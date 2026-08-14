@@ -84,6 +84,24 @@ this verb's dispatch branch reads none of those three flags (spec Always
 boundary: zero CFE involvement). `EngineAbsentError`/`PackageVersionMismatchError`
 both project through `main()`'s existing generic `MasonError` branch to
 `EXIT_FAILED` -- no dedicated branch, same as `CfeImportFloorError` above.
+
+Story 3.9 registers `package`'s SECOND verb, `ship`, plus the one
+documented bare-noun exception, `package --ship` (D-12/FR-30) -- both
+dispatch through the shared `_dispatch_package_ship` helper
+(`patch("pyforge.mason.cli.package.ship", ...)`, mocked to return a fixed
+`tuple[ShipTargetResult, ...]`, mirroring every other verb's fixed-result
+mocking convention but plural, since `ship()` always returns more than one
+result shape's worth of data). New coverage this story's predecessors
+don't need: canonical-vs-alias dispatch equivalence, the bare-noun-ship
+carve-out coexisting with the unchanged bare-noun-usage-error rule for
+every OTHER noun/verb-less shape, `--to`'s native argparse `required=True`
+usage error, and the data-dependent aggregate exit code (`EXIT_FAILED` if
+any returned result's `state == ShipState.FAILED`, else `EXIT_OK` -- the
+ONE dispatch branch in this whole file whose exit code is not uniformly
+`EXIT_OK`, spec Design Notes) -- unlike `package build`'s established
+never-reads-cfe-flags precedent, `ship` DOES read `--cfe-root`/
+`--cfe-python`/`--cfe-timeout` through to `package.ship`, since its own
+`conda-forge` target needs them.
 """
 
 from __future__ import annotations
@@ -110,7 +128,7 @@ from pyforge.mason.engines import EngineStatus
 from pyforge.mason.cfe import ImportFloorResult
 from pyforge.mason.errors import (
     CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError, EngineAbsentError,
-    MasonError, PackageVersionMismatchError,
+    InvalidShipTargetError, MasonError, PackageVersionMismatchError,
 )
 from pyforge.mason.exit_codes import (
     EXIT_CFE_UNAVAILABLE, EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
@@ -2305,14 +2323,474 @@ def test_package_build_global_flag_parses_after_the_verb_and_its_positional():
     assert ns.format == "json"
 
 
-def test_package_noun_metavar_reflects_the_registered_build_verb(capsys):
+def test_package_noun_metavar_reflects_the_registered_verbs(capsys):
     """Mirrors `test_recipe_diagnose_verb_metavar_reflects_the_registered_
     verb` above: `package` previously registered no verb at all, so its own
-    bad-verb usage error must now name `build`, not the stale literal
-    `{}`."""
+    bad-verb usage error must now name its registered verbs, not the stale
+    literal `{}`. Story 3.2 registered the first, `build`; Story 3.9 widens
+    this to two, `build` and `ship`, in registration order."""
     with pytest.raises(SystemExit) as exc:
         build_parser().parse_args(["package", "bogus-verb"])
     assert exc.value.code == 2
     err = capsys.readouterr().err
-    assert "{build}" in err
+    assert "{build,ship}" in err
     assert "argument {}:" not in err
+
+
+# --- Story 3.9: `package ship --to <targets>` / `package --ship <targets>` --
+
+_FIXED_SHIP_RESULTS = (
+    ShipTargetResult(
+        target="pypi", state=ShipState.TERMINAL,
+        reference="https://pypi.org/project/pkg/0.1.0/", message="View at:\n...\n",
+    ),
+    ShipTargetResult(
+        target="conda-forge", state=ShipState.PENDING,
+        reference="https://github.com/example/example/pull/1",
+        message="PR created: https://github.com/example/example/pull/1",
+    ),
+)
+
+
+def test_package_ship_help_works(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["package", "ship", "--help"])
+    assert exc.value.code == 0
+    assert "ship" in capsys.readouterr().out
+
+
+def test_package_ship_requires_the_to_flag(capsys):
+    """`--to` is `required=True` on the canonical verb form -- a native
+    argparse usage error, no dispatch reached at all."""
+    with patch("pyforge.mason.cli.package.ship") as mock_ship:
+        with pytest.raises(SystemExit) as exc:
+            build_parser().parse_args(["package", "ship"])
+    assert exc.value.code == 2
+    err = capsys.readouterr().err
+    assert "--to" in err
+    mock_ship.assert_not_called()
+
+
+def test_package_ship_parses_to_and_defaults():
+    """`--target`/`--yes`/`--recipe-path` default to `argparse.SUPPRESS`
+    (review pass 1) -- when omitted, they are simply ABSENT from the parsed
+    namespace, not present holding a plain default value; a direct
+    `ns.target`/`ns.yes`/`ns.recipe_path` access would raise
+    `AttributeError`. `_dispatch_package_ship` resolves each one via
+    `getattr(ns, ..., <default>)` instead (`_add_ship_flags`'s own
+    docstring)."""
+    ns = build_parser().parse_args(["package", "ship", "--to", "pypi"])
+    assert ns.noun == "package"
+    assert ns.verb == "ship"
+    assert ns.to == "pypi"
+    assert not hasattr(ns, "target")
+    assert not hasattr(ns, "yes")
+    assert not hasattr(ns, "recipe_path")
+    assert getattr(ns, "target", "library") == "library"
+    assert getattr(ns, "yes", False) is False
+    assert getattr(ns, "recipe_path", None) is None
+
+
+def test_package_ship_canonical_form_dispatches_to_package_ship(capsys):
+    with patch(
+        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+    ) as mock_ship:
+        assert main(["package", "ship", "--to", "pypi,conda-forge", "--yes"]) == EXIT_OK
+
+    mock_ship.assert_called_once()
+    args, kwargs = mock_ship.call_args
+    assert args == ("pypi,conda-forge",)
+    assert kwargs["confirm"] is True
+    assert kwargs["target"] == "library"
+    assert kwargs["recipe_path"] is None
+    assert kwargs["environ"] is os.environ
+    assert kwargs["start_directory"] == Path.cwd()
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert "package ship: ok" in out.out
+
+
+def test_package_ship_bare_noun_alias_dispatches_identically(capsys):
+    """spec I/O matrix: 'Alias happy path... identical dispatch/result to
+    the canonical form above.'"""
+    with patch(
+        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+    ) as mock_ship:
+        assert main(["package", "--ship", "pypi,conda-forge", "--yes"]) == EXIT_OK
+
+    mock_ship.assert_called_once()
+    args, kwargs = mock_ship.call_args
+    assert args == ("pypi,conda-forge",)
+    assert kwargs["confirm"] is True
+    assert kwargs["target"] == "library"
+    assert kwargs["recipe_path"] is None
+    assert kwargs["environ"] is os.environ
+    assert kwargs["start_directory"] == Path.cwd()
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert "package ship: ok" in out.out
+
+
+def test_package_ship_canonical_and_alias_forms_call_package_ship_with_equivalent_kwargs():
+    """Task list: 'both dispatch to pyforge.mason.cli.package.ship with
+    equivalent kwargs.'"""
+    with patch(
+        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+    ) as mock_ship:
+        assert main(["package", "ship", "--to", "pypi", "--yes"]) == EXIT_OK
+    canonical_args = mock_ship.call_args.args
+    canonical_kwargs = dict(mock_ship.call_args.kwargs)
+
+    with patch(
+        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+    ) as mock_ship:
+        assert main(["package", "--ship", "pypi", "--yes"]) == EXIT_OK
+    alias_args = mock_ship.call_args.args
+    alias_kwargs = dict(mock_ship.call_args.kwargs)
+
+    assert canonical_args == alias_args
+    assert canonical_kwargs.keys() == alias_kwargs.keys()
+    for key in canonical_kwargs:
+        if key == "environ":
+            assert canonical_kwargs[key] is alias_kwargs[key] is os.environ
+        else:
+            assert canonical_kwargs[key] == alias_kwargs[key]
+
+
+def test_bare_package_with_no_ship_flag_still_a_usage_error(capsys):
+    """D-12/FR-30: `--ship` is the ONE documented bare-noun exception --
+    bare `mason package` with no `--ship` given must remain the ordinary
+    bare-noun `EXIT_USAGE` (mirrors `test_bare_noun_is_a_usage_error`'s own
+    parametrized case for `package`, proven again explicitly here since
+    this story adds the ONE carve-out from that rule)."""
+    assert main(["package"]) == EXIT_USAGE
+    out = capsys.readouterr()
+    assert "package" in out.err
+    assert out.out == ""
+
+
+def test_recipe_and_environment_bare_nouns_still_usage_errors_after_ship_lands(capsys):
+    """`recipe`/`environment` never registered `--ship` at all -- the
+    bare-noun-ship dispatch check's own `ns.noun == "package"` guard means
+    they cannot reach it, and `getattr(ns, "ship", None)` would be `None`
+    for them regardless."""
+    assert main(["recipe"]) == EXIT_USAGE
+    assert main(["environment"]) == EXIT_USAGE
+
+
+def test_package_ship_json_mode_data_targets_is_a_list_of_ship_target_result_dicts(capsys):
+    with patch("pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS):
+        assert main(
+            ["package", "ship", "--to", "pypi,conda-forge", "--yes", "--format", "json"],
+        ) == EXIT_OK
+    doc = json.loads(capsys.readouterr().out)
+    assert set(doc) == {"schema_version", "command", "status", "data", "errors"}
+    assert doc["command"] == "package ship"
+    assert doc["status"] == "ok"
+    assert doc["errors"] == []
+    assert doc["data"]["targets"] == [
+        json.loads(json.dumps(dataclasses.asdict(r))) for r in _FIXED_SHIP_RESULTS
+    ]
+
+
+def test_package_ship_text_mode_never_leaks_the_raw_shipstate_repr(capsys):
+    """**New test (review pass 2)**: `--format text` is the DEFAULT format
+    (no `--format` flag given at all here) -- `_FIXED_SHIP_RESULTS` above
+    includes a `ShipState.TERMINAL` entry (a non-trivial state, not just
+    `PENDING`), so this reproduces the exact defect two independent
+    reviewers live-found against `render.render_text`: a bare
+    `dataclasses.asdict(r)` per target left `state` as a raw `ShipState`
+    enum member one level inside the rendered `"targets"` list, which
+    `render_text` printed via that list's own `repr()` (`<ShipState.
+    TERMINAL: 'terminal'>`), never `str()`. Asserts the literal substring
+    `"ShipState."` never appears anywhere in captured stdout -- not merely
+    that the plain value `"terminal"` appears, since a partial/incidental
+    match would not by itself rule out the `repr()` leaking alongside it."""
+    with patch("pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS):
+        assert main(["package", "ship", "--to", "pypi,conda-forge", "--yes"]) == EXIT_OK
+
+    out = capsys.readouterr().out
+    assert "ShipState." not in out
+    assert "terminal" in out
+    assert "pending" in out
+
+
+def test_package_ship_no_yes_flag_passes_confirm_false():
+    with patch(
+        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+    ) as mock_ship:
+        assert main(["package", "ship", "--to", "pypi"]) == EXIT_OK
+
+    assert mock_ship.call_args.kwargs["confirm"] is False
+
+
+def test_package_ship_yes_flag_passes_confirm_true():
+    with patch(
+        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+    ) as mock_ship:
+        assert main(["package", "ship", "--to", "pypi", "--yes"]) == EXIT_OK
+
+    assert mock_ship.call_args.kwargs["confirm"] is True
+
+
+def test_package_ship_recipe_path_flag_forwards_through():
+    with patch(
+        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+    ) as mock_ship:
+        assert main([
+            "package", "ship", "--to", "conda-forge", "--yes",
+            "--recipe-path", "/some/recipe",
+        ]) == EXIT_OK
+
+    assert mock_ship.call_args.kwargs["recipe_path"] == "/some/recipe"
+
+
+def test_package_ship_invalid_target_choice_is_a_usage_error(capsys):
+    """`--target`'s `choices=("library",)` -- mirrors `package build`'s own
+    usage-error case."""
+    with patch("pyforge.mason.cli.package.ship") as mock_ship:
+        rc = main(["package", "ship", "--to", "pypi", "--target", "application"])
+
+    assert rc == EXIT_USAGE
+    err = capsys.readouterr().err
+    assert "library" in err
+    mock_ship.assert_not_called()
+
+
+def test_package_ship_aggregate_exit_code_is_failed_when_any_target_failed():
+    mixed_results = (
+        ShipTargetResult(target="pypi", state=ShipState.TERMINAL, reference="u", message="ok"),
+        ShipTargetResult(
+            target="conda-forge", state=ShipState.FAILED, reference=None, message="bad",
+        ),
+    )
+    with patch("pyforge.mason.cli.package.ship", return_value=mixed_results):
+        rc = main(["package", "ship", "--to", "pypi,conda-forge", "--yes"])
+
+    assert rc == EXIT_FAILED
+
+
+def test_package_ship_aggregate_exit_code_is_ok_when_no_target_failed():
+    """`NOT_ATTEMPTED` (a dry run, or a rehearsal-gated skip) and
+    `TERMINAL` both count as success (AD-9) -- only `FAILED` flips the
+    aggregate."""
+    all_ok_results = (
+        ShipTargetResult(target="pypi", state=ShipState.TERMINAL, reference="u", message="ok"),
+        ShipTargetResult(
+            target="pypi", state=ShipState.NOT_ATTEMPTED, reference=None, message="gated",
+        ),
+    )
+    with patch("pyforge.mason.cli.package.ship", return_value=all_ok_results):
+        rc = main(["package", "ship", "--to", "pypi,pypi-test", "--yes"])
+
+    assert rc == EXIT_OK
+
+
+def test_package_ship_cfe_root_and_timeout_flags_reach_package_ship():
+    """Unlike `package build`'s established never-reads-cfe-flags
+    precedent, `ship` DOES need `--cfe-root`/`--cfe-timeout` for its
+    `conda-forge` target."""
+    with patch(
+        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+    ) as mock_ship:
+        assert main([
+            "package", "ship", "--to", "conda-forge", "--yes",
+            "--cfe-root", "/explicit/root", "--cfe-timeout", "30",
+        ]) == EXIT_OK
+
+    kwargs = mock_ship.call_args.kwargs
+    assert kwargs["cfe_root_arg"] == "/explicit/root"
+    assert kwargs["cfe_timeout_arg"] == 30.0
+
+
+def test_package_ship_cfe_python_flag_reaches_package_ship():
+    with patch(
+        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+    ) as mock_ship:
+        assert main([
+            "package", "ship", "--to", "conda-forge", "--yes",
+            "--cfe-python", "/explicit/python",
+        ]) == EXIT_OK
+
+    assert mock_ship.call_args.kwargs["cfe_python_arg"] == "/explicit/python"
+
+
+def test_package_ship_cfe_timeout_defaults_to_none_when_unset(monkeypatch):
+    monkeypatch.delenv("MASON_CFE_TIMEOUT", raising=False)
+    with patch(
+        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+    ) as mock_ship:
+        assert main(["package", "ship", "--to", "pypi", "--yes"]) == EXIT_OK
+
+    assert mock_ship.call_args.kwargs["cfe_timeout_arg"] is None
+
+
+def test_package_ship_mason_error_projects_to_exit_failed(capsys):
+    """`InvalidShipTargetError` (an invalid TOKEN, propagated un-caught out
+    of `package.ship`) degrades via `main()`'s existing generic `MasonError`
+    branch to `EXIT_FAILED` -- no dedicated branch, spec I/O matrix:
+    'Invalid token... Raises InvalidShipTargetError, EXIT_FAILED.'"""
+    with patch(
+        "pyforge.mason.cli.package.ship", side_effect=InvalidShipTargetError("bogus"),
+    ):
+        rc = main(["package", "ship", "--to", "pypi", "--yes"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert "bogus" in err
+
+
+def test_package_ship_global_flag_parses_after_the_verb_and_its_positional():
+    ns = build_parser().parse_args(
+        ["package", "ship", "--to", "pypi", "--format", "json"],
+    )
+    assert ns.noun == "package"
+    assert ns.verb == "ship"
+    assert ns.to == "pypi"
+    assert ns.format == "json"
+
+
+# --- Review pass 1: `--yes`/`--recipe-path`/`--target` given BEFORE the
+# verb token must parse identically to giving them after -- the confirmed
+# silent-clobber bug (Spec Change Log) this pass fixes with
+# `argparse.SUPPRESS` on both of `_add_ship_flags`'s registration sites.
+
+
+def test_package_ship_yes_before_verb_parses_the_same_as_after_via_parse_args():
+    """`mason package --yes ship --to pypi` must set `ns.yes = True` --
+    before this pass's fix, the `ship` subparser's own `--yes` (a plain
+    `False` default) silently clobbered the noun parser's `True` when
+    `_SubParsersAction.__call__` copied its fresh sub-namespace onto the
+    parent (Spec Change Log: 'mason package --yes ship --to pypi parses to
+    ns.yes == False')."""
+    before = build_parser().parse_args(["package", "--yes", "ship", "--to", "pypi"])
+    after = build_parser().parse_args(["package", "ship", "--to", "pypi", "--yes"])
+    assert getattr(before, "yes", False) is True
+    assert getattr(after, "yes", False) is True
+
+
+def test_package_ship_recipe_path_before_verb_parses_the_same_as_after_via_parse_args():
+    before = build_parser().parse_args(
+        ["package", "--recipe-path", "X", "ship", "--to", "conda-forge"],
+    )
+    after = build_parser().parse_args(
+        ["package", "ship", "--to", "conda-forge", "--recipe-path", "X"],
+    )
+    assert getattr(before, "recipe_path", None) == "X"
+    assert getattr(after, "recipe_path", None) == "X"
+
+
+def test_package_ship_target_before_verb_parses_the_same_as_after_via_parse_args():
+    before = build_parser().parse_args(
+        ["package", "--target", "library", "ship", "--to", "pypi"],
+    )
+    after = build_parser().parse_args(
+        ["package", "ship", "--to", "pypi", "--target", "library"],
+    )
+    assert getattr(before, "target", "library") == "library"
+    assert getattr(after, "target", "library") == "library"
+
+
+def test_package_ship_yes_before_verb_reaches_package_ship_via_main():
+    """Same hazard, proven end-to-end through `main()` + `_dispatch_package_
+    ship` rather than just `parse_args` -- `package.ship`'s own `confirm`
+    kwarg must be `True` regardless of where `--yes` was typed."""
+    with patch(
+        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+    ) as mock_ship:
+        assert main(["package", "--yes", "ship", "--to", "pypi"]) == EXIT_OK
+    before_kwargs = dict(mock_ship.call_args.kwargs)
+
+    with patch(
+        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+    ) as mock_ship:
+        assert main(["package", "ship", "--to", "pypi", "--yes"]) == EXIT_OK
+    after_kwargs = dict(mock_ship.call_args.kwargs)
+
+    assert before_kwargs["confirm"] is True
+    assert after_kwargs["confirm"] is True
+
+
+def test_package_ship_recipe_path_before_verb_reaches_package_ship_via_main():
+    with patch(
+        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+    ) as mock_ship:
+        assert main([
+            "package", "--recipe-path", "X", "ship", "--to", "conda-forge", "--yes",
+        ]) == EXIT_OK
+    before_kwargs = dict(mock_ship.call_args.kwargs)
+
+    with patch(
+        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+    ) as mock_ship:
+        assert main([
+            "package", "ship", "--to", "conda-forge", "--yes", "--recipe-path", "X",
+        ]) == EXIT_OK
+    after_kwargs = dict(mock_ship.call_args.kwargs)
+
+    assert before_kwargs["recipe_path"] == "X"
+    assert after_kwargs["recipe_path"] == "X"
+
+
+def test_package_ship_target_before_verb_reaches_package_ship_via_main():
+    with patch(
+        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+    ) as mock_ship:
+        assert main([
+            "package", "--target", "library", "ship", "--to", "pypi", "--yes",
+        ]) == EXIT_OK
+    before_kwargs = dict(mock_ship.call_args.kwargs)
+
+    with patch(
+        "pyforge.mason.cli.package.ship", return_value=_FIXED_SHIP_RESULTS,
+    ) as mock_ship:
+        assert main([
+            "package", "ship", "--to", "pypi", "--yes", "--target", "library",
+        ]) == EXIT_OK
+    after_kwargs = dict(mock_ship.call_args.kwargs)
+
+    assert before_kwargs["target"] == "library"
+    assert after_kwargs["target"] == "library"
+
+
+def test_package_ship_empty_string_alias_reaches_package_ship_not_the_bare_noun_usage_error():
+    """Review pass 1: `mason package --ship ""` must reach `package.
+    ship("")` (and, for real, fail with that call's own
+    `InvalidShipTargetError`) -- NOT silently fall through to the generic
+    bare-noun `EXIT_USAGE` branch, which is what the prior truthy
+    `getattr(ns, "ship", None)` check did for any falsy-but-given `--ship`
+    value."""
+    with patch("pyforge.mason.cli.package.ship", return_value=()) as mock_ship:
+        rc = main(["package", "--ship", ""])
+
+    mock_ship.assert_called_once()
+    args, _kwargs = mock_ship.call_args
+    assert args == ("",)
+    assert rc == EXIT_OK
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["package", "--ship", "pypi", "build", "."],
+        ["package", "--ship", "pypi", "ship", "--to", "conda-forge", "--yes"],
+    ],
+)
+def test_package_ship_combined_with_an_explicit_verb_is_a_usage_error(argv, capsys):
+    """Review pass 3: `--ship <targets>` is registered on the `package`
+    NOUN parser (needed for D-12's bare-noun alias), so it used to parse
+    successfully even alongside an explicit verb -- with `ns.ship` then
+    silently discarded (neither the `build` nor the `ship` verb branch ever
+    read it). Two independent review passes flagged this as a plausible
+    real trigger (editing a previous `--ship ...` invocation to add an
+    explicit verb, leaving the stale `--ship` in place); rejected as a
+    usage error now instead of silently ignored."""
+    with patch("pyforge.mason.cli.package.ship") as mock_ship, \
+            patch("pyforge.mason.cli.package.build") as mock_build:
+        rc = main(argv)
+
+    assert rc == EXIT_USAGE
+    err = capsys.readouterr().err
+    assert "--ship" in err
+    mock_ship.assert_not_called()
+    mock_build.assert_not_called()

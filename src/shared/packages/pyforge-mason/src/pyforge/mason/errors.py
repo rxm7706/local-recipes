@@ -402,19 +402,21 @@ class PackageProjectPathError(MasonError):
 
 
 class InvalidShipTargetError(MasonError):
-    """A `--ship`/`--to` token failed to parse as one of the three valid
-    ship-target forms (Story 3.3, FR-16, FR-19, NFR-14).
+    """A `--ship`/`--to` token failed to parse as one of the four valid
+    ship-target forms (Story 3.3, FR-16, FR-19, NFR-14; Story 3.9/FR-50 adds
+    the fourth, `pypi-test`).
 
     Raised by `package.py::parse_ship_targets` for a token that is not
-    exactly `"pypi"`, exactly `"conda-forge"`, or `"channel:"` followed by a
-    non-empty name -- the message names the offending token verbatim and
-    lists all three valid forms (spec AC1: "rejected with the valid set
-    listed"), never inventing a partial match or a best guess at what the
-    caller meant. `value` is the ORIGINAL stripped token, not the whole
-    comma-separated input string, so a caller sees exactly which part of a
-    multi-target value was wrong. Construction raises `ValueError` for an
-    empty `value`, matching `PackageProjectPathError`'s validation rigor: an
-    invalid-target error naming no token is incoherent.
+    exactly `"pypi"`, exactly `"pypi-test"`, exactly `"conda-forge"`, or
+    `"channel:"` followed by a non-empty name -- the message names the
+    offending token verbatim and lists all four valid forms (spec AC1:
+    "rejected with the valid set listed"), never inventing a partial match
+    or a best guess at what the caller meant. `value` is the ORIGINAL
+    stripped token, not the whole comma-separated input string, so a caller
+    sees exactly which part of a multi-target value was wrong. Construction
+    raises `ValueError` for an empty `value`, matching
+    `PackageProjectPathError`'s validation rigor: an invalid-target error
+    naming no token is incoherent.
     """
 
     def __init__(self, value: str) -> None:
@@ -426,7 +428,7 @@ class InvalidShipTargetError(MasonError):
         self.value = value
         message = (
             f"{value!r} is not a valid ship target; valid forms are "
-            "'pypi', 'conda-forge', 'channel:<name>'"
+            "'pypi', 'pypi-test', 'conda-forge', 'channel:<name>'"
         )
         super().__init__("ship:invalid-target", message)
 
@@ -457,6 +459,16 @@ class ShipCredentialMissingError(MasonError):
     the incoherent state this class exists to rule out. `missing` is stored
     as a `tuple`, matching every other `Sequence`-typed field in this
     module.
+
+    The message never names a specific repository (review pass 3, Story
+    3.9): `ship_pypi` raises this identically for both a real `pypi` ship
+    and a `pypi-test` rehearsal (AD-26's "identical code path"), and the
+    message is built BEFORE `ship_pypi` computes which of the two it is --
+    "set them before shipping to pypi" was accurate when only `pypi`
+    existed (Story 3.4) but became actively misleading for a `pypi-test`
+    invocation once Story 3.9 added it; genericizing to "before shipping"
+    is correct for both rather than threading a new constructor parameter
+    through for a cosmetic distinction.
     """
 
     def __init__(self, missing: Sequence[str]) -> None:
@@ -475,7 +487,7 @@ class ShipCredentialMissingError(MasonError):
         self.missing = missing
         message = (
             f"missing PyPI upload credential(s) in the environment: "
-            f"{', '.join(missing)}; set them before shipping to pypi"
+            f"{', '.join(missing)}; set them before shipping"
         )
         super().__init__("ship:credential-missing", message)
 

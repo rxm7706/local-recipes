@@ -35,7 +35,12 @@ ones would print a factually wrong message for a channel failure).
 Story 3.6 extends this file again with `ShipCondaForgeRecipeMissingError`
 (zero-arg, mirrors `CfeUnresolvedError`'s own suite shape) and
 `ShipCondaForgeRecipeLocationError` (two-arg, mirrors
-`PackageProjectPathError`'s own suite shape) coverage."""
+`PackageProjectPathError`'s own suite shape) coverage.
+
+Story 3.9 extends `InvalidShipTargetError`'s own message-content test:
+`pypi-test` now joins the listed valid forms (FR-24, FR-50, AD-26) -- no
+new error class, since `ShipTargetKind.PYPI_TEST` reuses this same
+existing class for the exact same failure mode."""
 
 from __future__ import annotations
 
@@ -625,11 +630,13 @@ def test_invalid_ship_target_error_stores_attributes():
     assert exc.value == "bogus"
 
 
-def test_invalid_ship_target_error_message_names_the_value_and_the_three_valid_forms():
+def test_invalid_ship_target_error_message_names_the_value_and_the_four_valid_forms():
+    """Story 3.9/FR-50: `pypi-test` joins the listed valid forms."""
     exc = InvalidShipTargetError("bogus")
     message = str(exc)
     assert "bogus" in message
     assert "pypi" in message
+    assert "pypi-test" in message
     assert "conda-forge" in message
     assert "channel:<name>" in message
 
@@ -705,6 +712,18 @@ def test_ship_credential_missing_error_single_missing_entry():
     exc = ShipCredentialMissingError(missing=("TWINE_PASSWORD",))
     assert "TWINE_PASSWORD" in str(exc)
     assert "TWINE_USERNAME" not in str(exc)
+
+
+def test_ship_credential_missing_error_message_names_no_specific_repository():
+    """Review pass 3: `ship_pypi` raises this identically for a real `pypi`
+    ship and a `pypi-test` rehearsal (AD-26), and the message is built
+    BEFORE `ship_pypi` knows which -- it must not claim the upload targets
+    "pypi" specifically ("PyPI upload credential(s)" as the generic
+    credential-type description is fine and unchanged; the directional
+    claim "shipping to pypi" was the part that was wrong for a `pypi-test`
+    invocation, and is what this test guards)."""
+    exc = ShipCredentialMissingError(missing=("TWINE_USERNAME",))
+    assert "to pypi" not in str(exc).lower()
 
 
 def test_ship_credential_missing_error_is_a_mason_error():

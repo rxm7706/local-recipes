@@ -232,8 +232,12 @@ class ShipTargetKind(StrEnum):
     targets` recognizes (Story 3.3, FR-16, FR-19, spec AC1): `PYPI` (upload
     to PyPI), `CONDA_FORGE` (a staged-recipes pull request), `CHANNEL` (an
     arbitrary named conda channel -- `ShipTarget.channel_name` carries
-    which one). Exactly these three; no `pypi-test` form lands here (spec
-    Never boundary -- Story 3.9/FR-50's own scope, not this vocabulary's).
+    which one), and (Story 3.9, FR-24, FR-50, AD-26) `PYPI_TEST` -- a
+    TestPyPI rehearsal upload. `PYPI_TEST` is NOT a second upload
+    mechanism: it runs through the IDENTICAL code path as `PYPI`
+    (`package.py::ship_pypi`), differing only in a `repository_url` knob
+    forwarded down to `engines.twine.upload` -- AD-26's own "identical code
+    path... differing only in repository configuration."
 
     `StrEnum`, not a plain `Enum`, mirroring `ShipState`'s own precedent
     above for the same reason: this file's shapes eventually reach
@@ -245,6 +249,7 @@ class ShipTargetKind(StrEnum):
     PYPI = "pypi"
     CONDA_FORGE = "conda-forge"
     CHANNEL = "channel"
+    PYPI_TEST = "pypi-test"
 
 
 @dataclass(frozen=True)

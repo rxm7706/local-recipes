@@ -137,7 +137,7 @@ from packaging.version import InvalidVersion, Version
 
 from .engines import pep517, pixi, twine
 from .errors import (
-    CfeUnresolvedError, InvalidShipTargetError, PackageProjectPathError,
+    CfeUnresolvedError, InvalidShipTargetError, MasonError, PackageProjectPathError,
     PackageVersionMismatchError, ShipChannelCredentialMissingError,
     ShipCondaForgeRecipeLocationError, ShipCondaForgeRecipeMissingError,
     ShipCredentialMissingError,
@@ -238,21 +238,32 @@ def build(project_path: str, *, target: str = "library") -> PackageBuildResult:
 
 _CHANNEL_PREFIX = "channel:"
 
+_TESTPYPI_REPOSITORY_URL = "https://test.pypi.org/legacy/"
+"""PyPI's own documented TestPyPI upload URL (Story 3.9, FR-24, FR-50,
+AD-26) -- a fixed constant, never a flag or environment variable (D-13
+forbids a config file as the alternative twine mechanism; spec Always
+boundary: "no flag, no env var"). `ship()`'s own `_ship_one` closure
+forwards this verbatim as `ship_pypi`'s `repository_url` argument for every
+`PYPI_TEST` target -- the ONE place this constant is read."""
+
 
 def parse_ship_targets(value: str) -> tuple[ShipTarget, ...]:
     """Parse a comma-separated `--ship`/`--to` value into `ShipTarget`s
-    (Story 3.3, FR-16, FR-19, spec AC1).
+    (Story 3.3, FR-16, FR-19, spec AC1; Story 3.9/FR-50 adds the fourth
+    form below).
 
     Splits `value` on `,` and strips whitespace from each resulting token
     (including the substring after a `"channel:"` prefix, review pass,
     2026-08-13), then matches each token INDEPENDENTLY of the others
-    against the three valid forms: `"pypi"`/`"conda-forge"` exactly
-    (case-sensitive), or a `"channel:"`-prefixed token whose suffix
+    against the four valid forms: `"pypi"`/`"pypi-test"`/`"conda-forge"`
+    exactly (case-sensitive), or a `"channel:"`-prefixed token whose suffix
     (everything after the colon, stripped) is non-empty, which becomes
-    `CHANNEL` with that stripped suffix as `channel_name`. Any other token
-    -- including a bare `"channel:"` with nothing after the colon, or an
-    empty token from a leading/trailing/doubled comma -- raises
-    `InvalidShipTargetError`.
+    `CHANNEL` with that stripped suffix as `channel_name`. `"pypi-test"` is
+    a new bare literal (Story 3.9), mirroring `"pypi"`/`"conda-forge"`'s own
+    handling exactly -- no prefix, no dedup, same precedent as the other
+    three. Any other token -- including a bare `"channel:"` with nothing
+    after the colon, or an empty token from a leading/trailing/doubled
+    comma -- raises `InvalidShipTargetError`.
 
     An empty token is named `"<empty>"` rather than passed to
     `InvalidShipTargetError` as-is (review pass, 2026-08-13):
@@ -276,6 +287,8 @@ def parse_ship_targets(value: str) -> tuple[ShipTarget, ...]:
             raise InvalidShipTargetError("<empty>")
         if stripped == "pypi":
             targets.append(ShipTarget(kind=ShipTargetKind.PYPI, channel_name=None))
+        elif stripped == "pypi-test":
+            targets.append(ShipTarget(kind=ShipTargetKind.PYPI_TEST, channel_name=None))
         elif stripped == "conda-forge":
             targets.append(ShipTarget(kind=ShipTargetKind.CONDA_FORGE, channel_name=None))
         elif stripped.startswith(_CHANNEL_PREFIX) and stripped[len(_CHANNEL_PREFIX):].strip():
@@ -290,31 +303,62 @@ def parse_ship_targets(value: str) -> tuple[ShipTarget, ...]:
     return tuple(targets)
 
 
+def _canonical_target_name(target: ShipTarget) -> str:
+    """Reconstruct one `ShipTarget`'s canonical string form: `"pypi"`,
+    `"pypi-test"`, `"conda-forge"`, or `"channel:<name>"` (extracted from
+    `plan_ship`'s own Story 3.3 inline logic, Story 3.9) -- never
+    `ShipTargetKind.value` alone, since `ShipTargetResult.target` stays a
+    plain `str` (spec Always boundary; see `models.ShipTargetResult`'s own
+    docstring).
+
+    The ONE place this reconstruction is written: `plan_ship` (below) calls
+    it to build each dry-run entry's `target` field, and `ship()`'s own
+    `_ship_one` closure calls it again to name a target whose function
+    raised a `MasonError` -- both need the identical canonical string for
+    the identical `ShipTarget`, so this is shared rather than
+    reimplemented a second time for the dispatcher.
+    """
+    if target.kind is ShipTargetKind.PYPI:
+        return "pypi"
+    if target.kind is ShipTargetKind.PYPI_TEST:
+        return "pypi-test"
+    if target.kind is ShipTargetKind.CONDA_FORGE:
+        return "conda-forge"
+    if target.kind is ShipTargetKind.CHANNEL:
+        return f"{_CHANNEL_PREFIX}{target.channel_name}"
+    raise AssertionError(f"unhandled ShipTargetKind: {target.kind!r}")  # pragma: no cover
+
+
 def plan_ship(
     targets: Sequence[ShipTarget], build_result: PackageBuildResult,
 ) -> tuple[ShipTargetResult, ...]:
     """Produce the dry-run ship plan for `targets` against an already-built
-    `build_result` (Story 3.3, FR-16, FR-19, spec AC1) -- print-only,
-    uploads nothing.
+    `build_result` (Story 3.3, FR-16, FR-19, spec AC1; Story 3.9/FR-50 adds
+    the `PYPI_TEST` branch below) -- print-only, uploads nothing.
 
     Reuses `models.ShipTargetResult` (`state=ShipState.NOT_ATTEMPTED,
     reference=None`), the exact dry-run shape `recipe.py::submit()` already
     produces for its own `confirm=False` branch (AD-9, this module's own
     docstring) -- never a second "plan" shape. There is no `confirm`
-    parameter here at all, unlike `submit()`'s inversion: this story's own
-    scope has no code path that ever ships for real (Stories 3.4-3.6 add
-    the target adapters this plan describes, but this function never calls
-    them, and never spawns a subprocess of its own -- `build_result` is
-    already-built data, read only), so there is nothing to invert.
+    parameter here at all, unlike `submit()`'s inversion: this function
+    never calls a target adapter, and never spawns a subprocess of its own
+    -- `build_result` is already-built data, read only -- so there is
+    nothing to invert. (`ship()`, Story 3.9, is the caller that DOES invert
+    on `confirm`; this function itself still does not.)
 
-    `target`'s canonical string form is reconstructed from each
-    `ShipTarget` (`"pypi"`, `"conda-forge"`, or `"channel:<name>"`), not
-    `ShipTargetKind.value` alone -- `ShipTargetResult.target` stays a plain
-    `str` (spec Always boundary; see `models.ShipTargetResult`'s own
-    docstring). Each `message` names the relevant `build_result` artifact(s)
-    and destination: `PYPI` names `wheel_path`/`sdist_path` and states the
-    upload is irreversible (spec Always boundary, epic-3-context
-    Requirements); `CONDA_FORGE` names no build artifact at all -- a
+    `target`'s canonical string form is reconstructed via
+    `_canonical_target_name` (extracted here, Story 3.9, from this
+    function's own former inline logic) rather than `ShipTargetKind.value`
+    alone -- `ShipTargetResult.target` stays a plain `str` (spec Always
+    boundary; see `models.ShipTargetResult`'s own docstring). Each `message`
+    names the relevant `build_result` artifact(s) and destination: `PYPI`
+    names `wheel_path`/`sdist_path` and states the upload is irreversible
+    (spec Always boundary, epic-3-context Requirements); `PYPI_TEST` names
+    the SAME two artifacts and states the upload targets TestPyPI, but
+    NEVER claims irreversibility (FR-50) -- that claim stays exclusive to
+    the real `PYPI` target, since a TestPyPI upload is trivially
+    re-attempted under a fresh version and carries none of the real
+    index's permanence; `CONDA_FORGE` names no build artifact at all -- a
     staged-recipes submission ships the recipe SOURCE, not the built
     `.conda` binary built here -- and states a pull request would be
     opened; `CHANNEL` names `conda_path` and the channel's own name.
@@ -330,18 +374,21 @@ def plan_ship(
     """
     results = []
     for target in targets:
+        canonical = _canonical_target_name(target)
         if target.kind is ShipTargetKind.PYPI:
-            canonical = "pypi"
             message = (
                 f"would upload {_describe_artifact(build_result.wheel_path, 'wheel')} and "
                 f"{_describe_artifact(build_result.sdist_path, 'sdist')} to PyPI; "
                 "this upload is irreversible"
             )
+        elif target.kind is ShipTargetKind.PYPI_TEST:
+            message = (
+                f"would upload {_describe_artifact(build_result.wheel_path, 'wheel')} and "
+                f"{_describe_artifact(build_result.sdist_path, 'sdist')} to TestPyPI"
+            )
         elif target.kind is ShipTargetKind.CONDA_FORGE:
-            canonical = "conda-forge"
             message = "would open a conda-forge/staged-recipes pull request"
         elif target.kind is ShipTargetKind.CHANNEL:
-            canonical = f"{_CHANNEL_PREFIX}{target.channel_name}"
             message = (
                 f"would upload {_describe_artifact(build_result.conda_path, '.conda package')} "
                 f"to channel {target.channel_name!r}"
@@ -369,9 +416,11 @@ _REQUIRED_SHIP_PYPI_CREDENTIALS = ("TWINE_USERNAME", "TWINE_PASSWORD")
 
 def ship_pypi(
     project_path: str, *, environ: Mapping[str, str], target: str = "library",
+    repository_url: str | None = None,
 ) -> ShipTargetResult:
-    """Build and upload `project_path`'s wheel+sdist to PyPI via `twine`
-    (Story 3.4, FR-16, FR-20, AD-9, AD-14).
+    """Build and upload `project_path`'s wheel+sdist to PyPI -- or, with
+    `repository_url` given, to TestPyPI -- via `twine` (Story 3.4, FR-16,
+    FR-20, AD-9, AD-14; Story 3.9/FR-24/FR-50/AD-26 adds `repository_url`).
 
     Checks `TWINE_USERNAME`/`TWINE_PASSWORD` presence in `environ` FIRST, as
     this function's very first action, before `build()` is ever called
@@ -382,7 +431,18 @@ def ship_pypi(
     but this truthiness check, logged, or stored on the returned object
     (NFR-2) -- the credentials reach `twine` only via the subprocess's own
     inherited environment, inside `engines.twine.upload` (see that module's
-    own docstring).
+    own docstring). Note: TestPyPI has its own, separate credential pair in
+    reality, but this function checks the SAME `TWINE_USERNAME`/
+    `TWINE_PASSWORD` names for both -- AD-26's "identical code path" leaves
+    credential resolution to the caller's own environment, exactly as it
+    was before this story; no new credential vocabulary is introduced here.
+
+    `canonical` -- `"pypi-test"` when `repository_url` is given, else
+    `"pypi"` -- is computed ONCE, immediately after the credential check,
+    and used at all three `ShipTargetResult(target=...)` construction sites
+    below (Story 3.9) -- the ONLY difference between a real PyPI ship and a
+    TestPyPI rehearsal anywhere in this function's own logic; every other
+    line runs identically for both.
 
     When both credentials are present, calls `build(project_path,
     target=target)` unconditionally (FR-15, reused rather than duplicated
@@ -391,16 +451,17 @@ def ship_pypi(
     `PackageBuildResult`). Only when the returned `PackageBuildResult`
     carries a non-`None` `wheel_path` AND a non-`None` `sdist_path` does
     this function go on to call `engines.twine.upload((wheel_path,
-    sdist_path))`; otherwise -- one or both engines failed to produce an
-    artifact -- it returns a `FAILED` result directly, without `twine.
-    upload` ever being called (spec I/O matrix). That "nothing built" case's
-    `message` is `build_result.pep517_stdout` -- the wrapped `build` engine
-    is the one responsible for the wheel/sdist this ship target needs, so
-    its own stdout is the wrapped tool's own field, verbatim (AD-1,
-    `models.ShipTargetResult.message`'s own docstring contract).
+    sdist_path), repository_url=repository_url)`; otherwise -- one or both
+    engines failed to produce an artifact -- it returns a `FAILED` result
+    directly, without `twine.upload` ever being called (spec I/O matrix).
+    That "nothing built" case's `message` is `build_result.pep517_stdout`
+    -- the wrapped `build` engine is the one responsible for the
+    wheel/sdist this ship target needs, so its own stdout is the wrapped
+    tool's own field, verbatim (AD-1, `models.ShipTargetResult.message`'s
+    own docstring contract).
 
-    On a zero `upload()` returncode, returns `ShipTargetResult(target=
-    "pypi", state=ShipState.TERMINAL, reference=upload_result.url,
+    On a zero `upload()` returncode, returns `ShipTargetResult(
+    target=canonical, state=ShipState.TERMINAL, reference=upload_result.url,
     message=upload_result.stdout)`. On a nonzero `upload()` returncode,
     returns `ShipTargetResult(state=ShipState.FAILED, reference=None,
     message=upload_result.stdout)` -- AD-4: a tool that RAN but failed is
@@ -423,25 +484,29 @@ def ship_pypi(
     if missing:
         raise ShipCredentialMissingError(missing)
 
+    canonical = "pypi-test" if repository_url is not None else "pypi"
+
     build_result = build(project_path, target=target)
 
     if build_result.wheel_path is None or build_result.sdist_path is None:
         return ShipTargetResult(
-            target="pypi",
+            target=canonical,
             state=ShipState.FAILED,
             reference=None,
             message=build_result.pep517_stdout,
         )
 
-    upload_result = twine.upload((build_result.wheel_path, build_result.sdist_path))
+    upload_result = twine.upload(
+        (build_result.wheel_path, build_result.sdist_path), repository_url=repository_url,
+    )
 
     if upload_result.returncode != 0:
         return ShipTargetResult(
-            target="pypi", state=ShipState.FAILED, reference=None, message=upload_result.stdout,
+            target=canonical, state=ShipState.FAILED, reference=None, message=upload_result.stdout,
         )
 
     return ShipTargetResult(
-        target="pypi",
+        target=canonical,
         state=ShipState.TERMINAL,
         reference=upload_result.url,
         message=upload_result.stdout,
@@ -646,3 +711,208 @@ def ship_conda_forge(
         environ=environ,
         start_directory=start_directory,
     )
+
+
+def ship(
+    raw_targets: str,
+    *,
+    confirm: bool,
+    environ: Mapping[str, str],
+    target: str = "library",
+    recipe_path: str | None = None,
+    cfe_root_arg: str | None,
+    cfe_python_arg: str | None,
+    cfe_timeout_arg: float | None,
+    start_directory: Path,
+) -> tuple[ShipTargetResult, ...]:
+    """The multi-target ship dispatcher (Story 3.9, FR-16, FR-24, FR-50,
+    AD-9, AD-26) -- the ONE place `--to`/`--ship`'s comma-separated targets
+    get turned into calls against `ship_pypi`/`ship_channel`/
+    `ship_conda_forge` (Stories 3.4-3.6), each of which existed for three
+    stories with nothing on the CLI ever reaching them.
+
+    Parses `raw_targets` via `parse_ship_targets` FIRST, letting
+    `InvalidShipTargetError` propagate un-caught -- an invalid TOKEN fails
+    the WHOLE command before any target runs at all (spec I/O matrix:
+    "whole command fails before any target runs"), a deliberately different
+    failure mode from a target's own execution failure below, which is
+    caught and reported per-target instead.
+
+    `project_path` is `str(start_directory)` -- there is no separate
+    project-path parameter on this function at all (spec Always boundary:
+    "Ship's `project_path` is always `Path.cwd()`, never a flag or
+    positional" -- `package build` keeps its own explicit positional; ship
+    does not adopt it). `start_directory` IS that `Path.cwd()` value,
+    already resolved once by the CLI dispatch branch that calls this
+    function, and this function never calls `Path.cwd()` a second time --
+    it doubles as the same anchor `ship_conda_forge`'s own
+    `resolve_cfe_root` call walks upward from for its `conda-forge` target.
+
+    Dry run (`confirm=False`, the default absent `--yes`, FR-19): calls
+    `build(project_path, target=target)` exactly ONCE, but ONLY when at
+    least one requested target is NOT `conda-forge` (**corrected, review
+    pass 2** -- this docstring previously said "calls `build()` exactly
+    ONCE regardless of how many targets were requested," unconditionally.
+    That was wrong: it contradicted this SAME docstring's own next
+    paragraph, which already states the real-ship path's principle that "a
+    project shipping only to `conda-forge` must never be forced through
+    `pep517`/`pixi` build engines it may not even have installed" --  that
+    principle was applied only to the real-ship path below, never carried
+    through to this dry-run branch, so `mason package ship --to
+    conda-forge` with no `--yes` crashed with `EngineAbsentError` on a host
+    missing `pep517`/`pixi` tooling instead of printing the intended plan,
+    defeating the exact safe-preview purpose FR-19's dry-run default
+    exists for). When every requested target IS `conda-forge`, `build()` is
+    never called at all -- a placeholder `PackageBuildResult` with every
+    artifact/version field `None` and both subprocess return codes `0` is
+    passed to `plan_ship` instead, which is safe because `plan_ship`'s own
+    `CONDA_FORGE` branch never reads any `build_result` field (its message
+    is a fixed string naming a pull request, not an artifact -- see
+    `plan_ship`'s own docstring). Either way, `plan_ship(targets,
+    build_result)` is returned verbatim -- print-only, uploads nothing, no
+    target function is ever called (mirrors `plan_ship`'s own docstring:
+    this function is the caller that inverts on `confirm`; `plan_ship`
+    itself still does not).
+
+    Real ship (`confirm=True`): there is NO shared upfront `build()` call
+    here at all -- each target kind's own function owns its own
+    build-or-none (`ship_pypi`/`ship_channel` each call `build()`
+    internally; `ship_conda_forge` builds nothing, unchanged). This is the
+    "minor redundancy" `ship_pypi`'s own Story 3.4 docstring already
+    accepted as belonging to this story ("this module's own docstring
+    explains why `ship_pypi` owns this sequence itself rather than
+    accepting an already-built `PackageBuildResult`") -- a project shipping
+    only to `conda-forge` must never be forced through `pep517`/`pixi`
+    build engines it may not even have installed.
+
+    Every target's own function call runs inside the internal `_ship_one`
+    closure below, wrapped in `try`/`except MasonError` -- converting a
+    raised structural precondition (a missing credential, an absent
+    engine, an unresolved CFE root, a missing/misplaced recipe path, ...)
+    into `ShipTargetResult(state=ShipState.FAILED, reference=None,
+    message=str(exc))` for THAT target alone, named via
+    `_canonical_target_name`, then continuing the rest (spec Always
+    boundary; `ship_conda_forge`'s own Story 3.6 docstring already
+    anticipated this: "leaving a caller -- a future multi-target
+    dispatcher -- free to catch it and continue"). Consequence, spelled
+    out because it is the one surprising exit-code behavior in this whole
+    file (spec Design Notes): `EXIT_CFE_UNAVAILABLE` NEVER surfaces from
+    `ship()`, even for a lone `--to conda-forge` with an unresolved CFE
+    root -- the `CfeUnresolvedError` that would otherwise reach `main()`'s
+    dedicated exit-code branch is intercepted HERE first, for every
+    invocation shape, single- or multi-target alike; only a per-target
+    `FAILED` result, never a raised exception, reaches `cli.py`.
+
+    FR-24/FR-50/AD-26's self-hosting rehearsal gate: when both a
+    `PYPI_TEST` target and a `PYPI` target are present anywhere in the same
+    `targets` tuple, the FIRST `PYPI_TEST` target is run exactly ONCE,
+    AHEAD of the main per-target loop below, and its result is reused --
+    never re-run -- at its ORIGINAL index in the returned tuple, so OUTPUT
+    order still matches INPUT order regardless of which order the caller
+    typed the two targets in (`parse_ship_targets`'s own no-reordering
+    precedent). Every `PYPI` target in the same invocation is then gated on
+    that one cached rehearsal result's `state`: `ShipState.TERMINAL` lets
+    it run for real (`ship_pypi` with no `repository_url`); anything else
+    -- `FAILED`, `NOT_ATTEMPTED`, `PENDING` -- produces a
+    `ShipTargetResult(state=ShipState.NOT_ATTEMPTED)` for that `PYPI`
+    target instead, naming the gate and the rehearsal's own actual state,
+    and `ship_pypi`/`twine upload` is never called for it. A SECOND (or
+    later) `PYPI_TEST` token in the same invocation is NOT the cached one
+    -- only the first is ever pre-run and reused; later ones execute
+    independently, in their own position in the main loop, exactly like
+    any other target. A `PYPI` target with no `PYPI_TEST` sibling anywhere
+    in the same `targets` tuple is entirely unaffected by any of this
+    (D-11: no cross-invocation memory exists to check against, so there is
+    nothing to gate on).
+    """
+    targets = parse_ship_targets(raw_targets)
+    project_path = str(start_directory)
+
+    if not confirm:
+        if any(t.kind is not ShipTargetKind.CONDA_FORGE for t in targets):
+            build_result = build(project_path, target=target)
+        else:
+            build_result = PackageBuildResult(
+                target=target,
+                project_path=project_path,
+                wheel_path=None,
+                sdist_path=None,
+                conda_path=None,
+                wheel_version=None,
+                conda_version=None,
+                pep517_returncode=0,
+                pixi_returncode=0,
+                pep517_stdout="",
+                pixi_stdout="",
+            )
+        return plan_ship(targets, build_result)
+
+    def _ship_one(t: ShipTarget) -> ShipTargetResult:
+        """Run exactly one target's own ship function and catch its
+        `MasonError` into a `FAILED` `ShipTargetResult` (see `ship()`'s own
+        docstring for the full rationale) -- a closure, not a module-level
+        function, since it reads `project_path`/`environ`/`target`/
+        `recipe_path`/`cfe_root_arg`/`cfe_python_arg`/`cfe_timeout_arg`/
+        `start_directory` straight from the enclosing `ship()` call rather
+        than accepting eight more parameters of its own."""
+        try:
+            if t.kind is ShipTargetKind.PYPI:
+                return ship_pypi(project_path, environ=environ, target=target)
+            if t.kind is ShipTargetKind.PYPI_TEST:
+                return ship_pypi(
+                    project_path, environ=environ, target=target,
+                    repository_url=_TESTPYPI_REPOSITORY_URL,
+                )
+            if t.kind is ShipTargetKind.CHANNEL:
+                return ship_channel(project_path, t.channel_name, environ=environ, target=target)
+            if t.kind is ShipTargetKind.CONDA_FORGE:
+                return ship_conda_forge(
+                    recipe_path,
+                    environ=environ,
+                    cfe_root_arg=cfe_root_arg,
+                    cfe_python_arg=cfe_python_arg,
+                    cfe_timeout_arg=cfe_timeout_arg,
+                    start_directory=start_directory,
+                )
+            raise AssertionError(f"unhandled ShipTargetKind: {t.kind!r}")  # pragma: no cover
+        except MasonError as exc:
+            return ShipTargetResult(
+                target=_canonical_target_name(t),
+                state=ShipState.FAILED,
+                reference=None,
+                message=str(exc),
+            )
+
+    results: list[ShipTargetResult | None] = [None] * len(targets)
+
+    # FR-24/FR-50/AD-26 rehearsal pre-run: only when a PYPI target exists
+    # anywhere in this invocation is there anything to gate -- find the
+    # FIRST PYPI_TEST target (if any) and run it now, ahead of the main
+    # loop, caching its result at its own original index.
+    rehearsal_result: ShipTargetResult | None = None
+    if any(t.kind is ShipTargetKind.PYPI for t in targets):
+        for i, t in enumerate(targets):
+            if t.kind is ShipTargetKind.PYPI_TEST:
+                rehearsal_result = _ship_one(t)
+                results[i] = rehearsal_result
+                break
+
+    for i, t in enumerate(targets):
+        if results[i] is not None:
+            continue  # the pre-run rehearsal slot above -- reused, not re-run
+        if t.kind is ShipTargetKind.PYPI and rehearsal_result is not None:
+            if rehearsal_result.state is not ShipState.TERMINAL:
+                results[i] = ShipTargetResult(
+                    target=_canonical_target_name(t),
+                    state=ShipState.NOT_ATTEMPTED,
+                    reference=None,
+                    message=(
+                        "gated on this invocation's pypi-test rehearsal: rehearsal state "
+                        f"is {rehearsal_result.state.value!r}, not terminal -- the pypi "
+                        "upload was not attempted"
+                    ),
+                )
+                continue
+        results[i] = _ship_one(t)
+
+    return tuple(results)
