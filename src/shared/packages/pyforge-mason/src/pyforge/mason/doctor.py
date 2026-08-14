@@ -50,22 +50,35 @@ probe-only seed (see that module's docstring); this module's composition
 shape is unaffected by that later story.
 
 Story 3.6 extends `build_report` with `conda_forge_ship_ready`/
-`conda_forge_ship_blockers` (FR-23, D-10): both of `package.py::
-ship_conda_forge`'s own shipping preconditions, reported here
-structurally since `mason doctor` takes no recipe-path argument (out of
-this story's scope) -- root unresolved is one blocker, root resolved but
-`<root>/recipes` not a directory is the other. `resolved_root.root` is
-`.expanduser().resolve()`d again here before the `recipes` check (review
-pass, 2026-08-13): `resolve_cfe_root`'s flag/environment steps return an
-UN-resolved `Path` (e.g. a literal `~` or a relative value), and comparing
-that directly against the filesystem would misreport readiness for exactly
-the inputs `package.py::ship_conda_forge` itself resolves and succeeds
-against -- mirrors that function's own identical resolution. The `is_dir()`
-check (and the resolution before it) runs inside a `try`/`except (OSError,
-ValueError)` (review pass, 2026-08-13) so a pathological root value or a
-permission-denied stat cannot break this function's own "never raises"
-invariant -- either failure is treated as `not a directory` (a blocker),
-never a crash.
+`conda_forge_ship_blockers` (FR-23, D-10): a structural PROXY for
+`package.py::ship_conda_forge`'s own shipping preconditions, not an exact
+restatement of them -- `mason doctor` takes no recipe-path argument (out
+of this story's scope), so it can neither see precondition #1 (a recipe
+path was given) nor check #2's exact `<cfe-root>/recipes/<name>/` equality
+for any particular recipe. What it reports instead is the pair of
+conditions observable without a recipe: root unresolved is one blocker,
+root resolved but `<root>/recipes` not a directory is the other. Note the
+proxy is deliberately stricter in one direction -- `ship_conda_forge`
+itself performs no `recipes/` existence check (it resolves paths only,
+matching `recipe.py::submit()`'s own no-existence-check precedent), so a
+`False` here does not by itself prove a ship would fail.
+
+`resolved_root.root` is `.expanduser().resolve()`d again here before the
+`recipes` check (review pass, 2026-08-13): `resolve_cfe_root`'s
+flag/environment steps return an UN-resolved `Path` (e.g. a literal `~` or
+a relative value), and comparing that directly against the filesystem
+would misreport readiness for exactly the inputs `package.py::
+ship_conda_forge` itself resolves against -- mirrors that function's own
+identical resolution. The `is_dir()` check (and the resolution before it)
+runs inside a `try`/`except (OSError, ValueError, RuntimeError)` (review
+pass, 2026-08-13) so a pathological root value cannot break this
+function's own "never raises" invariant: `RuntimeError` is in that tuple
+because `Path.expanduser()` -- NOT an `OSError` subclass for this failure
+-- raises it whenever a leading `~`/`~user` cannot be expanded (an unknown
+user, or `HOME` unset), which a `--cfe-root`/`MASON_CFE_ROOT` value
+reaches this function unvalidated. A permission-denied stat (`OSError`)
+and a `None` root paired with a non-`not-found` step are handled the same
+way -- treated as `not a directory` (a blocker), never a crash.
 """
 
 from __future__ import annotations
@@ -105,15 +118,29 @@ def build_report(
         unavailable_verbs = ("recipe",)
 
     blockers: list[str] = []
-    if resolved_root.step == STEP_NOT_FOUND:
+    # `root is None` is checked alongside the step, not left to the step
+    # alone: line 122 below still guards the same attribute that way, and
+    # an `AttributeError` from a `None` root would escape the `except`
+    # tuple entirely and break this function's own never-raises invariant.
+    if resolved_root.step == STEP_NOT_FOUND or resolved_root.root is None:
         blockers.append("the CFE root is unresolved")
     else:
+        # Resolution and the stat are guarded SEPARATELY so a denied stat
+        # still reports the resolved spelling. Folding both into one
+        # `except` made the blocker print `~/x/recipes` for a denied stat
+        # but `/home/u/x/recipes` for every other outcome on identical
+        # input; the raw spelling is a fallback only when resolution
+        # itself failed, when it is the only spelling that exists.
         try:
             recipes_dir = resolved_root.root.expanduser().resolve() / "recipes"
-            recipes_dir_is_present = recipes_dir.is_dir()
-        except (OSError, ValueError):
+        except (OSError, ValueError, RuntimeError):
             recipes_dir = resolved_root.root / "recipes"
             recipes_dir_is_present = False
+        else:
+            try:
+                recipes_dir_is_present = recipes_dir.is_dir()
+            except OSError:
+                recipes_dir_is_present = False
         if not recipes_dir_is_present:
             blockers.append(f"{recipes_dir} is not a directory")
 

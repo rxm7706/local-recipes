@@ -163,6 +163,56 @@ def test_conda_forge_ship_ready_never_raises_when_the_recipes_stat_is_denied(tmp
     assert report.conda_forge_ship_blockers != ()
 
 
+def test_denied_recipes_stat_reports_the_resolved_path_not_the_raw_one(tmp_path, monkeypatch):
+    """Follow-up review pass, 2026-08-13: resolution and the stat are
+    guarded separately so a denied stat still names the RESOLVED path.
+    Folding both into one `except` printed `~/my-cfe/recipes` for a denied
+    stat but `<home>/my-cfe/recipes` for every other outcome on identical
+    input -- two spellings of one path, differing only by an invisible
+    internal failure."""
+    monkeypatch.setenv("HOME", str(tmp_path))
+    (tmp_path / "my-cfe").mkdir()
+    root = ResolvedCfeRoot(root=Path("~/my-cfe"), step=STEP_FLAG)
+
+    with patch("pyforge.mason.doctor.Path.is_dir", side_effect=PermissionError("denied")):
+        report = _build(root, _INTERPRETER, missing=())
+
+    assert report.conda_forge_ship_ready is False
+    assert report.conda_forge_ship_blockers == (
+        f"{tmp_path / 'my-cfe' / 'recipes'} is not a directory",
+    )
+
+
+def test_conda_forge_ship_ready_never_raises_when_the_root_tilde_cannot_expand():
+    """Follow-up review pass, 2026-08-13: `Path.expanduser()` raises
+    `RuntimeError` -- NOT an `OSError` subclass for this failure -- when a
+    leading `~user` names no such user (or `HOME` is unset). The original
+    `except (OSError, ValueError)` did not catch it, so `--cfe-root
+    ~nosuchuser/cfe` crashed `mason doctor` with a raw traceback, breaking
+    this module's own never-raises invariant on exactly the broken-
+    environment input `doctor` exists to diagnose."""
+    root = ResolvedCfeRoot(root=Path("~nosuchuser9/cfe"), step=STEP_FLAG)
+
+    report = _build(root, _INTERPRETER, missing=())
+
+    assert report.conda_forge_ship_ready is False
+    assert report.conda_forge_ship_blockers == ("~nosuchuser9/cfe/recipes is not a directory",)
+
+
+def test_conda_forge_ship_ready_never_raises_when_root_is_none_with_a_found_step():
+    """Follow-up review pass, 2026-08-13: the blockers branch guarded only
+    on `step == STEP_NOT_FOUND` while the very next statement in
+    `build_report` still defends the same attribute with `root is not
+    None`. A `None` root paired with any other step raised
+    `AttributeError`, which the `except` tuple does not catch."""
+    root = ResolvedCfeRoot(root=None, step=STEP_FLAG)
+
+    report = _build(root, _INTERPRETER, missing=())
+
+    assert report.conda_forge_ship_ready is False
+    assert report.conda_forge_ship_blockers == ("the CFE root is unresolved",)
+
+
 # --- Field composition -------------------------------------------------------
 
 def test_report_names_mason_version_and_interpreter_step():

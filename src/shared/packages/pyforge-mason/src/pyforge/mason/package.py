@@ -552,31 +552,48 @@ def ship_conda_forge(
     """Ship `recipe_path` to conda-forge/staged-recipes by delegating to
     `recipe.py::submit()` (Story 3.6, FR-23, D-10, AD-11).
 
-    Validates D-10's two shipping preconditions itself, in order, BEFORE
-    `recipe.py` (and therefore `cfe`) is ever imported:
+    Enforces D-10's two shipping preconditions itself -- the CFE root
+    resolves (#2 below), and the recipe sits at `<cfe-root>/recipes/<name>/`
+    (#3 below) -- behind one precursor check of its own, that a recipe path
+    was supplied at all (#1). Three gates, two of them D-10's; all three run
+    in this order BEFORE `recipe.py` (and therefore `cfe`) is ever imported:
 
     1. `recipe_path` must be given (not `None`, not blank) -- raises
        `ShipCondaForgeRecipeMissingError()` otherwise, naming `mason recipe
        new` as the remedy (this module's own docstring: satisfies FR-23's
        "offers... does not generate silently" with no interactive prompt).
+       This is `ship_conda_forge`'s own precursor, not one of D-10's two.
     2. The CFE root must resolve (`resolve_cfe_root`) -- raises
        `CfeUnresolvedError()` otherwise, reused rather than a dedicated
-       class (its message is already precondition-generic).
+       class (its message is already precondition-generic). D-10's first.
 
-    `recipe_dir = Path(recipe_path).expanduser().resolve()`,
+    `recipe_dir = Path(recipe_path.strip()).expanduser().resolve()`,
     `root_dir = resolved_root.root.expanduser().resolve()`, and
     `expected_dir = (root_dir / "recipes" / recipe_dir.name).resolve()` are
-    all resolved inside one `try`/`except (OSError, ValueError)`: a
-    pathological input (a symlink loop, an embedded NUL byte) returns
-    `ShipTargetResult(target="conda-forge", state=ShipState.FAILED,
-    message=str(exc))` instead of raising -- mirrors `recipe.py::submit()`'s
-    own established precedent for this exact resolve-failure mode (its own
-    docstring, review pass 2026-08-12). `expected_dir` is independently
-    `.resolve()`d, not merely composed from the already-resolved `root_dir`
-    (review pass, 2026-08-13): if `<root>/recipes` were itself a symlink,
-    an un-resolved composition would not reflect the true physical path,
-    risking a false mismatch against the independently-resolved
-    `recipe_dir` for an otherwise-valid symlinked placement.
+    all resolved inside one `try`/`except (OSError, ValueError,
+    RuntimeError)`: a pathological input returns `ShipTargetResult(
+    target="conda-forge", state=ShipState.FAILED, message=str(exc))`
+    instead of raising -- mirrors `recipe.py::submit()`'s own established
+    precedent for this exact resolve-failure mode (its own docstring,
+    review pass 2026-08-12). `OSError` covers a symlink loop, `ValueError`
+    an embedded NUL byte, and `RuntimeError` (review pass, 2026-08-13) the
+    case `Path.expanduser()` raises -- it is NOT an `OSError` subclass for
+    this failure -- when a leading `~`/`~user` cannot be expanded (unknown
+    user, or `HOME` unset). That last one is reachable through `root_dir`
+    as well as `recipe_path`: `resolve_cfe_root`'s flag/environment steps
+    pass a `--cfe-root ~foo/cfe` value straight through unvalidated, and
+    the root is expanded HERE and in `doctor.py` only -- `submit()` never
+    expands a root, so this trigger has no pre-existing counterpart there.
+    `recipe_path` is `.strip()`ped before `Path()` for the same reason gate
+    #1 strips before its blank test: without it a leading-space value such
+    as `"  /abs/foo"` is not absolute (its first path component is the
+    spaces) and would silently resolve relative to the cwd.
+    `expected_dir` is independently `.resolve()`d, not merely composed from
+    the already-resolved `root_dir` (review pass, 2026-08-13): if
+    `<root>/recipes` were itself a symlink, an un-resolved composition
+    would not reflect the true physical path, risking a false mismatch
+    against the independently-resolved `recipe_dir` for an otherwise-valid
+    symlinked placement.
 
     3. `recipe_dir` must equal `expected_dir` exactly -- raises
        `ShipCondaForgeRecipeLocationError(str(recipe_dir), str(expected_dir))`
@@ -606,10 +623,10 @@ def ship_conda_forge(
         raise CfeUnresolvedError()
 
     try:
-        recipe_dir = Path(recipe_path).expanduser().resolve()
+        recipe_dir = Path(recipe_path.strip()).expanduser().resolve()
         root_dir = resolved_root.root.expanduser().resolve()
         expected_dir = (root_dir / "recipes" / recipe_dir.name).resolve()
-    except (OSError, ValueError) as exc:
+    except (OSError, ValueError, RuntimeError) as exc:
         return ShipTargetResult(
             target="conda-forge", state=ShipState.FAILED, reference=None, message=str(exc),
         )

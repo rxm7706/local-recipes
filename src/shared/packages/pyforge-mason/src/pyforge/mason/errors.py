@@ -614,10 +614,12 @@ class ShipChannelUploadTimeoutError(MasonError):
 
 
 class ShipCondaForgeRecipeMissingError(MasonError):
-    """`package.py::ship_conda_forge`'s first shipping precondition failed:
-    no `recipe_path` was given -- `None` or blank (Story 3.6, FR-23, D-10,
-    NFR-14).
+    """`package.py::ship_conda_forge`'s first gate failed: no `recipe_path`
+    was given -- `None` or blank (Story 3.6, FR-23, D-10, NFR-14).
 
+    This is `ship_conda_forge`'s own precursor check, not one of D-10's two
+    shipping preconditions (those are the CFE root resolving, and the
+    recipe's location -- see `ShipCondaForgeRecipeLocationError` below).
     Raised as `ship_conda_forge`'s FIRST action, before the CFE root is
     even resolved -- mirrors `ShipCredentialMissingError`/
     `ShipChannelCredentialMissingError`/`CfeUnresolvedError`'s precedent
@@ -651,9 +653,15 @@ class ShipCondaForgeRecipeMissingError(MasonError):
 
 
 class ShipCondaForgeRecipeLocationError(MasonError):
-    """`package.py::ship_conda_forge`'s second shipping precondition
+    """`package.py::ship_conda_forge`'s second D-10 shipping precondition
     failed: the resolved recipe directory does not sit at exactly
     `<cfe-root>/recipes/<name>/` (Story 3.6, FR-23, D-10, NFR-14).
+
+    This is the THIRD and last of `ship_conda_forge`'s gates, checked only
+    after `ShipCondaForgeRecipeMissingError`'s precursor and D-10's first
+    precondition (the root resolving, `CfeUnresolvedError`) both pass -- so
+    when several inputs are wrong at once, this is not the error the user
+    sees first.
 
     D-10 deliberately narrows `recipe.py::submit()`'s own leniency (that
     verb tolerates an out-of-tree recipe via its `CFE_RECIPES_ROOT` env

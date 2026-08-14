@@ -66,8 +66,11 @@ change that.
 
 Story 3.6 extends `DoctorReport` with two more fields,
 `conda_forge_ship_ready`/`conda_forge_ship_blockers` (FR-23, D-10):
-whether `package.py::ship_conda_forge`'s two shipping preconditions are
-currently met, and which ones are not. No defaults, matching every other
+a recipe-independent PROXY for `package.py::ship_conda_forge`'s shipping
+preconditions -- what `mason doctor` can observe without a recipe-path
+argument -- and which parts of it are unmet. See `doctor.py::build_report`'s
+own module docstring for exactly how the proxy differs from the real
+preconditions. No defaults, matching every other
 field on this dataclass -- a `DoctorReport` with a forgotten conda-forge-
 readiness field is exactly the ambiguity a default would silently paper
 over.
@@ -110,9 +113,9 @@ class DoctorReport:
     the resolved CFE root and which chain step found it, the selected
     interpreter and which chain step selected it, the import-floor outcome,
     which verbs are unavailable as a consequence, every known engine's
-    presence/version, and (Story 3.6) whether `package.py::
-    ship_conda_forge`'s two shipping preconditions (D-10) are currently
-    met, and which are not."""
+    presence/version, and (Story 3.6) a recipe-independent proxy for
+    whether `package.py::ship_conda_forge`'s shipping preconditions (D-10)
+    are currently met, plus which parts of that proxy are unmet."""
 
     mason_version: str
     cfe_root: str | None

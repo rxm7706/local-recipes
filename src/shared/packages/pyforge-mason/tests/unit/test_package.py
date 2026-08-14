@@ -69,7 +69,7 @@ from pyforge.mason.package import (
     _versions_disagree, build, parse_ship_targets, plan_ship, ship_channel, ship_conda_forge,
     ship_pypi,
 )
-from pyforge.mason.resolve import STEP_CWD_WALK, STEP_NOT_FOUND, ResolvedCfeRoot
+from pyforge.mason.resolve import STEP_CWD_WALK, STEP_FLAG, STEP_NOT_FOUND, ResolvedCfeRoot
 
 
 def test_package_module_imports_successfully():
@@ -936,6 +936,74 @@ def test_ship_conda_forge_returns_failed_when_path_resolve_raises(tmp_path):
         message="Too many levels of symlinks",
     )
     mock_submit.assert_not_called()
+
+
+def test_ship_conda_forge_returns_failed_when_the_recipe_tilde_cannot_expand(tmp_path):
+    """Follow-up review pass, 2026-08-13: `Path.expanduser()` raises
+    `RuntimeError` -- NOT an `OSError` subclass for this failure -- when a
+    leading `~user` names no such user. The original `except (OSError,
+    ValueError)` did not catch it, so the function raised instead of
+    returning the `FAILED` result its own docstring promises."""
+    with patch(
+        "pyforge.mason.package.resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=tmp_path, step=STEP_CWD_WALK),
+    ), patch("pyforge.mason.recipe.submit") as mock_submit:
+        result = ship_conda_forge(
+            "~nosuchuser9/recipes/foo",
+            environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            start_directory=tmp_path,
+        )
+
+    assert result.target == "conda-forge"
+    assert result.state is ShipState.FAILED
+    mock_submit.assert_not_called()
+
+
+def test_ship_conda_forge_returns_failed_when_the_root_tilde_cannot_expand(tmp_path):
+    """Follow-up review pass, 2026-08-13: the SAME `RuntimeError` is
+    reachable through the resolved ROOT, not only through `recipe_path`.
+    `resolve_cfe_root`'s flag/environment steps pass a `--cfe-root
+    ~foo/cfe` value through unvalidated, and the root is `.expanduser()`d
+    here (and in `doctor.py`) only -- `recipe.py::submit()` never expands a
+    root, so this trigger has no pre-existing counterpart there."""
+    with patch(
+        "pyforge.mason.package.resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=Path("~nosuchuser9/cfe"), step=STEP_FLAG),
+    ), patch("pyforge.mason.recipe.submit") as mock_submit:
+        result = ship_conda_forge(
+            str(tmp_path / "recipes" / "foo"),
+            environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            start_directory=tmp_path,
+        )
+
+    assert result.target == "conda-forge"
+    assert result.state is ShipState.FAILED
+    mock_submit.assert_not_called()
+
+
+def test_ship_conda_forge_strips_a_recipe_path_before_resolving_it(tmp_path):
+    """Follow-up review pass, 2026-08-13: gate #1 already `.strip()`s to
+    decide blankness, so `Path()` must strip too. Without it a
+    leading-space value is not absolute -- its first path component is the
+    spaces themselves -- and silently resolves relative to the cwd,
+    producing a location error naming a path the user never supplied."""
+    root = tmp_path / "cfe-root"
+    recipe_dir = root / "recipes" / "foo"
+    submit_result = ShipTargetResult(
+        target="conda-forge", state=ShipState.PENDING, reference="ref", message="msg",
+    )
+    with patch(
+        "pyforge.mason.package.resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=root, step=STEP_CWD_WALK),
+    ), patch("pyforge.mason.recipe.submit", return_value=submit_result) as mock_submit:
+        result = ship_conda_forge(
+            f"   {recipe_dir}  ",
+            environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            start_directory=tmp_path,
+        )
+
+    assert result is submit_result
+    assert mock_submit.call_args.args[0] == str(recipe_dir.resolve())
 
 
 def test_ship_conda_forge_happy_path_returns_recipe_submit_result_unchanged(tmp_path):
