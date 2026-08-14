@@ -86,6 +86,8 @@ from datetime import datetime
 from enum import StrEnum
 from types import MappingProxyType
 
+from pyforge.core.errors import PyforgeError
+
 from . import policy
 from .identity import StoryKey, normalize
 from .model import Finding, Severity
@@ -905,7 +907,7 @@ def _sidecar_ref(payload: Mapping[str, object]) -> str | None:
     return None
 
 
-class _SidecarUnresolved(ValueError):
+class _SidecarUnresolved(PyforgeError, ValueError):
     """Internal: raised by ``_parse_entry`` when a payload's
     ``sidecar_ref`` cannot be resolved -- the path is absent from
     ``sidecars`` (or maps to ``None``), or its blob text is not valid
@@ -913,7 +915,13 @@ class _SidecarUnresolved(ValueError):
     ``MRS-JOURNAL-002``, distinct from every other parse/validation
     failure (``MRS-JOURNAL-001``). A ``ValueError`` subclass so ``fold``'s
     loop can catch it FIRST, ahead of the general ``ValueError`` catch for
-    every other failure."""
+    every other failure.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``ValueError`` stays in the MRO (and stays first for
+    the isinstance-order catch above, since ``PyforgeError`` is listed
+    first in the base list but ``ValueError`` is the more specific type
+    ``fold``'s ``except`` clause actually names)."""
 
 
 def _parse_entry(raw_line: str, sidecars: Mapping[str, str | None]) -> JournalEntry:

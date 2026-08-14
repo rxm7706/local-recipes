@@ -86,6 +86,15 @@ degrades a missing dependency to `{"success": false, "error": ...}` JSON
 data, never a raw traceback -- the same "already handles it" case
 `diagnose_failure`'s own caller (`recipe.py::diagnose()`) established.
 
+Story 2.4 adds a third named adapter, `generate_recipe` (`recipe-generator.py`,
+FR-7), following the identical shape -- args passed straight through, a
+per-operation default timeout, `CfeResult` returned unchanged. Unlike its two
+predecessors, the wrapped script has no `--json` mode, so `json_body` is
+always `None` for this one adapter; `recipe.py::new` is the caller that turns
+a non-zero `returncode` into a raised, typed error (`RecipeGenerationError`)
+-- this file's own AD-4 rule that a non-zero return code is data, never
+raised, is unchanged by that: the raise happens one layer up, not here.
+
 `_CFE_SCRIPTS` maps an adapter's own key (e.g. `"validate_recipe"`) to the
 script's filename relative to a resolved CFE root's
 `.claude/scripts/conda-forge-expert/` -- a caller never passes a script
@@ -670,6 +679,7 @@ def run_streamed(
 _CFE_SCRIPTS: dict[str, str] = {
     "validate_recipe": "validate_recipe.py",
     "submit_pr": "submit_pr.py",
+    "generate_recipe": "recipe-generator.py",
     "build_native": "native-build.sh",
     "build_docker": "build-locally.py",
     "diagnose_failure": "failure_analyzer.py",
@@ -691,18 +701,20 @@ path itself rather than reusing `_invoke_captured`'s standard-subdirectory
 join.
 
 `validate_recipe.py` and `submit_pr.py` were Story 1.9's fixture-stubbed
-pair. Story 2.6 adds `build_native` -> `native-build.sh` and `build_docker`
--> `build-locally.py`, the first two STREAM-mode entries. Story 2.7 adds
-`diagnose_failure` -> `failure_analyzer.py` (OQ-A1's answer for FR-10,
-resolved by reading the real script). Story 2.8 adds `optimize_recipe` ->
-`recipe_optimizer.py` and `scan_for_vulnerabilities` ->
-`vulnerability_scanner.py` (OQ-A1's answer for FR-11/FR-12), each with a
-matching stub added to the fixture tree in the same story. Story 2.10 adds
-`update_recipe` -> `recipe_updater.py` and `update_recipe_from_github` ->
-`github_updater.py` (OQ-A1's answer for FR-14), each with a matching stub
-added to the fixture tree in the same story -- resolving the earlier "still
-open" note this docstring carried for Stories 2.9-2.10 (2.9 turned out to
-reuse the existing `submit_pr` entry rather than add a new one)."""
+pair. Story 2.4 adds `generate_recipe` -> `recipe-generator.py` (FR-7),
+with a matching fixture stub of its own. Story 2.6 adds `build_native` ->
+`native-build.sh` and `build_docker` -> `build-locally.py`, the first two
+STREAM-mode entries. Story 2.7 adds `diagnose_failure` ->
+`failure_analyzer.py` (OQ-A1's answer for FR-10, resolved by reading the
+real script). Story 2.8 adds `optimize_recipe` -> `recipe_optimizer.py` and
+`scan_for_vulnerabilities` -> `vulnerability_scanner.py` (OQ-A1's answer for
+FR-11/FR-12), each with a matching stub added to the fixture tree in the
+same story. Story 2.10 adds `update_recipe` -> `recipe_updater.py` and
+`update_recipe_from_github` -> `github_updater.py` (OQ-A1's answer for
+FR-14), each with a matching stub added to the fixture tree in the same
+story -- resolving the earlier "still open" note this docstring carried for
+Stories 2.9-2.10 (2.9 turned out to reuse the existing `submit_pr` entry
+rather than add a new one)."""
 
 _JSON_LINE_START_PATTERN = re.compile(r"^[ \t]*[{\[]", re.MULTILINE)
 """Matches the first `{` or `[` that starts a line (optionally indented),
@@ -1293,4 +1305,48 @@ def build_docker(
         returncode=returncode,
         stdout=stdout,
         artifact_dir=f"build_artifacts/{config}",
+    )
+
+
+_GENERATE_RECIPE_TIMEOUT_SECONDS = 240.0
+"""`recipe-generator.py` itself runs a `_run_rattler_generate` subprocess
+(CRAN/CPAN/LuaRocks generation) under its own internal 180s timeout
+(`recipe-generator.py:2285`); 240s gives that inner call headroom to
+complete and still leave room for the surrounding Python (network calls,
+license scanning, file writes) before this adapter's own timeout would fire
+first and mask the inner one's more specific failure. Proportioned the same
+way `_SUBMIT_PR_TIMEOUT_SECONDS` exceeds `_VALIDATE_RECIPE_TIMEOUT_SECONDS`
+-- more headroom for an operation with more moving parts -- rather than an
+arbitrary round number."""
+
+
+def generate_recipe(
+    args: Sequence[str],
+    *,
+    root: Path,
+    interpreter: str,
+    timeout: float | None = None,
+) -> CfeResult:
+    """Invoke CFE's `recipe-generator.py` (AD-3's `generate_recipe` adapter,
+    FR-1, FR-7) and return a `CfeResult`.
+
+    `args` is passed straight through as the script's own CLI arguments --
+    `recipe.py::new` builds it as `[source, package, "--output", output]`,
+    where `source` is CFE's own subcommand vocabulary (`pypi`/`github`/
+    `cran`/`npm`), not a Mason-invented value -- this adapter applies no
+    recipe-semantics interpretation of its own (AD-1). `timeout` defaults to
+    `_GENERATE_RECIPE_TIMEOUT_SECONDS` when `None`, mirroring `validate_
+    recipe`/`submit_pr`'s identical per-operation-default pattern above.
+    Unlike those two, the wrapped script has no `--json` output mode, so
+    `CfeResult.json_body` is always `None` here (`_extract_json` still runs
+    -- it is unconditional in `_invoke_captured` -- but finds nothing to
+    parse); callers use `returncode`/`stdout`/`stderr` instead (spec Never
+    boundary).
+    """
+    return _invoke_captured(
+        "generate_recipe",
+        args,
+        root=root,
+        interpreter=interpreter,
+        timeout=timeout if timeout is not None else _GENERATE_RECIPE_TIMEOUT_SECONDS,
     )

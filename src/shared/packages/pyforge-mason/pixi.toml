@@ -39,3 +39,4 @@ pixi = ">=0.76.2,<0.77"
 twine = ">=7.0.0,<7.1"
 conda-lock = ">=4.0.2,<4.1"
 python-build = ">=1.5.0,<1.6"
+pyforge-core = { path = "../pyforge-core" }  # Story 14.3, CAP-5: errors.py's MasonError re-parents to pyforge.core.errors.PyforgeError

@@ -1,0 +1,411 @@
+name: Herald live demo
+
+# Story 13.6: the bounded, CI-contained proof that Story 13.4's webhook
+# (`webhook.py`/`webhook_host.py`) and Story 13.5's scheduler
+# (`herald scheduler run`) actually run as real, listening/executing
+# processes -- not merely fully unit-tested in isolation. Before this
+# workflow existed, a real merge on any station produced nothing in Herald
+# without an operator running a CLI command by hand.
+#
+# WHAT THIS IS NOT: a persistent, publicly-reachable deployment. Each job
+# starts its own throwaway `webhook_host:application` (or runs the
+# scheduler) against a scratch, JOB-LOCAL `.herald/herald.db` under
+# `${{ runner.temp }}` that is discarded when the job ends -- never
+# committed, never reused across runs. Persistent hosting behind Steward's
+# live perimeter is explicitly out of this story's Surface (Steward's
+# `deploy perimeter` only renders systemd/nginx text pointed at a
+# hardcoded Django `asgi:application` placeholder, with no flag to target
+# an arbitrary ASGI callable -- see this repo's deferred-work ledger).
+#
+# THREE JOBS, each a real, unattended proof of one trigger:
+#   on-ship         -- push to main, derives station+story from the real
+#                       commit subject using this repo's OWN existing
+#                       attribution convention (docs/dashboard/generate.py's
+#                       `_LOOP_DONE`/`_QUALIFIED_STORY` patterns -- never an
+#                       invented parsing rule), POSTs a real signed request.
+#   on-pr-close     -- a real PR close event, derives merged/gates_passed
+#                       from the real payload, POSTs the same way.
+#   scheduler-demo  -- weekly schedule (+ workflow_dispatch), seeds one
+#                       claim with a real, currently-live evidence URL and
+#                       runs `herald scheduler run --json` for real.
+#
+# `workflow_dispatch` (this repo's own dashboard.yml/detectors.yml
+# combined-trigger convention) lets an operator sanity-check on-ship and
+# scheduler-demo by hand before trusting the real triggers (both can
+# derive real data with no live PR in flight -- on-ship falls back to the
+# checked-out ref's own tip commit). on-pr-close deliberately does NOT run
+# on workflow_dispatch: it needs a real PR event to derive `merged`/
+# `gates_passed` from, so the honest manual check for it is opening and
+# closing a real scratch PR, not a synthetic dispatch.
+#
+# HERALD_WEBHOOK_SECRET must be configured as a repo secret before on-ship/
+# on-pr-close can run for real -- that is an operational step outside this
+# story's Surface. Until it is set, `webhook_host.application` fails fast
+# at daphne startup (the same fail-fast `resolve_webhook_secret` always
+# guaranteed), and the "wait for daphne to start listening" step below
+# fails the job loudly rather than silently no-op'ing.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    types: [closed]
+    branches: [main]
+  schedule:
+    - cron: '0 7 * * 1'   # weekly, Monday ~07:00 UTC
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: herald-live-demo-${{ github.event_name }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  on-ship:
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: prefix-dev/setup-pixi@v0.10.0
+        with:
+          pixi-version: v0.76.2
+          environments: pyforge-herald
+          locked: true
+          cache: true
+
+      # Derives station+story from the real triggering commit's subject,
+      # using this repo's OWN already-established attribution convention --
+      # a literal port of docs/dashboard/generate.py's `_LOOP_DONE`/
+      # `_LOOP_TARGET_SLUG`/`_QUALIFIED_STORY` regexes, never a new,
+      # invented parsing rule (Boundaries & Constraints). A commit matching
+      # neither pattern is not a ship: `matched=false` makes every step
+      # after this one a no-op via `if:`, so the job still exits 0.
+      #
+      # `COMMIT_SUBJECT` is passed through `env:`, never interpolated
+      # directly into the script body -- a commit subject is attacker-
+      # influenced text (anyone who can push, or open a PR that gets
+      # merged, controls it), so it must never be substituted into a shell
+      # command via `${{ }}`.
+      - name: Derive station + story from the triggering commit
+        id: derive
+        env:
+          COMMIT_SUBJECT: ${{ github.event.head_commit.message }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+          import subprocess
+
+          # Mirrors docs/dashboard/generate.py's own regexes verbatim.
+          _LOOP_DONE = re.compile(r"Merge bmad-loop/[^/]+/(\d+-\d+)-\S*(?:\s+into\s+(\S+))?")
+          _LOOP_TARGET_SLUG = re.compile(r"pyforge-([a-z0-9]+)")
+          _QUALIFIED_STORY = re.compile(r"^([a-z0-9 +\-]+?):\s*story\s+(\d+\.\d+)\b", re.IGNORECASE)
+
+          subject = os.environ.get("COMMIT_SUBJECT", "")
+          if subject:
+              subject = subject.splitlines()[0]
+          else:
+              # workflow_dispatch (or any trigger with no head_commit
+              # payload) -- fall back to the checked-out ref's own tip
+              # commit, so a manual trigger still has something real to
+              # derive from.
+              subject = subprocess.run(
+                  ["git", "log", "-1", "--pretty=%s"],
+                  capture_output=True, text=True, check=True,
+              ).stdout.strip()
+
+          station = story = None
+          m = _LOOP_DONE.search(subject)
+          if m:
+              target = m.group(2) or ""
+              slug_m = _LOOP_TARGET_SLUG.search(target)
+              if slug_m:
+                  station = slug_m.group(1)
+                  story = m.group(1).replace("-", ".")
+          if station is None:
+              qm = _QUALIFIED_STORY.match(subject)
+              if qm:
+                  # First station only, when a commit credits several
+                  # (`mason + steward: story 1.1`) -- this demo posts one
+                  # `on-ship` call per push, not one per credited station.
+                  station = qm.group(1).split("+")[0].strip().lower().removeprefix("pyforge-")
+                  story = qm.group(2)
+
+          # `bool(...)`, not `is not None`: `_QUALIFIED_STORY`'s character
+          # class permits a whitespace-only prefix (e.g. "   : story 1.2"),
+          # which after `.strip()` yields station="" -- still not-None, but
+          # not a real station either. A falsy station must count as
+          # unmatched the same way a None one does (2026-08-13 review pass).
+          matched = bool(station) and bool(story)
+          print(f"subject: {subject!r}")
+          print(f"matched: {matched} station={station!r} story={story!r}")
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as fh:
+              fh.write(f"matched={'true' if matched else 'false'}\n")
+              fh.write(f"station={station or ''}\n")
+              fh.write(f"story={story or ''}\n")
+              fh.write(f"subject={subject}\n")
+          PY
+
+      - name: Start the webhook host (daphne)
+        if: steps.derive.outputs.matched == 'true'
+        env:
+          HERALD_REPO_ROOT: ${{ runner.temp }}/herald-on-ship-demo
+          HERALD_WEBHOOK_SECRET: ${{ secrets.HERALD_WEBHOOK_SECRET }}
+        run: |
+          mkdir -p "$HERALD_REPO_ROOT"
+          nohup pixi run -e pyforge-herald daphne -b 127.0.0.1 -p 8765 \
+            pyforge.herald.webhook_host:application > daphne-on-ship.log 2>&1 &
+          echo $! > daphne-on-ship.pid
+          for _ in $(seq 1 30); do
+            if curl -s -o /dev/null "http://127.0.0.1:8765/"; then
+              echo "daphne is listening"
+              exit 0
+            fi
+            sleep 0.5
+          done
+          echo "::error::daphne never started listening -- see daphne-on-ship.log" >&2
+          cat daphne-on-ship.log >&2
+          exit 1
+
+      # `event_id`/`unblock_narrative` and the HMAC signing all take their
+      # inputs through `env:`, never `${{ }}` string-interpolated directly
+      # into the script -- the same discipline the derivation step above
+      # applies.
+      - name: POST a real signed on-ship request
+        if: steps.derive.outputs.matched == 'true'
+        env:
+          STATION: ${{ steps.derive.outputs.station }}
+          SUBJECT: ${{ steps.derive.outputs.subject }}
+          WEBHOOK_SECRET: ${{ secrets.HERALD_WEBHOOK_SECRET }}
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import hmac
+          import json
+          import os
+          import sys
+          import time
+          import urllib.error
+          import urllib.request
+
+          secret = os.environ["WEBHOOK_SECRET"].encode("utf-8")
+          body = json.dumps(
+              {"station": os.environ["STATION"], "unblock_narrative": os.environ["SUBJECT"]}
+          ).encode("utf-8")
+          ts = str(int(time.time()))
+          signature = "sha256=" + hmac.new(
+              secret, ts.encode("ascii") + b"." + body, hashlib.sha256
+          ).hexdigest()
+
+          req = urllib.request.Request(
+              "http://127.0.0.1:8765/api/herald/webhooks/on-ship",
+              data=body,
+              method="POST",
+              headers={
+                  "X-Hub-Signature-256": signature,
+                  "X-Hub-Timestamp": ts,
+                  "Content-Type": "application/json",
+              },
+          )
+          try:
+              resp = urllib.request.urlopen(req, timeout=10)
+              status, payload = resp.status, resp.read()
+          except urllib.error.HTTPError as exc:
+              status, payload = exc.code, exc.read()
+
+          print(f"response: {status} {payload!r}")
+          if status != 201:
+              print(f"::error::expected 201, got {status}", file=sys.stderr)
+              sys.exit(1)
+          record = json.loads(payload)
+          print(f"::notice::on-ship created a Progress record: {record}")
+          PY
+
+      - name: Stop the webhook host
+        if: always() && steps.derive.outputs.matched == 'true'
+        run: |
+          # `$!` from `nohup pixi run ... daphne ... &` is `pixi run`'s own
+          # pid, not daphne's -- whether `pixi run` execs into daphne or
+          # keeps a wrapper process around is an implementation detail this
+          # step must not depend on either way. `pkill -f`, matched on the
+          # listening port (unique to this job), reaches the real daphne
+          # process regardless (2026-08-13 review pass).
+          if [ -f daphne-on-ship.pid ]; then
+            kill "$(cat daphne-on-ship.pid)" 2>/dev/null || true
+          fi
+          pkill -f "daphne .* -p 8765 " 2>/dev/null || true
+
+  on-pr-close:
+    # Deliberately NOT `|| github.event_name == 'workflow_dispatch'` (see
+    # the workflow-level comment): this job needs a real PR event to
+    # derive `merged`/`gates_passed` from.
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: prefix-dev/setup-pixi@v0.10.0
+        with:
+          pixi-version: v0.76.2
+          environments: pyforge-herald
+          locked: true
+          cache: true
+
+      - name: Start the webhook host (daphne)
+        env:
+          HERALD_REPO_ROOT: ${{ runner.temp }}/herald-on-pr-close-demo
+          HERALD_WEBHOOK_SECRET: ${{ secrets.HERALD_WEBHOOK_SECRET }}
+        run: |
+          mkdir -p "$HERALD_REPO_ROOT"
+          nohup pixi run -e pyforge-herald daphne -b 127.0.0.1 -p 8766 \
+            pyforge.herald.webhook_host:application > daphne-on-pr-close.log 2>&1 &
+          echo $! > daphne-on-pr-close.pid
+          for _ in $(seq 1 30); do
+            if curl -s -o /dev/null "http://127.0.0.1:8766/"; then
+              echo "daphne is listening"
+              exit 0
+            fi
+            sleep 0.5
+          done
+          echo "::error::daphne never started listening -- see daphne-on-pr-close.log" >&2
+          cat daphne-on-pr-close.log >&2
+          exit 1
+
+      # `merged`/`gates_passed` are derived from the real event
+      # (`github.event.pull_request.merged`), per Boundaries & Constraints.
+      # `gates_passed` is set EQUAL to `merged` -- a documented
+      # simplification of the demo payload only ("a merge to main already
+      # required its checks to pass"); it never changes
+      # `handle_on_pr_close`'s own independent two-boolean gate.
+      # `event_id` is repo-qualified (`${{ github.repository }}#<number>`),
+      # exactly what `webhook.py`'s own module docstring recommends a
+      # producer send.
+      - name: POST a real signed on-pr-close request
+        env:
+          MERGED: ${{ github.event.pull_request.merged }}
+          PROJECT_NAME: ${{ github.event.pull_request.title }}
+          PR_URL: ${{ github.event.pull_request.html_url }}
+          EVENT_ID: ${{ github.repository }}#${{ github.event.number }}
+          WEBHOOK_SECRET: ${{ secrets.HERALD_WEBHOOK_SECRET }}
+        run: |
+          python3 - <<'PY'
+          import hashlib
+          import hmac
+          import json
+          import os
+          import sys
+          import time
+          import urllib.error
+          import urllib.request
+
+          merged = os.environ["MERGED"].strip().lower() == "true"
+          secret = os.environ["WEBHOOK_SECRET"].encode("utf-8")
+          body = json.dumps(
+              {
+                  "merged": merged,
+                  "gates_passed": merged,  # documented demo simplification
+                  "project_name": os.environ["PROJECT_NAME"],
+                  "event_id": os.environ["EVENT_ID"],
+                  "evidence": [
+                      {"type": "other", "url": os.environ["PR_URL"], "label": "pull request"}
+                  ],
+              }
+          ).encode("utf-8")
+          ts = str(int(time.time()))
+          signature = "sha256=" + hmac.new(
+              secret, ts.encode("ascii") + b"." + body, hashlib.sha256
+          ).hexdigest()
+
+          req = urllib.request.Request(
+              "http://127.0.0.1:8766/api/herald/webhooks/on-pr-close",
+              data=body,
+              method="POST",
+              headers={
+                  "X-Hub-Signature-256": signature,
+                  "X-Hub-Timestamp": ts,
+                  "Content-Type": "application/json",
+              },
+          )
+          try:
+              resp = urllib.request.urlopen(req, timeout=10)
+              status, payload = resp.status, resp.read()
+          except urllib.error.HTTPError as exc:
+              status, payload = exc.code, exc.read()
+
+          print(f"response: {status} {payload!r}")
+          expected = 201 if merged else 202
+          if status != expected:
+              print(f"::error::expected {expected}, got {status}", file=sys.stderr)
+              sys.exit(1)
+          record = json.loads(payload)
+          if merged:
+              print(f"::notice::on-pr-close created a draft Claim: {record}")
+          else:
+              print(f"::notice::on-pr-close no-op (PR closed unmerged): {record}")
+          PY
+
+      - name: Stop the webhook host
+        if: always()
+        run: |
+          # See the on-ship job's identical step for why both the pid file
+          # AND a port-matched `pkill -f` are used (2026-08-13 review pass).
+          if [ -f daphne-on-pr-close.pid ]; then
+            kill "$(cat daphne-on-pr-close.pid)" 2>/dev/null || true
+          fi
+          pkill -f "daphne .* -p 8766 " 2>/dev/null || true
+
+  scheduler-demo:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: prefix-dev/setup-pixi@v0.10.0
+        with:
+          pixi-version: v0.76.2
+          environments: pyforge-herald
+          locked: true
+          cache: true
+
+      # Seeds the scratch DB with one draft claim whose evidence URL is
+      # real and currently live (this repo's own GitHub page) -- 13.5's
+      # `run_evidence_revalidation` genuinely HEADs it, so this proves the
+      # revalidation job does real network I/O, not a synthetic fixture.
+      # `--repo-root` sits on the PARENT `success` parser, so it must
+      # precede the `create` subcommand (cli.py's own argparse shape).
+      - name: Seed a claim with a real, live evidence URL
+        env:
+          HERALD_REPO_ROOT: ${{ runner.temp }}/herald-scheduler-demo
+        run: |
+          mkdir -p "$HERALD_REPO_ROOT"
+          pixi run -e pyforge-herald herald success --repo-root "$HERALD_REPO_ROOT" \
+            create "Herald live demo" \
+            --evidence-test-results "https://github.com/${{ github.repository }}"
+
+      # 13.5's own deferred proof: `herald scheduler run --json` executed
+      # unattended, against real seeded data, on a real `schedule` trigger
+      # (or a manual `workflow_dispatch`) -- "verified by manual/CLI
+      # inspection since no server exists yet to observe end-to-end" no
+      # longer holds once this job is green.
+      - name: Run the scheduler for real
+        env:
+          HERALD_REPO_ROOT: ${{ runner.temp }}/herald-scheduler-demo
+        run: |
+          pixi run -e pyforge-herald herald scheduler run \
+            --repo-root "$HERALD_REPO_ROOT" --json | tee scheduler-run.json
+          python3 -c "
+          import json
+          summary = json.load(open('scheduler-run.json'))
+          assert summary['claims_checked'] == 1, summary
+          assert summary['broken_evidence_claim_ids'] == [], summary
+          print(f'::notice::scheduler-demo revalidated {summary[\"claims_checked\"]} '
+                f'claim(s), aggregated {summary[\"records_aggregated\"]} progress '
+                f'record(s) -> {summary[\"snapshot_path\"]}')
+          "
