@@ -823,7 +823,7 @@ def test_same_region_name_across_different_entries_is_allowed(tmp_path):
             path: "AGENTS.md"
             applies_to: both
             rationale: r
-            format: markdown
+            format: html
             regions:
               - name: tiers
                 anchor: ["## Tiers"]
@@ -832,7 +832,7 @@ def test_same_region_name_across_different_entries_is_allowed(tmp_path):
             path: "CLAUDE.md"
             applies_to: both
             rationale: r
-            format: markdown
+            format: html
             regions:
               - name: tiers
                 anchor: ["## Tiers"]
@@ -1407,3 +1407,52 @@ def test_manifest_rejects_non_entry_items():
             never_write=(),
             entries=("not-an-entry",),  # pyright: ignore[reportArgumentType]
         )
+
+
+# --- Story 8.1: the two forward-referenced checks S-7.4 left open ----------
+# (see this module's own docstring + the S-7.4 spec's Review Triage Log --
+# S-8.1 builds the `RegionFormat` registry / `REGION_NAME_PATTERN` in
+# `seed/regions/markers.py` and wires both back in here.)
+
+
+def test_unregistered_format_raises_manifest_error_naming_id_and_format(tmp_path):
+    """AD-53's registry has exactly three members (html/hash/slashstar);
+    `xml` is not one of them."""
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: foo
+            class: hybrid-managed-region
+            path: "AGENTS.md"
+            applies_to: both
+            rationale: r
+            format: xml
+            regions:
+              - name: tiers
+                anchor: ["## Tiers"]
+    """
+    with pytest.raises(ManifestError, match=r"^foo: .*xml.*not a valid RegionFormat"):
+        load_manifest(_write(tmp_path, text))
+
+
+def test_marker_unsafe_region_name_raises_manifest_error_naming_id_and_name(tmp_path):
+    """A region name is a marker-safe token (`REGION_NAME_PATTERN`, shared
+    with `markers.py`'s `BeginMarker`/`EndMarker`) -- a raw space or `=`
+    would be ambiguous inside the rendered `region=<name>` marker field."""
+    text = """\
+        model_version: "1.0.0"
+        artifacts:
+          - id: foo
+            class: hybrid-managed-region
+            path: "AGENTS.md"
+            applies_to: both
+            rationale: r
+            format: html
+            regions:
+              - name: "my region"
+                anchor: ["## Tiers"]
+    """
+    with pytest.raises(
+        ManifestError, match=r"^foo: regions\[0\] \(my region\): region name must match .*my region"
+    ):
+        load_manifest(_write(tmp_path, text))

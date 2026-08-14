@@ -1336,19 +1336,19 @@ window.DASHBOARD_DATA = {
         "E6"
       ],
       "inflight": {
-        "key": "9.1",
-        "title": "Findings model — severity, types, remedies",
+        "key": "9.6",
+        "title": "Plan and Action types, repo fingerprint, and the plan builder",
         "phase": "dev",
         "attempt": "2",
-        "startEpoch": 1786670039,
-        "median": 97,
+        "startEpoch": 1786688807,
+        "median": 96,
         "lo": 27,
         "hi": 486,
-        "phaseAsOf": "2026-08-14 02:05 UTC"
+        "phaseAsOf": "2026-08-14 10:02 UTC"
       },
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 47 of 126 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 52 of 126 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -1520,7 +1520,27 @@ window.DASHBOARD_DATA = {
           ],
           [
             "9.1",
-            29
+            60
+          ],
+          [
+            "9.2",
+            81
+          ],
+          [
+            "9.3",
+            72
+          ],
+          [
+            "9.4",
+            49
+          ],
+          [
+            "9.5",
+            49
+          ],
+          [
+            "9.6",
+            194
           ],
           [
             "14.1",
@@ -1541,7 +1561,7 @@ window.DASHBOARD_DATA = {
         ],
         "foot": [
           [
-            "~96 min",
+            "~92 min",
             "median / story",
             "var(--done)"
           ],
@@ -1551,12 +1571,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "82/126",
+            "93/126",
             "stories complete",
             "var(--done)"
           ],
           [
-            "44",
+            "33",
             "remaining",
             ""
           ]
@@ -1565,9 +1585,9 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 6178,
-        "totalLabel": "~103.0 h active compute",
-        "note": "Derived from 47 measured stories; a story still in flight contributes only its closed sessions.",
+        "total": 6654,
+        "totalLabel": "~110.9 h active compute",
+        "note": "Derived from 52 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.1": 165,
           "1.2": 65,
@@ -1611,7 +1631,12 @@ window.DASHBOARD_DATA = {
           "8.2": 60,
           "8.3": 96,
           "8.4": 69,
-          "9.1": 29,
+          "9.1": 60,
+          "9.2": 81,
+          "9.3": 72,
+          "9.4": 49,
+          "9.5": 49,
+          "9.6": 194,
           "14.1": 36,
           "14.2": 223,
           "14.3": 97,
@@ -1625,13 +1650,13 @@ window.DASHBOARD_DATA = {
           "E5": 297,
           "E7": 326,
           "E8": 300,
-          "E9": 29,
+          "E9": 505,
           "E14": 457
         }
       },
       "lineState": {
         "state": "in flight",
-        "at": "9.1"
+        "at": "9.6"
       },
       "epics": [
         {
@@ -2016,12 +2041,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "7.2",
-              "pending",
+              "done",
               "Error taxonomy and exit codes"
             ],
             [
               "7.3",
-              "pending",
+              "done",
               "The `fs` write primitive and the never-write guard"
             ],
             [
@@ -2047,22 +2072,22 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "8.1",
-              "pending",
+              "done",
               "Marker grammar and the per-format registry"
             ],
             [
               "8.2",
-              "pending",
+              "done",
               "Region parser — span discovery, nesting rejection, fence awareness"
             ],
             [
               "8.3",
-              "pending",
+              "done",
               "Span substitution — the update primitive"
             ],
             [
               "8.4",
-              "pending",
+              "done",
               "Anchor resolution and region insertion"
             ],
             [
@@ -2078,32 +2103,32 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "9.1",
-              "active",
+              "done",
               "Findings model — severity, types, remedies"
             ],
             [
               "9.2",
-              "pending",
+              "done",
               "Repo inventory walker and artifact classification"
             ],
             [
               "9.3",
-              "pending",
+              "done",
               "Content hashing for managed files and regions"
             ],
             [
               "9.4",
-              "pending",
+              "done",
               "Legacy convention detection"
             ],
             [
               "9.5",
-              "pending",
+              "done",
               "Manifest coverage check"
             ],
             [
               "9.6",
-              "pending",
+              "active",
               "Plan and Action types, repo fingerprint, and the plan builder"
             ]
           ]
@@ -2395,19 +2420,19 @@ window.DASHBOARD_DATA = {
         "E5"
       ],
       "inflight": {
-        "key": "3.6",
-        "title": "The `conda-forge` ship target",
+        "key": "3.8",
+        "title": "Mason ships Mason",
         "phase": "dev",
         "attempt": "1",
-        "startEpoch": 1786672555,
-        "median": 58,
+        "startEpoch": 1786700459,
+        "median": 61,
         "lo": 16,
         "hi": 435,
-        "phaseAsOf": "2026-08-14 02:05 UTC"
+        "phaseAsOf": "2026-08-14 10:02 UTC"
       },
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 24 of 42 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 27 of 42 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.2",
@@ -2504,11 +2529,23 @@ window.DASHBOARD_DATA = {
           [
             "3.5",
             74
+          ],
+          [
+            "3.6",
+            93
+          ],
+          [
+            "3.7",
+            238
+          ],
+          [
+            "3.9",
+            133
           ]
         ],
         "foot": [
           [
-            "~61 min",
+            "~74 min",
             "median / story",
             "var(--done)"
           ],
@@ -2532,9 +2569,9 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 2876,
-        "totalLabel": "~47.9 h active compute",
-        "note": "Derived from 24 measured stories; a story still in flight contributes only its closed sessions.",
+        "total": 3340,
+        "totalLabel": "~55.7 h active compute",
+        "note": "Derived from 27 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.2": 91,
           "1.3": 402,
@@ -2559,17 +2596,20 @@ window.DASHBOARD_DATA = {
           "3.2": 64,
           "3.3": 41,
           "3.4": 42,
-          "3.5": 74
+          "3.5": 74,
+          "3.6": 93,
+          "3.7": 238,
+          "3.9": 133
         },
         "epicMin": {
           "E1": 872,
           "E2": 1726,
-          "E3": 278
+          "E3": 742
         }
       },
       "lineState": {
         "state": "in flight",
-        "at": "3.6"
+        "at": "3.8"
       },
       "epics": [
         {
@@ -2715,7 +2755,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "3.6",
-              "active",
+              "pending",
               "The `conda-forge` ship target"
             ],
             [
@@ -2730,7 +2770,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "3.8",
-              "pending",
+              "active",
               "Mason ships Mason"
             ]
           ]
@@ -3949,7 +3989,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-14 02:05 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-14 10:02 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6096,7 +6136,7 @@ window.DASHBOARD_DATA = {
           "stories": 86,
           "state": "running",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
-          "done": 82,
+          "done": 93,
           "total": 126
         },
         {
@@ -6289,7 +6329,7 @@ window.DASHBOARD_DATA = {
         ],
         "furthest": "retro",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "0.1.0",
         "progress": "46/46",
@@ -6419,7 +6459,7 @@ window.DASHBOARD_DATA = {
         ],
         "furthest": "retro",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "0.1.0",
         "progress": "33/33",
@@ -6549,7 +6589,7 @@ window.DASHBOARD_DATA = {
         ],
         "furthest": "retro",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "0.1.0",
         "progress": "53/53",
@@ -6583,7 +6623,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-08-01",
-          "spec": "2026-08-13T18:21",
+          "spec": "2026-08-13T23:44",
           "research": "2026-08-08",
           "brief": "2026-08-02",
           "prd": "2026-08-11",
@@ -6592,10 +6632,10 @@ window.DASHBOARD_DATA = {
           "context": "2026-06-20",
           "epics": "2026-08-12",
           "sprint": "2026-08-13",
-          "tea": "2026-08-13",
+          "tea": "2026-08-14",
           "gates": "2026-08-10",
-          "code": "2026-08-12",
-          "verify": "2026-08-12",
+          "code": "2026-08-13",
+          "verify": "2026-08-13",
           "retro": ""
         },
         "sub": {
@@ -6663,11 +6703,11 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "verify",
-        "updated": "2026-08-13",
+        "updated": "2026-08-14",
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "82/126",
+        "progress": "93/126",
         "complete": 13,
         "of": 13
       },
@@ -6798,7 +6838,7 @@ window.DASHBOARD_DATA = {
         ],
         "furthest": "verify",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "0.1.0",
         "progress": "25/42",
@@ -6928,7 +6968,7 @@ window.DASHBOARD_DATA = {
         ],
         "furthest": "retro",
         "updated": "2026-08-12",
-        "age": 1,
+        "age": 2,
         "stale": false,
         "version": "0.1.0",
         "progress": "9/9",
@@ -7058,7 +7098,7 @@ window.DASHBOARD_DATA = {
         ],
         "furthest": "retro",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "0.1.0",
         "progress": "41/41",
@@ -7188,7 +7228,7 @@ window.DASHBOARD_DATA = {
         ],
         "furthest": "retro",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "0.1.0",
         "progress": "31/31",
@@ -7294,7 +7334,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-11",
-        "age": 2,
+        "age": 3,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7400,7 +7440,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-11",
-        "age": 2,
+        "age": 3,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7506,7 +7546,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-11",
-        "age": 2,
+        "age": 3,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7605,7 +7645,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-11",
-        "age": 2,
+        "age": 3,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7711,7 +7751,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-11",
-        "age": 2,
+        "age": 3,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7810,7 +7850,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-11",
-        "age": 2,
+        "age": 3,
         "stale": false,
         "version": "",
         "progress": "",
@@ -7916,7 +7956,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8022,7 +8062,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8128,7 +8168,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8233,7 +8273,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "dream",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8338,7 +8378,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "dream",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8443,7 +8483,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "dream",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8548,7 +8588,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "dream",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8660,7 +8700,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "spec",
         "updated": "2026-08-08",
-        "age": 5,
+        "age": 6,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8766,7 +8806,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8872,7 +8912,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8979,7 +9019,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -9085,7 +9125,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -9191,7 +9231,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -9297,7 +9337,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -9403,7 +9443,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -9509,7 +9549,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -9615,7 +9655,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -9721,7 +9761,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -9827,7 +9867,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -9933,7 +9973,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -10039,7 +10079,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -10145,7 +10185,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -10251,7 +10291,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -10357,7 +10397,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -10463,7 +10503,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -10569,7 +10609,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -10675,7 +10715,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -10782,7 +10822,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -10888,7 +10928,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -10994,7 +11034,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -11100,7 +11140,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -11206,7 +11246,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -11312,7 +11352,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -11418,7 +11458,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -11524,7 +11564,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -11647,7 +11687,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "verify",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -11753,7 +11793,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -11859,7 +11899,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -11965,7 +12005,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -12076,7 +12116,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "epics",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -12182,7 +12222,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -12288,7 +12328,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -12394,7 +12434,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -12500,7 +12540,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -12606,7 +12646,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -12712,7 +12752,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -12818,7 +12858,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -12924,7 +12964,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -13032,7 +13072,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "epics",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -13138,7 +13178,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -13244,7 +13284,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-10",
-        "age": 3,
+        "age": 4,
         "stale": false,
         "version": "",
         "progress": "",
@@ -13350,7 +13390,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-10",
-        "age": 3,
+        "age": 4,
         "stale": false,
         "version": "",
         "progress": "",
@@ -13456,7 +13496,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-10",
-        "age": 3,
+        "age": 4,
         "stale": false,
         "version": "",
         "progress": "",
@@ -13562,7 +13602,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -13668,7 +13708,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -13779,7 +13819,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "arch",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -13885,7 +13925,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -13996,7 +14036,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "arch",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -14107,7 +14147,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "arch",
         "updated": "2026-08-13",
-        "age": 0,
+        "age": 1,
         "stale": false,
         "version": "",
         "progress": "",
@@ -14213,7 +14253,7 @@ window.DASHBOARD_DATA = {
         "staleBy": [],
         "furthest": "research",
         "updated": "2026-08-10",
-        "age": 3,
+        "age": 4,
         "stale": false,
         "version": "",
         "progress": "",
@@ -14599,7 +14639,7 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "green",
+        "state": "drift",
         "findings": 0,
         "verdict": "",
         "runbook": ""
@@ -14775,7 +14815,7 @@ window.DASHBOARD_DATA = {
           "archived": 15,
           "practice": 4
         },
-        "line": "in flight 9.1",
+        "line": "in flight 9.6",
         "load": 2,
         "blocked": 0,
         "dreams": [
@@ -15106,7 +15146,7 @@ window.DASHBOARD_DATA = {
           "archived": 4,
           "practice": 2
         },
-        "line": "in flight 3.6",
+        "line": "in flight 3.8",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -17187,27 +17227,27 @@ window.DASHBOARD_DATA = {
     "running": [
       {
         "station": "Marshal",
-        "story": "9.1",
+        "story": "9.6",
         "phase": "dev",
-        "startEpoch": 1786670039
+        "startEpoch": 1786688807
       },
       {
         "station": "Mason",
-        "story": "3.6",
+        "story": "3.8",
         "phase": "dev",
-        "startEpoch": 1786672555
+        "startEpoch": 1786700459
       }
     ],
     "lastShipped": {
       "station": "mason",
-      "story": "3.4",
-      "epoch": 1786668056,
-      "sha": "b7a9b78a5",
-      "subject": "Merge bmad-loop/20260813-145934-3eb0/3-4-the-pypi-ship-target into loop/pyforge-mason (bmad-loop)"
+      "story": "3.5",
+      "epoch": 1786672554,
+      "sha": "4219f1dea",
+      "subject": "Merge bmad-loop/20260813-145934-3eb0/3-5-the-channel-name-ship-target into loop/pyforge-mason (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-14 02:05 UTC",
-    "generatedEpoch": 1786673106
+    "generatedAt": "2026-08-14 10:02 UTC",
+    "generatedEpoch": 1786701773
   },
   "storySpecs": [
     {
@@ -17230,9 +17270,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-marshal",
-      "done": 82,
+      "done": 93,
       "tracked": 56,
-      "gap": 26
+      "gap": 37
     },
     {
       "station": "pyforge-mason",
@@ -17339,14 +17379,12 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation/SPEC.md"
           }
         ],
-        "done": 82,
-        "backlog": 41,
-        "blocked": 3,
+        "done": 93,
+        "backlog": 32,
+        "blocked": 1,
         "total": 126,
         "next": "10-1-copier-engine-wrapper-the-single-seam",
         "blockedKeys": [
-          "7-2-error-taxonomy-and-exit-codes",
-          "7-3-the-fs-write-primitive-and-the-never-write-guard",
           "8-5-marker-deletion-as-a-sanctioned-opt-out"
         ],
         "backlogKeys": [
@@ -17523,9 +17561,9 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 320,
-      "backlog": 58,
-      "blocked": 3,
+      "done": 331,
+      "backlog": 49,
+      "blocked": 1,
       "total": 381
     }
   },
@@ -17567,13 +17605,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "marshal",
         "stories": 126,
-        "done": 82,
-        "blocked": 3,
+        "done": 93,
+        "blocked": 1,
         "epics": 19,
-        "epicsDone": 8,
+        "epicsDone": 9,
         "complete": false,
         "running": true,
-        "projected": 123
+        "projected": 125
       },
       {
         "key": "mason",
@@ -17622,10 +17660,10 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 381,
-      "done": 320,
-      "blocked": 3,
+      "done": 331,
+      "blocked": 1,
       "epics": 74,
-      "epicsDone": 59
+      "epicsDone": 60
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
@@ -17633,7 +17671,7 @@ window.DASHBOARD_DATA = {
         "marshal",
         "mason"
       ],
-      "projected": 378
+      "projected": 380
     }
   }
 };

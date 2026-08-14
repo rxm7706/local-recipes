@@ -107,3 +107,16 @@ type = "forbidden"
 # forbids the other direction, supervisor -> cli.
 source_modules = ["pyforge.marshal.supervisor"]
 forbidden_modules = ["pyforge.marshal.cli"]
+
+[[tool.importlinter.contracts]]
+name = "Story 8.4 review finding: regions never imports model.manifest (avoids a package cycle)"
+type = "forbidden"
+# seed/model/manifest.py already imports FROM seed/regions/markers.py
+# (Story 7.4/8.1), so the reverse edge would be a package import cycle.
+# regions/apply.py's own module docstring already asserts this in prose
+# ("insert_region imports model.manifest's types nowhere"); this contract
+# gives that claim teeth, matching this repo's own established preference
+# for mechanical enforcement over docstring-only claims (AD-61's fs.py
+# meta-test precedent: "so the guard cannot be routed around").
+source_modules = ["pyforge.marshal.seed.regions"]
+forbidden_modules = ["pyforge.marshal.seed.model.manifest"]
