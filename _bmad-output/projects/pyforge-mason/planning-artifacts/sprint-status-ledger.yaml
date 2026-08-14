@@ -36,7 +36,7 @@ development_status:
   2-9-mason-recipe-submit: done
   3-1-engine-protocol-and-provisioning: done
   3-2-mason-package-build: done
-  3-3-ship-target-vocabulary-and-dry-run-default: backlog
+  3-3-ship-target-vocabulary-and-dry-run-default: done
   3-4-the-pypi-ship-target: backlog
   3-5-the-channel-name-ship-target: backlog
   3-6-the-conda-forge-ship-target: backlog
