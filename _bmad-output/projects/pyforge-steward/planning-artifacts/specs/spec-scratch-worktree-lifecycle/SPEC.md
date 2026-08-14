@@ -1,6 +1,6 @@
 ---
 spec: scratch-worktree-lifecycle
-status: draft
+status: ready
 owner-dream: docs/dreams/scratch-worktree-lifecycle.md
 surface:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/workspace.py
