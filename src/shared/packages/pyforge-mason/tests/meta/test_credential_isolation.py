@@ -94,7 +94,16 @@ capability today, which structurally forecloses CFE's own `_http.py`
 unconditional `JFROG_API_KEY` header-injection pattern from reaching Mason's
 own surface. Not a general network-access ban -- Epic 3 is expected to add
 scoped, non-CFE HTTP capability later and must loosen this guard explicitly
-when that story lands.
+when that story lands. **Story 3.7 is that story.** It adds a narrow,
+STRUCTURAL per-(file, module-name) allowlist, `_GUARD_2_HTTP_IMPORT_
+ALLOWLIST` below: `urllib.request` is now permitted, but ONLY inside
+`pypi_index.py` (the one module `package.py::ship_pypi`'s new PyPI-index
+idempotence interrogation, AD-10, needs it in). `requests`/`httpx`/
+`http.client` are NOT in that file's exempted set -- they stay banned even
+inside `pypi_index.py`, and `urllib.request` stays banned in every OTHER
+file exactly as before. This is a widening of WHO may import ONE already-
+named client for ONE already-scoped reason, not a widening of the banned
+set itself or of the deny-list's own narrow scope.
 
 **Guard 3 -- env inheritance.** Two scanners, one property: nothing changes
 what a spawned CFE child inherits.
@@ -471,6 +480,62 @@ actually about an owed follow-up review of Story 1.10 and says nothing about
 set duplication -- verified against the ledger)."""
 
 
+_GUARD_2_HTTP_IMPORT_ALLOWLIST: dict[str, frozenset[str]] = {
+    "pypi_index.py": frozenset({"urllib.request"}),
+}
+"""Per-(file, module-name) exemptions from Guard 2's import ban (Story 3.7):
+`urllib.request` is permitted ONLY inside `pypi_index.py` -- the one module
+Guard 2's own docstring above pre-authorizes ("Epic 3 is expected to add
+scoped, non-CFE HTTP capability later and must loosen this guard explicitly
+when that story lands"). `requests`/`httpx`/`http.client` are deliberately
+NOT in this file's exempted set -- they stay banned even inside
+`pypi_index.py` (spec Always boundary): PyPI's own public JSON index needs
+nothing beyond stdlib `urllib.request.urlopen`, so there is no legitimate
+reason for a third-party HTTP client to appear there either.
+
+Keyed by bare FILENAME, not a resolved full path (mirrors `_find_env_
+override_violations`'s own `cfe.py` special-case just above, which also
+special-cases by name against `root` rather than an absolute path):
+`pypi_index.py` is a single well-known module name, so a collision with an
+unrelated same-named file elsewhere in the tree is not a realistic risk the
+extra path-resolution machinery would be worth here.
+
+`test_guard_2_allowlist_has_not_widened_past_its_pinned_ceiling` below is
+this allowlist's own anti-shrink -- more precisely anti-WIDEN -- floor,
+mirroring `_REQUIRED_HTTP_IMPORTS`/`_REQUIRED_ENV_OVERRIDE_CALL_NAMES`'s
+independently-spelled-floor pattern used throughout this file: a live set
+that is free to widen on its own, with nothing else in the file noticing,
+is exactly the failure mode those floors exist to catch -- inverted here,
+since THIS set narrows the guard rather than widening it, so what must be
+pinned is a CEILING it may never silently exceed."""
+
+_GUARD_2_ALLOWLIST_CEILING: dict[str, frozenset[str]] = {
+    "pypi_index.py": frozenset({"urllib.request"}),
+}
+"""Independently-spelled ceiling mirroring `_GUARD_2_HTTP_IMPORT_ALLOWLIST`
+exactly (own docstring above): a widening edit to the live allowlist --
+adding a new file key, or adding `requests`/`httpx`/`http.client` to
+`pypi_index.py`'s own exempted set -- must also touch this independently-
+spelled copy, with the rationale for the widening spelled out in that diff.
+Deriving one dict from the other would let a single edit widen both at
+once, the same self-deleting-fixture failure mode `_REQUIRED_HTTP_IMPORTS`'s
+own docstring documents at length for the banned set."""
+
+
+def _is_http_import_allowlisted(path: Path, module_name: str) -> bool:
+    """True when `module_name` (a name Guard 2 would otherwise flag) is
+    exempted for `path` by `_GUARD_2_HTTP_IMPORT_ALLOWLIST` (module
+    docstring). `module_name` matches an allowlisted entry OR any of ITS
+    submodules -- the same dotted-boundary rule `_is_banned_http_module`
+    itself applies to the ban -- so `urllib.request.foo` is exactly as
+    exempt as the bare `urllib.request` inside `pypi_index.py`."""
+    allowed = _GUARD_2_HTTP_IMPORT_ALLOWLIST.get(path.name, frozenset())
+    return any(
+        module_name == allowed_name or module_name.startswith(f"{allowed_name}.")
+        for allowed_name in allowed
+    )
+
+
 def _is_banned_http_module(name: str) -> bool:
     """True for a banned client itself or ANY submodule of one (third review
     pass, both reviewers, reproduced): `import requests.sessions` binds the
@@ -528,11 +593,15 @@ def _find_http_client_imports(root: Path) -> list[Violation]:
     for path in sorted(root.rglob("*.py")):
         tree = _parse_file(path)
         for node, text in _banned_module_name_arguments(tree):
+            if _is_http_import_allowlisted(path, text):
+                continue
             violations.append(Violation(path, node.lineno, CATEGORY_HTTP_MODULE_NAME, text))
         for node in ast.walk(tree):
             if isinstance(node, ast.Import):
                 for alias in node.names:
-                    if _is_banned_http_module(alias.name):
+                    if _is_banned_http_module(alias.name) and not _is_http_import_allowlisted(
+                        path, alias.name,
+                    ):
                         violations.append(
                             Violation(path, node.lineno, CATEGORY_HTTP_IMPORT, alias.name)
                         )
@@ -547,9 +616,10 @@ def _find_http_client_imports(root: Path) -> list[Violation]:
                 and node.module is not None
             ):
                 if _is_banned_http_module(node.module):
-                    violations.append(
-                        Violation(path, node.lineno, CATEGORY_HTTP_IMPORT, node.module)
-                    )
+                    if not _is_http_import_allowlisted(path, node.module):
+                        violations.append(
+                            Violation(path, node.lineno, CATEGORY_HTTP_IMPORT, node.module)
+                        )
                     continue
                 # The "parent, then submodule" spelling of the two dotted
                 # names -- `from urllib import request` / `from http import
@@ -559,7 +629,9 @@ def _find_http_client_imports(root: Path) -> list[Violation]:
                 # twice.
                 for alias in node.names:
                     dotted = f"{node.module}.{alias.name}"
-                    if _is_banned_http_module(dotted):
+                    if _is_banned_http_module(dotted) and not _is_http_import_allowlisted(
+                        path, dotted,
+                    ):
                         violations.append(
                             Violation(path, node.lineno, CATEGORY_HTTP_IMPORT, dotted)
                         )
@@ -1179,6 +1251,31 @@ def test_banned_http_imports_covers_the_required_floor():
     )
 
 
+def test_guard_2_allowlist_has_not_widened_past_its_pinned_ceiling():
+    """Story 3.7's own anti-shrink floor for the Guard 2 allowlist, inverted
+    (`_GUARD_2_HTTP_IMPORT_ALLOWLIST`'s own docstring): the LIVE allowlist
+    is the thing under test here, and `_GUARD_2_ALLOWLIST_CEILING` is the
+    independently-spelled pin it must never silently exceed. A widening
+    edit -- a new file key, or a new exempted module name added to an
+    existing file's set -- must also touch the ceiling, with the rationale
+    for the widening spelled out in that diff, mirroring every other
+    `_REQUIRED_*`-floor test in this file."""
+    for file_name, modules in _GUARD_2_HTTP_IMPORT_ALLOWLIST.items():
+        ceiling_modules = _GUARD_2_ALLOWLIST_CEILING.get(file_name, frozenset())
+        widened = modules - ceiling_modules
+        assert not widened, (
+            f"{file_name}'s Guard 2 allowlist has widened beyond its pinned "
+            f"ceiling; new entries: {sorted(widened)}. Widening the "
+            "allowlist must also update _GUARD_2_ALLOWLIST_CEILING, with the "
+            "rationale in that diff."
+        )
+    extra_files = set(_GUARD_2_HTTP_IMPORT_ALLOWLIST) - set(_GUARD_2_ALLOWLIST_CEILING)
+    assert not extra_files, (
+        "Guard 2's allowlist gained new file key(s) not present in its "
+        f"pinned ceiling: {sorted(extra_files)}."
+    )
+
+
 def test_env_override_call_names_covers_the_required_floor():
     missing = _REQUIRED_ENV_OVERRIDE_CALL_NAMES - _ENV_OVERRIDE_CALL_NAMES
     assert not missing, (
@@ -1728,6 +1825,88 @@ def test_a_string_merely_containing_a_banned_name_is_not_flagged(tmp_path):
     root.mkdir()
     (root / "clean.py").write_text(
         'log("no outbound requests are permitted")\nload("requestsx")\n',
+        encoding="utf-8",
+    )
+
+    assert _find_http_client_imports(root) == []
+
+
+# --- Guard 2 allowlist regression fixtures (Story 3.7) ----------------------
+
+
+def test_urllib_request_import_in_pypi_index_py_is_not_flagged(tmp_path):
+    """The one exemption this story adds: a file literally named
+    `pypi_index.py` may `import urllib.request`."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "pypi_index.py").write_text("import urllib.request\n", encoding="utf-8")
+
+    assert _find_http_client_imports(root) == []
+
+
+def test_from_urllib_import_request_in_pypi_index_py_is_not_flagged(tmp_path):
+    """The `from urllib import request` spelling reaches the identical
+    submodule (module docstring's "parent, then submodule" note) and must
+    be exempted too."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "pypi_index.py").write_text("from urllib import request\n", encoding="utf-8")
+
+    assert _find_http_client_imports(root) == []
+
+
+def test_urllib_request_import_in_any_other_file_is_still_flagged(tmp_path):
+    """The allowlist is scoped to `pypi_index.py` specifically, not a
+    blanket un-banning of `urllib.request` -- the identical import in any
+    other file must still be caught."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "other.py").write_text("import urllib.request\n", encoding="utf-8")
+
+    violations = _find_http_client_imports(root)
+
+    assert any(v.detail == "urllib.request" for v in violations)
+
+
+@pytest.mark.parametrize("name", ["requests", "httpx", "http.client"])
+def test_requests_httpx_and_http_client_stay_banned_inside_pypi_index_py(tmp_path, name):
+    """`pypi_index.py`'s own exempted set is `{"urllib.request"}` only
+    (`_GUARD_2_HTTP_IMPORT_ALLOWLIST`'s own docstring) -- the OTHER three
+    banned clients must still be caught inside this one exempted file,
+    proving the allowlist is per-(file, module-name), not per-file."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "pypi_index.py").write_text(f"import {name}\n", encoding="utf-8")
+
+    violations = _find_http_client_imports(root)
+
+    assert any(v.category == CATEGORY_HTTP_IMPORT and v.detail == name for v in violations)
+
+
+def test_urllib_request_submodule_in_pypi_index_py_is_also_exempted(tmp_path):
+    """`_is_http_import_allowlisted`'s own dotted-boundary rule: a submodule
+    of an allowlisted name is exactly as exempt as the bare name itself,
+    mirroring `_is_banned_http_module`'s identical rule for the ban."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "pypi_index.py").write_text(
+        "from urllib.request import urlopen\n", encoding="utf-8",
+    )
+
+    assert _find_http_client_imports(root) == []
+
+
+def test_urllib_request_named_as_a_string_argument_in_pypi_index_py_is_exempted(tmp_path):
+    """The allowlist also covers the call-argument scan
+    (`_banned_module_name_arguments`), not only the static `import` scan --
+    a dynamic `importlib.import_module("urllib.request")` inside
+    `pypi_index.py` must not be flagged either, for the same structural
+    reason the static form is exempted."""
+    root = tmp_path / "mason"
+    root.mkdir()
+    (root / "pypi_index.py").write_text(
+        "import importlib\n_dyn = importlib.import_module\n"
+        'client = _dyn("urllib.request")\n',
         encoding="utf-8",
     )
 

@@ -13,7 +13,12 @@ handling).
 
 Story 3.3 extends this file again with `ShipTargetKind`/`ShipTarget`
 coverage: exactly-three-members plus construction/immutability/equality,
-mirroring `ShipTargetResult`'s own test shape."""
+mirroring `ShipTargetResult`'s own test shape.
+
+Story 3.7 extends this file once more with `ShipReceipt` coverage:
+construction/immutability/equality mirroring the shapes above, plus the
+`ok`-aggregation cases the spec's own I/O & Edge-Case Matrix names ("mixed
+success", "one failure")."""
 
 from __future__ import annotations
 
@@ -24,7 +29,8 @@ import pytest
 
 from pyforge.mason.engines import EngineStatus
 from pyforge.mason.models import (
-    CfeResult, DoctorReport, ShipState, ShipTarget, ShipTargetKind, ShipTargetResult,
+    CfeResult, DoctorReport, ShipReceipt, ShipState, ShipTarget, ShipTargetKind,
+    ShipTargetResult,
 )
 
 
@@ -202,3 +208,58 @@ def test_ship_target_equality_is_by_value():
     a = ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg")
     b = ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg")
     assert a == b
+
+
+# --- ShipReceipt (Story 3.7) ----------------------------------------------------
+
+_TERMINAL_RESULT = ShipTargetResult(
+    target="pypi", state=ShipState.TERMINAL, reference="https://pypi.org/project/pkg/0.1.0/",
+    message="View at:\n...\n",
+)
+_PENDING_RESULT = ShipTargetResult(
+    target="channel:myorg", state=ShipState.PENDING, reference=None,
+    message="could not determine whether channel already has pkg",
+)
+_FAILED_RESULT = ShipTargetResult(
+    target="pypi", state=ShipState.FAILED, reference=None, message="ERROR HTTPError: 400\n",
+)
+_NOT_ATTEMPTED_RESULT = ShipTargetResult(
+    target="conda-forge", state=ShipState.NOT_ATTEMPTED, reference=None, message=None,
+)
+
+
+def test_ship_receipt_constructs_with_both_fields():
+    receipt = ShipReceipt(targets=(_TERMINAL_RESULT,), ok=True)
+    assert receipt.targets == (_TERMINAL_RESULT,)
+    assert receipt.ok is True
+
+
+def test_ship_receipt_is_frozen():
+    receipt = ShipReceipt(targets=(), ok=True)
+    with pytest.raises(FrozenInstanceError):
+        receipt.ok = False  # type: ignore[misc]
+
+
+def test_ship_receipt_equality_is_by_value():
+    a = ShipReceipt(targets=(_TERMINAL_RESULT,), ok=True)
+    b = ShipReceipt(targets=(_TERMINAL_RESULT,), ok=True)
+    assert a == b
+
+
+def test_ship_receipt_mixed_not_attempted_and_pending_is_ok():
+    """spec I/O matrix: 'Receipt aggregate, mixed success' -- targets =
+    (TERMINAL, PENDING) -> ShipReceipt.ok is True."""
+    receipt = ShipReceipt(targets=(_TERMINAL_RESULT, _PENDING_RESULT), ok=True)
+    assert receipt.ok is True
+
+
+def test_ship_receipt_any_failed_target_is_not_ok():
+    """spec I/O matrix: 'Receipt aggregate, one failure' -- targets =
+    (TERMINAL, FAILED) -> ShipReceipt.ok is False."""
+    receipt = ShipReceipt(targets=(_TERMINAL_RESULT, _FAILED_RESULT), ok=False)
+    assert receipt.ok is False
+
+
+def test_ship_receipt_not_attempted_alone_is_ok():
+    receipt = ShipReceipt(targets=(_NOT_ATTEMPTED_RESULT,), ok=True)
+    assert receipt.ok is True

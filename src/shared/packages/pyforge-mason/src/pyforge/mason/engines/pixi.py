@@ -65,6 +65,22 @@ key, channel, and network access, out of reach during spec authoring), so
 `package.py::ship_channel`'s `reference` on success is the caller-supplied
 `channel_name` itself, never a value parsed out of this adapter's captured
 stdout.
+
+Story 3.7 adds `search()` (FR-18, AD-10): idempotence-by-interrogation for
+`ship_channel`, mirroring `pypi_index.version_exists`/`engines.gh.
+find_open_pr`'s identical three-way "found / conclusively absent /
+undeterminable" shape (both added by this same story). `pixi search
+--channel <channel> <name>==<version> --json` is live-verified in this
+environment (spec Design Notes): exit 0 with a JSON body on success, exit 1
+with the literal substring `"No packages found"` in stderr when the exact
+version does not exist in that channel. Deliberately uses `probe_engine`,
+never `require_engine` (the one structural difference from `build()`/
+`upload()` above): a missing `pixi` binary is exactly as "cannot be
+interrogated" as a network timeout, so it folds into the same `None`
+outcome this function already reports for every other undeterminable case,
+rather than raising `EngineAbsentError` the way `build()`/`upload()`'s own
+mutating operations still do -- an idempotence check must never crash a
+ship attempt that would otherwise have succeeded (AD-10).
 """
 
 from __future__ import annotations
@@ -295,3 +311,65 @@ def upload(conda_path: str, channel: str, *, timeout: float | None = None) -> Pi
         raise EngineAbsentError(name, name) from None
 
     return PixiUploadResult(returncode=completed.returncode, stdout=completed.stdout)
+
+
+_PIXI_SEARCH_TIMEOUT_SECONDS = 30.0
+"""A single small channel-metadata query, not an upload or a from-source
+build -- mirrors `pypi_index._VERSION_EXISTS_TIMEOUT_SECONDS`/`engines.gh.
+_GH_PR_LIST_TIMEOUT_SECONDS`'s own identical rationale and value (module
+docstring: all three are the "index/metadata interrogation" tier Story 3.7
+adds, distinct from `_PIXI_UPLOAD_TIMEOUT_SECONDS`'s own 300s allowance for
+a real file transfer)."""
+
+
+def search(
+    name: str, version: str, channel: str, *, timeout: float | None = None,
+) -> bool | None:
+    """Interrogate whether `name`==`version` is already present in `channel`
+    (Story 3.7, FR-18, AD-10) via `pixi search --channel <channel>
+    <name>==<version> --json` -- module docstring for the full rationale.
+
+    Unlike `build()`/`upload()`, this function uses `probe_engine` directly,
+    never `require_engine` (module docstring): a missing `pixi` binary folds
+    into the same `None` ("cannot be interrogated") outcome as a timeout or
+    an unrecognized failure, rather than raising `EngineAbsentError`.
+
+    `timeout` defaults to `_PIXI_SEARCH_TIMEOUT_SECONDS` when `None`. A
+    `TimeoutExpired` or any other `OSError` from the spawn itself (`pixi`
+    vanishing between the probe and this call) also folds into `None` --
+    this is an INTERROGATION, not a mutating ship-target operation, so its
+    own failure is data on the return value, never a raised `MasonError`
+    (mirrors `engines.gh.find_open_pr`'s identical choice).
+
+    Exit code `0` means the exact version was found -> `True`. A nonzero
+    exit whose stderr contains the literal substring `"No packages found"`
+    means it conclusively does not exist in `channel` -> `False`. Anything
+    else -- `pixi` absent, a timeout, or any other nonzero exit -- means the
+    question could not be answered -> `None` (AD-10: never an assumption in
+    either direction).
+    """
+    status = probe_engine("pixi", _BINARY_NAME)
+    if not status.available:
+        return None
+
+    resolved_timeout = timeout if timeout is not None else _PIXI_SEARCH_TIMEOUT_SECONDS
+    argv = [_BINARY_NAME, "search", "--channel", channel, f"{name}=={version}", "--json"]
+    try:
+        completed = subprocess.run(
+            argv,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=resolved_timeout,
+            check=False,
+        )
+    except (subprocess.TimeoutExpired, OSError):
+        return None
+
+    if completed.returncode == 0:
+        return True
+    if "No packages found" in completed.stderr:
+        return False
+    return None
