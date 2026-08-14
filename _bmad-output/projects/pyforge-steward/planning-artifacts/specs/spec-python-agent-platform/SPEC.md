@@ -4,7 +4,7 @@ status: ready
 companions: [ARCHITECTURE-SPINE.md]
 owner-dream: docs/dreams/python-agent-platform.md
 surface:
-  - src/platform/
+  - src/platform/**
   - pixi.toml
   - environment.yaml
 sources:
