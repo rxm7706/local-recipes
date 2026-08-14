@@ -2,7 +2,7 @@
 title: The "Corporate Brain" CMS atlas's own WikiSyncer has been waiting to push to
 type: dream
 owner: atlas
-status: dreamt
+status: specified
 ---
 
 # The "Corporate Brain" CMS atlas's own WikiSyncer has been waiting to push to
@@ -94,3 +94,8 @@ code before drafting" discipline)
   evidence-backed piece (closing DW-H3) from the much larger, still-genuinely-speculative full CMS
   feature set the source dream describes — the original "weakest fit" verdict was wrong for the
   narrow scope, right for the broad one.
+- **2026-08-14** — Spec authored (spec-wagtail-corporate-brain, pyforge-atlas) per operator
+  decision: spec-first, bring-up later — narrow scope only (live instance satisfying
+  LaSuiteClient's existing contract, real httpx opener, round-trip/idempotency verified); the
+  attended DW-H3 bring-up is scheduled separately; broad CMS scope stays excluded per the dream's
+  own Constraint.
