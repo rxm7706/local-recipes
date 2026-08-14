@@ -2,11 +2,13 @@
 (Story 3.1), ported from `pyforge-warden`'s identical guard
 (`tests/meta/test_engine_version_range_sync.py` there).
 
-`pixi.toml`'s `pixi`/`twine`/`conda-lock`/`python-build` run-dependency pins
-and `engines/__init__.py`'s `PIXI_VERSION_RANGE`/`TWINE_VERSION_RANGE`/
-`CONDA_LOCK_VERSION_RANGE`/`PYTHON_BUILD_VERSION_RANGE` `SpecifierSet`
-constants must never drift apart — one edited without the other is exactly
-the failure mode this guard exists to catch.
+`pixi.toml`'s `pixi`/`twine`/`conda-lock`/`python-build`/`gh` run-dependency
+pins and `engines/__init__.py`'s `PIXI_VERSION_RANGE`/`TWINE_VERSION_RANGE`/
+`CONDA_LOCK_VERSION_RANGE`/`PYTHON_BUILD_VERSION_RANGE`/`GH_VERSION_RANGE`
+`SpecifierSet` constants must never drift apart — one edited without the
+other is exactly the failure mode this guard exists to catch. Story 3.7
+adds the fifth pair (`gh`/`GH_VERSION_RANGE`), extended with the identical
+five assertion shapes the other four already have.
 
 The comparison runs BOTH sides through `packaging.specifiers.SpecifierSet`
 before comparing their `str()` forms byte-for-byte, rather than comparing
@@ -30,6 +32,7 @@ from packaging.version import Version
 import pyforge.mason
 from pyforge.mason.engines import (
     CONDA_LOCK_VERSION_RANGE,
+    GH_VERSION_RANGE,
     PIXI_VERSION_RANGE,
     PYTHON_BUILD_VERSION_RANGE,
     TWINE_VERSION_RANGE,
@@ -58,6 +61,7 @@ def test_pixi_toml_is_found_where_expected():
     assert "twine" in run_deps
     assert "conda-lock" in run_deps
     assert "python-build" in run_deps
+    assert "gh" in run_deps
 
 
 def test_pixi_range_matches_pixi_toml():
@@ -98,6 +102,15 @@ def test_python_build_range_matches_pixi_toml():
     )
 
 
+def test_gh_range_matches_pixi_toml():
+    run_deps = _run_dependencies()
+    pixi_range = SpecifierSet(str(run_deps["gh"]))
+    assert str(pixi_range) == str(GH_VERSION_RANGE), (
+        "pixi.toml's gh run-dependency range and engines/__init__.py's "
+        "GH_VERSION_RANGE have drifted apart — edit both together"
+    )
+
+
 def test_ranges_are_ranges_not_exact_pins():
     """NFR-C1-style convention (matching pyforge-warden's identical guard):
     a range, not an exact pin — engines come from feedstocks."""
@@ -105,17 +118,20 @@ def test_ranges_are_ranges_not_exact_pins():
     assert len(TWINE_VERSION_RANGE) >= 2
     assert len(CONDA_LOCK_VERSION_RANGE) >= 2
     assert len(PYTHON_BUILD_VERSION_RANGE) >= 2
+    assert len(GH_VERSION_RANGE) >= 2
 
 
 def test_evidence_backed_versions_are_in_range():
     """The exact minors this codebase has live-verified evidence for (spec
     Always boundary: pixi 0.76.2, twine 7.0.0, conda-lock 4.0.2, build
-    1.5.0) must be inside their own range — a vacuous guard (a range that
-    excludes its own evidence) would be worse than no guard at all."""
+    1.5.0, gh 2.97.0) must be inside their own range — a vacuous guard (a
+    range that excludes its own evidence) would be worse than no guard at
+    all."""
     assert Version("0.76.2") in PIXI_VERSION_RANGE
     assert Version("7.0.0") in TWINE_VERSION_RANGE
     assert Version("4.0.2") in CONDA_LOCK_VERSION_RANGE
     assert Version("1.5.0") in PYTHON_BUILD_VERSION_RANGE
+    assert Version("2.97.0") in GH_VERSION_RANGE
 
 
 def test_ranges_do_not_widen_to_the_next_untested_minor():
@@ -125,3 +141,4 @@ def test_ranges_do_not_widen_to_the_next_untested_minor():
     assert Version("7.1.0") not in TWINE_VERSION_RANGE
     assert Version("4.1.0") not in CONDA_LOCK_VERSION_RANGE
     assert Version("1.6.0") not in PYTHON_BUILD_VERSION_RANGE
+    assert Version("2.98.0") not in GH_VERSION_RANGE

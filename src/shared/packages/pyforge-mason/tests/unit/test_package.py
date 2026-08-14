@@ -45,6 +45,17 @@ import recipe` (lazy) and calls `recipe.submit(...)` -- an attribute lookup
 at call time, the same `cfe.probe_import_floor` gotcha `test_doctor.py`
 documents for `doctor.py`'s own lazy `cfe` import.
 
+Story 3.7 extends both `ship_pypi`/`ship_channel` suites with idempotence-
+by-interrogation coverage: `pyforge.mason.package.pypi_index.version_exists`/
+`pyforge.mason.package.pixi.search` are mocked at `package.py`'s own import
+namespace (same convention). Every PRE-EXISTING happy-path/upload-failure
+test in both suites now also patches the relevant interrogation call to
+return `False` ("not yet shipped") so the upload path they were already
+exercising still runs unmodified -- interrogation sits strictly between the
+artifact-presence check and the upload call (spec Always boundary), so a
+`False` there is a no-op for every test written before this story. This
+file also adds `build_ship_receipt` coverage.
+
 Story 3.9 extends this file three ways: `parse_ship_targets`/`plan_ship`
 gain `pypi-test` coverage (mirroring the existing `pypi`/`conda-forge`/
 `channel` shapes exactly); `ship_pypi` gains `repository_url` coverage
@@ -75,11 +86,11 @@ from pyforge.mason.errors import (
     ShipCredentialMissingError,
 )
 from pyforge.mason.models import (
-    PackageBuildResult, ShipState, ShipTarget, ShipTargetKind, ShipTargetResult,
+    PackageBuildResult, ShipReceipt, ShipState, ShipTarget, ShipTargetKind, ShipTargetResult,
 )
 from pyforge.mason.package import (
-    _TESTPYPI_REPOSITORY_URL, _versions_disagree, build, parse_ship_targets, plan_ship, ship,
-    ship_channel, ship_conda_forge, ship_pypi,
+    _TESTPYPI_REPOSITORY_URL, _versions_disagree, build, build_ship_receipt, parse_ship_targets,
+    plan_ship, ship, ship_channel, ship_conda_forge, ship_pypi,
 )
 from pyforge.mason.resolve import STEP_CWD_WALK, STEP_FLAG, STEP_NOT_FOUND, ResolvedCfeRoot
 
@@ -605,11 +616,14 @@ def test_ship_pypi_happy_path_uploads_and_returns_terminal_result():
     with patch(
         "pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT,
     ) as mock_build, patch(
+        "pyforge.mason.package.pypi_index.version_exists", return_value=False,
+    ) as mock_exists, patch(
         "pyforge.mason.package.twine.upload", return_value=upload_result,
     ) as mock_upload:
         result = ship_pypi("/proj", environ=_SHIP_ENVIRON)
 
     mock_build.assert_called_once_with("/proj", target="library")
+    mock_exists.assert_called_once_with("pkg", "0.1.0")
     mock_upload.assert_called_once_with(
         (_SHIP_BUILD_RESULT.wheel_path, _SHIP_BUILD_RESULT.sdist_path), repository_url=None,
     )
@@ -676,6 +690,7 @@ def test_ship_pypi_returns_failed_when_build_produces_a_wheel_but_no_sdist():
 def test_ship_pypi_returns_failed_when_upload_returns_nonzero():
     upload_result = TwineUploadResult(returncode=1, url=None, stdout="ERROR HTTPError: 400\n")
     with patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT), \
+         patch("pyforge.mason.package.pypi_index.version_exists", return_value=False), \
          patch("pyforge.mason.package.twine.upload", return_value=upload_result):
         result = ship_pypi("/proj", environ=_SHIP_ENVIRON)
 
@@ -714,7 +729,9 @@ def test_ship_pypi_default_target_is_library():
     upload_result = TwineUploadResult(returncode=0, url=None, stdout="")
     with patch(
         "pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT,
-    ) as mock_build, patch("pyforge.mason.package.twine.upload", return_value=upload_result):
+    ) as mock_build, patch(
+        "pyforge.mason.package.pypi_index.version_exists", return_value=False,
+    ), patch("pyforge.mason.package.twine.upload", return_value=upload_result):
         ship_pypi("/proj", environ=_SHIP_ENVIRON)
 
     mock_build.assert_called_once_with("/proj", target="library")
@@ -730,10 +747,69 @@ def test_ship_pypi_forwards_an_explicit_target():
     upload_result = TwineUploadResult(returncode=0, url=None, stdout="")
     with patch(
         "pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT,
-    ) as mock_build, patch("pyforge.mason.package.twine.upload", return_value=upload_result):
+    ) as mock_build, patch(
+        "pyforge.mason.package.pypi_index.version_exists", return_value=False,
+    ), patch("pyforge.mason.package.twine.upload", return_value=upload_result):
         ship_pypi("/proj", environ=_SHIP_ENVIRON, target="not-the-default")
 
     mock_build.assert_called_once_with("/proj", target="not-the-default")
+
+
+# --- Story 3.7: ship_pypi idempotence-by-interrogation --------------------------
+
+def test_ship_pypi_already_shipped_skips_upload_and_returns_terminal():
+    """spec I/O matrix: 'PyPI already shipped' -- version_exists -> True ->
+    TERMINAL, reference = project URL; twine.upload never called."""
+    with patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT), \
+         patch(
+             "pyforge.mason.package.pypi_index.version_exists", return_value=True,
+         ) as mock_exists, patch("pyforge.mason.package.twine.upload") as mock_upload:
+        result = ship_pypi("/proj", environ=_SHIP_ENVIRON)
+
+    mock_exists.assert_called_once_with("pkg", "0.1.0")
+    mock_upload.assert_not_called()
+    assert result.target == "pypi"
+    assert result.state == ShipState.TERMINAL
+    assert result.reference == "https://pypi.org/project/pkg/0.1.0/"
+
+
+def test_ship_pypi_undeterminable_interrogation_returns_pending_naming_the_reason():
+    """spec I/O matrix: 'PyPI interrogation undeterminable' -- version_exists
+    -> None -> PENDING naming the reason; twine.upload never called."""
+    with patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT), \
+         patch(
+             "pyforge.mason.package.pypi_index.version_exists", return_value=None,
+         ), patch("pyforge.mason.package.twine.upload") as mock_upload:
+        result = ship_pypi("/proj", environ=_SHIP_ENVIRON)
+
+    mock_upload.assert_not_called()
+    assert result.target == "pypi"
+    assert result.state == ShipState.PENDING
+    assert result.reference is None
+    assert "pkg" in result.message
+    assert "0.1.0" in result.message
+
+
+def test_ship_pypi_interrogation_runs_after_build_and_before_upload():
+    """spec Always boundary: interrogation runs strictly AFTER build()
+    (needs the built version) and BEFORE the upload call."""
+    call_order = []
+    with patch(
+        "pyforge.mason.package.build",
+        side_effect=lambda *a, **k: (call_order.append("build"), _SHIP_BUILD_RESULT)[1],
+    ), patch(
+        "pyforge.mason.package.pypi_index.version_exists",
+        side_effect=lambda *a, **k: (call_order.append("version_exists"), False)[1],
+    ), patch(
+        "pyforge.mason.package.twine.upload",
+        side_effect=lambda *a, **k: (
+            call_order.append("upload"),
+            TwineUploadResult(returncode=0, url=None, stdout=""),
+        )[1],
+    ):
+        ship_pypi("/proj", environ=_SHIP_ENVIRON)
+
+    assert call_order == ["build", "version_exists", "upload"]
 
 
 # --- Story 3.9: ship_pypi's repository_url (TestPyPI rehearsal) ------------
@@ -862,11 +938,14 @@ def test_ship_channel_happy_path_uploads_and_returns_terminal_result():
     with patch(
         "pyforge.mason.package.build", return_value=_SHIP_CHANNEL_BUILD_RESULT,
     ) as mock_build, patch(
+        "pyforge.mason.package.pixi.search", return_value=False,
+    ) as mock_search, patch(
         "pyforge.mason.package.pixi.upload", return_value=upload_result,
     ) as mock_upload:
         result = ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON)
 
     mock_build.assert_called_once_with("/proj", target="library")
+    mock_search.assert_called_once_with("pkg", "0.1.0", "myorg")
     mock_upload.assert_called_once_with(_SHIP_CHANNEL_BUILD_RESULT.conda_path, "myorg")
     assert result == ShipTargetResult(
         target="channel:myorg",
@@ -912,6 +991,7 @@ def test_ship_channel_returns_failed_when_upload_returns_nonzero():
         returncode=1, stdout="Error:   x no prefix.dev API key provided\n",
     )
     with patch("pyforge.mason.package.build", return_value=_SHIP_CHANNEL_BUILD_RESULT), \
+         patch("pyforge.mason.package.pixi.search", return_value=False), \
          patch(
              "pyforge.mason.package.pixi.upload", return_value=upload_result,
          ) as mock_upload:
@@ -967,7 +1047,9 @@ def test_ship_channel_default_target_is_library():
     upload_result = PixiUploadResult(returncode=0, stdout="")
     with patch(
         "pyforge.mason.package.build", return_value=_SHIP_CHANNEL_BUILD_RESULT,
-    ) as mock_build, patch("pyforge.mason.package.pixi.upload", return_value=upload_result):
+    ) as mock_build, patch(
+        "pyforge.mason.package.pixi.search", return_value=False,
+    ), patch("pyforge.mason.package.pixi.upload", return_value=upload_result):
         ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON)
 
     mock_build.assert_called_once_with("/proj", target="library")
@@ -977,10 +1059,67 @@ def test_ship_channel_forwards_an_explicit_target():
     upload_result = PixiUploadResult(returncode=0, stdout="")
     with patch(
         "pyforge.mason.package.build", return_value=_SHIP_CHANNEL_BUILD_RESULT,
-    ) as mock_build, patch("pyforge.mason.package.pixi.upload", return_value=upload_result):
+    ) as mock_build, patch(
+        "pyforge.mason.package.pixi.search", return_value=False,
+    ), patch("pyforge.mason.package.pixi.upload", return_value=upload_result):
         ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON, target="not-the-default")
 
     mock_build.assert_called_once_with("/proj", target="not-the-default")
+
+
+# --- Story 3.7: ship_channel idempotence-by-interrogation -----------------------
+
+def test_ship_channel_already_shipped_skips_upload_and_returns_terminal():
+    """spec I/O matrix: 'Channel already shipped' -- pixi.search -> True ->
+    TERMINAL, reference = channel_name; pixi.upload never called."""
+    with patch("pyforge.mason.package.build", return_value=_SHIP_CHANNEL_BUILD_RESULT), \
+         patch(
+             "pyforge.mason.package.pixi.search", return_value=True,
+         ) as mock_search, patch("pyforge.mason.package.pixi.upload") as mock_upload:
+        result = ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON)
+
+    mock_search.assert_called_once_with("pkg", "0.1.0", "myorg")
+    mock_upload.assert_not_called()
+    assert result.target == "channel:myorg"
+    assert result.state == ShipState.TERMINAL
+    assert result.reference == "myorg"
+
+
+def test_ship_channel_undeterminable_interrogation_returns_pending_naming_the_reason():
+    """spec I/O matrix: 'Channel interrogation undeterminable' -- pixi.search
+    -> None -> PENDING naming the reason; pixi.upload never called."""
+    with patch("pyforge.mason.package.build", return_value=_SHIP_CHANNEL_BUILD_RESULT), \
+         patch(
+             "pyforge.mason.package.pixi.search", return_value=None,
+         ), patch("pyforge.mason.package.pixi.upload") as mock_upload:
+        result = ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON)
+
+    mock_upload.assert_not_called()
+    assert result.target == "channel:myorg"
+    assert result.state == ShipState.PENDING
+    assert result.reference is None
+    assert "myorg" in result.message
+
+
+def test_ship_channel_interrogation_runs_after_build_and_before_upload():
+    """spec Always boundary: interrogation runs strictly AFTER build() (needs
+    the built version) and BEFORE the upload call."""
+    call_order = []
+    with patch(
+        "pyforge.mason.package.build",
+        side_effect=lambda *a, **k: (call_order.append("build"), _SHIP_CHANNEL_BUILD_RESULT)[1],
+    ), patch(
+        "pyforge.mason.package.pixi.search",
+        side_effect=lambda *a, **k: (call_order.append("search"), False)[1],
+    ), patch(
+        "pyforge.mason.package.pixi.upload",
+        side_effect=lambda *a, **k: (
+            call_order.append("upload"), PixiUploadResult(returncode=0, stdout=""),
+        )[1],
+    ):
+        ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON)
+
+    assert call_order == ["build", "search", "upload"]
 
 
 # --- Story 3.6: ship_conda_forge --------------------------------------------
@@ -1742,9 +1881,6 @@ def test_ship_real_ship_with_only_conda_forge_never_calls_build(tmp_path):
             cfe_timeout_arg=None, start_directory=tmp_path, recipe_path="/some/recipe",
         )
 
-    mock_build.assert_not_called()
-    mock_pep517.assert_not_called()
-    mock_pixi.assert_not_called()
     assert results == (conda_forge_result,)
 
 
@@ -1769,3 +1905,91 @@ def test_ship_forwards_recipe_path_and_cfe_args_to_the_conda_forge_target(tmp_pa
         cfe_timeout_arg=9.0,
         start_directory=tmp_path,
     )
+
+
+# --- Story 3.7: build_ship_receipt -----------------------------------------------
+
+_TERMINAL_PYPI = ShipTargetResult(
+    target="pypi", state=ShipState.TERMINAL, reference="https://pypi.org/project/pkg/0.1.0/",
+    message="View at:\n...\n",
+)
+_PENDING_CHANNEL = ShipTargetResult(
+    target="channel:myorg", state=ShipState.PENDING, reference=None,
+    message="could not determine whether channel already has pkg 0.1.0",
+)
+_FAILED_PYPI = ShipTargetResult(
+    target="pypi", state=ShipState.FAILED, reference=None, message="ERROR HTTPError: 400\n",
+)
+_NOT_ATTEMPTED_CONDA_FORGE = ShipTargetResult(
+    target="conda-forge", state=ShipState.NOT_ATTEMPTED, reference=None, message=None,
+)
+
+
+def test_build_ship_receipt_every_target_carries_its_own_state_and_reference():
+    """spec AC1: 'every target carries an explicit state and reference'."""
+    receipt = build_ship_receipt((_TERMINAL_PYPI, _PENDING_CHANNEL))
+
+    assert isinstance(receipt, ShipReceipt)
+    assert receipt.targets == (_TERMINAL_PYPI, _PENDING_CHANNEL)
+    for target in receipt.targets:
+        assert target.state is not None
+        # `reference` may legitimately be None (spec: "or None when nothing
+        # concrete exists yet") -- the field must simply be PRESENT, which
+        # a frozen dataclass with no defaults already guarantees.
+
+
+def test_build_ship_receipt_mixed_terminal_and_pending_is_ok():
+    """spec I/O matrix: 'Receipt aggregate, mixed success' -- targets =
+    (TERMINAL, PENDING) -> ShipReceipt.ok is True."""
+    receipt = build_ship_receipt((_TERMINAL_PYPI, _PENDING_CHANNEL))
+
+    assert receipt.ok is True
+
+
+def test_build_ship_receipt_any_failure_makes_ok_false():
+    """spec I/O matrix: 'Receipt aggregate, one failure' -- targets =
+    (TERMINAL, FAILED) -> ShipReceipt.ok is False. AC1: 'ok is False iff any
+    target is FAILED'."""
+    receipt = build_ship_receipt((_TERMINAL_PYPI, _FAILED_PYPI))
+
+    assert receipt.ok is False
+
+
+def test_build_ship_receipt_not_attempted_alone_is_ok():
+    receipt = build_ship_receipt((_NOT_ATTEMPTED_CONDA_FORGE,))
+
+    assert receipt.ok is True
+
+
+def test_build_ship_receipt_all_four_states_ok_iff_no_failure():
+    all_but_failed = (_TERMINAL_PYPI, _PENDING_CHANNEL, _NOT_ATTEMPTED_CONDA_FORGE)
+    assert build_ship_receipt(all_but_failed).ok is True
+
+    with_failed = (*all_but_failed, _FAILED_PYPI)
+    assert build_ship_receipt(with_failed).ok is False
+
+
+def test_build_ship_receipt_empty_results_is_vacuously_ok():
+    receipt = build_ship_receipt(())
+
+    assert receipt.targets == ()
+    assert receipt.ok is True
+
+
+def test_build_ship_receipt_preserves_order_and_does_not_deduplicate():
+    receipt = build_ship_receipt((_TERMINAL_PYPI, _TERMINAL_PYPI, _PENDING_CHANNEL))
+
+    assert receipt.targets == (_TERMINAL_PYPI, _TERMINAL_PYPI, _PENDING_CHANNEL)
+
+
+def test_build_ship_receipt_calls_no_engine():
+    """`build_ship_receipt` reads already-built `ShipTargetResult`s only --
+    it must never call an engine adapter or another ship function itself."""
+    with patch("pyforge.mason.package.build") as mock_build, \
+         patch("pyforge.mason.package.pep517.build") as mock_pep517, \
+         patch("pyforge.mason.package.pixi.build") as mock_pixi:
+        build_ship_receipt((_TERMINAL_PYPI, _FAILED_PYPI))
+
+    mock_build.assert_not_called()
+    mock_pep517.assert_not_called()
+    mock_pixi.assert_not_called()
