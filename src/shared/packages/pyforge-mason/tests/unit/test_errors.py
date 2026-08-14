@@ -30,7 +30,13 @@ Story 3.4 extends this file again with `ShipCredentialMissingError`/
 `ShipChannelCredentialMissingError`/`ShipChannelUploadTimeoutError`
 coverage, mirroring those two classes' own suites exactly in shape (this
 story's two classes are dedicated, not reused, because the PyPI-worded
-ones would print a factually wrong message for a channel failure)."""
+ones would print a factually wrong message for a channel failure).
+
+Story 4.1 extends this file again with `EnvironmentLockTimeoutError`
+coverage, mirroring `ShipUploadTimeoutError`'s own suite exactly in shape
+(identifier, stored `timeout`, message content, `MasonError` subclass-ness,
+`str()` format, deepcopy/pickle round-trip) -- only `condalock.lock()` ever
+raises it, so no second constructor argument is needed."""
 
 from __future__ import annotations
 
@@ -41,9 +47,10 @@ import pytest
 
 from pyforge.mason.errors import (
     CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError,
-    EngineAbsentError, InvalidShipTargetError, MasonError, PackageBuildTimeoutError,
-    PackageProjectPathError, PackageVersionMismatchError, ShipChannelCredentialMissingError,
-    ShipChannelUploadTimeoutError, ShipCredentialMissingError, ShipUploadTimeoutError,
+    EngineAbsentError, EnvironmentLockTimeoutError, InvalidShipTargetError, MasonError,
+    PackageBuildTimeoutError, PackageProjectPathError, PackageVersionMismatchError,
+    ShipChannelCredentialMissingError, ShipChannelUploadTimeoutError,
+    ShipCredentialMissingError, ShipUploadTimeoutError,
 )
 
 
@@ -926,6 +933,56 @@ def test_ship_channel_upload_timeout_error_survives_pickle_round_trip():
     original = ShipChannelUploadTimeoutError(timeout=300.0)
     clone = pickle.loads(pickle.dumps(original))
     assert isinstance(clone, ShipChannelUploadTimeoutError)
+    assert clone.timeout == original.timeout
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+# --- Story 4.1: EnvironmentLockTimeoutError -------------------------------------
+
+def test_environment_lock_timeout_error_identifier():
+    exc = EnvironmentLockTimeoutError(timeout=600.0)
+    assert exc.identifier == "environment:lock-timeout"
+
+
+def test_environment_lock_timeout_error_stores_attributes():
+    exc = EnvironmentLockTimeoutError(timeout=600.0)
+    assert exc.timeout == 600.0
+
+
+def test_environment_lock_timeout_error_message_names_the_timeout_value():
+    exc = EnvironmentLockTimeoutError(timeout=600.0)
+    assert "600.0" in str(exc)
+
+
+def test_environment_lock_timeout_error_is_a_mason_error():
+    assert issubclass(EnvironmentLockTimeoutError, MasonError)
+    with pytest.raises(MasonError):
+        raise EnvironmentLockTimeoutError(timeout=600.0)
+
+
+def test_environment_lock_timeout_error_str_format_is_identifier_colon_space_message():
+    exc = EnvironmentLockTimeoutError(timeout=45.5)
+    assert str(exc) == f"{exc.identifier}: {exc.message}"
+
+
+def test_environment_lock_timeout_error_survives_deepcopy():
+    """Mirrors `ShipUploadTimeoutError`'s own deepcopy guard: without the
+    `__reduce__` override, `cls(*self.args)` would reconstruct with
+    `timeout == "environment:lock-timeout"` (the identifier), corrupting
+    the clone instead of failing loudly."""
+    original = EnvironmentLockTimeoutError(timeout=600.0)
+    clone = copy.deepcopy(original)
+    assert isinstance(clone, EnvironmentLockTimeoutError)
+    assert clone.timeout == original.timeout
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+def test_environment_lock_timeout_error_survives_pickle_round_trip():
+    original = EnvironmentLockTimeoutError(timeout=600.0)
+    clone = pickle.loads(pickle.dumps(original))
+    assert isinstance(clone, EnvironmentLockTimeoutError)
     assert clone.timeout == original.timeout
     assert clone.identifier == original.identifier
     assert clone.message == original.message
