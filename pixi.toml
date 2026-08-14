@@ -121,6 +121,62 @@ dependencies.shellcheck = ">=0.10.0"
 platforms = ["linux-64", "osx-arm64-min"]
 dependencies.google-cloud-sdk = ">=579.0.0"
 
+[feature.python-agent-platform]
+# --- python-agent-platform (CAP-5, spec-python-agent-platform, Story 10.2) ---
+# The ONE environment that runs the three agentic engines (langflow, dbgpt,
+# dbgpt-serve) alongside Django on a single Python interpreter, sourced
+# entirely from this factory's own conda-forge feedstocks. Pins
+# `python = "3.12.*"` env-scoped ONLY -- no other feature/env in this file
+# changes its python floor; the rest of the repo stays on 3.14. Promotes the
+# operator-verified 373-package conda-native solve
+# (docs/dreams/enterprise-multi-agent-orchestration.md) into a first-class,
+# reproducible pixi env. Epic 11's engine-mounting stories and this epic's
+# own Story 10.3 (container image) both depend on this existing first.
+#
+# "Host deps" scope (Design Notes, spec-10-2): `fastapi` (Story 10.1's own
+# ASGI/FastAPI-integration seam, floor matches its pin exactly -- also
+# arrives transitively via langflow-base's own `fastapi >=0.135.0,<1.0.0`
+# run-dep, so the explicit pin only documents intent) and
+# `django-health-check` (Story 10.1's K8s liveness/readiness requirement,
+# CAP-1) as the Django-host-specific additions, plus `psycopg2` and
+# `redis-py` as the PostgreSQL/Redis client drivers the "infrastructure is
+# exactly PostgreSQL + Redis" constraint requires Django/Celery to actually
+# reach either backing service. Import-name gotcha: the conda-forge package
+# is named `redis-py`; it imports as `redis`.
+#
+# `redis-py >=6.0.0` also forces the solver off conda-forge's `slowapi`
+# (transitive via langflow -> langflow-base -> slowapi, which carries a
+# stale `run_constrained: redis-py >=3.4.1,<4.0.0`) and onto a relaxed
+# `slowapi 0.1.10` build already published on the `SelfExplainML` channel
+# (already in the workspace `channels` list above -- no channel change
+# needed). Expect `slowapi` from SelfExplainML in `pixi.lock`; that is
+# correct, not an error (see this story's Spec Change Log).
+#
+# `channel-priority = "flexible"` (feature-scoped, NOT touching [workspace]'s
+# implicit default of "strict" for every other feature/env): "strict" hard-
+# excludes an entire lower-priority channel the moment the higher-priority
+# channel has ANY build of a package name, so it would exclude SelfExplainML's
+# slowapi 0.1.10 outright even though conda-forge's own only build (0.1.9)
+# is infeasible against redis-py >=6.0.0 -- confirmed live (pixi 0.76.2):
+# `slowapi 0.1.10 is excluded because due to strict channel priority not
+# using this option from 'SelfExplainML'`. "flexible" is the mode that
+# actually implements the fallthrough this story's Change Log describes:
+# exhaust conda-forge's candidates first, only fall back to SelfExplainML
+# once conda-forge is exhausted.
+platforms = ["linux-64", "osx-arm64-min"]
+channel-priority = "flexible"
+
+[feature.python-agent-platform.dependencies]
+python = "3.12.*"                 # env-scoped python floor -- CAP-5's one interpreter; the rest of the repo stays on 3.14
+langflow = ">=1.11.2"             # agentic engine 1/3 (langflow-suite feedstock, python_min 3.11 -- compatible with our 3.12 floor)
+dbgpt = ">=0.8.1"                 # agentic engine 2/3 (db-gpt feedstock)
+dbgpt-serve = ">=0.8.1"           # agentic engine 3/3 (db-gpt feedstock)
+django = ">=5.2,<6"               # the host web framework the engines mount into (Epic 11)
+fastapi = ">=0.141.1"             # Story 10.1's ASGI/FastAPI-integration seam; also arrives transitively via langflow-base's fastapi >=0.135.0,<1.0.0 -- explicit pin documents intent
+django-health-check = ">=4.5.0"   # Story 10.1's K8s liveness/readiness requirement (CAP-1); needs django>=5.2, matching this env's floor -- a DIFFERENT install from Story 10.1's pip-pinned django-health-check==3.24.0
+psycopg2 = ">=2.9.12"             # PostgreSQL client driver -- "infrastructure is exactly PostgreSQL + Redis" constraint
+redis-py = ">=6.0.0"              # Redis client driver -- imports as `redis` (name gotcha); DO NOT relax this floor
+
 # --- pyforge-mason (Mason): pixi build workspace member (warden/doctor mirror, Story 1.1) --
 # Source + package manifest live in ./src/shared/packages/pyforge-mason (its own
 # [package] table, no [workspace]). One hatchling pyproject is the single Python
@@ -424,6 +480,11 @@ pyforge-marshal = { features = ["pyforge-marshal"], no-default-feature = true }
 # copied pins), so this tracks each station's deps automatically; it does
 # not curate or split any feature -- it only composes what already exists.
 pyforge-container = { features = ["pyforge-marshal", "pyforge-steward", "pyforge-atlas", "pyforge-warden", "pyforge-doctor", "pyforge-mason", "pyforge-herald", "pyforge-scribe"], no-default-feature = true }
+# python-agent-platform (CAP-5, Story 10.2, "one factory-sourced environment"):
+# no-default-feature keeps the fat default [dependencies] (python 3.14 + pixi
+# + conda + pip + uv) out, so this env pins python 3.12 env-scoped only --
+# every other environment in this file stays on its own declared floor.
+python-agent-platform = { features = ["python-agent-platform"], no-default-feature = true }
 
 [feature.local-recipes.activation]
 scripts = ["scripts/load-env.sh"]
@@ -1022,7 +1083,9 @@ conda-pypi = ">=0.11.0"           # Better PyPI interoperability for the conda e
 feedrattler = ">=0.3.14"          # Convert conda-forge feedstocks to rattler-build (v1) format
 ### Extensions Pixi - enabling all Python, C,C++, Rust, CMake Projects
 pixi = ">=0.76.2"                 # Pixi package & environment manager
-#pixitainer = ">=0.7.1"            # Containerize your Pixi workspace with a single command
+# pixitainer moved to [feature.local-recipes.target.linux-64.dependencies] (Story 10.2):
+# its own recipe is `build.skip: "not linux"`, so an unscoped placement here breaks
+# the win-64/osx-arm64-min solves.
 rattler-build = ">=0.72.2"        # Rust-native v1 conda recipe build engine
 pixi-build-rattler-build = ">=0.4.5"  # pixi build backend that delegates to rattler-build
 pixi-build-cmake = ">=0.4.5"      # pixi build backend for CMake projects
@@ -1286,6 +1349,10 @@ tmux = ">=3.7b_"                  # terminal multiplexer — bmad-loop spawns co
 ocrmypdf = ">=17.10.0"             # OCR text layer for scanned PDFs. linux-64 only here: ocrmypdf itself is
                                   # noarch, but hard-deps pngquant, which conda-forge ships only on
                                   # linux-64/osx-64 (no osx-arm64, no win-64).
+pixitainer = ">=0.8.3"             # Containerize your Pixi workspace with a single command. linux-64 only here:
+                                  # its own recipe is `build.skip: "not linux"` -- placing it in the cross-platform
+                                  # [feature.local-recipes.dependencies] table (its former, stale ">=0.7.1" home)
+                                  # breaks win-64/osx-arm64-min solves (Story 10.2, Story 10.3's pixitainer eval).
 
 [feature.local-recipes.target.win-64.dependencies]
 
