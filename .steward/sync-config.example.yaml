@@ -51,6 +51,20 @@ field_overrides: {}
 # field_overrides:
 #   status: jira
 
+# Jira status name -> GitHub status field value (AD-6/CAP-5: every status
+# value crossing into GitHub passes through this mapping; a non-null value
+# with no entry here is a hard, named `SyncUnmappedStatusError` -- never a
+# silent passthrough of the raw Jira status string). Only consulted on the
+# push_to_github write direction; push_to_jira already hard-fails via Jira's
+# own transition-name lookup. Both sides are operator-declared free text with
+# no fixed enum to validate keys/values against -- list every Jira status
+# name your workflow uses, mapped to the GitHub status value it should write.
+status_mapping: {}
+# status_mapping:
+#   "To Do": "To Do"
+#   "In Progress": "In Progress"
+#   "Closed": "Done"
+
 # GitHub login -> Jira accountId. Reserved for a future assignee-sync field
 # (the architecture's CAP-1 names status/assignee/identity-link; this story
 # wires status only -- see ARCHITECTURE-SPINE.md's Deferred section). Safe

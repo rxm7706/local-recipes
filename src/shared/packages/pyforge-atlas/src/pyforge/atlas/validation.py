@@ -66,6 +66,7 @@ import pandera.pandas as pa
 from kedro.framework.hooks import hook_impl
 
 from pyforge.atlas.a2a import AtlasAlert, Severity, build_alert_payload
+from pyforge.core.errors import PyforgeError
 
 logger = logging.getLogger(__name__)
 
@@ -95,13 +96,18 @@ class ContractViolation:
     evidence: dict[str, Any] = field(default_factory=dict)
 
 
-class DataContractViolation(RuntimeError):
+class DataContractViolation(PyforgeError, RuntimeError):
     """The native halting exception raised when a node output violates its contract.
 
     A plain ``RuntimeError`` subclass, deliberately: Dagster and kedro treat it as an
     ordinary run failure with NO special handling — the run halts and E2's
     ``on_pipeline_error`` (OL FAIL + span ERROR) fires naturally. It carries the
     structured ``violations`` and the emitted ``alert`` for inspection/tests.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``RuntimeError`` stays in the MRO (still isinstance
+    ``RuntimeError``, so Dagster/kedro's own untyped-failure handling is
+    unaffected).
     """
 
     def __init__(

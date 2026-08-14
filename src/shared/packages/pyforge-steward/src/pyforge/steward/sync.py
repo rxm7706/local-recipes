@@ -4,7 +4,8 @@ duty", mirrors `keys.py`/`deploy.py`/`budget.py`'s own precedent.
 Story 8.1 slice: the whole `sync` duty in one pass — `SyncConfig`/
 `SyncConfigError`/`load_config` (the non-secret, operator-declared mapping of
 GitHub project/field IDs, Jira base URL/project key/field IDs,
-`field_overrides`, and `user_mapping` that makes the engine board-agnostic), a
+`field_overrides`, `user_mapping`, and (Story 8.6) `status_mapping` that makes
+the engine board-agnostic), a
 GitHub GraphQL client and a Jira REST v3 client built on an injectable
 `transport` seam (a real `urlopen`-backed one by default, wrapping
 `.claude/skills/conda-forge-expert/scripts/_http.py`'s `open_url` — never a
@@ -25,8 +26,11 @@ Every outbound request's auth goes through `keys.HostScopedCredential`/
 `resolve_headers` → `_http.py`'s `auth_headers_for` (AD-8) — this module
 never builds its own credential/header logic. `SyncDuty` is the
 `Duty`-conforming adapter `cli.py`'s `resolve_duty("sync")` now returns,
-wiring `steward sync reconcile (--github-item ID | --jira-issue KEY)
-[--config PATH] [--dry-run]`.
+wiring `steward sync reconcile (--github-item ID | --jira-issue KEY |
+--schedule) [--config PATH] [--dry-run]` -- `--schedule` (Story 8.4)
+bulk-enumerates every linked item on the board and dispatches each through
+the same single-pair `reconcile` in one run (AD-1's default `trigger=
+schedule` operating mode).
 
 See ARCHITECTURE-SPINE.md's AD-5 (amended) and AD-10, and this story's own
 spec Design Notes ("Reconcile algorithm"), for the baseline-value mechanism
@@ -111,6 +115,7 @@ class SyncConfig:
     jira_baseline_field_id: str
     field_overrides: dict[str, str] = field(default_factory=dict)
     user_mapping: dict[str, str] = field(default_factory=dict)
+    status_mapping: dict[str, str] = field(default_factory=dict)
 
 
 def default_config_path() -> Path:
@@ -188,6 +193,21 @@ def load_config(path: str | Path) -> SyncConfig:
     if not isinstance(user_mapping, dict):
         raise SyncConfigError(f"{document_path}: 'user_mapping' must be a mapping")
 
+    status_mapping = document.get("status_mapping") or {}
+    if not isinstance(status_mapping, dict):
+        raise SyncConfigError(f"{document_path}: 'status_mapping' must be a mapping")
+    for jira_status, github_status in status_mapping.items():
+        # Type safety only -- never vocabulary validation (no closed set of
+        # valid status names exists to check against). Without this, a YAML
+        # gotcha (`Done: yes` -> `True`, `Done:` -> `None`) loads silently
+        # and only surfaces as a malformed GitHub GraphQL write instead of a
+        # named config-time `SyncConfigError`.
+        if not isinstance(jira_status, str) or not isinstance(github_status, str):
+            raise SyncConfigError(
+                f"{document_path}: 'status_mapping' keys and values must be strings "
+                f"(got {jira_status!r}: {github_status!r})"
+            )
+
     return SyncConfig(
         github_project_id=github_values["project_id"],
         github_status_field_id=github_values["status_field_id"],
@@ -199,6 +219,7 @@ def load_config(path: str | Path) -> SyncConfig:
         jira_baseline_field_id=jira_values["baseline_field_id"],
         field_overrides=dict(field_overrides),
         user_mapping=dict(user_mapping),
+        status_mapping=dict(status_mapping),
     )
 
 
@@ -218,6 +239,11 @@ class SyncAPIError(SyncError):
 class SyncUnlinkedError(SyncError):
     """An item has no identity-link value recorded pointing at its
     counterpart on the other side."""
+
+
+class SyncUnmappedStatusError(SyncError):
+    """A non-null status value crossing into GitHub has no `status_mapping`
+    entry."""
 
 
 class SyncBaselineTooLargeError(SyncError):
@@ -360,6 +386,31 @@ mutation($projectId: ID!, $itemId: ID!, $fieldId: ID!, $value: ProjectV2FieldVal
 }
 """
 
+# Story 8.4: `trigger=schedule` (AD-1, the architecture's default operating
+# mode) candidate-enumeration query -- ONE paginated GraphQL query over the
+# whole board, never one call per item. `ProjectV2.items(first, after)` is
+# GitHub's standard Relay-style connection; the caller follows
+# `pageInfo.hasNextPage`/`endCursor` until exhausted (see
+# `list_linked_github_items`).
+_LIST_PROJECT_ITEMS_QUERY = """
+query($projectId: ID!, $after: String) {
+  node(id: $projectId) {
+    ... on ProjectV2 {
+      items(first: 100, after: $after) {
+        nodes {
+          id
+          updatedAt
+        }
+        pageInfo {
+          hasNextPage
+          endCursor
+        }
+      }
+    }
+  }
+}
+"""
+
 
 def github_graphql_request(
     query: str, variables: dict[str, object], *, credential: HostScopedCredential, transport: TransportFn
@@ -408,18 +459,36 @@ class GitHubItemState:
     baseline: dict[str, object]
 
 
+def _parse_field_values(node: dict[str, object]) -> dict[str, str]:
+    """Parse a `ProjectV2Item` node's `fieldValues.nodes` connection into a
+    flat `{field_id: text}` map.
+
+    Every field is read as `ProjectV2ItemFieldTextValue` -- this story's
+    tracked/link/baseline GitHub fields are plain TEXT fields, never
+    GitHub's native single-select Status field (there is no
+    select-option-ID resolution anywhere in this module; the raw string
+    value is propagated 1:1, matching the Boundaries & Constraints' "Never
+    build a general status-vocabulary translation table").
+
+    Factored out of `get_project_item`'s own inline loop (Story 8.4). No
+    longer called by `list_linked_github_items` (Story 8.5) -- that
+    function's bulk listing no longer reads any field value, only `id`/
+    `updatedAt` per node.
+    """
+    field_values: dict[str, str] = {}
+    for entry in ((node.get("fieldValues") or {}).get("nodes") or []):
+        field_id = ((entry or {}).get("field") or {}).get("id")
+        text = (entry or {}).get("text")
+        if field_id is not None and text is not None:
+            field_values[field_id] = text
+    return field_values
+
+
 def get_project_item(
     item_id: str, *, config: SyncConfig, credential: HostScopedCredential, transport: TransportFn
 ) -> GitHubItemState:
     """Read a GitHub Projects V2 item's tracked status, link, and baseline
     field values.
-
-    Every field is read as `ProjectV2ItemFieldTextValue` -- this story's
-    tracked GitHub field is a plain TEXT field, never GitHub's native
-    single-select Status field (there is no select-option-ID resolution
-    anywhere in this module; the raw string value is propagated 1:1,
-    matching the Boundaries & Constraints' "Never build a general
-    status-vocabulary translation table").
 
     Raises `SyncAPIError` for a missing/malformed `data.node` -- never a raw
     `KeyError` escaping to `cli.main()`'s crash boundary.
@@ -436,12 +505,7 @@ def get_project_item(
     if node is None:
         raise SyncAPIError(f"GitHub project item {item_id}: not found")
 
-    field_values: dict[str, str] = {}
-    for entry in ((node.get("fieldValues") or {}).get("nodes") or []):
-        field_id = ((entry or {}).get("field") or {}).get("id")
-        text = (entry or {}).get("text")
-        if field_id is not None and text is not None:
-            field_values[field_id] = text
+    field_values = _parse_field_values(node)
 
     baseline_raw = field_values.get(config.github_baseline_field_id)
     return GitHubItemState(
@@ -450,6 +514,94 @@ def get_project_item(
         status=field_values.get(config.github_status_field_id),
         baseline=_parse_baseline(baseline_raw, side="github item", identifier=item_id),
     )
+
+
+def list_linked_github_items(
+    *, config: SyncConfig, credential: HostScopedCredential, transport: TransportFn
+) -> list[dict[str, object]]:
+    """Bulk, paginated candidate discovery for `trigger=schedule` (AD-1) --
+    enumerates EVERY item on the configured GitHub Projects V2 board, via
+    ONE new paginated GraphQL query (`_LIST_PROJECT_ITEMS_QUERY`), never one
+    call per item. Follows `pageInfo.hasNextPage`/`endCursor` until
+    exhausted.
+
+    A candidate is every deduplicated node the bulk listing returns --
+    candidacy is never gated on the link field (or any other field value);
+    only `id`/`updatedAt` are read per node. An item with no linked Jira
+    issue is still a candidate here, and is dispatched through `reconcile()`
+    like any other -- `reconcile()`'s own `_read_both_sides` re-reads the
+    item fresh and raises `SyncUnlinkedError` (Story 8.5, CAP-4 "fail loud,
+    fail alone") the moment it finds no link, which `reconcile_schedule_batch`
+    folds into that candidate's own failed entry without aborting the rest
+    of the batch. Candidacy is likewise never gated on the baseline (AD-10
+    rule 1: an absent baseline is a first link, not a loop candidate, and is
+    still reconciled) -- the baseline is never even read here. `updated_at`
+    is fetched and returned per candidate for observability only --
+    deliberately never used to filter candidacy: a Jira-only-originated
+    change never touches GitHub's `updatedAt`, and AD-5 treats a false
+    negative ("silently drops a change") as strictly worse than a false
+    positive ("one wasted read, converges to no_op"). See this story's
+    Design Notes for the full rationale.
+
+    Raises `SyncAPIError` for a missing/malformed `data.node.items` shape
+    (including `nodes`/`pageInfo` present but not list-/dict-shaped), a
+    null or malformed entry inside `items.nodes`, or a non-advancing
+    pagination cursor -- never a raw `KeyError`/`TypeError`/`AttributeError`
+    escaping to the caller, and never an infinite loop against a malformed
+    `pageInfo`. Mirrors `transition_jira_issue`'s own
+    `isinstance(transitions, list)` + per-entry `isinstance(..., dict)`
+    guard for the same class of "valid JSON, wrong shape" response.
+
+    Candidates are deduplicated by `github_item_id` within one call -- GitHub's
+    Relay-style pagination offers no guarantee against a repeated node if the
+    underlying connection mutates between page fetches, and a duplicate would
+    otherwise dispatch the same item twice in one batch.
+    """
+    candidates: list[dict[str, object]] = []
+    seen_item_ids: set[str] = set()
+    after: str | None = None
+    while True:
+        payload = github_graphql_request(
+            _LIST_PROJECT_ITEMS_QUERY,
+            {"projectId": config.github_project_id, "after": after},
+            credential=credential,
+            transport=transport,
+        )
+        try:
+            items_conn = payload["data"]["node"]["items"]
+            nodes = items_conn["nodes"]
+            page_info = items_conn["pageInfo"]
+            if not isinstance(nodes, list) or not isinstance(page_info, dict):
+                raise TypeError
+        except (KeyError, TypeError) as exc:
+            raise SyncAPIError(
+                f"GitHub project {config.github_project_id}: malformed response "
+                "(missing data.node.items)"
+            ) from exc
+
+        for node in nodes:
+            # A null or non-dict entry (e.g. a partial GraphQL error for one
+            # node) is skipped, not fatal -- one bad node must not drop
+            # every other candidate on the page, matching this story's own
+            # "one item's failure never aborts the batch" spirit.
+            if not isinstance(node, dict):
+                continue
+            item_id = node.get("id")
+            if item_id is None or item_id in seen_item_ids:
+                continue
+            seen_item_ids.add(item_id)
+            candidates.append({"github_item_id": item_id, "updated_at": node.get("updatedAt")})
+
+        if not page_info.get("hasNextPage"):
+            break
+        next_after = page_info.get("endCursor")
+        if next_after is None or next_after == after:
+            # A vendor response claiming more pages exist but not advancing
+            # the cursor -- treat as exhausted rather than loop forever.
+            break
+        after = next_after
+
+    return candidates
 
 
 def update_project_item_field(
@@ -824,17 +976,37 @@ def reconcile(
             details=details,
         )
 
+    # `github_write_value` defaults to `target_value` unchanged -- the
+    # `push_to_jira` and no_op paths never assign it, so they keep writing
+    # exactly what they write today. Only the `push_to_github` branch below
+    # translates it (AD-6/CAP-5: every status value crossing into GitHub
+    # passes through `status_mapping`; an unmapped value is a hard, named
+    # failure, never passed through).
+    github_write_value = target_value
     if decision != "no_op":
         try:
             if decision == "push_to_jira":
                 transition_jira_issue(
                     jira.issue_key, target_value, config=config, credential=jira_credential, transport=transport
                 )
-            else:
+            else:  # push_to_github
+                if target_value is None:
+                    # An explicit clear is not a status word to translate
+                    # (AD-10: an absent baseline key and an explicit null
+                    # mean opposite things) -- bypasses the mapping lookup.
+                    github_write_value = None
+                else:
+                    mapped = config.status_mapping.get(target_value)
+                    if mapped is None:
+                        raise SyncUnmappedStatusError(
+                            f"unmapped: jira status {target_value!r} has no status_mapping "
+                            "entry for github"
+                        )
+                    github_write_value = mapped
                 update_project_item_field(
                     gh.item_id,
                     config.github_status_field_id,
-                    target_value,
+                    github_write_value,
                     config=config,
                     credential=github_credential,
                     transport=transport,
@@ -846,9 +1018,14 @@ def reconcile(
     # already" no_op path and the real-push path reach this), because at
     # least one side diverged from ITS OWN prior baseline and every future
     # reconcile of this pair would otherwise see it as "changed" forever.
+    # The GitHub-side baseline records the TRANSLATED (actually-written)
+    # value -- `github_write_value`, never the raw `target_value` -- or the
+    # next reconcile's `gh.status != gh_base` comparison would permanently
+    # mismatch (a zero-loop regression, AD-5). The Jira-side baseline stays
+    # keyed on `target_value`: Jira's own value did not change.
     try:
         new_gh_baseline = _serialize_baseline(
-            {**gh.baseline, _TRACKED_FIELD: target_value},
+            {**gh.baseline, _TRACKED_FIELD: github_write_value},
             side="github",
             ceiling=_GITHUB_BASELINE_FIELD_CEILING,
         )
@@ -883,7 +1060,11 @@ def reconcile(
             summary=f"sync reconcile: {decision} but failed refreshing baseline: {exc}",
         )
 
-    details["baseline"] = {_TRACKED_FIELD: target_value}
+    # `github_write_value` (== `target_value` on every path except a
+    # translated push_to_github) so this returned detail matches what the
+    # GH-side baseline write above actually persisted, not the raw
+    # pre-translation status.
+    details["baseline"] = {_TRACKED_FIELD: github_write_value}
     return DutyResult(
         ok=True,
         summary=(
@@ -891,6 +1072,79 @@ def reconcile(
             f"(github={gh.item_id}, jira={jira.issue_key}); baseline refreshed"
         ),
         details=details,
+    )
+
+
+def reconcile_schedule_batch(
+    *, config: SyncConfig, dry_run: bool = False, transport: TransportFn | None = None
+) -> DutyResult:
+    """`trigger=schedule` (AD-1, the architecture's default operating mode):
+    bulk-enumerate every linked item on the GitHub Projects V2 board via
+    `list_linked_github_items`, then dispatch each candidate through the
+    existing, UNCHANGED single-pair `reconcile()` one at a time, aggregating
+    into ONE `DutyResult` (mirrors `reconcile()`'s own `details` convention
+    -- `SyncDuty.run()` calls this instead of `reconcile` when `--schedule`
+    is given).
+
+    Each candidate's `reconcile(...)` call is wrapped the same way
+    `SyncDuty.run()` already wraps its own single-pair call (`except
+    (OSError, urllib.error.URLError)`), so one candidate's raw transport
+    failure cannot abort the rest of the batch -- it is folded into that
+    candidate's own failed entry instead. Overall `ok` is `True` only if
+    every candidate's own result was `ok`.
+
+    This story never builds Jira-side (JQL) candidate discovery (GitHub is
+    the authoritative board per AD-4, and `reconcile()` already re-reads
+    BOTH sides fresh regardless of entry identifier). The "named, greppable
+    error for the broken item" refinement (FR-30 / Story 8.5, CAP-4 "fail
+    loud, fail alone") is closed by `list_linked_github_items` making every
+    board item a candidate -- an unlinked candidate's `reconcile()` call
+    raises `SyncUnlinkedError`, which `reconcile()` already catches (as any
+    other `SyncError`) and turns into an `ok=False` `DutyResult`, folded here
+    into that candidate's own failed entry exactly like any other failure,
+    without aborting the rest of the batch.
+    """
+    transport = transport or _default_transport
+    github_credential = HostScopedCredential(hosts=(_GITHUB_API_HOST,))
+
+    try:
+        candidates = list_linked_github_items(
+            config=config, credential=github_credential, transport=transport
+        )
+    except (SyncError, OSError, urllib.error.URLError) as exc:
+        return DutyResult(
+            ok=False,
+            summary=f"sync reconcile --schedule: failed enumerating candidates: {exc}",
+        )
+
+    entries: list[dict[str, object]] = []
+    for candidate in candidates:
+        github_item_id = candidate["github_item_id"]
+        try:
+            result = reconcile(
+                github_item_id=github_item_id, config=config, dry_run=dry_run, transport=transport
+            )
+        except (OSError, urllib.error.URLError) as exc:
+            result = DutyResult(ok=False, summary=f"sync reconcile: network error: {exc}")
+        entries.append(
+            {
+                "github_item_id": github_item_id,
+                "updated_at": candidate.get("updated_at"),
+                "ok": result.ok,
+                "summary": result.summary,
+            }
+        )
+
+    failed = [entry for entry in entries if not entry["ok"]]
+    ok_count = len(entries) - len(failed)
+    candidate_word = "candidate" if len(entries) == 1 else "candidates"
+    return DutyResult(
+        ok=not failed,
+        summary=(
+            f"sync reconcile --schedule: {len(entries)} {candidate_word}, "
+            f"{ok_count} ok, {len(failed)} failed"
+        ),
+        details={"candidates": entries},
     )
 
 
@@ -912,6 +1166,11 @@ class SyncDuty:
     handling -- is caught here too. Both are reported as duty-level
     failures, never conflated with an internal crash (AD-8 -- that boundary
     is `cli.main()`'s alone).
+
+    `--schedule` (Story 8.4, `trigger=schedule`, AD-1's default operating
+    mode) dispatches to `reconcile_schedule_batch` instead of the
+    single-pair `reconcile` -- everything else about this method (verb
+    dispatch, config load, the network-error catch) is shared verbatim.
     """
 
     name = "sync"
@@ -928,6 +1187,8 @@ class SyncDuty:
             return DutyResult(ok=False, summary=f"sync {verb}: {exc}")
 
         try:
+            if getattr(ns, "schedule", False):
+                return reconcile_schedule_batch(config=config, dry_run=getattr(ns, "dry_run", False))
             return reconcile(
                 github_item_id=getattr(ns, "github_item", None),
                 jira_issue_key=getattr(ns, "jira_issue", None),

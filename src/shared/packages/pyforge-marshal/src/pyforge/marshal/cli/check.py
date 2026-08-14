@@ -55,11 +55,11 @@ import json
 import sys
 from collections.abc import Mapping
 
-from ..adapters.process_posix import PosixProcess, ProcessError
+from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
+
 from ..core.context import MarshalContext
 from ..core.model import Finding, Severity, build_envelope
 from ..core.verdict import compute_verdict, exit_code_for
-from ..ports.process import ProcessPort
 from .config import _suppress_downstream_pipe_close, repo_root
 
 # The EXISTING, already-shipped repo-level detector registry (repo root,
