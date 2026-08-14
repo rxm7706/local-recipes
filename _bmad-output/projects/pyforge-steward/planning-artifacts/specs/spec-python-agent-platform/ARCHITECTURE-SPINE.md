@@ -118,6 +118,15 @@ bmad-drift baseline) reconciles in the same PR that adds or changes the env.
   existing copilot-bridge lineage for dev-time assistant/LLM needs; live engine flows still
   require an env-var-pointed model endpoint (never hardcoded).
 
+**Native-Windows sub-posture (no WSL2), verified 2026-08-14 by win-64 dry-run solves:** a
+plain-Windows + pixi seat covers Tier 0 fully and most of Tier 1 — the engine trio installs
+natively (langflow resolves to 1.10.2 on win-64; the 1.11.x lane does not close there yet)
+and `postgresql` 16 + `pgvector` solve natively, so real schema/`search_path`/pgvector work
+runs without WSL. `redis-server` has NO native win-64 build — `fakeredis` + eager-Celery
+stand in; a real Redis needs WSL2 or a remote. The bmad-loop machinery (tmux) is not native.
+Tier 2 is moot natively: Docker Desktop and Podman machine both arrive on a WSL2 backend, so
+containers on Windows imply WSL2 regardless.
+
 ## Local development tiers (AD-16 in practice)
 
 | Tier | Requires | Covers |
