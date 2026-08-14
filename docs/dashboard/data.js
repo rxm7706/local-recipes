@@ -3159,10 +3159,10 @@ window.DASHBOARD_DATA = {
         "phase": "dev",
         "attempt": "1",
         "startEpoch": 1786745569,
-        "median": 102,
-        "lo": 27,
+        "median": 82,
+        "lo": 1,
         "hi": 468,
-        "phaseAsOf": "2026-08-14 22:16 UTC"
+        "phaseAsOf": "2026-08-14 22:30 UTC"
       },
       "velocity": {
         "derived": true,
@@ -4246,7 +4246,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-14 22:16 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-14 22:30 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4491,10 +4491,12 @@ window.DASHBOARD_DATA = {
     {
       "slug": "django-accelerator-framework",
       "title": "A Django-service scaffolding engine, if this repo ever births new Django-based stations",
-      "status": "dreamt",
+      "status": "specified",
       "owner": "mason",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-django-accelerator-framework"
+      }
     },
     {
       "slug": "dream-to-code-model-self-verification",
@@ -5729,6 +5731,16 @@ window.DASHBOARD_DATA = {
       "updated": "2026-07-29",
       "dream": "db-gpt-packaging",
       "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-db-gpt-packaging"
+    },
+    {
+      "slug": "django-accelerator-framework",
+      "project": "pyforge-mason",
+      "title": "The Django accelerator is a contract today; the engine waits for a third surface",
+      "caps": 2,
+      "companions": 0,
+      "updated": "",
+      "dream": "django-accelerator-framework",
+      "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-django-accelerator-framework"
     },
     {
       "slug": "fleet-stewardship",
@@ -14120,18 +14132,18 @@ window.DASHBOARD_DATA = {
           }
         },
         "archived": false,
-        "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "dreamStatus": "specified",
+        "ownerDream": "django-accelerator-framework",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 0,
+        "openQuestions": 1,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -14148,8 +14160,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 4
+        "complete": 1,
+        "of": 3
       },
       {
         "label": "fleet-stewardship",
@@ -17206,7 +17218,7 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "green",
+        "state": "drift",
         "findings": 0,
         "verdict": "",
         "runbook": ""
@@ -17215,22 +17227,16 @@ window.DASHBOARD_DATA = {
         "name": "llms-full",
         "task": "llms-full-check",
         "guards": "library catalog freshness",
-        "state": "drift",
-        "findings": 34,
-        "verdict": "DRIFT: 34 finding(s). Reconcile by regenerating the catalog (prompt in its header), then re-run.",
+        "state": "green",
+        "findings": 0,
+        "verdict": "",
         "runbook": ""
       }
     ],
     "baseline": {
       "skill": "8.81.0",
-      "head": "3fd83c1aa1",
-      "deltas": [
-        {
-          "what": "pixi envs",
-          "baseline": "20",
-          "live": "21"
-        }
-      ],
+      "head": "4febffd7bf",
+      "deltas": [],
       "runbook": "_bmad-output/projects/pyforge-marshal/SYNC-RUNBOOK.md"
     }
   },
@@ -17241,14 +17247,6 @@ window.DASHBOARD_DATA = {
         "title": "Django, Langflow, and DB-GPT co-locate in one ASGI process without starving each other",
         "status": "dreamt",
         "owner": "steward",
-        "blockedOn": "",
-        "chain": {}
-      },
-      {
-        "slug": "django-accelerator-framework",
-        "title": "A Django-service scaffolding engine, if this repo ever births new Django-based stations",
-        "status": "dreamt",
-        "owner": "mason",
         "blockedOn": "",
         "chain": {}
       },
@@ -17320,8 +17318,8 @@ window.DASHBOARD_DATA = {
     "blocked": 0,
     "byOwner": {
       "steward": 2,
-      "mason": 4,
       "atlas": 1,
+      "mason": 3,
       "warden": 1,
       "herald": 2
     },
@@ -17860,15 +17858,15 @@ window.DASHBOARD_DATA = {
         "station": "mason",
         "total": 12,
         "counts": {
-          "dreamt": 4,
+          "dreamt": 3,
           "pitched": 0,
-          "specified": 2,
+          "specified": 3,
           "realized": 0,
           "archived": 4,
           "practice": 2
         },
         "line": "paused 4.2",
-        "load": 4,
+        "load": 3,
         "blocked": 0,
         "dreams": [
           {
@@ -17896,13 +17894,6 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-mason-recipe-validator",
             "title": "\"Dream — PyForge Mason: Recipe Validator\"",
             "status": "archived",
-            "type": "dream",
-            "blockedOn": ""
-          },
-          {
-            "slug": "django-accelerator-framework",
-            "title": "A Django-service scaffolding engine, if this repo ever births new Django-based stations",
-            "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
           },
@@ -17944,6 +17935,13 @@ window.DASHBOARD_DATA = {
           {
             "slug": "conda-forge-expert-rebuild",
             "title": "Rebuild conda-forge-expert as a Skill-Forge-authored skill, slice by slice",
+            "status": "specified",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "django-accelerator-framework",
+            "title": "A Django-service scaffolding engine, if this repo ever births new Django-based stations",
             "status": "specified",
             "type": "dream",
             "blockedOn": ""
@@ -20018,8 +20016,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260814-124446-18c2/10-1-the-host-renders-into-src-platform into loop/pyforge-steward (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-14 22:16 UTC",
-    "generatedEpoch": 1786745782
+    "generatedAt": "2026-08-14 22:30 UTC",
+    "generatedEpoch": 1786746614
   },
   "storySpecs": [
     {
@@ -20177,6 +20175,11 @@ window.DASHBOARD_DATA = {
             "slug": "spec-conda-forge-expert-rebuild",
             "status": "ready",
             "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md"
+          },
+          {
+            "slug": "spec-django-accelerator-framework",
+            "status": "draft",
+            "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-django-accelerator-framework/SPEC.md"
           }
         ],
         "done": 30,
