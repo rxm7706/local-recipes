@@ -2,7 +2,7 @@
 title: Marshal-driven landings are provably Marshal-driven
 type: dream
 owner: marshal
-status: dreamt
+status: realized
 ---
 
 # marshal land renders a detectable merge subject
@@ -54,3 +54,4 @@ GitHub PR merge again.
   pass 2 escalation (intent-gap finding 1): `marshal_native_merged_keys`'s
   own detection is correct, but `marshal land`'s merge strategy defeats it
   for its own landings.
+- **2026-08-14** — Realized — Story 5.10 (FR-187) shipped: `cli/land.py` renders the AD-24 templated subject through `ForgePort.merge_pr`. Status flipped and FR-187 backfilled into the PRD by the 2026-08-14 audit.

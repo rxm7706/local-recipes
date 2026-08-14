@@ -2,7 +2,7 @@
 title: A spike report is not a corrupt file, and the classifier can't yet tell the difference
 type: dream
 owner: doctor
-status: dreamt
+status: realized
 ---
 
 # A spike report is not a corrupt file, and the classifier can't yet tell the difference
@@ -82,3 +82,4 @@ follow a future Marshal story and repeat the identical shape.
   (the same treatment as Story 5.8) to route this class of gap through the Dream/Spec/story
   chain instead of a same-session classifier edit — `factory.py`'s `classify()` was
   deliberately left untouched pending the Spec/story.
+- **2026-08-14** — Realized — Story 6.11's implementation (commit `c9e59028ff`, stranded on its loop branch by a destructive rearm reset) landed via PR #491; the classifier recognizes the spike-report shape and the SPEC flipped to shipped in the same merge. Status flipped by the 2026-08-14 dream-backlog chain audit.

@@ -2,7 +2,7 @@
 title: FR-51's model tiering is fully wired and never turned on
 type: dream
 owner: marshal
-status: dreamt
+status: realized
 ---
 
 # FR-51's model tiering is fully wired and never turned on
@@ -126,3 +126,4 @@ first.
   Queued as a Dream rather than patched by hand — `core/policy.py`,
   `adapters/harness_bmadloop.py`, and `cli/spin.py` were deliberately left
   untouched pending the Spec/story chain.
+- **2026-08-14** — Realized — decomposed 2026-08-11 as Stories 3.11 (FR-182) and 3.12 (FR-183), both shipped and ledger-done; `marshal-policy.toml` now carries real `model_tier_map` entries. Status flipped and FR-182/183 backfilled into the PRD by the 2026-08-14 dream-backlog chain audit. Residual is operational adoption: stories declaring `difficulty:`.

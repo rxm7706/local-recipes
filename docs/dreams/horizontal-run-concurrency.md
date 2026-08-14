@@ -2,7 +2,7 @@
 title: One story in flight at a time, silently, by an upstream stub
 type: dream
 owner: marshal
-status: dreamt
+status: realized
 ---
 
 # One story in flight at a time, silently, by an upstream stub
@@ -106,3 +106,4 @@ whether, and how, more than one story could ever run inside one launch.
   entry names this gap. Queued as a Dream rather than patched by hand —
   `adapters/harness_bmadloop.py` and `upstream-register.json` were
   deliberately left untouched pending the Spec/story chain.
+- **2026-08-14** — Realized in its own declared scope — Story 3.13 (FR-184) shipped the loud advisory (`MRS-POLICY-007`), the `upstream-register.json` `parallel-fan-out` entry, and the readiness assessment. Actual concurrent dispatch stays parked by this dream's own constraint until upstream `bmad_loop` ships Phase 5; the register tracks that day. Status flipped by the 2026-08-14 audit.

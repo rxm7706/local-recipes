@@ -2,7 +2,7 @@
 title: Two ways to finish a story, and Marshal has only ever heard of one
 type: dream
 owner: marshal
-status: dreamt
+status: realized
 ---
 
 # Two ways to finish a story, and Marshal has only ever heard of one
@@ -147,3 +147,4 @@ Marshal noticing, after the fact, that someone already did.
   pending the Spec/story chain. Companion pain, same investigation, separate
   Dream (different subsystem, different epic):
   [`risk-tiered-review-depth.md`](risk-tiered-review-depth.md).
+- **2026-08-14** — Realized — Story 5.9 (FR-186) shipped `deploy reconcile-completions` with the documented `not-loop-native` label deviation (narrows toward true quick-dev as FR-187 subjects accumulate). Status flipped and FR-186 backfilled into the PRD by the 2026-08-14 audit.
