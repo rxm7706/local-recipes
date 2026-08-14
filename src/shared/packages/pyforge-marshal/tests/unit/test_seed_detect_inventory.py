@@ -147,6 +147,18 @@ def test_every_other_present_class_is_present_conformant_no_hash_check(tmp_path,
     assert _one(inventory) == Classification(entry_id="a", state=ArtifactState.PRESENT_CONFORMANT)
 
 
+def test_whole_file_entry_whose_path_is_a_directory_is_present_conformant(tmp_path):
+    """The module docstring states a present directory is simply present
+    for a whole-file class -- no recursive content comparison. Proven here
+    directly, distinct from the hybrid-managed-region directory case
+    (which is `present-divergent`, since a directory is never a readable
+    region-bearing file)."""
+    (tmp_path / "target_dir").mkdir()
+    manifest = _manifest(_whole_file("a", "target_dir", ArtifactClass.COPIED_MANAGED))
+    inventory = classify(manifest, tmp_path)
+    assert _one(inventory) == Classification(entry_id="a", state=ArtifactState.PRESENT_CONFORMANT)
+
+
 # --- hybrid-managed-region ------------------------------------------------
 
 
@@ -275,6 +287,23 @@ def test_entry_with_traversal_path_escaping_repo_root_is_absent(tmp_path):
         secret.write_text("outside the repo\n")
         relative_escape = os.path.relpath(secret, tmp_path)
         manifest = _manifest(_whole_file("a", relative_escape, ArtifactClass.COPIED_MANAGED))
+        inventory = classify(manifest, tmp_path)
+    assert _one(inventory) == Classification(entry_id="a", state=ArtifactState.ABSENT)
+
+
+def test_entry_path_through_a_symlink_escaping_repo_root_is_absent(tmp_path):
+    """A plain relative ``entry.path`` that resolves through an on-disk
+    symlink pointing outside ``repo_root`` is a more realistic escape
+    vector than a hand-crafted absolute/``../`` manifest string (a stray
+    symlink checked into a repo) -- ``Path.resolve()`` follows it, so
+    ``_resolve_within_repo``'s containment check already covers this, but
+    it was previously unproven by a test."""
+    with tempfile.TemporaryDirectory() as outside_dir:
+        secret = Path(outside_dir) / "secret.txt"
+        secret.write_text("outside the repo\n")
+        link = tmp_path / "link.txt"
+        link.symlink_to(secret)
+        manifest = _manifest(_whole_file("a", "link.txt", ArtifactClass.COPIED_MANAGED))
         inventory = classify(manifest, tmp_path)
     assert _one(inventory) == Classification(entry_id="a", state=ArtifactState.ABSENT)
 
@@ -415,6 +444,51 @@ def test_trailing_double_star_matches_everything_inside_the_prefix(tmp_path):
 
     assert "build/a.txt" not in inventory.tree
     assert "build/sub/b.txt" not in inventory.tree
+
+
+def test_bracket_character_class_excludes_matching_files(tmp_path):
+    """This repo's own root ``.gitignore`` uses bracket expressions
+    extensively (``*.py[cod]``, ``[Dd]ebug/``, dozens more) -- confirmed by
+    review to previously match NOTHING: a blanket ``re.escape`` turned
+    ``[cod]`` into a literal 5-character string no walked path ever
+    carries, so every one of those exclusions silently excluded nothing at
+    all."""
+    (tmp_path / ".gitignore").write_text("*.py[cod]\n")
+    (tmp_path / "mod.pyc").write_text("x\n")
+    (tmp_path / "mod.pyo").write_text("y\n")
+    (tmp_path / "mod.pyx").write_text("z\n")
+
+    inventory = classify(_manifest(), tmp_path)
+
+    assert "mod.pyc" not in inventory.tree
+    assert "mod.pyo" not in inventory.tree
+    assert "mod.pyx" in inventory.tree
+
+
+def test_negated_bracket_character_class_excludes_non_matching_files(tmp_path):
+    (tmp_path / ".gitignore").write_text("*.[!ch]\n")
+    (tmp_path / "a.o").write_text("x\n")
+    (tmp_path / "a.c").write_text("y\n")
+    (tmp_path / "a.h").write_text("z\n")
+
+    inventory = classify(_manifest(), tmp_path)
+
+    assert "a.o" not in inventory.tree
+    assert "a.c" in inventory.tree
+    assert "a.h" in inventory.tree
+
+
+def test_gitignore_with_only_comments_and_blank_lines_excludes_nothing(tmp_path):
+    """A present ``.gitignore`` that yields zero rules after filtering
+    comments/blank lines exercises a different branch than a missing
+    ``.gitignore`` (the file read succeeds, but every line is skipped) --
+    both must degrade to "nothing excluded"."""
+    (tmp_path / ".gitignore").write_text("# just a comment\n\n   \n")
+    (tmp_path / "kept.txt").write_text("x\n")
+
+    inventory = classify(_manifest(), tmp_path)
+
+    assert "kept.txt" in inventory.tree
 
 
 # --- tree shape --------------------------------------------------------

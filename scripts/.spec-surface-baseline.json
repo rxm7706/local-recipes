@@ -2534,7 +2534,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/derive/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/findings.py": "1ebf2815bda1987b8c9866c394201aa5b8b56b57",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/inventory.py": "ed3e714d11976576c7d2eccd7d724577c4a1740a",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/inventory.py": "b601cd8c78ad4469f4c6292e6caa854cb9ef9ef2",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/engine/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/migrate/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/model/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
@@ -2615,7 +2615,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_retire.py": "0743f7640ab885ec05d6211b844c4868a0fc898a",
    "src/shared/packages/pyforge-marshal/tests/unit/test_scope.py": "9a20cb228bc8fee3bf86588e89666d229da2001b",
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_detect_findings.py": "1f7048d9549705c2f9bcfb6bd27d3846d8798cc6",
-   "src/shared/packages/pyforge-marshal/tests/unit/test_seed_detect_inventory.py": "3870b7a96e3e58ec4bb79e30ca83040f53f880f1",
+   "src/shared/packages/pyforge-marshal/tests/unit/test_seed_detect_inventory.py": "1214d9aa288de302780d981d6f829a56ba915674",
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_model_artifact.py": "a330c82beee6b624e2c0ee3551393614839ae4a2",
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_model_manifest.py": "1d25f4458c251b5e5093e500b444a51f4610e797",
    "src/shared/packages/pyforge-marshal/tests/unit/test_seed_model_version.py": "94fc868245296eeabe46de4876e9c453926b75d2",
@@ -2636,7 +2636,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git.py": "c1d548b6f116e4fcda5124f30dab9b6cd891cb32",
    "src/shared/packages/pyforge-marshal/tests/unit/test_verdict.py": "18457557624771e5365d39d2c0c0df03b1ebc9e1"
   },
-  "memlog": "dabb301aadfce1b41d2e098f5fc01e25c1a9eaf0"
+  "memlog": "c1102b118a6f6712bcdfb9eb1a70a05928b51305"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},

@@ -177,12 +177,45 @@ class _GitignoreRule:
 def _translate_segment_to_regex(segment: str) -> str:
     """Translate one gitignore glob SEGMENT (no ``/`` inside it) to a regex
     fragment: ``*`` matches any run of characters except ``/``, ``?``
-    matches exactly one non-``/`` character, everything else is literal.
-    ``re.escape`` happens to escape both glob characters too (as
-    ``\\*``/``\\?``), so substituting those two escaped forms back out is
-    enough -- no character-by-character loop needed."""
-    escaped = re.escape(segment)
-    return escaped.replace(r"\*", "[^/]*").replace(r"\?", "[^/]")
+    matches exactly one non-``/`` character, a bracket expression
+    (``[abc]``, ``[a-z]``, ``[!abc]``/``[^abc]`` negated) becomes the
+    equivalent regex character class, everything else is literal.
+
+    Confirmed live against this repo's own root ``.gitignore``, which uses
+    bracket expressions extensively (``*.py[cod]``, ``[Dd]ebug/``,
+    ``[Ww][Ii][Nn]32/``, dozens more) -- a blanket ``re.escape`` (the
+    prior form) turns ``[cod]`` into a literal 5-character string nothing
+    ever matches, so every one of those exclusions silently matched
+    nothing at all. An unterminated ``[`` (no closing ``]``) falls back to
+    a literal ``[``, matching real gitignore's own tolerance for that
+    shape."""
+    pieces: list[str] = []
+    index = 0
+    length = len(segment)
+    while index < length:
+        char = segment[index]
+        if char == "*":
+            pieces.append("[^/]*")
+            index += 1
+        elif char == "?":
+            pieces.append("[^/]")
+            index += 1
+        elif char == "[":
+            negated = segment[index + 1 : index + 2] in ("!", "^")
+            search_from = index + 2 if negated else index + 1
+            end = segment.find("]", search_from)
+            if end == -1:
+                pieces.append(re.escape(char))
+                index += 1
+                continue
+            inner = segment[search_from:end]
+            inner = inner.replace("\\", "\\\\").replace("]", "\\]")
+            pieces.append(f"[{'^' if negated else ''}{inner}]")
+            index = end + 1
+        else:
+            pieces.append(re.escape(char))
+            index += 1
+    return "".join(pieces)
 
 
 def _translate_pattern_to_regex(pattern: str, *, anchored: bool) -> re.Pattern[str]:
@@ -380,9 +413,13 @@ def _classify_hybrid(entry: ManifestEntry, target: Path) -> ArtifactState:
     return ArtifactState.PRESENT_DIVERGENT
 
 
-def _resolve_within_repo(repo_root: Path, entry_path: str) -> Path | None:
+def _resolve_within_repo(repo_root: Path, resolved_root: Path, entry_path: str) -> Path | None:
     """Resolve ``entry_path`` against ``repo_root``, or ``None`` if the
-    result would escape it.
+    result would escape it. ``resolved_root`` is ``repo_root.resolve()``,
+    computed once by `classify` and threaded through -- re-resolving the
+    same fixed root on every manifest entry would repeat the same
+    filesystem lookup for no benefit, unlike `_walk_tree`'s own "walked
+    once, cached" tree, which is genuinely expensive to redo.
 
     ``ManifestEntry.path`` (``model/manifest.py``) validates only that the
     string is non-blank -- an absolute path (``/etc/hostname``) or a
@@ -396,14 +433,13 @@ def _resolve_within_repo(repo_root: Path, entry_path: str) -> Path | None:
     path resolves outside it is never "present" from this module's own
     vantage point, regardless of what exists elsewhere on the host --
     `_classify_entry` treats a ``None`` result the same as ``ABSENT``."""
-    resolved_root = repo_root.resolve()
     candidate = (repo_root / entry_path).resolve()
     if candidate != resolved_root and resolved_root not in candidate.parents:
         return None
     return candidate
 
 
-def _classify_entry(entry: ManifestEntry, repo_root: Path) -> ArtifactState:
+def _classify_entry(entry: ManifestEntry, repo_root: Path, resolved_root: Path) -> ArtifactState:
     """One entry's state, per its ``artifact_class`` -- always against a
     DIRECT filesystem check on ``entry.path``, never merely against
     `_walk_tree`'s `Inventory.tree` (the explicit-target carve-out)."""
@@ -411,7 +447,7 @@ def _classify_entry(entry: ManifestEntry, repo_root: Path) -> ArtifactState:
         # Not materialized (`model/artifact.py`'s own `CLASS_BEHAVIOR`) --
         # nothing in the repo tree to inspect.
         return ArtifactState.PRESENT_CONFORMANT
-    target = _resolve_within_repo(repo_root, entry.path)
+    target = _resolve_within_repo(repo_root, resolved_root, entry.path)
     if target is None or not target.exists():
         return ArtifactState.ABSENT
     if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION:
@@ -430,8 +466,9 @@ def classify(manifest: Manifest, repo_root: Path) -> Inventory:
     Read-only throughout: no write, no subprocess, no network call
     anywhere in this call graph."""
     tree = _walk_tree(repo_root)
+    resolved_root = repo_root.resolve()
     classifications = tuple(
-        Classification(entry_id=entry.id, state=_classify_entry(entry, repo_root))
+        Classification(entry_id=entry.id, state=_classify_entry(entry, repo_root, resolved_root))
         for entry in manifest.entries
     )
     return Inventory(repo_root=repo_root, tree=tree, classifications=classifications)
