@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 59
+# stories: 76
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -21,6 +21,17 @@ development_status:
   1-5-the-operator-can-see-every-credential-steward-knows-about-never-a-secret-value: done
   1-6-the-operator-can-ask-is-anything-host-unscoped-right-now-and-get-a-real-answer: done
   1-7-retiring-a-credential-leaves-a-record-not-a-silent-gap: done
+  10-1-the-host-renders-into-src-platform: backlog
+  10-2-one-factory-sourced-environment: backlog
+  10-3-one-image-both-engines: backlog
+  10-4-the-bcrypt-pin-stops-blocking-3-14: backlog
+  11-1-langflow-joins-as-a-pluggable-app: backlog
+  11-2-db-gpt-joins-as-a-pluggable-app: backlog
+  11-3-async-work-never-blocks-django: backlog
+  11-4-isolation-and-statelessness-proven: backlog
+  12-1-the-vanilla-chart-with-an-ocp-overlay: backlog
+  12-2-gke-as-a-portability-profile: backlog
+  12-3-air-gap-parity-is-a-failing-check: backlog
   2-1-the-dashboard-builds-through-steward-not-a-bare-pixi-task-the-operator-has-to-remember: done
   2-2-nothing-happens-unless-something-actually-changed: done
   2-3-the-operator-can-see-what-would-change-before-it-changes: done
@@ -57,6 +68,12 @@ development_status:
   9-7-hosted-or-static-no-fork: done
   epic-1: done
   epic-1-retrospective: optional
+  epic-10: backlog
+  epic-10-retrospective: optional
+  epic-11: backlog
+  epic-11-retrospective: optional
+  epic-12: backlog
+  epic-12-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
   epic-3: done
@@ -69,7 +86,7 @@ development_status:
   epic-6-retrospective: optional
   epic-7: done
   epic-7-retrospective: optional
-  epic-8: in-progress
+  epic-8: done
   epic-8-retrospective: optional
-  epic-9: backlog
+  epic-9: done
   epic-9-retrospective: optional

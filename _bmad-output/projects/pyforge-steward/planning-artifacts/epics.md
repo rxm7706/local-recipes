@@ -804,3 +804,129 @@ isolation is removed** — a suite that cannot fail is a failing suite; the cach
 **Surface:** static-export path
 **Given** a board needing no isolation **Then** the same definition publishes as a static
 GitHub-Pages site — mutually exclusive with role isolation, never a second codebase.
+
+## Epic 10: python-agent-platform — the host takes root
+
+**Spec binding.** Decomposes `spec-python-agent-platform` (this station's specs/ dir; all
+open questions resolved 2026-08-14, operator: OCP-first with GKE as a CI portability profile;
+in-repo at `src/platform/` per the monorepo goal; ship on py3.12 with py3.14 as a release
+gate; Docker AND Podman with rootless Podman as the reference posture). Stories cite CAP-1..6
+directly — the Spec is the contract; no new FR numbers are minted. Story 10.4 is conda-forge
+feedstock work and per the repo's Rule 1 its dev session MUST invoke the
+`conda-forge-expert` skill; it is the py3.14 unblocker and rides in parallel (no deps).
+
+### Story 10.1: The host renders into src/platform
+**Type:** foundation • **Effort:** L • **Deps:** none • **FR/AD:** spec-python-agent-platform CAP-1
+**Surface:** `src/platform/` (new), `.github/workflows/` (platform CI, paths-filtered)
+**Given** the cookiecutter-django render (parameters pinned in the story spec: root
+`src/platform/`, FastAPI integration on, `env()`-split settings, PostgreSQL + Redis only)
+**Then** `src/platform/manage.py check` passes against PostgreSQL + Redis with no other
+infrastructure, health endpoints exist for K8s probes, static assets are vendored zero-CDN,
+and platform CI runs `working-directory: src/platform` filtered on `paths: [src/platform/**]`
+— factory detector jobs and platform jobs never pay for each other. The factory/platform
+boundary is enforced: no `pyforge.*` import anywhere under `src/platform/` (a lint/test
+asserts it).
+
+### Story 10.2: One factory-sourced environment
+**Type:** infra • **Effort:** M • **Deps:** none • **FR/AD:** spec-python-agent-platform CAP-5
+**Surface:** `pixi.toml`, `environment.yaml`, `docs/reference/library-llms-full.md`, drift baseline
+**Given** a new `[feature.python-agent-platform]` + env pinning `python = "3.12.*"`
+env-scoped (rest of repo stays 3.14) with langflow, dbgpt, dbgpt-serve, django and host deps
+from conda-forge **Then** `pixi install -e python-agent-platform` solves reproducibly, and
+the SAME story owns the known env-count reconcile ripple end-to-end: `pixi project export
+conda-environment -e build > environment.yaml`, llms-full catalog regeneration (new deps +
+the now-uncommented `pixitainer` pin — its conda-forge feedstock exists), bmad-drift
+count/doc reconcile and `python scripts/bmad_drift_check.py --write-baseline` (files
+`git add`-ed BEFORE stamping). A green story leaves every detector no redder than it found it.
+
+### Story 10.3: One image, both engines
+**Type:** infra • **Effort:** L • **Deps:** S-10.1, S-10.2 • **FR/AD:** spec-python-agent-platform CAP-6
+**Surface:** `src/platform/Containerfile`, `src/platform/compose/`, platform CI
+**Given** a UBI-minimal-based multi-stage Containerfile whose environment layer is generated
+from the pixi env **Then** the image builds under BOTH `docker build` and `podman build`
+(secret mounts only via the `--mount=type=secret` form both honor; OCI manifests; no
+Docker-only extensions), runs rootless (arbitrary-UID clean — the OCP `restricted-v2`
+predictor), and CI exercises both engines. **Pixitainer evaluation is a named AC:** attempt
+the env→layer step with `pixitainer`/`pixitainer-docker` (conda-forge feedstock available)
+and record a dated verdict in the Spec — adopted for the layer, adopted dev-only, or
+rejected with the reason; hand-rolled multi-stage is the fallback, not the default
+assumption.
+
+### Story 10.4: The bcrypt pin stops blocking 3.14
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** spec-python-agent-platform CAP-5 (release gate)
+**Surface:** langflow-feedstock (maintainer flow), upstream langflow issue
+**Given** langflow-base's `bcrypt ==4.0.1` pin (upstream main re-verified 2026-08-14, pinned
+beside `passlib>=1.7.4`) **Then** two lanes run: (a) the upstream ask — an issue/PR proposing
+langflow drop passlib (direct `bcrypt` or `pwdlib`); (b) the runtime-validated feedstock
+loosening — `bcrypt >=4.0.1,<5` with a build-number bump whose recipe test exercises the
+REAL API-key/password-hashing path under bcrypt ≥4.1 (an import check is insufficient),
+via the local-mirror-first maintainer flow (edit `recipes/`, build locally, push, request
+rerender). Dev session invokes `conda-forge-expert` (Rule 1). Success: a py3.14 solve of
+langflow + dbgpt + django completes cleanly.
+
+## Epic 11: The engines join as pluggable apps
+
+**Spec binding.** CAP-2, CAP-3, CAP-4 and the isolation/statelessness constraints of
+`spec-python-agent-platform`. Pattern A per the plugin dreams ([[langflow-django-plugin]],
+[[db-gpt-django-plugin]]); a sidecar fallback requires a dated deviation in the Dream first.
+
+### Story 11.1: Langflow joins as a pluggable app
+**Type:** feature • **Effort:** L • **Deps:** S-10.1, S-10.2 • **FR/AD:** spec-python-agent-platform CAP-2
+**Surface:** `src/platform/langflow_integration/`
+**Given** the `langflow_integration` app **Then** an ASGI dispatcher mounts Langflow's app at
+`/api/v1/`, `/health`, `/langflow/`; a `RunSQL` migration provisions `langflow_schema`;
+`LANGFLOW_DATABASE_URL` carries the `search_path` suffix; no local-disk state path survives;
+and a flow executes end-to-end through the mount with its tables provably confined to
+`langflow_schema`.
+
+### Story 11.2: DB-GPT joins as a pluggable app
+**Type:** feature • **Effort:** L • **Deps:** S-10.1, S-10.2 • **FR/AD:** spec-python-agent-platform CAP-3
+**Surface:** `src/platform/dbgpt_integration/`
+**Given** the `dbgpt_integration` app **Then** a Django data migration provisions
+`dbgpt_schema` (Django ORM never crosses in; DB-GPT's Alembic never touches `public`);
+`DBGPT_SESSION_STORAGE_TYPE=db` plus disabled local paths make the container genuinely
+ephemeral; the dispatcher routes `/api/dbgpt/` (stripped); pgvector lives in the SAME
+PostgreSQL if a vector store is needed; a text-to-SQL round-trip succeeds through the mount.
+
+### Story 11.3: Async work never blocks Django
+**Type:** feature • **Effort:** M • **Deps:** S-11.1, S-11.2 • **FR/AD:** spec-python-agent-platform CAP-4
+**Surface:** `src/platform/config/celery*`, worker wiring
+**Given** Celery over Redis **Then** LLM/AWEL work dispatches to workers that call the
+engines internally (never through the public edge), the host stays responsive under a
+long-running agent task, and the new failure mode (timeout / partial result) is named and
+handled, not discovered.
+
+### Story 11.4: Isolation and statelessness proven
+**Type:** test • **Effort:** L • **Deps:** S-11.1, S-11.2 • **FR/AD:** spec-python-agent-platform CAP-2, CAP-3 (success clauses)
+**Surface:** `src/platform/tests/`
+**Given** the proof suite **Then** schema inspection asserts each engine's tables live only
+in its schema; a container-replacement simulation (kill + fresh start) loses no flow, no
+session, no state; and the suite fails loudly if isolation or statelessness is removed — a
+suite that cannot fail is a failing suite (the 9.6 discipline).
+
+## Epic 12: Deploy anywhere, including nowhere-connected
+
+**Spec binding.** CAP-6 and the Q1 resolution (OCP first, GKE as a CI portability profile
+over a vanilla-Kubernetes core chart).
+
+### Story 12.1: The vanilla chart with an OCP overlay
+**Type:** infra • **Effort:** L • **Deps:** S-10.3 • **FR/AD:** spec-python-agent-platform CAP-1, CAP-6
+**Surface:** `src/platform/deploy/`
+**Given** a Helm chart of plain Deployment/Service/Ingress (or Gateway API) resources plus a
+thin OCP Route overlay **Then** the platform deploys onto a namespace carrying only
+PostgreSQL, Redis and the platform image; the image passes `restricted-v2` (arbitrary UID,
+no root); and nothing in the core chart is OCP-specific.
+
+### Story 12.2: GKE as a portability profile
+**Type:** infra • **Effort:** S • **Deps:** S-12.1 • **FR/AD:** spec-python-agent-platform CAP-6 (portability clause)
+**Surface:** platform CI
+**Given** the same chart **Then** a CI smoke profile deploys it against a GKE-shaped target
+(kind or equivalent) with the Ingress path — a profile, never a second implementation.
+
+### Story 12.3: Air-gap parity is a failing check
+**Type:** test • **Effort:** L • **Deps:** S-10.3, S-12.1 • **FR/AD:** spec-python-agent-platform CAP-6
+**Surface:** platform CI, mirror-only channel config
+**Given** a build + deploy executed with external egress blocked **Then** it succeeds
+end-to-end — image from an internal/local registry, lockfile resolved from mirror-only
+channels, zero CDN references in served assets, credentials via secret mounts only — and any
+external reference is a FAILING check, not a warning.
