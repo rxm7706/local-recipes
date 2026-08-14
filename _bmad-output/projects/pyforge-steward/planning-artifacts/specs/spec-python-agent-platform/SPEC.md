@@ -93,6 +93,13 @@ thing. The operator named it: **python-agent-platform**.
   issues upstream, it never forks the engines.
 - **Always:** a per-engine sidecar container is admissible ONLY on demonstrated pluggability
   failure (dependency or lifecycle isolation), recorded as a dated deviation in the Dream.
+- **Always:** images build and run under BOTH Docker and Podman (operator, 2026-08-14) — the
+  Containerfile stays in the engines' intersection (secret mounts via the
+  `--mount=type=secret` form both BuildKit and `podman build --secret`/buildah honor; OCI
+  manifests; no Docker-only extensions), local compose works under both `docker compose` and
+  `podman-compose`, and **rootless Podman is the reference posture** — it enforces the same
+  arbitrary-UID discipline OCP's `restricted-v2` demands, so passing rootless Podman locally
+  predicts passing the first deployment target. CI exercises both engines, not one.
 
 ## Non-goals
 
