@@ -41,9 +41,9 @@ development_status:
   3-5-the-channel-name-ship-target: done
   3-6-the-conda-forge-ship-target: done
   3-7-asymmetric-receipts-partial-failure-and-idempotence: done
-  3-8-mason-ships-mason: backlog
+  3-8-mason-ships-mason: done
   3-9-the-ship-verb-and-testpypi-rehearsal: done
-  4-1-lock-engine-adapter-and-provenance: backlog
+  4-1-lock-engine-adapter-and-provenance: done
   4-2-manifest-discovery: backlog
   4-3-mason-environment-lock: backlog
   4-4-mason-environment-check: backlog
