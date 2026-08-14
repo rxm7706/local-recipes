@@ -606,3 +606,38 @@ class ShipChannelUploadTimeoutError(MasonError):
         # "ship:channel-upload-timeout", <built message>)` -- the wrong
         # value for this class's own `(timeout,)` constructor.
         return (self.__class__, (self.timeout,))
+
+
+class EnvironmentLockTimeoutError(MasonError):
+    """A `engines.condalock.lock()` invocation exceeded its mandatory
+    timeout (Story 4.1, FR-29, AD-25, NFR-14) -- mirrors
+    `ShipUploadTimeoutError`'s own shape and rationale exactly; only the
+    wrapped subprocess boundary differs (`engines.condalock.lock`'s own
+    `subprocess.run(timeout=...)` rather than `engines.twine.upload`'s).
+
+    `subprocess.run`'s own `timeout=` kill-and-reap-before-raising behaviour
+    is what guarantees "no orphaned process" here -- this class only names
+    the failure; it does not itself do any process cleanup. `timeout` is the
+    number of seconds that elapsed before the child was killed, echoed
+    verbatim into the message. v1 exposes no per-lock timeout override (spec
+    Never boundary) -- the message says so rather than pointing at a knob
+    that does not exist. Only `condalock.lock()` ever raises this error, so
+    -- unlike `PackageBuildTimeoutError`'s `engine` argument -- no second
+    constructor argument is needed to disambiguate which engine timed out.
+    """
+
+    def __init__(self, timeout: float) -> None:
+        self.timeout = timeout
+        message = (
+            f"the environment lock did not complete within {timeout}s and was "
+            "killed; this is not a currently configurable v1 knob"
+        )
+        super().__init__("environment:lock-timeout", message)
+
+    def __reduce__(self):
+        # Mirrors `ShipUploadTimeoutError.__reduce__` above:
+        # `Exception.__reduce__` reconstructs via `cls(*self.args)`, and
+        # `MasonError.__init__` sets `self.args = (
+        # "environment:lock-timeout", <built message>)` -- the wrong value
+        # for this class's own `(timeout,)` constructor.
+        return (self.__class__, (self.timeout,))
