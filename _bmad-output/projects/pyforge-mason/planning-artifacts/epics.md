@@ -1462,3 +1462,10 @@ from this decision. **Deps:** S-6.3.
    touching `src/shared/packages/pyforge-mason/**`; rebuild-effort commits are governed by
    `spec-conda-forge-expert-rebuild`'s own gates, outside this check.
 
+## Standing contracts (no stories until their triggers fire)
+
+- **spec-django-accelerator-framework** (2026-08-14): the accelerator CONTRACT every PyForge
+  Django surface renders to — CAP-1 documented with two conforming realizations
+  (python-agent-platform's `src/platform/` render, Story 10.1; steward's dashboard); CAP-2
+  (the templating engine) explicitly parked on the dream's own third-surface trigger. No
+  stories are minted here until that trigger fires — this entry is the chain reference.
