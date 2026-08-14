@@ -3589,7 +3589,7 @@
  },
  "pyforge-steward/spec-pyforge-steward": {
   "files": {
-   ".steward/sync-config.example.yaml": "a7910c5667d566231625582744938a2f6f62ce54",
+   ".steward/sync-config.example.yaml": "359543cf281477d44c712d25ed35b06d14f86540",
    "docs/reference/library-llms-full.md": "42f4d74a33941c27a2ee8aa857fb081c62016391",
    "scripts/llms_full_check.py": "b4be3162567293d6ac0cdbd466c4cac3dad35df9",
    "src/shared/packages/pyforge-steward/.gitignore": "be289b476d44528c782051711aa069c09adb1255",
@@ -3617,7 +3617,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/interfaces.py": "58334410924556f3fd5ec6ac5e6f0e3d46ffeace",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/keys.py": "5e711634d520c468d46038dcb0bbcb37e360bf00",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py": "fd72d6a13afd5619eef54f8b1bbdff96298bc10a",
-   "src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py": "2240f685a7c29cb845d57957888a0c21bf111b51",
+   "src/shared/packages/pyforge-steward/src/pyforge/steward/sync.py": "7d57f930717bc8e07b1819d8de5459511cb5e3d2",
    "src/shared/packages/pyforge-steward/tests/conformance/fixtures/plaintext_secret_candidate/leaked_key.txt": "3032a639b61ac7dd31b029c4549d8645ed0fa497",
    "src/shared/packages/pyforge-steward/tests/conformance/fixtures/ungated_jfrog_auth.py": "cf6abdd3b6404f31b7a975e0d83126995e884197",
    "src/shared/packages/pyforge-steward/tests/conformance/test_budget_check.py": "ed576f53666e0749eeefd683318ad153554f4f81",
@@ -3645,9 +3645,9 @@
    "src/shared/packages/pyforge-steward/tests/conformance/test_provision_module.py": "34bece59d45adfd29ff4d4bc2d15c028f551cc96",
    "src/shared/packages/pyforge-steward/tests/conformance/test_provision_runner.py": "822b18464dc8fd7d56f54f11efd19424246d9ee7",
    "src/shared/packages/pyforge-steward/tests/conformance/test_provision_verify.py": "98fb32651cd8f05062278a3a341e1a13fc0f75b6",
-   "src/shared/packages/pyforge-steward/tests/conformance/test_sync_config.py": "9dd8cadf8a297e6539c0ea04c46fff6988f3cf34",
+   "src/shared/packages/pyforge-steward/tests/conformance/test_sync_config.py": "b0a89166fa475d19a2f05cca49d3ca24851232a9",
    "src/shared/packages/pyforge-steward/tests/conformance/test_sync_duty.py": "ea54f6a1f1f0c08c820d2dff601b3c2bb2ed24f7",
-   "src/shared/packages/pyforge-steward/tests/conformance/test_sync_reconcile_propagation.py": "e2ec8d3b21f4015a457eb4dfa26b0b91693c930d",
+   "src/shared/packages/pyforge-steward/tests/conformance/test_sync_reconcile_propagation.py": "7448572d0d78528a8c7b151d4c69d307ef3016f8",
    "src/shared/packages/pyforge-steward/tests/meta/test_invariants.py": "ee8c99ec4e222db4b31abfcec052e881e0677817",
    "src/shared/packages/pyforge-steward/tests/unit/test_cli.py": "8f72bad2abf3ff2cda19faaf34da34123e07d3ef",
    "src/shared/packages/pyforge-steward/tests/unit/test_dashboard_audit.py": "f34121d38da67e52d6e28458cea986167008ef91",
@@ -3660,7 +3660,7 @@
    "src/shared/packages/pyforge-steward/tests/unit/test_dashboard_navigation.py": "38d5df19cd1f647006c403d898f915cea3b1a145",
    "src/shared/packages/pyforge-steward/tests/unit/test_dashboard_views.py": "7ef4cc1726c2006f7f22692e7b20250e5188220b"
   },
-  "memlog": "24632c5acd15330d7242d749d59a0e70f63e134b"
+  "memlog": "9e95d1ba7b0adec1e20850f6bfe05b05a2ed8982"
  },
  "pyforge-steward/spec-pyforge-steward-feedstock-maintenance": {
   "files": {},
