@@ -196,7 +196,43 @@ def test_conda_forge_ship_ready_never_raises_when_the_root_tilde_cannot_expand()
     report = _build(root, _INTERPRETER, missing=())
 
     assert report.conda_forge_ship_ready is False
-    assert report.conda_forge_ship_blockers == ("~nosuchuser9/cfe/recipes is not a directory",)
+    assert len(report.conda_forge_ship_blockers) == 1
+    assert report.conda_forge_ship_blockers[0].startswith(
+        "the CFE root ~nosuchuser9/cfe cannot be resolved: ",
+    )
+
+
+def test_an_unresolvable_root_is_not_reported_as_a_missing_recipes_directory():
+    """Follow-up review pass, 2026-08-13: a root that cannot be expanded at
+    all used to fall back to the raw spelling and report `~nosuchuser9/cfe/
+    recipes is not a directory` -- naming a cause that was not the real one,
+    and implying a remedy (create that directory) impossible at a path that
+    cannot exist. In the one command whose entire job is diagnosis, a
+    confidently wrong cause is worse than a vague one."""
+    root = ResolvedCfeRoot(root=Path("~nosuchuser9/cfe"), step=STEP_FLAG)
+
+    report = _build(root, _INTERPRETER, missing=())
+
+    assert not any(
+        "is not a directory" in blocker for blocker in report.conda_forge_ship_blockers
+    )
+
+
+def test_conda_forge_ship_ready_is_false_when_the_import_floor_is_incomplete(tmp_path):
+    """Follow-up review pass, 2026-08-13 (Edge Case Hunter): both D-10
+    preconditions can be met while the import floor is incomplete, and
+    `ship_conda_forge` delegates to `recipe.py::submit()` -- the very verb
+    `unavailable_verbs` already reports as unavailable for that same reason.
+    Without this blocker one report answered the same question two ways:
+    `conda_forge_ship_ready=True` beside `unavailable_verbs=("recipe",)`."""
+    (tmp_path / "recipes").mkdir()
+    root = ResolvedCfeRoot(root=tmp_path, step=STEP_CWD_WALK)
+
+    report = _build(root, _INTERPRETER, missing=("conda_build",))
+
+    assert report.unavailable_verbs == ("recipe",)
+    assert report.conda_forge_ship_ready is False
+    assert any("conda_build" in blocker for blocker in report.conda_forge_ship_blockers)
 
 
 def test_conda_forge_ship_ready_never_raises_when_root_is_none_with_a_found_step():

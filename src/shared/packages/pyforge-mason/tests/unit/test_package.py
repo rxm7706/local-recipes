@@ -911,6 +911,38 @@ def test_ship_conda_forge_wrong_location_raises_naming_both_paths_no_subprocess(
     mock_run.assert_not_called()
 
 
+def test_ship_conda_forge_accepts_a_recipe_reached_through_a_symlinked_recipes_dir(tmp_path):
+    """Follow-up review pass, 2026-08-13: pass 1 added the `.resolve()` on
+    `expected_dir` specifically so a symlinked `<root>/recipes` would not
+    produce a FALSE mismatch against the independently-resolved
+    `recipe_dir` -- and shipped that patch with no test covering the one
+    scenario that motivated it. Both sides are compared physically, so a
+    recipe reached through the symlink is accepted; without the
+    `.resolve()`, `expected_dir` keeps the symlink spelling and this call
+    raises instead."""
+    root = tmp_path / "cfe-root"
+    (root / "store").mkdir(parents=True)
+    (root / "recipes").symlink_to(root / "store", target_is_directory=True)
+    recipe_dir = root / "store" / "foo"
+    recipe_dir.mkdir()
+    submit_result = ShipTargetResult(
+        target="conda-forge", state=ShipState.PENDING, reference=None, message="ok",
+    )
+
+    with patch(
+        "pyforge.mason.package.resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=root, step=STEP_CWD_WALK),
+    ), patch("pyforge.mason.recipe.submit", return_value=submit_result) as mock_submit:
+        result = ship_conda_forge(
+            str(recipe_dir),
+            environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            start_directory=tmp_path,
+        )
+
+    assert result is submit_result
+    assert mock_submit.call_args.args[0] == str(recipe_dir.resolve())
+
+
 def test_ship_conda_forge_returns_failed_when_path_resolve_raises(tmp_path):
     """spec Always boundary: a `Path.resolve()` `OSError`/`ValueError` on
     either `recipe_path` or the resolved root returns `ShipTargetResult(

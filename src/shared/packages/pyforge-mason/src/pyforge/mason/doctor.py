@@ -55,13 +55,23 @@ Story 3.6 extends `build_report` with `conda_forge_ship_ready`/
 restatement of them -- `mason doctor` takes no recipe-path argument (out
 of this story's scope), so it can neither see precondition #1 (a recipe
 path was given) nor check #2's exact `<cfe-root>/recipes/<name>/` equality
-for any particular recipe. What it reports instead is the pair of
+for any particular recipe. What it reports instead is the set of
 conditions observable without a recipe: root unresolved is one blocker,
-root resolved but `<root>/recipes` not a directory is the other. Note the
-proxy is deliberately stricter in one direction -- `ship_conda_forge`
-itself performs no `recipes/` existence check (it resolves paths only,
-matching `recipe.py::submit()`'s own no-existence-check precedent), so a
-`False` here does not by itself prove a ship would fail.
+a root that cannot be expanded/resolved at all is a second, root resolved
+but `<root>/recipes` not a directory is a third, and an incomplete import
+floor is the fourth. Note the proxy is deliberately stricter in one
+direction -- `ship_conda_forge` itself performs no `recipes/` existence
+check (it resolves paths only, matching `recipe.py::submit()`'s own
+no-existence-check precedent), so a `False` here does not by itself prove
+a ship would fail.
+
+The import-floor blocker (follow-up review pass, 2026-08-13) is not one of
+D-10's two preconditions but gates the same path just as structurally:
+`ship_conda_forge` delegates to `recipe.py::submit()`, and an incomplete
+floor is already exactly why `unavailable_verbs` names `"recipe"` above.
+Omitting it let one report answer the same question two ways --
+`conda_forge_ship_ready=True` beside an `unavailable_verbs` naming the
+verb the ship path runs through.
 
 `resolved_root.root` is `.expanduser().resolve()`d again here before the
 `recipes` check (review pass, 2026-08-13): `resolve_cfe_root`'s
@@ -76,9 +86,13 @@ function's own "never raises" invariant: `RuntimeError` is in that tuple
 because `Path.expanduser()` -- NOT an `OSError` subclass for this failure
 -- raises it whenever a leading `~`/`~user` cannot be expanded (an unknown
 user, or `HOME` unset), which a `--cfe-root`/`MASON_CFE_ROOT` value
-reaches this function unvalidated. A permission-denied stat (`OSError`)
-and a `None` root paired with a non-`not-found` step are handled the same
-way -- treated as `not a directory` (a blocker), never a crash.
+reaches this function unvalidated. Each of those failures becomes its own
+blocker rather than a crash, and each names its own cause: a root that
+cannot be resolved says so (follow-up review pass, 2026-08-13 -- calling
+it a missing `recipes/` directory named the wrong cause and implied an
+impossible remedy), a permission-denied stat (`OSError`) is treated as
+`not a directory` while keeping the RESOLVED spelling, and a `None` root
+paired with a non-`not-found` step reports the root as unresolved.
 """
 
 from __future__ import annotations
@@ -125,24 +139,38 @@ def build_report(
     if resolved_root.step == STEP_NOT_FOUND or resolved_root.root is None:
         blockers.append("the CFE root is unresolved")
     else:
-        # Resolution and the stat are guarded SEPARATELY so a denied stat
-        # still reports the resolved spelling. Folding both into one
-        # `except` made the blocker print `~/x/recipes` for a denied stat
-        # but `/home/u/x/recipes` for every other outcome on identical
-        # input; the raw spelling is a fallback only when resolution
-        # itself failed, when it is the only spelling that exists.
+        # Resolution and the stat are guarded SEPARATELY, and report
+        # DIFFERENT blockers. A root that cannot be expanded or resolved at
+        # all is not a missing `recipes/` directory: reporting it as one
+        # named a cause that was not the real one and implied a remedy --
+        # create that directory -- impossible at a path that cannot exist.
+        # A denied stat, by contrast, keeps the RESOLVED spelling rather
+        # than falling back to the raw one, so a single input never prints
+        # two spellings of the same path.
         try:
             recipes_dir = resolved_root.root.expanduser().resolve() / "recipes"
-        except (OSError, ValueError, RuntimeError):
-            recipes_dir = resolved_root.root / "recipes"
-            recipes_dir_is_present = False
+        except (OSError, ValueError, RuntimeError) as exc:
+            blockers.append(f"the CFE root {resolved_root.root} cannot be resolved: {exc}")
         else:
             try:
                 recipes_dir_is_present = recipes_dir.is_dir()
             except OSError:
                 recipes_dir_is_present = False
-        if not recipes_dir_is_present:
-            blockers.append(f"{recipes_dir} is not a directory")
+            if not recipes_dir_is_present:
+                blockers.append(f"{recipes_dir} is not a directory")
+
+    # The import floor gates this target too: `package.py::ship_conda_forge`
+    # delegates to `recipe.py::submit()`, and an incomplete floor is already
+    # why `unavailable_verbs` above names `recipe`. Without this blocker one
+    # report could claim `conda_forge_ship_ready=True` while, three fields
+    # away, `unavailable_verbs` named the very verb the ship path runs
+    # through -- a self-contradiction in the command whose whole job is to
+    # let a user learn the boundary BEFORE attempting a release.
+    if floor_result.missing:
+        blockers.append(
+            "the CFE import floor is incomplete, so the `recipe` verb this target "
+            f"delegates to is unavailable: {', '.join(floor_result.missing)}",
+        )
 
     return DoctorReport(
         mason_version=__version__,
