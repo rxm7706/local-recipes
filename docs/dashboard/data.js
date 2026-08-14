@@ -3986,7 +3986,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-14 12:43 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-14 13:13 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -16598,7 +16598,7 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "drift",
+        "state": "green",
         "findings": 0,
         "verdict": "",
         "runbook": ""
@@ -19443,15 +19443,15 @@ window.DASHBOARD_DATA = {
     "source": "sprint-status",
     "running": [],
     "lastShipped": {
-      "station": "marshal",
-      "story": "9.6",
-      "epoch": 1786703727,
-      "sha": "b949353f8",
-      "subject": "marshal: story 9.6 -- plan and action types, repo fingerprint, and the plan builder"
+      "station": "mason",
+      "story": "4.1",
+      "epoch": 1786710218,
+      "sha": "c22074df1",
+      "subject": "Merge bmad-loop/20260813-145934-3eb0/4-1-lock-engine-adapter-and-provenance into loop/pyforge-mason (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-14 12:43 UTC",
-    "generatedEpoch": 1786711398
+    "generatedAt": "2026-08-14 13:13 UTC",
+    "generatedEpoch": 1786713200
   },
   "storySpecs": [
     {
