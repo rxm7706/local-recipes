@@ -143,7 +143,17 @@ def substitute_region(
     (Python slicing never raises on ``start > stop``), concatenating the new
     begin line directly onto the new body with no terminator between them --
     a corrupted, unterminated marker line written with no error at all.
+
+    Raises ``TypeError`` upfront if ``new_body`` is not ``str`` (review
+    finding, mirroring ``fs.replace_span``'s own identical upfront
+    ``new_body`` check one layer down): without this, a caller accidentally
+    passing ``bytes`` -- plausible, since ``fs.replace_span`` itself takes
+    ``new_body: bytes`` -- previously fell through to a bare, contextless
+    ``AttributeError: 'bytes' object has no attribute 'encode'`` instead of
+    a named, attributable error.
     """
+    if not isinstance(new_body, str):
+        raise TypeError(f"new_body must be str, got {type(new_body).__name__}")
     if region.sha != expected_sha:
         raise RegionShaMismatchError(
             f"{path}: region {region.name!r} declared sha {region.sha!r} does not match"

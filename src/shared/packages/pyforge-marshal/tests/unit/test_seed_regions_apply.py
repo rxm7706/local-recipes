@@ -24,7 +24,7 @@ from __future__ import annotations
 
 import pytest
 from pyforge.core.errors import PyforgeError
-from pyforge.marshal.seed.fs import NeverWrite
+from pyforge.marshal.seed.fs import NeverWrite, NeverWriteViolation
 from pyforge.marshal.seed.model.version import ModelVersion
 from pyforge.marshal.seed.regions import apply as apply_module
 from pyforge.marshal.seed.regions.apply import RegionShaMismatchError, substitute_region
@@ -260,6 +260,35 @@ def test_malformed_span_where_begin_ends_after_body_starts_raises_before_any_wri
     assert path.read_bytes() == text.encode("utf-8")
 
 
+def test_new_body_that_is_bytes_not_str_raises_type_error_before_any_write(tmp_path):
+    """Review finding: `fs.replace_span` -- this module's own dependency --
+    upfront-validates its `new_body: bytes` argument with a named
+    `TypeError` for exactly this caller mistake, one layer down. Without a
+    mirroring check here, a caller accidentally passing `bytes` (plausible,
+    since `fs.replace_span` itself expects `bytes`) previously fell through
+    to a bare, contextless `AttributeError` from `new_body.encode(...)`."""
+    body = "body\n"
+    old_sha = region_sha(body)
+    text = _doc(_begin("tiers", old_sha), "body", _end("tiers"))
+    path = tmp_path / "doc.md"
+    path.write_text(text, encoding="utf-8", newline="")
+    (region,) = parse_regions(text, RegionFormat.HTML)
+
+    with pytest.raises(TypeError, match="new_body must be str"):
+        substitute_region(
+            text,
+            path,
+            region,
+            b"new body\n",
+            model_version=_VERSION,
+            expected_sha=old_sha,
+            fmt=RegionFormat.HTML,
+            repo_root=tmp_path,
+            never_write=NeverWrite(()),
+        )
+    assert path.read_bytes() == text.encode("utf-8")
+
+
 # --- conflict-marker-shaped new body, I/O Matrix row 4 ----------------------
 
 
@@ -348,8 +377,6 @@ def test_a_real_non_empty_never_write_guard_blocks_the_write_end_to_end(tmp_path
     path.parent.mkdir(parents=True)
     path.write_text(text, encoding="utf-8", newline="")
     (region,) = parse_regions(text, RegionFormat.HTML)
-
-    from pyforge.marshal.seed.fs import NeverWriteViolation
 
     with pytest.raises(NeverWriteViolation):
         substitute_region(
