@@ -1,0 +1,328 @@
+"""The plan builder: `Classification` -> `Action` (Story 9.6, architecture
+FR-82/AD-57/AD-59/AD-60/NFR-12/P-04/P-05/P-07).
+
+`detect.inventory.classify` already answers "what state is this manifest
+entry in" for a target repo. `build_plan` is the one function that turns
+that answer into the artifact a human reviews before Genesis writes
+anything: one `Action` per entry that actually needs a change
+(`ArtifactState.ABSENT` or `PRESENT_DIVERGENT`), each carrying its own
+rationale and, for a `hybrid-managed-region` entry, which anchor a missing
+region would be inserted at -- plus a `RepoFingerprint` tying the whole
+`Plan` to the repo state it was computed against (AD-57).
+
+**Which classifications produce an `Action`.** `PRESENT_CONFORMANT` and
+`PRESENT_LEGACY` never do (AD-59/AD-60) -- a `referenced` entry is always
+`PRESENT_CONFORMANT` per `classify()` itself, so it never reaches this rule
+either; it simply never appears among the qualifying classifications.
+Every entry that DOES qualify gets EXACTLY one `Action` -- there is no
+per-entry branching here that could produce more than one, or skip one
+that qualifies, beyond the plain state-membership test itself.
+
+**Why this module resolves paths directly rather than re-deriving
+`detect.inventory._resolve_within_repo`'s containment check.** `classify()`
+has ALREADY run that check once, for every entry, to produce the very
+`ArtifactState` this module switches on: an entry classified `ABSENT`
+because its path escapes `repo_root` is indistinguishable here from one
+genuinely missing (both are `ABSENT`, and this module's own `_current_text`
+never touches the filesystem for that state at all -- see below). An entry
+classified `PRESENT_DIVERGENT` can ONLY be `hybrid-managed-region`, and
+`_classify_entry` can only reach that state once the SAME containment
+check has already confirmed the path resolves within `repo_root` -- so a
+second, private-function-reaching re-check here would test nothing that
+is not already proven by the state itself. `detect/inventory.py` is
+reference-only for this story (its own Never bullet), and its containment
+helper is a private, unexported function this module does not import.
+
+**Why `pyforge.core.process.PosixProcess` directly, not
+`adapters.vcs_git.GitVcs`.** See this story's spec Design Notes: `GitVcs`
+serves `ports.vcs.VcsPort`'s much larger worktree-provisioning surface and
+sits in `adapters/`, a layer `seed/` (which sits below `adapters/` in the
+architecture's module-dependency chain) must not import from for two
+read-only git calls. `pyforge.core.process`, like `pyforge.core.
+atomic_write` (already imported by `seed/fs.py`), is a precedented
+cross-package import for this package's low layers.
+
+Never in this module (see the spec's own Never bullets for the full
+list): no read of `.marshal/seed-state.yml` (`seed/state/` is an empty
+stub -- no story has built it yet); no CLI wiring (`build_plan`/
+`write_plan`/`load_plan`/`default_plan_path` are library functions only);
+no `apply` integration and no fingerprint-based refusal logic (a future
+`apply` story, Epic 10, checks the fingerprint this module only RECORDS);
+no re-matching of `manifest.never_write`/`effective_never_write` beyond
+the `PRESENT_LEGACY` skip `classify()` already computes (`fs.py`'s own
+guard is the defense-in-depth backstop at actual write time, a later
+story).
+"""
+
+from __future__ import annotations
+
+import json
+from pathlib import Path
+
+from pyforge.core.atomic_write import atomic_write_bytes
+from pyforge.core.process import PosixProcess
+
+from ..detect.hashes import hash_content
+from ..detect.inventory import ArtifactState, Inventory
+from ..model.manifest import ArtifactClass, Manifest, ManifestEntry, Region
+from ..regions.markers import MarkerError
+from ..regions.parse import RegionParseError, parse_regions, resolve_anchor
+from .types import Action, Plan, RepoFingerprint
+
+# Classifications this module ever turns into an Action -- everything else
+# (PRESENT_CONFORMANT, PRESENT_LEGACY) is conformant or intentionally
+# frozen, and produces no Action (AD-59/AD-60).
+_ACTIONABLE_STATES = frozenset({ArtifactState.ABSENT, ArtifactState.PRESENT_DIVERGENT})
+
+# Query-style git calls (never a checkout/push) -- matches
+# `adapters/vcs_git.py::_GIT_TIMEOUT_S`'s identical value for the identical
+# class of call, so a hung `git` process fails fast instead of blocking
+# `build_plan` indefinitely (review finding: `PosixProcess.run` defaults to
+# no timeout at all).
+_GIT_TIMEOUT_S = 30.0
+
+
+def _current_text(state: ArtifactState, repo_root: Path, entry_path: str) -> str:
+    """The one text both `_chosen_anchor` and `build_plan`'s own
+    `artifact_hashes` computation read/hash -- a single shared definition
+    so the two can never see a different byte stream for the same
+    artifact.
+
+    `ABSENT` never touches the filesystem: `''` is `classify()`'s own
+    reported truth about this artifact (genuinely missing, or resolving
+    outside `repo_root` -- either way, nothing safe to read). A
+    present-but-non-regular-file, unreadable, or non-UTF-8 target also
+    degrades to `''` -- the identical fallback `detect.inventory.
+    _classify_hybrid` already applies when its own read hits the same
+    failure (this story's Always bullet: "`current_text` is `\"\"` for an
+    absent or unreadable target").
+
+    Only ever reads a real path for a `PRESENT_DIVERGENT` entry, and only
+    because `classify()` has ALREADY proven -- to produce that very state
+    -- that `entry_path` resolves to an existing target within
+    `repo_root` (see the module docstring)."""
+    if state is ArtifactState.ABSENT:
+        return ""
+    target = repo_root / entry_path
+    if not target.is_file():
+        return ""
+    try:
+        return target.read_text(encoding="utf-8")
+    except (OSError, UnicodeDecodeError):
+        return ""
+
+
+def _chosen_anchor(
+    entry: ManifestEntry, state: ArtifactState, current_text: str
+) -> tuple[tuple[str, str | None], ...]:
+    """One `(region_name, matched_anchor)` pair per declared region that
+    still needs inserting this run.
+
+    `()` for every non-`hybrid-managed-region` class (there is no region to
+    anchor for a whole-file artifact). For a hybrid entry: every declared
+    region when `state is ABSENT` (nothing on disk, so nothing is already
+    present); only the regions `regions.parse.parse_regions` does not find
+    when `state is PRESENT_DIVERGENT` (the entry is present but structurally
+    non-conformant, so some -- not necessarily all -- declared regions are
+    missing).
+
+    Catches `RegionParseError`/`MarkerError`/`NotImplementedError` from
+    EITHER the missing-region scan or a `resolve_anchor` call and degrades
+    the WHOLE entry's `chosen_anchor` to `()` -- never a partial list --
+    the identical "cannot safely re-parse this file, so degrade rather than
+    guess" rule `detect.inventory._classify_hybrid` already applies for the
+    same three exception types."""
+    if entry.artifact_class is not ArtifactClass.HYBRID_MANAGED_REGION:
+        return ()
+    # ManifestEntry.__post_init__ guarantees a hybrid-managed-region entry
+    # carries a non-None format -- narrows for the type checker, matching
+    # `_classify_hybrid`'s own identical assertion.
+    assert entry.format is not None
+    try:
+        if state is ArtifactState.ABSENT:
+            missing_regions: tuple[Region, ...] = entry.regions
+        else:
+            found_spans = parse_regions(current_text, entry.format)
+            found_names = {span.name for span in found_spans}
+            missing_regions = tuple(
+                region for region in entry.regions if region.name not in found_names
+            )
+        return tuple(
+            (region.name, resolve_anchor(current_text, entry.format, region.anchor).matched)
+            for region in missing_regions
+        )
+    except (RegionParseError, MarkerError, NotImplementedError):
+        return ()
+
+
+def _rationale(entry: ManifestEntry, state: ArtifactState) -> str:
+    """A one-line justification for the proposed change -- P-05's own
+    "human reviewing a change" framing -- distinct from `entry.rationale`
+    (the MANIFEST's own "why this artifact exists at all", authored once,
+    never about a specific run's proposed action)."""
+    if state is ArtifactState.ABSENT:
+        return f"{entry.path!r} is absent; materialize it as {entry.artifact_class.value}"
+    # The only other actionable state is PRESENT_DIVERGENT, which only ever
+    # occurs for hybrid-managed-region (see `_chosen_anchor`'s own guard).
+    return (
+        f"{entry.path!r} is present but missing one or more declared managed "
+        "regions; insert them at their resolved anchors"
+    )
+
+
+def _git_head(process: PosixProcess, repo_root: Path) -> str | None:
+    """`git rev-parse HEAD`'s stdout, stripped -- `None` on a non-zero exit
+    (no commits yet, or `repo_root` is not a git repo at all).
+    `PosixProcess.run` never raises for a non-zero exit -- only for a
+    launch failure -- so a missing `git` executable is the one case this
+    function does not degrade; that is a host misconfiguration, not an
+    ordinary "not a git repo" outcome."""
+    result = process.run(["git", "rev-parse", "HEAD"], cwd=repo_root, timeout_s=_GIT_TIMEOUT_S)
+    if result.returncode != 0:
+        return None
+    return result.stdout.strip()
+
+
+def _repo_is_dirty(process: PosixProcess, repo_root: Path) -> bool:
+    """`True` iff `git status --porcelain --untracked-files=normal`
+    produces any output, OR the command exits non-zero (cannot confirm
+    clean -- the conservative direction, per this story's Always bullet)."""
+    result = process.run(
+        ["git", "status", "--porcelain", "--untracked-files=normal"],
+        cwd=repo_root,
+        timeout_s=_GIT_TIMEOUT_S,
+    )
+    if result.returncode != 0:
+        return True
+    return bool(result.stdout)
+
+
+def build_plan(manifest: Manifest, inventory: Inventory) -> Plan:
+    """Map each qualifying `Classification` in `inventory` to one `Action`,
+    plus a `RepoFingerprint` of `inventory.repo_root` (`inventory.
+    repo_root` supplies the target repo -- there is no separate `repo_root`
+    parameter, per this story's Always bullet).
+
+    `inventory.classifications` is already in manifest entry order (one
+    `Classification` per `manifest.entries`, `classify()`'s own contract);
+    `Plan.actions` is re-sorted by `artifact_id` here regardless, since
+    manifest-entry order and artifact-id order are not the same thing and
+    determinism must not depend on manifest authoring order -- two
+    `build_plan()` calls against identical repo state must produce
+    byte-identical `plan.json` (the epics AC's own requirement).
+
+    Reads only what it needs: `_current_text` is called once per actionable
+    entry and its result is reused for BOTH `chosen_anchor` resolution and
+    `artifact_hashes` -- never read twice for the same artifact.
+
+    Raises `ValueError` if `inventory` was not built from `manifest`
+    (`classify(this_manifest, ...)`'s own contract is one `Classification`
+    per `manifest.entries`, so any `entry_id` this loop cannot find in
+    `manifest.entries` means the two arguments are a mismatched pair --
+    review finding: without this check, the lookup below raised a bare,
+    unnamed `KeyError` instead of the named, context-carrying `ValueError`
+    every other caller-contract violation in this package reports)."""
+    entries_by_id = {entry.id: entry for entry in manifest.entries}
+    unknown_ids = sorted(
+        {
+            classification.entry_id
+            for classification in inventory.classifications
+            if classification.entry_id not in entries_by_id
+        }
+    )
+    if unknown_ids:
+        raise ValueError(
+            "inventory references entry id(s) absent from manifest.entries -- "
+            f"inventory was not built from this manifest: {unknown_ids!r}"
+        )
+    actioned: list[tuple[ManifestEntry, ArtifactState, str]] = [
+        (
+            entries_by_id[classification.entry_id],
+            classification.state,
+            _current_text(
+                classification.state,
+                inventory.repo_root,
+                entries_by_id[classification.entry_id].path,
+            ),
+        )
+        for classification in inventory.classifications
+        if classification.state in _ACTIONABLE_STATES
+    ]
+
+    actions = tuple(
+        sorted(
+            (
+                Action(
+                    artifact_id=entry.id,
+                    artifact_class=entry.artifact_class,
+                    current_state=state,
+                    target_state=ArtifactState.PRESENT_CONFORMANT,
+                    target_path=entry.path,
+                    chosen_anchor=_chosen_anchor(entry, state, current_text),
+                    rationale=_rationale(entry, state),
+                )
+                for entry, state, current_text in actioned
+            ),
+            key=lambda action: action.artifact_id,
+        )
+    )
+    artifact_hashes = tuple(
+        sorted(
+            (
+                (entry.id, hash_content(current_text))
+                for entry, _state, current_text in actioned
+            ),
+            key=lambda pair: pair[0],
+        )
+    )
+    process = PosixProcess()
+    repo_fingerprint = RepoFingerprint(
+        git_head=_git_head(process, inventory.repo_root),
+        dirty=_repo_is_dirty(process, inventory.repo_root),
+        artifact_hashes=artifact_hashes,
+    )
+    return Plan(actions=actions, repo_fingerprint=repo_fingerprint)
+
+
+def default_plan_path(repo_root: Path) -> Path:
+    """`<repo_root>/.marshal/plan.json` -- already covered by the packaged
+    `.gitignore` region's `model-ignores.gitignore.j2` template (confirmed
+    present, not added by this story)."""
+    return repo_root / ".marshal" / "plan.json"
+
+
+def write_plan(plan: Plan, path: Path) -> None:
+    """Write `plan` to `path` as indented JSON, atomically.
+
+    Delegates entirely to `atomic_write_bytes` (Story 14.2), which already
+    creates `path.parent` (`mkdir(parents=True, exist_ok=True)`) before
+    writing -- this function adds no second, redundant `mkdir` of its own.
+
+    `ensure_ascii=False`: `Plan` is "the single artifact a human reviews
+    before Genesis writes anything" (P-04) -- a manifest-derived path,
+    rationale, or anchor string carrying non-ASCII text should read as
+    itself in `plan.json`, not as `\\uXXXX` escapes (review finding: the
+    stdlib default escapes every non-ASCII code point)."""
+    atomic_write_bytes(
+        path, json.dumps(plan.to_json_dict(), indent=2, ensure_ascii=False).encode("utf-8")
+    )
+
+
+def load_plan(path: Path) -> Plan:
+    """Read `path`, parse it as JSON, and rebuild a `Plan`.
+
+    Raises `ValueError` naming the problem for malformed JSON CONTENT:
+    `json.loads` raises `json.JSONDecodeError` for invalid JSON syntax --
+    already a `ValueError` subclass, so it propagates unchanged and needs
+    no translation here -- and `Plan.from_json_dict` (and the `Action`/
+    `RepoFingerprint` calls it makes) raise a plain `ValueError` for a
+    missing key, a wrong-shaped value, or an unrecognized enum value.
+
+    A missing, unreadable, or directory `path` raises `read_text`'s own
+    `OSError` (e.g. `FileNotFoundError`, `IsADirectoryError`) UNCHANGED --
+    review finding: this function's docstring previously read as promising
+    `ValueError` even for a file-access failure, which would contradict
+    `fs.py`'s own established "never wraps a generic OSError" convention
+    for this exact class of failure; this function draws the identical
+    line `fs.py` already draws, one layer up."""
+    return Plan.from_json_dict(json.loads(path.read_text(encoding="utf-8")))
