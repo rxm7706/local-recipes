@@ -1,6 +1,6 @@
 ---
 spec: python-agent-platform
-status: ready
+status: in-progress
 companions: [ARCHITECTURE-SPINE.md]
 owner-dream: docs/dreams/python-agent-platform.md
 surface:
