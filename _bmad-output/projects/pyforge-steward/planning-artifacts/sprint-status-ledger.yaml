@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 76
+# stories: 80
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -22,7 +22,7 @@ development_status:
   1-6-the-operator-can-ask-is-anything-host-unscoped-right-now-and-get-a-real-answer: done
   1-7-retiring-a-credential-leaves-a-record-not-a-silent-gap: done
   10-1-the-host-renders-into-src-platform: done
-  10-2-one-factory-sourced-environment: backlog
+  10-2-one-factory-sourced-environment: done
   10-3-one-image-both-engines: backlog
   10-4-the-bcrypt-pin-stops-blocking-3-14: backlog
   11-1-langflow-joins-as-a-pluggable-app: backlog
@@ -32,6 +32,8 @@ development_status:
   12-1-the-vanilla-chart-with-an-ocp-overlay: backlog
   12-2-gke-as-a-portability-profile: backlog
   12-3-air-gap-parity-is-a-failing-check: backlog
+  13-1-workspace-verbs-over-git-worktree: backlog
+  13-2-status-and-the-feed-mirror-decision: backlog
   2-1-the-dashboard-builds-through-steward-not-a-bare-pixi-task-the-operator-has-to-remember: done
   2-2-nothing-happens-unless-something-actually-changed: done
   2-3-the-operator-can-see-what-would-change-before-it-changes: done
@@ -74,6 +76,8 @@ development_status:
   epic-11-retrospective: optional
   epic-12: backlog
   epic-12-retrospective: optional
+  epic-13: backlog
+  epic-13-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
   epic-3: done
