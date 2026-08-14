@@ -2157,9 +2157,9 @@
  "pyforge-marshal/spec-bmad-loop-baseline-drift": {
   "files": {
    "docs/dreams/bmad-loop-baseline-drift.md": "56f5ee0420aecca7acc42b5437b92cab563fddf7",
-   "pixi.toml": "0f9455fd5fd81f4314f49f35d680edc7d0349ddb"
+   "pixi.toml": "0ae029cc41f4470967578c984cbdf265222d649a"
   },
-  "memlog": "789c8a2817ce1654ac57391dc3faa931e42edb75"
+  "memlog": "4430c1049d03b1e74395532e23a3c8deb00727c1"
  },
  "pyforge-marshal/spec-bmad-loop-forward-dependency-blindness": {
   "files": {
@@ -3713,7 +3713,7 @@
  "pyforge-steward/spec-python-agent-platform": {
   "files": {
    "environment.yaml": "a7394e9ac491d921acc22e4ebfe742d0fa400aba",
-   "pixi.toml": "0f9455fd5fd81f4314f49f35d680edc7d0349ddb",
+   "pixi.toml": "0ae029cc41f4470967578c984cbdf265222d649a",
    "src/platform/.editorconfig": "c241cc74e556577f3fafca63942d74d0c8764396",
    "src/platform/.gitattributes": "6c04362d1bfb9effdd6645bf5d171a298af084be",
    "src/platform/.gitignore": "7085a5f6068c1cf766528e1eb1a569c4baf5c358",
@@ -3738,7 +3738,7 @@
    "src/platform/docs/conf.py": "614b5fbfe49ea50b9c4bd7d90dd0714a848e0a01",
    "src/platform/docs/howto.rst": "1b3a914d2565451e40c6e5d1bf31b344532df303",
    "src/platform/docs/index.rst": "38c9bc9b7de512856fc2b3aa2b3bc7219e866589",
-   "src/platform/docs/make.bat": "6a946df1447c0bc9330cd10963fe72e3af464bee",
+   "src/platform/docs/make.bat": "2d4b4a05d6d89aaf8ba844340148e76c32dcda1e",
    "src/platform/docs/users.rst": "754b0d83892444ed52f4b9a6de831e07883f686a",
    "src/platform/locale/README.md": "628296bfb7f3f4ec4009c512964b252cc2add5ca",
    "src/platform/locale/en_US/LC_MESSAGES/django.po": "a1398d8ce1a7c9c249658e8dc010c718f428c0e2",
@@ -3822,7 +3822,7 @@
    "src/platform/utility/requirements-trusty.apt": "e10d1cbf221b4f02656dd749e24500125974de20",
    "src/platform/utility/requirements-xenial.apt": "755c0266e7b97cbf9e90ee9936e2d2f6943c67c5"
   },
-  "memlog": "b91661cb4060077f649b3d815a36a3f15e7d39e3"
+  "memlog": "917650ee96d180fb11a0f354d1b33876fae36210"
  },
  "pyforge-steward/spec-scratch-worktree-lifecycle": {
   "files": {
