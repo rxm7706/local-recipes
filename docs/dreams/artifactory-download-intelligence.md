@@ -2,7 +2,7 @@
 title: An enterprise Artifactory mirror's own download telemetry joins the universe picture
 type: dream
 owner: atlas
-status: dreamt
+status: specified
 ---
 
 # An enterprise Artifactory mirror's own download telemetry joins the universe picture
@@ -116,3 +116,7 @@ eligibility provenance)
   scope: only the Artifactory-telemetry join and the internal/private-package flag it enables are
   genuinely new; everything else the source dream described is already atlas's, checked line by
   line against real code rather than trusted from the source's own "What it owns" list.
+- **2026-08-14** — Spec authored (spec-artifactory-download-intelligence, pyforge-atlas) per
+  operator decision: mock-first injectable — no named instance; AQL adapter + internal/private
+  flag join Phase C's identity space through _http.py's auth chain, mock-verified; live wiring
+  stays a later attended step.
