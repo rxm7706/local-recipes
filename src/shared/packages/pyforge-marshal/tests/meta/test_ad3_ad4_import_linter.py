@@ -1,7 +1,9 @@
 """Meta test -- AD-3/AD-4 import-linter contracts (Story 1.1). Story 3.4
 adds a THIRD contract (AD-9, ``tests/meta/test_ad9_supervisor_no_control_channel.py``
-owns ITS OWN shape assertions) -- this file's own scope stays AD-3/AD-4
-only, plus the total contract-count guard below.
+owns ITS OWN shape assertions) and Story 8.4 a FOURTH (regions never imports
+``model.manifest``, ``tests/meta/test_regions_no_manifest_import.py`` owns
+ITS OWN shape assertion) -- this file's own scope stays AD-3/AD-4 only, plus
+the total contract-count guard below.
 
 Invokes the real ``lint-imports`` CLI (import-linter, provisioned in the
 root ``pixi.toml``'s ``[feature.pyforge-marshal.dependencies]``) against
@@ -48,8 +50,8 @@ def _contract_forbidding(forbidden_module: str) -> dict:
     raise AssertionError(f"no contract forbids {forbidden_module!r}")
 
 
-def test_pyproject_declares_exactly_three_contracts():
-    assert len(_contracts()) == 3
+def test_pyproject_declares_exactly_four_contracts():
+    assert len(_contracts()) == 4
 
 
 def test_ad4_core_purity_contract_shape():

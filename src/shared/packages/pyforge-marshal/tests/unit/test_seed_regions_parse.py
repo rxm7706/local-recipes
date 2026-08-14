@@ -1,10 +1,14 @@
-"""Unit tests for ``pyforge.marshal.seed.regions.parse`` (Story 8.2) --
+"""Unit tests for ``pyforge.marshal.seed.regions.parse`` (Stories 8.2/8.4) --
 covers the spec's I/O & Edge-Case Matrix: zero/one/two regions, nesting and
 overlap rejection, unterminated begin, duplicate region name, mismatched and
 stray end markers, markdown fence awareness (html only), CRLF/LF parity, and
 ``MarkerError`` propagation from the line-level grammar -- plus the
 body-span byte-offset proof over multi-byte UTF-8 content and the
 zero-length-body case.
+
+Story 8.4 adds ``resolve_anchor`` coverage: anchor-order-is-preference (not
+file-position), the EOF append fallback, both ``<top>`` cases (with and
+without frontmatter), and an anchor-shaped line shadowed inside a fence.
 """
 
 from __future__ import annotations
@@ -20,9 +24,11 @@ from pyforge.marshal.seed.regions.markers import (
     render_end,
 )
 from pyforge.marshal.seed.regions.parse import (
+    AnchorResolution,
     RegionParseError,
     RegionSpan,
     parse_regions,
+    resolve_anchor,
 )
 
 _VERSION = ModelVersion.parse("1.0.0")
@@ -538,3 +544,173 @@ def test_slashstar_format_propagates_not_implemented():
     catches nor special-cases that."""
     with pytest.raises(NotImplementedError):
         parse_regions(_doc("/* marshal-seed:end region=a */"), RegionFormat.SLASHSTAR)
+
+
+# --- resolve_anchor (Story 8.4) ----------------------------------------------
+
+
+def test_first_anchor_matches_resolves_immediately_after_its_line():
+    text = _doc("intro", "## The tiers", "rest of the section", "outro")
+
+    resolution = resolve_anchor(text, RegionFormat.HTML, ("## The tiers",))
+
+    assert isinstance(resolution, AnchorResolution)
+    assert resolution.matched == "## The tiers"
+    # offset is the matched line's own line_end -- right after "## The
+    # tiers\n", i.e. where "rest of the section" begins.
+    assert text.encode("utf-8")[resolution.offset :].startswith(b"rest of the section")
+
+
+def test_anchor_order_is_a_preference_not_a_file_position_search():
+    """AD-56's own example: an earlier, absent anchor is ignored entirely --
+    a LATER anchor in the list, even one further down in the file, still
+    wins over a guaranteed-fallback anchor listed after it."""
+    text = _doc("intro", "# CLAUDE.md", "more content")
+
+    resolution = resolve_anchor(
+        text, RegionFormat.HTML, ("## The tiers", "# CLAUDE.md", "<top>")
+    )
+
+    assert resolution.matched == "# CLAUDE.md"
+    assert text.encode("utf-8")[resolution.offset :].startswith(b"more content")
+
+
+def test_top_wins_only_when_every_earlier_anchor_is_absent():
+    """The other half of the same AD-56 example: with NEITHER preferred
+    anchor present, `<top>` (listed last) is the one that resolves."""
+    text = _doc("intro", "unrelated content")
+
+    resolution = resolve_anchor(
+        text, RegionFormat.HTML, ("## The tiers", "# CLAUDE.md", "<top>")
+    )
+
+    assert resolution.matched == "<top>"
+    assert resolution.offset == 0
+
+
+def test_no_anchor_matches_and_no_top_appends_at_eof():
+    text = _doc("intro", "some content", "more content")
+
+    resolution = resolve_anchor(text, RegionFormat.HTML, ("## Nope", "### Also nope"))
+
+    assert resolution.matched is None
+    assert resolution.offset == len(text.encode("utf-8"))
+
+
+def test_empty_anchor_tuple_also_falls_back_to_eof():
+    text = _doc("intro")
+
+    resolution = resolve_anchor(text, RegionFormat.HTML, ())
+
+    assert resolution.matched is None
+    assert resolution.offset == len(text.encode("utf-8"))
+
+
+def test_top_with_frontmatter_resolves_immediately_after_the_closing_delimiter():
+    text = _doc("---", "title: x", "---", "# Heading", "body")
+
+    resolution = resolve_anchor(text, RegionFormat.HTML, ("<top>",))
+
+    assert resolution.matched == "<top>"
+    assert text.encode("utf-8")[resolution.offset :].startswith(b"# Heading")
+
+
+def test_top_without_frontmatter_resolves_to_byte_zero():
+    text = _doc("# Heading", "body")
+
+    resolution = resolve_anchor(text, RegionFormat.HTML, ("<top>",))
+
+    assert resolution.matched == "<top>"
+    assert resolution.offset == 0
+
+
+def test_top_with_an_unclosed_frontmatter_delimiter_falls_back_to_byte_zero():
+    """No closing `---` before end of text -- per `core/spec_surface.py`'s
+    own established convention, this is "no such block", not a malformed
+    one; `<top>` still resolves, to byte 0."""
+    text = _doc("---", "title: x", "no closing delimiter")
+
+    resolution = resolve_anchor(text, RegionFormat.HTML, ("<top>",))
+
+    assert resolution.matched == "<top>"
+    assert resolution.offset == 0
+
+
+def test_top_frontmatter_delimiter_may_be_far_from_the_second_line():
+    """Mirrors `parse_declared_surface`'s own "next line THAT IS ---" (not
+    literally line 2) convention -- multiple non-`---` frontmatter lines
+    still close correctly at the first line that is exactly `---`."""
+    text = _doc("---", "title: x", "tags: [a, b]", "extra: field", "---", "content")
+
+    resolution = resolve_anchor(text, RegionFormat.HTML, ("<top>",))
+
+    assert text.encode("utf-8")[resolution.offset :].startswith(b"content")
+
+
+def test_anchor_text_only_inside_a_fence_is_skipped_and_falls_through():
+    """The one line starting with the anchor text sits inside a fenced
+    block (html fmt) -- fence-shadowed, so resolution falls through to the
+    next anchor (here, the EOF fallback)."""
+    text = _doc(
+        "intro",
+        "```markdown",
+        "## The tiers",
+        "```",
+        "outro",
+    )
+
+    resolution = resolve_anchor(text, RegionFormat.HTML, ("## The tiers",))
+
+    assert resolution.matched is None
+    assert resolution.offset == len(text.encode("utf-8"))
+
+
+def test_anchor_text_inside_a_fence_falls_through_to_a_later_real_match():
+    text = _doc(
+        "```markdown",
+        "## The tiers",
+        "```",
+        "## The tiers",
+        "real content",
+    )
+
+    resolution = resolve_anchor(text, RegionFormat.HTML, ("## The tiers",))
+
+    assert resolution.matched == "## The tiers"
+    assert text.encode("utf-8")[resolution.offset :].startswith(b"real content")
+
+
+def test_fence_awareness_for_anchor_resolution_is_html_only():
+    """A `hash`-format artifact has no fenced-code-block concept -- a
+    backtick banner line there must never make a real anchor line inert."""
+    text = _doc("```", "## The tiers", "rest")
+
+    resolution = resolve_anchor(text, RegionFormat.HASH, ("## The tiers",))
+
+    assert resolution.matched == "## The tiers"
+    assert text.encode("utf-8")[resolution.offset :].startswith(b"rest")
+
+
+def test_first_matching_line_in_file_order_wins_when_an_anchor_recurs():
+    text = _doc("## The tiers", "first", "## The tiers", "second")
+
+    resolution = resolve_anchor(text, RegionFormat.HTML, ("## The tiers",))
+
+    assert text.encode("utf-8")[resolution.offset :].startswith(b"first")
+
+
+def test_anchor_resolution_is_frozen():
+    resolution = AnchorResolution(offset=0, matched=None)
+    with pytest.raises(AttributeError):
+        resolution.offset = 5  # pyright: ignore[reportAttributeAccessIssue]
+
+
+def test_resolve_anchor_raises_on_an_unterminated_fence_symmetric_with_parse_regions():
+    """Review finding: without this, an unterminated fence silently made
+    every remaining line -- including any real anchor after it --
+    unmatchable with no error at all, unlike `parse_regions`'s own hard
+    error for the identical condition."""
+    text = _doc("intro", "```markdown", "## The tiers", "no closing fence")
+
+    with pytest.raises(RegionParseError, match="never closed"):
+        resolve_anchor(text, RegionFormat.HTML, ("## The tiers",))

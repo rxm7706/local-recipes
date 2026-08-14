@@ -1,4 +1,4 @@
-"""Unit tests for ``pyforge.marshal.seed.regions.apply`` (Story 8.3) --
+"""Unit tests for ``pyforge.marshal.seed.regions.apply`` (Stories 8.3/8.4) --
 covers the spec's I/O & Edge-Case Matrix: ordinary substitution, byte-for-
 byte prefix/suffix preservation, a sha mismatch (raised before any write),
 conflict-marker-shaped new body written verbatim, a CRLF file's terminator
@@ -7,11 +7,18 @@ sha therefore unchanged too). Also proves the story's own core invariant --
 ``fs.replace_span`` is called EXACTLY ONCE per ``substitute_region`` call,
 never zero (on the happy path) and never two.
 
+Story 8.4 adds ``insert_region`` coverage: anchor-order-is-preference, the
+EOF append fallback (with its leading blank line), both ``<top>`` cases, an
+anchor-shadowed-inside-a-fence case, already-present idempotence, and
+absent-file creation -- each asserting ``fs.replace_span``/``fs.write`` is
+called exactly once on the write paths, and neither on the already-present
+no-op.
+
 Imports the ``apply`` module itself (not its individual functions), so the
-call-count test can monkeypatch ``apply_module.fs.replace_span`` -- the
-exact name ``substitute_region`` references in its own module namespace,
-mirroring ``test_seed_fs.py``'s own precedent for
-``fs.atomic_write_bytes``.
+call-count test can monkeypatch ``apply_module.fs.replace_span``/
+``apply_module.fs.write`` -- the exact names ``substitute_region``/
+``insert_region`` reference in their own module namespace, mirroring
+``test_seed_fs.py``'s own precedent for ``fs.atomic_write_bytes``.
 
 Regions are located by round-tripping through ``render_begin``/
 ``render_end`` (to construct a well-formed fixture) and ``parse_regions``
@@ -27,7 +34,14 @@ from pyforge.core.errors import PyforgeError
 from pyforge.marshal.seed.fs import NeverWrite, NeverWriteViolation
 from pyforge.marshal.seed.model.version import ModelVersion
 from pyforge.marshal.seed.regions import apply as apply_module
-from pyforge.marshal.seed.regions.apply import RegionShaMismatchError, substitute_region
+from pyforge.marshal.seed.regions.apply import (
+    AnchorInsideExistingRegionError,
+    InsertionOutcome,
+    InsertionResult,
+    RegionShaMismatchError,
+    insert_region,
+    substitute_region,
+)
 from pyforge.marshal.seed.regions.markers import (
     RegionFormat,
     region_sha,
@@ -605,3 +619,497 @@ def test_fs_replace_span_is_called_exactly_once_per_substitution(tmp_path, monke
     # itself has no OTHER write path (no Path.write_text, no second
     # fs.replace_span call) that could have mutated the file instead.
     assert path.read_bytes() == text.encode("utf-8")
+
+
+# =============================================================================
+# Story 8.4: insert_region
+# =============================================================================
+
+
+def _rendered_region(
+    name: str, body: str, version: ModelVersion = _VERSION, fmt: RegionFormat = RegionFormat.HTML
+) -> str:
+    """The exact freestanding-region payload ``insert_region`` renders for a
+    brand-new region -- built the same round-trip way the rest of this file
+    constructs fixtures, never hand-assembled byte-for-byte."""
+    sha = region_sha(body)
+    return f"{render_begin(fmt, name, version, sha)}\n{body}{render_end(fmt, name)}\n"
+
+
+# --- matched anchor, I/O Matrix row 1 ---------------------------------------
+
+
+def test_insert_region_inserts_immediately_after_the_matching_anchor_line(tmp_path):
+    text = "intro\n## The tiers\nrest of section\n"
+    path = tmp_path / "doc.md"
+    path.write_text(text, encoding="utf-8", newline="")
+    body = "new body\n"
+
+    outcome = insert_region(
+        text,
+        path,
+        "tiers",
+        ("## The tiers",),
+        body,
+        model_version=_VERSION,
+        fmt=RegionFormat.HTML,
+        repo_root=tmp_path,
+        never_write=NeverWrite(()),
+    )
+
+    assert outcome == InsertionResult(outcome=InsertionOutcome.INSERTED, matched="## The tiers")
+    result = path.read_text(encoding="utf-8", newline="")
+    assert result == (
+        "intro\n## The tiers\n" + _rendered_region("tiers", body) + "rest of section\n"
+    )
+    (span,) = parse_regions(result, RegionFormat.HTML)
+    assert span.name == "tiers"
+
+
+# --- earlier anchor absent, later matches, I/O Matrix row 2 ----------------
+
+
+def test_insert_region_ignores_an_earlier_absent_anchor_and_uses_a_later_match(tmp_path):
+    """AD-56's own example: order is a PREFERENCE, not a file-position
+    search -- the earlier, absent anchor is ignored entirely."""
+    text = "intro\n# CLAUDE.md\nmore content\n"
+    path = tmp_path / "doc.md"
+    path.write_text(text, encoding="utf-8", newline="")
+    body = "new body\n"
+
+    outcome = insert_region(
+        text,
+        path,
+        "tiers",
+        ("## The tiers", "# CLAUDE.md", "<top>"),
+        body,
+        model_version=_VERSION,
+        fmt=RegionFormat.HTML,
+        repo_root=tmp_path,
+        never_write=NeverWrite(()),
+    )
+
+    assert outcome.matched == "# CLAUDE.md"
+    result = path.read_text(encoding="utf-8", newline="")
+    assert result == (
+        "intro\n# CLAUDE.md\n" + _rendered_region("tiers", body) + "more content\n"
+    )
+
+
+# --- no anchor matches, no <top>, I/O Matrix row 3 --------------------------
+
+
+def test_insert_region_appends_at_eof_with_a_leading_blank_line_when_nothing_matches(tmp_path):
+    text = "intro\nsome content\n"
+    path = tmp_path / "doc.md"
+    path.write_text(text, encoding="utf-8", newline="")
+    body = "new body\n"
+
+    outcome = insert_region(
+        text,
+        path,
+        "tiers",
+        ("## Nope",),
+        body,
+        model_version=_VERSION,
+        fmt=RegionFormat.HTML,
+        repo_root=tmp_path,
+        never_write=NeverWrite(()),
+    )
+
+    assert outcome == InsertionResult(outcome=InsertionOutcome.INSERTED, matched=None)
+    result = path.read_text(encoding="utf-8", newline="")
+    assert result == text + "\n" + _rendered_region("tiers", body)
+
+
+# --- <top> with frontmatter, I/O Matrix row 4 -------------------------------
+
+
+def test_insert_region_with_top_inserts_after_the_frontmatter_block(tmp_path):
+    text = "---\ntitle: x\n---\n# Heading\nbody\n"
+    path = tmp_path / "doc.md"
+    path.write_text(text, encoding="utf-8", newline="")
+    body = "new body\n"
+
+    outcome = insert_region(
+        text,
+        path,
+        "tiers",
+        ("<top>",),
+        body,
+        model_version=_VERSION,
+        fmt=RegionFormat.HTML,
+        repo_root=tmp_path,
+        never_write=NeverWrite(()),
+    )
+
+    assert outcome.matched == "<top>"
+    result = path.read_text(encoding="utf-8", newline="")
+    assert result == (
+        "---\ntitle: x\n---\n" + _rendered_region("tiers", body) + "# Heading\nbody\n"
+    )
+
+
+# --- <top> without frontmatter, I/O Matrix row 5 ----------------------------
+
+
+def test_insert_region_with_top_and_no_frontmatter_inserts_at_byte_zero(tmp_path):
+    text = "# Heading\nbody\n"
+    path = tmp_path / "doc.md"
+    path.write_text(text, encoding="utf-8", newline="")
+    body = "new body\n"
+
+    outcome = insert_region(
+        text,
+        path,
+        "tiers",
+        ("<top>",),
+        body,
+        model_version=_VERSION,
+        fmt=RegionFormat.HTML,
+        repo_root=tmp_path,
+        never_write=NeverWrite(()),
+    )
+
+    assert outcome.matched == "<top>"
+    result = path.read_text(encoding="utf-8", newline="")
+    assert result == _rendered_region("tiers", body) + text
+
+
+# --- anchor shadowed inside a fence, I/O Matrix row 6 -----------------------
+
+
+def test_insert_region_skips_an_anchor_line_shadowed_inside_a_fence(tmp_path):
+    text = "intro\n```markdown\n## The tiers\n```\noutro\n"
+    path = tmp_path / "doc.md"
+    path.write_text(text, encoding="utf-8", newline="")
+    body = "new body\n"
+
+    insert_region(
+        text,
+        path,
+        "tiers",
+        ("## The tiers",),
+        body,
+        model_version=_VERSION,
+        fmt=RegionFormat.HTML,
+        repo_root=tmp_path,
+        never_write=NeverWrite(()),
+    )
+
+    # No real match -- falls through to the EOF append fallback, exactly
+    # like row 3, proving the fenced line was never treated as a match.
+    result = path.read_text(encoding="utf-8", newline="")
+    assert result == text + "\n" + _rendered_region("tiers", body)
+
+
+# --- region already present, I/O Matrix row 7 -------------------------------
+
+
+def test_insert_region_is_a_noop_when_the_region_already_exists(tmp_path, monkeypatch):
+    body = "old body\n"
+    text = _doc(_begin("tiers", region_sha(body)), "old body", _end("tiers"))
+    path = tmp_path / "doc.md"
+    path.write_text(text, encoding="utf-8", newline="")
+
+    replace_calls: list[object] = []
+    write_calls: list[object] = []
+    monkeypatch.setattr(
+        apply_module.fs, "replace_span", lambda *a, **k: replace_calls.append((a, k))
+    )
+    monkeypatch.setattr(apply_module.fs, "write", lambda *a, **k: write_calls.append((a, k)))
+
+    outcome = insert_region(
+        text,
+        path,
+        "tiers",
+        ("<top>",),
+        "a different body\n",
+        model_version=_VERSION,
+        fmt=RegionFormat.HTML,
+        repo_root=tmp_path,
+        never_write=NeverWrite(()),
+    )
+
+    assert outcome == InsertionResult(outcome=InsertionOutcome.ALREADY_PRESENT, matched=None)
+    assert replace_calls == []
+    assert write_calls == []
+    assert path.read_bytes() == text.encode("utf-8")
+
+
+# --- absent file, I/O Matrix row 8 ------------------------------------------
+
+
+def test_insert_region_creates_an_absent_file_containing_only_the_rendered_region(tmp_path):
+    path = tmp_path / "new.md"
+    body = "new body\n"
+
+    outcome = insert_region(
+        None,
+        path,
+        "tiers",
+        ("<top>",),
+        body,
+        model_version=_VERSION,
+        fmt=RegionFormat.HTML,
+        repo_root=tmp_path,
+        never_write=NeverWrite(()),
+    )
+
+    assert outcome == InsertionResult(outcome=InsertionOutcome.INSERTED, matched=None)
+    result = path.read_text(encoding="utf-8", newline="")
+    assert result == _rendered_region("tiers", body)
+    (span,) = parse_regions(result, RegionFormat.HTML)
+    assert span.name == "tiers"
+
+
+# --- fs.replace_span called exactly once, never fs.write -------------------
+
+
+def test_insert_region_calls_fs_replace_span_exactly_once_never_fs_write(tmp_path, monkeypatch):
+    """The story's own core invariant on the existing-file path: never zero
+    (the write must happen) and never two -- exactly one, and never the
+    OTHER write primitive either."""
+    text = "intro\n## The tiers\nrest\n"
+    path = tmp_path / "doc.md"
+    path.write_text(text, encoding="utf-8", newline="")
+
+    replace_calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+    write_calls: list[object] = []
+    monkeypatch.setattr(
+        apply_module.fs, "replace_span", lambda *a, **k: replace_calls.append((a, k))
+    )
+    monkeypatch.setattr(apply_module.fs, "write", lambda *a, **k: write_calls.append((a, k)))
+
+    insert_region(
+        text,
+        path,
+        "tiers",
+        ("## The tiers",),
+        "new body\n",
+        model_version=_VERSION,
+        fmt=RegionFormat.HTML,
+        repo_root=tmp_path,
+        never_write=NeverWrite(()),
+    )
+
+    assert len(replace_calls) == 1
+    assert write_calls == []
+    args, kwargs = replace_calls[0]
+    assert args[0] == path
+    # Zero-width span -- an insertion, never a substitution.
+    assert args[1] == args[2]
+    assert kwargs == {"repo_root": tmp_path, "never_write": NeverWrite(())}
+    # The fake never actually wrote anything -- the real file is untouched.
+    assert path.read_bytes() == text.encode("utf-8")
+
+
+# --- fs.write called exactly once, never fs.replace_span, absent file ------
+
+
+def test_insert_region_calls_fs_write_exactly_once_never_fs_replace_span_for_an_absent_file(
+    tmp_path, monkeypatch
+):
+    path = tmp_path / "new.md"
+    body = "new body\n"
+
+    replace_calls: list[object] = []
+    write_calls: list[tuple[tuple[object, ...], dict[str, object]]] = []
+    monkeypatch.setattr(
+        apply_module.fs, "replace_span", lambda *a, **k: replace_calls.append((a, k))
+    )
+    monkeypatch.setattr(apply_module.fs, "write", lambda *a, **k: write_calls.append((a, k)))
+
+    insert_region(
+        None,
+        path,
+        "tiers",
+        ("<top>",),
+        body,
+        model_version=_VERSION,
+        fmt=RegionFormat.HTML,
+        repo_root=tmp_path,
+        never_write=NeverWrite(()),
+    )
+
+    assert replace_calls == []
+    assert len(write_calls) == 1
+    args, kwargs = write_calls[0]
+    assert args[0] == path
+    assert args[1] == _rendered_region("tiers", body).encode("utf-8")
+    assert kwargs == {"repo_root": tmp_path, "never_write": NeverWrite(())}
+    # The fake never actually wrote anything -- the file stays absent.
+    assert not path.exists()
+
+
+# --- anchor collides with an existing region's span (review finding) -------
+
+
+def test_insert_region_raises_when_the_anchor_falls_inside_an_existing_region(tmp_path):
+    """The anchor text happens to also appear as ordinary content inside an
+    UNRELATED existing region's own body -- naively inserting there would
+    splice a brand-new region's markers into the middle of that region,
+    producing the exact nested/overlapping structure AR-1 forbids."""
+    # The anchor is a literal LINE-PREFIX matcher (`str.startswith`), so the
+    # colliding line must itself START WITH the anchor text -- e.g. a
+    # documentation example inside the existing region's own body.
+    other_body = "## The tiers\nmore explanation\n"
+    text = _doc(
+        _begin("other", region_sha(other_body)), "## The tiers", "more explanation", _end("other")
+    )
+    path = tmp_path / "doc.md"
+    path.write_text(text, encoding="utf-8", newline="")
+
+    with pytest.raises(AnchorInsideExistingRegionError, match="other"):
+        insert_region(
+            text,
+            path,
+            "tiers",
+            ("## The tiers",),
+            "new body\n",
+            model_version=_VERSION,
+            fmt=RegionFormat.HTML,
+            repo_root=tmp_path,
+            never_write=NeverWrite(()),
+        )
+
+    # No write attempted -- the file is byte-for-byte untouched.
+    assert path.read_bytes() == text.encode("utf-8")
+
+
+def test_anchor_inside_existing_region_error_is_a_pyforge_error_and_a_value_error():
+    assert issubclass(AnchorInsideExistingRegionError, PyforgeError)
+    assert issubclass(AnchorInsideExistingRegionError, ValueError)
+
+
+def test_insert_region_allows_an_anchor_immediately_before_an_existing_regions_begin_marker(
+    tmp_path,
+):
+    """The boundary case: the anchor's line ends EXACTLY where an existing
+    region's begin marker starts -- inserting there sits BEFORE the region,
+    never inside it, so it must be allowed, not rejected."""
+    other_body = "old body\n"
+    text = _doc("## The tiers", _begin("other", region_sha(other_body)), "old body", _end("other"))
+    path = tmp_path / "doc.md"
+    path.write_text(text, encoding="utf-8", newline="")
+
+    insert_region(
+        text,
+        path,
+        "tiers",
+        ("## The tiers",),
+        "new body\n",
+        model_version=_VERSION,
+        fmt=RegionFormat.HTML,
+        repo_root=tmp_path,
+        never_write=NeverWrite(()),
+    )
+
+    result = path.read_text(encoding="utf-8", newline="")
+    (span,) = [s for s in parse_regions(result, RegionFormat.HTML) if s.name == "tiers"]
+    assert span is not None
+
+
+# --- EOF append blank-line correctness (review finding) ---------------------
+
+
+def test_eof_append_adds_a_blank_line_when_text_has_no_trailing_newline(tmp_path):
+    text = "intro\nsome content"  # deliberately no trailing "\n"
+    path = tmp_path / "doc.md"
+    path.write_text(text, encoding="utf-8", newline="")
+    body = "new body\n"
+
+    insert_region(
+        text,
+        path,
+        "tiers",
+        ("## Nope",),
+        body,
+        model_version=_VERSION,
+        fmt=RegionFormat.HTML,
+        repo_root=tmp_path,
+        never_write=NeverWrite(()),
+    )
+
+    result = path.read_text(encoding="utf-8", newline="")
+    assert result == text + "\n\n" + _rendered_region("tiers", body)
+
+
+def test_eof_append_does_not_double_an_already_present_blank_line(tmp_path):
+    text = "intro\nsome content\n\n"  # already ends in a blank line
+    path = tmp_path / "doc.md"
+    path.write_text(text, encoding="utf-8", newline="")
+    body = "new body\n"
+
+    insert_region(
+        text,
+        path,
+        "tiers",
+        ("## Nope",),
+        body,
+        model_version=_VERSION,
+        fmt=RegionFormat.HTML,
+        repo_root=tmp_path,
+        never_write=NeverWrite(()),
+    )
+
+    result = path.read_text(encoding="utf-8", newline="")
+    assert result == text + _rendered_region("tiers", body)
+
+
+def test_eof_append_adds_no_leading_blank_line_for_a_present_but_empty_file(tmp_path):
+    text = ""  # the file exists on disk but is zero bytes, distinct from text=None
+    path = tmp_path / "doc.md"
+    path.write_text(text, encoding="utf-8", newline="")
+    body = "new body\n"
+
+    insert_region(
+        text,
+        path,
+        "tiers",
+        ("## Nope",),
+        body,
+        model_version=_VERSION,
+        fmt=RegionFormat.HTML,
+        repo_root=tmp_path,
+        never_write=NeverWrite(()),
+    )
+
+    result = path.read_text(encoding="utf-8", newline="")
+    assert result == _rendered_region("tiers", body)
+
+
+# --- body without a trailing newline glues the end marker onto its line ----
+
+
+def test_body_without_a_trailing_newline_glues_the_end_marker_onto_its_own_line(tmp_path):
+    """Mirrors ``substitute_region``'s own ``new_body`` contract: this
+    primitive does not append a trailing newline on the caller's behalf."""
+    path = tmp_path / "doc.md"
+    body = "no trailing newline"
+
+    insert_region(
+        None,
+        path,
+        "tiers",
+        ("<top>",),
+        body,
+        model_version=_VERSION,
+        fmt=RegionFormat.HTML,
+        repo_root=tmp_path,
+        never_write=NeverWrite(()),
+    )
+
+    result = path.read_text(encoding="utf-8", newline="")
+    expected_end_line = render_end(RegionFormat.HTML, "tiers")
+    assert result.endswith(f"{body}{expected_end_line}\n")
+    assert f"{body}\n{expected_end_line}" not in result
+
+
+# --- InsertionResult shape ---------------------------------------------------
+
+
+def test_insertion_result_is_frozen():
+    result = InsertionResult(outcome=InsertionOutcome.INSERTED, matched=None)
+    with pytest.raises(AttributeError):
+        result.matched = "x"  # pyright: ignore[reportAttributeAccessIssue]
