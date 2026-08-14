@@ -130,8 +130,8 @@ class EvidenceLinkError(HeraldError):
 
 class ClaimNotFoundError(HeraldError):
     """A ``herald success`` subcommand (``review``, ``publish``, ``get``,
-    ``validate``) named a claim id that does not exist in ``claims.json``
-    (Story 9.1/9.3). Falls through to the default exit code (``1``) -- a
+    ``validate``) named a claim id that does not exist in the claims store
+    (Story 9.1/9.3; ``.herald/herald.db`` since Story 13.3). Falls through to the default exit code (``1``) -- a
     bad claim id is a usage problem for the operator to fix, not a
     transport outage."""
 

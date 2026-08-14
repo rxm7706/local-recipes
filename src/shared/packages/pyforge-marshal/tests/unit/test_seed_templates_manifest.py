@@ -5,8 +5,10 @@ packaged data) and ``load_manifest`` (Story 7.4), then asserts the spec's
 I/O & Edge-Case Matrix: zero load errors, the exact per-class entry counts,
 the exact ``never_write`` pattern list, the two deliberate dedups
 (``.gitignore``, ``CLAUDE.md``) each appearing exactly once, every hybrid
-region's body file existing and non-empty, and every ``unclassified-deferred``
-rationale being real prose rather than a placeholder.
+region's body file existing and non-empty, every ``unclassified-deferred``
+rationale being real prose rather than a placeholder, and (Story 9.5) that
+the packaged manifest passes ``coverage_findings`` with zero findings --
+the CI gate that fails the moment a future manifest edit drops coverage.
 
 This file tests DATA, not the loader (``test_seed_model_manifest.py`` already
 covers every ``load_manifest`` schema rule with synthetic fixtures) -- so
@@ -20,6 +22,7 @@ from collections import Counter
 from importlib import resources
 
 import pytest
+from pyforge.marshal.seed.detect.inventory import coverage_counts, coverage_findings
 from pyforge.marshal.seed.model.manifest import AppliesTo, ArtifactClass, load_manifest
 
 # The spec's Boundaries section, as corrected by review: 16 referenced,
@@ -35,6 +38,14 @@ EXPECTED_CLASS_COUNTS = {
     ArtifactClass.GENERATED_DERIVED: 10,
     ArtifactClass.HYBRID_MANAGED_REGION: 4,
     ArtifactClass.UNCLASSIFIED_DEFERRED: 3,
+}
+
+# `coverage_counts` (S-9.5) is keyed by wire value (`ArtifactClass.value`,
+# e.g. `"copied-managed"`), not the enum member itself -- derived from
+# `EXPECTED_CLASS_COUNTS` above rather than a second hand-typed pin, so the
+# two numbers cannot drift apart.
+EXPECTED_COVERAGE_COUNTS = {
+    artifact_class.value: count for artifact_class, count in EXPECTED_CLASS_COUNTS.items()
 }
 
 # The spec's Always bullet: exactly 7 never-write patterns.
@@ -99,6 +110,22 @@ def test_packaged_manifest_class_counts_match_the_spec_exactly(manifest):
     actual_counts = Counter(entry.artifact_class for entry in manifest.entries)
     assert actual_counts == EXPECTED_CLASS_COUNTS
     assert len(manifest.entries) == sum(EXPECTED_CLASS_COUNTS.values()) == 43
+
+
+def test_packaged_manifest_passes_coverage_findings_with_zero_findings(manifest):
+    """S-9.5's own CI gate (the AC this test exists for): ``coverage_findings``
+    re-verifies every entry's ``artifact_class``/``rationale`` independently
+    of ``load_manifest``'s own validation, so a future manifest edit that
+    drops coverage -- an unrecognized ``class``, or an
+    ``unclassified-deferred`` entry with a blank ``rationale`` -- fails this
+    test, not only a human review of the diff."""
+    assert coverage_findings(manifest) == ()
+
+
+def test_packaged_manifest_coverage_counts_match_the_class_counts(manifest):
+    actual = coverage_counts(manifest)
+    assert actual == EXPECTED_COVERAGE_COUNTS
+    assert sum(actual.values()) == len(manifest.entries) == 43
 
 
 def test_packaged_manifest_never_write_matches_the_7_pattern_list_exactly(manifest):

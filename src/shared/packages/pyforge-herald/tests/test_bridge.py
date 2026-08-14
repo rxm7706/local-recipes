@@ -21,6 +21,7 @@ from pyforge.herald import (
     auth,
     bridge,
     claims,
+    db,
     deck_pipeline,
     errors,
     evidence,
@@ -28,8 +29,11 @@ from pyforge.herald import (
     notices,
     progress,
     registry,
+    scheduler,
     state,
     watch,
+    webhook,
+    webhook_host,
 )
 from pyforge.herald import transport as transport_pkg
 from pyforge.herald.cli import dispatch
@@ -141,6 +145,10 @@ _BRIDGE_CORE_MODULES = (
     progress,
     notices,
     locking,
+    db,
+    scheduler,
+    webhook,
+    webhook_host,
 )
 """The modules on the deterministic side of the boundary today. ``cli.py``
 is the CLI layer (AD-2) and ``transport/`` is the adapter side (AD-3) --
@@ -167,9 +175,27 @@ module with no transport or argv-parsing concerns of its own.
 markdown/JSON storage only, no transport call and no inference SDK, so it
 has no legitimate reason to import either denylist below. ``locking.py``
 (Story 13.1) joins for the same reason once more: a stdlib-only
-(``fcntl``/``msvcrt``) advisory-lock primitive shared by ``state.py``/
-``progress.py``/``claims.py``/``notices.py``'s read-modify-write spans --
-no transport call, no inference SDK, no argv parsing."""
+(``fcntl``/``msvcrt``) advisory-lock primitive for ``state.py``'s
+read-modify-write spans (Story 13.3 moved the other three modules onto
+``db.py``) -- no transport call, no inference SDK, no argv parsing. ``db.py`` (Story
+13.3) joins for the same reason again: the stdlib-only ``sqlite3``
+connection/migration/transaction module that replaced ``locking.py`` as
+``progress.py``/``claims.py``/``notices.py``'s concurrency primitive --
+same local-storage concern, no transport call, no inference SDK, no argv
+parsing. ``scheduler.py`` (Story 13.5) joins for the same reason once
+more: it only composes ``claims.revalidate_all``/``progress.write_snapshot``
+into ``herald scheduler run``'s cron-facing job -- no transport call, no
+inference SDK, no argv parsing (that's ``cli.py``'s own job). ``webhook.py``
+(Story 13.4) joins for the same reason again: it calls straight through
+to ``progress.upsert``/``claims.create`` (plus one raw ASGI3
+``app(scope, receive, send)`` boundary, never a web framework) -- no
+transport call, no inference SDK, and no argv parsing of its own.
+``webhook_host.py`` (Story 13.6) joins for the same reason once more: it
+wraps ``webhook.create_app``'s own ASGI3 callable in a bounded timeout plus
+a dedicated executor (stdlib ``asyncio``/``concurrent.futures`` only) --
+never imports ``daphne`` itself (that stays confined to the
+``webhook-host`` optional extra and whatever process invokes it from the
+command line), no transport call, no inference SDK, no argv parsing."""
 
 _FORBIDDEN_ADAPTER_MODULES = {
     module.name
@@ -230,6 +256,24 @@ reaches, not hypothetical ones. Local-inference stacks (``transformers``,
 ``vllm``, ``llama_cpp``, ``huggingface_hub``) and hosted-inference clients
 (``vertexai``, ``boto3`` for Bedrock) clear the same foreseeable-reach
 bar."""
+
+_FORBIDDEN_HOST_FRAMEWORK_PACKAGES = {
+    "asgiref",
+    "channels",
+    "daphne",
+    "django",
+}
+"""Story 13.6's own stated boundary (AD-8, ``webhook_host.py``'s module
+docstring: "never imports ``daphne`` itself... no adopter may be asked to
+change frameworks to adopt"), made a static guarantee rather than prose
+alone -- ``_FORBIDDEN_ADAPTER_MODULES``/``_FORBIDDEN_INFERENCE_PACKAGES``
+check for different reaches (a concrete transport adapter; an LLM/inference
+SDK) and neither would catch a host-framework import landing in bridge-core.
+``daphne`` is the ASGI server Story 13.6 wires up as a *process*, never a
+library import; ``django``/``channels``/``asgiref`` are Steward's own
+`spec-secure-live-dashboards` dashboard stack (`pyforge-steward`'s
+``[dashboard]`` extra) -- none of the four may ever be named directly by
+Herald's own framework-neutral webhook/host modules."""
 
 _FORBIDDEN_DYNAMIC_IMPORT_NAMES = {
     "__dict__",
@@ -401,6 +445,18 @@ def test_bridge_core_never_names_a_concrete_transport_adapter(module):
 def test_bridge_core_never_names_a_recognized_inference_sdk_package(module):
     assert _all_identifiers(_module_source(module)).isdisjoint(
         _FORBIDDEN_INFERENCE_PACKAGES
+    )
+
+
+@pytest.mark.parametrize("module", _BRIDGE_CORE_MODULES, ids=lambda m: m.__name__)
+def test_bridge_core_never_names_a_host_framework_package(module):
+    """Story 13.6's AD-8 boundary, made a static guarantee: ``webhook.py``/
+    ``webhook_host.py`` (both bridge-core, per this file's own module
+    docstring) may never literally import ``daphne``/``django``/``channels``/
+    ``asgiref`` -- daphne stays a process invoked from the command line, and
+    the Django stack stays confined to ``pyforge-steward``."""
+    assert _all_identifiers(_module_source(module)).isdisjoint(
+        _FORBIDDEN_HOST_FRAMEWORK_PACKAGES
     )
 
 

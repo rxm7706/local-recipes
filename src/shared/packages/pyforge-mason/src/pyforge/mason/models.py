@@ -40,6 +40,29 @@ their own results in later (AD-11, spec Never boundary: no `ShipTarget`
 enum or `ShipReceipt` aggregate lands with this story -- both are
 explicitly out of scope here). Later stories still add `ShipReceipt` and
 `LockResult` here (architecture Structural Seed) -- neither exists yet.
+
+Story 3.2 adds `PackageBuildResult` -- the fifth shape, and the first NOT
+produced anywhere near `cfe.py`: `package.py::build()`'s own return type
+(FR-15, FR-21, FR-22), composed from `engines.pep517`/`engines.pixi`'s two
+independent build outcomes. Its per-engine intermediate result dataclasses
+(`Pep517BuildResult`, `PixiBuildResult`) deliberately stay in their own
+`engines/*.py` modules rather than landing here -- they cross a layer
+boundary too (`engines/*.py` -> `package.py`), but never reach `cli.py`/
+`render.py` directly the way `PackageBuildResult` itself does, so widening
+this leaf's surface for them is not warranted.
+
+Story 3.3 adds `ShipTargetKind`/`ShipTarget` -- the sixth and seventh
+shapes in this file, and the first pair produced nowhere near a subprocess
+at all: `package.py::parse_ship_targets`'s own closed parse-result
+vocabulary for `--ship`/`--to` (FR-16, FR-19, spec AC1), consumed
+immediately afterward by `package.py::plan_ship` to build each target's
+`ShipTargetResult` dry-run entry -- AD-9's already-established shape
+(Story 2.9, above), reused rather than reinvented (see `ShipTargetResult`'s
+own docstring below for why its `target` field stays a plain `str` rather
+than adopting this new enum). No `ShipReceipt` aggregate lands with this
+story either (spec Never boundary) -- Story 2.9's docstring above already
+named that as a later story's addition (Story 3.7), and this story does not
+change that.
 """
 
 from __future__ import annotations
@@ -162,15 +185,107 @@ class ShipTargetResult:
     same operation).
 
     `target` is a literal string (e.g. `"conda-forge"`), not a `ShipTarget`
-    enum -- that closed vocabulary is explicitly Story 3.3's scope (spec
-    Never boundary), so this field stays a plain `str` until that story
-    defines it. `reference` is a URL, PR number, or branch URL, depending on
-    `state`, or `None` when nothing concrete exists yet (a dry run, or a
-    failure before anything was produced). `message` is the wrapped tool's
-    own `message`/`error` field, verbatim -- no Mason-side re-authoring
-    (AD-1)."""
+    enum, even though Story 3.3 (below) now defines that closed vocabulary
+    -- this field stays a plain `str` deliberately (spec Always boundary:
+    "`ShipTargetResult.target` stays a plain `str`... `recipe.py::submit()`
+    is untouched"): `recipe.py::submit()`'s own literal `"conda-forge"` is
+    not migrated to `ShipTargetKind.CONDA_FORGE.value`, and `package.py::
+    plan_ship`'s new dry-run entries reconstruct the same canonical string
+    form rather than reaching for the enum here, so every producer of this
+    field agrees on its type without this dataclass itself changing shape.
+    `reference` is a URL, PR number, branch URL, or channel path (Story 3.5:
+    `package.py::ship_channel`'s success `reference` is the bare, caller-
+    supplied channel name -- see `engines.pixi`'s own module docstring for
+    why no equivalent live-verified URL exists to parse one out of),
+    depending on `state`, or `None` when nothing concrete exists yet (a dry
+    run, or a failure before anything was produced). `message` is the
+    wrapped tool's own `message`/`error` field, verbatim -- no Mason-side
+    re-authoring (AD-1)."""
 
     target: str
     state: ShipState
     reference: str | None
     message: str | None
+
+
+class ShipTargetKind(StrEnum):
+    """The closed set of ship-destination kinds `package.py::parse_ship_
+    targets` recognizes (Story 3.3, FR-16, FR-19, spec AC1): `PYPI` (upload
+    to PyPI), `CONDA_FORGE` (a staged-recipes pull request), `CHANNEL` (an
+    arbitrary named conda channel -- `ShipTarget.channel_name` carries
+    which one). Exactly these three; no `pypi-test` form lands here (spec
+    Never boundary -- Story 3.9/FR-50's own scope, not this vocabulary's).
+
+    `StrEnum`, not a plain `Enum`, mirroring `ShipState`'s own precedent
+    above for the same reason: this file's shapes eventually reach
+    `render_json`'s bare `json.dumps(dataclasses.asdict(...))` call with no
+    custom encoder once a future story wires a ship-related result onto the
+    CLI's output envelope, and a plain `Enum` member would raise
+    `TypeError` there where a `StrEnum` member serializes natively."""
+
+    PYPI = "pypi"
+    CONDA_FORGE = "conda-forge"
+    CHANNEL = "channel"
+
+
+@dataclass(frozen=True)
+class ShipTarget:
+    """One parsed `--ship`/`--to` token (Story 3.3, FR-16, FR-19, spec
+    AC1) -- `package.py::parse_ship_targets`'s own per-token return shape,
+    and `package.py::plan_ship`'s per-target input.
+
+    `kind` is the closed `ShipTargetKind`. `channel_name` is the name after
+    `channel:` (e.g. `"myorg"` for `"channel:myorg"`) when `kind` is
+    `CHANNEL`, or `None` for `PYPI`/`CONDA_FORGE`, whose canonical string
+    form carries no further variable data. No default value on either
+    field, mirroring `ShipTargetResult`'s own no-defaults field convention
+    above: a `ShipTarget` with a forgotten `channel_name` is exactly the
+    ambiguity a default would silently paper over."""
+
+    kind: ShipTargetKind
+    channel_name: str | None
+
+
+@dataclass(frozen=True)
+class PackageBuildResult:
+    """The outcome of one `package build` invocation (FR-15, FR-21, FR-22):
+    both a PEP 517 wheel+sdist build (`engines.pep517`) and a `.conda`
+    build (`engines.pixi`) run for the same project, in one call.
+
+    `target` is the caller's own `--target` value (`"library"` in v1 --
+    `cli.py`'s `choices=("library",)` is the only validation, since a
+    closed `ShipTarget`-style enum for this field is out of this story's
+    scope, mirroring `ShipTargetResult.target`'s own plain-`str` precedent).
+    `project_path` is the resolved, absolute project directory both engines
+    actually ran against (`package.py::build()`'s own docstring explains why
+    it is resolved before either engine runs). `wheel_path`/`sdist_path`/
+    `conda_path` are the produced artifacts' paths, or `None` when that
+    artifact was not produced -- an absent engine never reaches this far
+    (`require_engine` raises before either subprocess spawns), so `None`
+    here means a non-zero build returncode (AD-4: data, never raised) or no
+    matching artifact filename was found on disk after a build that
+    otherwise reported success. `wheel_version`/`conda_version` are each
+    build's own parsed version (`engines.pep517`'s wheel-filename parse,
+    `engines.pixi`'s `.conda`-filename parse respectively), or `None` under
+    the same "not produced" condition -- `package.py::build()`'s one point
+    of comparison between them (FR-22: a disagreement between two known
+    values raises `PackageVersionMismatchError` before this dataclass is
+    ever constructed). `pep517_returncode`/`pixi_returncode` are each
+    engine subprocess's raw exit code -- non-zero is DATA here, never
+    raised (AD-4), mirroring `BuildResult.returncode`'s own precedent.
+    `pep517_stdout`/`pixi_stdout` are each engine subprocess's captured
+    stdout in full (review pass, 2026-08-13) -- mirror `BuildResult.
+    stdout`'s own precedent: a build failure investigated outside a live
+    terminal needs diagnostic text, not a bare returncode integer."""
+
+    target: str
+    project_path: str
+    wheel_path: str | None
+    sdist_path: str | None
+    conda_path: str | None
+    wheel_version: str | None
+    conda_version: str | None
+    pep517_returncode: int
+    pixi_returncode: int
+    pep517_stdout: str
+    pixi_stdout: str

@@ -1451,8 +1451,10 @@ from this decision. **Deps:** S-6.3.
 
 1. **OQ-E1** — S-2.1's script table must name a specific CFE script per verb (PRD OQ-1, spine
    OQ-A1). Mechanical, but must be produced before S-2.4 starts.
-2. **OQ-E2** — S-3.5's engine choice: `pixi publish` or `anaconda upload` (PRD OQ-2, spine OQ-A2).
-   Either satisfies AD-12.
+2. **OQ-E2** — RESOLVED 2026-08-13 (S-3.5's spec, PRD OQ-2, spine OQ-A2): `pixi upload prefix
+   --channel <name>` -- the only pixi-upload subcommand whose destination maps 1:1 onto
+   `channel:<name>`'s bare-name vocabulary; `pixi publish` and `anaconda upload` were both ruled
+   out (see PRD OQ-2 for the reasoning).
 3. **OQ-E3** — S-4.1's engine: `conda-lock` or `pixi` (PRD OQ-4). May need both adapters.
 4. **OQ-E4** — S-2.2's deny-list content (spine OQ-A3): the concrete pattern set must be reviewable
    and hard to weaken silently. Needs a review gate of its own.

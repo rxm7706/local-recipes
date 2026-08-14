@@ -9,7 +9,11 @@ construction/immutability mirroring `CfeResult`'s own tests, plus the one
 property unique to `ShipState` -- its `StrEnum` members behave as plain
 `str` under `json.dumps`/`str()`/`==` (the exact claim `models.py`'s own
 Design Notes make about why `render_json`/`render_text` need no special
-handling)."""
+handling).
+
+Story 3.3 extends this file again with `ShipTargetKind`/`ShipTarget`
+coverage: exactly-three-members plus construction/immutability/equality,
+mirroring `ShipTargetResult`'s own test shape."""
 
 from __future__ import annotations
 
@@ -19,7 +23,9 @@ from dataclasses import FrozenInstanceError
 import pytest
 
 from pyforge.mason.engines import EngineStatus
-from pyforge.mason.models import CfeResult, DoctorReport, ShipState, ShipTargetResult
+from pyforge.mason.models import (
+    CfeResult, DoctorReport, ShipState, ShipTarget, ShipTargetKind, ShipTargetResult,
+)
 
 
 # --- CfeResult ----------------------------------------------------------------
@@ -154,4 +160,45 @@ def test_ship_target_result_is_frozen():
 def test_ship_target_result_equality_is_by_value():
     a = ShipTargetResult(target="conda-forge", state=ShipState.FAILED, reference=None, message="x")
     b = ShipTargetResult(target="conda-forge", state=ShipState.FAILED, reference=None, message="x")
+    assert a == b
+
+
+# --- ShipTargetKind ----------------------------------------------------------
+
+def test_ship_target_kind_has_exactly_the_three_story_3_3_members():
+    assert {member.value for member in ShipTargetKind} == {"pypi", "conda-forge", "channel"}
+
+
+def test_ship_target_kind_members_are_real_str_instances():
+    """`StrEnum`, not a plain `Enum` (docstring): every member must already
+    BE a `str`, not merely comparable to one -- mirrors `ShipState`'s own
+    test above."""
+    assert isinstance(ShipTargetKind.PYPI, str)
+    assert ShipTargetKind.CONDA_FORGE == "conda-forge"
+
+
+# --- ShipTarget ----------------------------------------------------------------
+
+def test_ship_target_constructs_with_both_fields():
+    target = ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg")
+    assert target.kind == ShipTargetKind.CHANNEL
+    assert target.channel_name == "myorg"
+
+
+def test_ship_target_channel_name_accepts_none_for_non_channel_kinds():
+    pypi_target = ShipTarget(kind=ShipTargetKind.PYPI, channel_name=None)
+    conda_forge_target = ShipTarget(kind=ShipTargetKind.CONDA_FORGE, channel_name=None)
+    assert pypi_target.channel_name is None
+    assert conda_forge_target.channel_name is None
+
+
+def test_ship_target_is_frozen():
+    target = ShipTarget(kind=ShipTargetKind.PYPI, channel_name=None)
+    with pytest.raises(FrozenInstanceError):
+        target.kind = ShipTargetKind.CONDA_FORGE  # type: ignore[misc]
+
+
+def test_ship_target_equality_is_by_value():
+    a = ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg")
+    b = ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg")
     assert a == b

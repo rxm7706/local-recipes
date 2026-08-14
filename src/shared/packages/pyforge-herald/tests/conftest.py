@@ -99,8 +99,14 @@ def deny_network(
     tmp_path: Path,
 ):
     """Deny egress -- and real-credential reads -- for every test not
-    marked ``live``."""
+    marked ``live`` or ``live_webhook`` (Story 13.6: a real daphne
+    subprocess bound to a real loopback socket, never reaching
+    claude-design -- a genuinely different kind of "live", kept as its own
+    marker so each marker's docstring stays literally true, but carved out
+    of this same egress-deny harness for the identical reason)."""
     if request.node.get_closest_marker("live") is not None:
+        return
+    if request.node.get_closest_marker("live_webhook") is not None:
         return
     monkeypatch.setattr(socket.socket, "connect", _denied_connect)
     monkeypatch.setattr(socket.socket, "connect_ex", _denied_connect_ex)

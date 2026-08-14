@@ -14,6 +14,7 @@ requirement.
 
 from __future__ import annotations
 
+import json
 from pathlib import Path
 
 from pyforge.doctor.models import DoctorStatus, Source
@@ -37,6 +38,17 @@ def _write_tracked(target: Path, project: str, text: str) -> Path:
     path = _project_dir(target, project) / "planning-artifacts" / "deferred-work-ledger.md"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(text, encoding="utf-8")
+    return path
+
+
+def _write_baseline(target: Path, data: dict) -> Path:
+    """Write the Story 7.2 grandfather baseline (``{project_slug: count}``)
+    a test fixture needs so ``gather_deferred_work`` does not degrade to the
+    ``no-deferred-work-baseline`` finding -- most tests below are exercising
+    something ORTHOGONAL to the baseline itself and want a clean ``{}``."""
+    path = target / "scripts" / ".deferred-work-baseline.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data), encoding="utf-8")
     return path
 
 
@@ -155,6 +167,7 @@ def test_anonymous_ledger_entry_reports_fail(tmp_path: Path) -> None:
 def test_project_with_no_tier3_ledger_reports_ok(tmp_path: Path) -> None:
     """A real projects tree whose projects simply carry no Tier-3 ledger is an
     evaluable, genuinely clean state -- the confident OK is honest here."""
+    _write_baseline(tmp_path, {})
     _project_dir(tmp_path, "proj").mkdir(parents=True, exist_ok=True)
 
     findings = chain.gather_deferred_work(tmp_path)
@@ -187,6 +200,7 @@ def test_target_with_no_projects_tree_reports_unevaluable_warn(
 
 
 def test_fully_promoted_project_reports_ok(tmp_path: Path) -> None:
+    _write_baseline(tmp_path, {})
     _write_tier3(tmp_path, "proj", "## DW-story-1-1\npromoted\n")
     _write_tracked(tmp_path, "proj", "## DW-story-1-1\nstatus: closed\n")
 
@@ -202,6 +216,7 @@ def test_fully_promoted_project_reports_ok(tmp_path: Path) -> None:
 
 
 def test_multiple_projects_are_all_reported_independently(tmp_path: Path) -> None:
+    _write_baseline(tmp_path, {})
     _write_tier3(tmp_path, "alpha", "## DW-1\nnever promoted\n")
     _write_tracked(tmp_path, "alpha", "## DW-other\nstatus: open\n")
     _write_tier3(tmp_path, "beta", "## DW-story-1-1\npromoted\n")
@@ -220,16 +235,17 @@ def test_one_unevaluable_project_does_not_hide_another_projects_real_fail(
     DIFFERENT, well-formed project's real ``tier3-only-deferral`` FAIL --
     isolation structured in from the first draft (Design Notes), mirroring
     ``sources/board.py``'s own per-project isolation tests."""
+    _write_baseline(tmp_path, {})
     _write_tier3(tmp_path, "good", "## DW-1\nnever promoted\n")  # real FAIL
     _write_tracked(tmp_path, "good", "## DW-other\nstatus: open\n")
     _write_tier3(tmp_path, "zbroken", "## DW-2\nsomething\n")
 
     real = chain._check_project_deferred_work
 
-    def _explode(target, proj, findings):
+    def _explode(target, proj, findings, baseline):
         if proj.name == "zbroken":
             raise RuntimeError("unanticipated shape")
-        return real(target, proj, findings)
+        return real(target, proj, findings, baseline)
 
     monkeypatch.setattr(chain, "_check_project_deferred_work", _explode)
 
@@ -363,6 +379,7 @@ def test_unreadable_tier3_directory_is_a_warn_not_a_confident_ok(
     nothing" -- reproduced live during review, two real FAILs became a
     confident ``deferred-work ok``. Empty must never be inferred from
     unreadable."""
+    _write_baseline(tmp_path, {})
     _write_tier3(tmp_path, "proj", "## DW-1\nx\n" + "y" * 3000)
 
     t3_dir = _project_dir(tmp_path, "proj") / "implementation-artifacts"
@@ -384,6 +401,7 @@ def test_unreadable_tracked_ledger_directory_does_not_claim_the_ledger_is_absent
     "the tracked ledger does not exist", asserting the WHOLE record was
     gitignored -- and re-flagging every already-promoted id as Tier-3-only --
     about a project whose ledger is right there."""
+    _write_baseline(tmp_path, {})
     _write_tier3(tmp_path, "proj", "## DW-1\nx\n" + "y" * 3000)
     _write_tracked(tmp_path, "proj", "## DW-1\nstatus: open\n")
     assert [f.check for f in chain.gather_deferred_work(tmp_path)] == ["deferred-work"]
@@ -400,3 +418,233 @@ def test_unreadable_tracked_ledger_directory_does_not_claim_the_ledger_is_absent
         f"an unreadable planning-artifacts/ produced confidently wrong FAILs: {checks}"
     )
     assert findings[0].status is DoctorStatus.WARN
+
+
+# --- Story 7.3: Tier-3-anonymous entries against the grandfather baseline ---------
+
+
+def test_anonymous_tier3_entries_beyond_baseline_are_reported_fail(
+    tmp_path: Path,
+) -> None:
+    """The core I/O matrix row: N=3 anonymous Tier-3 entries, baseline stamps
+    K=1 -- the two entries past the stamped count (positional slice, not a
+    lookup) each become one ``tier3-entry-unidentified`` FAIL."""
+    _write_baseline(tmp_path, {"proj": 1})
+    _write_tier3(
+        tmp_path, "proj",
+        "- source_spec: `a`\n\n- source_spec: `b`\n\n- source_spec: `c`\n",
+    )
+    _write_tracked(tmp_path, "proj", "## DW-x\nstatus: open\n")
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    reported = [f for f in findings if f.check == "tier3-entry-unidentified"]
+    assert len(reported) == 2, findings
+    assert all(f.source is Source.DEFERRED_WORK for f in reported)
+    assert all(f.status is DoctorStatus.FAIL for f in reported)
+    assert {f.evidence["id"] for f in reported} == {"line 3", "line 5"}
+    assert "cannot be cited" in reported[0].message
+
+
+def test_anonymous_tier3_entries_within_baseline_report_nothing(
+    tmp_path: Path,
+) -> None:
+    """The grandfather row: exactly K=2 anonymous Tier-3 entries, baseline
+    stamps K=2 -- entirely grandfathered, zero findings for this project."""
+    _write_baseline(tmp_path, {"proj": 2})
+    _write_tier3(tmp_path, "proj", "- source_spec: `a`\n\n- source_spec: `b`\n")
+    _write_tracked(tmp_path, "proj", "## DW-x\nstatus: open\n")
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    assert not any(f.check == "tier3-entry-unidentified" for f in findings), findings
+
+
+def test_project_absent_from_baseline_is_treated_as_count_zero(
+    tmp_path: Path,
+) -> None:
+    """A project present in the Tier-3 tree but with no key in the committed
+    baseline is never silently grandfathered -- every one of its current
+    anonymous entries is reported."""
+    _write_baseline(tmp_path, {"other-project": 5})
+    _write_tier3(tmp_path, "proj", "- source_spec: `a`\n")
+    _write_tracked(tmp_path, "proj", "## DW-x\nstatus: open\n")
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    reported = [f for f in findings if f.check == "tier3-entry-unidentified"]
+    assert len(reported) == 1, findings
+    assert reported[0].evidence["project"] == "proj"
+    assert reported[0].evidence["id"] == "line 1"
+
+
+def test_tier3_cap2_mutation_pair_identified_then_anonymous(tmp_path: Path) -> None:
+    """CAP-2's proof standard, applied to the Tier-3 side (mirrors the
+    tracked-ledger proof ``_anonymous()``'s own docstring already records): a
+    claimed ``## DW-1`` entry (its own ``- source_spec:`` field, positionally
+    the first under the heading) produces no Tier-3-anonymous finding.
+    Deleting the id heading turns the SAME entry anonymous and, being beyond
+    the baseline-stamped count of 0, reds the detector where it was
+    previously clean -- demonstrated by mutation, not asserted by inspection."""
+    _write_baseline(tmp_path, {"proj": 0})
+    _write_tier3(tmp_path, "proj", "## DW-1\n- source_spec: `spec-x`\n")
+    _write_tracked(tmp_path, "proj", "## DW-1\nstatus: open\n")
+
+    before = chain.gather_deferred_work(tmp_path)
+    assert not any(f.check == "tier3-entry-unidentified" for f in before), before
+
+    # Mutation: delete the id heading, leaving a bare anonymous entry behind.
+    _write_tier3(tmp_path, "proj", "- source_spec: `spec-x`\n")
+
+    after = chain.gather_deferred_work(tmp_path)
+    finding = next(f for f in after if f.check == "tier3-entry-unidentified")
+    assert finding.source is Source.DEFERRED_WORK
+    assert finding.status is DoctorStatus.FAIL
+    assert finding.evidence["id"] == "line 1"
+
+
+def test_missing_baseline_reports_one_fail_and_suppresses_tier3_anonymous_checks(
+    tmp_path: Path,
+) -> None:
+    """Given no ``scripts/.deferred-work-baseline.json`` at all: exactly one
+    ``no-deferred-work-baseline`` FAIL, and the genuinely anonymous Tier-3
+    entry present is NOT individually reported -- silently treating a
+    missing baseline as count 0 would flood it as a fresh FAIL instead."""
+    _write_tier3(tmp_path, "proj", "- source_spec: `a`\n")
+    _write_tracked(tmp_path, "proj", "## DW-x\nstatus: open\n")
+    # deliberately: no _write_baseline(...) call
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    kinds = [f.check for f in findings]
+    assert kinds.count("no-deferred-work-baseline") == 1, kinds
+    assert "tier3-entry-unidentified" not in kinds, kinds
+    finding = next(f for f in findings if f.check == "no-deferred-work-baseline")
+    assert finding.source is Source.DEFERRED_WORK
+    assert finding.status is DoctorStatus.FAIL
+
+
+def test_malformed_baseline_json_degrades_like_missing(tmp_path: Path) -> None:
+    """Invalid JSON is handled, not raised, and degrades exactly like a
+    missing file -- one named FAIL, Tier-3-anonymous check skipped repo-wide."""
+    baseline_path = tmp_path / "scripts" / ".deferred-work-baseline.json"
+    baseline_path.parent.mkdir(parents=True, exist_ok=True)
+    baseline_path.write_text("{not valid json", encoding="utf-8")
+    _write_tier3(tmp_path, "proj", "- source_spec: `a`\n")
+    _write_tracked(tmp_path, "proj", "## DW-x\nstatus: open\n")
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    kinds = [f.check for f in findings]
+    assert kinds.count("no-deferred-work-baseline") == 1, kinds
+    assert "tier3-entry-unidentified" not in kinds, kinds
+
+
+def test_baseline_wrong_top_level_shape_degrades_like_missing(tmp_path: Path) -> None:
+    """Valid JSON but the wrong shape (a list, not a ``{project: count}``
+    object) is the second malformed-but-parseable failure mode the matrix
+    names -- same one-FAIL degrade, not a crash on ``.get()``/``isinstance``."""
+    baseline_path = tmp_path / "scripts" / ".deferred-work-baseline.json"
+    baseline_path.parent.mkdir(parents=True, exist_ok=True)
+    baseline_path.write_text(json.dumps(["proj", 1]), encoding="utf-8")
+    _write_tier3(tmp_path, "proj", "- source_spec: `a`\n")
+    _write_tracked(tmp_path, "proj", "## DW-x\nstatus: open\n")
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    kinds = [f.check for f in findings]
+    assert kinds.count("no-deferred-work-baseline") == 1, kinds
+    assert "tier3-entry-unidentified" not in kinds, kinds
+
+
+def test_missing_baseline_does_not_suppress_unrelated_finding_kinds(
+    tmp_path: Path,
+) -> None:
+    """A missing baseline only silences the NEW Tier-3-anonymous check --
+    every pre-existing finding kind (here, ``tier3-only-deferral``) still
+    fires normally, since it is unrelated to this story's grandfathering."""
+    _write_tier3(tmp_path, "proj", "## DW-1\nnever promoted\n")
+    _write_tracked(tmp_path, "proj", "## DW-other\nstatus: open\n")
+    # deliberately: no _write_baseline(...) call
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    kinds = {f.check for f in findings}
+    assert "no-deferred-work-baseline" in kinds
+    assert "tier3-only-deferral" in kinds
+
+
+def test_baseline_count_larger_than_live_entries_reports_nothing(
+    tmp_path: Path,
+) -> None:
+    """Review-pass addition: a stamped count that exceeds the file's current
+    number of anonymous entries (e.g. some were later given headings) must
+    not crash or under/over-report -- the positional slice is simply empty."""
+    _write_baseline(tmp_path, {"proj": 99})
+    _write_tier3(tmp_path, "proj", "- source_spec: `a`\n")
+    _write_tracked(tmp_path, "proj", "## DW-x\nstatus: open\n")
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    assert not any(f.check == "tier3-entry-unidentified" for f in findings), findings
+
+
+def test_baseline_bool_or_negative_value_degrades_like_missing(
+    tmp_path: Path,
+) -> None:
+    """Review-pass addition: ``bool`` is an ``int`` subclass in Python, so
+    ``{"proj": true}`` would otherwise pass an ``isinstance(v, int)`` shape
+    guard and mis-slice as ``[1:]``; a negative count would mis-slice as a
+    tail-only ``[-1:]`` via Python's negative-index semantics. Both must be
+    rejected as malformed shape, not silently coerced."""
+    for bad_value in (True, -1):
+        baseline_path = tmp_path / "scripts" / ".deferred-work-baseline.json"
+        baseline_path.parent.mkdir(parents=True, exist_ok=True)
+        baseline_path.write_text(json.dumps({"proj": bad_value}), encoding="utf-8")
+        _write_tier3(tmp_path, "proj", "- source_spec: `a`\n")
+        _write_tracked(tmp_path, "proj", "## DW-x\nstatus: open\n")
+
+        findings = chain.gather_deferred_work(tmp_path)
+
+        kinds = [f.check for f in findings]
+        assert kinds.count("no-deferred-work-baseline") == 1, (bad_value, kinds)
+        assert "tier3-entry-unidentified" not in kinds, (bad_value, kinds)
+
+
+# --- Story 7.4: severity parity across ledger/Tier-3 sides -------------------------
+
+
+def test_ledger_and_tier3_anonymous_entries_carry_the_same_severity(
+    tmp_path: Path,
+) -> None:
+    """CAP-2's closing AC: proof, not an inference from reading the code, that
+    the two anonymous-entry finding kinds -- tracked-side
+    ``ledger-entry-unidentified`` and Tier-3-side ``tier3-entry-unidentified``
+    -- resolve to the same status within ONE run. Neither finding-building
+    branch in ``_check_project_deferred_work`` sets the ``"warn"`` key, so
+    both must come back FAIL; this pins that fact so a future one-sided edit
+    (e.g. adding ``"warn"`` to only one branch) cannot silently desync them."""
+    _write_baseline(tmp_path, {"proj": 0})
+    _write_tier3(tmp_path, "proj", "- source_spec: `a`\n")
+    _write_tracked(
+        tmp_path, "proj",
+        "## DW-x\nstatus: open\n- source_spec: foo\n\n- source_spec: bar\n",
+    )
+
+    findings = chain.gather_deferred_work(tmp_path)
+
+    kinds = {f.check for f in findings}
+    assert {"ledger-entry-unidentified", "tier3-entry-unidentified"} <= kinds, (
+        f"expected both anonymous-entry finding kinds to fire in the same run: "
+        f"{sorted(kinds)}"
+    )
+    ledger = next(f for f in findings if f.check == "ledger-entry-unidentified")
+    tier3 = next(f for f in findings if f.check == "tier3-entry-unidentified")
+    assert ledger.source is Source.DEFERRED_WORK
+    assert tier3.source is Source.DEFERRED_WORK
+    assert ledger.status is DoctorStatus.FAIL
+    assert tier3.status is DoctorStatus.FAIL
+    assert ledger.status == tier3.status, (
+        f"anonymous entries on the two sides diverged in severity: "
+        f"ledger={ledger.status!r} tier3={tier3.status!r}"
+    )

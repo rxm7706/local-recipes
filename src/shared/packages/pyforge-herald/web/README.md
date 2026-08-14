@@ -27,9 +27,9 @@ npm run preview   # serves dist/, defaults to http://localhost:4173
 ```
 
 `dev`/`build` both run `sync-progress` first (via `predev`/`prebuild`), which
-copies the operator's local `.herald/progress.json` (written by `herald
-progress <station> --update`, run from the repo root) into
-`public/progress.json` -- the static snapshot `ProgressPanel` fetches at
+exports the operator's local progress records from `.herald/herald.db`
+(written by `herald progress <station> --update`, run from the repo root)
+into `public/progress.json` -- the static snapshot `ProgressPanel` fetches at
 runtime. Run it by hand after recording new progress without a full
 dev/build cycle:
 
@@ -57,7 +57,7 @@ npm run test      # vitest run (component tests: tab switching, sidebar
   date, shipped-capability count, total compute hours; expanded: the full
   capability list, cost breakdown, unblock narrative), filtered by the
   sidebar's station/date-range filters. Reads `public/progress.json` (see
-  `scripts/sync-progress.mjs` above) -- there is no live REST API in this
+  `sync-progress` above) -- there is no live REST API in this
   scaled-down pass.
 - `src/panels/SuccessPanel.jsx`, `OperationsPanel.jsx` — per-tab
   placeholders. Real data-fetching is Epic 9/10's scope; today they just
