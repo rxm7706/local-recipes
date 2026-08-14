@@ -70,3 +70,21 @@ source org's Tier-3 batch, sharing the same "no current PyForge target" disposit
   application-container concern, confirmed by reading its own source docstring). Kept
   intentionally thin — the credential-handling discipline is the only piece worth retaining
   independent of timing.
+- **2026-08-14** — **Air-gapped realization requirements (operator, from the source original
+  pixi-container-image.md):** the source Dockerfile is itself the airgap mechanism; its specifics
+  should transfer intact if this is ever built: (1) the base is an internally-certified
+  UBI8-minimal pulled from the enterprise registry, never public Docker Hub, and the produced
+  image publishes back to that registry so K8s/OCP pulls (per today's operator decision) never
+  leave the perimeter; (2) the pixi binary downloads from an Artifactory generic-repo mirror
+  (`ARTIFACTORY_URL` + `ARTIFACTORY_REPO_PATH`, with a `${PIXI_VERSION%%.*}.x` major-version
+  subdirectory) — direct prefix.dev download is an explicit source non-goal; (3) credentials
+  cross the build boundary only via BuildKit `--mount=type=secret` read inline as
+  `$(cat /run/secrets/...)` — never ENV, never COPY, never persisted in any layer — the
+  build-time twin of `_http.py`'s env-only runtime posture, followed by `.pem`/`.enc` cleanup;
+  (4) TLS to the mirror trusts the internal CA via a `CA_PATH` build arg, the image-build analog
+  of the truststore half of `_http.py`'s runtime chain; (5) OS updates run `microdnf update`
+  against internal `rpm-OraLinux*` repos only (credentials via `--setopt` from the same mounted
+  secrets, `tsflags=nodocs`, caches cleaned), on a weekly rebuild cron so patching continues with
+  no container ever reaching the public net; (6) downstream layers that later run `pixi install`
+  resolve their channels from the same Artifactory conda mirrors this repo's pixi channels
+  already swap to.

@@ -74,3 +74,25 @@ precedent from, not the source's own FreeMarker sample app) · [[pixi-container-
   noted that Steward's own `middleware.py`/`declarations.py` design is the real local reference a
   second Django surface should copy, not this source dream's FreeMarker tooling.
 - **2026-08-14** — **Activation trigger recorded (operator direction):** the Django/Langflow/DB-GPT family is to build on a cookiecutter-django Django service WITH FastAPI integration **based on this dream** — the engines joining as pluggable Django applications ([[langflow-django-plugin]] / [[db-gpt-django-plugin]]), on PostgreSQL + Redis + Kubernetes. This is the concrete second-Django-surface signal this dream's own Constraint was waiting for, affirmed by the operator rather than inferred. Stays `dreamt` only until the family's subject project is named; at that intake this dream is the basis and should be spec'd with (not after) the family.
+- **2026-08-14** — **Air-gapped realization requirements (operator, from the source original
+  django-accelerator-framework.md):** the source accelerator treats the private network as ground
+  truth — Artifactory coordinates are first-class template substitutions stamped into
+  `pyproject.toml`, `pixi.toml`, Helm charts, CI workflows, and the conda recipe of every
+  rendered service, and the pipeline publishes to Artifactory and deploys to OpenShift. The
+  cookiecutter-django + FastAPI host recorded above must carry the same posture from its first
+  render: (1) template renders parameterize the mirror endpoints so every pip/conda/pixi install
+  in a generated service resolves from Artifactory-mirrored indexes only (pixi channels swappable
+  to internal mirrors, as this repo already practices); (2) frontend assets follow the source's
+  Bootstrap 5.3 + HTMX + Django Compressor shape — vendored and bundled locally, served
+  WhiteNoise/`collectstatic`-style, zero CDN `<script>`/`<link>` references in base templates
+  (the CAP-4 CDN-rewrite precedent from spec-atlas-query-dashboards applies at template-authoring
+  time, not as a later patch); (3) all runtime config flows through the source's
+  `env()`-helper/split-settings pattern — DB, Redis broker, OIDC endpoints, and secret keys via
+  env/secret mounts, never committed, matching `_http.py`'s env-only enterprise routing;
+  (4) auth binds to an internal OIDC IdP (the source uses PINGi via django-allauth; form login
+  only in DEBUG) — no external identity callbacks; (5) deployment per the
+  K8s/OCP+PostgreSQL+Redis decision: images pulled from an internal registry, `/ht/`
+  django-health-check endpoints wired to K8s liveness/readiness probes, Celery's Redis broker
+  in-cluster. Python 3.14 compatibility is orthogonal but constrains which mirrored package
+  versions the template may pin.
+- **2026-08-14** — **Subject project NAMED: [[python-agent-platform]]** (operator). The family's last precondition is met — the subject Dream and its family Spec (spec-python-agent-platform, pyforge-steward) consolidate all four same-day operator decisions plus the spike evidence; this dream's remaining role is the decision trail and its named pattern contracts.

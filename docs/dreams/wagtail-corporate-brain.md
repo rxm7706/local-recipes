@@ -99,3 +99,23 @@ code before drafting" discipline)
   LaSuiteClient's existing contract, real httpx opener, round-trip/idempotency verified); the
   attended DW-H3 bring-up is scheduled separately; broad CMS scope stays excluded per the dream's
   own Constraint.
+- **2026-08-14** — **Air-gapped realization requirements (operator, from the source original
+  wagtail-cms-content-platform.md):** the source platform runs entirely inside a private network,
+  and the narrow DW-H3 instance must too. (1) Whichever way the spec's substrate open question
+  resolves, installs come from mirrors only: conda-forge `wagtail` + `django-lasuite` resolved
+  through an Artifactory-mirrored conda channel (this repo's pixi channels are already swappable
+  to internal mirrors), or a container image pulled from an internal registry per today's
+  K8s/OCP+PostgreSQL+Redis decision — never Docker Hub, never public PyPI at deploy time.
+  (2) All static assets self-hosted: the source serves its CSS from app `static/` dirs
+  (`custom.css`, `wagtail_admin.css`) and injects all editor JS (Draftail color picker,
+  Handsontable/TipTap/Chart.js StructBlockAdapter media, Bokeh `render_embed()` resource tags)
+  from local media — the live instance serves Wagtail admin + site assets
+  WhiteNoise/`collectstatic`-style with zero CDN references, the exact concern
+  spec-atlas-query-dashboards CAP-4 just made contractual for Panel/Bokeh; any future
+  broad-scope chart/table blocks inherit that CAP-4 vendoring precedent rather than re-deriving
+  it. (3) Credentials stay env-only: `LASUITE_BASE_URL`/`LASUITE_API_TOKEN` already resolve only
+  from env (spec AD-2) — in-cluster that means secret-mounted env vars, matching `_http.py`'s
+  truststore + JFrog/GitHub/.netrc chain (env vars only, never committed config); the httpx
+  opener trusts the internal CA the same truststore-driven way. (4) The source's production auth
+  is an internal OIDC IdP (form login only in DEBUG) — moot for the narrow Bearer-token scope,
+  but any separately-decided broad scope inherits "internal IdP, no external auth callbacks."
