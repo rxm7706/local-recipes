@@ -936,3 +936,31 @@ no root); and nothing in the core chart is OCP-specific.
 end-to-end — image from an internal/local registry, lockfile resolved from mirror-only
 channels, zero CDN references in served assets, credentials via secret mounts only — and any
 external reference is a FAILING check, not a warning.
+
+## Epic 13: Scratch worktrees become one command
+
+**Spec binding.** Decomposes `spec-scratch-worktree-lifecycle` (this station's specs/ dir;
+authored 2026-08-14 from the best-evidenced dream of its batch — the hand-typed five-step
+scratch-worktree ritual observed a dozen-plus times in one session's landing passes).
+Deliberately deferred while the Epic 10-12 run was live (feed mutation under a live run is
+the stuck-baseline failure mode); decomposed at the run's stop. Quick-dev-sized by design —
+prefer `bmad-quick-dev` over a loop re-spin for these two stories if hand-picked.
+
+### Story 13.1: Workspace verbs over git worktree
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** spec-scratch-worktree-lifecycle CAP-1, CAP-2, CAP-4, CAP-5
+**Surface:** `src/shared/packages/pyforge-steward/` (workspace duty), steward CLI
+**Given** `steward workspace start <slug> [--from <branch>]` (defaults `origin/main`, prints
+the path, records bookkeeping), `ls` (cheap enumeration, no per-worktree subprocess), and
+`clean [--merged-only]` (bmad-loop clean's archive-not-delete discipline) **Then** every verb
+emits `--json`, and the own-worktrees-only rule is HARD: `ls`/`clean` never see Marshal's
+loop-home worktrees (bookkeeping of what this tool created is the enforcement, backed by a
+test that plants a foreign loop-home worktree and proves it invisible).
+
+### Story 13.2: Status and the feed-mirror decision
+**Type:** feature • **Effort:** S • **Deps:** S-13.1 • **FR/AD:** spec-scratch-worktree-lifecycle CAP-3 (+ its two open questions)
+**Surface:** steward workspace duty
+**Given** `steward workspace status [<slug>]` **Then** it pays the per-worktree git-subprocess
+cost (dirty/clean, ahead/behind, merged?) that `ls` deliberately does not, and this story
+RESOLVES the spec's two open questions with dated Spec Change Log entries: whether the Tier-3
+feed rsync-mirror step becomes its own verb or joins `start`, and whether `workspace update`
+exists at all — decisions recorded, not silently implemented.

@@ -2,7 +2,7 @@
 title: A Django-service scaffolding engine, if this repo ever births new Django-based stations
 type: dream
 owner: mason
-status: dreamt
+status: specified
 ---
 
 # A Django-service scaffolding engine, if this repo ever births new Django-based stations
@@ -96,3 +96,4 @@ precedent from, not the source's own FreeMarker sample app) · [[pixi-container-
   in-cluster. Python 3.14 compatibility is orthogonal but constrains which mirrored package
   versions the template may pin.
 - **2026-08-14** — **Subject project NAMED: [[python-agent-platform]]** (operator). The family's last precondition is met — the subject Dream and its family Spec (spec-python-agent-platform, pyforge-steward) consolidate all four same-day operator decisions plus the spike evidence; this dream's remaining role is the decision trail and its named pattern contracts.
+- **2026-08-14** — Spec authored (spec-django-accelerator-framework, pyforge-mason) closing the "spec'd with the family" obligation: CAP-1 = the accelerator contract (first realization: python-agent-platform's src/platform render, Story 10.1; second reference: steward's dashboard); CAP-2 = the templating engine, explicitly parked on the dream's own third-surface trigger.
