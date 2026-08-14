@@ -3,7 +3,9 @@ spec: python-agent-platform
 status: draft
 owner-dream: docs/dreams/python-agent-platform.md
 surface:
-  - "(downstream subject — no in-repo code surface; steward planning artifacts + the five family dreams are the governed surface)"
+  - src/platform/
+  - pixi.toml
+  - environment.yaml
 sources:
   - ../../../../../../docs/dreams/python-agent-platform.md
   - ../../../../../../docs/dreams/django-accelerator-framework.md
@@ -11,10 +13,7 @@ sources:
   - ../../../../../../docs/dreams/db-gpt-django-plugin.md
   - ../../../../../../docs/dreams/enterprise-multi-agent-orchestration.md
   - ../../../../../../docs/dreams/asgi-multiplexer-monolith.md
-open_questions:
-  - "Which Kubernetes platform is the first deployment target — Red Hat OCP or Google GKE? (Both must be supported; the first target sequences the Helm/route vs ingress work.)"
-  - "Where does the platform's own repository live — a new sibling repo scaffolded per django-accelerator-framework, or a directory under an existing one? (Decomposition-time decision.)"
-  - "bcrypt sequencing: is the py3.14 prerequisite cleared upstream (langflow drops the passlib-era pin) or via a runtime-validated feedstock loosening — and does the platform's first render wait for it or ship on py3.12 with 3.14 as a follow-up gate?"
+open_questions: []
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what
@@ -100,8 +99,12 @@ thing. The operator named it: **python-agent-platform**.
 - **Not** a re-decision of the topology pair — enterprise-multi-agent-orchestration and
   asgi-multiplexer-monolith's Realization logs carry the closed decision trail; the monolith
   survives only as "one service" and the microservices shape only as the sidecar fallback.
-- **Not** a packaging effort, a new station, or in-repo platform code — this is a downstream
-  subject built from steward's deployment craft and mason's packages.
+- **Not** a packaging effort or a new station — the platform is built from steward's deployment
+  craft and mason's packages. *(Corrected 2026-08-14, operator monorepo decision: the platform's
+  code DOES live in this repo, at `src/platform/` — the original "no in-repo platform code"
+  framing is superseded; the factory/platform boundary survives as an import rule, not a repo
+  wall: `src/platform/` consumes the factory's published conda packages only and never imports
+  `pyforge.*` code.)*
 - **Not** frontend-only embedding (plugin Pattern C) or SDK-only usage (Pattern C/B) as the
   primary shape — those stay documented fallbacks in the plugin dreams.
 
@@ -114,10 +117,33 @@ the same render succeeds with egress blocked; and the environment lockfile shows
 resolved from mirrored channels — with the py3.14 gate either green or explicitly waiting on
 the named bcrypt prerequisite.
 
-## Open Questions
+## Open Questions — all three resolved 2026-08-14 (operator)
 
-- "Which Kubernetes platform is the first deployment target — Red Hat OCP or Google GKE?"
-- "Where does the platform's own repository live — a new sibling repo scaffolded per
-  django-accelerator-framework, or a directory under an existing one?"
-- "bcrypt sequencing: upstream pin drop vs runtime-validated feedstock loosening — and does the
-  first render wait for 3.14 or ship on 3.12 with 3.14 as a follow-up gate?"
+- **First deployment target → Red Hat OCP; GKE is the portability check.** OCP's
+  `restricted-v2` SCC discipline (arbitrary UIDs, no root) is a strict superset — an image
+  passing it runs unmodified on GKE, while the reverse commonly fails; disconnected installs
+  are a first-class OpenShift pattern, so CAP-6's air-gap parity is exercised where it is
+  *real*; and every inherited source-org mechanic (UBI8-minimal, Artifactory mirrors, internal
+  OIDC, in-cluster Kaniko) is OpenShift-shaped. The core chart stays vanilla-Kubernetes
+  (Deployment/Service/Ingress or Gateway API) with a thin OCP Route overlay; GKE runs as a CI
+  smoke profile, never a second implementation.
+- **Repository home → THIS repo (monorepo goal), at `src/platform/`.** The cookiecutter-django
+  render roots there (`src/platform/manage.py`; image build context `src/platform/`), beside
+  the existing `src/shared/` (libraries) and `src/pptx/` (exports) tiers. Mitigations, all
+  standing conventions: platform PRs take the `maintenance` label; platform CI filters on
+  `paths: [src/platform/**]` with `working-directory` defaults; one new pixi feature+env
+  `python-agent-platform` pinning `python = "3.12.*"` env-scoped (the rest of the repo stays
+  3.14; flips to 3.14 when the bcrypt prerequisite clears), with the known env-count ripple
+  (bmad-drift surface-changed + llms-full + environment.yaml) reconciled in the same PR that
+  adds the env; this SPEC's `surface:` now governs `src/platform/`. Knock-on corrections:
+  `reusable-cicd-workflows` stays parked (no second consuming repo materializes);
+  `pixi-container-image` gains its first real `FROM` consumer when the platform containerizes.
+- **bcrypt / py3.14 sequencing → ship the first render on py3.12 now; fix the pin in parallel;
+  3.14 is a release gate, not an entry gate.** Verified 2026-08-14: langflow upstream `main`
+  still pins `bcrypt==4.0.1` beside `passlib>=1.7.4`, so no free fix is coming. Two lanes run
+  in parallel: (a) upstream issue/PR asking langflow to drop passlib (direct `bcrypt` or
+  `pwdlib`); (b) runtime-validated loosening in this factory's own langflow-feedstock
+  (`bcrypt >=4.0.1,<5`, build-number bump) whose recipe test exercises the actual
+  API-key/password-hashing path under bcrypt ≥4.1 — an import check is not sufficient. The
+  platform's 3.14 gate (CAP-5) flips green the release after either lane lands; dbgpt + django
+  5.2.15 are already 3.14-clean.

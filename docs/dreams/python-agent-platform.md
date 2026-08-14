@@ -43,7 +43,8 @@ statelessness is mandatory, not aspirational.
   2026-08-13; db-gpt-feedstock 2026-07-22).
 - The feasibility spike passed (py3.12), the py3.14 blocker is isolated to one pin, and the
   topology/infra/architecture decisions are recorded with dates in the five family dreams.
-- Nothing of the platform itself exists yet — no repo, no rendered host, no pluggable app.
+- Nothing of the platform itself exists yet — no `src/platform/` tree, no rendered host, no
+  pluggable app.
 
 ## Constraints
 
@@ -61,8 +62,10 @@ statelessness is mandatory, not aspirational.
   (2026-08-14) is pluggable-apps-in-one-service with sidecars only on pluggability failure;
   the sibling topology dreams record the full decision trail.
 - **Not** a new packaging effort — the engines are already on conda-forge.
-- **Not** owned by this repo's codebase: the platform is a downstream subject; this factory
-  ships its packages and (via Steward) its deployment craft.
+- **Not** a fork of the factory's engines — the platform consumes the factory's published conda
+  packages only and never imports `pyforge.*` code. *(Corrected 2026-08-14: originally "not
+  owned by this repo's codebase"; the operator's monorepo decision places the platform IN this
+  repo at `src/platform/` — the boundary survives as this import rule, not a repo wall.)*
 
 ## Kinships
 
@@ -83,3 +86,4 @@ statelessness is mandatory, not aspirational.
   conda-native co-install solves on py3.12 (373 pkgs); py3.14 blocked solely by langflow-base's
   `bcrypt ==4.0.1` (langflow-feedstock maintenance item). Name chosen by the operator:
   **python-agent-platform**.
+- **2026-08-14** — **All three Spec open questions resolved (operator), recorded in spec-python-agent-platform:** (1) first deployment target = Red Hat OCP (strictest-superset image discipline, air-gap exercised where it is real), GKE as the CI portability profile; (2) the platform lives IN this repo at `src/platform/` per the monorepo goal — cookiecutter-django roots there, one new env-scoped pixi feature pins py3.12 until the bcrypt prerequisite clears, and the factory/platform boundary becomes an import rule (published conda packages only, never `pyforge.*`); (3) first render ships on py3.12 with the bcrypt fix running in parallel (upstream passlib-drop ask + runtime-validated langflow-feedstock loosening — upstream main re-verified today still pinning bcrypt==4.0.1) and py3.14 as a release gate. Knock-ons: reusable-cicd-workflows stays parked; pixi-container-image activates when the platform containerizes. The Spec is now decomposition-ready.
