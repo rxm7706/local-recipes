@@ -20,7 +20,15 @@ whitespace tolerance, and `plan_ship`'s dry-run plan content for all three
 target kinds against a directly-constructed `PackageBuildResult` fixture --
 no engine mock is needed for `plan_ship` itself (it reads an already-built
 result and calls neither adapter), proven by
-`test_plan_ship_calls_no_engine` below."""
+`test_plan_ship_calls_no_engine` below.
+
+Story 3.4 extends this file with `ship_pypi` coverage: missing-credential-
+raises-before-build, happy path, no-artifact-built, upload-failure,
+structural-error propagation. Story 3.5 extends it again with `ship_channel`
+coverage, mirroring `ship_pypi`'s own suite exactly in shape (both engine
+adapters mocked at their own call sites, `pyforge.mason.package.pixi.upload`
+for the new one, mirroring this suite's "patch on the calling module's own
+namespace" convention)."""
 
 from __future__ import annotations
 
@@ -29,17 +37,17 @@ from unittest.mock import patch
 import pytest
 
 from pyforge.mason.engines.pep517 import Pep517BuildResult
-from pyforge.mason.engines.pixi import PixiBuildResult
+from pyforge.mason.engines.pixi import PixiBuildResult, PixiUploadResult
 from pyforge.mason.engines.twine import TwineUploadResult
 from pyforge.mason.errors import (
     EngineAbsentError, InvalidShipTargetError, PackageProjectPathError,
-    PackageVersionMismatchError, ShipCredentialMissingError,
+    PackageVersionMismatchError, ShipChannelCredentialMissingError, ShipCredentialMissingError,
 )
 from pyforge.mason.models import (
     PackageBuildResult, ShipState, ShipTarget, ShipTargetKind, ShipTargetResult,
 )
 from pyforge.mason.package import (
-    _versions_disagree, build, parse_ship_targets, plan_ship, ship_pypi,
+    _versions_disagree, build, parse_ship_targets, plan_ship, ship_channel, ship_pypi,
 )
 
 
@@ -652,5 +660,172 @@ def test_ship_pypi_forwards_an_explicit_target():
         "pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT,
     ) as mock_build, patch("pyforge.mason.package.twine.upload", return_value=upload_result):
         ship_pypi("/proj", environ=_SHIP_ENVIRON, target="not-the-default")
+
+    mock_build.assert_called_once_with("/proj", target="not-the-default")
+
+
+# --- Story 3.5: ship_channel -----------------------------------------------
+
+_SHIP_CHANNEL_ENVIRON = {"PREFIX_API_KEY": "prefix-secret"}
+
+_SHIP_CHANNEL_BUILD_RESULT = PackageBuildResult(
+    target="library",
+    project_path="/proj",
+    wheel_path=None,
+    sdist_path=None,
+    conda_path="/proj/dist-conda/pkg-0.1.0-abc123_0.conda",
+    wheel_version=None,
+    conda_version="0.1.0",
+    pep517_returncode=1,
+    pixi_returncode=0,
+    pep517_stdout="",
+    pixi_stdout="Building pkg\n",
+)
+
+
+def test_ship_channel_raises_before_build_or_upload_when_credential_missing():
+    with patch("pyforge.mason.package.build") as mock_build, \
+         patch("pyforge.mason.package.pixi.upload") as mock_upload:
+        with pytest.raises(ShipChannelCredentialMissingError) as excinfo:
+            ship_channel("/proj", "myorg", environ={})
+
+    assert excinfo.value.missing == ("PREFIX_API_KEY",)
+    mock_build.assert_not_called()
+    mock_upload.assert_not_called()
+
+
+def test_ship_channel_treats_a_whitespace_only_credential_as_missing():
+    with patch("pyforge.mason.package.build") as mock_build, \
+         patch("pyforge.mason.package.pixi.upload") as mock_upload:
+        with pytest.raises(ShipChannelCredentialMissingError) as excinfo:
+            ship_channel("/proj", "myorg", environ={"PREFIX_API_KEY": "   "})
+
+    assert excinfo.value.missing == ("PREFIX_API_KEY",)
+    mock_build.assert_not_called()
+    mock_upload.assert_not_called()
+
+
+def test_ship_channel_happy_path_uploads_and_returns_terminal_result():
+    upload_result = PixiUploadResult(returncode=0, stdout="Uploading...\ndone\n")
+    with patch(
+        "pyforge.mason.package.build", return_value=_SHIP_CHANNEL_BUILD_RESULT,
+    ) as mock_build, patch(
+        "pyforge.mason.package.pixi.upload", return_value=upload_result,
+    ) as mock_upload:
+        result = ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON)
+
+    mock_build.assert_called_once_with("/proj", target="library")
+    mock_upload.assert_called_once_with(_SHIP_CHANNEL_BUILD_RESULT.conda_path, "myorg")
+    assert result == ShipTargetResult(
+        target="channel:myorg",
+        state=ShipState.TERMINAL,
+        reference="myorg",
+        message="Uploading...\ndone\n",
+    )
+
+
+def test_ship_channel_returns_failed_when_build_produces_no_conda_artifact():
+    failed_build = PackageBuildResult(
+        target="library",
+        project_path="/proj",
+        wheel_path=None,
+        sdist_path=None,
+        conda_path=None,
+        wheel_version=None,
+        conda_version=None,
+        pep517_returncode=0,
+        pixi_returncode=1,
+        pep517_stdout="",
+        pixi_stdout="error: recipe not found\n",
+    )
+    with patch("pyforge.mason.package.build", return_value=failed_build), \
+         patch("pyforge.mason.package.pixi.upload") as mock_upload:
+        result = ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON)
+
+    mock_upload.assert_not_called()
+    assert result == ShipTargetResult(
+        target="channel:myorg",
+        state=ShipState.FAILED,
+        reference=None,
+        message="error: recipe not found\n",
+    )
+
+
+def test_ship_channel_returns_failed_when_upload_returns_nonzero():
+    """Proves the channel-rejection path returns data, not a raised
+    exception (spec Always boundary) -- `pixi.upload` WAS called, so a
+    second call for a different target in the same invocation would be
+    unaffected."""
+    upload_result = PixiUploadResult(
+        returncode=1, stdout="Error:   x no prefix.dev API key provided\n",
+    )
+    with patch("pyforge.mason.package.build", return_value=_SHIP_CHANNEL_BUILD_RESULT), \
+         patch(
+             "pyforge.mason.package.pixi.upload", return_value=upload_result,
+         ) as mock_upload:
+        result = ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON)
+
+    mock_upload.assert_called_once_with(_SHIP_CHANNEL_BUILD_RESULT.conda_path, "myorg")
+    assert result == ShipTargetResult(
+        target="channel:myorg",
+        state=ShipState.FAILED,
+        reference=None,
+        message="Error:   x no prefix.dev API key provided\n",
+    )
+
+
+def test_ship_channel_propagates_engine_absent_from_build():
+    with patch(
+        "pyforge.mason.package.build", side_effect=EngineAbsentError("pixi", "pixi"),
+    ), patch("pyforge.mason.package.pixi.upload") as mock_upload:
+        with pytest.raises(EngineAbsentError):
+            ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON)
+
+    mock_upload.assert_not_called()
+
+
+def test_ship_channel_propagates_package_version_mismatch_from_build():
+    with patch(
+        "pyforge.mason.package.build",
+        side_effect=PackageVersionMismatchError(
+            wheel_version="0.1.0",
+            conda_version="0.2.0",
+            wheel_path="/proj/dist/pkg-0.1.0-py3-none-any.whl",
+            conda_path="/proj/dist-conda/pkg-0.2.0-abc123_0.conda",
+        ),
+    ), patch("pyforge.mason.package.pixi.upload") as mock_upload:
+        with pytest.raises(PackageVersionMismatchError):
+            ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON)
+
+    mock_upload.assert_not_called()
+
+
+def test_ship_channel_propagates_package_project_path_error_from_build():
+    with patch(
+        "pyforge.mason.package.build",
+        side_effect=PackageProjectPathError(project_path="/proj", reason="boom"),
+    ), patch("pyforge.mason.package.pixi.upload") as mock_upload:
+        with pytest.raises(PackageProjectPathError):
+            ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON)
+
+    mock_upload.assert_not_called()
+
+
+def test_ship_channel_default_target_is_library():
+    upload_result = PixiUploadResult(returncode=0, stdout="")
+    with patch(
+        "pyforge.mason.package.build", return_value=_SHIP_CHANNEL_BUILD_RESULT,
+    ) as mock_build, patch("pyforge.mason.package.pixi.upload", return_value=upload_result):
+        ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON)
+
+    mock_build.assert_called_once_with("/proj", target="library")
+
+
+def test_ship_channel_forwards_an_explicit_target():
+    upload_result = PixiUploadResult(returncode=0, stdout="")
+    with patch(
+        "pyforge.mason.package.build", return_value=_SHIP_CHANNEL_BUILD_RESULT,
+    ) as mock_build, patch("pyforge.mason.package.pixi.upload", return_value=upload_result):
+        ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON, target="not-the-default")
 
     mock_build.assert_called_once_with("/proj", target="not-the-default")

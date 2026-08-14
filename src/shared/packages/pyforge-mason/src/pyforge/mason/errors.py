@@ -558,3 +558,95 @@ class ShipUploadTimeoutError(MasonError):
         # <built message>)` -- the wrong value for this class's own
         # `(timeout,)` constructor.
         return (self.__class__, (self.timeout,))
+
+
+class ShipChannelCredentialMissingError(MasonError):
+    """`package.py::ship_channel`'s credential-presence precondition failed:
+    `PREFIX_API_KEY` is absent or empty (stripped) in the caller's `environ`
+    (Story 3.5, FR-16, AD-14, NFR-14).
+
+    A dedicated class, NOT a reuse of `ShipCredentialMissingError` (spec
+    Always boundary): that class hardcodes "PyPI" into its message text
+    (`"missing PyPI upload credential(s)..."`), which would be a factually
+    wrong diagnostic for a channel-upload failure. Raised as `ship_channel`'s
+    FIRST action, before `build()` or `engines.pixi.upload()` are ever
+    called (architecture AD-14: "Credential presence is validated before any
+    artifact is built") -- mirrors `ShipCredentialMissingError`/
+    `EngineAbsentError`/`CfeUnresolvedError`'s precedent that a structural
+    precondition is RAISED, not returned as data. `missing` names exactly
+    which required channel-upload credential(s) were absent or empty, in the
+    order `ship_channel` checked them -- construction raises `ValueError` for
+    an empty `missing` or for any entry that is not a non-empty string,
+    matching `ShipCredentialMissingError`'s validation rigor: a credential-
+    missing error naming nothing missing, or naming a malformed entry, is
+    exactly the incoherent state this class exists to rule out. `missing` is
+    stored as a `tuple`, matching every other `Sequence`-typed field in this
+    module.
+    """
+
+    def __init__(self, missing: Sequence[str]) -> None:
+        missing = tuple(missing)
+        if not missing:
+            raise ValueError(
+                "ShipChannelCredentialMissingError requires a non-empty "
+                "`missing`: a credential-missing error naming nothing "
+                "missing is incoherent"
+            )
+        if not all(isinstance(item, str) and item.strip() for item in missing):
+            raise ValueError(
+                "ShipChannelCredentialMissingError requires every `missing` "
+                "entry to be a non-empty string: a credential-missing error "
+                "naming a malformed entry is incoherent"
+            )
+        self.missing = missing
+        message = (
+            f"missing channel upload credential(s) in the environment: "
+            f"{', '.join(missing)}; set them before shipping to a channel"
+        )
+        super().__init__("ship:channel-credential-missing", message)
+
+    def __reduce__(self):
+        # Mirrors `ShipCredentialMissingError.__reduce__` above:
+        # `Exception.__reduce__` reconstructs via `cls(*self.args)`, and
+        # `MasonError.__init__` sets `self.args = (
+        # "ship:channel-credential-missing", <built message>)` -- the wrong
+        # value for this class's own `(missing,)` constructor.
+        return (self.__class__, (self.missing,))
+
+
+class ShipChannelUploadTimeoutError(MasonError):
+    """A `engines.pixi.upload()` invocation exceeded its mandatory timeout
+    (Story 3.5, FR-16, AD-25, NFR-14) -- mirrors `ShipUploadTimeoutError`'s
+    own shape and rationale exactly; only the wrapped subprocess boundary
+    differs (`engines.pixi.upload`'s own `subprocess.run(timeout=...)`
+    rather than `engines.twine.upload`'s).
+
+    A dedicated class, NOT a reuse of `ShipUploadTimeoutError` (spec Always
+    boundary): that class hardcodes "PyPI" into its message text (`"the
+    PyPI upload did not complete..."`), which would be a factually wrong
+    diagnostic for a channel-upload timeout.
+
+    `subprocess.run`'s own `timeout=` kill-and-reap-before-raising behaviour
+    is what guarantees "no orphaned process" here -- this class only names
+    the failure; it does not itself do any process cleanup. `timeout` is the
+    number of seconds that elapsed before the child was killed, echoed
+    verbatim into the message. v1 exposes no per-upload timeout override
+    (spec Never boundary) -- the message says so rather than pointing at a
+    knob that does not exist.
+    """
+
+    def __init__(self, timeout: float) -> None:
+        self.timeout = timeout
+        message = (
+            f"the channel upload did not complete within {timeout}s and was "
+            "killed; this is not a currently configurable v1 knob"
+        )
+        super().__init__("ship:channel-upload-timeout", message)
+
+    def __reduce__(self):
+        # Mirrors `ShipUploadTimeoutError.__reduce__` above:
+        # `Exception.__reduce__` reconstructs via `cls(*self.args)`, and
+        # `MasonError.__init__` sets `self.args = (
+        # "ship:channel-upload-timeout", <built message>)` -- the wrong
+        # value for this class's own `(timeout,)` constructor.
+        return (self.__class__, (self.timeout,))

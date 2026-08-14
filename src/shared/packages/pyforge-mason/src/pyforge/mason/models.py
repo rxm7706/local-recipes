@@ -193,10 +193,14 @@ class ShipTargetResult:
     plan_ship`'s new dry-run entries reconstruct the same canonical string
     form rather than reaching for the enum here, so every producer of this
     field agrees on its type without this dataclass itself changing shape.
-    `reference` is a URL, PR number, or branch URL, depending on `state`, or
-    `None` when nothing concrete exists yet (a dry run, or a failure before
-    anything was produced). `message` is the wrapped tool's own
-    `message`/`error` field, verbatim -- no Mason-side re-authoring (AD-1)."""
+    `reference` is a URL, PR number, branch URL, or channel path (Story 3.5:
+    `package.py::ship_channel`'s success `reference` is the bare, caller-
+    supplied channel name -- see `engines.pixi`'s own module docstring for
+    why no equivalent live-verified URL exists to parse one out of),
+    depending on `state`, or `None` when nothing concrete exists yet (a dry
+    run, or a failure before anything was produced). `message` is the
+    wrapped tool's own `message`/`error` field, verbatim -- no Mason-side
+    re-authoring (AD-1)."""
 
     target: str
     state: ShipState

@@ -38,7 +38,7 @@ development_status:
   3-2-mason-package-build: done
   3-3-ship-target-vocabulary-and-dry-run-default: done
   3-4-the-pypi-ship-target: done
-  3-5-the-channel-name-ship-target: backlog
+  3-5-the-channel-name-ship-target: done
   3-6-the-conda-forge-ship-target: backlog
   3-7-asymmetric-receipts-partial-failure-and-idempotence: backlog
   3-8-mason-ships-mason: backlog

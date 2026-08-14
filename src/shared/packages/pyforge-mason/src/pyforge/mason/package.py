@@ -69,11 +69,24 @@ result shape. See `ship_pypi`'s own docstring, and this module's Design
 Notes in its spec, for why it does its own `build()` call rather than
 accepting an already-built `PackageBuildResult`.
 
+Story 3.5 adds `ship_channel()` (FR-16, AD-9, AD-14): the second ship
+target that actually uploads, mirroring `ship_pypi()`'s structure exactly.
+It checks `PREFIX_API_KEY` presence in the caller's own `environ` FIRST,
+before calling `build()` at all (same AD-14 precondition-first ordering),
+then reuses `build()` unconditionally (FR-15, never duplicated) and, only
+when `build_result.conda_path` is non-`None`, calls the new `engines.pixi.
+upload()` adapter and wraps its outcome in a `ShipTargetResult` -- the same
+AD-9 shape `ship_pypi`'s own upload path already uses. Unlike `ship_pypi`'s
+`reference=upload_result.url`, `ship_channel`'s success `reference` is the
+bare, caller-supplied `channel_name` (never a constructed URL) -- see
+`engines.pixi`'s own module docstring for why no equivalent live-verified
+URL exists to parse.
+
 Zero `cfe` reference anywhere in this file (spec Always boundary,
 `tests/meta/test_capability_tiers.py` guards it): `build()` never resolves
 a CFE root or interpreter, unlike every `recipe.py` verb, and Story 3.3's
-two new functions -- and Story 3.4's `ship_pypi()` -- are pure and
-CFE-independent too.
+two new functions -- and Story 3.4's `ship_pypi()`, and Story 3.5's `ship_
+channel()` -- are pure and CFE-independent too.
 """
 
 from __future__ import annotations
@@ -86,7 +99,7 @@ from packaging.version import InvalidVersion, Version
 from .engines import pep517, pixi, twine
 from .errors import (
     InvalidShipTargetError, PackageProjectPathError, PackageVersionMismatchError,
-    ShipCredentialMissingError,
+    ShipChannelCredentialMissingError, ShipCredentialMissingError,
 )
 from .models import (
     PackageBuildResult, ShipState, ShipTarget, ShipTargetKind, ShipTargetResult,
@@ -389,5 +402,97 @@ def ship_pypi(
         target="pypi",
         state=ShipState.TERMINAL,
         reference=upload_result.url,
+        message=upload_result.stdout,
+    )
+
+
+_REQUIRED_SHIP_CHANNEL_CREDENTIALS = ("PREFIX_API_KEY",)
+
+
+def ship_channel(
+    project_path: str, channel_name: str, *, environ: Mapping[str, str], target: str = "library",
+) -> ShipTargetResult:
+    """Build and upload `project_path`'s `.conda` package to the named
+    private conda channel `channel_name` via `pixi upload prefix` (Story
+    3.5, FR-16, AD-9, AD-14).
+
+    Checks `PREFIX_API_KEY` presence in `environ` FIRST, as this function's
+    very first action, before `build()` is ever called (architecture AD-14:
+    "Credential presence is validated before any artifact is built") --
+    raises `ShipChannelCredentialMissingError` naming it when absent or
+    empty (stripped). Only presence is checked: the value is never read
+    into a variable used for anything but this truthiness check, logged, or
+    stored on the returned object (NFR-2) -- the credential reaches `pixi`
+    only via the subprocess's own inherited environment, inside `engines.
+    pixi.upload` (see that module's own docstring).
+
+    When the credential is present, calls `build(project_path,
+    target=target)` unconditionally (FR-15, reused rather than duplicated
+    -- mirrors `ship_pypi`'s own identical rationale for owning this
+    sequence itself rather than accepting an already-built
+    `PackageBuildResult`). The canonical target string is `f"channel:
+    {channel_name}"` (matches `plan_ship`'s own canonical reconstruction).
+    Only when the returned `PackageBuildResult` carries a non-`None`
+    `conda_path` does this function go on to call `engines.pixi.upload(
+    conda_path, channel_name)`; otherwise -- the `.conda` engine failed or
+    produced nothing -- it returns a `FAILED` result directly, without
+    `pixi.upload` ever being called (spec I/O matrix). That "nothing built"
+    case's `message` is `build_result.pixi_stdout` -- the wrapped `pixi`
+    build engine is the one responsible for the `.conda` artifact this ship
+    target needs, so its own stdout is the wrapped tool's own field,
+    verbatim (AD-1, `models.ShipTargetResult.message`'s own docstring
+    contract).
+
+    On a zero `upload()` returncode, returns `ShipTargetResult(target=
+    f"channel:{channel_name}", state=ShipState.TERMINAL,
+    reference=channel_name, message=upload_result.stdout)` -- `reference`
+    is the bare `channel_name`, never a constructed URL (spec Always
+    boundary; see `engines.pixi`'s own module docstring for why no
+    equivalent live-verified URL exists to parse). On a nonzero `upload()`
+    returncode, returns `ShipTargetResult(state=ShipState.FAILED,
+    reference=None, message=upload_result.stdout)` -- AD-4: a tool that RAN
+    but failed is data, never raised (mirrors `ship_pypi`'s own identical
+    nonzero-upload handling), so a caller shipping to other targets in the
+    same invocation is unaffected by this one's failure.
+
+    `EngineAbsentError` (pixi, or either build engine, not on `PATH`),
+    `ShipChannelUploadTimeoutError` (the upload exceeds its timeout), and
+    anything else `build()` itself already raises
+    (`PackageVersionMismatchError`, `PackageProjectPathError`) all
+    propagate un-caught out of this function -- these are structural
+    preconditions, not this call's own execution outcome (spec Always
+    boundary, same split `build()`/`ship_pypi()` already established).
+    """
+    missing = [
+        name
+        for name in _REQUIRED_SHIP_CHANNEL_CREDENTIALS
+        if not environ.get(name, "").strip()
+    ]
+    if missing:
+        raise ShipChannelCredentialMissingError(missing)
+
+    build_result = build(project_path, target=target)
+
+    canonical = f"{_CHANNEL_PREFIX}{channel_name}"
+
+    if build_result.conda_path is None:
+        return ShipTargetResult(
+            target=canonical,
+            state=ShipState.FAILED,
+            reference=None,
+            message=build_result.pixi_stdout,
+        )
+
+    upload_result = pixi.upload(build_result.conda_path, channel_name)
+
+    if upload_result.returncode != 0:
+        return ShipTargetResult(
+            target=canonical, state=ShipState.FAILED, reference=None, message=upload_result.stdout,
+        )
+
+    return ShipTargetResult(
+        target=canonical,
+        state=ShipState.TERMINAL,
+        reference=channel_name,
         message=upload_result.stdout,
     )
