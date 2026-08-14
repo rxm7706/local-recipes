@@ -94,6 +94,10 @@ thing. The operator named it: **python-agent-platform**.
   issues upstream, it never forks the engines.
 - **Always:** a per-engine sidecar container is admissible ONLY on demonstrated pluggability
   failure (dependency or lifecycle isolation), recorded as a dated deviation in the Dream.
+- **Always:** development is local-first on the guaranteed baseline (pixi + conda-forge/
+  Artifactory mirror + VS Code + Copilot; WSL2 on Windows) — every dev dependency resolves
+  via pixi; only the container engine and `kind` are system-level installs (AD-16, tiers
+  table in the SPINE companion).
 - **Always:** images build and run under BOTH Docker and Podman (operator, 2026-08-14) — the
   Containerfile stays in the engines' intersection (secret mounts via the
   `--mount=type=secret` form both BuildKit and `podman build --secret`/buildah honor; OCI

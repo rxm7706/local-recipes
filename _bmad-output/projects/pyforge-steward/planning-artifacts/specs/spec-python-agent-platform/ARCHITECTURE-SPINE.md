@@ -106,6 +106,27 @@ defaults — factory and platform jobs never pay for each other; platform PRs ta
 `maintenance` label; the env-count ripple (environment.yaml export, llms-full catalog,
 bmad-drift baseline) reconciles in the same PR that adds or changes the env.
 
+- **AD-16 — Local-first development on the guaranteed baseline.** The guaranteed developer
+  baseline is exactly: pixi, conda-forge (or an internal Artifactory conda mirror), VS Code,
+  and GitHub Copilot — on Windows the posture is WSL2. Every development dependency ships as
+  a conda package through pixi: a `platform-dev` feature provisions per-user `postgresql` +
+  `pgvector` + `redis-server` (verified solving together from conda-forge 2026-08-14, with
+  `kubernetes-helm` + `kubernetes-client` for chart work), and the serverless dev mode is
+  eager-Celery + in-memory Channels. The ONLY system-level installs permitted are the
+  container engine (Podman/Docker Desktop) and the `kind` binary it hosts — everything else
+  that cannot arrive via pixi is a design smell. The Copilot surface connects to the
+  existing copilot-bridge lineage for dev-time assistant/LLM needs; live engine flows still
+  require an env-var-pointed model endpoint (never hardcoded).
+
+## Local development tiers (AD-16 in practice)
+
+| Tier | Requires | Covers |
+|---|---|---|
+| 0 | pixi + checkout only | All factory/station work; platform app code, `manage.py check`/`runserver`, boundary lint, mocked-engine tests, eager-Celery/in-memory-Channels |
+| 1 | + `platform-dev` pixi feature (per-user PG/pgvector/redis-server as local processes) | All of Epic 11: schema isolation, `search_path`, pgvector, the isolation proof suite |
+| 2 | + container engine (Podman Desktop preferred) & `kind` | Story 10.3 image (rootless Podman = the OCP `restricted-v2` predictor), 11.4 replacement sim, chart work incl. the GKE-shaped kind profile and the egress-blocked air-gap check |
+| 3 | a real cluster (attended) | Final OCP acceptance only: Route admission, SCC enforcement, real registry/OIDC wiring |
+
 ## Consumed by
 
 | AD | Stories |
@@ -125,3 +146,4 @@ bmad-drift baseline) reconciles in the same PR that adds or changes the env.
 | AD-13 | 10.1, 10.2, 10.3, 12.3 |
 | AD-14 | 11.1, 11.2 |
 | AD-15 | 10.1, 10.2, 10.3, 12.2, 12.3 |
+| AD-16 | 10.2 (env), 11.1 (platform-dev feature AC), 10.3, 11.3, 11.4, 12.1, 12.2, 12.3 |

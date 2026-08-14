@@ -878,6 +878,12 @@ langflow + dbgpt + django completes cleanly.
 `LANGFLOW_DATABASE_URL` carries the `search_path` suffix; no local-disk state path survives;
 and a flow executes end-to-end through the mount with its tables provably confined to
 `langflow_schema`.
+**And** (added 2026-08-14, AD-16 — folded here rather than into 10.2, whose contract was
+frozen mid-dev under the graceful stop) a `platform-dev` pixi feature exists providing
+per-user `postgresql` + `pgvector` + `redis-server` (plus `kubernetes-helm`/
+`kubernetes-client`) so this story's schema work — and all of Epic 11 — runs on the
+guaranteed baseline with no managed services and no containers; its pixi.toml edit carries
+the standard env-count reconcile ripple.
 
 ### Story 11.2: DB-GPT joins as a pluggable app
 **Type:** feature • **Effort:** L • **Deps:** S-10.1, S-10.2 • **FR/AD:** spec-python-agent-platform CAP-3
