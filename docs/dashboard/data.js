@@ -2415,20 +2415,10 @@ window.DASHBOARD_DATA = {
         "E4",
         "E5"
       ],
-      "inflight": {
-        "key": "4.1",
-        "title": "Lock engine adapter and provenance",
-        "phase": "dev",
-        "attempt": "1",
-        "startEpoch": 1786707517,
-        "median": 69,
-        "lo": 16,
-        "hi": 435,
-        "phaseAsOf": "2026-08-14 11:59 UTC"
-      },
+      "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 28 of 42 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 29 of 42 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.2",
@@ -2541,11 +2531,15 @@ window.DASHBOARD_DATA = {
           [
             "3.9",
             133
+          ],
+          [
+            "4.1",
+            44
           ]
         ],
         "foot": [
           [
-            "~78 min",
+            "~74 min",
             "median / story",
             "var(--done)"
           ],
@@ -2555,12 +2549,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "28/42",
+            "30/42",
             "stories complete",
             "var(--done)"
           ],
           [
-            "14",
+            "12",
             "remaining",
             ""
           ]
@@ -2569,9 +2563,9 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 3458,
-        "totalLabel": "~57.6 h active compute",
-        "note": "Derived from 28 measured stories; a story still in flight contributes only its closed sessions.",
+        "total": 3502,
+        "totalLabel": "~58.4 h active compute",
+        "note": "Derived from 29 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.2": 91,
           "1.3": 402,
@@ -2600,17 +2594,19 @@ window.DASHBOARD_DATA = {
           "3.6": 93,
           "3.7": 238,
           "3.8": 118,
-          "3.9": 133
+          "3.9": 133,
+          "4.1": 44
         },
         "epicMin": {
           "E1": 872,
           "E2": 1726,
-          "E3": 860
+          "E3": 860,
+          "E4": 44
         }
       },
       "lineState": {
-        "state": "in flight",
-        "at": "4.1"
+        "state": "paused",
+        "at": "4.2"
       },
       "epics": [
         {
@@ -2771,7 +2767,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "3.8",
-              "pending",
+              "done",
               "Mason ships Mason"
             ]
           ]
@@ -2782,7 +2778,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "4.1",
-              "active",
+              "done",
               "Lock engine adapter and provenance"
             ],
             [
@@ -3990,7 +3986,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-14 11:59 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-14 12:43 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4107,6 +4103,14 @@ window.DASHBOARD_DATA = {
       "chain": {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-forward-dependency-blindness"
       }
+    },
+    {
+      "slug": "bmad-loop-intent-gap-work-preservation",
+      "title": "An intent-gap revert can never discard real work without a recoverable trace",
+      "status": "dreamt",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "bmad-module-provisioning",
@@ -6244,9 +6248,9 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-mason",
           "pkey": null,
           "stories": 38,
-          "state": "running",
+          "state": "in-progress",
           "note": "longest persona line; CFE Rule-2 retro at closeout",
-          "done": 28,
+          "done": 30,
           "total": 42
         },
         {
@@ -6330,9 +6334,9 @@ window.DASHBOARD_DATA = {
       "retro": null
     },
     "sound": 4,
-    "live": 57,
+    "live": 58,
     "reached": 12,
-    "gaps": 67,
+    "gaps": 69,
     "findings": 24,
     "rows": [
       {
@@ -6763,8 +6767,8 @@ window.DASHBOARD_DATA = {
           "sprint": "2026-08-14",
           "tea": "2026-08-14",
           "gates": "2026-08-10",
-          "code": "2026-08-13",
-          "verify": "2026-08-13",
+          "code": "2026-08-14",
+          "verify": "2026-08-14",
           "retro": ""
         },
         "sub": {
@@ -6874,7 +6878,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
-          "spec": "2026-08-14T10:45",
+          "spec": "2026-08-14T13:10",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -6956,7 +6960,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-14T10:45",
+            "at": "2026-08-14T13:10",
             "other": "2026-08-01"
           },
           {
@@ -6977,7 +6981,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "28/42",
+        "progress": "30/42",
         "complete": 13,
         "of": 13
       },
@@ -10865,6 +10869,113 @@ window.DASHBOARD_DATA = {
         "progress": "",
         "complete": 2,
         "of": 3
+      },
+      {
+        "label": "bmad-loop-intent-gap-work-preservation",
+        "slug": "bmad-loop-intent-gap-work-preservation",
+        "project": "pyforge-marshal",
+        "dream": "bmad-loop-intent-gap-work-preservation",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-14",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
       },
       {
         "label": "bmad-output-hygiene",
@@ -16487,7 +16598,7 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "green",
+        "state": "drift",
         "findings": 0,
         "verdict": "",
         "runbook": ""
@@ -16536,6 +16647,14 @@ window.DASHBOARD_DATA = {
       {
         "slug": "bmad-loop-baseline-drift",
         "title": "A story's orchestrator-recorded baseline can never drift out from under its own worktree",
+        "status": "dreamt",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
+        "slug": "bmad-loop-intent-gap-work-preservation",
+        "title": "An intent-gap revert can never discard real work without a recoverable trace",
         "status": "dreamt",
         "owner": "marshal",
         "blockedOn": "",
@@ -16661,7 +16780,7 @@ window.DASHBOARD_DATA = {
     "blocked": 0,
     "byOwner": {
       "atlas": 4,
-      "marshal": 4,
+      "marshal": 5,
       "herald": 3,
       "mason": 4,
       "warden": 1,
@@ -16806,9 +16925,9 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "marshal",
-        "total": 33,
+        "total": 34,
         "counts": {
-          "dreamt": 8,
+          "dreamt": 9,
           "pitched": 0,
           "specified": 0,
           "realized": 6,
@@ -16816,7 +16935,7 @@ window.DASHBOARD_DATA = {
           "practice": 4
         },
         "line": "paused 8.5",
-        "load": 4,
+        "load": 5,
         "blocked": 0,
         "dreams": [
           {
@@ -16941,6 +17060,13 @@ window.DASHBOARD_DATA = {
           {
             "slug": "bmad-loop-baseline-drift",
             "title": "A story's orchestrator-recorded baseline can never drift out from under its own worktree",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "bmad-loop-intent-gap-work-preservation",
+            "title": "An intent-gap revert can never discard real work without a recoverable trace",
             "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
@@ -17195,7 +17321,7 @@ window.DASHBOARD_DATA = {
           "archived": 4,
           "practice": 2
         },
-        "line": "in flight 4.1",
+        "line": "paused 4.2",
         "load": 4,
         "blocked": 0,
         "dreams": [
@@ -19315,14 +19441,7 @@ window.DASHBOARD_DATA = {
   },
   "status": {
     "source": "sprint-status",
-    "running": [
-      {
-        "station": "Mason",
-        "story": "4.1",
-        "phase": "dev",
-        "startEpoch": 1786707517
-      }
-    ],
+    "running": [],
     "lastShipped": {
       "station": "marshal",
       "story": "9.6",
@@ -19331,8 +19450,8 @@ window.DASHBOARD_DATA = {
       "subject": "marshal: story 9.6 -- plan and action types, repo fingerprint, and the plan builder"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-14 11:59 UTC",
-    "generatedEpoch": 1786708767
+    "generatedAt": "2026-08-14 12:43 UTC",
+    "generatedEpoch": 1786711398
   },
   "storySpecs": [
     {
@@ -19361,9 +19480,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-mason",
-      "done": 28,
+      "done": 30,
       "tracked": 10,
-      "gap": 18
+      "gap": 20
     },
     {
       "station": "pyforge-scribe",
@@ -19497,21 +19616,21 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md"
           }
         ],
-        "done": 28,
-        "backlog": 14,
+        "done": 30,
+        "backlog": 12,
         "blocked": 0,
         "total": 42,
-        "next": "3-8-mason-ships-mason",
+        "next": "4-2-manifest-discovery",
         "blockedKeys": [],
         "backlogKeys": [
-          "3-8-mason-ships-mason",
-          "4-1-lock-engine-adapter-and-provenance",
           "4-2-manifest-discovery",
           "4-3-mason-environment-lock",
           "4-4-mason-environment-check",
           "5-1-cfe-independence-test",
           "5-2-governance-test",
-          "5-3-delegation-fidelity-test"
+          "5-3-delegation-fidelity-test",
+          "5-4-free-inheritance-verification",
+          "5-5-rule-2-conda-forge-expert-retrospective"
         ],
         "state": "ready"
       },
@@ -19646,8 +19765,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 336,
-      "backlog": 44,
+      "done": 338,
+      "backlog": 42,
       "blocked": 1,
       "total": 381
     }
@@ -19701,13 +19820,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "mason",
         "stories": 42,
-        "done": 28,
+        "done": 30,
         "blocked": 0,
         "epics": 6,
-        "epicsDone": 2,
+        "epicsDone": 3,
         "complete": false,
-        "running": true,
-        "projected": 42
+        "running": false,
+        "projected": 30
       },
       {
         "key": "scribe",
@@ -19745,17 +19864,15 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 381,
-      "done": 336,
+      "done": 338,
       "blocked": 1,
       "epics": 74,
-      "epicsDone": 61
+      "epicsDone": 62
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
-      "running": [
-        "mason"
-      ],
-      "projected": 350
+      "running": [],
+      "projected": 338
     }
   }
 };
