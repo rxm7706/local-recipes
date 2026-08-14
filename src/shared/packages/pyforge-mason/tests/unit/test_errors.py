@@ -23,7 +23,14 @@ two new error classes: `PackageBuildTimeoutError` (Patch 3, mirrors
 Story 3.3 extends this file again with `InvalidShipTargetError` coverage,
 mirroring `PackageProjectPathError`'s suite exactly in shape: identifier,
 stored attribute, message content, is-a-`MasonError`, `str()` format,
-rejects-empty-value, deepcopy/pickle round-trip."""
+rejects-empty-value, deepcopy/pickle round-trip.
+
+Story 3.4 extends this file again with `ShipCredentialMissingError`/
+`ShipUploadTimeoutError` coverage. Story 3.5 extends it again with
+`ShipChannelCredentialMissingError`/`ShipChannelUploadTimeoutError`
+coverage, mirroring those two classes' own suites exactly in shape (this
+story's two classes are dedicated, not reused, because the PyPI-worded
+ones would print a factually wrong message for a channel failure)."""
 
 from __future__ import annotations
 
@@ -35,8 +42,8 @@ import pytest
 from pyforge.mason.errors import (
     CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError,
     EngineAbsentError, InvalidShipTargetError, MasonError, PackageBuildTimeoutError,
-    PackageProjectPathError, PackageVersionMismatchError, ShipCredentialMissingError,
-    ShipUploadTimeoutError,
+    PackageProjectPathError, PackageVersionMismatchError, ShipChannelCredentialMissingError,
+    ShipChannelUploadTimeoutError, ShipCredentialMissingError, ShipUploadTimeoutError,
 )
 
 
@@ -793,6 +800,132 @@ def test_ship_upload_timeout_error_survives_pickle_round_trip():
     original = ShipUploadTimeoutError(timeout=300.0)
     clone = pickle.loads(pickle.dumps(original))
     assert isinstance(clone, ShipUploadTimeoutError)
+    assert clone.timeout == original.timeout
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+# --- Story 3.5: ShipChannelCredentialMissingError ------------------------------
+
+def test_ship_channel_credential_missing_error_identifier():
+    exc = ShipChannelCredentialMissingError(missing=("PREFIX_API_KEY",))
+    assert exc.identifier == "ship:channel-credential-missing"
+
+
+def test_ship_channel_credential_missing_error_stores_attributes():
+    exc = ShipChannelCredentialMissingError(missing=("PREFIX_API_KEY",))
+    assert exc.missing == ("PREFIX_API_KEY",)
+
+
+def test_ship_channel_credential_missing_error_message_names_every_missing_entry():
+    exc = ShipChannelCredentialMissingError(missing=("PREFIX_API_KEY",))
+    assert "PREFIX_API_KEY" in str(exc)
+
+
+def test_ship_channel_credential_missing_error_message_names_the_channel_upload():
+    exc = ShipChannelCredentialMissingError(missing=("PREFIX_API_KEY",))
+    assert "channel" in str(exc).lower()
+
+
+def test_ship_channel_credential_missing_error_is_a_mason_error():
+    assert issubclass(ShipChannelCredentialMissingError, MasonError)
+    with pytest.raises(MasonError):
+        raise ShipChannelCredentialMissingError(missing=("PREFIX_API_KEY",))
+
+
+def test_ship_channel_credential_missing_error_str_format_is_identifier_colon_space_message():
+    exc = ShipChannelCredentialMissingError(missing=("PREFIX_API_KEY",))
+    assert str(exc) == f"{exc.identifier}: {exc.message}"
+
+
+def test_ship_channel_credential_missing_error_coerces_missing_to_a_tuple():
+    exc = ShipChannelCredentialMissingError(missing=["PREFIX_API_KEY"])
+    assert exc.missing == ("PREFIX_API_KEY",)
+    assert isinstance(exc.missing, tuple)
+
+
+def test_ship_channel_credential_missing_error_rejects_empty_missing():
+    with pytest.raises(ValueError):
+        ShipChannelCredentialMissingError(missing=())
+
+
+def test_ship_channel_credential_missing_error_rejects_a_non_str_missing_item():
+    with pytest.raises(ValueError):
+        ShipChannelCredentialMissingError(missing=(None,))  # type: ignore[list-item]
+
+
+def test_ship_channel_credential_missing_error_rejects_a_whitespace_only_missing_item():
+    with pytest.raises(ValueError):
+        ShipChannelCredentialMissingError(missing=("   ",))
+
+
+def test_ship_channel_credential_missing_error_survives_deepcopy():
+    """Mirrors `ShipCredentialMissingError`'s own deepcopy guard: without
+    the `__reduce__` override, `cls(*self.args)` would reconstruct with
+    `missing == "ship:channel-credential-missing"` (the identifier),
+    corrupting the clone's `.args`/`repr()` instead of failing loudly."""
+    original = ShipChannelCredentialMissingError(missing=("PREFIX_API_KEY",))
+    clone = copy.deepcopy(original)
+    assert isinstance(clone, ShipChannelCredentialMissingError)
+    assert clone.missing == original.missing
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+def test_ship_channel_credential_missing_error_survives_pickle_round_trip():
+    original = ShipChannelCredentialMissingError(missing=("PREFIX_API_KEY",))
+    clone = pickle.loads(pickle.dumps(original))
+    assert isinstance(clone, ShipChannelCredentialMissingError)
+    assert clone.missing == original.missing
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+# --- Story 3.5: ShipChannelUploadTimeoutError -----------------------------------
+
+def test_ship_channel_upload_timeout_error_identifier():
+    exc = ShipChannelUploadTimeoutError(timeout=300.0)
+    assert exc.identifier == "ship:channel-upload-timeout"
+
+
+def test_ship_channel_upload_timeout_error_stores_attributes():
+    exc = ShipChannelUploadTimeoutError(timeout=300.0)
+    assert exc.timeout == 300.0
+
+
+def test_ship_channel_upload_timeout_error_message_names_the_timeout_value():
+    exc = ShipChannelUploadTimeoutError(timeout=300.0)
+    assert "300.0" in str(exc)
+
+
+def test_ship_channel_upload_timeout_error_is_a_mason_error():
+    assert issubclass(ShipChannelUploadTimeoutError, MasonError)
+    with pytest.raises(MasonError):
+        raise ShipChannelUploadTimeoutError(timeout=300.0)
+
+
+def test_ship_channel_upload_timeout_error_str_format_is_identifier_colon_space_message():
+    exc = ShipChannelUploadTimeoutError(timeout=45.5)
+    assert str(exc) == f"{exc.identifier}: {exc.message}"
+
+
+def test_ship_channel_upload_timeout_error_survives_deepcopy():
+    """Mirrors `ShipUploadTimeoutError`'s own deepcopy guard: without the
+    `__reduce__` override, `cls(*self.args)` would reconstruct with
+    `timeout == "ship:channel-upload-timeout"` (the identifier), corrupting
+    the clone instead of failing loudly."""
+    original = ShipChannelUploadTimeoutError(timeout=300.0)
+    clone = copy.deepcopy(original)
+    assert isinstance(clone, ShipChannelUploadTimeoutError)
+    assert clone.timeout == original.timeout
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+def test_ship_channel_upload_timeout_error_survives_pickle_round_trip():
+    original = ShipChannelUploadTimeoutError(timeout=300.0)
+    clone = pickle.loads(pickle.dumps(original))
+    assert isinstance(clone, ShipChannelUploadTimeoutError)
     assert clone.timeout == original.timeout
     assert clone.identifier == original.identifier
     assert clone.message == original.message

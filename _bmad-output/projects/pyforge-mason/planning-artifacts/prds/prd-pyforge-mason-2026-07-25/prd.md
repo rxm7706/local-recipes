@@ -1091,9 +1091,11 @@ Carried forward:
 1. **OQ-1** — Which `mason recipe` verbs beyond the eight in FR-7 – FR-14 earn a place? Deliberately
    deferred to usage; SM-C2 warns against reflexive coverage. *Owner: architect. Revisit: after v1
    dogfooding.*
-2. **OQ-2** — Does `channel:<name>` upload via `pixi publish`, `anaconda upload`, or both? An
-   architecture-level engine choice with no product consequence. *Owner: architect. Revisit: at
-   architecture.*
+2. **OQ-2** — RESOLVED 2026-08-13 (S-3.5's spec): `pixi upload prefix` -- its single `--channel
+   <name>` value is the only pixi-upload subcommand that maps 1:1 onto the `channel:<name>`
+   vocabulary without inventing owner/URL/bucket syntax; `pixi publish` was ruled out separately
+   (it rebuilds from a workspace manifest rather than uploading an already-built artifact) and
+   `anaconda upload` requires a separate `--owner` this vocabulary has no slot for.
 3. **OQ-3** — Does Mason own multi-ecosystem autotick (CRAN/npm/cargo), or Marshal/Steward? The
    origin dream places it in the packaging factory; the crew charter omits it from Mason's cadence.
    *Owner: crew-level. Revisit: before v2 scoping.*

@@ -439,8 +439,10 @@ sequenceDiagram
 
 - **OQ-A1** — Which CFE scripts does the AD-3 declaration table name for each of FR-7 – FR-14? A
   mechanical mapping the first story must produce; no invariant depends on it.
-- **OQ-A2** — Does `engines/pixi` cover both `pixi build` and `pixi publish`, or do they split into
-  two adapters? AD-12 permits either; the protocol shape decides it at implementation.
+- **OQ-A2** — RESOLVED 2026-08-13 (S-3.5's spec): `engines/pixi` covers both -- `build()` (Story
+  3.2) and the new `upload()` (Story 3.5) stay one adapter, one protocol per AD-12, wrapping `pixi
+  upload prefix` rather than `pixi publish` (which rebuilds from a workspace manifest, duplicating
+  `build()`'s own job).
 - **OQ-A3** — What exactly is the FR-42 deny-list's content? The rule is fixed (AD-1); the concrete
   pattern set is an implementation artifact that must be reviewable and hard to weaken silently.
 - **OQ-A4** — Should `doctor` be a fourth noun or a top-level verb? Currently top-level (PRD FR-30);
