@@ -13,7 +13,10 @@ handling).
 
 Story 3.3 extends this file again with `ShipTargetKind`/`ShipTarget`
 coverage: exactly-three-members plus construction/immutability/equality,
-mirroring `ShipTargetResult`'s own test shape."""
+mirroring `ShipTargetResult`'s own test shape.
+
+Story 3.6 extends `DoctorReport`'s two direct construction sites with its
+two new `conda_forge_ship_ready`/`conda_forge_ship_blockers` fields."""
 
 from __future__ import annotations
 
@@ -76,6 +79,8 @@ def test_doctor_report_constructs_with_its_original_fields():
         cfe_import_floor_missing=(),
         unavailable_verbs=(),
         engines=(EngineStatus(name="pixi", available=True, version="pixi 0.72.2"),),
+        conda_forge_ship_ready=True,
+        conda_forge_ship_blockers=(),
     )
     assert report.cfe_root == "/fake/cfe"
     assert report.engines == (EngineStatus(name="pixi", available=True, version="pixi 0.72.2"),)
@@ -92,6 +97,8 @@ def test_doctor_report_is_frozen():
         cfe_import_floor_missing=("pyyaml",),
         unavailable_verbs=("recipe",),
         engines=(),
+        conda_forge_ship_ready=False,
+        conda_forge_ship_blockers=("the CFE root is unresolved",),
     )
     with pytest.raises(FrozenInstanceError):
         report.mason_version = "9.9.9"  # type: ignore[misc]

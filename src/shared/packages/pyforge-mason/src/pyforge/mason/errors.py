@@ -93,12 +93,17 @@ class CfeUnresolvedError(MasonError):
     chain (FR-5, D-2, NFR-14).
 
     Raised by `cfe.py::ensure_cfe_root` when the already-computed
-    `ResolvedCfeRoot.step` is `STEP_NOT_FOUND`. Unlike `CfeImportFloorError`,
-    there is no per-call variable data to report -- the four steps either
-    matched or did not, and nothing about *which* value was tried is
-    meaningful once resolution has already failed -- so the constructor
-    takes no arguments and the message is a fixed string naming all four
-    step names and how to satisfy the first three.
+    `ResolvedCfeRoot.step` is `STEP_NOT_FOUND`. Also raised directly by
+    `package.py::ship_conda_forge` (Story 3.6, D-10) when its own
+    `resolve_cfe_root` call finds no root, before `recipe.py::submit()` (and
+    therefore `cfe.py::ensure_cfe_root`) is ever reached -- reused rather
+    than a third dedicated class, since this message is already
+    precondition-generic. Unlike `CfeImportFloorError`, there is no per-call
+    variable data to report -- the four steps either matched or did not, and
+    nothing about *which* value was tried is meaningful once resolution has
+    already failed -- so the constructor takes no arguments and the message
+    is a fixed string naming all four step names and how to satisfy the
+    first three.
     """
 
     # `.claude/scripts/conda-forge-expert/` below duplicates `resolve.py`'s
@@ -606,3 +611,95 @@ class ShipChannelUploadTimeoutError(MasonError):
         # "ship:channel-upload-timeout", <built message>)` -- the wrong
         # value for this class's own `(timeout,)` constructor.
         return (self.__class__, (self.timeout,))
+
+
+class ShipCondaForgeRecipeMissingError(MasonError):
+    """`package.py::ship_conda_forge`'s first shipping precondition failed:
+    no `recipe_path` was given -- `None` or blank (Story 3.6, FR-23, D-10,
+    NFR-14).
+
+    Raised as `ship_conda_forge`'s FIRST action, before the CFE root is
+    even resolved -- mirrors `ShipCredentialMissingError`/
+    `ShipChannelCredentialMissingError`/`CfeUnresolvedError`'s precedent
+    that a structural precondition is RAISED, not returned as data.
+    Zero-arg constructor, mirroring `CfeUnresolvedError`'s own shape: there
+    is no per-call variable data to report -- a missing recipe path is
+    missing regardless of what else was passed -- so the message is a
+    fixed string naming `mason recipe new` as the remedy. This is what
+    satisfies FR-23's "offers... does not generate silently" requirement:
+    this error's own message is the offer; nothing here prompts
+    interactively or calls `recipe.new()` itself (spec Never boundary --
+    that CLI-level offer is Story 3.9's scope).
+    """
+
+    _MESSAGE = (
+        "no recipe path was given for the conda-forge ship target; run "
+        "`mason recipe new` to generate one, then pass its path"
+    )
+
+    def __init__(self) -> None:
+        super().__init__("ship:conda-forge-recipe-missing", self._MESSAGE)
+
+    def __reduce__(self):
+        # Mirrors `CfeUnresolvedError.__reduce__` above: `Exception.
+        # __reduce__` reconstructs via `cls(*self.args)`, but `MasonError.
+        # __init__` sets `self.args` to a two-item tuple while this class's
+        # constructor takes zero arguments -- without this override,
+        # `ShipCondaForgeRecipeMissingError(*self.args)` would raise
+        # `TypeError` on every deepcopy/pickle round-trip.
+        return (self.__class__, ())
+
+
+class ShipCondaForgeRecipeLocationError(MasonError):
+    """`package.py::ship_conda_forge`'s second shipping precondition
+    failed: the resolved recipe directory does not sit at exactly
+    `<cfe-root>/recipes/<name>/` (Story 3.6, FR-23, D-10, NFR-14).
+
+    D-10 deliberately narrows `recipe.py::submit()`'s own leniency (that
+    verb tolerates an out-of-tree recipe via its `CFE_RECIPES_ROOT` env
+    override, per its own docstring) for the ship-target boundary alone:
+    "Shipping to `conda-forge` works only from a repository where... the
+    recipe sits at `<cfe-root>/recipes/<name>/`" (PRD D-10) -- `mason
+    recipe submit` stays lenient; `mason package ship --to conda-forge`
+    does not. Raised before any CFE subprocess spawns (spec Always
+    boundary), mirroring `PackageProjectPathError`'s precedent that a
+    structural precondition is RAISED, not returned as data.
+
+    `recipe_path`/`expected_path` are both ALREADY-RESOLVED, absolute
+    strings (`ship_conda_forge`'s own `recipe_dir`/`expected_dir`) -- the
+    message names both, so a caller sees exactly what was given and
+    exactly where D-10 requires it to sit. Construction raises `ValueError`
+    for an empty `recipe_path`/`expected_path`, matching
+    `PackageProjectPathError`'s validation rigor: a location error naming
+    no path on either side is incoherent.
+    """
+
+    def __init__(self, recipe_path: str, expected_path: str) -> None:
+        if not isinstance(recipe_path, str) or not recipe_path.strip():
+            raise ValueError(
+                "ShipCondaForgeRecipeLocationError requires a non-empty "
+                "`recipe_path`: a location error naming no recipe path is "
+                "incoherent"
+            )
+        if not isinstance(expected_path, str) or not expected_path.strip():
+            raise ValueError(
+                "ShipCondaForgeRecipeLocationError requires a non-empty "
+                "`expected_path`: a location error naming no expected "
+                "path is incoherent"
+            )
+        self.recipe_path = recipe_path
+        self.expected_path = expected_path
+        message = (
+            f"recipe at {recipe_path!r} is not at the required conda-forge "
+            f"ship location {expected_path!r}: shipping to conda-forge "
+            "requires the recipe to sit at <cfe-root>/recipes/<name>/ (D-10)"
+        )
+        super().__init__("ship:conda-forge-recipe-location", message)
+
+    def __reduce__(self):
+        # Mirrors `PackageProjectPathError.__reduce__` above: `Exception.
+        # __reduce__` reconstructs via `cls(*self.args)`, and `MasonError.
+        # __init__` sets `self.args = ("ship:conda-forge-recipe-location",
+        # <built message>)` -- the wrong two values for this class's own
+        # `(recipe_path, expected_path)` constructor.
+        return (self.__class__, (self.recipe_path, self.expected_path))

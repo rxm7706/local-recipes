@@ -12,6 +12,12 @@ gotcha `test_cfe.py::test_ensure_cfe_root_never_re_resolves` documents for
 `cfe` itself (lazily) and calls `cfe.probe_import_floor(...)`, an attribute
 lookup at call time, so patching `pyforge.mason.cfe.probe_import_floor`
 does reach it.
+
+Story 3.6 extends `_build`'s assertions with `conda_forge_ship_ready`/
+`conda_forge_ship_blockers` coverage (FR-23, D-10): root unresolved, root
+resolved with a real `tmp_path`-backed `recipes/` directory present, and
+root resolved with no `recipes/` directory -- the three cases `build_
+report`'s own new blockers computation distinguishes.
 """
 
 from __future__ import annotations
@@ -93,6 +99,68 @@ def test_report_never_lists_package_or_environment_as_unavailable():
 
     assert "package" not in report.unavailable_verbs
     assert "environment" not in report.unavailable_verbs
+
+
+# --- Story 3.6: conda_forge_ship_ready / conda_forge_ship_blockers -----------
+
+def test_conda_forge_ship_ready_is_false_and_blockers_non_empty_when_root_unresolved():
+    root = ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND)
+    report = _build(root, _INTERPRETER, missing=())
+
+    assert report.conda_forge_ship_ready is False
+    assert report.conda_forge_ship_blockers != ()
+    assert any("unresolved" in blocker for blocker in report.conda_forge_ship_blockers)
+
+
+def test_conda_forge_ship_ready_is_true_when_root_resolved_and_recipes_dir_present(tmp_path):
+    (tmp_path / "recipes").mkdir()
+    root = ResolvedCfeRoot(root=tmp_path, step=STEP_CWD_WALK)
+    report = _build(root, _INTERPRETER, missing=())
+
+    assert report.conda_forge_ship_ready is True
+    assert report.conda_forge_ship_blockers == ()
+
+
+def test_conda_forge_ship_ready_is_false_when_root_resolved_but_no_recipes_dir(tmp_path):
+    root = ResolvedCfeRoot(root=tmp_path, step=STEP_CWD_WALK)
+    report = _build(root, _INTERPRETER, missing=())
+
+    assert report.conda_forge_ship_ready is False
+    assert report.conda_forge_ship_blockers != ()
+    assert any(
+        str(tmp_path / "recipes") in blocker for blocker in report.conda_forge_ship_blockers
+    )
+
+
+def test_conda_forge_ship_ready_resolves_a_tilde_flag_sourced_root_before_checking(
+    tmp_path, monkeypatch,
+):
+    """Review pass, 2026-08-13: `resolve_cfe_root`'s flag/environment steps
+    return an UN-resolved `Path` (e.g. a literal `~`) -- this must be
+    `.expanduser().resolve()`d before the `recipes` check, mirroring
+    `package.py::ship_conda_forge`'s own identical resolution, or a
+    perfectly valid `--cfe-root ~/my-cfe` would misreport not-ready."""
+    monkeypatch.setenv("HOME", str(tmp_path))
+    (tmp_path / "my-cfe" / "recipes").mkdir(parents=True)
+    root = ResolvedCfeRoot(root=Path("~/my-cfe"), step=STEP_FLAG)
+
+    report = _build(root, _INTERPRETER, missing=())
+
+    assert report.conda_forge_ship_ready is True
+    assert report.conda_forge_ship_blockers == ()
+
+
+def test_conda_forge_ship_ready_never_raises_when_the_recipes_stat_is_denied(tmp_path):
+    """Review pass, 2026-08-13 (Edge Case Hunter): an unguarded `is_dir()`
+    would let a `PermissionError` (EACCES) escape and violate this
+    module's own documented "never raises" invariant."""
+    root = ResolvedCfeRoot(root=tmp_path, step=STEP_CWD_WALK)
+
+    with patch("pyforge.mason.doctor.Path.is_dir", side_effect=PermissionError("denied")):
+        report = _build(root, _INTERPRETER, missing=())
+
+    assert report.conda_forge_ship_ready is False
+    assert report.conda_forge_ship_blockers != ()
 
 
 # --- Field composition -------------------------------------------------------

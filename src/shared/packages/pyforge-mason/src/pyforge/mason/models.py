@@ -63,6 +63,14 @@ than adopting this new enum). No `ShipReceipt` aggregate lands with this
 story either (spec Never boundary) -- Story 2.9's docstring above already
 named that as a later story's addition (Story 3.7), and this story does not
 change that.
+
+Story 3.6 extends `DoctorReport` with two more fields,
+`conda_forge_ship_ready`/`conda_forge_ship_blockers` (FR-23, D-10):
+whether `package.py::ship_conda_forge`'s two shipping preconditions are
+currently met, and which ones are not. No defaults, matching every other
+field on this dataclass -- a `DoctorReport` with a forgotten conda-forge-
+readiness field is exactly the ambiguity a default would silently paper
+over.
 """
 
 from __future__ import annotations
@@ -101,8 +109,10 @@ class DoctorReport:
     """`mason doctor`'s full self-diagnosis (FR-34): Mason's own version,
     the resolved CFE root and which chain step found it, the selected
     interpreter and which chain step selected it, the import-floor outcome,
-    which verbs are unavailable as a consequence, and every known engine's
-    presence/version."""
+    which verbs are unavailable as a consequence, every known engine's
+    presence/version, and (Story 3.6) whether `package.py::
+    ship_conda_forge`'s two shipping preconditions (D-10) are currently
+    met, and which are not."""
 
     mason_version: str
     cfe_root: str | None
@@ -113,6 +123,8 @@ class DoctorReport:
     cfe_import_floor_missing: tuple[str, ...]
     unavailable_verbs: tuple[str, ...]
     engines: tuple[EngineStatus, ...]
+    conda_forge_ship_ready: bool
+    conda_forge_ship_blockers: tuple[str, ...]
 
 
 @dataclass(frozen=True)
