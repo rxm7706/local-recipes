@@ -130,9 +130,11 @@ def test_probe_invokes_subprocess_with_list_argv_no_shell_and_a_timeout():
 
 # --- probe_known_engines() ---------------------------------------------------
 
-def test_probe_known_engines_covers_pixi_twine_conda_lock_and_build():
-    assert set(_KNOWN_ENGINES) == {"pixi", "twine", "conda-lock", "build"}
+def test_probe_known_engines_covers_pixi_twine_conda_lock_build_and_gh():
+    """Story 3.7 adds `gh` as the fifth known engine."""
+    assert set(_KNOWN_ENGINES) == {"pixi", "twine", "conda-lock", "build", "gh"}
     assert _KNOWN_ENGINES["build"] == "pyproject-build"
+    assert _KNOWN_ENGINES["gh"] == "gh"
 
 
 def test_probe_known_engines_probes_every_known_engine_in_declared_order():

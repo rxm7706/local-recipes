@@ -9,7 +9,12 @@ docstring): presence via `require_engine` (mocked directly on this
 module's own namespace), and the `upload()` operation itself via a mocked
 `subprocess.run` -- no `tmp_path` fixture is needed for `upload()`'s own
 tests, unlike `build()`'s: `upload()` does no filesystem-based artifact
-discovery, only reports the child's raw `returncode`/merged `stdout`."""
+discovery, only reports the child's raw `returncode`/merged `stdout`.
+
+Story 3.7 extends this file again with `search()` coverage: unlike
+`build()`/`upload()`, `search()` uses `probe_engine` directly (mocked, not
+`require_engine`), so its own presence-gate tests assert `None` is
+returned and no subprocess spawns, rather than an `EngineAbsentError`."""
 
 from __future__ import annotations
 
@@ -26,8 +31,12 @@ from pyforge.mason.errors import (
 )
 
 
-def _fake_completed(returncode: int = 0, stdout: str = "") -> subprocess.CompletedProcess:
-    return subprocess.CompletedProcess(args=[], returncode=returncode, stdout=stdout)
+def _fake_completed(
+    returncode: int = 0, stdout: str = "", stderr: str = "",
+) -> subprocess.CompletedProcess:
+    return subprocess.CompletedProcess(
+        args=[], returncode=returncode, stdout=stdout, stderr=stderr,
+    )
 
 
 # --- probe() -----------------------------------------------------------------
@@ -373,3 +382,172 @@ def test_upload_zero_returncode_success_has_no_url_or_reference_field():
     assert result.stdout == "Uploading...\ndone\n"
     assert not hasattr(result, "url")
     assert not hasattr(result, "reference")
+
+
+# --- search(): engine presence gate (Story 3.7) ---------------------------------
+
+def test_search_returns_none_when_pixi_is_absent_and_never_spawns():
+    with patch("pyforge.mason.engines.pixi.probe_engine") as mock_probe, \
+         patch("pyforge.mason.engines.pixi.subprocess.run") as mock_run:
+        mock_probe.return_value.available = False
+        result = pixi.search("pkg", "0.1.0", "myorg")
+
+    mock_probe.assert_called_once_with("pixi", "pixi")
+    assert result is None
+    mock_run.assert_not_called()
+
+
+# --- search(): invocation shape --------------------------------------------------
+
+def test_search_invokes_pixi_search_with_the_documented_argv():
+    with patch("pyforge.mason.engines.pixi.probe_engine") as mock_probe, \
+         patch(
+             "pyforge.mason.engines.pixi.subprocess.run", return_value=_fake_completed(),
+         ) as mock_run:
+        mock_probe.return_value.available = True
+        pixi.search("pkg", "0.1.0", "myorg")
+
+    args, kwargs = mock_run.call_args
+    argv = args[0]
+    assert argv == ["pixi", "search", "--channel", "myorg", "pkg==0.1.0", "--json"]
+    assert "env" not in kwargs
+    assert kwargs["stdout"] == subprocess.PIPE
+    assert kwargs["stderr"] == subprocess.PIPE
+    assert kwargs["text"] is True
+    assert kwargs["encoding"] == "utf-8"
+    assert kwargs["errors"] == "replace"
+    assert kwargs["check"] is False
+    assert "timeout" in kwargs
+
+
+def test_search_uses_the_default_timeout_when_none_given():
+    with patch("pyforge.mason.engines.pixi.probe_engine") as mock_probe, \
+         patch(
+             "pyforge.mason.engines.pixi.subprocess.run", return_value=_fake_completed(),
+         ) as mock_run:
+        mock_probe.return_value.available = True
+        pixi.search("pkg", "0.1.0", "myorg")
+
+    assert mock_run.call_args.kwargs["timeout"] == pixi._PIXI_SEARCH_TIMEOUT_SECONDS
+
+
+def test_search_forwards_an_explicit_timeout():
+    with patch("pyforge.mason.engines.pixi.probe_engine") as mock_probe, \
+         patch(
+             "pyforge.mason.engines.pixi.subprocess.run", return_value=_fake_completed(),
+         ) as mock_run:
+        mock_probe.return_value.available = True
+        pixi.search("pkg", "0.1.0", "myorg", timeout=5.0)
+
+    assert mock_run.call_args.kwargs["timeout"] == 5.0
+
+
+# --- search(): I/O & Edge-Case Matrix ---------------------------------------------
+
+def test_search_returns_true_on_a_zero_returncode():
+    with patch("pyforge.mason.engines.pixi.probe_engine") as mock_probe, \
+         patch(
+             "pyforge.mason.engines.pixi.subprocess.run",
+             return_value=_fake_completed(stdout='{"noarch": [{}]}'),
+         ):
+        mock_probe.return_value.available = True
+        result = pixi.search("pkg", "0.1.0", "myorg")
+
+    assert result is True
+
+
+def test_search_returns_none_on_a_zero_returncode_with_unparseable_json():
+    """Review pass (adversarial + edge-case, this story): the returncode
+    alone is not trusted -- a body that fails to parse as JSON is exactly as
+    undeterminable as a network error, mirroring `engines.gh.find_open_pr`'s
+    own body-validation diligence."""
+    with patch("pyforge.mason.engines.pixi.probe_engine") as mock_probe, \
+         patch(
+             "pyforge.mason.engines.pixi.subprocess.run",
+             return_value=_fake_completed(stdout="not json"),
+         ):
+        mock_probe.return_value.available = True
+        result = pixi.search("pkg", "0.1.0", "myorg")
+
+    assert result is None
+
+
+def test_search_returns_none_on_a_zero_returncode_with_a_non_dict_json_body():
+    with patch("pyforge.mason.engines.pixi.probe_engine") as mock_probe, \
+         patch(
+             "pyforge.mason.engines.pixi.subprocess.run",
+             return_value=_fake_completed(stdout="[]"),
+         ):
+        mock_probe.return_value.available = True
+        result = pixi.search("pkg", "0.1.0", "myorg")
+
+    assert result is None
+
+
+def test_search_returns_none_on_a_zero_returncode_with_only_empty_platform_lists():
+    with patch("pyforge.mason.engines.pixi.probe_engine") as mock_probe, \
+         patch(
+             "pyforge.mason.engines.pixi.subprocess.run",
+             return_value=_fake_completed(stdout='{"noarch": [], "linux-64": []}'),
+         ):
+        mock_probe.return_value.available = True
+        result = pixi.search("pkg", "0.1.0", "myorg")
+
+    assert result is None
+
+
+def test_search_returns_false_when_stderr_names_no_packages_found():
+    with patch("pyforge.mason.engines.pixi.probe_engine") as mock_probe, \
+         patch(
+             "pyforge.mason.engines.pixi.subprocess.run",
+             return_value=_fake_completed(returncode=1, stderr="Error: No packages found\n"),
+         ):
+        mock_probe.return_value.available = True
+        result = pixi.search("pkg", "0.1.0", "myorg")
+
+    assert result is False
+
+
+def test_search_returns_none_on_an_unrecognized_nonzero_failure():
+    with patch("pyforge.mason.engines.pixi.probe_engine") as mock_probe, \
+         patch(
+             "pyforge.mason.engines.pixi.subprocess.run",
+             return_value=_fake_completed(returncode=1, stderr="Error: network unreachable\n"),
+         ):
+        mock_probe.return_value.available = True
+        result = pixi.search("pkg", "0.1.0", "myorg")
+
+    assert result is None
+
+
+def test_search_returns_none_on_timeout():
+    with patch("pyforge.mason.engines.pixi.probe_engine") as mock_probe, \
+         patch(
+             "pyforge.mason.engines.pixi.subprocess.run",
+             side_effect=subprocess.TimeoutExpired(cmd=["pixi", "search"], timeout=30.0),
+         ):
+        mock_probe.return_value.available = True
+        result = pixi.search("pkg", "0.1.0", "myorg")
+
+    assert result is None
+
+
+def test_search_returns_none_on_a_bare_oserror():
+    with patch("pyforge.mason.engines.pixi.probe_engine") as mock_probe, \
+         patch(
+             "pyforge.mason.engines.pixi.subprocess.run",
+             side_effect=FileNotFoundError("No such file or directory"),
+         ):
+        mock_probe.return_value.available = True
+        result = pixi.search("pkg", "0.1.0", "myorg")
+
+    assert result is None
+
+
+def test_search_never_raises_for_any_undeterminable_cause():
+    """Spec I/O matrix: 'Channel interrogation undeterminable' is data,
+    never raised."""
+    with patch("pyforge.mason.engines.pixi.probe_engine") as mock_probe, \
+         patch("pyforge.mason.engines.pixi.subprocess.run", side_effect=OSError("boom")):
+        mock_probe.return_value.available = True
+        assert pixi.search("pkg", "0.1.0", "myorg") is None

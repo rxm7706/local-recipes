@@ -63,6 +63,14 @@ than adopting this new enum). No `ShipReceipt` aggregate lands with this
 story either (spec Never boundary) -- Story 2.9's docstring above already
 named that as a later story's addition (Story 3.7), and this story does not
 change that.
+
+Story 3.7 adds `ShipReceipt` -- the eighth shape in this file, and the
+aggregate both Story 2.9's and Story 3.3's paragraphs above already named as
+a later addition (both said "Story 3.7"): the multi-target ship outcome
+`package.py::build_ship_receipt` composes from however many
+`ShipTargetResult`s a caller already produced (AD-9). See `ShipReceipt`'s
+own docstring below for why `ok` is a plain field, not a property, and what
+it does and does not summarize.
 """
 
 from __future__ import annotations
@@ -289,3 +297,39 @@ class PackageBuildResult:
     pixi_returncode: int
     pep517_stdout: str
     pixi_stdout: str
+
+
+@dataclass(frozen=True)
+class ShipReceipt:
+    """The aggregate outcome of a multi-target ship (Story 3.7, AD-9): every
+    `ShipTargetResult` an invocation produced, plus a pre-computed `ok`
+    summary field.
+
+    `targets` is every result IN THE ORDER shipped -- no reordering, no
+    deduplication (mirrors `package.py::parse_ship_targets`'s own no-dedup
+    precedent for the same reason: deciding what "duplicate" means for two
+    identical targets shipped in the same invocation is out of this
+    dataclass's own scope). `ok` is a plain FIELD, not a property or method
+    (AD-1: "data carries no behaviour" -- every shape in this module is a
+    frozen dataclass with fields only), computed ONCE by `package.py::
+    build_ship_receipt` as `not any(r.state is ShipState.FAILED for r in
+    results)`: `NOT_ATTEMPTED`, `PENDING`, and `TERMINAL` all count as
+    success for this aggregate (AD-9) -- only an actual `FAILED` target
+    flips `ok` to `False`. A `PENDING` target (an interrogation Story 3.7
+    could not complete, or a confirmed attempt whose durable end state is
+    still unconfirmed -- `ShipState`'s own docstring, above) is deliberately
+    NOT collapsed into failure here any more than it is collapsed into
+    success in `render.py`'s own rendering (`ShipState`'s own docstring:
+    "`pending` is never collapsed into success in any rendering") -- this
+    aggregate's `ok` field answers a narrower question ("did anything
+    definitively fail?"), not "did everything definitively succeed?".
+
+    Nothing constructs a `ShipReceipt` in this story except `package.py::
+    build_ship_receipt` itself -- no `ship()` multi-target dispatcher and no
+    CLI wiring land here (spec Never boundary): `cli.py`'s own `ship` verb
+    (Story 3.9) is the future caller that will gather several
+    `ShipTargetResult`s from `ship_pypi`/`ship_channel`/(eventually)
+    `ship_conda_forge`, once merged, and hand them to `build_ship_receipt`."""
+
+    targets: tuple[ShipTargetResult, ...]
+    ok: bool
