@@ -373,6 +373,15 @@ def resolve_anchor(
     present in ``anchor`` at all), returns ``matched=None`` and
     ``offset=len(text.encode())`` -- the EOF append fallback.
 
+    Raises ``NotImplementedError`` for ``RegionFormat.SLASHSTAR`` (reserved,
+    unimplemented in V1) -- symmetric with ``parse_regions``'s own eager
+    ``parse_marker_line(fmt, "")`` validation (review finding: without this,
+    ``resolve_anchor`` silently ran ordinary, non-fence-aware matching for a
+    reserved format instead of raising -- currently masked in
+    ``insert_region`` only because it always calls ``parse_regions`` first,
+    which already raises for this same ``fmt``, but this function is
+    independently public).
+
     Raises ``RegionParseError`` if a fenced code block is never closed
     before end of text -- symmetric with ``parse_regions``'s own identical
     hard error for the identical condition (review finding: without this,
@@ -386,6 +395,11 @@ def resolve_anchor(
     shares its fence-tracking and line-iteration machinery with rather than
     duplicating it.
     """
+    # Force `fmt` validation eagerly, exactly like `parse_regions` -- see
+    # that function's own comment on why probing with an empty line is
+    # side-effect-free for every registered format.
+    parse_marker_line(fmt, "")
+
     fence_aware = fmt == RegionFormat.HTML
     first_match_end: dict[str, int] = {}
     open_fence: tuple[str, int] | None = None

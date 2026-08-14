@@ -198,8 +198,8 @@ def test_lint_imports_passes_against_the_installed_package():
     # A loose regex, not an exact-substring match on the whole summary line:
     # a future import-linter release reformatting its report (spacing,
     # wording) should not break this test over something unrelated to the
-    # contracts themselves. The "3 kept" contract COUNT is separately
-    # enforced by test_pyproject_declares_exactly_three_contracts (which
+    # contracts themselves. The "4 kept" contract COUNT is separately
+    # enforced by test_pyproject_declares_exactly_four_contracts (which
     # reads the config, not lint-imports' stdout) -- this only needs to
     # confirm nothing broke.
     assert re.search(r"\b0\s+broken\b", stdout), (

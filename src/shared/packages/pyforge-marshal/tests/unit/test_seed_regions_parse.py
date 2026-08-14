@@ -714,3 +714,18 @@ def test_resolve_anchor_raises_on_an_unterminated_fence_symmetric_with_parse_reg
 
     with pytest.raises(RegionParseError, match="never closed"):
         resolve_anchor(text, RegionFormat.HTML, ("## The tiers",))
+
+
+def test_resolve_anchor_raises_not_implemented_for_slashstar_symmetric_with_parse_regions():
+    """Review finding: `parse_regions` raises `NotImplementedError` for the
+    reserved `slashstar` format via an eager `parse_marker_line(fmt, "")`
+    call even on marker-free text (see that function's own docstring);
+    `resolve_anchor` had no equivalent call, so it silently ran ordinary,
+    non-fence-aware matching for `slashstar` instead of raising -- masked
+    in `insert_region` only because it always calls `parse_regions` first,
+    which already raises for this same `fmt`, but this function is
+    independently public."""
+    text = _doc("## The tiers", "rest")
+
+    with pytest.raises(NotImplementedError):
+        resolve_anchor(text, RegionFormat.SLASHSTAR, ("## The tiers",))

@@ -1079,6 +1079,102 @@ def test_eof_append_adds_no_leading_blank_line_for_a_present_but_empty_file(tmp_
     assert result == _rendered_region("tiers", body)
 
 
+def test_eof_append_adds_a_blank_line_when_a_crlf_file_has_no_trailing_blank_line(tmp_path):
+    """Review finding: the original fixed ``"\\n\\n"`` suffix check never
+    recognized a CRLF file's own blank line, so this CRLF case previously
+    fell through to the "ends in a single terminator" branch and got a
+    bare LF-only blank line stacked onto all-CRLF content."""
+    text = "intro\r\nsome content\r\n"  # single CRLF terminator, no blank line yet
+    path = tmp_path / "doc.md"
+    path.write_text(text, encoding="utf-8", newline="")
+    body = "new body\n"
+
+    insert_region(
+        text,
+        path,
+        "tiers",
+        ("## Nope",),
+        body,
+        model_version=_VERSION,
+        fmt=RegionFormat.HTML,
+        repo_root=tmp_path,
+        never_write=NeverWrite(()),
+    )
+
+    result = path.read_text(encoding="utf-8", newline="")
+    assert result == text + "\n" + _rendered_region("tiers", body)
+
+
+def test_eof_append_does_not_double_an_already_present_crlf_blank_line(tmp_path):
+    """Review finding: without terminator-agnostic detection, a CRLF file
+    already ending in a blank line (``"...\\r\\n\\r\\n"``) got a SECOND,
+    LF-only blank line appended -- violating "never two" and mixing
+    line-ending styles in the output."""
+    text = "intro\r\nsome content\r\n\r\n"  # already ends in a CRLF blank line
+    path = tmp_path / "doc.md"
+    path.write_text(text, encoding="utf-8", newline="")
+    body = "new body\n"
+
+    insert_region(
+        text,
+        path,
+        "tiers",
+        ("## Nope",),
+        body,
+        model_version=_VERSION,
+        fmt=RegionFormat.HTML,
+        repo_root=tmp_path,
+        never_write=NeverWrite(()),
+    )
+
+    result = path.read_text(encoding="utf-8", newline="")
+    assert result == text + _rendered_region("tiers", body)
+
+
+# --- repeated insertions at the same anchor (review finding) ---------------
+
+
+def test_repeated_insertions_at_the_same_anchor_accumulate_nearest_anchor_first(tmp_path):
+    """Documents (module docstring, "Repeated insert_region calls...") that
+    this is the literal, spec-mandated consequence of "insertion occurs
+    immediately after the first matching anchor line" applied twice -- not
+    a stale-offset hazard, since this reproduces even with a correct
+    re-detect-between-calls pattern (each call re-reads the file the prior
+    call actually wrote)."""
+    text = "intro\n## The tiers\nrest\n"
+    path = tmp_path / "doc.md"
+    path.write_text(text, encoding="utf-8", newline="")
+
+    insert_region(
+        text,
+        path,
+        "first",
+        ("## The tiers",),
+        "first body\n",
+        model_version=_VERSION,
+        fmt=RegionFormat.HTML,
+        repo_root=tmp_path,
+        never_write=NeverWrite(()),
+    )
+    text_after_first = path.read_text(encoding="utf-8", newline="")
+
+    insert_region(
+        text_after_first,
+        path,
+        "second",
+        ("## The tiers",),
+        "second body\n",
+        model_version=_VERSION,
+        fmt=RegionFormat.HTML,
+        repo_root=tmp_path,
+        never_write=NeverWrite(()),
+    )
+    result = path.read_text(encoding="utf-8", newline="")
+
+    spans = {span.name: span for span in parse_regions(result, RegionFormat.HTML)}
+    assert spans["second"].begin_span[0] < spans["first"].begin_span[0]
+
+
 # --- body without a trailing newline glues the end marker onto its line ----
 
 

@@ -75,6 +75,17 @@ re-detect -> apply the next, never parse-once-apply-many. `tests/unit/
 test_seed_regions_apply.py` proves both the hazard (naive reuse of stale
 offsets corrupts the file) and the safe pattern (re-parsing between calls
 does not).
+
+**Repeated ``insert_region`` calls at the same anchor accumulate nearest-anchor-first
+(review finding).** This holds even with the safe re-detect-between-calls pattern
+above, because it is not a stale-offset hazard -- it is the literal, spec-mandated
+consequence of "insertion occurs immediately after the first matching anchor line"
+applied twice: inserting region A then region B, both anchored to the SAME still-
+present line, places B immediately after that line too, i.e. BETWEEN the anchor and
+A -- the most recently inserted region ends up closest to the anchor, not furthest.
+Callers wanting an accumulating, append-like order at one anchor must anchor each
+insertion to the previous insertion's own end marker (or an equivalent later anchor),
+not repeat the same anchor.
 """
 
 from __future__ import annotations
@@ -250,6 +261,17 @@ class AnchorInsideExistingRegionError(PyforgeError, ValueError):
     """
 
 
+def _strip_one_terminator(text: str) -> str | None:
+    """``text`` with exactly one trailing line terminator removed (``\\r\\n``,
+    ``\\n``, or a lone ``\\r``, checked in that order so a CRLF pair is never
+    split into two separate terminators), or ``None`` if ``text`` does not
+    end in any terminator at all."""
+    for terminator in ("\r\n", "\n", "\r"):
+        if text.endswith(terminator):
+            return text[: -len(terminator)]
+    return None
+
+
 def _eof_append_prefix(text: str) -> str:
     """The bytes to prepend to a payload being appended at end of file so
     it is separated from EXISTING content by exactly one blank line --
@@ -258,12 +280,27 @@ def _eof_append_prefix(text: str) -> str:
     a bare ``"\\n"`` prefix produces two when ``text`` already ends in a
     blank line) -- or by nothing at all when ``text`` is empty, since there
     is then no existing content to separate from, matching the absent-file
-    create path's own "region alone, nothing else" contract."""
-    if not text or text.endswith("\n\n"):
+    create path's own "region alone, nothing else" contract.
+
+    Detects an existing trailing blank line by stripping terminators one at
+    a time via ``_strip_one_terminator`` rather than a fixed ``"\\n\\n"``
+    suffix check (review finding: the fixed check never recognized a CRLF
+    file's own blank line -- ``"...\\r\\n\\r\\n"`` -- so a CRLF file that
+    already ended in a blank line got a second, LF-only one stacked on top,
+    both violating "never two" and mixing line-ending styles in the output).
+    This module never re-derives ambient CRLF for the BRAND NEW bytes it
+    writes (see the module docstring), so the separator itself, once judged
+    needed, is still always plain ``"\\n"``/``"\\n\\n"`` -- only the
+    detection of what is already there becomes terminator-agnostic.
+    """
+    if not text:
         return ""
-    if text.endswith("\n"):
-        return "\n"
-    return "\n\n"
+    once = _strip_one_terminator(text)
+    if once is None:
+        return "\n\n"
+    if _strip_one_terminator(once) is not None:
+        return ""
+    return "\n"
 
 
 def _render_region(fmt: RegionFormat, name: str, model_version: ModelVersion, body: str) -> str:
