@@ -26,7 +26,7 @@ development_status:
   1-7-preflight-adapter-config-seeding-and-first-run-acknowledgement: done
   1-8-teardown-that-refuses-to-destroy-work: done
   1-9-packaging-distribution-and-version-reporting: done
-  10-1-copier-engine-wrapper-the-single-seam: backlog
+  10-1-copier-engine-wrapper-the-single-seam: done
   10-2-state-schema-and-the-atomic-store: backlog
   10-3-the-apply-runner-transactional-guarded: backlog
   10-4-preconditions-refusals-and-skips: backlog

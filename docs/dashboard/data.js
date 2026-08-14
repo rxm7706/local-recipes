@@ -1335,20 +1335,10 @@ window.DASHBOARD_DATA = {
         "E5",
         "E6"
       ],
-      "inflight": {
-        "key": "10.1",
-        "title": "Copier engine wrapper — the single seam",
-        "phase": "dev",
-        "attempt": "1",
-        "startEpoch": 1786703751,
-        "median": 92,
-        "lo": 27,
-        "hi": 486,
-        "phaseAsOf": "2026-08-14 11:16 UTC"
-      },
+      "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 52 of 126 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 53 of 126 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -1543,6 +1533,10 @@ window.DASHBOARD_DATA = {
             249
           ],
           [
+            "10.1",
+            66
+          ],
+          [
             "14.1",
             36
           ],
@@ -1561,7 +1555,7 @@ window.DASHBOARD_DATA = {
         ],
         "foot": [
           [
-            "~92 min",
+            "~91 min",
             "median / story",
             "var(--done)"
           ],
@@ -1571,12 +1565,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "94/126",
+            "95/126",
             "stories complete",
             "var(--done)"
           ],
           [
-            "32",
+            "31",
             "remaining",
             ""
           ]
@@ -1585,9 +1579,9 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 6709,
-        "totalLabel": "~111.8 h active compute",
-        "note": "Derived from 52 measured stories; a story still in flight contributes only its closed sessions.",
+        "total": 6775,
+        "totalLabel": "~112.9 h active compute",
+        "note": "Derived from 53 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.1": 165,
           "1.2": 65,
@@ -1637,6 +1631,7 @@ window.DASHBOARD_DATA = {
           "9.4": 49,
           "9.5": 49,
           "9.6": 249,
+          "10.1": 66,
           "14.1": 36,
           "14.2": 223,
           "14.3": 97,
@@ -1651,12 +1646,13 @@ window.DASHBOARD_DATA = {
           "E7": 326,
           "E8": 300,
           "E9": 560,
+          "E10": 66,
           "E14": 457
         }
       },
       "lineState": {
-        "state": "in flight",
-        "at": "10.1"
+        "state": "paused",
+        "at": "8.5"
       },
       "epics": [
         {
@@ -2139,7 +2135,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "10.1",
-              "active",
+              "done",
               "Copier engine wrapper — the single seam"
             ],
             [
@@ -2420,15 +2416,15 @@ window.DASHBOARD_DATA = {
         "E5"
       ],
       "inflight": {
-        "key": "3.8",
-        "title": "Mason ships Mason",
+        "key": "4.1",
+        "title": "Lock engine adapter and provenance",
         "phase": "dev",
-        "attempt": "2",
-        "startEpoch": 1786700459,
-        "median": 74,
+        "attempt": "1",
+        "startEpoch": 1786707517,
+        "median": 69,
         "lo": 16,
         "hi": 435,
-        "phaseAsOf": "2026-08-14 11:16 UTC"
+        "phaseAsOf": "2026-08-14 11:59 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2540,7 +2536,7 @@ window.DASHBOARD_DATA = {
           ],
           [
             "3.8",
-            63
+            118
           ],
           [
             "3.9",
@@ -2549,7 +2545,7 @@ window.DASHBOARD_DATA = {
         ],
         "foot": [
           [
-            "~69 min",
+            "~78 min",
             "median / story",
             "var(--done)"
           ],
@@ -2573,8 +2569,8 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 3403,
-        "totalLabel": "~56.7 h active compute",
+        "total": 3458,
+        "totalLabel": "~57.6 h active compute",
         "note": "Derived from 28 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.2": 91,
@@ -2603,18 +2599,18 @@ window.DASHBOARD_DATA = {
           "3.5": 74,
           "3.6": 93,
           "3.7": 238,
-          "3.8": 63,
+          "3.8": 118,
           "3.9": 133
         },
         "epicMin": {
           "E1": 872,
           "E2": 1726,
-          "E3": 805
+          "E3": 860
         }
       },
       "lineState": {
         "state": "in flight",
-        "at": "3.8"
+        "at": "4.1"
       },
       "epics": [
         {
@@ -2775,7 +2771,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "3.8",
-              "active",
+              "pending",
               "Mason ships Mason"
             ]
           ]
@@ -2786,7 +2782,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "4.1",
-              "pending",
+              "active",
               "Lock engine adapter and provenance"
             ],
             [
@@ -3994,7 +3990,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-14 11:16 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-14 11:59 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4061,10 +4057,26 @@ window.DASHBOARD_DATA = {
       "archived_reason": "retired"
     },
     {
+      "slug": "artifactory-download-intelligence",
+      "title": "An enterprise Artifactory mirror's own download telemetry joins the universe picture",
+      "status": "dreamt",
+      "owner": "atlas",
+      "type": "dream",
+      "chain": {}
+    },
+    {
       "slug": "asgi-multiplexer-monolith",
       "title": "Django, Langflow, and DB-GPT co-locate in one ASGI process without starving each other",
       "status": "dreamt",
       "owner": "guild",
+      "type": "dream",
+      "chain": {}
+    },
+    {
+      "slug": "atlas-query-dashboards",
+      "title": "A query against the atlas DB becomes an interactive dashboard, no SPA framework",
+      "status": "dreamt",
+      "owner": "atlas",
       "type": "dream",
       "chain": {}
     },
@@ -4077,6 +4089,14 @@ window.DASHBOARD_DATA = {
       "chain": {
         "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-bmad-drift-new-artifact-shape"
       }
+    },
+    {
+      "slug": "bmad-loop-baseline-drift",
+      "title": "A story's orchestrator-recorded baseline can never drift out from under its own worktree",
+      "status": "dreamt",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "bmad-loop-forward-dependency-blindness",
@@ -4107,6 +4127,14 @@ window.DASHBOARD_DATA = {
       "chain": {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-output-hygiene"
       }
+    },
+    {
+      "slug": "bmad-switch-scope-enforcement",
+      "title": "A BMAD write can never land in the wrong project's artifacts, mechanically",
+      "status": "dreamt",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "conda-forge-expert-rebuild",
@@ -4159,6 +4187,14 @@ window.DASHBOARD_DATA = {
       "archived_reason": "terminal"
     },
     {
+      "slug": "deck-visual-qa",
+      "title": "A deck is proven to look right, not merely to render without crashing",
+      "status": "dreamt",
+      "owner": "herald",
+      "type": "dream",
+      "chain": {}
+    },
+    {
       "slug": "deferred-work-visibility",
       "title": "A deferral that nobody can see is a deferral that never happened",
       "status": "specified",
@@ -4167,6 +4203,22 @@ window.DASHBOARD_DATA = {
       "chain": {
         "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility"
       }
+    },
+    {
+      "slug": "developer-machine-bootstrap",
+      "title": "A new contributor or agent is productive on this repo without tribal knowledge",
+      "status": "dreamt",
+      "owner": "steward",
+      "type": "practice",
+      "chain": {}
+    },
+    {
+      "slug": "django-accelerator-framework",
+      "title": "A Django-service scaffolding engine, if this repo ever births new Django-based stations",
+      "status": "dreamt",
+      "owner": "mason",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "dream-to-code-model-self-verification",
@@ -4198,6 +4250,14 @@ window.DASHBOARD_DATA = {
       "chain": {
         "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-enterprise-airgap"
       }
+    },
+    {
+      "slug": "enterprise-data-models-and-apis",
+      "title": "A normalized data model and REST API pattern, waiting for a PyForge-native subject",
+      "status": "dreamt",
+      "owner": "atlas",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "enterprise-multi-agent-orchestration",
@@ -4379,6 +4439,14 @@ window.DASHBOARD_DATA = {
       "archived_reason": "absorbed"
     },
     {
+      "slug": "miniforge-installer",
+      "title": "A custom-branded Python distributable, if this repo ever needs one",
+      "status": "dreamt",
+      "owner": "mason",
+      "type": "dream",
+      "chain": {}
+    },
+    {
       "slug": "one-front-door",
       "title": "One front door — Marshal drives everything BMAD installs",
       "status": "archived",
@@ -4390,6 +4458,14 @@ window.DASHBOARD_DATA = {
       "archived_reason": "absorbed"
     },
     {
+      "slug": "package-inventory-eligibility",
+      "title": "Every package has one provenance trail and one eligibility answer, from any source",
+      "status": "dreamt",
+      "owner": "warden",
+      "type": "dream",
+      "chain": {}
+    },
+    {
       "slug": "packaging-factory",
       "title": "The Packaging Factory",
       "status": "realized",
@@ -4399,6 +4475,30 @@ window.DASHBOARD_DATA = {
         "deck": "presentations/pyforge-mason",
         "spec": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-packaging-factory"
       }
+    },
+    {
+      "slug": "pixi-container-image",
+      "title": "A shared base container image with pixi already installed, if this repo ever ships one",
+      "status": "dreamt",
+      "owner": "mason",
+      "type": "dream",
+      "chain": {}
+    },
+    {
+      "slug": "pptx-custom-shapes",
+      "title": "Programmatic OOXML shapes for information-dense slides, if the .pptx pipeline ever exists",
+      "status": "dreamt",
+      "owner": "herald",
+      "type": "dream",
+      "chain": {}
+    },
+    {
+      "slug": "pptx-deck-generation",
+      "title": "A second, PowerPoint-native deck pipeline, if this repo ever needs editable .pptx output",
+      "status": "dreamt",
+      "owner": "herald",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "pr-lifecycle",
@@ -4650,6 +4750,14 @@ window.DASHBOARD_DATA = {
       }
     },
     {
+      "slug": "reusable-cicd-workflows",
+      "title": "A centrally-maintained CI/CD workflow family, if this repo ever needs more than plain Actions",
+      "status": "dreamt",
+      "owner": "mason",
+      "type": "dream",
+      "chain": {}
+    },
+    {
       "slug": "risk-tiered-review-depth",
       "title": "A one-line doc fix and a cross-module rewrite get the identical review",
       "status": "dreamt",
@@ -4658,6 +4766,14 @@ window.DASHBOARD_DATA = {
       "chain": {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-risk-tiered-review-depth"
       }
+    },
+    {
+      "slug": "scratch-worktree-lifecycle",
+      "title": "A scratch worktree for one story's work is one command, not five",
+      "status": "dreamt",
+      "owner": "steward",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "secure-live-dashboards",
@@ -4742,6 +4858,14 @@ window.DASHBOARD_DATA = {
         "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-upstream-discovery"
       },
       "archived_reason": "absorbed"
+    },
+    {
+      "slug": "wagtail-corporate-brain",
+      "title": "The \"Corporate Brain\" CMS atlas's own WikiSyncer has been waiting to push to",
+      "status": "dreamt",
+      "owner": "atlas",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "wasm-analytics-stack",
@@ -6139,9 +6263,9 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-marshal",
           "pkey": null,
           "stories": 86,
-          "state": "running",
+          "state": "in-progress",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
-          "done": 94,
+          "done": 95,
           "total": 126
         },
         {
@@ -6206,9 +6330,9 @@ window.DASHBOARD_DATA = {
       "retro": null
     },
     "sound": 4,
-    "live": 41,
+    "live": 57,
     "reached": 12,
-    "gaps": 35,
+    "gaps": 67,
     "findings": 24,
     "rows": [
       {
@@ -6628,7 +6752,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-08-01",
-          "spec": "2026-08-14T11:20",
+          "spec": "2026-08-14T12:10",
           "research": "2026-08-08",
           "brief": "2026-08-02",
           "prd": "2026-08-11",
@@ -6710,7 +6834,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-14T11:20",
+            "at": "2026-08-14T12:10",
             "other": "2026-08-11"
           }
         ],
@@ -6719,7 +6843,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "94/126",
+        "progress": "95/126",
         "complete": 13,
         "of": 13
       },
@@ -7248,6 +7372,327 @@ window.DASHBOARD_DATA = {
         "of": 14
       },
       {
+        "label": "artifactory-download-intelligence",
+        "slug": "artifactory-download-intelligence",
+        "project": "pyforge-atlas",
+        "dream": "artifactory-download-intelligence",
+        "owner": "atlas",
+        "stages": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-14",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
+      },
+      {
+        "label": "atlas-query-dashboards",
+        "slug": "atlas-query-dashboards",
+        "project": "pyforge-atlas",
+        "dream": "atlas-query-dashboards",
+        "owner": "atlas",
+        "stages": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-14",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
+      },
+      {
+        "label": "enterprise-data-models-and-apis",
+        "slug": "enterprise-data-models-and-apis",
+        "project": "pyforge-atlas",
+        "dream": "enterprise-data-models-and-apis",
+        "owner": "atlas",
+        "stages": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-14",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
+      },
+      {
         "label": "kedro-org-tooling-adoption",
         "slug": "kedro-org-tooling-adoption",
         "project": "pyforge-atlas",
@@ -7769,6 +8214,113 @@ window.DASHBOARD_DATA = {
         "progress": "",
         "complete": 2,
         "of": 3
+      },
+      {
+        "label": "wagtail-corporate-brain",
+        "slug": "wagtail-corporate-brain",
+        "project": "pyforge-atlas",
+        "dream": "wagtail-corporate-brain",
+        "owner": "atlas",
+        "stages": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-14",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
       },
       {
         "label": "wasm",
@@ -8720,6 +9272,113 @@ window.DASHBOARD_DATA = {
         "of": 2
       },
       {
+        "label": "deck-visual-qa",
+        "slug": "deck-visual-qa",
+        "project": "pyforge-herald",
+        "dream": "deck-visual-qa",
+        "owner": "herald",
+        "stages": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-14",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
+      },
+      {
         "label": "herald-moments-2-4-live-backend",
         "slug": "herald-moments-2-4-live-backend",
         "project": "pyforge-herald",
@@ -9032,6 +9691,220 @@ window.DASHBOARD_DATA = {
         "furthest": "research",
         "updated": "2026-08-13",
         "age": 1,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
+      },
+      {
+        "label": "pptx-custom-shapes",
+        "slug": "pptx-custom-shapes",
+        "project": "pyforge-herald",
+        "dream": "pptx-custom-shapes",
+        "owner": "herald",
+        "stages": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-14",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
+      },
+      {
+        "label": "pptx-deck-generation",
+        "slug": "pptx-deck-generation",
+        "project": "pyforge-herald",
+        "dream": "pptx-deck-generation",
+        "owner": "herald",
+        "stages": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-14",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -9675,6 +10548,113 @@ window.DASHBOARD_DATA = {
         "of": 3
       },
       {
+        "label": "bmad-loop-baseline-drift",
+        "slug": "bmad-loop-baseline-drift",
+        "project": "pyforge-marshal",
+        "dream": "bmad-loop-baseline-drift",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-14",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
+      },
+      {
         "label": "bmad-loop-forward-dependency-blindness",
         "slug": "bmad-loop-forward-dependency-blindness",
         "project": "pyforge-marshal",
@@ -9991,6 +10971,113 @@ window.DASHBOARD_DATA = {
         "progress": "",
         "complete": 2,
         "of": 3
+      },
+      {
+        "label": "bmad-switch-scope-enforcement",
+        "slug": "bmad-switch-scope-enforcement",
+        "project": "pyforge-marshal",
+        "dream": "bmad-switch-scope-enforcement",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-14",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
       },
       {
         "label": "dashboard-project-path-derivation",
@@ -12772,6 +13859,113 @@ window.DASHBOARD_DATA = {
         "of": 3
       },
       {
+        "label": "django-accelerator-framework",
+        "slug": "django-accelerator-framework",
+        "project": "pyforge-mason",
+        "dream": "django-accelerator-framework",
+        "owner": "mason",
+        "stages": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-14",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
+      },
+      {
         "label": "fleet-stewardship",
         "slug": "fleet-stewardship",
         "project": "pyforge-mason",
@@ -12878,6 +14072,113 @@ window.DASHBOARD_DATA = {
         "of": 3
       },
       {
+        "label": "miniforge-installer",
+        "slug": "miniforge-installer",
+        "project": "pyforge-mason",
+        "dream": "miniforge-installer",
+        "owner": "mason",
+        "stages": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-14",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
+      },
+      {
         "label": "packaging-factory",
         "slug": "packaging-factory",
         "project": "pyforge-mason",
@@ -12982,6 +14283,113 @@ window.DASHBOARD_DATA = {
         "progress": "",
         "complete": 2,
         "of": 3
+      },
+      {
+        "label": "pixi-container-image",
+        "slug": "pixi-container-image",
+        "project": "pyforge-mason",
+        "dream": "pixi-container-image",
+        "owner": "mason",
+        "stages": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-14",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
       },
       {
         "label": "presenton",
@@ -13196,6 +14604,113 @@ window.DASHBOARD_DATA = {
         "progress": "",
         "complete": 2,
         "of": 3
+      },
+      {
+        "label": "reusable-cicd-workflows",
+        "slug": "reusable-cicd-workflows",
+        "project": "pyforge-mason",
+        "dream": "reusable-cicd-workflows",
+        "owner": "mason",
+        "stages": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-14",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
       },
       {
         "label": "scribe-team-memory",
@@ -13622,6 +15137,113 @@ window.DASHBOARD_DATA = {
         "of": 3
       },
       {
+        "label": "developer-machine-bootstrap",
+        "slug": "developer-machine-bootstrap",
+        "project": "pyforge-steward",
+        "dream": "developer-machine-bootstrap",
+        "owner": "steward",
+        "stages": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-14",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
+      },
+      {
         "label": "enterprise-airgap",
         "slug": "enterprise-airgap",
         "project": "pyforge-steward",
@@ -13945,6 +15567,113 @@ window.DASHBOARD_DATA = {
         "of": 3
       },
       {
+        "label": "scratch-worktree-lifecycle",
+        "slug": "scratch-worktree-lifecycle",
+        "project": "pyforge-steward",
+        "dream": "scratch-worktree-lifecycle",
+        "owner": "steward",
+        "stages": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-14",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
+      },
+      {
         "label": "secure-live-dashboards",
         "slug": "secure-live-dashboards",
         "project": "pyforge-steward",
@@ -14165,6 +15894,113 @@ window.DASHBOARD_DATA = {
         "progress": "",
         "complete": 3,
         "of": 6
+      },
+      {
+        "label": "package-inventory-eligibility",
+        "slug": "package-inventory-eligibility",
+        "project": "pyforge-warden",
+        "dream": "package-inventory-eligibility",
+        "owner": "warden",
+        "stages": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-14",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
       },
       {
         "label": "warden-compliance-gates",
@@ -14682,6 +16518,102 @@ window.DASHBOARD_DATA = {
   "backlog": {
     "rows": [
       {
+        "slug": "artifactory-download-intelligence",
+        "title": "An enterprise Artifactory mirror's own download telemetry joins the universe picture",
+        "status": "dreamt",
+        "owner": "atlas",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
+        "slug": "atlas-query-dashboards",
+        "title": "A query against the atlas DB becomes an interactive dashboard, no SPA framework",
+        "status": "dreamt",
+        "owner": "atlas",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
+        "slug": "bmad-loop-baseline-drift",
+        "title": "A story's orchestrator-recorded baseline can never drift out from under its own worktree",
+        "status": "dreamt",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
+        "slug": "bmad-switch-scope-enforcement",
+        "title": "A BMAD write can never land in the wrong project's artifacts, mechanically",
+        "status": "dreamt",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
+        "slug": "deck-visual-qa",
+        "title": "A deck is proven to look right, not merely to render without crashing",
+        "status": "dreamt",
+        "owner": "herald",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
+        "slug": "django-accelerator-framework",
+        "title": "A Django-service scaffolding engine, if this repo ever births new Django-based stations",
+        "status": "dreamt",
+        "owner": "mason",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
+        "slug": "enterprise-data-models-and-apis",
+        "title": "A normalized data model and REST API pattern, waiting for a PyForge-native subject",
+        "status": "dreamt",
+        "owner": "atlas",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
+        "slug": "miniforge-installer",
+        "title": "A custom-branded Python distributable, if this repo ever needs one",
+        "status": "dreamt",
+        "owner": "mason",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
+        "slug": "package-inventory-eligibility",
+        "title": "Every package has one provenance trail and one eligibility answer, from any source",
+        "status": "dreamt",
+        "owner": "warden",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
+        "slug": "pixi-container-image",
+        "title": "A shared base container image with pixi already installed, if this repo ever ships one",
+        "status": "dreamt",
+        "owner": "mason",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
+        "slug": "pptx-custom-shapes",
+        "title": "Programmatic OOXML shapes for information-dense slides, if the .pptx pipeline ever exists",
+        "status": "dreamt",
+        "owner": "herald",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
+        "slug": "pptx-deck-generation",
+        "title": "A second, PowerPoint-native deck pipeline, if this repo ever needs editable .pptx output",
+        "status": "dreamt",
+        "owner": "herald",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
         "slug": "quick-dev-reconciliation",
         "title": "Two ways to finish a story, and Marshal has only ever heard of one",
         "status": "dreamt",
@@ -14692,6 +16624,14 @@ window.DASHBOARD_DATA = {
         }
       },
       {
+        "slug": "reusable-cicd-workflows",
+        "title": "A centrally-maintained CI/CD workflow family, if this repo ever needs more than plain Actions",
+        "status": "dreamt",
+        "owner": "mason",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
         "slug": "risk-tiered-review-depth",
         "title": "A one-line doc fix and a cross-module rewrite get the identical review",
         "status": "dreamt",
@@ -14700,11 +16640,32 @@ window.DASHBOARD_DATA = {
         "chain": {
           "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-risk-tiered-review-depth"
         }
+      },
+      {
+        "slug": "scratch-worktree-lifecycle",
+        "title": "A scratch worktree for one story's work is one command, not five",
+        "status": "dreamt",
+        "owner": "steward",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
+        "slug": "wagtail-corporate-brain",
+        "title": "The \"Corporate Brain\" CMS atlas's own WikiSyncer has been waiting to push to",
+        "status": "dreamt",
+        "owner": "atlas",
+        "blockedOn": "",
+        "chain": {}
       }
     ],
     "blocked": 0,
     "byOwner": {
-      "marshal": 2
+      "atlas": 4,
+      "marshal": 4,
+      "herald": 3,
+      "mason": 4,
+      "warden": 1,
+      "steward": 1
     },
     "practices": [
       {
@@ -14724,6 +16685,12 @@ window.DASHBOARD_DATA = {
         "title": "The Agentic SDLC — four views of autonomy, one governed factory",
         "owner": "marshal",
         "status": "pitched"
+      },
+      {
+        "slug": "developer-machine-bootstrap",
+        "title": "A new contributor or agent is productive on this repo without tribal knowledge",
+        "owner": "steward",
+        "status": "dreamt"
       },
       {
         "slug": "enterprise-airgap",
@@ -14773,9 +16740,9 @@ window.DASHBOARD_DATA = {
     "rows": [
       {
         "station": "herald",
-        "total": 4,
+        "total": 7,
         "counts": {
-          "dreamt": 0,
+          "dreamt": 3,
           "pitched": 0,
           "specified": 1,
           "realized": 1,
@@ -14783,7 +16750,7 @@ window.DASHBOARD_DATA = {
           "practice": 0
         },
         "line": "complete",
-        "load": 0,
+        "load": 3,
         "blocked": 0,
         "dreams": [
           {
@@ -14797,6 +16764,27 @@ window.DASHBOARD_DATA = {
             "slug": "herald-pitch",
             "title": "Herald's Pitch Deck — Moment 1 Orchestration (Consolidated)",
             "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "deck-visual-qa",
+            "title": "A deck is proven to look right, not merely to render without crashing",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "pptx-custom-shapes",
+            "title": "Programmatic OOXML shapes for information-dense slides, if the .pptx pipeline ever exists",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "pptx-deck-generation",
+            "title": "A second, PowerPoint-native deck pipeline, if this repo ever needs editable .pptx output",
+            "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
           },
@@ -14818,17 +16806,17 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "marshal",
-        "total": 31,
+        "total": 33,
         "counts": {
-          "dreamt": 6,
+          "dreamt": 8,
           "pitched": 0,
           "specified": 0,
           "realized": 6,
           "archived": 15,
           "practice": 4
         },
-        "line": "in flight 10.1",
-        "load": 2,
+        "line": "paused 8.5",
+        "load": 4,
         "blocked": 0,
         "dreams": [
           {
@@ -14951,6 +16939,20 @@ window.DASHBOARD_DATA = {
             "blockedOn": ""
           },
           {
+            "slug": "bmad-loop-baseline-drift",
+            "title": "A story's orchestrator-recorded baseline can never drift out from under its own worktree",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "bmad-switch-scope-enforcement",
+            "title": "A BMAD write can never land in the wrong project's artifacts, mechanically",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
             "slug": "fleet-status-supervisor-fallback",
             "title": "A dead supervisor and a dead engine report identically — and only one of them needs help",
             "status": "dreamt",
@@ -15052,9 +17054,9 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "atlas",
-        "total": 7,
+        "total": 11,
         "counts": {
-          "dreamt": 0,
+          "dreamt": 4,
           "pitched": 0,
           "specified": 0,
           "realized": 2,
@@ -15062,7 +17064,7 @@ window.DASHBOARD_DATA = {
           "practice": 0
         },
         "line": "complete",
-        "load": 0,
+        "load": 4,
         "blocked": 0,
         "dreams": [
           {
@@ -15101,6 +17103,34 @@ window.DASHBOARD_DATA = {
             "blockedOn": ""
           },
           {
+            "slug": "artifactory-download-intelligence",
+            "title": "An enterprise Artifactory mirror's own download telemetry joins the universe picture",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "atlas-query-dashboards",
+            "title": "A query against the atlas DB becomes an interactive dashboard, no SPA framework",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "enterprise-data-models-and-apis",
+            "title": "A normalized data model and REST API pattern, waiting for a PyForge-native subject",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "wagtail-corporate-brain",
+            "title": "The \"Corporate Brain\" CMS atlas's own WikiSyncer has been waiting to push to",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
             "slug": "kedro-org-tooling-adoption",
             "title": "Atlas's own Kedro tooling gap — skills, viz publishing, IDE integration",
             "status": "realized",
@@ -15118,9 +17148,9 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "warden",
-        "total": 2,
+        "total": 3,
         "counts": {
-          "dreamt": 0,
+          "dreamt": 1,
           "pitched": 0,
           "specified": 0,
           "realized": 1,
@@ -15128,13 +17158,20 @@ window.DASHBOARD_DATA = {
           "practice": 0
         },
         "line": "complete",
-        "load": 0,
+        "load": 1,
         "blocked": 0,
         "dreams": [
           {
             "slug": "pyforge-warden-compliance-gates",
             "title": "\"Dream — PyForge Warden: Compliance Gates\"",
             "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "package-inventory-eligibility",
+            "title": "Every package has one provenance trail and one eligibility answer, from any source",
+            "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
           },
@@ -15149,17 +17186,17 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "mason",
-        "total": 8,
+        "total": 12,
         "counts": {
-          "dreamt": 0,
+          "dreamt": 4,
           "pitched": 0,
           "specified": 2,
           "realized": 0,
           "archived": 4,
           "practice": 2
         },
-        "line": "in flight 3.8",
-        "load": 0,
+        "line": "in flight 4.1",
+        "load": 4,
         "blocked": 0,
         "dreams": [
           {
@@ -15187,6 +17224,34 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-mason-recipe-validator",
             "title": "\"Dream — PyForge Mason: Recipe Validator\"",
             "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "django-accelerator-framework",
+            "title": "A Django-service scaffolding engine, if this repo ever births new Django-based stations",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "miniforge-installer",
+            "title": "A custom-branded Python distributable, if this repo ever needs one",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "pixi-container-image",
+            "title": "A shared base container image with pixi already installed, if this repo ever ships one",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "reusable-cicd-workflows",
+            "title": "A centrally-maintained CI/CD workflow family, if this repo ever needs more than plain Actions",
+            "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
           },
@@ -15312,23 +17377,37 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "steward",
-        "total": 7,
+        "total": 9,
         "counts": {
-          "dreamt": 0,
+          "dreamt": 1,
           "pitched": 0,
           "specified": 2,
           "realized": 3,
           "archived": 1,
-          "practice": 1
+          "practice": 2
         },
         "line": "complete",
-        "load": 0,
+        "load": 1,
         "blocked": 0,
         "dreams": [
           {
             "slug": "pyforge-steward-feedstock-maintenance",
             "title": "\"Dream — PyForge Steward: Feedstock Maintenance Automation\"",
             "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "developer-machine-bootstrap",
+            "title": "A new contributor or agent is productive on this repo without tribal knowledge",
+            "status": "dreamt",
+            "type": "practice",
+            "blockedOn": ""
+          },
+          {
+            "slug": "scratch-worktree-lifecycle",
+            "title": "A scratch worktree for one story's work is one command, not five",
+            "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
           },
@@ -17238,28 +19317,22 @@ window.DASHBOARD_DATA = {
     "source": "sprint-status",
     "running": [
       {
-        "station": "Marshal",
-        "story": "10.1",
-        "phase": "dev",
-        "startEpoch": 1786703751
-      },
-      {
         "station": "Mason",
-        "story": "3.8",
+        "story": "4.1",
         "phase": "dev",
-        "startEpoch": 1786700459
+        "startEpoch": 1786707517
       }
     ],
     "lastShipped": {
       "station": "marshal",
-      "story": "9.5",
-      "epoch": 1786688789,
-      "sha": "24e401be1",
-      "subject": "marshal: story 9.5 review pass 2 -- assert finding.path in the non-str-rationale test"
+      "story": "9.6",
+      "epoch": 1786703727,
+      "sha": "b949353f8",
+      "subject": "marshal: story 9.6 -- plan and action types, repo fingerprint, and the plan builder"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-14 11:16 UTC",
-    "generatedEpoch": 1786706193
+    "generatedAt": "2026-08-14 11:59 UTC",
+    "generatedEpoch": 1786708767
   },
   "storySpecs": [
     {
@@ -17282,9 +19355,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-marshal",
-      "done": 94,
+      "done": 95,
       "tracked": 56,
-      "gap": 38
+      "gap": 39
     },
     {
       "station": "pyforge-mason",
@@ -17391,23 +19464,23 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-surface-drift-reconciliation/SPEC.md"
           }
         ],
-        "done": 94,
-        "backlog": 31,
+        "done": 95,
+        "backlog": 30,
         "blocked": 1,
         "total": 126,
-        "next": "10-1-copier-engine-wrapper-the-single-seam",
+        "next": "10-2-state-schema-and-the-atomic-store",
         "blockedKeys": [
           "8-5-marker-deletion-as-a-sanctioned-opt-out"
         ],
         "backlogKeys": [
-          "10-1-copier-engine-wrapper-the-single-seam",
           "10-2-state-schema-and-the-atomic-store",
           "10-3-the-apply-runner-transactional-guarded",
           "10-4-preconditions-refusals-and-skips",
           "10-5-marshal-seed-check",
           "10-6-marshal-seed-adopt",
           "10-7-marshal-seed-init",
-          "11-1-neutral-contract-and-agent-adapter-fan-out"
+          "11-1-neutral-contract-and-agent-adapter-fan-out",
+          "11-2-projects-md-index-and-artifact-symlink-derivation"
         ],
         "state": "ready"
       },
@@ -17573,8 +19646,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 335,
-      "backlog": 45,
+      "done": 336,
+      "backlog": 44,
       "blocked": 1,
       "total": 381
     }
@@ -17617,13 +19690,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "marshal",
         "stories": 126,
-        "done": 94,
+        "done": 95,
         "blocked": 1,
         "epics": 19,
         "epicsDone": 10,
         "complete": false,
-        "running": true,
-        "projected": 125
+        "running": false,
+        "projected": 95
       },
       {
         "key": "mason",
@@ -17672,7 +19745,7 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 381,
-      "done": 335,
+      "done": 336,
       "blocked": 1,
       "epics": 74,
       "epicsDone": 61
@@ -17680,10 +19753,9 @@ window.DASHBOARD_DATA = {
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
       "running": [
-        "marshal",
         "mason"
       ],
-      "projected": 380
+      "projected": 350
     }
   }
 };
