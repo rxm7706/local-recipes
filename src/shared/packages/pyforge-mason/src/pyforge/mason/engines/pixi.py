@@ -27,6 +27,44 @@ segment is kept as the RAW string the `.conda` filename convention already
 encodes, so `package.py::build()`'s FR-22 mismatch comparison sees exactly
 what `pixi build` itself named, not a Mason-side reinterpretation of it
 (AD-1).
+
+Story 3.5 adds `upload()` (FR-16, AD-14): a `.conda` artifact upload to a
+named private conda channel via `pixi upload prefix --channel <name>
+<file>`, resolving epic OQ-E2 in favour of the `prefix` pixi-upload
+subcommand (see this story's spec Design Notes for why `prefix`, not
+`anaconda`/`artifactory`/`pixi publish`). Mirrors `engines/twine.py::
+upload()`'s own gate/timeout/argv shape (`require_engine` first, list argv,
+no `env=` kwarg -- `pixi` itself reads `PREFIX_API_KEY` from its inherited
+environment automatically, live-verified: `pixi upload prefix --help`
+documents `--api-key` as `[env: PREFIX_API_KEY=]`) with one deliberate
+deviation: `stderr=subprocess.STDOUT` merges the child's stderr into the
+same captured stream as stdout, rather than `twine.py`'s/this module's own
+`build()`'s `stderr=None`. Live-verified against the installed `pixi
+0.76.2` binary: a missing-credential failure (`pixi upload prefix
+--channel x nonexistent.conda`) prints its entire diagnostic ("Error: no
+prefix.dev API key provided...") to stderr and writes NOTHING to stdout --
+the opposite of `twine`'s own stdout-only diagnostics -- so `stderr=None`
+here would silently produce an empty `stdout` field on every real-world
+channel-upload failure.
+
+Argv token order is `["pixi", "upload", "prefix", "--channel", channel,
+conda_path]` -- the `prefix` subcommand and its `--channel` flag come
+BEFORE the trailing `[PACKAGE_FILES]...` positional (live-verified,
+2026-08-13: `pixi upload <file> prefix --channel <name>`, with the file
+positioned before the subcommand, fails immediately with clap's own
+`error: unexpected argument '--channel' found` -- the file is greedily
+consumed as a second package-file positional, so `prefix` never registers
+as the subcommand -- while `pixi upload prefix --channel <name> <file>`
+reaches the tool's real credential check, per `pixi upload prefix --help`'s
+own `Usage:` line).
+
+`PixiUploadResult` carries no `url`/`reference` field, unlike `TwineUpload
+Result` (module docstring below) -- no equivalent live-verified success-
+path output exists for `pixi upload prefix` (exercising it needs a real API
+key, channel, and network access, out of reach during spec authoring), so
+`package.py::ship_channel`'s `reference` on success is the caller-supplied
+`channel_name` itself, never a value parsed out of this adapter's captured
+stdout.
 """
 
 from __future__ import annotations
@@ -36,7 +74,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from . import probe_engine, require_engine
-from ..errors import PackageBuildTimeoutError, PackageProjectPathError
+from ..errors import (
+    PackageBuildTimeoutError, PackageProjectPathError, ShipChannelUploadTimeoutError,
+)
 
 name = "pixi"
 """`EngineAdapter.name` -- an `engines/__init__.py::_KNOWN_ENGINES` key."""
@@ -49,6 +89,14 @@ _PIXI_BUILD_TIMEOUT_SECONDS = 600.0
 generous ten-minute allowance for a from-source build; no live evidence yet
 that `.conda` construction runs meaningfully longer or shorter than the
 wheel/sdist path for this project."""
+
+_PIXI_UPLOAD_TIMEOUT_SECONDS = 300.0
+"""Five minutes: mirrors `engines/twine.py::_TWINE_UPLOAD_TIMEOUT_SECONDS`'s
+own rationale for a network operation against a remote service (there,
+PyPI; here, a prefix.dev channel) -- generous enough for a slow connection
+uploading a single `.conda` file, without being as open-ended as
+`_PIXI_BUILD_TIMEOUT_SECONDS`'s ten-minute allowance for compiling from
+source."""
 
 
 def probe() -> str | None:
@@ -160,3 +208,75 @@ def build(project_path: str, *, timeout: float | None = None) -> PixiBuildResult
         conda_version=conda_version,
         stdout=completed.stdout,
     )
+
+
+@dataclass(frozen=True)
+class PixiUploadResult:
+    """One `upload()` call's outcome. `returncode` is the child's raw exit
+    code -- DATA, never raised (AD-4, mirrors `TwineUploadResult`/
+    `PixiBuildResult`). `stdout` is the child's captured stdout AND stderr,
+    merged into one field (module docstring: `stderr=subprocess.STDOUT`) --
+    unlike `TwineUploadResult`, there is no `url` field here: no equivalent
+    live-verified success-path output shape exists for `pixi upload prefix`
+    to parse (module docstring), so this dataclass reports only what was
+    live-verified -- the raw exit code and the merged diagnostic text."""
+
+    returncode: int
+    stdout: str
+
+
+def upload(conda_path: str, channel: str, *, timeout: float | None = None) -> PixiUploadResult:
+    """Upload `conda_path` (a built `.conda` artifact) to the named private
+    conda channel `channel` via `pixi upload prefix --channel <channel>
+    <conda_path>` (Story 3.5, FR-16, AD-14).
+
+    Raises `EngineAbsentError` (via `require_engine`) before any subprocess
+    spawns if the `pixi` engine is not on `PATH` (spec Always boundary). No
+    `env=` kwarg is passed to `subprocess.run` (spec Always boundary,
+    AD-14, module docstring) -- the child inherits the real process
+    environment automatically, which is how `PREFIX_API_KEY` reaches `pixi`
+    without this module (or `package.py::ship_channel`) ever touching or
+    copying it.
+
+    Argv is `["pixi", "upload", "prefix", "--channel", channel,
+    conda_path]` (module docstring for the live-verified rationale behind
+    this exact token order -- the `prefix` subcommand and its `--channel`
+    flag MUST precede the trailing `[PACKAGE_FILES]...` positional).
+    `stderr=subprocess.STDOUT` merges the child's stderr into the captured
+    stdout stream (module docstring: a missing-credential failure writes
+    its entire diagnostic to stderr and nothing to stdout, the opposite of
+    `twine`'s own stdout-only diagnostics).
+
+    `timeout` defaults to `_PIXI_UPLOAD_TIMEOUT_SECONDS` when `None`,
+    mirroring every other engine adapter's own per-operation-default
+    convention. Raises `ShipChannelUploadTimeoutError` when the child
+    exceeds `timeout` -- `subprocess.run`'s own timeout handling has
+    already killed and reaped the child by the time that exception reaches
+    here, mirroring `engines.twine.upload`'s identical translation to its
+    own timeout error.
+
+    A non-zero return code is DATA on the returned `PixiUploadResult`,
+    never raised (AD-4, spec Always boundary) -- the caller decides what a
+    failed upload means; this function only reports it. No further parsing
+    is performed on the captured output (module docstring: no live-verified
+    success-path output shape exists for `pixi upload prefix` to scan).
+    """
+    require_engine("pixi")
+
+    resolved_timeout = timeout if timeout is not None else _PIXI_UPLOAD_TIMEOUT_SECONDS
+    argv = [_BINARY_NAME, "upload", "prefix", "--channel", channel, conda_path]
+    try:
+        completed = subprocess.run(
+            argv,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=resolved_timeout,
+            check=False,
+        )
+    except subprocess.TimeoutExpired:
+        raise ShipChannelUploadTimeoutError(timeout=resolved_timeout) from None
+
+    return PixiUploadResult(returncode=completed.returncode, stdout=completed.stdout)
