@@ -32,6 +32,10 @@ dependencies = [
     "jsonschema>=4.25",
     "bmad-loop>=0.9.0,<0.10",
     "pyforge-core",
+    # Story 10.1: Genesis's template engine (architecture Stack table,
+    # AD-52). Imported nowhere but seed/engine/copier.py (P-02, proven by
+    # tests/meta/test_p02_copier_sole_ownership.py).
+    "copier>=9.17,<10",
 ]
 
 [project.scripts]

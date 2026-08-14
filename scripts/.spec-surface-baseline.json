@@ -2454,8 +2454,8 @@
   "files": {
    "src/shared/packages/pyforge-marshal/.gitignore": "63c59419f6a5a17602e6cecfe6d44e3d491c3c63",
    "src/shared/packages/pyforge-marshal/README.md": "dc187a907cce55b648581ad62bb8f5227e4d4438",
-   "src/shared/packages/pyforge-marshal/pixi.toml": "ac7253c9028938ce455e42b2556a893666dc9139",
-   "src/shared/packages/pyforge-marshal/pyproject.toml": "d161641ac577ec34ec775e8ae705fb6295dc3760",
+   "src/shared/packages/pyforge-marshal/pixi.toml": "8a1be1bc9aa8d29478b8c9c16dc9ace3f288b2ff",
+   "src/shared/packages/pyforge-marshal/pyproject.toml": "ee049a92f02ed19d2174feb3f12364ad5f8118c4",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/__init__.py": "b9e09847a6e53c11db7d1afdbeefd6fc00ff6c2e",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/clock_system.py": "e9b2f6d0cf1b73337cd7fd0dbd3a892bd98f0c70",
@@ -2524,7 +2524,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/findings.py": "1ebf2815bda1987b8c9866c394201aa5b8b56b57",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/hashes.py": "087101ceb869a83d75ea8d16383786893f511417",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/detect/inventory.py": "bc5199ec440a723e042b9798113f420e38dc4b2b",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/engine/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/engine/__init__.py": "8dbc3406a54d1c13c52ec57d4c37edd082c1c202",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/errors.py": "05d63d20d7099f26d7a2167f2d2a617fc7f1060f",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/fs.py": "d2645dfeb8402674d40ee217eb80a3ecddf92e81",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/seed/migrate/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
@@ -2639,7 +2639,7 @@
    "src/shared/packages/pyforge-marshal/tests/unit/test_vcs_git.py": "c1d548b6f116e4fcda5124f30dab9b6cd891cb32",
    "src/shared/packages/pyforge-marshal/tests/unit/test_verdict.py": "18457557624771e5365d39d2c0c0df03b1ebc9e1"
   },
-  "memlog": "ebd8cdd12a136aefd84117f00d5601c8c55c1a60"
+  "memlog": "45613ce0a435fd7a427d27deb0ecd61d176cae52"
  },
  "pyforge-marshal/spec-pyforge-marshal-loop-orchestrator": {
   "files": {},
