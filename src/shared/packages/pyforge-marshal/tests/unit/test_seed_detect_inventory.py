@@ -834,6 +834,7 @@ def test_coverage_findings_flags_a_deferred_entry_with_a_forced_non_str_rational
     (finding,) = coverage_findings(manifest)
     assert finding.severity == Severity.HARD
     assert finding.type == FindingType.UNCOVERED
+    assert finding.path == "a.txt"
     assert finding.message == "a: unclassified-deferred entry has a blank rationale"
     assert coverage_counts(manifest) == {"uncovered": 1}
 
