@@ -1,7 +1,7 @@
 ---
 title: Django, Langflow, and DB-GPT co-locate in one ASGI process without starving each other
 type: dream
-owner: guild
+owner: steward
 status: dreamt
 ---
 
@@ -101,3 +101,4 @@ are, for the first time, genuinely in the same process.
   decision on which project or station this belongs to, and pending
   confirmation that the underlying dependency conflict is even solvable
   before committing engineering time to it.
+- **2026-08-14** — Owner reassigned `guild` → `steward` by operator decision (2026-08-14 dream-backlog audit): Charter §5 reserves `guild` for pyforge-charter and forbids it as a terminal owner; the whole Django/Langflow/DB-GPT family lands under one deployment-owning station. Status stays `dreamt` — the family's preconditions (monolith-vs-microservices decision, dependency-solve spike, a named subject project) are unchanged.

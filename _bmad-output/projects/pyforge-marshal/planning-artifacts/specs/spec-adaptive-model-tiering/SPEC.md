@@ -1,6 +1,6 @@
 ---
 spec: adaptive-model-tiering
-status: draft
+status: shipped
 owner-dream: docs/dreams/adaptive-model-tiering.md
 surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py

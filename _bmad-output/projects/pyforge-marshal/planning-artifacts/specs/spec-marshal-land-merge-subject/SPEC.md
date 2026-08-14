@@ -1,5 +1,6 @@
 ---
 id: SPEC-marshal-land-merge-subject
+status: shipped
 owner-dream: docs/dreams/marshal-land-merge-subject.md
 companions: []
 sources: ['docs/dreams/marshal-land-merge-subject.md']

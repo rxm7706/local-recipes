@@ -1,7 +1,7 @@
 ---
 title: Django, Langflow, and DB-GPT scale as isolated containers behind one gateway
 type: dream
-owner: guild
+owner: steward
 status: dreamt
 ---
 
@@ -101,3 +101,4 @@ without losing anything.
   specific downstream project — no station claimed, no Spec derived, no
   decision made between this and the monolith option. Owner deliberately
   left as `guild` (intake, not a terminal owner) pending that decision.
+- **2026-08-14** — Owner reassigned `guild` → `steward` by operator decision (2026-08-14 dream-backlog audit): Charter §5 reserves `guild` for pyforge-charter and forbids it as a terminal owner; the whole Django/Langflow/DB-GPT family lands under one deployment-owning station. Status stays `dreamt` — the family's preconditions (monolith-vs-microservices decision, dependency-solve spike, a named subject project) are unchanged.

@@ -1,7 +1,7 @@
 ---
 id: SPEC-risk-tiered-review-depth
 spec: risk-tiered-review-depth
-status: draft
+status: shipped
 owner-dream: docs/dreams/risk-tiered-review-depth.md
 surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/gate.py

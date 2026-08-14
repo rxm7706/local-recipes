@@ -2,7 +2,8 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: 2026-08-11  # FR-181 added to § 7.2 (docs/dreams/fleet-status-supervisor-fallback.md, spec-fleet-status-supervisor-fallback): a dead supervisor sidecar consults a fallback engine-liveness signal before reporting "unsupervised". Queued as Story 5.8 (epics.md, PR #425); this closes the chain-completeness INV-A gap that PR #425 left open (the FR entry, not the Dream/Spec/Story chain, was the missing piece). ONE FR space now FR-1..FR-181, no gaps.
+updated: 2026-08-14  # FR-182..FR-187 backfilled into § 7.2/§ 7.3: six FRs cited by epics.md (Stories 3.11/3.12/3.13/2.8/5.9/5.10, all shipped) but absent here — the same INV-A class the 2026-08-11 line closed for FR-181, found ×6 by the 2026-08-14 dream-backlog chain audit. Sources: spec-adaptive-model-tiering (FR-182/183), spec-horizontal-run-concurrency (FR-184), spec-risk-tiered-review-depth (FR-185), spec-quick-dev-reconciliation (FR-186), spec-marshal-land-merge-subject (FR-187). ONE FR space now FR-1..FR-187, no gaps.
+# 2026-08-11  # FR-181 added to § 7.2 (docs/dreams/fleet-status-supervisor-fallback.md, spec-fleet-status-supervisor-fallback): a dead supervisor sidecar consults a fallback engine-liveness signal before reporting "unsupervised". Queued as Story 5.8 (epics.md, PR #425); this closes the chain-completeness INV-A gap that PR #425 left open (the FR entry, not the Dream/Spec/Story chain, was the missing piece). ONE FR space now FR-1..FR-181, no gaps.
 # 2026-08-09  # § 16.9 reopened twice: FR-168 (a Spec cannot declare a surface it has no contract for) realizes CAP-5, and FR-169 (the presumed set is worked down by measurement) realizes CAP-6 — both of spec-surface-drift-reconciliation, both found by operating the gate FR-164..FR-167 turned green. ONE FR space now FR-1..FR-180, no gaps. FR-170/171 reopen § 7.2 durability (the guarantee holds, its SIGNAL did not); FR-172/173 reopen pr-lifecycle and FR-174 surface-drift-reconciliation, all three found by operating the fleet during a live 9-story run.
 # 2026-08-08  # ONE FR space, FR-1..FR-163, no gaps. The genesis-installer satellite's own FR1..FR62 island renumbered into FR-66..FR-127 and its section retitled "15. The seed installer — `marshal seed`"; OQ-1..9 -> Q-17..25; NFR-O1 retired into NFR-12; SC-01..10 and K-01..03 adopted as-is (Marshal had neither namespace). New § 16: the FR-surface rule widened to an ownership test, and 8 previously-undecomposed Marshal Specs absorbed as FR-128..FR-163 (testing-charter, loop-home-fleet-refresh, sprint-status-auto-promote, dashboard-path-derivation, detector-self-verification, fleet-chain-completeness, agent-tool-surface, pyforge-core). New § 17: the Marshal/Steward seam. jira-github-projects-sync re-owned to Steward; agentic-sdlc-autonomy recorded as a standing position with nothing to decompose.
 # 2026-08-02  # genesis-installer PRD consolidated in as a Satellite section (explicit user override); CAP-9 -> FR-59/FR-60; competitive re-frame; FR-13 re-scope; FR-58 psmux; convergence watch; Q-3/Q-10..14 resolutions; durable-runs -> FR-61/FR-62/FR-63; fidelity-enforcement (Marshal-only slice) -> FR-64; one-front-door -> FR-65, Q-15/Q-16
@@ -458,6 +459,42 @@ When the supervisor sidecar is dead, `derive_home_state` consults a second, inde
 - The fallback signal is itself derived from journals/process state (AD-5), never a hand-maintained flag or an operator override.
 - The two failure shapes (sidecar-dead-engine-alive vs. sidecar-dead-engine-dead) are distinguishable from `marshal status`/`fleet-picture`'s own output, so an operator never again needs the `ps`/`tmux ls`/`state.json` cross-check by hand.
 - *Motivating evidence: measured 2026-08-11 — 5 stations resumed via bare `bmad-loop resume` (which never spawns a fresh sidecar) reported `unsupervised — needs re-spin` for the rest of their run's life, although each was independently verified alive via `ps`/`tmux ls`/`state.json`. Story 5.8 (Epic 5) queues the implementation; the concrete fallback signal is a story-level design decision, not resolved here.*
+
+#### FR-182: A story's declared difficulty actually picks its model *(added 2026-08-14 backfill — `docs/dreams/adaptive-model-tiering.md`; shipped via Story 3.11)*
+A project's declared `model_tier_map` and a story's declared `difficulty:` change which model runs each stage: the rendered `policy.toml` differs from the undeclared baseline in exactly the mapped stages, and the resolution is journaled at launch.
+**Consequences:**
+- Reuses FR-51's already-shipped chain (`core/spec_difficulty.py`, `cli/spin.py` resolution, `render_policy_toml` tier-batching) — no second mechanism; this FR is the *feeding* of that chain, which grep proved fully built and permanently unused (zero real map entries, zero declared difficulties across all 8 loop homes).
+- Difficulty is **authored**, not derived: a Tier-3 story-spec frontmatter `difficulty:` key against the vocabulary `marshal-policy.toml` maps.
+- A mismatched or undeclared story still reports via the existing `batching_report` path, unchanged.
+
+#### FR-183: A struggling retry runs under a stronger model *(added 2026-08-14 backfill — `docs/dreams/adaptive-model-tiering.md`; shipped via Story 3.12)*
+A story whose attempt or review-cycle count crosses a configured threshold — derived from the journal fold (AD-26), never a hand-maintained flag — is next dispatched under a model at least as strong as its resolved tier: a floor-raise only, never a downgrade.
+**Consequences:**
+- The escalation applies on the deferral-then-resume path (`run_resume`'s existing re-render), is journaled with intent/outcome discipline (AD-28) naming trigger and resulting model, and is bounded — it does not re-fire without a new trigger (C-6).
+- A story with no declared difficulty still has a baseline model to escalate from — not a no-op for undeclared stories.
+
+#### FR-184: The parallel-fan-out clamp is surfaced, not silent *(added 2026-08-14 backfill — `docs/dreams/horizontal-run-concurrency.md`; shipped via Story 3.13)*
+`bmad_loop==0.9.0`'s server-side clamp of `max_parallel` to 1 (an unbuilt Phase-5 stub) is surfaced as a loud advisory (`MRS-POLICY-007` WARN), registered in Story 6.8's `upstream-register.json`, and assessed for Marshal-side readiness (`parallel-fan-out-readiness-assessment.md`).
+**Consequences:**
+- Marshal must **not** build concurrent dispatch while upstream clamps (AD-2/AD-3 wrap-never-fork); the capability itself stays parked until upstream Phase 5 ships, at which point adoption starts from the readiness assessment, not a fresh investigation.
+
+#### FR-185: A low-risk story's review runs lighter, never absent *(added 2026-08-14 backfill — `docs/dreams/risk-tiered-review-depth.md`; shipped via Story 2.8)*
+A story mechanically classified low-risk (`classify_review_tier`, the Story-2.4 pure-function idiom) runs review at reduced cycle count (`resolve_review_cycles`) while the independent reviewer still runs on every story with no exception.
+**Consequences:**
+- Only cycle count varies by tier; review **occurrence** never does (`gate_mode = "none"` stays human-approval-only).
+- Any tightened cap is checked against `DW-AD23-3` by name: a too-low cap once silently damped five reviewer-recommended follow-ups; the low-risk tier must not reproduce that loss (CAP-3 regression guarantee on `deferred-work-check`'s full capture).
+
+#### FR-186: A story finished by hand isn't invisible to the ledger *(added 2026-08-14 backfill — `docs/dreams/quick-dev-reconciliation.md`; shipped via Story 5.9)*
+A backlog story merged with no `bmad-loop` run record is detected as completed from git plus story-identity artifacts alone (AD-5/AD-33), advanced out of `backlog` with its completion path recorded, and its spec promoted under Story 4.1's durability guarantee — via `deploy reconcile-completions` with advisory-locked ledger writes.
+**Consequences:**
+- Only `backlog` rows are eligible for advancement; `blocked`/`in-progress` are never force-advanced.
+- Documented label deviation (Spec change log 2026-08-12): the completion path is `not-loop-native`, never `bmad-quick-dev` — git alone could not distinguish quick-dev from `marshal land` until FR-187; the label narrows automatically as FR-187 subjects accumulate.
+- Reconciliation around a live run neither reads nor writes that run's journal (CAP-4, proven by test).
+
+#### FR-187: `marshal land` renders a detectable merge subject *(added 2026-08-14 backfill — `docs/dreams/marshal-land-merge-subject.md`; shipped via Story 5.10)*
+`marshal land` merges render the same templated subject (`identity.render_merge_subject`, AD-24) that `deploy land-story` already renders — threaded as a port-level `subject` parameter through `ForgePort.merge_pr` — so `marshal_native_merged_keys` classifies every Marshal-driven landing correctly.
+**Consequences:**
+- Purely additive and forward-only: no strategy/gate changes, no retroactive relabelling of pre-fix `not-loop-native` rows (explicit non-goal); FR-186's classification precision sharpens with zero change to FR-186 itself.
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 spec: fleet-status-supervisor-fallback
-status: draft
+status: shipped
 owner-dream: docs/dreams/fleet-status-supervisor-fallback.md
 surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py

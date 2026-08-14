@@ -2,7 +2,7 @@
 title: A one-line doc fix and a cross-module rewrite get the identical review
 type: dream
 owner: marshal
-status: dreamt
+status: realized
 ---
 
 # A one-line doc fix and a cross-module rewrite get the identical review
@@ -119,3 +119,4 @@ mode for a class of stories, not just for the repo as a whole.
   pending the Spec/story chain. Companion pain, same investigation, separate
   Dream (different subsystem, different epic):
   [`quick-dev-reconciliation.md`](quick-dev-reconciliation.md).
+- **2026-08-14** — Realized — Story 2.8 (FR-185) shipped `classify_review_tier`/`resolve_review_cycles` in `core/gate.py`. Status flipped and FR-185 backfilled into the PRD by the 2026-08-14 audit.

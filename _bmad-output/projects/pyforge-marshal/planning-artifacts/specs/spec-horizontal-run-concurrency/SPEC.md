@@ -1,6 +1,6 @@
 ---
 spec: horizontal-run-concurrency
-status: draft
+status: shipped
 owner-dream: docs/dreams/horizontal-run-concurrency.md
 surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py

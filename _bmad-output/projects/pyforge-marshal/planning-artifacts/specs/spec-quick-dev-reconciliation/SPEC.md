@@ -1,7 +1,7 @@
 ---
 id: SPEC-quick-dev-reconciliation
 spec: quick-dev-reconciliation
-status: draft
+status: shipped
 owner-dream: docs/dreams/quick-dev-reconciliation.md
 surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py

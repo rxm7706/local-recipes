@@ -1,7 +1,7 @@
 ---
 title: DB-GPT's agentic, file-hungry model integrates into a stateless Django control plane
 type: dream
-owner: guild
+owner: steward
 status: dreamt
 ---
 
@@ -102,3 +102,4 @@ would silently lose.
   unrelated Dream (conda-forge packaging of DB-GPT itself, delivered via
   external PR #33883) — this Dream is about consuming DB-GPT inside a
   Django application, not packaging it.
+- **2026-08-14** — Owner reassigned `guild` → `steward` by operator decision (2026-08-14 dream-backlog audit): Charter §5 reserves `guild` for pyforge-charter and forbids it as a terminal owner; the whole Django/Langflow/DB-GPT family lands under one deployment-owning station. Status stays `dreamt` — the family's preconditions (monolith-vs-microservices decision, dependency-solve spike, a named subject project) are unchanged.

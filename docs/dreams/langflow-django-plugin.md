@@ -1,7 +1,7 @@
 ---
 title: Langflow integrates into a cookiecutter-django project without fighting it
 type: dream
-owner: guild
+owner: steward
 status: dreamt
 ---
 
@@ -100,3 +100,4 @@ scratch each time.
   downstream project — no station claimed, no Spec derived, no pattern
   chosen. Owner deliberately left as `guild` (intake, not a terminal owner)
   pending a decision on which project or station this belongs to.
+- **2026-08-14** — Owner reassigned `guild` → `steward` by operator decision (2026-08-14 dream-backlog audit): Charter §5 reserves `guild` for pyforge-charter and forbids it as a terminal owner; the whole Django/Langflow/DB-GPT family lands under one deployment-owning station. Status stays `dreamt` — the family's preconditions (monolith-vs-microservices decision, dependency-solve spike, a named subject project) are unchanged.

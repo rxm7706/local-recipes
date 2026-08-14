@@ -2,7 +2,7 @@
 title: A dead supervisor and a dead engine report identically — and only one of them needs help
 type: dream
 owner: marshal
-status: dreamt
+status: realized
 ---
 
 # A dead supervisor and a dead engine report identically — and only one of them needs help
@@ -108,3 +108,4 @@ case, it silently reintroduces exactly those five.
   going forward. Queued as a Dream rather than patched by hand —
   `core/status.py`, `cli/status.py`, and `scripts/fleet_picture.py` were
   deliberately left untouched pending the Spec/story chain.
+- **2026-08-14** — Realized — FR-181 (PRD, PR #435), Story 5.8 shipped (`d9f7691c97`), ledger-done. Status flipped by the 2026-08-14 dream-backlog chain audit.
