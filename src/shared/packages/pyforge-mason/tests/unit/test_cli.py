@@ -2794,3 +2794,45 @@ def test_package_ship_combined_with_an_explicit_verb_is_a_usage_error(argv, caps
     assert "--ship" in err
     mock_ship.assert_not_called()
     mock_build.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "argv",
+    [
+        ["package", "--yes", "build", "."],
+        ["package", "--recipe-path", "X", "build", "."],
+        ["package", "--yes", "--recipe-path", "X", "build", "."],
+    ],
+)
+def test_package_yes_or_recipe_path_before_build_is_a_usage_error(argv, capsys):
+    """Review, 2026-08-14: `--yes`/`--recipe-path` are registered on the
+    `package` NOUN parser (needed for `ship`'s own bare-noun alias), so --
+    exactly like the `--ship`+verb combination fixed in review pass 3 above
+    -- they used to parse successfully ahead of the `build` verb with
+    `ns.yes`/`ns.recipe_path` then silently unread (`build`'s own dispatch
+    branch only reads `ns.project_path`/`ns.target`). Two independent fresh
+    reviewer instances (no shared context) re-discovered this exact gap;
+    rejected as a usage error now instead of silently ignored."""
+    with patch("pyforge.mason.cli.package.build") as mock_build:
+        rc = main(argv)
+
+    assert rc == EXIT_USAGE
+    err = capsys.readouterr().err
+    assert "--yes" in err
+    assert "--recipe-path" in err
+    mock_build.assert_not_called()
+
+
+def test_package_target_before_build_is_still_read_not_rejected():
+    """`--target` is deliberately excluded from the usage-error guard above:
+    unlike `--yes`/`--recipe-path`, `build` has its own `--target`
+    registration (same `choices=("library",)` set), so a noun-level
+    `--target` is never silently dropped -- it is read, just via `build`'s
+    own flag rather than the noun-level one."""
+    with patch(
+        "pyforge.mason.cli.package.build", return_value=_FIXED_PACKAGE_BUILD_RESULT,
+    ) as mock_build:
+        rc = main(["package", "--target", "library", "build", "."])
+
+    assert rc == EXIT_OK
+    mock_build.assert_called_once_with(".", target="library")

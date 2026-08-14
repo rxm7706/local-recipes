@@ -879,6 +879,35 @@ def main(argv: Sequence[str] | None = None) -> int:
 
         if (
             ns.noun == "package"
+            and getattr(ns, "verb", None) == "build"
+            and (getattr(ns, "yes", None) is not None or getattr(ns, "recipe_path", None) is not None)
+        ):
+            # Review, 2026-08-14: `--yes`/`--recipe-path` are registered on
+            # the `package` NOUN parser (needed for `ship`'s own bare-noun
+            # alias above), so -- exactly like the `--ship`+verb combination
+            # already rejected two blocks up -- they parse successfully even
+            # ahead of the `build` verb (`mason package --yes --recipe-path
+            # X build .`), with `ns.yes`/`ns.recipe_path` then silently
+            # unread: `build`'s own dispatch branch below only reads
+            # `ns.project_path`/`ns.target`. Two independent fresh reviewer
+            # instances (no shared context) re-discovered this exact gap,
+            # matching the same "typo indistinguishable from a real flag"
+            # reasoning that already promoted the sibling `--ship`+verb
+            # combination from a rejected finding to this rejected-usage
+            # pattern. `--target` is deliberately excluded: `build` has its
+            # own `--target` registration (`choices=("library",)`, same
+            # single-element set), so a noun-level `--target` is never
+            # silently dropped -- it is read, just via `build`'s own flag
+            # rather than the noun-level one.
+            print(
+                "package: --yes/--recipe-path apply only to `ship` -- they have no "
+                "effect on `build` and are rejected here instead of silently ignored",
+                file=sys.stderr,
+            )
+            return EXIT_USAGE
+
+        if (
+            ns.noun == "package"
             and not getattr(ns, "verb", None)
             and getattr(ns, "ship", None) is not None
         ):
