@@ -1336,15 +1336,15 @@ window.DASHBOARD_DATA = {
         "E6"
       ],
       "inflight": {
-        "key": "8.3",
-        "title": "Span substitution — the update primitive",
+        "key": "8.4",
+        "title": "Anchor resolution and region insertion",
         "phase": "dev",
-        "attempt": "2",
-        "startEpoch": 1786660103,
+        "attempt": "1",
+        "startEpoch": 1786665876,
         "median": 97,
         "lo": 27,
         "hi": 486,
-        "phaseAsOf": "2026-08-13 23:58 UTC"
+        "phaseAsOf": "2026-08-14 00:05 UTC"
       },
       "velocity": {
         "derived": true,
@@ -1512,7 +1512,7 @@ window.DASHBOARD_DATA = {
           ],
           [
             "8.3",
-            79
+            96
           ],
           [
             "14.1",
@@ -1557,8 +1557,8 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 6063,
-        "totalLabel": "~101.0 h active compute",
+        "total": 6080,
+        "totalLabel": "~101.3 h active compute",
         "note": "Derived from 45 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.1": 165,
@@ -1601,7 +1601,7 @@ window.DASHBOARD_DATA = {
           "7.6": 37,
           "8.1": 75,
           "8.2": 60,
-          "8.3": 79,
+          "8.3": 96,
           "14.1": 36,
           "14.2": 223,
           "14.3": 97,
@@ -1614,13 +1614,13 @@ window.DASHBOARD_DATA = {
           "E4": 485,
           "E5": 297,
           "E7": 326,
-          "E8": 214,
+          "E8": 231,
           "E14": 457
         }
       },
       "lineState": {
         "state": "in flight",
-        "at": "8.3"
+        "at": "8.4"
       },
       "epics": [
         {
@@ -2046,12 +2046,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "8.3",
-              "active",
+              "pending",
               "Span substitution — the update primitive"
             ],
             [
               "8.4",
-              "pending",
+              "active",
               "Anchor resolution and region insertion"
             ],
             [
@@ -2384,15 +2384,15 @@ window.DASHBOARD_DATA = {
         "E5"
       ],
       "inflight": {
-        "key": "3.3",
-        "title": "Ship-target vocabulary and dry-run default",
+        "key": "3.4",
+        "title": "The `pypi` ship target",
         "phase": "dev",
-        "attempt": "2",
-        "startEpoch": 1786663009,
-        "median": 64,
+        "attempt": "1",
+        "startEpoch": 1786665491,
+        "median": 61,
         "lo": 16,
         "hi": 435,
-        "phaseAsOf": "2026-08-13 23:58 UTC"
+        "phaseAsOf": "2026-08-14 00:05 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2499,12 +2499,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "22/42",
+            "23/42",
             "stories complete",
             "var(--done)"
           ],
           [
-            "20",
+            "19",
             "remaining",
             ""
           ]
@@ -2548,7 +2548,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "in flight",
-        "at": "3.3"
+        "at": "3.4"
       },
       "epics": [
         {
@@ -2679,12 +2679,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "3.3",
-              "active",
+              "done",
               "Ship-target vocabulary and dry-run default"
             ],
             [
               "3.4",
-              "pending",
+              "active",
               "The `pypi` ship target"
             ],
             [
@@ -2957,7 +2957,7 @@ window.DASHBOARD_DATA = {
         "bars": [
           [
             "8.1",
-            286
+            182
           ],
           [
             "8.2",
@@ -3034,11 +3034,11 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 2202,
-        "totalLabel": "~36.7 h active compute",
+        "total": 2098,
+        "totalLabel": "~35.0 h active compute",
         "note": "Derived from 13 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
-          "8.1": 286,
+          "8.1": 182,
           "8.2": 61,
           "8.3": 44,
           "8.4": 81,
@@ -3053,7 +3053,7 @@ window.DASHBOARD_DATA = {
           "9.7": 204
         },
         "epicMin": {
-          "E8": 560,
+          "E8": 456,
           "E9": 1642
         }
       },
@@ -3928,7 +3928,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-13 23:58 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-14 00:05 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6056,7 +6056,7 @@ window.DASHBOARD_DATA = {
           "stories": 38,
           "state": "running",
           "note": "longest persona line; CFE Rule-2 retro at closeout",
-          "done": 22,
+          "done": 23,
           "total": 42
         },
         {
@@ -6677,7 +6677,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "2026-07-25",
-          "spec": "2026-08-13T23:25",
+          "spec": "2026-08-14T00:10",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -6759,7 +6759,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-13T23:25",
+            "at": "2026-08-14T00:10",
             "other": "2026-08-01"
           },
           {
@@ -6780,7 +6780,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "22/42",
+        "progress": "23/42",
         "complete": 13,
         "of": 13
       },
@@ -6941,7 +6941,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
-          "spec": "2026-08-13T23:10",
+          "spec": "2026-08-13T23:58",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-01",
@@ -7024,7 +7024,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-13T23:10",
+            "at": "2026-08-13T23:58",
             "other": "2026-08-01"
           },
           {
@@ -14578,7 +14578,7 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "drift",
+        "state": "green",
         "findings": 0,
         "verdict": "",
         "runbook": ""
@@ -14754,7 +14754,7 @@ window.DASHBOARD_DATA = {
           "archived": 15,
           "practice": 4
         },
-        "line": "in flight 8.3",
+        "line": "in flight 8.4",
         "load": 2,
         "blocked": 0,
         "dreams": [
@@ -15085,7 +15085,7 @@ window.DASHBOARD_DATA = {
           "archived": 4,
           "practice": 2
         },
-        "line": "in flight 3.3",
+        "line": "in flight 3.4",
         "load": 0,
         "blocked": 0,
         "dreams": [
@@ -17166,27 +17166,27 @@ window.DASHBOARD_DATA = {
     "running": [
       {
         "station": "Marshal",
-        "story": "8.3",
+        "story": "8.4",
         "phase": "dev",
-        "startEpoch": 1786660103
+        "startEpoch": 1786665876
       },
       {
         "station": "Mason",
-        "story": "3.3",
+        "story": "3.4",
         "phase": "dev",
-        "startEpoch": 1786663009
+        "startEpoch": 1786665491
       }
     ],
     "lastShipped": {
-      "station": "herald",
-      "story": "13.6",
-      "epoch": 1786664076,
-      "sha": "4622b3a2f",
-      "subject": "Merge bmad-loop/20260813-145413-7eb9/13-6-a-ship-records-itself-end-to-end into loop/pyforge-herald (bmad-loop)"
+      "station": "steward",
+      "story": "8.6",
+      "epoch": 1786665278,
+      "sha": "4df3acad2",
+      "subject": "Merge bmad-loop/20260813-160412-936a/8-6-explicit-status-vocabulary-translation into loop/pyforge-steward (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-13 23:58 UTC",
-    "generatedEpoch": 1786665490
+    "generatedAt": "2026-08-14 00:05 UTC",
+    "generatedEpoch": 1786665913
   },
   "storySpecs": [
     {
@@ -17215,9 +17215,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-mason",
-      "done": 22,
+      "done": 23,
       "tracked": 10,
-      "gap": 12
+      "gap": 13
     },
     {
       "station": "pyforge-scribe",
@@ -17353,21 +17353,21 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/specs/spec-conda-forge-expert-rebuild/SPEC.md"
           }
         ],
-        "done": 22,
-        "backlog": 20,
+        "done": 23,
+        "backlog": 19,
         "blocked": 0,
         "total": 42,
-        "next": "3-3-ship-target-vocabulary-and-dry-run-default",
+        "next": "3-4-the-pypi-ship-target",
         "blockedKeys": [],
         "backlogKeys": [
-          "3-3-ship-target-vocabulary-and-dry-run-default",
           "3-4-the-pypi-ship-target",
           "3-5-the-channel-name-ship-target",
           "3-6-the-conda-forge-ship-target",
           "3-7-asymmetric-receipts-partial-failure-and-idempotence",
           "3-8-mason-ships-mason",
           "3-9-the-ship-verb-and-testpypi-rehearsal",
-          "4-1-lock-engine-adapter-and-provenance"
+          "4-1-lock-engine-adapter-and-provenance",
+          "4-2-manifest-discovery"
         ],
         "state": "ready"
       },
@@ -17502,8 +17502,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 317,
-      "backlog": 61,
+      "done": 318,
+      "backlog": 60,
       "blocked": 3,
       "total": 381
     }
@@ -17557,7 +17557,7 @@ window.DASHBOARD_DATA = {
       {
         "key": "mason",
         "stories": 42,
-        "done": 22,
+        "done": 23,
         "blocked": 0,
         "epics": 6,
         "epicsDone": 2,
@@ -17601,7 +17601,7 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 381,
-      "done": 317,
+      "done": 318,
       "blocked": 3,
       "epics": 74,
       "epicsDone": 59

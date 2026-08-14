@@ -11,7 +11,16 @@ pep517.build`/`pyforge.mason.package.pixi.build`, mirroring this suite's
 "patch on the calling module's own namespace" convention -- `package.py`
 does `from .engines import pep517, pixi`, binding those two module objects
 directly into its own namespace) -- neither a real `pyproject-build` nor a
-real `pixi` binary is needed for this file's coverage (AD-16)."""
+real `pixi` binary is needed for this file's coverage (AD-16).
+
+Story 3.3 extends this file with `parse_ship_targets`/`plan_ship` coverage:
+each of the three vocabulary forms parsed individually and comma-separated
+together (order preserved), invalid-token and empty-channel-name rejection,
+whitespace tolerance, and `plan_ship`'s dry-run plan content for all three
+target kinds against a directly-constructed `PackageBuildResult` fixture --
+no engine mock is needed for `plan_ship` itself (it reads an already-built
+result and calls neither adapter), proven by
+`test_plan_ship_calls_no_engine` below."""
 
 from __future__ import annotations
 
@@ -22,10 +31,13 @@ import pytest
 from pyforge.mason.engines.pep517 import Pep517BuildResult
 from pyforge.mason.engines.pixi import PixiBuildResult
 from pyforge.mason.errors import (
-    EngineAbsentError, PackageProjectPathError, PackageVersionMismatchError,
+    EngineAbsentError, InvalidShipTargetError, PackageProjectPathError,
+    PackageVersionMismatchError,
 )
-from pyforge.mason.models import PackageBuildResult
-from pyforge.mason.package import _versions_disagree, build
+from pyforge.mason.models import (
+    PackageBuildResult, ShipState, ShipTarget, ShipTargetKind, ShipTargetResult,
+)
+from pyforge.mason.package import _versions_disagree, build, parse_ship_targets, plan_ship
 
 
 def test_package_module_imports_successfully():
@@ -262,3 +274,190 @@ def test_build_forwards_an_explicit_target(tmp_path):
         result = build(str(proj), target="library")
 
     assert result.target == "library"
+
+
+# --- Story 3.3: parse_ship_targets --------------------------------------------
+
+def test_parse_ship_targets_pypi():
+    assert parse_ship_targets("pypi") == (
+        ShipTarget(kind=ShipTargetKind.PYPI, channel_name=None),
+    )
+
+
+def test_parse_ship_targets_conda_forge():
+    assert parse_ship_targets("conda-forge") == (
+        ShipTarget(kind=ShipTargetKind.CONDA_FORGE, channel_name=None),
+    )
+
+
+def test_parse_ship_targets_channel():
+    assert parse_ship_targets("channel:myorg") == (
+        ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg"),
+    )
+
+
+def test_parse_ship_targets_all_three_comma_separated_preserves_order():
+    assert parse_ship_targets("pypi,conda-forge,channel:myorg") == (
+        ShipTarget(kind=ShipTargetKind.PYPI, channel_name=None),
+        ShipTarget(kind=ShipTargetKind.CONDA_FORGE, channel_name=None),
+        ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg"),
+    )
+
+
+def test_parse_ship_targets_invalid_value_raises_naming_the_original_token():
+    with pytest.raises(InvalidShipTargetError) as excinfo:
+        parse_ship_targets("pypi,bogus")
+
+    assert excinfo.value.value == "bogus"
+    assert "bogus" in str(excinfo.value)
+
+
+def test_parse_ship_targets_rejects_empty_channel_name():
+    with pytest.raises(InvalidShipTargetError) as excinfo:
+        parse_ship_targets("channel:")
+
+    assert excinfo.value.value == "channel:"
+
+
+def test_parse_ship_targets_tolerates_whitespace_around_commas():
+    assert parse_ship_targets("pypi, conda-forge") == (
+        ShipTarget(kind=ShipTargetKind.PYPI, channel_name=None),
+        ShipTarget(kind=ShipTargetKind.CONDA_FORGE, channel_name=None),
+    )
+
+
+def test_parse_ship_targets_strips_whitespace_after_channel_prefix():
+    """Review pass, 2026-08-13: `"channel: myorg"`'s leading space after the
+    colon must not survive into `channel_name`."""
+    assert parse_ship_targets("channel: myorg") == (
+        ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg"),
+    )
+
+
+@pytest.mark.parametrize("value", [",", "pypi,", ",pypi", " ", "pypi,,conda-forge"])
+def test_parse_ship_targets_raises_invalid_ship_target_error_not_bare_value_error(value):
+    """Review pass, 2026-08-13: an empty token (from a leading/trailing/
+    doubled comma, or an all-whitespace value) must raise
+    `InvalidShipTargetError` -- this function's own documented contract for
+    "any other token" -- never let `InvalidShipTargetError.__init__`'s own
+    empty-value guard escape as a bare `ValueError` instead."""
+    with pytest.raises(InvalidShipTargetError):
+        parse_ship_targets(value)
+
+
+def test_parse_ship_targets_is_case_sensitive():
+    with pytest.raises(InvalidShipTargetError) as excinfo:
+        parse_ship_targets("PyPI")
+
+    assert excinfo.value.value == "PyPI"
+
+
+# --- Story 3.3: plan_ship ------------------------------------------------------
+
+_PLAN_BUILD_RESULT = PackageBuildResult(
+    target="library",
+    project_path="/proj",
+    wheel_path="/proj/dist/pkg-0.1.0-py3-none-any.whl",
+    sdist_path="/proj/dist/pkg-0.1.0.tar.gz",
+    conda_path="/proj/dist-conda/pkg-0.1.0-abc123_0.conda",
+    wheel_version="0.1.0",
+    conda_version="0.1.0",
+    pep517_returncode=0,
+    pixi_returncode=0,
+    pep517_stdout="",
+    pixi_stdout="",
+)
+
+
+def test_plan_ship_all_three_kinds_are_not_attempted_with_no_reference():
+    targets = (
+        ShipTarget(kind=ShipTargetKind.PYPI, channel_name=None),
+        ShipTarget(kind=ShipTargetKind.CONDA_FORGE, channel_name=None),
+        ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg"),
+    )
+    results = plan_ship(targets, _PLAN_BUILD_RESULT)
+
+    assert len(results) == 3
+    for result in results:
+        assert isinstance(result, ShipTargetResult)
+        assert result.state == ShipState.NOT_ATTEMPTED
+        assert result.reference is None
+
+
+def test_plan_ship_pypi_message_names_wheel_and_sdist_and_states_irreversibility():
+    results = plan_ship(
+        (ShipTarget(kind=ShipTargetKind.PYPI, channel_name=None),), _PLAN_BUILD_RESULT,
+    )
+
+    assert results[0].target == "pypi"
+    message = results[0].message
+    assert _PLAN_BUILD_RESULT.wheel_path in message
+    assert _PLAN_BUILD_RESULT.sdist_path in message
+    assert "irreversible" in message.lower()
+
+
+def test_plan_ship_conda_forge_message_mentions_a_pull_request():
+    results = plan_ship(
+        (ShipTarget(kind=ShipTargetKind.CONDA_FORGE, channel_name=None),), _PLAN_BUILD_RESULT,
+    )
+
+    assert results[0].target == "conda-forge"
+    assert "pull request" in results[0].message.lower()
+
+
+def test_plan_ship_channel_message_names_conda_path_and_channel_name():
+    results = plan_ship(
+        (ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg"),), _PLAN_BUILD_RESULT,
+    )
+
+    assert results[0].target == "channel:myorg"
+    message = results[0].message
+    assert _PLAN_BUILD_RESULT.conda_path in message
+    assert "myorg" in message
+
+
+def test_plan_ship_calls_no_engine():
+    """`plan_ship()` takes an already-built `PackageBuildResult` and reads
+    its fields only -- it must never call an engine adapter itself (spec
+    I/O matrix: 'no subprocess/engine call occurs')."""
+    targets = (
+        ShipTarget(kind=ShipTargetKind.PYPI, channel_name=None),
+        ShipTarget(kind=ShipTargetKind.CONDA_FORGE, channel_name=None),
+        ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg"),
+    )
+    with patch("pyforge.mason.package.pep517.build") as mock_pep517, \
+         patch("pyforge.mason.package.pixi.build") as mock_pixi:
+        plan_ship(targets, _PLAN_BUILD_RESULT)
+
+    mock_pep517.assert_not_called()
+    mock_pixi.assert_not_called()
+
+
+def test_plan_ship_never_prints_the_literal_string_none_for_a_failed_artifact():
+    """Review pass, 2026-08-13: `wheel_path`/`sdist_path`/`conda_path` are
+    `str | None` -- `None` when that engine's own build failed. A bare
+    `!r}` interpolation of `None` renders the misleading literal text
+    `"None"` into the printed plan; this must instead read as a note that
+    no artifact was built."""
+    failed_build = PackageBuildResult(
+        target="library",
+        project_path="/proj",
+        wheel_path=None,
+        sdist_path=None,
+        conda_path=None,
+        wheel_version=None,
+        conda_version=None,
+        pep517_returncode=1,
+        pixi_returncode=1,
+        pep517_stdout="",
+        pixi_stdout="",
+    )
+    targets = (
+        ShipTarget(kind=ShipTargetKind.PYPI, channel_name=None),
+        ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg"),
+    )
+    results = plan_ship(targets, failed_build)
+
+    for result in results:
+        assert "None" not in result.message
+        assert "no" in result.message.lower()
