@@ -139,7 +139,7 @@ development_status:
   9-3-content-hashing-for-managed-files-and-regions: done
   9-4-legacy-convention-detection: done
   9-5-manifest-coverage-check: done
-  9-6-plan-and-action-types-repo-fingerprint-and-the-plan-builder: backlog
+  9-6-plan-and-action-types-repo-fingerprint-and-the-plan-builder: done
   epic-1: done
   epic-1-retrospective: optional
   epic-10: backlog
