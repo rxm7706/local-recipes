@@ -126,11 +126,40 @@ external dependency), matching every sibling ``detect``/``regions``/
 directory-shaped whole-file artifact -- a present directory is simply
 present.
 
-S-9.4 adds this module's only ``Finding`` construction: ``legacy_findings()``
+S-9.4 adds this module's first ``Finding`` construction: ``legacy_findings()``
 builds one INFO ``legacy-present`` ``Finding`` per ``LegacyRecord``, via
 ``Finding.new`` (``hashes.py``'s own construction convention) -- never
-``HARD``/``DRIFT``, and no other classification outcome in this module ever
-constructs a ``Finding``.
+``HARD``/``DRIFT``, and no ``classify()`` classification outcome in this
+module ever constructs a ``Finding`` beyond that one call site.
+
+S-9.5 (FR-69/SC-10, architecture AD-54) adds this module's second and last:
+``coverage_findings()``/``coverage_counts()`` give manifest coverage its own
+explicit, independently testable definition, mirroring the split
+``effective_never_write()``/``legacy_findings()`` already established --
+without it, SC-10's "100% manifest coverage" claim rested entirely on
+``ManifestEntry.__post_init__`` (S-7.4/7.5, ``model/manifest.py``) never
+having a bug, with no second, decoupled gate. Unlike every other function in
+this module, both take a bare ``Manifest`` -- no ``Inventory``/``repo_root``
+-- because coverage is intrinsic to the manifest alone, not a property of
+the target repo the way `classify()`'s own per-entry filesystem check is.
+Both explicitly re-verify ``entry.artifact_class``/``entry.rationale`` via
+``isinstance``/direct inspection rather than trusting the loader's
+guarantee that produced ``entry`` in the first place -- defense in depth,
+the same "structural guarantee is not enough, verify explicitly" stance
+``Finding.__post_init__`` itself already takes for its own ``remedy`` field.
+An entry fails coverage when either ``entry.artifact_class`` is not a
+genuine ``ArtifactClass`` member, or it is
+``ArtifactClass.UNCLASSIFIED_DEFERRED`` with a blank ``rationale``.
+``coverage_findings()`` emits one HARD ``uncovered`` ``Finding`` per failing
+entry, in manifest entry order (matching `legacy_findings`'s own ordering
+convention); ``coverage_counts()`` buckets every entry by class wire-value
+or the literal ``"uncovered"`` key -- sparse, `Counter`-style, never
+zero-padded for a class with no entries -- so
+``sum(coverage_counts(manifest).values()) == len(manifest.entries)`` always
+holds. Both route through one private ``_uncovered_reason()`` check so the
+two can never drift on what "covered" means (mirroring `hashes.py`'s own
+``_hash_mismatch_detail`` precedent: one private "why" helper, several
+public callers).
 
 ``classify()`` performs reads only: no writes, no subprocess, no network.
 """
@@ -139,6 +168,7 @@ from __future__ import annotations
 
 import os
 import re
+from collections import Counter
 from collections.abc import Iterator
 from dataclasses import dataclass
 from enum import StrEnum
@@ -600,3 +630,77 @@ def legacy_findings(inventory: Inventory) -> tuple[Finding, ...]:
         )
         for record in inventory.legacy
     )
+
+
+def _uncovered_reason(entry: ManifestEntry) -> str | None:
+    """Why ``entry`` fails S-9.5's coverage rule, or ``None`` if it passes --
+    the single shared definition `coverage_findings`/`coverage_counts` both
+    consult, so the two can never drift on what "covered" means (see the
+    module docstring).
+
+    Re-verifies ``entry.artifact_class``/``entry.rationale`` directly rather
+    than trusting `ManifestEntry.__post_init__` (S-7.4/7.5) already having
+    enforced both -- defense in depth. Both checks are ``isinstance`` guards,
+    deliberate on both fields (not ``entry.artifact_class in ArtifactClass``,
+    not a bare ``entry.rationale.strip()``, not a truthiness test): a caller
+    that force-sets either field past ``__post_init__``
+    (``object.__setattr__``, as this module's own tests do to reach these
+    otherwise-unreachable branches) can leave a plain ``str`` equal to a real
+    ``ArtifactClass`` member's own value (which would otherwise read as
+    covered despite carrying no genuine class identity, since
+    ``ArtifactClass`` is a ``StrEnum``) or a non-``str`` ``rationale``
+    (``None`` included) that ``.strip()`` would raise on instead of
+    reporting as uncovered -- exactly the "never assumed from the field's
+    static type" defensive re-check this story exists to add, applied
+    symmetrically to both fields it inspects."""
+    if not isinstance(entry.artifact_class, ArtifactClass):
+        return f"artifact_class {entry.artifact_class!r} is not a valid ArtifactClass member"
+    if entry.artifact_class is ArtifactClass.UNCLASSIFIED_DEFERRED and (
+        not isinstance(entry.rationale, str) or not entry.rationale.strip()
+    ):
+        return "unclassified-deferred entry has a blank rationale"
+    return None
+
+
+def coverage_findings(manifest: Manifest) -> tuple[Finding, ...]:
+    """One HARD ``uncovered`` `Finding` per entry `_uncovered_reason` fails,
+    in manifest entry order (matching `legacy_findings`'s own ordering
+    convention) -- S-9.5's own explicit, independently testable second gate
+    on SC-10's "100% manifest coverage" claim (see the module docstring).
+    Constructed via `Finding.new` (never bare `Finding(...)`), matching
+    every other real call site in this module, so `remedy` always resolves
+    from `REMEDIES[FindingType.UNCOVERED]` (already documented, S-9.1)
+    rather than being hand-typed here."""
+    findings: list[Finding] = []
+    for entry in manifest.entries:
+        reason = _uncovered_reason(entry)
+        if reason is None:
+            continue
+        findings.append(
+            Finding.new(
+                Severity.HARD,
+                FindingType.UNCOVERED,
+                entry.path,
+                f"{entry.id}: {reason}",
+            )
+        )
+    return tuple(findings)
+
+
+def coverage_counts(manifest: Manifest) -> dict[str, int]:
+    """One bucket per class actually present in ``manifest.entries``, keyed
+    by wire value (``entry.artifact_class.value``, e.g. ``"copied-managed"``)
+    -- sparse, `Counter`-style, never zero-padded for a class with no
+    entries in this manifest. An entry `_uncovered_reason` fails is counted
+    under the literal key ``"uncovered"`` instead, so
+    ``sum(coverage_counts(manifest).values()) == len(manifest.entries)``
+    always holds, whether or not every entry passes coverage. Built via
+    ``Counter`` -- matching `test_seed_templates_manifest.py`'s own
+    ``Counter(entry.artifact_class for entry in manifest.entries)`` idiom for
+    the identical per-class tally -- rather than a hand-rolled
+    ``dict.get``/increment loop."""
+    keys = (
+        "uncovered" if _uncovered_reason(entry) is not None else entry.artifact_class.value
+        for entry in manifest.entries
+    )
+    return dict(Counter(keys))

@@ -1,13 +1,16 @@
 """Unit tests for ``pyforge.marshal.seed.detect.inventory`` (Stories 9.2 +
-9.4) -- covers the spec's I/O & Edge-Case Matrix: absent/present whole-file,
-referenced, every hybrid-managed-region outcome (region found/missing,
-multi-region partial, malformed markers, path-is-a-directory, non-UTF-8),
-the excluded-dir explicit-target carve-out, tree exclusion of
+9.4 + 9.5) -- covers the spec's I/O & Edge-Case Matrix: absent/present
+whole-file, referenced, every hybrid-managed-region outcome (region
+found/missing, multi-region partial, malformed markers, path-is-a-directory,
+non-UTF-8), the excluded-dir explicit-target carve-out, tree exclusion of
 ``.git``/``node_modules``/``.pixi``, gitignore negation and
-nested-gitignore non-consultation, the ``0o555`` purity proof, and (S-9.4)
-the legacy short-circuit, ``Inventory.legacy``, ``effective_never_write``,
-and ``legacy_findings`` -- plus the "walked once" contract and the
-hand-rolled matcher's leading-``/`` anchoring and ``**`` grammar.
+nested-gitignore non-consultation, the ``0o555`` purity proof, (S-9.4) the
+legacy short-circuit, ``Inventory.legacy``, ``effective_never_write``, and
+``legacy_findings`` -- plus the "walked once" contract and the hand-rolled
+matcher's leading-``/`` anchoring and ``**`` grammar -- and (S-9.5)
+``coverage_findings``/``coverage_counts``'s two failure rules (an
+unrecognized ``artifact_class`` force-set past ``ManifestEntry.__post_init__``,
+and an ``unclassified-deferred`` entry with a blank ``rationale``).
 """
 
 from __future__ import annotations
@@ -25,6 +28,8 @@ from pyforge.marshal.seed.detect.inventory import (
     Inventory,
     LegacyRecord,
     classify,
+    coverage_counts,
+    coverage_findings,
     effective_never_write,
     legacy_findings,
 )
@@ -754,3 +759,112 @@ def test_inventory_is_frozen(tmp_path):
 def test_inventory_is_hashable(tmp_path):
     inventory = classify(_manifest(), tmp_path)
     assert isinstance(hash(inventory), int)
+
+
+# --- manifest coverage (S-9.5) ----------------------------------------------
+#
+# `coverage_findings`/`coverage_counts` are pure over `Manifest` alone -- no
+# `repo_root`/`classify()` involved, so none of these tests need `tmp_path`
+# (the module docstring's own boundary: coverage is intrinsic to the
+# manifest, not a property of the target repo).
+
+
+def test_coverage_findings_returns_empty_tuple_when_every_entry_is_validly_classed():
+    """Mix of all 6 real classes; the ``unclassified-deferred`` entry carries
+    a real rationale (`_whole_file`'s own default, ``"test"``)."""
+    manifest = _manifest(
+        _referenced("dep"),
+        _whole_file("a", "a.txt", ArtifactClass.COPIED_MANAGED),
+        _whole_file("b", "b.txt", ArtifactClass.COPIED_SEEDED),
+        _whole_file("c", "c.txt", ArtifactClass.GENERATED_DERIVED),
+        _hybrid("h", "h.txt", "region-one"),
+        _whole_file("d", "d.txt", ArtifactClass.UNCLASSIFIED_DEFERRED),
+    )
+    assert coverage_findings(manifest) == ()
+    assert coverage_counts(manifest) == {
+        "referenced": 1,
+        "copied-managed": 1,
+        "copied-seeded": 1,
+        "generated-derived": 1,
+        "hybrid-managed-region": 1,
+        "unclassified-deferred": 1,
+    }
+    assert sum(coverage_counts(manifest).values()) == len(manifest.entries)
+
+
+def test_coverage_findings_flags_an_entry_forced_to_an_invalid_artifact_class():
+    """``artifact_class`` force-set (``object.__setattr__``) past
+    ``ManifestEntry.__post_init__`` to a raw string outside ``ArtifactClass``
+    -- the otherwise-unreachable branch this story's defensive re-check
+    exists to catch (`test_seed_model_version.py`'s identical idiom)."""
+    entry = _whole_file("a", "a.txt", ArtifactClass.COPIED_MANAGED)
+    object.__setattr__(entry, "artifact_class", "not-a-real-class")
+    manifest = _manifest(entry)
+
+    (finding,) = coverage_findings(manifest)
+    assert finding.severity == Severity.HARD
+    assert finding.type == FindingType.UNCOVERED
+    assert finding.path == "a.txt"
+    assert finding.message == "a: artifact_class 'not-a-real-class' is not a valid ArtifactClass member"
+    assert coverage_counts(manifest) == {"uncovered": 1}
+
+
+def test_coverage_findings_flags_a_deferred_entry_with_a_forced_blank_rationale():
+    entry = _whole_file("a", "a.txt", ArtifactClass.UNCLASSIFIED_DEFERRED)
+    object.__setattr__(entry, "rationale", "   ")
+    manifest = _manifest(entry)
+
+    (finding,) = coverage_findings(manifest)
+    assert finding.severity == Severity.HARD
+    assert finding.type == FindingType.UNCOVERED
+    assert finding.path == "a.txt"
+    assert finding.message == "a: unclassified-deferred entry has a blank rationale"
+    assert coverage_counts(manifest) == {"uncovered": 1}
+
+
+def test_coverage_findings_flags_a_deferred_entry_with_a_forced_non_str_rationale():
+    """``rationale`` force-set to ``None`` -- `_uncovered_reason` guards this
+    field with the same ``isinstance`` discipline as ``artifact_class``, so a
+    non-``str`` value is reported as ``uncovered`` rather than raising
+    ``AttributeError`` out of a bare ``.strip()`` call."""
+    entry = _whole_file("a", "a.txt", ArtifactClass.UNCLASSIFIED_DEFERRED)
+    object.__setattr__(entry, "rationale", None)
+    manifest = _manifest(entry)
+
+    (finding,) = coverage_findings(manifest)
+    assert finding.severity == Severity.HARD
+    assert finding.type == FindingType.UNCOVERED
+    assert finding.message == "a: unclassified-deferred entry has a blank rationale"
+    assert coverage_counts(manifest) == {"uncovered": 1}
+
+
+def test_coverage_findings_passes_a_deferred_entry_with_a_real_rationale():
+    manifest = _manifest(_whole_file("a", "a.txt", ArtifactClass.UNCLASSIFIED_DEFERRED))
+    assert coverage_findings(manifest) == ()
+    assert coverage_counts(manifest) == {"unclassified-deferred": 1}
+
+
+def test_coverage_findings_reports_two_uncovered_entries_in_manifest_order():
+    """Two entries fail coverage for DIFFERENT reasons -- proves the
+    ordering is manifest entry order, not e.g. failure-reason grouping, and
+    that a passing entry between them is simply excluded (never a
+    placeholder)."""
+    invalid_class_entry = _whole_file("a", "a.txt", ArtifactClass.COPIED_MANAGED)
+    object.__setattr__(invalid_class_entry, "artifact_class", "bogus")
+    ok_entry = _whole_file("mid", "mid.txt", ArtifactClass.COPIED_SEEDED)
+    blank_rationale_entry = _whole_file("b", "b.txt", ArtifactClass.UNCLASSIFIED_DEFERRED)
+    object.__setattr__(blank_rationale_entry, "rationale", "")
+    manifest = _manifest(invalid_class_entry, ok_entry, blank_rationale_entry)
+
+    findings = coverage_findings(manifest)
+    assert [finding.path for finding in findings] == ["a.txt", "b.txt"]
+    assert all(finding.severity == Severity.HARD for finding in findings)
+    assert all(finding.type == FindingType.UNCOVERED for finding in findings)
+    assert coverage_counts(manifest) == {"uncovered": 2, "copied-seeded": 1}
+    assert sum(coverage_counts(manifest).values()) == len(manifest.entries)
+
+
+def test_coverage_findings_and_counts_on_an_empty_manifest():
+    manifest = _manifest()
+    assert coverage_findings(manifest) == ()
+    assert coverage_counts(manifest) == {}
