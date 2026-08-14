@@ -85,3 +85,18 @@ subject exists)
   PyForge subsystem has an unmet need this pattern would close; kept only as a documented,
   intentionally-thin placeholder distinguishing "the pattern is reusable" from "this domain is
   reusable" — the latter is not. Should not be advanced without a concrete subject named first.
+- **2026-08-14** — **Air-gapped realization requirements (operator, from the source original
+  enterprise-data-models-and-apis.md):** the source pattern is already the disconnected-friendly
+  shape, worth recording so it survives intact if a subject is ever named: data enters as batch
+  file drops (18 `django-import-export` CSV/XLSX resource classes loaded via admin and management
+  commands; real-time streaming is an explicit non-goal), the Django ORM is the query engine (no
+  external ETL service), and the JSON:API surface serves consumers inside the perimeter only.
+  A PyForge realization must keep that: the full dependency set (Django, DRF,
+  `djangorestframework-jsonapi`, `django-simple-history`, `django-import-export`) resolves from
+  Artifactory-mirrored conda/PyPI indexes only (this repo's pixi channels are already swappable
+  to internal mirrors); it deploys per today's K8s/OCP+PostgreSQL+Redis decision — image pulled
+  from an internal registry, PostgreSQL in-cluster; DB credentials and any group-sync
+  configuration reach the process via env/secret-mount only, composing with `_http.py`'s
+  runtime-driven enterprise posture (env vars only, never committed config); and admin/browsable-
+  API static assets serve WhiteNoise/`collectstatic`-style with zero CDN references — the same
+  concern spec-atlas-query-dashboards CAP-4 makes contractual for dashboard surfaces.

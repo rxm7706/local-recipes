@@ -79,6 +79,11 @@ deploy/credential verbs as the mechanism.
   minting go through Steward's deploy/credential verbs; atlas grows no deploy code of its own.
 - **Always:** the bring-up itself stays ATTENDED, exactly as DW-H3 frames it. This SPEC does not
   decide or schedule the bring-up date.
+- **Always:** the live instance is deployable air-gapped — substrate installs resolve from
+  mirrored indexes only (an Artifactory-mirrored conda channel or an internal-registry image,
+  whichever way the substrate open question resolves), admin/site static assets serve locally
+  with zero CDN references, and endpoint + token reach the process via env/secret-mount through
+  the existing config seam (`resolve_lasuite_config`) — never a committed credential.
 
 ## Non-goals
 

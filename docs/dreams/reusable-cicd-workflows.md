@@ -75,3 +75,20 @@ estate or a real CI bottleneck exists) · [[pixi-container-image]] and [[minifor
   estate, no Jenkins/Harness presence, and no obvious serial-CI bottleneck the source dream's
   parallel-job pattern would concretely fix. Kept thin and honest about the mismatch rather than
   manufacturing a scoped feature set with no real target.
+- **2026-08-14** — **Air-gapped realization requirements (operator, from the source original
+  reusable-cicd-workflows.md):** the source family is a complete worked example of disconnected
+  CI, recorded here against the day a second consuming repo exists: (1) toolchain bootstrap never
+  touches the public internet — Miniforge downloads from internal object storage (HPOS), not
+  GitHub releases, and every build runs `PIXI_FROZEN: true` against `pixi.lock`; (2) channel
+  topology is committed, credentials are not — consumer repos carry a `.condarc-cicd` naming the
+  enterprise conda channels (the mirror-URL analog of this repo's swappable pixi channels), while
+  secrets inject per-job via `vault-action` (HashiCorp Vault), the CI counterpart of `_http.py`'s
+  env-vars-only rule; (3) container builds are in-cluster Kaniko (no Docker daemon) with separate
+  `builder_base_image`/`runtime_base_image` inputs, both pulled from the internal registry and
+  published to Artifactory docker-local — composing with [[pixi-container-image]]'s base layer
+  and today's K8s/OCP deployment decision; (4) artifacts publish to Artifactory
+  conda-local/pypi-local with checksum verification, and inter-job data moves through internal
+  object storage rather than GitHub-hosted artifact storage; (5) the scanning/governance slots
+  (Prisma, Checkmarx/BlackDuck, ThreadFix, FCD gate) all run against internal services — a
+  PyForge equivalent would fill them with Warden's registry-perimeter gates on Artifactory
+  ([[enterprise-airgap]]'s frontier), not WF's own scanners.
