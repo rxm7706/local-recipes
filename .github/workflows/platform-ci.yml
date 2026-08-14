@@ -96,8 +96,5 @@ jobs:
       - name: Mypy
         run: mypy platformapp config tests
 
-      - name: Factory/platform import boundary (src/platform/ never imports pyforge.*)
-        run: python -m pytest tests/meta/test_no_pyforge_import.py -v
-
-      - name: Full test suite (platformapp app tests + the ASGI seam)
+      - name: Full test suite (platformapp app tests, the ASGI seam, and the import boundary)
         run: python -m pytest -v

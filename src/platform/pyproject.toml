@@ -142,7 +142,7 @@ force-single-line = true
 # pyforge-marshal/pyproject.toml); tests/meta/test_no_pyforge_import.py
 # shells out to `lint-imports` against this config and makes it a real gate.
 [tool.importlinter]
-root_packages = ["config", "platformapp"]
+root_packages = ["config", "platformapp", "tests"]
 # `pyforge` is external to root_packages (it is never a declared dependency
 # of this platform host at all -- that is the point of the contract), so
 # import-linter requires this flag before it will validate a forbidden
@@ -152,5 +152,5 @@ include_external_packages = true
 [[tool.importlinter.contracts]]
 name = "Story 10.1: the platform host never imports pyforge.* (factory/platform boundary)"
 type = "forbidden"
-source_modules = ["config", "platformapp"]
+source_modules = ["config", "platformapp", "tests"]
 forbidden_modules = ["pyforge"]

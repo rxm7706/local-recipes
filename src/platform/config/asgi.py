@@ -32,8 +32,12 @@ from config.fastapi_app import fastapi_application  # noqa: E402
 from config.websocket import websocket_application  # noqa: E402
 
 
+def _is_api_path(path: str) -> bool:
+    return path == "/api" or path.startswith("/api/")
+
+
 async def application(scope, receive, send):
-    if scope["type"] == "http" and scope["path"].startswith("/api/"):
+    if scope["type"] == "http" and _is_api_path(scope["path"]):
         await fastapi_application(scope, receive, send)
     elif scope["type"] == "http":
         await django_application(scope, receive, send)
@@ -41,15 +45,11 @@ async def application(scope, receive, send):
         await websocket_application(scope, receive, send)
     elif scope["type"] == "lifespan":
         # Neither django_application nor websocket_application implements the
-        # ASGI lifespan protocol; an ASGI server that sends startup/shutdown
-        # messages here would otherwise hit the NotImplementedError below.
-        while True:
-            message = await receive()
-            if message["type"] == "lifespan.startup":
-                await send({"type": "lifespan.startup.complete"})
-            elif message["type"] == "lifespan.shutdown":
-                await send({"type": "lifespan.shutdown.complete"})
-                return
+        # ASGI lifespan protocol. Forward to fastapi_application, which does
+        # (Starlette's own lifespan handling) -- so any startup/shutdown
+        # hooks a future FastAPI route module registers actually run, rather
+        # than being silently swallowed by a bare startup/shutdown ack.
+        await fastapi_application(scope, receive, send)
     else:
         msg = f"Unknown scope type {scope['type']}"
         raise NotImplementedError(msg)
