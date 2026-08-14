@@ -5,7 +5,12 @@ and the `upload()` operation itself via a mocked `subprocess.run` -- no
 `tmp_path` fixture is needed here, unlike the two build adapters: `upload()`
 does no filesystem-based artifact discovery, only ANSI-stripped stdout
 parsing (see `twine.py`'s own module docstring), so no real `twine` binary
-is needed for this file's coverage (AD-16)."""
+is needed for this file's coverage (AD-16).
+
+Story 3.9 extends this file with `repository_url` coverage (FR-24, FR-50,
+AD-26): present -> `--repository-url <url>` lands in argv immediately
+before the paths; omitted/`None` -> argv is byte-identical to every
+pre-3.9 assertion above (unchanged)."""
 
 from __future__ import annotations
 
@@ -171,3 +176,35 @@ def test_upload_never_scans_for_a_view_at_url_on_failure_even_if_present():
 
     assert result.returncode == 1
     assert result.url is None
+
+
+# --- upload(): Story 3.9 `repository_url` -------------------------------------
+
+def test_upload_appends_repository_url_flag_immediately_before_the_paths():
+    with patch("pyforge.mason.engines.twine.require_engine", return_value="twine 7.0.0"), \
+         patch(
+             "pyforge.mason.engines.twine.subprocess.run", return_value=_fake_completed(),
+         ) as mock_run:
+        twine.upload(_PATHS, repository_url="https://test.pypi.org/legacy/")
+
+    argv = mock_run.call_args.args[0]
+    assert argv == [
+        "twine", "upload", "--non-interactive", "--disable-progress-bar",
+        "--repository-url", "https://test.pypi.org/legacy/", *_PATHS,
+    ]
+
+
+def test_upload_omits_repository_url_flag_when_none():
+    """Regression: the pre-3.9 argv shape must be unchanged when
+    `repository_url` is not given -- mirrors
+    `test_upload_invokes_twine_with_the_documented_argv` above but asserts
+    it directly against the `repository_url=None` default."""
+    with patch("pyforge.mason.engines.twine.require_engine", return_value="twine 7.0.0"), \
+         patch(
+             "pyforge.mason.engines.twine.subprocess.run", return_value=_fake_completed(),
+         ) as mock_run:
+        twine.upload(_PATHS, repository_url=None)
+
+    argv = mock_run.call_args.args[0]
+    assert argv == ["twine", "upload", "--non-interactive", "--disable-progress-bar", *_PATHS]
+    assert "--repository-url" not in argv
