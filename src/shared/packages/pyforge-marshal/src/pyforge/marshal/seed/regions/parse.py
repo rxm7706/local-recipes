@@ -294,3 +294,148 @@ def parse_regions(text: str, fmt: RegionFormat) -> tuple[RegionSpan, ...]:
             " but is never closed before end of text"
         )
     return tuple(spans)
+
+
+# The literal anchor sentinel that never searches file content -- it always
+# resolves, to the byte offset right after a YAML frontmatter block (or 0
+# when there is none). See ``_frontmatter_end`` and ``resolve_anchor``.
+_TOP_SENTINEL = "<top>"
+
+# `core/spec_surface.py`'s own frontmatter delimiter -- `<top>`'s detection
+# mirrors that module's established `---`/`---` convention (first line
+# exactly `---`, the next line THAT IS `---` closes it), reimplemented
+# locally rather than imported: importing `core/spec_surface.py` would give
+# `regions/` its first dependency on `pyforge.marshal.core`, for ~10 lines of
+# well-established, easily-mirrored logic (this story's own Design Notes).
+_FRONTMATTER_DELIMITER = "---"
+
+
+@dataclass(frozen=True)
+class AnchorResolution:
+    """Where a region belongs, and which anchor (if any) put it there.
+
+    ``offset`` is a BYTE offset into ``text.encode("utf-8")`` (P-06, the same
+    convention every ``RegionSpan`` offset already follows), always a valid
+    insertion point: immediately after the matched anchor line's own
+    terminator, immediately after a YAML frontmatter block (or byte 0) for
+    ``<top>``, or ``len(text.encode())`` for the EOF append fallback.
+
+    ``matched`` is the literal anchor string from ``anchor`` that resolved
+    (including ``"<top>"`` itself), or ``None`` for the EOF fallback -- named
+    here so a future plan layer can surface which anchor was chosen (AD-57's
+    own surface, not this story's; see the module's Never bullets).
+    """
+
+    offset: int
+    matched: str | None
+
+
+def _frontmatter_end(text: str) -> int:
+    """The byte offset right after a leading YAML frontmatter block in
+    ``text``, or ``0`` when ``text`` carries no such block.
+
+    Mirrors ``core/spec_surface.py::parse_declared_surface``'s own detection
+    exactly (see that module's docstring): the first line must be exactly
+    ``---`` (whitespace-stripped), and the block closes at the next line
+    that is exactly ``---`` -- NOT necessarily the second line -- scanning
+    forward from there. An unclosed block (no closing ``---`` before end of
+    text) is "no such block", per that same established convention, and
+    returns ``0`` exactly like a text with no leading ``---`` at all.
+    """
+    lines = list(_iter_lines(text))
+    if not lines or lines[0][0].strip() != _FRONTMATTER_DELIMITER:
+        return 0
+    for content, _line_start, _content_end, line_end in lines[1:]:
+        if content.strip() == _FRONTMATTER_DELIMITER:
+            return line_end
+    return 0
+
+
+def resolve_anchor(
+    text: str, fmt: RegionFormat, anchor: tuple[str, ...]
+) -> AnchorResolution:
+    """Resolve ``anchor`` -- an ORDERED preference list, not a file-position
+    search (see the module's Design Notes) -- against ``text`` to a single
+    byte offset a new region may be inserted at.
+
+    Tries each literal in ``anchor`` IN ORDER. For an ordinary anchor
+    string, the FIRST anchor with ANY matching line anywhere in the file
+    (``content.startswith(anchor_text)``, fence-skipped exactly like
+    ``parse_regions``'s own ``fence_aware`` gate -- so a line that only
+    LOOKS like an anchor from inside a fenced code block is never treated as
+    one) wins, and ``offset`` is that line's own ``line_end`` (right after
+    its terminator) -- the first such line encountered in file order, when
+    more than one line matches the same anchor text. The literal sentinel
+    ``"<top>"`` never searches file content at all: the moment it is reached
+    in ``anchor``'s own order, it always resolves, via ``_frontmatter_end``.
+
+    When nothing in ``anchor`` matches (including when ``"<top>"`` is not
+    present in ``anchor`` at all), returns ``matched=None`` and
+    ``offset=len(text.encode())`` -- the EOF append fallback.
+
+    Raises ``NotImplementedError`` for ``RegionFormat.SLASHSTAR`` (reserved,
+    unimplemented in V1) -- symmetric with ``parse_regions``'s own eager
+    ``parse_marker_line(fmt, "")`` validation (review finding: without this,
+    ``resolve_anchor`` silently ran ordinary, non-fence-aware matching for a
+    reserved format instead of raising -- currently masked in
+    ``insert_region`` only because it always calls ``parse_regions`` first,
+    which already raises for this same ``fmt``, but this function is
+    independently public).
+
+    Raises ``RegionParseError`` if a fenced code block is never closed
+    before end of text -- symmetric with ``parse_regions``'s own identical
+    hard error for the identical condition (review finding: without this,
+    an unterminated fence made every remaining line, including any real
+    anchor candidate after it, silently unmatchable with no error at all --
+    currently masked in ``insert_region`` only because it always calls
+    ``parse_regions`` first, which already raises for this same file, but
+    this function is independently public).
+
+    Pure (P-03): no I/O, exactly like ``parse_regions``, which this function
+    shares its fence-tracking and line-iteration machinery with rather than
+    duplicating it.
+    """
+    # Force `fmt` validation eagerly, exactly like `parse_regions` -- see
+    # that function's own comment on why probing with an empty line is
+    # side-effect-free for every registered format.
+    parse_marker_line(fmt, "")
+
+    fence_aware = fmt == RegionFormat.HTML
+    first_match_end: dict[str, int] = {}
+    open_fence: tuple[str, int] | None = None
+    fence_lineno = 0
+
+    for lineno, (content, _line_start, _content_end, line_end) in enumerate(
+        _iter_lines(text), start=1
+    ):
+        if fence_aware:
+            if open_fence is not None:
+                if _closes_fence(content, open_fence):
+                    open_fence = None
+                continue
+            delimiter = _fence_delimiter(content)
+            if delimiter is not None:
+                open_fence = delimiter
+                fence_lineno = lineno
+                continue
+
+        for anchor_text in anchor:
+            if anchor_text == _TOP_SENTINEL or anchor_text in first_match_end:
+                continue
+            if content.startswith(anchor_text):
+                first_match_end[anchor_text] = line_end
+
+    if open_fence is not None:
+        char, run_length = open_fence
+        raise RegionParseError(
+            f"line {fence_lineno}: a {char * run_length!r} fenced code block is never closed"
+            " before end of text"
+        )
+
+    for anchor_text in anchor:
+        if anchor_text == _TOP_SENTINEL:
+            return AnchorResolution(offset=_frontmatter_end(text), matched=_TOP_SENTINEL)
+        if anchor_text in first_match_end:
+            return AnchorResolution(offset=first_match_end[anchor_text], matched=anchor_text)
+
+    return AnchorResolution(offset=len(text.encode("utf-8")), matched=None)
