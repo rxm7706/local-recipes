@@ -105,6 +105,25 @@ def test_errors_render_verbatim_as_a_list_in_json():
     assert doc["errors"] == errors
 
 
+def test_render_text_formats_a_list_of_dicts_readably_not_as_a_repr_dump():
+    """Review, 2026-08-14: Story 3.9's `package ship` is the first caller to
+    put a `list` under a top-level `data` key -- falling through to
+    `f"{data[key]}"`'s default `str()`-on-a-`list` behaviour deferred to
+    each element's own `repr()`, printing one unreadable line of raw Python
+    dict/repr syntax (e.g. `{'target': 'pypi', 'state': 'terminal', ...}`)
+    instead of human-readable text."""
+    data = {
+        "targets": [
+            {"target": "pypi", "state": "terminal", "reference": "https://pypi.org/p/1.0.0/"},
+        ],
+    }
+    text = render.render_text("package ship", "ok", data, [])
+    assert "{'target'" not in text
+    assert "target: pypi" in text
+    assert "state: terminal" in text
+    assert "reference: https://pypi.org/p/1.0.0/" in text
+
+
 def test_errors_render_one_line_each_in_text():
     errors = [
         {"identifier": "x:y", "message": "z"},

@@ -397,13 +397,17 @@ def test_parse_ship_targets_strips_whitespace_after_channel_prefix():
     )
 
 
-@pytest.mark.parametrize("value", [",", "pypi,", ",pypi", " ", "pypi,,conda-forge"])
+@pytest.mark.parametrize("value", ["", ",", "pypi,", ",pypi", " ", "pypi,,conda-forge"])
 def test_parse_ship_targets_raises_invalid_ship_target_error_not_bare_value_error(value):
     """Review pass, 2026-08-13: an empty token (from a leading/trailing/
     doubled comma, or an all-whitespace value) must raise
     `InvalidShipTargetError` -- this function's own documented contract for
     "any other token" -- never let `InvalidShipTargetError.__init__`'s own
-    empty-value guard escape as a bare `ValueError` instead."""
+    empty-value guard escape as a bare `ValueError` instead. `""` itself
+    (review, 2026-08-14) is `--ship`'s own real-parser path for `mason
+    package --ship ""` -- CLI-level coverage (`test_cli.py`) mocks `package.
+    ship` and only proves routing, never the real parser's own empty-string
+    handling this bare case exercises directly."""
     with pytest.raises(InvalidShipTargetError):
         parse_ship_targets(value)
 
