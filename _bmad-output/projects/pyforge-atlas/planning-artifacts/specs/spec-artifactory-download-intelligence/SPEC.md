@@ -1,6 +1,6 @@
 ---
 spec: artifactory-download-intelligence
-status: draft
+status: ready
 owner-dream: docs/dreams/artifactory-download-intelligence.md
 surface:
   - src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/

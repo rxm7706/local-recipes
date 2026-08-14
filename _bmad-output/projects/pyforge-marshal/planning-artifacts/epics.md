@@ -11,7 +11,7 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
-epicCount: 19
+epicCount: 20  # 2026-08-14: Epic 20 added (FR-188..FR-191 — the four undecomposed loss-mode/recognizability Specs)
 storyCount: 119  # 2026-08-08: epics-genesis-installer.md (E7-E12, 36 stories) merged in; verified against sprint-status-ledger.yaml. Was 50 (E1-E6), itself corrected 2026-08-01 from an original 40.
 status: complete
 mode: headless
@@ -106,7 +106,8 @@ Every FR-1..FR-65 appears exactly once as a primary owner. FR-27 spans E2 (the g
 | **E17** | Instruments verified, chains regenerable | Detector blind spots pinned; chain regeneration one invocation | 4 | (new 2026-08-10) |
 | **E18** | The governed tool surface | Marshal's capabilities as typed tools; parity/coverage gated | 2 | (new 2026-08-10) |
 | **E19** | The testing charter, enforced | One TEA generator, shared kit, coverage gates | 3 | (new 2026-08-10) |
-| **Total** | | | **126** | **~119 days ≈ 24 weeks single-builder (E1-E12 figure; see note)** |
+| **E20** | The loop cannot lose work, and a landing is always recognizable | The operator can trust that a stranded attempt is preserved and loud, a scope drift refuses instead of passing, and every classifier agrees a landed story landed | 10 | (new 2026-08-14) |
+| **Total** | | | **136** | **~119 days ≈ 24 weeks single-builder (E1-E12 figure; see note)** |
 
 *Story counts re-verified 2026-08-10 (FR-128..163 decomposition): headings and
 `sprint-status-ledger.yaml` story keys agree at **119** (E1-E6 = 60, E7-E12 = 36, E13 = 7,
@@ -128,7 +129,11 @@ the total to 125. **Story 5.10 added 2026-08-12** (FR-187, `marshal land` detect
 fix, sourced from `spec-marshal-land-merge-subject` — discovered during Story 5.9's own review,
 backlog, not a prerequisite for it — same deliberate exclusion from `sprint-status-ledger.yaml`
 pending its next sync) brings E5 to 10, E1-E6 to 66, and the total to **126**; the ledger will
-re-agree on its next sync.*
+re-agree on its next sync. **Epic 20 (Stories 20.1-20.10) added 2026-08-14** (FR-188..FR-191,
+decomposing `spec-bmad-loop-baseline-drift`, `spec-bmad-loop-intent-gap-work-preservation`,
+`spec-bmad-switch-scope-enforcement`, and `spec-landing-evidence-grammar` — same Dream/Spec-chain
+convention, same deliberate exclusion from `sprint-status-ledger.yaml` pending its next sync)
+brings the total to **136**.*
 
 **Epics 7-12 were a separate document until 2026-08-08** (`epics-genesis-installer.md`, now
 archived). They were always Marshal's own — the installer's buildable half moved here on
@@ -3127,6 +3132,109 @@ as a shared kit (seeded, not rewritten) and at least one other station imports f
 **Surface:** CI workflow + per-station thresholds
 **Given** a PR dropping a touched package below its station's threshold **Then** CI fails
 naming the uncovered module (unit >80% / integration >70%), not just printing a percentage.
+
+## Epic 20: The loop cannot lose work, and a landing is always recognizable
+
+**Goal:** FR-188..FR-191: the 2026-08-14 audit's four undecomposed marshal Specs become checked
+machinery. The unowned `bmad_loop` package's two work-loss modes get Marshal-side containment —
+baseline drift detected and loud (five occurrences in one session, PRs #482–#484), intent-gap
+reverts preserved instead of discarded (Story 10.1, PR #486) — with one gated upstream filing for
+both; the bmad-switch scope triangle becomes enforcement instead of discipline (closes DW-1-4-2);
+and one shared landing-evidence grammar replaces the three partial classifier dialects that
+produced 3 standing story-status false positives, 26 MRS-STATUS-010 UNCONFIRMED warns, and 0
+retire proposals. Everything lives on this repo's side of the seam: no edits to the installed
+`bmad_loop` package, and doctor never imports `pyforge.marshal`.
+
+### Story 20.1: Baseline-drift detector at the seam
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** FR-188 (spec-bmad-loop-baseline-drift, CAP-1)
+**Surface:** detector home is this story's design decision — `scripts/*.py` (loop-stall-check precedent) or `pyforge.doctor.sources` (story-status-check precedent); run-home feeds read-only
+**Given** run `20260813-094919-bfcb`'s journal (story 9-6) **Then** a detector — reading only
+feeds `bmad_loop` itself writes (`journal.jsonl`, `state.json`, `attempt-preserve/*` refs,
+`failed/*/changes.patch`), never importing or editing the package — fires naming the story, both
+baselines (`523e938c7978` real vs `26102ea12c6d` drifted), and the preserve ref; a clean run's
+feeds yield no finding. Scope=runtime like `loop-stall-check` — excluded from `detectors-ci`.
+
+### Story 20.2: Baseline-drift defers get loud
+**Type:** feature • **Effort:** S • **Deps:** S-20.1 • **FR/AD:** FR-188 (spec-bmad-loop-baseline-drift, CAP-2)
+**Surface:** the S-20.1 detector's exit/report path + the operator's existing ATTENTION plane (`fleet-picture` or equivalent)
+**Given** a run carrying a baseline-drift defer **Then** the detector exits non-zero and the
+finding surfaces where the operator already looks, naming the recovery inputs — story, run,
+preserved ref/patch, drifted-vs-real baselines — so recovery is a named next action, never
+per-occurrence archaeology; such a run cannot read healthy in the containment's output; loud
+defer only, never a quiet auto-land.
+
+### Story 20.3: The gated upstream filing
+**Type:** chore • **Effort:** S • **Deps:** none • **FR/AD:** FR-188, FR-189 (spec-bmad-loop-baseline-drift CAP-3; carries spec-bmad-loop-intent-gap-work-preservation's Story 10.1 evidence — the two loss modes share one report)
+**Surface:** both Dreams' Realization logs, Story 6.8's upstream contribution register
+**Given** the drafted issue already in the baseline-drift Dream **Then** both gates are recorded
+as checked — (1) repo access / org relationship (issue vs PR vs discussion), (2) duplicate search
+first — and either the coordinated issue is filed against `bmad-code-org/bmad-loop` (URL appended
+to both Dreams' Realization logs, registered in `upstream-register.json`) or a duplicate is found
+and linked instead; until the gates clear, the draft stays unfiled by design.
+
+### Story 20.4: Intent-gap attempts are preserved
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** FR-189 (spec-bmad-loop-intent-gap-work-preservation, CAP-1 + CAP-2)
+**Surface:** `adapters/harness_bmadloop.py`, `supervisor/`
+**Given** an intent-gap halt on a story with tracked changes **Then** Marshal-side compensation
+at the adapter seam parks the attempt exactly like the deferred-story path — an
+`attempt-preserve/*` branch for real commits, a `failed/<story>/changes.patch` otherwise
+(interception point, seam-observed vs proactive supervisor snapshot, is this story's design
+decision) — the worktree stays reverted clean per protocol, and the escalation text names the
+exact ref/patch so `bmad-loop resolve --restore-patch` restores the attempt with zero
+session-transcript access; the halt's strictness never changes, and no preserved attempt
+auto-relands without the contract fix.
+
+### Story 20.5: Missing-preserve detector
+**Type:** test • **Effort:** S • **Deps:** S-20.4 • **FR/AD:** FR-189 (spec-bmad-loop-intent-gap-work-preservation, CAP-3)
+**Surface:** the S-20.4 preserve convention + a post-hoc detector (`story-status-check`/`loop-stall-check` precedent)
+**Given** a simulated intent-gap halt with no preserve artifact **Then** the detector trips a
+finding rather than passing silently (seam bypassed or upstream behavior shifted); a halt with
+its artifact present passes clean.
+
+### Story 20.6: The verify_scope primitive
+**Type:** feature • **Effort:** S • **Deps:** none • **FR/AD:** FR-190 (spec-bmad-switch-scope-enforcement, CAP-1)
+**Surface:** one new shared module — where it physically lives (import path vs Genesis COPIED-MANAGED copy) is this story's design decision under the never-two-parallel-copies constraint
+**Given** marker and both symlinks all pointing at slug B **Then** `verify_scope(root, "A")`
+returns a `ScopeDrift` naming found-vs-expected, an unrecognized symlink-target shape returns a
+drift reporting "unrecognized" — never inferred agreement — (DW-1-4-2 blind spots (2) and (1)),
+and the all-agree happy path returns `None`; three file reads and string compares, no subprocess,
+cheap enough for a write-skill preflight.
+
+### Story 20.7: Both guards hard-fail on drift
+**Type:** feature • **Effort:** S • **Deps:** S-20.6 • **FR/AD:** FR-190 (spec-bmad-switch-scope-enforcement, CAP-2 + CAP-3; closes DW-1-4-2)
+**Surface:** `scripts/bmad-switch`, `cli/init.py` (MRS-INIT-003)
+**Given** a deliberately desynced tree **Then** `scripts/bmad-switch --current` exits non-zero
+naming the drift (no more advisory stderr at exit 0) and `marshal init` refuses a home whose
+marker/symlinks agree on a different project than requested instead of silently reconciling it —
+both by consuming the ONE S-20.6 primitive, retired per-caller check bodies gone, not shadowed;
+DW-1-4-2 (`deferred-work-ledger.md:385`) closes against this story.
+
+### Story 20.8: The landing-evidence grammar
+**Type:** feature • **Effort:** M • **Deps:** none • **FR/AD:** FR-191 (spec-landing-evidence-grammar, CAP-1)
+**Surface:** the grammar artifact — contract with cross-package conformance test, shared data artifact, or `pyforge-core` module; the home is this story's own design decision inside the doctor-never-imports-`pyforge.marshal` boundary
+**Given** the three-plus sanctioned landing paths **Then** ONE grammar of landing-evidence shapes
+exists — merge-subject templates (FR-187's templated subject is one shape, not the grammar),
+branch-name grammars (`land/<station>-<story>…`, `bmad-loop/<run>/<story>`), and a documented
+recovery-commit convention so the next manual recovery is born recognizable — recognizing the
+three live recovery commits (`accc097e6a`, `5290c9bcd2`, `03d8fc8c86`) as written (or via a
+one-time reviewed allowlist, never a history rewrite), with a conformance surface both packages
+test against.
+
+### Story 20.9: Doctor consumes the grammar
+**Type:** feature • **Effort:** S • **Deps:** S-20.8 • **FR/AD:** FR-191 (spec-landing-evidence-grammar, CAP-2)
+**Surface:** `pyforge-doctor` `sources/marshal.py` story-status evidence routes (`:479-517`)
+**Given** the live repo **Then** `story-status`'s evidence routes consume the shared grammar in
+place of route 2/route 3's private dialects, the three standing false positives (marshal 8-2,
+marshal 10-1, mason 3-7) go green with **no per-story whitelist**, and a genuinely-unlanded story
+fails exactly as today — absence-of-match stays hedged.
+
+### Story 20.10: Marshal consumes the grammar
+**Type:** feature • **Effort:** S • **Deps:** S-20.8 • **FR/AD:** FR-191 (spec-landing-evidence-grammar, CAP-3)
+**Surface:** `core/promotion.py` (`:93-107`), `core/status.py` (MRS-STATUS-010, `:836-861`), `marshal retire`'s patch-id matching
+**Given** the live tree **Then** the promotion classifiers, MRS-STATUS-010, and `marshal retire`
+consume the same grammar: the UNCONFIRMED pile shrinks from 26 to genuinely-unlanded patches
+(the honest "UNCONFIRMED, not proof it never landed" wording retained), and `retire` proposes
+real retirements again where recovered branches are demonstrably merged.
 
 ## Story DAG (critical path and key dependencies)
 

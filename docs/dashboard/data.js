@@ -15,7 +15,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 11 of 46 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 11 of 55 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "10.4",
@@ -74,12 +74,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "46/46",
+            "46/55",
             "stories complete",
             "var(--done)"
           ],
           [
-            "0",
+            "9",
             "remaining",
             ""
           ]
@@ -137,8 +137,8 @@ window.DASHBOARD_DATA = {
         "total": 1502
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "14.1"
       },
       "roadmap": {
         "sub": "Complete: all of Waves 0–H are shipped (per merged PRs #69–#102) — the Kedro port, MCP surface, parity harness, Universal SBOM intake, orchestration, the BSL + Vizro + Vizro-AI dashboards, A2A + OpenLineage/OTel, the full DuckDB singularity (cold-start gate, Pandera contracts, vss RAG, F4’s hygiene node importing Warden’s ComplianceReport), Wave G’s WASM read surface + static-host Parquet emitter + Dagster sensors, and Wave H’s AI software factory (Karpathy wiki + 5 factory personas, agno crews, La Suite sync, Dagster orchestration). The migration was closed out by the CFE Rule-2 retro #103 (v8.79.0) — 32/32. Wave I is NOT part of the migration: it is post-audit remediation, opened 2026-07-27 after an independent Round-3 spec-to-code audit raised 49 findings (PR #131, branch abandoned — the incorporation record is the only surviving account). Six stories close the verified atlas subset at source and all six landed (merged as PR #132, 6/6, kedro-test 803 -> 901 passed); it is ordered by the tested gate rather than by wave, because kedro-test was red on main until I3 landed.",
@@ -495,6 +495,69 @@ window.DASHBOARD_DATA = {
               "13.5",
               "done",
               "Downstream handoff to Mason (FR-68)"
+            ]
+          ]
+        },
+        {
+          "badge": "E14",
+          "title": "Atlas query dashboards — hand-someone-a-link views",
+          "stories": [
+            [
+              "14.1",
+              "pending",
+              "Static view catalog (CAP-1)"
+            ],
+            [
+              "14.2",
+              "pending",
+              "Pluggable widget registry (CAP-3)"
+            ],
+            [
+              "14.3",
+              "pending",
+              "Bokeh WebSocket interactivity (CAP-2)"
+            ],
+            [
+              "14.4",
+              "pending",
+              "Air-gap asset rewriting (CAP-4)"
+            ]
+          ]
+        },
+        {
+          "badge": "E15",
+          "title": "Artifactory download intelligence — mock-first AQL",
+          "stories": [
+            [
+              "15.1",
+              "pending",
+              "Injectable AQL adapter (CAP-1)"
+            ],
+            [
+              "15.2",
+              "pending",
+              "Identity join and internal flag (CAP-2, CAP-3)"
+            ],
+            [
+              "15.3",
+              "pending",
+              "Kedro pipeline surfacing (CAP-4)"
+            ]
+          ]
+        },
+        {
+          "badge": "E16",
+          "title": "Wagtail corporate brain — the narrow DW-H3 contract",
+          "stories": [
+            [
+              "16.1",
+              "pending",
+              "Instance deploy definition (CAP-1)"
+            ],
+            [
+              "16.2",
+              "pending",
+              "Httpx opener and rehearsal (CAP-2, CAP-3)"
             ]
           ]
         }
@@ -876,7 +939,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 11 of 53 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 11 of 56 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -935,12 +998,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "53/53",
+            "53/56",
             "stories complete",
             "var(--done)"
           ],
           [
-            "0",
+            "3",
             "remaining",
             ""
           ]
@@ -971,8 +1034,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "14.1"
       },
       "epics": [
         {
@@ -1317,6 +1380,27 @@ window.DASHBOARD_DATA = {
               "A ship records itself, end to end"
             ]
           ]
+        },
+        {
+          "badge": "E14",
+          "title": "A deck is proven to look right",
+          "stories": [
+            [
+              "14.1",
+              "pending",
+              "Gate report interface"
+            ],
+            [
+              "14.2",
+              "pending",
+              "Headless render gate"
+            ],
+            [
+              "14.3",
+              "pending",
+              "Image slot scan"
+            ]
+          ]
         }
       ],
       "owner": "herald",
@@ -1338,7 +1422,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 54 of 126 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 54 of 136 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -1569,12 +1653,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "95/126",
+            "95/136",
             "stories complete",
             "var(--done)"
           ],
           [
-            "31",
+            "41",
             "remaining",
             ""
           ]
@@ -2403,6 +2487,62 @@ window.DASHBOARD_DATA = {
               "Coverage gates that name the module"
             ]
           ]
+        },
+        {
+          "badge": "E20",
+          "title": "The loop cannot lose work, and a landing is always recognizable",
+          "stories": [
+            [
+              "20.1",
+              "pending",
+              "Baseline-drift detector at the seam"
+            ],
+            [
+              "20.2",
+              "pending",
+              "Baseline-drift defers get loud"
+            ],
+            [
+              "20.3",
+              "pending",
+              "The gated upstream filing"
+            ],
+            [
+              "20.4",
+              "pending",
+              "Intent-gap attempts are preserved"
+            ],
+            [
+              "20.5",
+              "pending",
+              "Missing-preserve detector"
+            ],
+            [
+              "20.6",
+              "pending",
+              "The verify_scope primitive"
+            ],
+            [
+              "20.7",
+              "pending",
+              "Both guards hard-fail on drift"
+            ],
+            [
+              "20.8",
+              "pending",
+              "The landing-evidence grammar"
+            ],
+            [
+              "20.9",
+              "pending",
+              "Doctor consumes the grammar"
+            ],
+            [
+              "20.10",
+              "pending",
+              "Marshal consumes the grammar"
+            ]
+          ]
         }
       ],
       "owner": "marshal",
@@ -3013,7 +3153,17 @@ window.DASHBOARD_DATA = {
         "E3",
         "E4"
       ],
-      "inflight": null,
+      "inflight": {
+        "key": "10.1",
+        "title": "The host renders into src/platform",
+        "phase": "dev",
+        "attempt": "1",
+        "startEpoch": 1786729486,
+        "median": 81,
+        "lo": 27,
+        "hi": 468,
+        "phaseAsOf": "2026-08-14 18:20 UTC"
+      },
       "velocity": {
         "derived": true,
         "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 13 of 52 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
@@ -3121,7 +3271,7 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "paused",
+        "state": "in flight",
         "at": "10.1"
       },
       "epics": [
@@ -3390,7 +3540,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "10.1",
-              "pending",
+              "active",
               "The host renders into src/platform"
             ],
             [
@@ -4064,7 +4214,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-14 17:39 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-14 18:20 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4496,10 +4646,12 @@ window.DASHBOARD_DATA = {
     {
       "slug": "landing-evidence-grammar",
       "title": "A legitimate landing is recognizable no matter which of the three-plus paths landed it",
-      "status": "dreamt",
+      "status": "specified",
       "owner": "marshal",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-landing-evidence-grammar"
+      }
     },
     {
       "slug": "langflow-django-plugin",
@@ -5367,6 +5519,16 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-horizontal-run-concurrency"
     },
     {
+      "slug": "landing-evidence-grammar",
+      "project": "pyforge-marshal",
+      "title": "A legitimate landing is recognizable no matter which of the three-plus paths landed it",
+      "caps": 3,
+      "companions": 0,
+      "updated": "",
+      "dream": "landing-evidence-grammar",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-landing-evidence-grammar"
+    },
+    {
       "slug": "loop-home-fleet-refresh",
       "project": "pyforge-marshal",
       "title": "loop-home fleet refresh",
@@ -5671,7 +5833,7 @@ window.DASHBOARD_DATA = {
       "project": "pyforge-steward",
       "title": "python-agent-platform — one Django service hosts the agentic engines, anywhere",
       "caps": 6,
-      "companions": 0,
+      "companions": 1,
       "updated": "2026-08-14",
       "dream": "python-agent-platform",
       "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-python-agent-platform"
@@ -6414,10 +6576,10 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-herald",
           "pkey": "herald",
           "stories": 17,
-          "state": "done",
+          "state": "in-progress",
           "note": "line 1 — smallest full product, spec settled 0 OQs",
           "done": 53,
-          "total": 53
+          "total": 56
         },
         {
           "slug": "pyforge-doctor",
@@ -6441,7 +6603,7 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-steward",
           "pkey": null,
           "stories": 18,
-          "state": "in-progress",
+          "state": "running",
           "note": "next free slot",
           "done": 41,
           "total": 52
@@ -6472,7 +6634,7 @@ window.DASHBOARD_DATA = {
           "state": "in-progress",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
           "done": 95,
-          "total": 126
+          "total": 136
         },
         {
           "slug": "wasm-analytics-stack",
@@ -6539,7 +6701,7 @@ window.DASHBOARD_DATA = {
     "live": 60,
     "reached": 8,
     "gaps": 72,
-    "findings": 24,
+    "findings": 25,
     "rows": [
       {
         "label": "atlas",
@@ -6575,7 +6737,7 @@ window.DASHBOARD_DATA = {
           "ux": "",
           "arch": "2026-08-02",
           "context": "2026-08-04",
-          "epics": "2026-08-10",
+          "epics": "2026-08-14",
           "sprint": "2026-08-10",
           "tea": "2026-08-10",
           "gates": "2026-08-10",
@@ -6656,6 +6818,13 @@ window.DASHBOARD_DATA = {
           },
           {
             "kind": "feeds",
+            "stage": "epics",
+            "than": "sprint",
+            "at": "2026-08-14",
+            "other": "2026-08-10"
+          },
+          {
+            "kind": "feeds",
             "stage": "code",
             "than": "retro",
             "at": "2026-08-12",
@@ -6667,7 +6836,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "46/46",
+        "progress": "46/55",
         "complete": 14,
         "of": 14
       },
@@ -6927,7 +7096,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "53/53",
+        "progress": "53/56",
         "complete": 14,
         "of": 14
       },
@@ -7049,7 +7218,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "95/126",
+        "progress": "95/136",
         "complete": 13,
         "of": 13
       },
@@ -7352,7 +7521,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-01",
           "epics": "2026-08-10",
-          "sprint": "2026-08-13",
+          "sprint": "2026-08-14",
           "tea": "2026-08-13",
           "gates": "2026-08-10",
           "code": "2026-08-12",
@@ -12102,18 +12271,18 @@ window.DASHBOARD_DATA = {
           }
         },
         "archived": false,
-        "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "dreamStatus": "specified",
+        "ownerDream": "landing-evidence-grammar",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 0,
+        "openQuestions": 2,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -12130,8 +12299,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 4
+        "complete": 1,
+        "of": 3
       },
       {
         "label": "loop-home-fleet-refresh",
@@ -16912,7 +17081,7 @@ window.DASHBOARD_DATA = {
           "tests",
           "retro"
         ],
-        "gate": "5 complete (atlas, doctor, herald, scribe, warden); 3 building (marshal, mason, steward)",
+        "gate": "3 complete (doctor, scribe, warden); 5 building (atlas, herald, marshal, mason, steward)",
         "stations": [
           {
             "name": "Herald",
@@ -17076,14 +17245,6 @@ window.DASHBOARD_DATA = {
         "chain": {}
       },
       {
-        "slug": "landing-evidence-grammar",
-        "title": "A legitimate landing is recognizable no matter which of the three-plus paths landed it",
-        "status": "dreamt",
-        "owner": "marshal",
-        "blockedOn": "",
-        "chain": {}
-      },
-      {
         "slug": "miniforge-installer",
         "title": "A custom-branded Python distributable, if this repo ever needs one",
         "status": "dreamt",
@@ -17132,66 +17293,6 @@ window.DASHBOARD_DATA = {
         "chain": {}
       },
       {
-        "slug": "artifactory-download-intelligence",
-        "title": "An enterprise Artifactory mirror's own download telemetry joins the universe picture",
-        "status": "specified",
-        "owner": "atlas",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-artifactory-download-intelligence"
-        }
-      },
-      {
-        "slug": "atlas-query-dashboards",
-        "title": "A query against the atlas DB becomes an interactive dashboard, no SPA framework",
-        "status": "specified",
-        "owner": "atlas",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-query-dashboards"
-        }
-      },
-      {
-        "slug": "bmad-loop-baseline-drift",
-        "title": "A story's orchestrator-recorded baseline can never drift out from under its own worktree",
-        "status": "specified",
-        "owner": "marshal",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-baseline-drift"
-        }
-      },
-      {
-        "slug": "bmad-loop-intent-gap-work-preservation",
-        "title": "An intent-gap revert can never discard real work without a recoverable trace",
-        "status": "specified",
-        "owner": "marshal",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-intent-gap-work-preservation"
-        }
-      },
-      {
-        "slug": "bmad-switch-scope-enforcement",
-        "title": "A BMAD write can never land in the wrong project's artifacts, mechanically",
-        "status": "specified",
-        "owner": "marshal",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-switch-scope-enforcement"
-        }
-      },
-      {
-        "slug": "deck-visual-qa",
-        "title": "A deck is proven to look right, not merely to render without crashing",
-        "status": "specified",
-        "owner": "herald",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-visual-qa"
-        }
-      },
-      {
         "slug": "scratch-worktree-lifecycle",
         "title": "A scratch worktree for one story's work is one command, not five",
         "status": "specified",
@@ -17200,26 +17301,15 @@ window.DASHBOARD_DATA = {
         "chain": {
           "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-scratch-worktree-lifecycle"
         }
-      },
-      {
-        "slug": "wagtail-corporate-brain",
-        "title": "The \"Corporate Brain\" CMS atlas's own WikiSyncer has been waiting to push to",
-        "status": "specified",
-        "owner": "atlas",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-wagtail-corporate-brain"
-        }
       }
     ],
     "blocked": 0,
     "byOwner": {
       "steward": 3,
       "mason": 4,
-      "atlas": 4,
-      "marshal": 4,
+      "atlas": 1,
       "warden": 1,
-      "herald": 3
+      "herald": 2
     },
     "practices": [
       {
@@ -17303,8 +17393,8 @@ window.DASHBOARD_DATA = {
           "archived": 2,
           "practice": 0
         },
-        "line": "complete",
-        "load": 3,
+        "line": "paused 14.1",
+        "load": 2,
         "blocked": 0,
         "dreams": [
           {
@@ -17362,15 +17452,15 @@ window.DASHBOARD_DATA = {
         "station": "marshal",
         "total": 35,
         "counts": {
-          "dreamt": 1,
+          "dreamt": 0,
           "pitched": 0,
-          "specified": 3,
+          "specified": 4,
           "realized": 12,
           "archived": 15,
           "practice": 4
         },
         "line": "paused 8.5",
-        "load": 4,
+        "load": 0,
         "blocked": 0,
         "dreams": [
           {
@@ -17482,13 +17572,6 @@ window.DASHBOARD_DATA = {
             "slug": "sprint-status-auto-promote",
             "title": "The dashboard goes stale because promotion is a remembered step",
             "status": "archived",
-            "type": "dream",
-            "blockedOn": ""
-          },
-          {
-            "slug": "landing-evidence-grammar",
-            "title": "A legitimate landing is recognizable no matter which of the three-plus paths landed it",
-            "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
           },
@@ -17617,6 +17700,13 @@ window.DASHBOARD_DATA = {
             "status": "specified",
             "type": "dream",
             "blockedOn": ""
+          },
+          {
+            "slug": "landing-evidence-grammar",
+            "title": "A legitimate landing is recognizable no matter which of the three-plus paths landed it",
+            "status": "specified",
+            "type": "dream",
+            "blockedOn": ""
           }
         ]
       },
@@ -17631,8 +17721,8 @@ window.DASHBOARD_DATA = {
           "archived": 5,
           "practice": 0
         },
-        "line": "complete",
-        "load": 4,
+        "line": "paused 14.1",
+        "load": 1,
         "blocked": 0,
         "dreams": [
           {
@@ -17954,7 +18044,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 2
         },
-        "line": "paused 10.1",
+        "line": "in flight 10.1",
         "load": 3,
         "blocked": 0,
         "dreams": [
@@ -19898,7 +19988,14 @@ window.DASHBOARD_DATA = {
   },
   "status": {
     "source": "sprint-status",
-    "running": [],
+    "running": [
+      {
+        "station": "Steward",
+        "story": "10.1",
+        "phase": "dev",
+        "startEpoch": 1786729486
+      }
+    ],
     "lastShipped": {
       "station": "mason",
       "story": "4.1",
@@ -19907,8 +20004,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260813-145934-3eb0/4-1-lock-engine-adapter-and-provenance into loop/pyforge-mason (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-14 17:39 UTC",
-    "generatedEpoch": 1786729162
+    "generatedAt": "2026-08-14 18:20 UTC",
+    "generatedEpoch": 1786731658
   },
   "storySpecs": [
     {
@@ -19976,17 +20073,17 @@ window.DASHBOARD_DATA = {
           },
           {
             "slug": "spec-bmad-loop-baseline-drift",
-            "status": "draft",
+            "status": "ready",
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-baseline-drift/SPEC.md"
           },
           {
             "slug": "spec-bmad-loop-intent-gap-work-preservation",
-            "status": "draft",
+            "status": "ready",
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-loop-intent-gap-work-preservation/SPEC.md"
           },
           {
             "slug": "spec-bmad-switch-scope-enforcement",
-            "status": "draft",
+            "status": "ready",
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-bmad-switch-scope-enforcement/SPEC.md"
           },
           {
@@ -20003,6 +20100,11 @@ window.DASHBOARD_DATA = {
             "slug": "spec-fleet-chain-completeness",
             "status": "draft",
             "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-chain-completeness/SPEC.md"
+          },
+          {
+            "slug": "spec-landing-evidence-grammar",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-landing-evidence-grammar/SPEC.md"
           },
           {
             "slug": "spec-loop-home-fleet-refresh",
@@ -20031,9 +20133,9 @@ window.DASHBOARD_DATA = {
           }
         ],
         "done": 95,
-        "backlog": 30,
+        "backlog": 40,
         "blocked": 1,
-        "total": 126,
+        "total": 136,
         "next": "10-2-state-schema-and-the-atomic-store",
         "blockedKeys": [
           "8-5-marker-deletion-as-a-sanctioned-opt-out"
@@ -20141,28 +20243,68 @@ window.DASHBOARD_DATA = {
         "openSpecs": [
           {
             "slug": "spec-artifactory-download-intelligence",
-            "status": "draft",
+            "status": "ready",
             "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-artifactory-download-intelligence/SPEC.md"
           },
           {
             "slug": "spec-atlas-query-dashboards",
-            "status": "draft",
+            "status": "ready",
             "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-atlas-query-dashboards/SPEC.md"
           },
           {
             "slug": "spec-wagtail-corporate-brain",
-            "status": "draft",
+            "status": "ready",
             "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-wagtail-corporate-brain/SPEC.md"
           }
         ],
         "done": 46,
-        "backlog": 0,
+        "backlog": 9,
         "blocked": 0,
-        "total": 46,
-        "next": "",
+        "total": 55,
+        "next": "14-1-static-view-catalog",
         "blockedKeys": [],
-        "backlogKeys": [],
-        "state": "complete"
+        "backlogKeys": [
+          "14-1-static-view-catalog",
+          "14-2-pluggable-widget-registry",
+          "14-3-bokeh-websocket-interactivity",
+          "14-4-air-gap-asset-rewriting",
+          "15-1-injectable-aql-adapter",
+          "15-2-identity-join-and-internal-flag",
+          "15-3-kedro-pipeline-surfacing",
+          "16-1-instance-deploy-definition"
+        ],
+        "state": "ready"
+      },
+      {
+        "station": "herald",
+        "project": "pyforge-herald",
+        "epicsPath": "_bmad-output/projects/pyforge-herald/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-deck-visual-qa",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-visual-qa/SPEC.md"
+          },
+          {
+            "slug": "spec-herald-moments-2-4-live-backend",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-moments-2-4-live-backend/SPEC.md"
+          }
+        ],
+        "done": 53,
+        "backlog": 3,
+        "blocked": 0,
+        "total": 56,
+        "next": "14-1-gate-report-interface",
+        "blockedKeys": [],
+        "backlogKeys": [
+          "14-1-gate-report-interface",
+          "14-2-headless-render-gate",
+          "14-3-image-slot-scan"
+        ],
+        "state": "ready"
       },
       {
         "station": "doctor",
@@ -20181,33 +20323,6 @@ window.DASHBOARD_DATA = {
         "backlog": 0,
         "blocked": 0,
         "total": 33,
-        "next": "",
-        "blockedKeys": [],
-        "backlogKeys": [],
-        "state": "complete"
-      },
-      {
-        "station": "herald",
-        "project": "pyforge-herald",
-        "epicsPath": "_bmad-output/projects/pyforge-herald/planning-artifacts/epics.md",
-        "ledgerPath": "_bmad-output/projects/pyforge-herald/planning-artifacts/sprint-status-ledger.yaml",
-        "specsPath": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs",
-        "openSpecs": [
-          {
-            "slug": "spec-deck-visual-qa",
-            "status": "draft",
-            "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-deck-visual-qa/SPEC.md"
-          },
-          {
-            "slug": "spec-herald-moments-2-4-live-backend",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/specs/spec-herald-moments-2-4-live-backend/SPEC.md"
-          }
-        ],
-        "done": 53,
-        "backlog": 0,
-        "blocked": 0,
-        "total": 53,
         "next": "",
         "blockedKeys": [],
         "backlogKeys": [],
@@ -20248,21 +20363,21 @@ window.DASHBOARD_DATA = {
     ],
     "totals": {
       "done": 338,
-      "backlog": 53,
+      "backlog": 75,
       "blocked": 1,
-      "total": 392
+      "total": 414
     }
   },
   "fleetProgress": {
     "rows": [
       {
         "key": "atlas",
-        "stories": 46,
+        "stories": 55,
         "done": 46,
         "blocked": 0,
-        "epics": 12,
+        "epics": 15,
         "epicsDone": 12,
-        "complete": true,
+        "complete": false,
         "running": false,
         "projected": 46
       },
@@ -20279,21 +20394,21 @@ window.DASHBOARD_DATA = {
       },
       {
         "key": "herald",
-        "stories": 53,
+        "stories": 56,
         "done": 53,
         "blocked": 0,
-        "epics": 13,
+        "epics": 14,
         "epicsDone": 13,
-        "complete": true,
+        "complete": false,
         "running": false,
         "projected": 53
       },
       {
         "key": "marshal",
-        "stories": 126,
+        "stories": 136,
         "done": 95,
         "blocked": 1,
-        "epics": 19,
+        "epics": 20,
         "epicsDone": 10,
         "complete": false,
         "running": false,
@@ -20329,8 +20444,8 @@ window.DASHBOARD_DATA = {
         "epics": 12,
         "epicsDone": 9,
         "complete": false,
-        "running": false,
-        "projected": 41
+        "running": true,
+        "projected": 52
       },
       {
         "key": "warden",
@@ -20345,16 +20460,18 @@ window.DASHBOARD_DATA = {
       }
     ],
     "total": {
-      "stories": 392,
+      "stories": 414,
       "done": 338,
       "blocked": 1,
-      "epics": 77,
+      "epics": 82,
       "epicsDone": 62
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
-      "running": [],
-      "projected": 338
+      "running": [
+        "steward"
+      ],
+      "projected": 349
     }
   }
 };

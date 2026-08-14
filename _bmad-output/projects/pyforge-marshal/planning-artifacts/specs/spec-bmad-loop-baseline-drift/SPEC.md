@@ -1,6 +1,6 @@
 ---
 spec: bmad-loop-baseline-drift
-status: draft
+status: ready
 owner-dream: docs/dreams/bmad-loop-baseline-drift.md
 surface:
   - pixi.toml

@@ -2,7 +2,8 @@
 title: Marshal (pyforge-marshal)
 status: final
 created: 2026-07-25
-updated: 2026-08-14  # FR-182..FR-187 backfilled into § 7.2/§ 7.3: six FRs cited by epics.md (Stories 3.11/3.12/3.13/2.8/5.9/5.10, all shipped) but absent here — the same INV-A class the 2026-08-11 line closed for FR-181, found ×6 by the 2026-08-14 dream-backlog chain audit. Sources: spec-adaptive-model-tiering (FR-182/183), spec-horizontal-run-concurrency (FR-184), spec-risk-tiered-review-depth (FR-185), spec-quick-dev-reconciliation (FR-186), spec-marshal-land-merge-subject (FR-187). ONE FR space now FR-1..FR-187, no gaps.
+updated: 2026-08-14  # FR-188..FR-191 added to § 7.2: the four undecomposed marshal Specs decomposed into epics.md Epic 20 (Stories 20.1-20.10) — spec-bmad-loop-baseline-drift (FR-188), spec-bmad-loop-intent-gap-work-preservation (FR-189), spec-bmad-switch-scope-enforcement (FR-190, closes DW-1-4-2), spec-landing-evidence-grammar (FR-191, Spec authored the same day from docs/dreams/landing-evidence-grammar.md). ONE FR space now FR-1..FR-191, no gaps.
+# 2026-08-14  # FR-182..FR-187 backfilled into § 7.2/§ 7.3: six FRs cited by epics.md (Stories 3.11/3.12/3.13/2.8/5.9/5.10, all shipped) but absent here — the same INV-A class the 2026-08-11 line closed for FR-181, found ×6 by the 2026-08-14 dream-backlog chain audit. Sources: spec-adaptive-model-tiering (FR-182/183), spec-horizontal-run-concurrency (FR-184), spec-risk-tiered-review-depth (FR-185), spec-quick-dev-reconciliation (FR-186), spec-marshal-land-merge-subject (FR-187). ONE FR space now FR-1..FR-187, no gaps.
 # 2026-08-11  # FR-181 added to § 7.2 (docs/dreams/fleet-status-supervisor-fallback.md, spec-fleet-status-supervisor-fallback): a dead supervisor sidecar consults a fallback engine-liveness signal before reporting "unsupervised". Queued as Story 5.8 (epics.md, PR #425); this closes the chain-completeness INV-A gap that PR #425 left open (the FR entry, not the Dream/Spec/Story chain, was the missing piece). ONE FR space now FR-1..FR-181, no gaps.
 # 2026-08-09  # § 16.9 reopened twice: FR-168 (a Spec cannot declare a surface it has no contract for) realizes CAP-5, and FR-169 (the presumed set is worked down by measurement) realizes CAP-6 — both of spec-surface-drift-reconciliation, both found by operating the gate FR-164..FR-167 turned green. ONE FR space now FR-1..FR-180, no gaps. FR-170/171 reopen § 7.2 durability (the guarantee holds, its SIGNAL did not); FR-172/173 reopen pr-lifecycle and FR-174 surface-drift-reconciliation, all three found by operating the fleet during a live 9-story run.
 # 2026-08-08  # ONE FR space, FR-1..FR-163, no gaps. The genesis-installer satellite's own FR1..FR62 island renumbered into FR-66..FR-127 and its section retitled "15. The seed installer — `marshal seed`"; OQ-1..9 -> Q-17..25; NFR-O1 retired into NFR-12; SC-01..10 and K-01..03 adopted as-is (Marshal had neither namespace). New § 16: the FR-surface rule widened to an ownership test, and 8 previously-undecomposed Marshal Specs absorbed as FR-128..FR-163 (testing-charter, loop-home-fleet-refresh, sprint-status-auto-promote, dashboard-path-derivation, detector-self-verification, fleet-chain-completeness, agent-tool-surface, pyforge-core). New § 17: the Marshal/Steward seam. jira-github-projects-sync re-owned to Steward; agentic-sdlc-autonomy recorded as a standing position with nothing to decompose.
@@ -495,6 +496,42 @@ A backlog story merged with no `bmad-loop` run record is detected as completed f
 `marshal land` merges render the same templated subject (`identity.render_merge_subject`, AD-24) that `deploy land-story` already renders — threaded as a port-level `subject` parameter through `ForgePort.merge_pr` — so `marshal_native_merged_keys` classifies every Marshal-driven landing correctly.
 **Consequences:**
 - Purely additive and forward-only: no strategy/gate changes, no retroactive relabelling of pre-fix `not-loop-native` rows (explicit non-goal); FR-186's classification precision sharpens with zero change to FR-186 itself.
+
+#### FR-188: A baseline-drift defer can never pass silently *(added 2026-08-14 — `docs/dreams/bmad-loop-baseline-drift.md`; spec-bmad-loop-baseline-drift)*
+A Marshal-side detector at the adapter seam recognizes `bmad_loop`'s baseline-drift defer signature from the feeds the package itself writes, surfaces it loudly with the recovery inputs named, and the drafted upstream issue is filed behind its two gates.
+**Consequences:**
+- Reads only feeds `bmad_loop` writes (`journal.jsonl`, `state.json`, `attempt-preserve/*` refs, `failed/*/changes.patch`) — never imports or edits the git-pinned package (HARD constraint: it ships via pixi, is imported by live loops, and is wiped on `pixi install`); scope=runtime like `loop-stall-check`, excluded from `detectors-ci`.
+- Replaying run `20260813-094919-bfcb`'s journal (story 9-6) fires the detector naming the story, both baselines (`523e938c7978` real vs `26102ea12c6d` drifted), and the preserve ref; a clean run's feeds yield no finding.
+- Loud-defer containment only: the finding lands in the operator's existing ATTENTION plane with story, run, preserved ref/patch, and drifted-vs-real baselines named — a run carrying such a defer cannot read healthy, and there is never a quiet auto-land.
+- The upstream filing against `bmad-code-org/bmad-loop` is strictly gated — repo-access check and duplicate search recorded, then either filed (URL in the Dream's Realization log) or a duplicate linked — and carries FR-189's Story 10.1 evidence too: the two loss modes share one coordinated report.
+- *Motivating evidence: five occurrences in one session (2026-08-14) — marshal 8.1–9.5, 9.6, 10.1, mason 3.6–3.9 — each recovered only by manual git archaeology (PRs #482–#484). Queued as Stories 20.1–20.3.*
+
+#### FR-189: An intent-gap revert leaves a recoverable artifact *(added 2026-08-14 — `docs/dreams/bmad-loop-intent-gap-work-preservation.md`; spec-bmad-loop-intent-gap-work-preservation)*
+When `bmad_loop`'s intent-gap protocol reverts an attempt, Marshal-side compensation at the adapter seam preserves the discarded work the way the deferred-story path already does — branch or patch — the escalation text names the artifact, and a detector flags any halt missing one.
+**Consequences:**
+- Preservation symmetry with `scm.keep_failed`: an `attempt-preserve/*` branch for real commits, a `failed/<story>/changes.patch` otherwise; the worktree stays reverted clean per protocol; no edits to the installed package.
+- `bmad-loop resolve --restore-patch` (or a human following the named ref) restores the attempt from the escalation text alone — zero session-transcript access.
+- The intent-gap halt itself stays exactly as strict: the never-patch-around protocol is unchanged, and no preserved attempt auto-relands without the contract fix.
+- A post-hoc detector makes any residual gap loud: an intent-gap halt whose preserve artifact is missing is a finding, never a silent pass.
+- *Motivating evidence: Story 10.1 (2026-08-14) — full implementation, 3646 tests green, two adversarial reviews, then a correct halt whose revert left nothing; recovered byte-identical (PR #486) only via a transcript accident. Queued as Stories 20.4–20.5; the upstream evidence rides FR-188's gated filing.*
+
+#### FR-190: A write resolves to the slug the caller asked for *(added 2026-08-14 — `docs/dreams/bmad-switch-scope-enforcement.md`; spec-bmad-switch-scope-enforcement)*
+One shared `verify_scope(root, expected_slug)` primitive checks the marker/symlink/expected-slug triangle in a single pass, and both existing guards — `scripts/bmad-switch --current` and `marshal init`'s MRS-INIT-003 — consume it and hard-fail on drift.
+**Consequences:**
+- A home internally consistent on the WRONG project is a drift, not a pass, and an unrecognized symlink-target shape reports "unrecognized" rather than inferred agreement — closing DW-1-4-2's blind spots (2) and (1) respectively.
+- Exactly one implementation of the triangle check exists; the retired per-caller check bodies are gone, not shadowed — the divergent-pair failure mode this exists to kill is not reintroduced as an implementation detail.
+- Hard-fail everywhere: `bmad-switch --current` exits non-zero naming the drift (no more advisory stderr at exit 0); `marshal init` refuses a repurposed home instead of silently reconciling it onto the new target.
+- Cheap by contract — three file reads and string compares, no subprocess — so wiring it into a write-skill preflight is free; fail-closed on parse.
+- *Motivating evidence: the 2026-07-25 five-agent fan-out incident (symlinks observed moving mid-run; one memlog under the wrong project), caught only by voluntary `readlink -f`. DW-1-4-2 (`deferred-work-ledger.md:385`) closes against this. Queued as Stories 20.6–20.7.*
+
+#### FR-191: A legitimate landing is recognizable on every path *(added 2026-08-14 — `docs/dreams/landing-evidence-grammar.md`; spec-landing-evidence-grammar)*
+ONE shared grammar of landing-evidence shapes — merge-subject templates, branch-name grammars, and a documented recovery-commit convention — is defined once and consumed by doctor's `story-status` evidence routes, Marshal's promotion classifiers, MRS-STATUS-010, and `marshal retire`'s patch-id matching.
+**Consequences:**
+- HARD: doctor never imports `pyforge.marshal`, so the grammar is a contract with a cross-package conformance test, a shared data artifact both read, or a `pyforge-core` module (the Story 14.2 shared-spine precedent) — the home is a story-level design decision inside that boundary.
+- Measured deltas the day it ships: the three standing `story-status` false positives (marshal 8-2, 10-1, mason 3-7 — all verified landed, PRs #482/#486/#483) go green with no per-story whitelist; MRS-STATUS-010's 26-warn UNCONFIRMED pile shrinks to genuinely-unlanded patches; `marshal retire` proposes real retirements again.
+- Absence of evidence stays hedged: the grammar widens what is *recognizable*, it never converts "no match" into a confident "never landed" anywhere.
+- Forward-compatible with FR-187 (the templated subject is one shape in the grammar, not the grammar itself) and never retroactive: existing recovery landings are recognized as written, or via a one-time reviewed allowlist — history is not rewritten.
+- *Queued as Stories 20.8–20.10; the Spec was authored 2026-08-14 from the Dream, which carries the full 2026-08-14 broken-windows-audit evidence trail.*
 
 ---
 

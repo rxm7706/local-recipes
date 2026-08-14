@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 164
+# stories: 176
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -76,6 +76,16 @@ development_status:
   2-6-gate-evidence-record-with-redaction-at-egress: done
   2-7-a-gate-binds-to-the-specs-success-signal: done
   2-8-a-low-risk-storys-review-runs-lighter-never-absent: done
+  20-1-baseline-drift-detector-at-the-seam: backlog
+  20-10-marshal-consumes-the-grammar: backlog
+  20-2-baseline-drift-defers-get-loud: backlog
+  20-3-the-gated-upstream-filing: backlog
+  20-4-intent-gap-attempts-are-preserved: backlog
+  20-5-missing-preserve-detector: backlog
+  20-6-the-verify-scope-primitive: backlog
+  20-7-both-guards-hard-fail-on-drift: backlog
+  20-8-the-landing-evidence-grammar: backlog
+  20-9-doctor-consumes-the-grammar: backlog
   3-1-run-identity-and-the-journal-writer: done
   3-10-unpushed-work-is-measured-by-tip-never-by-name: done
   3-11-a-storys-declared-difficulty-actually-picks-its-model: done
@@ -164,6 +174,8 @@ development_status:
   epic-19-retrospective: optional
   epic-2: done
   epic-2-retrospective: done
+  epic-20: backlog
+  epic-20-retrospective: optional
   epic-3: done
   epic-3-retrospective: done
   epic-4: done

@@ -1,6 +1,6 @@
 ---
 spec: atlas-query-dashboards
-status: draft
+status: ready
 owner-dream: docs/dreams/atlas-query-dashboards.md
 surface:
   - src/shared/packages/pyforge-atlas/src/pyforge/atlas/  # new presentation module — nothing Panel/Bokeh-shaped exists in the repo yet
