@@ -77,10 +77,30 @@ def render_text(
     key (sorted, for the same determinism reason ``render_json`` sorts),
     then one line per error. Never schema-validated -- only
     ``render_json``'s document is the contract.
+
+    A ``list`` value (Story 3.9's ``package ship`` is the first caller to
+    put one under a top-level key -- one invocation names several ship
+    targets) renders as one indented sub-line per item, each item's own
+    dict fields sorted onto their own line in turn, rather than falling
+    through to Python's default ``str()``-on-a-``list`` behaviour: that
+    defers to each element's own ``repr()``, which -- reproduced directly
+    against this function before this fix -- printed a single unreadable
+    line of raw Python dict/repr syntax instead of human-readable text.
     """
     lines = [f"{command}: {status}"]
     for key in sorted(data):
-        lines.append(f"  {key}: {data[key]}")
+        value = data[key]
+        if isinstance(value, list):
+            lines.append(f"  {key}:")
+            for item in value:
+                if isinstance(item, dict):
+                    lines.append("    -")
+                    for sub_key in sorted(item):
+                        lines.append(f"      {sub_key}: {item[sub_key]}")
+                else:
+                    lines.append(f"    - {item}")
+        else:
+            lines.append(f"  {key}: {value}")
     for error in errors:
         identifier = error.get("identifier", "?")
         message = error.get("message", "")

@@ -79,6 +79,7 @@ from .errors import CfeUnresolvedError, MasonError
 from .exit_codes import (
     EXIT_CFE_UNAVAILABLE, EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
 )
+from .models import ShipState
 
 # main() is the sole owner of the process exit code. A verb never calls
 # sys.exit() directly; it returns an int and main() projects it. The
@@ -113,6 +114,11 @@ _RECIPE_UPDATE_HELP = (
 _PACKAGE_BUILD_HELP = (
     "build a project's distributable artifacts: wheel+sdist via PEP 517, and a .conda "
     "package via pixi build (--target library only in v1; CFE-independent)"
+)
+_PACKAGE_SHIP_HELP = (
+    "ship a project's built artifacts to pypi, pypi-test (TestPyPI rehearsal), conda-forge, "
+    "and/or a named channel (comma-separated; dry run by default, --yes to confirm; a "
+    "pypi-test target requested alongside pypi always runs first and gates it)"
 )
 
 # AD-13: every global setting has a flag and an environment-variable form,
@@ -385,6 +391,83 @@ def _build_global_flags_parser() -> argparse.ArgumentParser:
     return parent
 
 
+def _add_ship_flags(parser: argparse.ArgumentParser, *, targets_flag: str) -> None:
+    """Register `ship`'s four flags onto `parser` (Story 3.9, FR-16, FR-24,
+    FR-50, D-12): `--target`, `--yes`, `--recipe-path`, and one flag named
+    by `targets_flag`.
+
+    Called TWICE, on two DIFFERENT parser objects (`build_parser`'s own
+    registration comment explains why both are needed): once on `ship`'s
+    own verb subparser, with `targets_flag="--to"` (the canonical form),
+    and once directly on the `package` NOUN parser itself, with
+    `targets_flag="--ship"` (the one documented bare-noun exception, D-12
+    -- `mason package --target library --ship pypi,conda-forge`). argparse
+    scoping requires two separate registrations: a noun-level flag cannot
+    be read after a verb token has already consumed the remaining argv, and
+    a verb-level flag cannot be read when no verb token was ever given --
+    this helper exists so the shared `add_argument` bodies are written
+    once, not duplicated at both call sites.
+
+    `--target`/`--yes`/`--recipe-path` all default to `argparse.SUPPRESS`,
+    NOT a plain `"library"`/implicit-`False`/`None` (**corrected, review
+    pass 1** -- this docstring previously claimed these three "need no
+    `argparse.SUPPRESS`/`getattr` dance" because they are "per-verb-shaped
+    flags, not part of that closed six-knob AD-13 set." That was wrong: the
+    hazard `_build_global_flags_parser`'s own docstring documents above has
+    nothing to do with AD-13's six-knob set -- it applies to ANY flag
+    registered on both an ancestor and a descendant parser in this
+    codebase's noun/verb subparser tree, and these three flags are
+    registered on exactly that shape (once on the `package` NOUN parser
+    here, once on `ship`'s own verb subparser, both reachable in the SAME
+    invocation via `mason package --yes ship --to pypi`). Exactly as that
+    docstring explains: `_SubParsersAction.__call__` parses the verb
+    subparser's remaining tokens into a *fresh* namespace and copies every
+    one of that namespace's attributes onto the parent -- so if
+    `ship_parser`'s own copy of `--yes` fell back to a plain `False`
+    default, that `False` would silently clobber a `True` already set by
+    the noun parser's own `--yes`, given *before* the verb token (the
+    natural place to put a confirming flag when composing a command
+    left-to-right). `SUPPRESS` means the attribute is only set on the
+    sub-namespace when the flag actually appears among that parser's own
+    tokens, so a value set by the OTHER registration survives untouched.
+    Callers must therefore read a resolved value via `getattr(ns, "yes",
+    False)` / `getattr(ns, "target", "library")` / `getattr(ns,
+    "recipe_path", None)`, never `ns.yes`/`ns.target`/`ns.recipe_path`
+    directly -- `_dispatch_package_ship` (below) is the ONE place this
+    resolution happens now, not `main()`'s two call sites. `--to`/`--ship`
+    need no such change and stay as before: `--to` is `required=True` (the
+    canonical verb form has no other way to name a target, so there is
+    nothing for a missing value to clobber), and `--ship` is registered
+    exactly ONCE, only on the noun parser, so there is no second
+    registration for its `default=None` to ever disagree with.
+    """
+    parser.add_argument(
+        "--target", choices=("library",), default=argparse.SUPPRESS,
+        help="what to build (v1 scope: library only)",
+    )
+    parser.add_argument(
+        "--yes", action="store_true", default=argparse.SUPPRESS,
+        help="confirm a real ship (default: dry run -- prints the plan, ships nothing)",
+    )
+    parser.add_argument(
+        "--recipe-path", default=argparse.SUPPRESS, metavar="RECIPE_PATH",
+        help="recipe directory for the conda-forge target (inert for every other target; "
+        "omitting it while targeting conda-forge is not a usage error -- ship_conda_forge's "
+        "own precondition error reports it per-target instead)",
+    )
+    if targets_flag == "--to":
+        parser.add_argument(
+            "--to", required=True, metavar="TARGETS",
+            help="comma-separated ship targets: pypi, pypi-test, conda-forge, channel:<name>",
+        )
+    else:
+        parser.add_argument(
+            targets_flag, default=None, metavar="TARGETS",
+            help="comma-separated ship targets -- same vocabulary as `package ship --to` "
+            "(D-12 bare-noun alias)",
+        )
+
+
 def build_parser() -> argparse.ArgumentParser:
     # One shared parent, reused across the top-level parser and every noun
     # subparser, so a global flag parses whether it appears before or after
@@ -408,12 +491,21 @@ def build_parser() -> argparse.ArgumentParser:
     # one parser, so this cannot be done from outside build_parser() after
     # the fact — see module docstring's documented seam).
     _noun_verbs: dict[str, argparse._SubParsersAction] = {}
+    # Story 3.9: each noun's own ArgumentParser object, keyed by noun name
+    # — mirrors `_noun_verbs` above, captured for the same reason: so a
+    # FLAG (not a verb) can be registered directly on a noun parser after
+    # this loop, addressed by name rather than re-parsed or rebuilt. Only
+    # `package` uses this today (`--ship`'s bare-noun alias, D-12), but
+    # every noun is captured, mirroring `_noun_verbs`'s own
+    # capture-everything precedent for future stories.
+    _noun_parsers: dict[str, argparse.ArgumentParser] = {}
 
     for name, help_text in _NOUNS.items():
         noun_parser = nouns.add_parser(
             name, help=help_text, description=help_text, parents=[global_flags],
         )
         _noun_verbs[name] = noun_parser.add_subparsers(dest="verb", metavar="{}")
+        _noun_parsers[name] = noun_parser
         # Remembered so main() can print this noun's own help on the
         # bare-noun usage error without re-parsing or rebuilding a parser.
         noun_parser.set_defaults(_noun_parser=noun_parser)
@@ -584,11 +676,131 @@ def build_parser() -> argparse.ArgumentParser:
         help="what to build (v1 scope: library only)",
     )
 
+    # Story 3.9: mason package ship --to <targets> [--yes] [--target
+    # library] [--recipe-path PATH] -- the canonical shipping verb (FR-16,
+    # FR-24, FR-50, D-12), dispatching to package.ship()'s own multi-target
+    # orchestrator. `_add_ship_flags` (above) factors the four-flag
+    # registration this verb shares with the bare-noun `--ship` alias
+    # immediately below, so the `add_argument` bodies are not duplicated.
+    ship_parser = _noun_verbs["package"].add_parser(
+        "ship", help=_PACKAGE_SHIP_HELP, description=_PACKAGE_SHIP_HELP,
+        parents=[global_flags],
+    )
+    _add_ship_flags(ship_parser, targets_flag="--to")
+
+    # D-12/FR-30: `mason package --target library --ship pypi,conda-forge`
+    # is the ONE documented bare-noun exception to "a noun with no verb is
+    # a usage error" (main()'s own dispatch check, below) -- registered
+    # directly on the `package` NOUN parser itself (`_noun_parsers
+    # ["package"]`, captured in the loop above), since a noun-level flag
+    # cannot be read after a verb token has already consumed the remaining
+    # argv, and vice versa (argparse scoping; `_add_ship_flags`'s own
+    # docstring). Both registrations share the SAME `_add_ship_flags` body
+    # — only the targets flag's own name/required-ness differs.
+    _add_ship_flags(_noun_parsers["package"], targets_flag="--ship")
+
     # Same `.choices`-derived metavar fixup as `recipe` above, now that
-    # `package` has a real verb registered too.
+    # `package` has two real verbs registered (`build`, `ship`).
     _noun_verbs["package"].metavar = "{" + ",".join(_noun_verbs["package"].choices) + "}"
 
     return parser
+
+
+def _dispatch_package_ship(ns: argparse.Namespace, *, raw_targets: str) -> int:
+    """Shared dispatch body for BOTH `mason package ship --to <targets>`
+    (the canonical verb) and `mason package --ship <targets>` (the one
+    documented bare-noun exception, D-12/FR-30) -- both call sites in
+    `main()` below pass their own namespace's `--to`/`--ship` value through
+    as `raw_targets`, and everything past that point is byte-identical
+    (spec I/O matrix: "Alias happy path... identical dispatch/result to the
+    canonical form above").
+
+    **Corrected, review pass 1:** `confirm`/`target`/`recipe_path` are no
+    longer parameters a caller resolves and passes in -- this function
+    resolves all three itself, via `getattr(ns, "yes", False)`, `getattr(
+    ns, "target", "library")`, `getattr(ns, "recipe_path", None)`, mirroring
+    how `--cfe-root`/`--cfe-python`/`--cfe-timeout` are already read a few
+    lines below and exactly how `_add_ship_flags`'s own docstring now
+    documents these three flags must be read (`argparse.SUPPRESS`
+    defaults on BOTH of their registration sites -- never `ns.yes`/
+    `ns.target`/`ns.recipe_path` directly, which would raise
+    `AttributeError` whenever the flag was never given anywhere in the
+    parsed argv at all, and previously -- before this correction -- read a
+    value that a sibling registration could silently overwrite back to its
+    default). This is the ONE place that resolution happens now: both call
+    sites in `main()` below pass only `ns` and `raw_targets`, nothing else.
+
+    Resolves `--format` the same way every other dispatch branch does, then
+    calls `package.ship(...)`, forwarding the real `os.environ` and
+    `Path.cwd()` (mirrors every CFE-dependent verb's own established
+    contract) plus the unresolved `--cfe-root`/`--cfe-python` flag values
+    and `--cfe-timeout` resolved via the shared `_resolve_optional_float`
+    helper. `package build`'s established "never reads CFE flags"
+    precedent does NOT apply here: `ship`'s own `conda-forge` target needs
+    them for its `resolve_cfe_root` call, unlike `package.build()`, which
+    touches no CFE state at all.
+
+    Renders `{"targets": [{**dataclasses.asdict(r), "state": r.state.value}
+    for r in results]}` under the command name `"package ship"` -- a LIST,
+    not a single result object, unlike every prior dispatch branch's `data`
+    payload: `ship()` always returns a *tuple* of per-target results, since
+    one invocation can name several targets at once. The `"state":
+    r.state.value` override (**corrected, review pass 2** -- this was
+    previously a bare `dataclasses.asdict(r)` per target) stringifies each
+    result's `ShipState` member to its plain value BEFORE it reaches either
+    renderer: `render_text`'s `f"{data[key]}"` line only strips
+    `StrEnum`'s own `__str__` wrapper for a value sitting directly at
+    `data`'s own top level -- `str()`/`format()` on the ENUM MEMBER itself
+    prints its plain value, but formatting a `list` (or `dict`) containing
+    one falls back to each element's `repr()`, not `str()`, which is
+    exactly the Python-level mechanism that rendered the raw
+    `<ShipState.TERMINAL: 'terminal'>` fragment for every `package ship`
+    result before this fix -- no prior dispatch branch in this codebase
+    ever rendered a list, so this gap in `render_text` was never exercised
+    before this story. `render_json`'s `json.dumps` was never affected
+    either way (it already serializes a bare `StrEnum` member as its plain
+    string value regardless of nesting depth) -- this fix is purely for
+    `render_text`'s benefit, and is harmless to leave in place for JSON
+    mode too (`r.state.value` is already the exact string `json.dumps`
+    would have produced from the bare member).
+
+    The aggregate exit code is the ONE genuinely data-dependent exit code
+    in this whole file (spec Design Notes, AD-9): `EXIT_FAILED` if ANY
+    returned `ShipTargetResult.state == ShipState.FAILED`, else `EXIT_OK`
+    -- unlike every other dispatch branch above, which always reports
+    `EXIT_OK` for a Mason-successful invocation regardless of a delegated
+    tool's own failure (AD-4), because a multi-target command has no
+    single delegated-tool returncode to defer to. This also means
+    `EXIT_CFE_UNAVAILABLE` never reaches this function's return value, even
+    for a lone `--to conda-forge` with an unresolved CFE root:
+    `package.ship()`'s own per-target `MasonError` catch (see that
+    function's own docstring) already converted the exception into a
+    `FAILED` result before it ever got here, so there is no
+    `CfeUnresolvedError` left for this function -- or `main()`'s dedicated
+    except-clause below -- to catch. The render's own `status` field stays
+    the literal `"ok"` regardless (matches every existing dispatch
+    branch's "Mason ran successfully" convention; AD-9 governs the exit
+    code, not this field).
+    """
+    fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
+    results = package.ship(
+        raw_targets,
+        confirm=getattr(ns, "yes", False),
+        environ=os.environ,
+        target=getattr(ns, "target", "library"),
+        recipe_path=getattr(ns, "recipe_path", None),
+        cfe_root_arg=getattr(ns, "cfe_root", None),
+        cfe_python_arg=getattr(ns, "cfe_python", None),
+        cfe_timeout_arg=_resolve_optional_float(
+            getattr(ns, "cfe_timeout", None), _ENV_CFE_TIMEOUT,
+        ),
+        start_directory=Path.cwd(),
+    )
+    render.write(
+        fmt, sys.stdout, "package ship", "ok",
+        {"targets": [{**dataclasses.asdict(r), "state": r.state.value} for r in results]}, [],
+    )
+    return EXIT_FAILED if any(r.state == ShipState.FAILED for r in results) else EXIT_OK
 
 
 def main(argv: Sequence[str] | None = None) -> int:
@@ -637,6 +849,92 @@ def main(argv: Sequence[str] | None = None) -> int:
             )
             render.write(fmt, sys.stdout, "doctor", "ok", dataclasses.asdict(report), [])
             return EXIT_OK
+
+        if (
+            ns.noun == "package"
+            and getattr(ns, "ship", None) is not None
+            and getattr(ns, "verb", None)
+        ):
+            # Review pass 3: `--ship <targets>` is registered on the `package`
+            # NOUN parser (needed for D-12's bare-noun alias below), so it
+            # parses successfully even when an explicit verb is ALSO given --
+            # `mason package --ship pypi build .` or `mason package --ship
+            # pypi ship --to conda-forge` both used to parse with `ns.ship`
+            # silently discarded (the `build`/`ship` branches below never
+            # read it). Rejected here, before either branch, rather than
+            # silently ignored: two independent review passes (3 total
+            # reviewer instances) flagged this as a plausible real trigger
+            # (editing a previous `--ship ...` invocation in shell history to
+            # add an explicit verb, leaving the old `--ship` in place) whose
+            # silent-drop outcome is indistinguishable from a typo the user
+            # never notices.
+            print(
+                "package: --ship cannot be combined with an explicit verb "
+                "(`build`/`ship`) -- use either `mason package ship --to "
+                "<targets>` or the bare `mason package --ship <targets>` "
+                "alias, not both",
+                file=sys.stderr,
+            )
+            return EXIT_USAGE
+
+        if (
+            ns.noun == "package"
+            and getattr(ns, "verb", None) == "build"
+            and (getattr(ns, "yes", None) is not None or getattr(ns, "recipe_path", None) is not None)
+        ):
+            # Review, 2026-08-14: `--yes`/`--recipe-path` are registered on
+            # the `package` NOUN parser (needed for `ship`'s own bare-noun
+            # alias above), so -- exactly like the `--ship`+verb combination
+            # already rejected two blocks up -- they parse successfully even
+            # ahead of the `build` verb (`mason package --yes --recipe-path
+            # X build .`), with `ns.yes`/`ns.recipe_path` then silently
+            # unread: `build`'s own dispatch branch below only reads
+            # `ns.project_path`/`ns.target`. Two independent fresh reviewer
+            # instances (no shared context) re-discovered this exact gap,
+            # matching the same "typo indistinguishable from a real flag"
+            # reasoning that already promoted the sibling `--ship`+verb
+            # combination from a rejected finding to this rejected-usage
+            # pattern. `--target` is deliberately excluded: `build` has its
+            # own `--target` registration (`choices=("library",)`, same
+            # single-element set), so a noun-level `--target` is never
+            # silently dropped -- it is read, just via `build`'s own flag
+            # rather than the noun-level one.
+            print(
+                "package: --yes/--recipe-path apply only to `ship` -- they have no "
+                "effect on `build` and are rejected here instead of silently ignored",
+                file=sys.stderr,
+            )
+            return EXIT_USAGE
+
+        if (
+            ns.noun == "package"
+            and not getattr(ns, "verb", None)
+            and getattr(ns, "ship", None) is not None
+        ):
+            # D-12/FR-30: the ONE documented bare-noun exception to "a noun
+            # with no verb is a usage error" (the generic check immediately
+            # below) -- `mason package --target library --ship
+            # pypi,conda-forge` dispatches through the SAME
+            # `_dispatch_package_ship` helper the canonical `package ship
+            # --to` verb branch (below) calls, so the two forms are
+            # byte-identical past this point (spec I/O matrix: "Alias
+            # happy path... identical dispatch/result to the canonical
+            # form"). This check must stay ahead of the generic one: every
+            # OTHER bare noun -- `recipe`, `environment`, and `package`
+            # itself with no `--ship` given -- falls through unaffected,
+            # since `getattr(ns, "ship", None)` is `None` for all of them
+            # (`--ship` is registered with a plain `default=None`, always
+            # present on the namespace).
+            #
+            # **Corrected, review pass 1:** was a truthy check
+            # (`getattr(ns, "ship", None)`), which mishandled an explicit
+            # `--ship ""` (empty string) -- falsy, so it silently fell
+            # through to the generic bare-noun usage error below instead of
+            # reaching `package.ship("")`'s own `InvalidShipTargetError`,
+            # contradicting this command's own "byte-identical dispatch"
+            # contract with `--to ""`. `is not None` treats only a truly
+            # ABSENT `--ship` as "not this invocation shape."
+            return _dispatch_package_ship(ns, raw_targets=ns.ship)
 
         if not getattr(ns, "verb", None):
             # A noun invoked with no verb is a usage error: stderr, EXIT_USAGE —
@@ -869,15 +1167,22 @@ def main(argv: Sequence[str] | None = None) -> int:
             render.write(fmt, sys.stdout, "package build", "ok", dataclasses.asdict(result), [])
             return EXIT_OK
 
+        if ns.noun == "package" and ns.verb == "ship":
+            # FR-16/FR-24/FR-50/D-12: the canonical shipping verb --
+            # dispatches through the SAME `_dispatch_package_ship` helper
+            # the bare-noun `--ship` alias branch above calls, so the two
+            # forms are byte-identical past this point (spec I/O matrix).
+            return _dispatch_package_ship(ns, raw_targets=ns.to)
+
         # Unreachable now for every verb-noun pair except `recipe build`/
         # `recipe diagnose`/`recipe optimize`/`recipe scan`/`recipe submit`/
-        # `recipe update`/`package build` above, each handled by its own
-        # branch: `environment` still registers no verbs at all, `package`
-        # registers no verb beyond `build`, and `recipe` registers no verb
-        # beyond those six, so argparse itself rejects any other token here
-        # as an invalid choice before `ns.verb` could ever hold it. Kept
-        # only so a later story that populates another verb has somewhere
-        # to land its dispatch.
+        # `recipe update`/`package build`/`package ship` above, each
+        # handled by its own branch: `environment` still registers no
+        # verbs at all, `package` registers no verb beyond `build`/`ship`,
+        # and `recipe` registers no verb beyond those six, so argparse
+        # itself rejects any other token here as an invalid choice before
+        # `ns.verb` could ever hold it. Kept only so a later story that
+        # populates another verb has somewhere to land its dispatch.
         return EXIT_OK  # pragma: no cover
     except KeyboardInterrupt:
         return EXIT_INTERRUPTED

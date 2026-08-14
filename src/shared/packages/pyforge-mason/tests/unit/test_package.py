@@ -28,10 +28,39 @@ structural-error propagation. Story 3.5 extends it again with `ship_channel`
 coverage, mirroring `ship_pypi`'s own suite exactly in shape (both engine
 adapters mocked at their own call sites, `pyforge.mason.package.pixi.upload`
 for the new one, mirroring this suite's "patch on the calling module's own
-namespace" convention)."""
+namespace" convention).
+
+Story 3.6 extends this file with `ship_conda_forge` coverage: no-recipe-path
+raises before any resolution, CFE-root-unresolved raises, wrong-location
+raises naming both paths with no CFE subprocess spawned, a pathological
+`Path.resolve()` failure returns `FAILED` data rather than raising, a
+mocked happy path, and a real end-to-end test against the `fake_cfe_root`
+fixture (AD-16, no mocking) mirroring `test_recipe.py`'s own
+`test_submit_against_fake_cfe_root_returns_the_fixtures_canned_success`.
+`resolve_cfe_root` is patched on `pyforge.mason.package`'s own namespace
+(`from .resolve import resolve_cfe_root` binds the name directly there,
+mirroring `doctor.py`'s identical precedent); `recipe.submit` is patched on
+`pyforge.mason.recipe`'s own namespace, since `package.py` does `from .
+import recipe` (lazy) and calls `recipe.submit(...)` -- an attribute lookup
+at call time, the same `cfe.probe_import_floor` gotcha `test_doctor.py`
+documents for `doctor.py`'s own lazy `cfe` import.
+
+Story 3.9 extends this file three ways: `parse_ship_targets`/`plan_ship`
+gain `pypi-test` coverage (mirroring the existing `pypi`/`conda-forge`/
+`channel` shapes exactly); `ship_pypi` gains `repository_url` coverage
+(the `"pypi"` vs `"pypi-test"` canonical-target split, and forwarding to a
+mocked `twine.upload`); and the new `ship()` dispatcher gets its own test
+block covering every I/O-matrix row from the story spec, including the
+FR-24/FR-50/AD-26 rehearsal gate -- `ship_pypi`/`ship_channel`/
+`ship_conda_forge` are all mocked at their own `pyforge.mason.package.*`
+call sites (this suite's established "patch on the calling module's own
+namespace" convention) so `ship()`'s own dispatch/gating logic is proven
+independent of any one target's real behavior."""
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -40,15 +69,19 @@ from pyforge.mason.engines.pep517 import Pep517BuildResult
 from pyforge.mason.engines.pixi import PixiBuildResult, PixiUploadResult
 from pyforge.mason.engines.twine import TwineUploadResult
 from pyforge.mason.errors import (
-    EngineAbsentError, InvalidShipTargetError, PackageProjectPathError,
-    PackageVersionMismatchError, ShipChannelCredentialMissingError, ShipCredentialMissingError,
+    CfeUnresolvedError, EngineAbsentError, InvalidShipTargetError, PackageProjectPathError,
+    PackageVersionMismatchError, ShipChannelCredentialMissingError,
+    ShipCondaForgeRecipeLocationError, ShipCondaForgeRecipeMissingError,
+    ShipCredentialMissingError,
 )
 from pyforge.mason.models import (
     PackageBuildResult, ShipState, ShipTarget, ShipTargetKind, ShipTargetResult,
 )
 from pyforge.mason.package import (
-    _versions_disagree, build, parse_ship_targets, plan_ship, ship_channel, ship_pypi,
+    _TESTPYPI_REPOSITORY_URL, _versions_disagree, build, parse_ship_targets, plan_ship, ship,
+    ship_channel, ship_conda_forge, ship_pypi,
 )
+from pyforge.mason.resolve import STEP_CWD_WALK, STEP_FLAG, STEP_NOT_FOUND, ResolvedCfeRoot
 
 
 def test_package_module_imports_successfully():
@@ -295,6 +328,14 @@ def test_parse_ship_targets_pypi():
     )
 
 
+def test_parse_ship_targets_pypi_test():
+    """Story 3.9/FR-50: `"pypi-test"` mirrors `"pypi"`'s own bare-literal
+    handling exactly -- no prefix, no dedup."""
+    assert parse_ship_targets("pypi-test") == (
+        ShipTarget(kind=ShipTargetKind.PYPI_TEST, channel_name=None),
+    )
+
+
 def test_parse_ship_targets_conda_forge():
     assert parse_ship_targets("conda-forge") == (
         ShipTarget(kind=ShipTargetKind.CONDA_FORGE, channel_name=None),
@@ -309,6 +350,17 @@ def test_parse_ship_targets_channel():
 
 def test_parse_ship_targets_all_three_comma_separated_preserves_order():
     assert parse_ship_targets("pypi,conda-forge,channel:myorg") == (
+        ShipTarget(kind=ShipTargetKind.PYPI, channel_name=None),
+        ShipTarget(kind=ShipTargetKind.CONDA_FORGE, channel_name=None),
+        ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg"),
+    )
+
+
+def test_parse_ship_targets_all_four_comma_separated_preserves_order():
+    """Story 3.9: `pypi-test` joins the comma-separated vocabulary,
+    no-reordering precedent unchanged."""
+    assert parse_ship_targets("pypi-test,pypi,conda-forge,channel:myorg") == (
+        ShipTarget(kind=ShipTargetKind.PYPI_TEST, channel_name=None),
         ShipTarget(kind=ShipTargetKind.PYPI, channel_name=None),
         ShipTarget(kind=ShipTargetKind.CONDA_FORGE, channel_name=None),
         ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg"),
@@ -345,13 +397,17 @@ def test_parse_ship_targets_strips_whitespace_after_channel_prefix():
     )
 
 
-@pytest.mark.parametrize("value", [",", "pypi,", ",pypi", " ", "pypi,,conda-forge"])
+@pytest.mark.parametrize("value", ["", ",", "pypi,", ",pypi", " ", "pypi,,conda-forge"])
 def test_parse_ship_targets_raises_invalid_ship_target_error_not_bare_value_error(value):
     """Review pass, 2026-08-13: an empty token (from a leading/trailing/
     doubled comma, or an all-whitespace value) must raise
     `InvalidShipTargetError` -- this function's own documented contract for
     "any other token" -- never let `InvalidShipTargetError.__init__`'s own
-    empty-value guard escape as a bare `ValueError` instead."""
+    empty-value guard escape as a bare `ValueError` instead. `""` itself
+    (review, 2026-08-14) is `--ship`'s own real-parser path for `mason
+    package --ship ""` -- CLI-level coverage (`test_cli.py`) mocks `package.
+    ship` and only proves routing, never the real parser's own empty-string
+    handling this bare case exercises directly."""
     with pytest.raises(InvalidShipTargetError):
         parse_ship_targets(value)
 
@@ -380,15 +436,18 @@ _PLAN_BUILD_RESULT = PackageBuildResult(
 )
 
 
-def test_plan_ship_all_three_kinds_are_not_attempted_with_no_reference():
+def test_plan_ship_all_four_kinds_are_not_attempted_with_no_reference():
+    """Story 3.9 widens this from three targets to four -- `PYPI_TEST`
+    joins the vocabulary."""
     targets = (
         ShipTarget(kind=ShipTargetKind.PYPI, channel_name=None),
+        ShipTarget(kind=ShipTargetKind.PYPI_TEST, channel_name=None),
         ShipTarget(kind=ShipTargetKind.CONDA_FORGE, channel_name=None),
         ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg"),
     )
     results = plan_ship(targets, _PLAN_BUILD_RESULT)
 
-    assert len(results) == 3
+    assert len(results) == 4
     for result in results:
         assert isinstance(result, ShipTargetResult)
         assert result.state == ShipState.NOT_ATTEMPTED
@@ -405,6 +464,23 @@ def test_plan_ship_pypi_message_names_wheel_and_sdist_and_states_irreversibility
     assert _PLAN_BUILD_RESULT.wheel_path in message
     assert _PLAN_BUILD_RESULT.sdist_path in message
     assert "irreversible" in message.lower()
+
+
+def test_plan_ship_pypi_test_message_names_wheel_and_sdist_but_never_claims_irreversibility():
+    """Story 3.9/FR-50: the `pypi-test` plan message names the same two
+    artifacts as `pypi`'s own message, states the destination is TestPyPI,
+    but NEVER claims irreversibility -- that claim stays exclusive to the
+    real `pypi` target."""
+    results = plan_ship(
+        (ShipTarget(kind=ShipTargetKind.PYPI_TEST, channel_name=None),), _PLAN_BUILD_RESULT,
+    )
+
+    assert results[0].target == "pypi-test"
+    message = results[0].message
+    assert _PLAN_BUILD_RESULT.wheel_path in message
+    assert _PLAN_BUILD_RESULT.sdist_path in message
+    assert "testpypi" in message.lower()
+    assert "irreversible" not in message.lower()
 
 
 def test_plan_ship_conda_forge_message_mentions_a_pull_request():
@@ -539,7 +615,7 @@ def test_ship_pypi_happy_path_uploads_and_returns_terminal_result():
 
     mock_build.assert_called_once_with("/proj", target="library")
     mock_upload.assert_called_once_with(
-        (_SHIP_BUILD_RESULT.wheel_path, _SHIP_BUILD_RESULT.sdist_path),
+        (_SHIP_BUILD_RESULT.wheel_path, _SHIP_BUILD_RESULT.sdist_path), repository_url=None,
     )
     assert result == ShipTargetResult(
         target="pypi",
@@ -662,6 +738,86 @@ def test_ship_pypi_forwards_an_explicit_target():
         ship_pypi("/proj", environ=_SHIP_ENVIRON, target="not-the-default")
 
     mock_build.assert_called_once_with("/proj", target="not-the-default")
+
+
+# --- Story 3.9: ship_pypi's repository_url (TestPyPI rehearsal) ------------
+
+_TESTPYPI_URL = "https://test.pypi.org/legacy/"
+
+
+def test_ship_pypi_repository_url_sets_target_pypi_test_on_the_terminal_result():
+    upload_result = TwineUploadResult(
+        returncode=0, url="https://test.pypi.org/project/pkg/0.1.0/", stdout="View at:\n...\n",
+    )
+    with patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT), \
+         patch(
+             "pyforge.mason.package.twine.upload", return_value=upload_result,
+         ) as mock_upload:
+        result = ship_pypi("/proj", environ=_SHIP_ENVIRON, repository_url=_TESTPYPI_URL)
+
+    mock_upload.assert_called_once_with(
+        (_SHIP_BUILD_RESULT.wheel_path, _SHIP_BUILD_RESULT.sdist_path),
+        repository_url=_TESTPYPI_URL,
+    )
+    assert result == ShipTargetResult(
+        target="pypi-test",
+        state=ShipState.TERMINAL,
+        reference="https://test.pypi.org/project/pkg/0.1.0/",
+        message="View at:\n...\n",
+    )
+
+
+def test_ship_pypi_repository_url_sets_target_pypi_test_on_a_failed_build():
+    """`canonical` is computed unconditionally, right after the credential
+    check -- it must still read `"pypi-test"` even when no wheel/sdist was
+    built at all."""
+    failed_build = PackageBuildResult(
+        target="library",
+        project_path="/proj",
+        wheel_path=None,
+        sdist_path=None,
+        conda_path=None,
+        wheel_version=None,
+        conda_version=None,
+        pep517_returncode=1,
+        pixi_returncode=0,
+        pep517_stdout="error: build backend failed\n",
+        pixi_stdout="",
+    )
+    with patch("pyforge.mason.package.build", return_value=failed_build), \
+         patch("pyforge.mason.package.twine.upload") as mock_upload:
+        result = ship_pypi("/proj", environ=_SHIP_ENVIRON, repository_url=_TESTPYPI_URL)
+
+    mock_upload.assert_not_called()
+    assert result.target == "pypi-test"
+    assert result.state == ShipState.FAILED
+
+
+def test_ship_pypi_repository_url_sets_target_pypi_test_on_upload_failure():
+    upload_result = TwineUploadResult(returncode=1, url=None, stdout="ERROR HTTPError: 400\n")
+    with patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT), \
+         patch("pyforge.mason.package.twine.upload", return_value=upload_result):
+        result = ship_pypi("/proj", environ=_SHIP_ENVIRON, repository_url=_TESTPYPI_URL)
+
+    assert result == ShipTargetResult(
+        target="pypi-test", state=ShipState.FAILED, reference=None, message="ERROR HTTPError: 400\n",
+    )
+
+
+def test_ship_pypi_without_repository_url_still_forwards_none_to_twine_upload():
+    """Regression: `ship_pypi`'s own default (`repository_url=None`) must
+    still reach `twine.upload` explicitly -- proven separately from
+    `test_ship_pypi_happy_path_uploads_and_returns_terminal_result` above,
+    which already asserts this, so a future edit that silently drops the
+    keyword is still caught even if that other test's assertion changes."""
+    upload_result = TwineUploadResult(returncode=0, url=None, stdout="")
+    with patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT), \
+         patch(
+             "pyforge.mason.package.twine.upload", return_value=upload_result,
+         ) as mock_upload:
+        ship_pypi("/proj", environ=_SHIP_ENVIRON)
+
+    assert mock_upload.call_args.kwargs["repository_url"] is None
 
 
 # --- Story 3.5: ship_channel -----------------------------------------------
@@ -829,3 +985,791 @@ def test_ship_channel_forwards_an_explicit_target():
         ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON, target="not-the-default")
 
     mock_build.assert_called_once_with("/proj", target="not-the-default")
+
+
+# --- Story 3.6: ship_conda_forge --------------------------------------------
+
+@pytest.mark.parametrize("recipe_path", [None, "", "   "])
+def test_ship_conda_forge_raises_recipe_missing_before_any_resolution(recipe_path):
+    with patch("pyforge.mason.package.resolve_cfe_root") as mock_resolve, \
+         patch("pyforge.mason.recipe.submit") as mock_submit, \
+         patch("pyforge.mason.cfe.subprocess.run") as mock_run:
+        with pytest.raises(ShipCondaForgeRecipeMissingError):
+            ship_conda_forge(
+                recipe_path,
+                environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                start_directory=Path("/start"),
+            )
+
+    mock_resolve.assert_not_called()
+    mock_submit.assert_not_called()
+    mock_run.assert_not_called()
+
+
+def test_ship_conda_forge_raises_cfe_unresolved_when_root_is_not_found():
+    with patch(
+        "pyforge.mason.package.resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+    ) as mock_resolve, patch("pyforge.mason.recipe.submit") as mock_submit, \
+         patch("pyforge.mason.cfe.subprocess.run") as mock_run:
+        with pytest.raises(CfeUnresolvedError):
+            ship_conda_forge(
+                "/some/recipe/foo",
+                environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                start_directory=Path("/start"),
+            )
+
+    mock_resolve.assert_called_once_with(None, {}, Path("/start"))
+    mock_submit.assert_not_called()
+    mock_run.assert_not_called()
+
+
+def test_ship_conda_forge_wrong_location_raises_naming_both_paths_no_subprocess(tmp_path):
+    root = tmp_path / "cfe-root"
+    recipe_dir = tmp_path / "elsewhere" / "foo"
+    with patch(
+        "pyforge.mason.package.resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=root, step=STEP_CWD_WALK),
+    ), patch("pyforge.mason.recipe.submit") as mock_submit, \
+         patch("pyforge.mason.cfe.subprocess.run") as mock_run:
+        with pytest.raises(ShipCondaForgeRecipeLocationError) as excinfo:
+            ship_conda_forge(
+                str(recipe_dir),
+                environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                start_directory=tmp_path,
+            )
+
+    expected_dir = root / "recipes" / "foo"
+    assert excinfo.value.recipe_path == str(recipe_dir.resolve())
+    assert excinfo.value.expected_path == str(expected_dir.resolve())
+    mock_submit.assert_not_called()
+    mock_run.assert_not_called()
+
+
+def test_ship_conda_forge_accepts_a_recipe_reached_through_a_symlinked_recipes_dir(tmp_path):
+    """Follow-up review pass, 2026-08-13: pass 1 added the `.resolve()` on
+    `expected_dir` specifically so a symlinked `<root>/recipes` would not
+    produce a FALSE mismatch against the independently-resolved
+    `recipe_dir` -- and shipped that patch with no test covering the one
+    scenario that motivated it. Both sides are compared physically, so a
+    recipe reached through the symlink is accepted; without the
+    `.resolve()`, `expected_dir` keeps the symlink spelling and this call
+    raises instead."""
+    root = tmp_path / "cfe-root"
+    (root / "store").mkdir(parents=True)
+    (root / "recipes").symlink_to(root / "store", target_is_directory=True)
+    recipe_dir = root / "store" / "foo"
+    recipe_dir.mkdir()
+    submit_result = ShipTargetResult(
+        target="conda-forge", state=ShipState.PENDING, reference=None, message="ok",
+    )
+
+    with patch(
+        "pyforge.mason.package.resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=root, step=STEP_CWD_WALK),
+    ), patch("pyforge.mason.recipe.submit", return_value=submit_result) as mock_submit:
+        result = ship_conda_forge(
+            str(recipe_dir),
+            environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            start_directory=tmp_path,
+        )
+
+    assert result is submit_result
+    assert mock_submit.call_args.args[0] == str(recipe_dir.resolve())
+
+
+def test_ship_conda_forge_returns_failed_when_path_resolve_raises(tmp_path):
+    """spec Always boundary: a `Path.resolve()` `OSError`/`ValueError` on
+    either `recipe_path` or the resolved root returns `ShipTargetResult(
+    FAILED, message=str(exc))` instead of raising -- mirrors
+    `recipe.py::submit()`'s own established precedent for this exact
+    resolve-failure mode."""
+    with patch(
+        "pyforge.mason.package.resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=tmp_path, step=STEP_CWD_WALK),
+    ), patch(
+        "pyforge.mason.package.Path.resolve", side_effect=OSError("Too many levels of symlinks"),
+    ), patch("pyforge.mason.recipe.submit") as mock_submit:
+        result = ship_conda_forge(
+            "/some/bad/path",
+            environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            start_directory=tmp_path,
+        )
+
+    assert result == ShipTargetResult(
+        target="conda-forge",
+        state=ShipState.FAILED,
+        reference=None,
+        message="Too many levels of symlinks",
+    )
+    mock_submit.assert_not_called()
+
+
+def test_ship_conda_forge_returns_failed_when_the_recipe_tilde_cannot_expand(tmp_path):
+    """Follow-up review pass, 2026-08-13: `Path.expanduser()` raises
+    `RuntimeError` -- NOT an `OSError` subclass for this failure -- when a
+    leading `~user` names no such user. The original `except (OSError,
+    ValueError)` did not catch it, so the function raised instead of
+    returning the `FAILED` result its own docstring promises."""
+    with patch(
+        "pyforge.mason.package.resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=tmp_path, step=STEP_CWD_WALK),
+    ), patch("pyforge.mason.recipe.submit") as mock_submit:
+        result = ship_conda_forge(
+            "~nosuchuser9/recipes/foo",
+            environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            start_directory=tmp_path,
+        )
+
+    assert result.target == "conda-forge"
+    assert result.state is ShipState.FAILED
+    mock_submit.assert_not_called()
+
+
+def test_ship_conda_forge_returns_failed_when_the_root_tilde_cannot_expand(tmp_path):
+    """Follow-up review pass, 2026-08-13: the SAME `RuntimeError` is
+    reachable through the resolved ROOT, not only through `recipe_path`.
+    `resolve_cfe_root`'s flag/environment steps pass a `--cfe-root
+    ~foo/cfe` value through unvalidated, and the root is `.expanduser()`d
+    here (and in `doctor.py`) only -- `recipe.py::submit()` never expands a
+    root, so this trigger has no pre-existing counterpart there."""
+    with patch(
+        "pyforge.mason.package.resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=Path("~nosuchuser9/cfe"), step=STEP_FLAG),
+    ), patch("pyforge.mason.recipe.submit") as mock_submit:
+        result = ship_conda_forge(
+            str(tmp_path / "recipes" / "foo"),
+            environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            start_directory=tmp_path,
+        )
+
+    assert result.target == "conda-forge"
+    assert result.state is ShipState.FAILED
+    mock_submit.assert_not_called()
+
+
+def test_ship_conda_forge_strips_a_recipe_path_before_resolving_it(tmp_path):
+    """Follow-up review pass, 2026-08-13: gate #1 already `.strip()`s to
+    decide blankness, so `Path()` must strip too. Without it a
+    leading-space value is not absolute -- its first path component is the
+    spaces themselves -- and silently resolves relative to the cwd,
+    producing a location error naming a path the user never supplied."""
+    root = tmp_path / "cfe-root"
+    recipe_dir = root / "recipes" / "foo"
+    submit_result = ShipTargetResult(
+        target="conda-forge", state=ShipState.PENDING, reference="ref", message="msg",
+    )
+    with patch(
+        "pyforge.mason.package.resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=root, step=STEP_CWD_WALK),
+    ), patch("pyforge.mason.recipe.submit", return_value=submit_result) as mock_submit:
+        result = ship_conda_forge(
+            f"   {recipe_dir}  ",
+            environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            start_directory=tmp_path,
+        )
+
+    assert result is submit_result
+    assert mock_submit.call_args.args[0] == str(recipe_dir.resolve())
+
+
+def test_ship_conda_forge_happy_path_returns_recipe_submit_result_unchanged(tmp_path):
+    root = tmp_path / "cfe-root"
+    recipe_dir = root / "recipes" / "foo"
+    submit_result = ShipTargetResult(
+        target="conda-forge",
+        state=ShipState.PENDING,
+        reference="https://github.com/conda-forge/staged-recipes/pull/123",
+        message="PR created: https://github.com/conda-forge/staged-recipes/pull/123",
+    )
+    with patch(
+        "pyforge.mason.package.resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=root, step=STEP_CWD_WALK),
+    ), patch("pyforge.mason.recipe.submit", return_value=submit_result) as mock_submit:
+        result = ship_conda_forge(
+            str(recipe_dir),
+            environ={"FOO": "bar"},
+            cfe_root_arg="cfe-root-flag", cfe_python_arg="py-flag", cfe_timeout_arg=42.0,
+            start_directory=tmp_path,
+        )
+
+    assert result is submit_result
+    mock_submit.assert_called_once_with(
+        str(recipe_dir.resolve()),
+        confirm=True,
+        prepare_only=False,
+        cfe_root_arg="cfe-root-flag",
+        cfe_python_arg="py-flag",
+        cfe_timeout_arg=42.0,
+        environ={"FOO": "bar"},
+        start_directory=tmp_path,
+    )
+
+
+# --- Real end-to-end against fake_cfe_root (AD-16, no mocking) -------------
+
+def test_ship_conda_forge_against_fake_cfe_root_returns_the_fixtures_canned_success(
+    fake_cfe_root, monkeypatch,
+):
+    """Mirrors `test_recipe.py::
+    test_submit_against_fake_cfe_root_returns_the_fixtures_canned_success`:
+    a recipe path that resolves to exactly `<fake_cfe_root>/recipes/
+    example-recipe` satisfies both of `ship_conda_forge`'s own
+    preconditions, so the real `recipe.py::submit()` composition runs and
+    returns the fixture's canned `PENDING` result unchanged. No `recipes/`
+    directory needs to exist on disk -- matches `submit()`'s established
+    no-existence-check precedent (path resolution only)."""
+    for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
+        monkeypatch.delenv(var, raising=False)
+
+    result = ship_conda_forge(
+        str(fake_cfe_root / "recipes" / "example-recipe"),
+        environ={},
+        cfe_root_arg=str(fake_cfe_root),
+        cfe_python_arg=sys.executable,
+        cfe_timeout_arg=15.0,
+        start_directory=fake_cfe_root,
+    )
+
+    assert result == ShipTargetResult(
+        target="conda-forge",
+        state=ShipState.PENDING,
+        reference="https://github.com/example/example/pull/1",
+        message="PR created: https://github.com/example/example/pull/1",
+    )
+
+
+# --- Story 3.9: ship() dispatcher -------------------------------------------
+#
+# `ship_pypi`/`ship_channel`/`ship_conda_forge` are mocked at their own
+# `pyforge.mason.package.*` call sites (this suite's established "patch on
+# the calling module's own namespace" convention -- `package.py`'s `ship()`
+# calls each of them directly, an attribute lookup at call time), so this
+# block proves `ship()`'s own dispatch/gating/exception-catch logic
+# independent of any one target's real behavior.
+
+def test_ship_invalid_target_raises_before_any_target_runs(tmp_path):
+    """spec I/O matrix: 'Invalid token... whole command fails before any
+    target runs.'"""
+    with patch("pyforge.mason.package.build") as mock_build, \
+         patch("pyforge.mason.package.ship_pypi") as mock_ship_pypi:
+        with pytest.raises(InvalidShipTargetError) as excinfo:
+            ship(
+                "bogus", confirm=True, environ={}, cfe_root_arg=None, cfe_python_arg=None,
+                cfe_timeout_arg=None, start_directory=tmp_path,
+            )
+
+    assert excinfo.value.value == "bogus"
+    mock_build.assert_not_called()
+    mock_ship_pypi.assert_not_called()
+
+
+def test_ship_dry_run_calls_build_once_and_returns_the_plan(tmp_path):
+    """spec I/O matrix: dry-run default -- one `build()` call, then `plan_
+    ship`'s own `NOT_ATTEMPTED` entries; nothing uploaded."""
+    with patch(
+        "pyforge.mason.package.build", return_value=_PLAN_BUILD_RESULT,
+    ) as mock_build, patch("pyforge.mason.package.ship_pypi") as mock_ship_pypi:
+        results = ship(
+            "pypi,conda-forge", confirm=False, environ={}, cfe_root_arg=None,
+            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+        )
+
+    mock_build.assert_called_once_with(str(tmp_path), target="library")
+    mock_ship_pypi.assert_not_called()
+    assert len(results) == 2
+    assert all(r.state == ShipState.NOT_ATTEMPTED for r in results)
+    assert results[0].target == "pypi"
+    assert "irreversible" in results[0].message.lower()
+    assert results[1].target == "conda-forge"
+
+
+def test_ship_dry_run_calls_build_exactly_once_regardless_of_target_count(tmp_path):
+    with patch(
+        "pyforge.mason.package.build", return_value=_PLAN_BUILD_RESULT,
+    ) as mock_build:
+        ship(
+            "pypi,pypi-test,conda-forge,channel:myorg", confirm=False, environ={},
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            start_directory=tmp_path,
+        )
+
+    mock_build.assert_called_once()
+
+
+def test_ship_dry_run_pypi_test_plan_names_testpypi_with_no_irreversibility_claim(tmp_path):
+    with patch("pyforge.mason.package.build", return_value=_PLAN_BUILD_RESULT):
+        results = ship(
+            "pypi-test", confirm=False, environ={}, cfe_root_arg=None, cfe_python_arg=None,
+            cfe_timeout_arg=None, start_directory=tmp_path,
+        )
+
+    assert results[0].target == "pypi-test"
+    assert results[0].state == ShipState.NOT_ATTEMPTED
+    assert "testpypi" in results[0].message.lower()
+    assert "irreversible" not in results[0].message.lower()
+
+
+def test_ship_dry_run_forwards_an_explicit_target_to_build(tmp_path):
+    with patch(
+        "pyforge.mason.package.build", return_value=_PLAN_BUILD_RESULT,
+    ) as mock_build:
+        ship(
+            "pypi", confirm=False, environ={}, target="not-the-default", cfe_root_arg=None,
+            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+        )
+
+    mock_build.assert_called_once_with(str(tmp_path), target="not-the-default")
+
+
+def test_ship_dry_run_with_only_conda_forge_never_calls_build(tmp_path):
+    """**New test (review pass 2)**: spec Always boundary -- "A project
+    needing only `conda-forge` must not be forced through `pep517`/`pixi`
+    build engines it may not even have" applies to the DRY-RUN branch too,
+    not just the real-ship path (`test_ship_real_ship_with_only_conda_forge_
+    never_calls_build` above already covers the real-ship side). A lone
+    `conda-forge` target and a duplicated `conda-forge,conda-forge` target
+    set must both skip `build()` entirely and still return a proper
+    dry-run `NOT_ATTEMPTED` plan naming a pull request -- not crash with
+    `EngineAbsentError` on a host missing pep517/pixi tooling."""
+    with patch("pyforge.mason.package.build") as mock_build:
+        results = ship(
+            "conda-forge", confirm=False, environ={}, cfe_root_arg=None,
+            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+        )
+
+    mock_build.assert_not_called()
+    assert len(results) == 1
+    assert results[0].target == "conda-forge"
+    assert results[0].state == ShipState.NOT_ATTEMPTED
+    assert "pull request" in results[0].message.lower()
+
+    with patch("pyforge.mason.package.build") as mock_build:
+        results = ship(
+            "conda-forge,conda-forge", confirm=False, environ={}, cfe_root_arg=None,
+            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+        )
+
+    mock_build.assert_not_called()
+    assert len(results) == 2
+    assert all(r.target == "conda-forge" for r in results)
+    assert all(r.state == ShipState.NOT_ATTEMPTED for r in results)
+
+
+def test_ship_dry_run_mixing_conda_forge_with_pypi_still_calls_build_once(tmp_path):
+    """**New test (review pass 2)**: confirms the existing coverage the
+    spec's own Tasks entry points at -- the `build()` skip applies ONLY
+    when EVERY target is `conda-forge`; a dry-run mixing `conda-forge` with
+    `pypi` (or `channel:<name>`) still calls `build()` exactly once.
+    `test_ship_dry_run_calls_build_once_and_returns_the_plan` above already
+    exercises `"pypi,conda-forge"` for this; this test names the same
+    guarantee explicitly against a `channel:<name>` mix too, so the
+    boundary condition ("at least one non-conda-forge target") is not only
+    ever exercised via `pypi`."""
+    with patch(
+        "pyforge.mason.package.build", return_value=_PLAN_BUILD_RESULT,
+    ) as mock_build:
+        results = ship(
+            "conda-forge,channel:myorg", confirm=False, environ={}, cfe_root_arg=None,
+            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+        )
+
+    mock_build.assert_called_once_with(str(tmp_path), target="library")
+    assert len(results) == 2
+    assert all(r.state == ShipState.NOT_ATTEMPTED for r in results)
+
+
+def test_ship_dry_run_mixing_conda_forge_with_pypi_test_still_calls_build_once(tmp_path):
+    """**New test (review pass 3)**: `pypi-test` (like `pypi`/`channel:<name>`)
+    is a non-`conda-forge` target that needs a real `build_result` for
+    `plan_ship`'s own `PYPI_TEST` branch -- confirms the `build()`-skip
+    boundary condition against `pypi-test` specifically, not only `pypi`/
+    `channel:<name>` as the two tests above already cover."""
+    with patch(
+        "pyforge.mason.package.build", return_value=_PLAN_BUILD_RESULT,
+    ) as mock_build:
+        results = ship(
+            "conda-forge,pypi-test", confirm=False, environ={}, cfe_root_arg=None,
+            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+        )
+
+    mock_build.assert_called_once_with(str(tmp_path), target="library")
+    assert len(results) == 2
+    assert all(r.state == ShipState.NOT_ATTEMPTED for r in results)
+
+
+def test_ship_real_ship_conda_forge_and_pypi_test_with_no_pypi_sibling_run_independently(
+    tmp_path,
+):
+    """**New test (review pass 3)**: `--to conda-forge,pypi-test` (real
+    ship, no plain `pypi` target anywhere in the invocation) exercises
+    every target through the ordinary per-target loop -- the FR-24/FR-50
+    rehearsal-gate pre-run only ever triggers when a `PYPI` target is ALSO
+    present (see `ship()`'s own docstring); with none here, neither target
+    should be gated or specially reordered."""
+    recipe_dir = tmp_path / "recipes" / "example-recipe"
+    recipe_dir.mkdir(parents=True)
+    conda_forge_result = ShipTargetResult(
+        target="conda-forge", state=ShipState.PENDING, reference="https://github.com/x/pull/1",
+        message="opened",
+    )
+    pypi_test_result = ShipTargetResult(
+        target="pypi-test", state=ShipState.TERMINAL, reference="https://test.pypi.org/x",
+        message="ok",
+    )
+    with patch(
+        "pyforge.mason.package.ship_conda_forge", return_value=conda_forge_result,
+    ) as mock_conda_forge, patch(
+        "pyforge.mason.package.ship_pypi", return_value=pypi_test_result,
+    ) as mock_ship_pypi:
+        results = ship(
+            "conda-forge,pypi-test", confirm=True, environ={}, recipe_path=str(recipe_dir),
+            cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            start_directory=tmp_path,
+        )
+
+    assert results == (conda_forge_result, pypi_test_result)
+    mock_conda_forge.assert_called_once()
+    mock_ship_pypi.assert_called_once()
+    assert mock_ship_pypi.call_args.kwargs["repository_url"] == _TESTPYPI_REPOSITORY_URL
+
+
+def test_ship_canonical_happy_path_pypi_and_channel_both_terminal(tmp_path):
+    """spec I/O matrix: canonical happy path -- both `TERMINAL`."""
+    pypi_result = ShipTargetResult(
+        target="pypi", state=ShipState.TERMINAL, reference="url", message="ok",
+    )
+    channel_result = ShipTargetResult(
+        target="channel:myorg", state=ShipState.TERMINAL, reference="myorg", message="ok",
+    )
+    with patch(
+        "pyforge.mason.package.ship_pypi", return_value=pypi_result,
+    ) as mock_ship_pypi, patch(
+        "pyforge.mason.package.ship_channel", return_value=channel_result,
+    ) as mock_ship_channel, patch("pyforge.mason.package.build") as mock_build:
+        results = ship(
+            "pypi,channel:myorg", confirm=True, environ={"X": "Y"}, cfe_root_arg=None,
+            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+        )
+
+    mock_build.assert_not_called()
+    assert results == (pypi_result, channel_result)
+    mock_ship_pypi.assert_called_once_with(str(tmp_path), environ={"X": "Y"}, target="library")
+    mock_ship_channel.assert_called_once_with(
+        str(tmp_path), "myorg", environ={"X": "Y"}, target="library",
+    )
+
+
+def test_ship_pypi_alone_runs_immediately_with_no_gate(tmp_path):
+    """spec I/O matrix: 'pypi alone... runs immediately, no gate.'"""
+    pypi_result = ShipTargetResult(
+        target="pypi", state=ShipState.TERMINAL, reference="url", message="ok",
+    )
+    with patch("pyforge.mason.package.ship_pypi", return_value=pypi_result) as mock_ship_pypi:
+        results = ship(
+            "pypi", confirm=True, environ={}, cfe_root_arg=None, cfe_python_arg=None,
+            cfe_timeout_arg=None, start_directory=tmp_path,
+        )
+
+    mock_ship_pypi.assert_called_once_with(str(tmp_path), environ={}, target="library")
+    assert results == (pypi_result,)
+
+
+def test_ship_forwards_an_explicit_target_to_ship_pypi(tmp_path):
+    pypi_result = ShipTargetResult(
+        target="pypi", state=ShipState.TERMINAL, reference="u", message="m",
+    )
+    with patch("pyforge.mason.package.ship_pypi", return_value=pypi_result) as mock_ship_pypi:
+        ship(
+            "pypi", confirm=True, environ={}, target="not-the-default", cfe_root_arg=None,
+            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+        )
+
+    mock_ship_pypi.assert_called_once_with(str(tmp_path), environ={}, target="not-the-default")
+
+
+def test_ship_rehearsal_passes_then_pypi_runs_for_real(tmp_path):
+    """spec I/O matrix: 'Rehearsal passes... pypi-test TERMINAL, then pypi
+    runs for real and is TERMINAL.'"""
+    rehearsal_result = ShipTargetResult(
+        target="pypi-test", state=ShipState.TERMINAL, reference="test-url", message="ok-test",
+    )
+    real_result = ShipTargetResult(
+        target="pypi", state=ShipState.TERMINAL, reference="real-url", message="ok-real",
+    )
+    with patch(
+        "pyforge.mason.package.ship_pypi", side_effect=[rehearsal_result, real_result],
+    ) as mock_ship_pypi:
+        results = ship(
+            "pypi-test,pypi", confirm=True, environ={}, cfe_root_arg=None, cfe_python_arg=None,
+            cfe_timeout_arg=None, start_directory=tmp_path,
+        )
+
+    assert results == (rehearsal_result, real_result)
+    assert mock_ship_pypi.call_count == 2
+    first_call, second_call = mock_ship_pypi.call_args_list
+    assert first_call.kwargs["repository_url"] == _TESTPYPI_URL
+    assert "repository_url" not in second_call.kwargs
+
+
+def test_ship_rehearsal_fails_then_pypi_is_gated_and_never_called(tmp_path):
+    """spec I/O matrix: 'Rehearsal fails... pypi-test FAILED; pypi is
+    NOT_ATTEMPTED naming the gate, no upload attempted.'"""
+    rehearsal_result = ShipTargetResult(
+        target="pypi-test", state=ShipState.FAILED, reference=None, message="upload failed",
+    )
+    with patch(
+        "pyforge.mason.package.ship_pypi", return_value=rehearsal_result,
+    ) as mock_ship_pypi:
+        results = ship(
+            "pypi-test,pypi", confirm=True, environ={}, cfe_root_arg=None, cfe_python_arg=None,
+            cfe_timeout_arg=None, start_directory=tmp_path,
+        )
+
+    mock_ship_pypi.assert_called_once()  # only the rehearsal itself -- pypi's own upload never ran
+    assert results[0] == rehearsal_result
+    assert results[1].target == "pypi"
+    assert results[1].state == ShipState.NOT_ATTEMPTED
+    assert "rehearsal" in results[1].message.lower()
+    assert "failed" in results[1].message.lower()
+
+
+def test_ship_rehearsal_runs_first_regardless_of_input_order(tmp_path):
+    """spec Always boundary: 'the FIRST pypi-test target always executes
+    before the loop's normal per-target pass (regardless of which order
+    the user typed them)... reused... at its original position in the
+    OUTPUT order.'"""
+    call_order = []
+
+    def fake_ship_pypi(project_path, *, environ, target, repository_url=None):
+        call_order.append(repository_url)
+        if repository_url:
+            return ShipTargetResult(
+                target="pypi-test", state=ShipState.TERMINAL, reference="t", message="t",
+            )
+        return ShipTargetResult(target="pypi", state=ShipState.TERMINAL, reference="r", message="r")
+
+    with patch("pyforge.mason.package.ship_pypi", side_effect=fake_ship_pypi):
+        results = ship(
+            "pypi,pypi-test", confirm=True, environ={}, cfe_root_arg=None, cfe_python_arg=None,
+            cfe_timeout_arg=None, start_directory=tmp_path,
+        )
+
+    # The rehearsal (repository_url set) ran FIRST even though "pypi" was
+    # typed first in raw_targets...
+    assert call_order[0] == _TESTPYPI_URL
+    # ...but OUTPUT order still matches INPUT order: pypi at index 0,
+    # pypi-test at index 1.
+    assert results[0].target == "pypi"
+    assert results[1].target == "pypi-test"
+
+
+def test_ship_multiple_pypi_test_tokens_only_the_first_gates_pypi(tmp_path):
+    """Task list: 'multiple pypi-test tokens: only the first gates pypi,
+    later ones still execute independently.'"""
+    call_log = []
+
+    def fake_ship_pypi(project_path, *, environ, target, repository_url=None):
+        call_log.append(repository_url)
+        if repository_url:
+            return ShipTargetResult(
+                target="pypi-test", state=ShipState.TERMINAL, reference="t",
+                message=f"call-{len(call_log)}",
+            )
+        return ShipTargetResult(target="pypi", state=ShipState.TERMINAL, reference="r", message="r")
+
+    with patch("pyforge.mason.package.ship_pypi", side_effect=fake_ship_pypi):
+        results = ship(
+            "pypi-test,pypi-test,pypi", confirm=True, environ={}, cfe_root_arg=None,
+            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+        )
+
+    assert len(call_log) == 3  # both pypi-test tokens ran independently, plus the real pypi
+    assert results[0].target == "pypi-test"
+    assert results[1].target == "pypi-test"
+    assert results[2].target == "pypi"
+    assert results[0].message != results[1].message  # two genuinely independent calls
+
+
+def test_ship_pypi_with_no_pypi_test_sibling_is_unaffected_by_the_gate(tmp_path):
+    """spec Always boundary (D-11): 'A pypi target with no pypi-test
+    sibling in the same invocation is unaffected.'"""
+    pypi_result = ShipTargetResult(
+        target="pypi", state=ShipState.TERMINAL, reference="u", message="m",
+    )
+    channel_result = ShipTargetResult(
+        target="channel:myorg", state=ShipState.TERMINAL, reference="myorg", message="m",
+    )
+    with patch(
+        "pyforge.mason.package.ship_pypi", return_value=pypi_result,
+    ) as mock_ship_pypi, patch(
+        "pyforge.mason.package.ship_channel", return_value=channel_result,
+    ):
+        results = ship(
+            "channel:myorg,pypi", confirm=True, environ={}, cfe_root_arg=None,
+            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+        )
+
+    mock_ship_pypi.assert_called_once_with(str(tmp_path), environ={}, target="library")
+    assert results[1] == pypi_result
+
+
+def test_ship_pypi_test_with_no_pypi_sibling_runs_the_ordinary_loop_not_the_gate(tmp_path):
+    """New test, review pass 1: the rehearsal pre-run/gate block above only
+    ever triggers `if any(t.kind is ShipTargetKind.PYPI for t in targets)`
+    -- a lone `pypi-test` target, with no `pypi` sibling anywhere in the
+    same `targets` tuple, must never enter that pre-run block at all and
+    must instead be dispatched once per token from the ordinary per-target
+    loop, exactly like any other target kind (mirrors `test_ship_pypi_
+    with_no_pypi_test_sibling_is_unaffected_by_the_gate` above, the
+    opposite-direction case)."""
+    pypi_test_result = ShipTargetResult(
+        target="pypi-test", state=ShipState.TERMINAL, reference="test-url", message="ok-test",
+    )
+    with patch(
+        "pyforge.mason.package.ship_pypi", return_value=pypi_test_result,
+    ) as mock_ship_pypi:
+        results = ship(
+            "pypi-test", confirm=True, environ={}, cfe_root_arg=None, cfe_python_arg=None,
+            cfe_timeout_arg=None, start_directory=tmp_path,
+        )
+
+    mock_ship_pypi.assert_called_once_with(
+        str(tmp_path), environ={}, target="library", repository_url=_TESTPYPI_URL,
+    )
+    assert results == (pypi_test_result,)
+
+
+def test_ship_duplicated_pypi_test_with_no_pypi_sibling_calls_ship_pypi_once_per_token(tmp_path):
+    """New test, review pass 1: `--to pypi-test,pypi-test` with no `pypi`
+    sibling -- neither token is a cached/reused pre-run result (that
+    mechanism only exists to gate a `pypi` target), so both must be
+    dispatched independently, once each, from the ordinary loop."""
+    with patch(
+        "pyforge.mason.package.ship_pypi",
+        side_effect=[
+            ShipTargetResult(
+                target="pypi-test", state=ShipState.TERMINAL, reference="t1", message="call-1",
+            ),
+            ShipTargetResult(
+                target="pypi-test", state=ShipState.TERMINAL, reference="t2", message="call-2",
+            ),
+        ],
+    ) as mock_ship_pypi:
+        results = ship(
+            "pypi-test,pypi-test", confirm=True, environ={}, cfe_root_arg=None,
+            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+        )
+
+    assert mock_ship_pypi.call_count == 2
+    for call in mock_ship_pypi.call_args_list:
+        assert call.kwargs["repository_url"] == _TESTPYPI_URL
+    assert len(results) == 2
+    assert results[0].message == "call-1"
+    assert results[1].message == "call-2"
+
+
+def test_ship_conda_forge_precondition_failure_alongside_pypi_does_not_block_pypi(tmp_path):
+    """spec I/O matrix: 'conda-forge precondition fails alongside
+    others... conda-forge alone FAILED naming the precondition; pypi
+    completes normally.'"""
+    pypi_result = ShipTargetResult(
+        target="pypi", state=ShipState.TERMINAL, reference="url", message="ok",
+    )
+    with patch("pyforge.mason.package.ship_pypi", return_value=pypi_result), patch(
+        "pyforge.mason.package.ship_conda_forge", side_effect=CfeUnresolvedError(),
+    ):
+        results = ship(
+            "pypi,conda-forge", confirm=True, environ={}, cfe_root_arg=None,
+            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+        )
+
+    assert results[0] == pypi_result
+    assert results[1].target == "conda-forge"
+    assert results[1].state == ShipState.FAILED
+    assert results[1].message == str(CfeUnresolvedError())
+
+
+def test_ship_lone_conda_forge_cfe_unresolved_returns_failed_not_raised(tmp_path):
+    """spec Design Notes: `EXIT_CFE_UNAVAILABLE` never surfaces from
+    `ship()`, even for a lone `--to conda-forge` with an unresolved CFE
+    root -- the per-target catch intercepts `CfeUnresolvedError` before it
+    can reach `main()`'s own exception handler. Proven here by NOT wrapping
+    the call in `pytest.raises` at all: a raise would fail this test."""
+    with patch("pyforge.mason.package.ship_conda_forge", side_effect=CfeUnresolvedError()):
+        results = ship(
+            "conda-forge", confirm=True, environ={}, cfe_root_arg=None, cfe_python_arg=None,
+            cfe_timeout_arg=None, start_directory=tmp_path,
+        )
+
+    assert results == (
+        ShipTargetResult(
+            target="conda-forge", state=ShipState.FAILED, reference=None,
+            message=str(CfeUnresolvedError()),
+        ),
+    )
+
+
+def test_ship_a_masonerror_from_one_target_does_not_stop_later_targets(tmp_path):
+    conda_forge_result = ShipTargetResult(
+        target="conda-forge", state=ShipState.PENDING, reference="ref", message="ok",
+    )
+    with patch(
+        "pyforge.mason.package.ship_channel",
+        side_effect=ShipChannelCredentialMissingError(["PREFIX_API_KEY"]),
+    ), patch("pyforge.mason.package.ship_conda_forge", return_value=conda_forge_result):
+        results = ship(
+            "channel:myorg,conda-forge", confirm=True, environ={}, cfe_root_arg=None,
+            cfe_python_arg=None, cfe_timeout_arg=None, start_directory=tmp_path,
+            recipe_path="/some/recipe",
+        )
+
+    assert results[0].target == "channel:myorg"
+    assert results[0].state == ShipState.FAILED
+    assert results[1] == conda_forge_result
+
+
+def test_ship_real_ship_with_only_conda_forge_never_calls_build(tmp_path):
+    """spec Always boundary: a project shipping only to `conda-forge` must
+    never be forced through `pep517`/`pixi` build engines it may not even
+    have installed."""
+    conda_forge_result = ShipTargetResult(
+        target="conda-forge", state=ShipState.PENDING, reference="ref", message="ok",
+    )
+    with patch(
+        "pyforge.mason.package.ship_conda_forge", return_value=conda_forge_result,
+    ), patch("pyforge.mason.package.build") as mock_build, \
+         patch("pyforge.mason.package.pep517.build") as mock_pep517, \
+         patch("pyforge.mason.package.pixi.build") as mock_pixi:
+        results = ship(
+            "conda-forge", confirm=True, environ={}, cfe_root_arg=None, cfe_python_arg=None,
+            cfe_timeout_arg=None, start_directory=tmp_path, recipe_path="/some/recipe",
+        )
+
+    mock_build.assert_not_called()
+    mock_pep517.assert_not_called()
+    mock_pixi.assert_not_called()
+    assert results == (conda_forge_result,)
+
+
+def test_ship_forwards_recipe_path_and_cfe_args_to_the_conda_forge_target(tmp_path):
+    conda_forge_result = ShipTargetResult(
+        target="conda-forge", state=ShipState.PENDING, reference="ref", message="ok",
+    )
+    with patch(
+        "pyforge.mason.package.ship_conda_forge", return_value=conda_forge_result,
+    ) as mock_ship_conda_forge:
+        ship(
+            "conda-forge", confirm=True, environ={"E": "V"}, cfe_root_arg="/root",
+            cfe_python_arg="/py", cfe_timeout_arg=9.0, start_directory=tmp_path,
+            recipe_path="/some/recipe",
+        )
+
+    mock_ship_conda_forge.assert_called_once_with(
+        "/some/recipe",
+        environ={"E": "V"},
+        cfe_root_arg="/root",
+        cfe_python_arg="/py",
+        cfe_timeout_arg=9.0,
+        start_directory=tmp_path,
+    )

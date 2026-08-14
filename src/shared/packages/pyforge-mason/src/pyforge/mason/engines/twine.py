@@ -37,11 +37,17 @@ rendering (`rich.reconfigure(force_terminal=True)` in the installed
 so an enabled progress bar would otherwise interleave cursor-movement
 escape sequences into the captured text unpredictably.
 
-No `repository`/`repository_url` parameter, and no TestPyPI vocabulary
-(spec Never boundary) -- Story 3.9/FR-50's own scope, not this adapter's;
-AD-26's "identical code path, differing only in repository configuration"
-is a knob Story 3.9 adds to this function later, not one invented here
-ahead of need.
+Story 3.9 adds `upload()`'s `repository_url` keyword (FR-24, FR-50, AD-26):
+when given, argv gains `--repository-url <repository_url>` immediately
+before the artifact paths -- `twine`'s own flag for pointing an upload at a
+non-default package index. This is the ENTIRE mechanism behind AD-26's
+"identical code path, differing only in repository configuration": no new
+vocabulary lands here, no `.pypirc`, no `TWINE_REPOSITORY`/
+`TWINE_REPOSITORY_URL` env-var read (spec Never boundary) -- the TestPyPI
+URL itself is a `package.py`-owned constant
+(`_TESTPYPI_REPOSITORY_URL`), never hardcoded in this module. `None` (the
+default) leaves argv exactly as it was before this story, so every
+pre-3.9 call site's own argv shape is unchanged.
 
 ANSI stripping and URL extraction (spec Always boundary, verified live
 against the installed `twine 7.0.0` binary): a failed `twine upload` of a
@@ -136,9 +142,13 @@ def _extract_view_at_url(stdout: str) -> str | None:
     return match.group(1) if match is not None else None
 
 
-def upload(paths: Sequence[str], *, timeout: float | None = None) -> TwineUploadResult:
-    """Upload `paths` (the wheel+sdist artifacts) to PyPI via `twine upload`
-    (FR-16, FR-20, AD-14).
+def upload(
+    paths: Sequence[str], *, timeout: float | None = None, repository_url: str | None = None,
+) -> TwineUploadResult:
+    """Upload `paths` (the wheel+sdist artifacts) to PyPI -- or, with
+    `repository_url` given, to whatever index that URL names (Story 3.9,
+    e.g. TestPyPI) -- via `twine upload` (FR-16, FR-20, FR-24, FR-50,
+    AD-14, AD-26).
 
     Raises `EngineAbsentError` (via `require_engine`) before any subprocess
     spawns if the `twine` engine is not on `PATH` (spec Always boundary). No
@@ -149,7 +159,11 @@ def upload(paths: Sequence[str], *, timeout: float | None = None) -> TwineUpload
     or copying them.
 
     Argv is `["twine", "upload", "--non-interactive", "--disable-progress-
-    bar", *paths]` (module docstring for the rationale behind each flag).
+    bar", *paths]` (module docstring for the rationale behind each flag),
+    except that when `repository_url` is not `None`, `"--repository-url"`
+    and `repository_url` itself are inserted immediately before `*paths`
+    (module docstring, Story 3.9) -- `omitted`/`None` reproduces the exact
+    pre-3.9 argv shape.
 
     `timeout` defaults to `_TWINE_UPLOAD_TIMEOUT_SECONDS` when `None`,
     mirroring every other engine adapter's own per-operation-default
@@ -169,7 +183,10 @@ def upload(paths: Sequence[str], *, timeout: float | None = None) -> TwineUpload
     require_engine("twine")
 
     resolved_timeout = timeout if timeout is not None else _TWINE_UPLOAD_TIMEOUT_SECONDS
-    argv = [_BINARY_NAME, "upload", "--non-interactive", "--disable-progress-bar", *paths]
+    argv = [_BINARY_NAME, "upload", "--non-interactive", "--disable-progress-bar"]
+    if repository_url is not None:
+        argv.extend(["--repository-url", repository_url])
+    argv.extend(paths)
     try:
         completed = subprocess.run(
             argv,

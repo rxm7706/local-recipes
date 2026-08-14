@@ -13,7 +13,14 @@ handling).
 
 Story 3.3 extends this file again with `ShipTargetKind`/`ShipTarget`
 coverage: exactly-three-members plus construction/immutability/equality,
-mirroring `ShipTargetResult`'s own test shape."""
+mirroring `ShipTargetResult`'s own test shape.
+
+Story 3.9 extends `ShipTargetKind`'s coverage to its fourth member,
+`PYPI_TEST` (FR-24, FR-50, AD-26) -- the "exactly three" test above becomes
+"exactly four," mirroring its own established shape.
+
+Story 3.6 extends `DoctorReport`'s two direct construction sites with its
+two new `conda_forge_ship_ready`/`conda_forge_ship_blockers` fields."""
 
 from __future__ import annotations
 
@@ -76,6 +83,8 @@ def test_doctor_report_constructs_with_its_original_fields():
         cfe_import_floor_missing=(),
         unavailable_verbs=(),
         engines=(EngineStatus(name="pixi", available=True, version="pixi 0.72.2"),),
+        conda_forge_ship_ready=True,
+        conda_forge_ship_blockers=(),
     )
     assert report.cfe_root == "/fake/cfe"
     assert report.engines == (EngineStatus(name="pixi", available=True, version="pixi 0.72.2"),)
@@ -92,6 +101,8 @@ def test_doctor_report_is_frozen():
         cfe_import_floor_missing=("pyyaml",),
         unavailable_verbs=("recipe",),
         engines=(),
+        conda_forge_ship_ready=False,
+        conda_forge_ship_blockers=("the CFE root is unresolved",),
     )
     with pytest.raises(FrozenInstanceError):
         report.mason_version = "9.9.9"  # type: ignore[misc]
@@ -165,8 +176,12 @@ def test_ship_target_result_equality_is_by_value():
 
 # --- ShipTargetKind ----------------------------------------------------------
 
-def test_ship_target_kind_has_exactly_the_three_story_3_3_members():
-    assert {member.value for member in ShipTargetKind} == {"pypi", "conda-forge", "channel"}
+def test_ship_target_kind_has_exactly_the_four_members():
+    """Story 3.9 widens this from three members to four -- `PYPI_TEST`
+    (FR-24, FR-50, AD-26)."""
+    assert {member.value for member in ShipTargetKind} == {
+        "pypi", "conda-forge", "channel", "pypi-test",
+    }
 
 
 def test_ship_target_kind_members_are_real_str_instances():
@@ -175,6 +190,13 @@ def test_ship_target_kind_members_are_real_str_instances():
     test above."""
     assert isinstance(ShipTargetKind.PYPI, str)
     assert ShipTargetKind.CONDA_FORGE == "conda-forge"
+
+
+def test_ship_target_kind_pypi_test_value():
+    """Story 3.9, FR-24/FR-50/AD-26: the TestPyPI rehearsal target's own
+    literal value."""
+    assert ShipTargetKind.PYPI_TEST.value == "pypi-test"
+    assert isinstance(ShipTargetKind.PYPI_TEST, str)
 
 
 # --- ShipTarget ----------------------------------------------------------------
@@ -188,8 +210,10 @@ def test_ship_target_constructs_with_both_fields():
 def test_ship_target_channel_name_accepts_none_for_non_channel_kinds():
     pypi_target = ShipTarget(kind=ShipTargetKind.PYPI, channel_name=None)
     conda_forge_target = ShipTarget(kind=ShipTargetKind.CONDA_FORGE, channel_name=None)
+    pypi_test_target = ShipTarget(kind=ShipTargetKind.PYPI_TEST, channel_name=None)
     assert pypi_target.channel_name is None
     assert conda_forge_target.channel_name is None
+    assert pypi_test_target.channel_name is None
 
 
 def test_ship_target_is_frozen():
