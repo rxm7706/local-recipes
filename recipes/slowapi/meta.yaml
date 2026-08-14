@@ -1,0 +1,52 @@
+{% set name = "slowapi" %}
+{% set version = "0.1.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/slowapi-{{ version }}.tar.gz
+  sha256: d320d5bc04d9f171a77fb16700faf3036d85b00f420f22924c8a225f95bd14f9
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >={{ python_min }},<4.0
+    - limits >=2.3
+    - starlette
+  run_constrained:
+    # Relaxed from ">=3.4.1,<4.0.0": slowapi's code never imports redis directly —
+    # rate-limit storage is delegated to `limits` (storage_from_string), which supports
+    # modern redis-py. The <4 cap mirrors upstream's 2020-era poetry caret (^3.4.1)
+    # and blocks co-installation with any modern redis client (redis-py is at 8.x).
+    - redis-py >=3.4.1
+
+test:
+  imports:
+    - slowapi
+  commands:
+    - pip check
+    - python -c "import slowapi, redis; from limits.storage import storage_from_string; storage_from_string('memory://'); print('redis-py', redis.__version__, 'co-installed OK')"
+  requires:
+    - pip
+    - python {{ python_min }}
+    - redis-py >=8
+
+about:
+  home: https://github.com/laurents/slowapi
+  summary: A rate limiting extension for Starlette and Fastapi
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - mediocretech
