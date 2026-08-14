@@ -1,12 +1,13 @@
-"""Unit tests for ``pyforge.marshal.seed.detect.inventory`` (Story 9.2) --
-covers the spec's I/O & Edge-Case Matrix: absent/present whole-file,
+"""Unit tests for ``pyforge.marshal.seed.detect.inventory`` (Stories 9.2 +
+9.4) -- covers the spec's I/O & Edge-Case Matrix: absent/present whole-file,
 referenced, every hybrid-managed-region outcome (region found/missing,
 multi-region partial, malformed markers, path-is-a-directory, non-UTF-8),
 the excluded-dir explicit-target carve-out, tree exclusion of
 ``.git``/``node_modules``/``.pixi``, gitignore negation and
-nested-gitignore non-consultation, and the ``0o555`` purity proof -- plus
-the "walked once" contract and the hand-rolled matcher's leading-``/``
-anchoring and ``**`` grammar.
+nested-gitignore non-consultation, the ``0o555`` purity proof, and (S-9.4)
+the legacy short-circuit, ``Inventory.legacy``, ``effective_never_write``,
+and ``legacy_findings`` -- plus the "walked once" contract and the
+hand-rolled matcher's leading-``/`` anchoring and ``**`` grammar.
 """
 
 from __future__ import annotations
@@ -17,11 +18,15 @@ import tempfile
 from pathlib import Path
 
 import pytest
+from pyforge.marshal.seed.detect.findings import FindingType, Severity
 from pyforge.marshal.seed.detect.inventory import (
     ArtifactState,
     Classification,
     Inventory,
+    LegacyRecord,
     classify,
+    effective_never_write,
+    legacy_findings,
 )
 from pyforge.marshal.seed.model.manifest import (
     AppliesTo,
@@ -41,11 +46,13 @@ from pyforge.marshal.seed.regions.markers import (
 _VERSION = ModelVersion.parse("1.0.0")
 
 
-def _manifest(*entries: ManifestEntry) -> Manifest:
-    return Manifest(model_version=_VERSION, never_write=(), entries=tuple(entries))
+def _manifest(*entries: ManifestEntry, never_write: tuple[str, ...] = ()) -> Manifest:
+    return Manifest(model_version=_VERSION, never_write=never_write, entries=tuple(entries))
 
 
-def _referenced(entry_id: str, path: str = "unused") -> ManifestEntry:
+def _referenced(
+    entry_id: str, path: str = "unused", *, legacy_of: str | None = None
+) -> ManifestEntry:
     return ManifestEntry(
         id=entry_id,
         artifact_class=ArtifactClass.REFERENCED,
@@ -53,21 +60,29 @@ def _referenced(entry_id: str, path: str = "unused") -> ManifestEntry:
         applies_to=AppliesTo.BOTH,
         rationale="test",
         pin=">=1.0",
+        legacy_of=legacy_of,
     )
 
 
-def _whole_file(entry_id: str, path: str, artifact_class: ArtifactClass) -> ManifestEntry:
+def _whole_file(
+    entry_id: str, path: str, artifact_class: ArtifactClass, *, legacy_of: str | None = None
+) -> ManifestEntry:
     return ManifestEntry(
         id=entry_id,
         artifact_class=artifact_class,
         path=path,
         applies_to=AppliesTo.BOTH,
         rationale="test",
+        legacy_of=legacy_of,
     )
 
 
 def _hybrid(
-    entry_id: str, path: str, *region_names: str, fmt: RegionFormat = RegionFormat.HTML
+    entry_id: str,
+    path: str,
+    *region_names: str,
+    fmt: RegionFormat = RegionFormat.HTML,
+    legacy_of: str | None = None,
 ) -> ManifestEntry:
     return ManifestEntry(
         id=entry_id,
@@ -77,6 +92,7 @@ def _hybrid(
         rationale="test",
         format=fmt,
         regions=tuple(Region(name=name, anchor=("# anchor",)) for name in region_names),
+        legacy_of=legacy_of,
     )
 
 
@@ -560,6 +576,157 @@ def test_classify_is_read_only_against_a_permission_locked_tree(tmp_path):
     }
 
 
+# --- legacy convention detection (S-9.4) ------------------------------------
+
+
+def test_present_legacy_whole_file_entry_is_present_legacy_with_one_legacy_record(tmp_path):
+    (tmp_path / "old.txt").write_text("hand-authored\n")
+    manifest = _manifest(
+        _whole_file("a", "old.txt", ArtifactClass.COPIED_MANAGED, legacy_of="succ")
+    )
+    inventory = classify(manifest, tmp_path)
+    assert _one(inventory) == Classification(entry_id="a", state=ArtifactState.PRESENT_LEGACY)
+    assert inventory.legacy == (LegacyRecord(entry_id="a", path="old.txt", legacy_of="succ"),)
+
+
+def test_absent_legacy_of_entry_stays_absent_with_no_legacy_record(tmp_path):
+    manifest = _manifest(
+        _whole_file("a", "missing.txt", ArtifactClass.COPIED_MANAGED, legacy_of="succ")
+    )
+    inventory = classify(manifest, tmp_path)
+    assert _one(inventory) == Classification(entry_id="a", state=ArtifactState.ABSENT)
+    assert inventory.legacy == ()
+
+
+def test_legacy_hybrid_entry_with_missing_region_is_present_legacy_not_divergent(tmp_path):
+    """A ``hybrid-managed-region`` entry with a missing declared region would
+    ordinarily be ``present-divergent`` (see the sibling
+    ``test_hybrid_entry_with_declared_region_missing_is_present_divergent``)
+    -- ``legacy_of`` short-circuits that structural check entirely, per
+    AD-59's "never written to, never inspected" rule."""
+    (tmp_path / "CLAUDE.md").write_text("no markers in this file at all\n")
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers", legacy_of="succ"))
+    inventory = classify(manifest, tmp_path)
+    assert _one(inventory) == Classification(entry_id="h", state=ArtifactState.PRESENT_LEGACY)
+    assert inventory.legacy == (LegacyRecord(entry_id="h", path="CLAUDE.md", legacy_of="succ"),)
+
+
+def test_referenced_entry_with_legacy_of_set_is_still_present_conformant(tmp_path):
+    """``referenced`` is never materialized -- ``legacy_of`` is never
+    consulted for this class, regardless of whether it is set."""
+    manifest = _manifest(_referenced("dep", "does-not-exist", legacy_of="succ"))
+    inventory = classify(manifest, tmp_path)
+    assert _one(inventory) == Classification(entry_id="dep", state=ArtifactState.PRESENT_CONFORMANT)
+    assert inventory.legacy == ()
+
+
+def test_canonical_specs_dir_legacy_worked_example(tmp_path):
+    """The AD-59 / epics AC canonical worked example, proven via a
+    self-contained fixture using the real manifest's own ids -- never by
+    editing the shipped ``templates/manifest.yaml`` (see the spec's Design
+    Notes)."""
+    (tmp_path / "docs" / "specs").mkdir(parents=True)
+    manifest = _manifest(
+        _whole_file(
+            "specs-dir-legacy",
+            "docs/specs/",
+            ArtifactClass.COPIED_MANAGED,
+            legacy_of="planning-artifacts-symlink",
+        )
+    )
+    inventory = classify(manifest, tmp_path)
+    assert _one(inventory) == Classification(
+        entry_id="specs-dir-legacy", state=ArtifactState.PRESENT_LEGACY
+    )
+    (finding,) = legacy_findings(inventory)
+    assert finding.severity == Severity.INFO
+    assert finding.type == FindingType.LEGACY_PRESENT
+    assert finding.path == "docs/specs/"
+    assert finding.message == (
+        "docs/specs/: superseded by 'planning-artifacts-symlink'; preserved, never modified"
+    )
+
+
+def test_manifest_with_no_legacy_entries_yields_empty_legacy_and_empty_findings(tmp_path):
+    (tmp_path / "seeded.txt").write_text("hello\n")
+    manifest = _manifest(_whole_file("a", "seeded.txt", ArtifactClass.COPIED_SEEDED))
+    inventory = classify(manifest, tmp_path)
+    assert inventory.legacy == ()
+    assert legacy_findings(inventory) == ()
+
+
+def test_effective_never_write_unions_manifest_patterns_with_legacy_paths(tmp_path):
+    (tmp_path / "docs" / "specs").mkdir(parents=True)
+    manifest = _manifest(
+        _whole_file(
+            "specs-dir-legacy", "docs/specs/", ArtifactClass.COPIED_MANAGED, legacy_of="succ"
+        ),
+        never_write=("a/*",),
+    )
+    inventory = classify(manifest, tmp_path)
+    assert effective_never_write(manifest, inventory) == frozenset({"a/*", "docs/specs/"})
+
+
+def test_effective_never_write_dedupes_when_legacy_path_already_in_never_write(tmp_path):
+    """The union is a real set union, not a naive concatenation -- a legacy
+    path already named in the manifest's own ``never_write`` must not appear
+    twice or otherwise change the result's membership."""
+    (tmp_path / "docs" / "specs").mkdir(parents=True)
+    manifest = _manifest(
+        _whole_file(
+            "specs-dir-legacy", "docs/specs/", ArtifactClass.COPIED_MANAGED, legacy_of="succ"
+        ),
+        never_write=("docs/specs/", "b/*"),
+    )
+    inventory = classify(manifest, tmp_path)
+    assert effective_never_write(manifest, inventory) == frozenset({"docs/specs/", "b/*"})
+
+
+def test_multiple_legacy_entries_yield_records_and_findings_in_manifest_order(tmp_path):
+    (tmp_path / "first.txt").write_text("x\n")
+    (tmp_path / "second.txt").write_text("y\n")
+    manifest = _manifest(
+        _whole_file("a", "first.txt", ArtifactClass.COPIED_MANAGED, legacy_of="succ-a"),
+        _whole_file("b", "second.txt", ArtifactClass.COPIED_MANAGED, legacy_of="succ-b"),
+    )
+    inventory = classify(manifest, tmp_path)
+    assert inventory.legacy == (
+        LegacyRecord(entry_id="a", path="first.txt", legacy_of="succ-a"),
+        LegacyRecord(entry_id="b", path="second.txt", legacy_of="succ-b"),
+    )
+    findings = legacy_findings(inventory)
+    assert len(findings) == 2
+    assert all(finding.severity == Severity.INFO for finding in findings)
+    assert all(finding.type == FindingType.LEGACY_PRESENT for finding in findings)
+    assert [finding.path for finding in findings] == ["first.txt", "second.txt"]
+
+
+def test_legacy_records_ordered_correctly_when_interleaved_with_non_legacy_entries(tmp_path):
+    """`Inventory.legacy` must reflect manifest entry order among LEGACY
+    entries specifically, even when non-legacy entries are interleaved
+    between them -- proving `classify()` filters by state rather than
+    coincidentally preserving order because every entry in the manifest
+    happened to be legacy (see the sibling all-legacy ordering test)."""
+    (tmp_path / "first.txt").write_text("x\n")
+    (tmp_path / "middle.txt").write_text("m\n")
+    (tmp_path / "second.txt").write_text("y\n")
+    manifest = _manifest(
+        _whole_file("a", "first.txt", ArtifactClass.COPIED_MANAGED, legacy_of="succ-a"),
+        _whole_file("mid", "middle.txt", ArtifactClass.COPIED_SEEDED),
+        _whole_file("b", "second.txt", ArtifactClass.COPIED_MANAGED, legacy_of="succ-b"),
+    )
+    inventory = classify(manifest, tmp_path)
+    assert inventory.legacy == (
+        LegacyRecord(entry_id="a", path="first.txt", legacy_of="succ-a"),
+        LegacyRecord(entry_id="b", path="second.txt", legacy_of="succ-b"),
+    )
+    assert inventory.classifications == (
+        Classification(entry_id="a", state=ArtifactState.PRESENT_LEGACY),
+        Classification(entry_id="mid", state=ArtifactState.PRESENT_CONFORMANT),
+        Classification(entry_id="b", state=ArtifactState.PRESENT_LEGACY),
+    )
+
+
 # --- frozen dataclass conventions ------------------------------------------
 
 
@@ -568,6 +735,13 @@ def test_classification_is_frozen_and_hashable():
     with pytest.raises(dataclasses.FrozenInstanceError):
         classification.state = ArtifactState.PRESENT_CONFORMANT  # type: ignore[misc]
     assert isinstance(hash(classification), int)
+
+
+def test_legacy_record_is_frozen_and_hashable():
+    record = LegacyRecord(entry_id="a", path="old.txt", legacy_of="succ")
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        record.path = "new.txt"  # type: ignore[misc]
+    assert isinstance(hash(record), int)
 
 
 def test_inventory_is_frozen(tmp_path):

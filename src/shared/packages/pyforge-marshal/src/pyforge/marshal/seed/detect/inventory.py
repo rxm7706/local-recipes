@@ -1,5 +1,5 @@
-"""Repo inventory walker + structural artifact classification (Story 9.2,
-architecture AD-53/AD-54/AD-55/AD-59/AD-61, PRD FR-80, P-03/P-07).
+"""Repo inventory walker + structural artifact classification (Stories 9.2
++ 9.4, architecture AD-53/AD-54/AD-55/AD-59/AD-61, PRD FR-80/FR-81, P-03/P-07).
 
 Epic 9's detect stage already has a manifest loader (S-7.4), a whole-file
 region parser (S-8.2), and a findings vocabulary (S-9.1) -- but nothing yet
@@ -13,22 +13,30 @@ consumer re-walking the tree itself), then classifies every manifest entry
 against that one walk's result plus a direct filesystem check on the
 entry's own declared path.
 
-``ArtifactState`` declares all four epics-AC members now (``absent``,
-``present-conformant``, ``present-divergent``, ``present-legacy``) even
-though this story's own classification logic never emits
-``present-legacy`` -- S-9.4 extends this same classifier with the
-``legacy_of`` manifest field and is the first story with a real
-``PRESENT_LEGACY`` call site (mirrors S-9.1's own "type exists before every
-member has a real call site" precedent for ``FindingType``). Per-class
-rules, all purely STRUCTURAL (presence/absence and, for
+``ArtifactState`` declares all four epics-AC members (``absent``,
+``present-conformant``, ``present-divergent``, ``present-legacy``); S-9.2
+shipped the type with no ``PRESENT_LEGACY`` call site (mirroring S-9.1's own
+"type exists before every member has a real call site" precedent for
+``FindingType``), and S-9.4 -- this module's other author -- is the story
+that adds it: a present entry whose manifest ``legacy_of`` names a successor
+id classifies ``present-legacy`` UNCONDITIONALLY, ahead of every
+class-specific structural rule below (see the legacy paragraph after them,
+and AD-59: a recognized legacy artifact is "never written to," so Genesis
+stops caring about its internal structure the moment ``legacy_of`` is set).
+Per-class rules, all purely STRUCTURAL (presence/absence and, for
 ``hybrid-managed-region``, whether S-8.2's ``parse_regions`` finds every
 declared region -- never a content-hash comparison, which is S-9.3's own
 layer, P-07):
 
 - ``referenced``: always ``present-conformant`` -- ``model/artifact.py``'s
   own ``CLASS_BEHAVIOR`` names this class "not materialized," so there is
-  nothing in the repo tree to inspect.
-- Any other class, path absent: ``absent``.
+  nothing in the repo tree to inspect. A ``referenced`` entry's own
+  ``legacy_of`` (if any) is never consulted -- the legacy short-circuit runs
+  only after a real filesystem presence check, and this class returns before
+  reaching one.
+- Any other class, path absent: ``absent`` -- including a ``legacy_of``-
+  bearing entry: legacy classification requires presence, per the module's
+  own I/O Matrix (S-9.4).
 - ``hybrid-managed-region``, path present: read as UTF-8 and run
   ``parse_regions``. ``present-conformant`` iff every declared region name
   is among the returned spans; ``present-divergent`` for a missing region,
@@ -38,10 +46,29 @@ layer, P-07):
   the parser -- all caught here, never propagated, because each is "present
   but not what the manifest expects" (the PRD's own J2 worked example:
   ``CLAUDE.md`` reported ``present-divergent``, resolved by "insert a
-  managed region at an anchor").
+  managed region at an anchor"). This rule never runs at all for a
+  ``legacy_of``-bearing entry -- see below.
 - Every other present class (``copied-managed``, ``copied-seeded``,
   ``generated-derived``, and V1's ``unclassified-deferred`` escape hatch,
   which gets no special-casing here either): ``present-conformant``.
+
+**The legacy short-circuit (S-9.4).** A present entry (any class except
+``referenced``, which never reaches this point) with ``legacy_of is not
+None`` classifies ``present-legacy`` regardless of what its class-specific
+structural rule above would otherwise say -- including a
+``hybrid-managed-region`` entry whose declared regions are missing, which
+would otherwise be ``present-divergent``. This is deliberate, not an
+oversight the hybrid rule should also apply: AD-59 frames ``present-legacy``
+as "never written to," so once an entry is recognized as legacy, Genesis
+never inspects its internal structure again -- the check runs BEFORE the
+``hybrid-managed-region`` branch precisely so that branch is never reached
+for a legacy entry. ``classify()`` collects every ``present-legacy``
+classification into ``Inventory.legacy`` in the same single walk (no second
+pass); ``effective_never_write()`` and ``legacy_findings()`` are this
+module's two small legacy consumers, turning that collection into,
+respectively, the write-guard set a later plan builder (S-9.6) must honor
+and the one INFO ``Finding`` per legacy artifact a ``check`` renderer will
+eventually surface.
 
 An entry's own declared ``path`` is always checked DIRECTLY against the
 live filesystem, regardless of the walk's own exclusion rules below (the
@@ -79,19 +106,31 @@ already forbids the one dependency-free alternative (shelling out to
 ``detect``). ``**`` support specifically exists because this repo's own
 root ``.gitignore`` uses patterns shaped like ``.idea/**/workspace.xml``.
 
-Never in this module (see the story's own Never boundary for the full
-list): no content-hash comparison (S-9.3); no ``legacy_of``/
-``present-legacy``-producing logic (S-9.4); no ``.marshal/seed-state.yml``
-read of any kind (this story depends on S-7.4/S-8.2/S-9.1 only -- no
-state-store story); no ``Finding`` construction (a later story's job); no
-nested-``.gitignore`` consultation; no ``pathspec``, ``git ls-files``, or
-any subprocess/adapter import -- ``detect`` sits below ``adapters/`` in the
-module-dependency chain (architecture § Module dependency rules: ``detect``
-reaches only ``model``/``state``/``regions``/``engine``/``derive``), so
-this module is stdlib-only, matching every sibling ``detect``/``regions``/
+Never in this module (see each story's own Never boundary for the full
+list): no content-hash comparison (S-9.3, a different layer -- P-07); no
+``.marshal/seed-state.yml`` read of any kind (no state-store story exists
+yet); no automated Tier-1 -> Tier-2 migration logic of any kind (AD-59,
+explicitly out of V1 -- S-9.4's own Never boundary; ``LegacyRecord`` is a
+pure in-memory precursor, never a migration actuator); no ``Action``/plan-
+exclusion logic (S-9.6's own job, a later story -- this module only produces
+the ``effective_never_write()``/``Inventory.legacy`` primitives that story
+consumes); no nested-``.gitignore`` consultation; no ``pathspec``,
+``git ls-files``, or any subprocess/adapter import -- ``detect`` sits below
+``adapters/`` in the module-dependency chain (architecture § Module
+dependency rules: ``detect`` reaches only ``model``/``state``/``regions``/
+``engine``/``derive``), so this module is stdlib-only aside from its own
+sibling ``.findings`` import (S-9.4 -- the identical precedent
+``hashes.py`` already set for a ``detect``-internal import, not a new
+external dependency), matching every sibling ``detect``/``regions``/
 ``model`` module in this package; and no recursive content comparison for a
 directory-shaped whole-file artifact -- a present directory is simply
 present.
+
+S-9.4 adds this module's only ``Finding`` construction: ``legacy_findings()``
+builds one INFO ``legacy-present`` ``Finding`` per ``LegacyRecord``, via
+``Finding.new`` (``hashes.py``'s own construction convention) -- never
+``HARD``/``DRIFT``, and no other classification outcome in this module ever
+constructs a ``Finding``.
 
 ``classify()`` performs reads only: no writes, no subprocess, no network.
 """
@@ -108,13 +147,15 @@ from pathlib import Path
 from ..model.manifest import ArtifactClass, Manifest, ManifestEntry
 from ..regions.markers import MarkerError
 from ..regions.parse import RegionParseError, parse_regions
+from .findings import Finding, FindingType, Severity
 
 
 class ArtifactState(StrEnum):
     """The four-state classification vocabulary the epics AC names
     verbatim, kebab-case wire values matching ``ArtifactClass``/
-    ``FindingType``'s established convention. ``PRESENT_LEGACY`` has no
-    producing code path in this story -- see the module docstring."""
+    ``FindingType``'s established convention. ``PRESENT_LEGACY``'s first
+    producing code path is `_classify_entry`'s legacy short-circuit (S-9.4)
+    -- see the module docstring."""
 
     ABSENT = "absent"
     PRESENT_CONFORMANT = "present-conformant"
@@ -139,18 +180,43 @@ class Classification:
 
 
 @dataclass(frozen=True)
+class LegacyRecord:
+    """One entry classified `present-legacy` (S-9.4): its own id and path,
+    plus the successor id its manifest ``legacy_of`` names. Carries no
+    ``__post_init__`` validation, for the same reason `Classification` above
+    carries none -- this is `classify`'s own COMPUTED OUTPUT, built only from
+    an already-validated ``ManifestEntry``'s own ``id``/``path``/
+    ``legacy_of`` fields (`model/manifest.py`'s ``__post_init__`` already
+    guarantees each is a non-blank str, and ``legacy_of`` is non-``None`` by
+    construction -- see `classify`).
+
+    This is the pure in-memory precursor a future state store (no
+    `state/store.py` yet) will serialize into ``state.legacy[]`` -- mirroring
+    S-9.3's own ``recorded_sha``-is-a-caller-supplied-parameter precedent:
+    this module produces the fact, a later story persists it."""
+
+    entry_id: str
+    path: str
+    legacy_of: str
+
+
+@dataclass(frozen=True)
 class Inventory:
     """One `classify()` call's full result: the repo root it walked, the
     cached tree (every walked, non-excluded regular file's path,
-    POSIX-separated and relative to ``repo_root``), and every manifest
-    entry's classification. This is the "walked once, cached" structure the
-    epics AC requires -- a caller invokes `classify()` once and reuses this
-    for both plan building and finding emission, rather than re-walking the
-    tree per consumer."""
+    POSIX-separated and relative to ``repo_root``), every manifest entry's
+    classification, and every `LegacyRecord` for an entry classified
+    `present-legacy` (S-9.4, same field order as `classify`'s own
+    `Classification` list -- manifest entry order, since both are built from
+    one pass over ``manifest.entries``). This is the "walked once, cached"
+    structure the epics AC requires -- a caller invokes `classify()` once and
+    reuses this for both plan building and finding emission, rather than
+    re-walking the tree per consumer."""
 
     repo_root: Path
     tree: frozenset[str]
     classifications: tuple[Classification, ...]
+    legacy: tuple[LegacyRecord, ...]
 
 
 # Pruned by directory NAME, at any depth -- never descended into, regardless
@@ -445,11 +511,23 @@ def _classify_entry(entry: ManifestEntry, repo_root: Path, resolved_root: Path) 
     `_walk_tree`'s `Inventory.tree` (the explicit-target carve-out)."""
     if entry.artifact_class is ArtifactClass.REFERENCED:
         # Not materialized (`model/artifact.py`'s own `CLASS_BEHAVIOR`) --
-        # nothing in the repo tree to inspect.
+        # nothing in the repo tree to inspect. `entry.legacy_of` (if any) is
+        # never consulted for this class -- the legacy short-circuit below
+        # only runs once a real filesystem presence check has passed, and a
+        # referenced entry never reaches one.
         return ArtifactState.PRESENT_CONFORMANT
     target = _resolve_within_repo(repo_root, resolved_root, entry.path)
     if target is None or not target.exists():
         return ArtifactState.ABSENT
+    # S-9.4: a present entry naming a successor is `present-legacy`
+    # UNCONDITIONALLY -- ahead of the `hybrid-managed-region` structural
+    # check below, which a legacy entry must never reach (AD-59: "never
+    # written to" means Genesis stops inspecting a recognized legacy
+    # artifact's internal structure, so a hybrid-managed-region entry with a
+    # missing declared region does not fall through to present-divergent
+    # once legacy_of is set -- see the module docstring).
+    if entry.legacy_of is not None:
+        return ArtifactState.PRESENT_LEGACY
     if entry.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION:
         return _classify_hybrid(entry, target)
     # copied-managed / copied-seeded / generated-derived /
@@ -460,15 +538,65 @@ def _classify_entry(entry: ManifestEntry, repo_root: Path, resolved_root: Path) 
 
 
 def classify(manifest: Manifest, repo_root: Path) -> Inventory:
-    """This module's public entry point (Story 9.2): one walk of
-    ``repo_root`` (`_walk_tree`), then a per-entry structural
+    """This module's public entry point (Story 9.2, extended by S-9.4): one
+    walk of ``repo_root`` (`_walk_tree`), then a per-entry structural
     classification -- see the module docstring for the per-class rules.
-    Read-only throughout: no write, no subprocess, no network call
-    anywhere in this call graph."""
+    ``Inventory.legacy`` is built from that SAME pass, one `LegacyRecord`
+    per entry whose computed state is `present-legacy` (S-9.4's own "no
+    second pass, no extra filesystem access" requirement) -- never a
+    separate walk over ``manifest.entries``. Read-only throughout: no
+    write, no subprocess, no network call anywhere in this call graph."""
     tree = _walk_tree(repo_root)
     resolved_root = repo_root.resolve()
-    classifications = tuple(
-        Classification(entry_id=entry.id, state=_classify_entry(entry, repo_root, resolved_root))
-        for entry in manifest.entries
+    classifications: list[Classification] = []
+    legacy: list[LegacyRecord] = []
+    for entry in manifest.entries:
+        state = _classify_entry(entry, repo_root, resolved_root)
+        classifications.append(Classification(entry_id=entry.id, state=state))
+        if state is ArtifactState.PRESENT_LEGACY:
+            # `entry.legacy_of` is guaranteed non-None here -- it is the
+            # only way `_classify_entry` produces `PRESENT_LEGACY`.
+            assert entry.legacy_of is not None
+            legacy.append(
+                LegacyRecord(entry_id=entry.id, path=entry.path, legacy_of=entry.legacy_of)
+            )
+    return Inventory(
+        repo_root=repo_root,
+        tree=tree,
+        classifications=tuple(classifications),
+        legacy=tuple(legacy),
     )
-    return Inventory(repo_root=repo_root, tree=tree, classifications=classifications)
+
+
+def effective_never_write(manifest: Manifest, inventory: Inventory) -> frozenset[str]:
+    """The write-guard set a later plan builder (S-9.6) must honor: every
+    manifest-declared ``never_write`` pattern, UNION the ``path`` of every
+    `LegacyRecord` in ``inventory.legacy``. A legacy artifact is never
+    written to (AD-59) whether or not the manifest's own ``never_write`` list
+    happens to already name its path -- folding it in here means S-9.6 needs
+    only ONE set to consult, not two independent ones it could forget to
+    check both of."""
+    return frozenset(manifest.never_write) | {record.path for record in inventory.legacy}
+
+
+def legacy_findings(inventory: Inventory) -> tuple[Finding, ...]:
+    """One INFO ``legacy-present`` `Finding` per `LegacyRecord` in
+    ``inventory.legacy``, in that same order (manifest entry order -- see
+    `classify`) -- never ``HARD``/``DRIFT`` (AD-59: a recognized legacy
+    artifact is a preserved, intentional convention, not a conformance
+    problem). Each message names both the artifact's own path and its
+    successor id (``record.legacy_of``), so a human reading the finding
+    knows what superseded it without cross-referencing the manifest.
+    Constructed via `Finding.new` (never bare `Finding(...)`), matching
+    `hashes.py`'s own construction convention -- so `remedy` always resolves
+    from `REMEDIES[FindingType.LEGACY_PRESENT]` rather than being hand-typed
+    here."""
+    return tuple(
+        Finding.new(
+            Severity.INFO,
+            FindingType.LEGACY_PRESENT,
+            record.path,
+            f"{record.path}: superseded by '{record.legacy_of}'; preserved, never modified",
+        )
+        for record in inventory.legacy
+    )
