@@ -56,22 +56,37 @@ only. No CLI wiring lands with this story (spec Never boundary) -- the
 `ship` verb and its flags are Story 3.9's scope, built only after the
 individual target adapters (Stories 3.4-3.6) exist to dispatch to.
 
+Story 3.4 adds `ship_pypi()` (FR-16, FR-20, AD-9, AD-14): the first ship
+target that actually uploads. It checks `TWINE_USERNAME`/`TWINE_PASSWORD`
+presence in the caller's own `environ` FIRST, before calling `build()` at
+all (AD-14: "Credential presence is validated before any artifact is
+built"), then reuses `build()` unconditionally (FR-15, never duplicated)
+and, only when both a wheel and an sdist were produced, calls the new
+`engines.twine.upload()` adapter and wraps its outcome in a
+`ShipTargetResult` -- the same AD-9 shape `plan_ship()`'s own dry-run
+entries and `recipe.py::submit()` already use, never a second "real ship"
+result shape. See `ship_pypi`'s own docstring, and this module's Design
+Notes in its spec, for why it does its own `build()` call rather than
+accepting an already-built `PackageBuildResult`.
+
 Zero `cfe` reference anywhere in this file (spec Always boundary,
 `tests/meta/test_capability_tiers.py` guards it): `build()` never resolves
 a CFE root or interpreter, unlike every `recipe.py` verb, and Story 3.3's
-two new functions are pure and CFE-independent too.
+two new functions -- and Story 3.4's `ship_pypi()` -- are pure and
+CFE-independent too.
 """
 
 from __future__ import annotations
 
-from collections.abc import Sequence
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 
 from packaging.version import InvalidVersion, Version
 
-from .engines import pep517, pixi
+from .engines import pep517, pixi, twine
 from .errors import (
     InvalidShipTargetError, PackageProjectPathError, PackageVersionMismatchError,
+    ShipCredentialMissingError,
 )
 from .models import (
     PackageBuildResult, ShipState, ShipTarget, ShipTargetKind, ShipTargetResult,
@@ -292,3 +307,87 @@ def _describe_artifact(path: str | None, label: str) -> str:
     2026-08-13) -- see `plan_ship`'s own docstring for why a bare `!r}` of a
     possibly-`None` path is wrong here."""
     return repr(path) if path is not None else f"no {label} was built"
+
+
+_REQUIRED_SHIP_PYPI_CREDENTIALS = ("TWINE_USERNAME", "TWINE_PASSWORD")
+
+
+def ship_pypi(
+    project_path: str, *, environ: Mapping[str, str], target: str = "library",
+) -> ShipTargetResult:
+    """Build and upload `project_path`'s wheel+sdist to PyPI via `twine`
+    (Story 3.4, FR-16, FR-20, AD-9, AD-14).
+
+    Checks `TWINE_USERNAME`/`TWINE_PASSWORD` presence in `environ` FIRST, as
+    this function's very first action, before `build()` is ever called
+    (architecture AD-14: "Credential presence is validated before any
+    artifact is built") -- raises `ShipCredentialMissingError` naming
+    whichever of the two are absent or empty (stripped). Only presence is
+    checked: neither value is ever read into a variable used for anything
+    but this truthiness check, logged, or stored on the returned object
+    (NFR-2) -- the credentials reach `twine` only via the subprocess's own
+    inherited environment, inside `engines.twine.upload` (see that module's
+    own docstring).
+
+    When both credentials are present, calls `build(project_path,
+    target=target)` unconditionally (FR-15, reused rather than duplicated
+    -- this module's own docstring explains why `ship_pypi` owns this
+    sequence itself rather than accepting an already-built
+    `PackageBuildResult`). Only when the returned `PackageBuildResult`
+    carries a non-`None` `wheel_path` AND a non-`None` `sdist_path` does
+    this function go on to call `engines.twine.upload((wheel_path,
+    sdist_path))`; otherwise -- one or both engines failed to produce an
+    artifact -- it returns a `FAILED` result directly, without `twine.
+    upload` ever being called (spec I/O matrix). That "nothing built" case's
+    `message` is `build_result.pep517_stdout` -- the wrapped `build` engine
+    is the one responsible for the wheel/sdist this ship target needs, so
+    its own stdout is the wrapped tool's own field, verbatim (AD-1,
+    `models.ShipTargetResult.message`'s own docstring contract).
+
+    On a zero `upload()` returncode, returns `ShipTargetResult(target=
+    "pypi", state=ShipState.TERMINAL, reference=upload_result.url,
+    message=upload_result.stdout)`. On a nonzero `upload()` returncode,
+    returns `ShipTargetResult(state=ShipState.FAILED, reference=None,
+    message=upload_result.stdout)` -- AD-4: a tool that RAN but failed is
+    data, never raised (mirrors `recipe.py::submit()`'s own data-vs-raise
+    split).
+
+    `EngineAbsentError` (twine, or either build engine, not on `PATH`),
+    `ShipUploadTimeoutError` (the upload exceeds its timeout), and anything
+    else `build()` itself already raises (`PackageVersionMismatchError`,
+    `PackageProjectPathError`) all propagate un-caught out of this function
+    -- these are structural preconditions, not this call's own execution
+    outcome (spec Always boundary, same split `build()` already established
+    for its own two engines).
+    """
+    missing = [
+        name
+        for name in _REQUIRED_SHIP_PYPI_CREDENTIALS
+        if not environ.get(name, "").strip()
+    ]
+    if missing:
+        raise ShipCredentialMissingError(missing)
+
+    build_result = build(project_path, target=target)
+
+    if build_result.wheel_path is None or build_result.sdist_path is None:
+        return ShipTargetResult(
+            target="pypi",
+            state=ShipState.FAILED,
+            reference=None,
+            message=build_result.pep517_stdout,
+        )
+
+    upload_result = twine.upload((build_result.wheel_path, build_result.sdist_path))
+
+    if upload_result.returncode != 0:
+        return ShipTargetResult(
+            target="pypi", state=ShipState.FAILED, reference=None, message=upload_result.stdout,
+        )
+
+    return ShipTargetResult(
+        target="pypi",
+        state=ShipState.TERMINAL,
+        reference=upload_result.url,
+        message=upload_result.stdout,
+    )

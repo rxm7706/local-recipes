@@ -30,14 +30,17 @@ import pytest
 
 from pyforge.mason.engines.pep517 import Pep517BuildResult
 from pyforge.mason.engines.pixi import PixiBuildResult
+from pyforge.mason.engines.twine import TwineUploadResult
 from pyforge.mason.errors import (
     EngineAbsentError, InvalidShipTargetError, PackageProjectPathError,
-    PackageVersionMismatchError,
+    PackageVersionMismatchError, ShipCredentialMissingError,
 )
 from pyforge.mason.models import (
     PackageBuildResult, ShipState, ShipTarget, ShipTargetKind, ShipTargetResult,
 )
-from pyforge.mason.package import _versions_disagree, build, parse_ship_targets, plan_ship
+from pyforge.mason.package import (
+    _versions_disagree, build, parse_ship_targets, plan_ship, ship_pypi,
+)
 
 
 def test_package_module_imports_successfully():
@@ -461,3 +464,193 @@ def test_plan_ship_never_prints_the_literal_string_none_for_a_failed_artifact():
     for result in results:
         assert "None" not in result.message
         assert "no" in result.message.lower()
+
+
+# --- Story 3.4: ship_pypi --------------------------------------------------
+
+_SHIP_ENVIRON = {"TWINE_USERNAME": "__token__", "TWINE_PASSWORD": "pypi-secret"}
+
+_SHIP_BUILD_RESULT = PackageBuildResult(
+    target="library",
+    project_path="/proj",
+    wheel_path="/proj/dist/pkg-0.1.0-py3-none-any.whl",
+    sdist_path="/proj/dist/pkg-0.1.0.tar.gz",
+    conda_path=None,
+    wheel_version="0.1.0",
+    conda_version=None,
+    pep517_returncode=0,
+    pixi_returncode=1,
+    pep517_stdout="Successfully built pkg\n",
+    pixi_stdout="",
+)
+
+
+def test_ship_pypi_raises_before_build_or_upload_when_both_credentials_missing():
+    with patch("pyforge.mason.package.build") as mock_build, \
+         patch("pyforge.mason.package.twine.upload") as mock_upload:
+        with pytest.raises(ShipCredentialMissingError) as excinfo:
+            ship_pypi("/proj", environ={})
+
+    assert excinfo.value.missing == ("TWINE_USERNAME", "TWINE_PASSWORD")
+    mock_build.assert_not_called()
+    mock_upload.assert_not_called()
+
+
+def test_ship_pypi_raises_naming_only_the_missing_credential():
+    with patch("pyforge.mason.package.build") as mock_build, \
+         patch("pyforge.mason.package.twine.upload") as mock_upload:
+        with pytest.raises(ShipCredentialMissingError) as excinfo:
+            ship_pypi("/proj", environ={"TWINE_USERNAME": "me"})
+
+    assert excinfo.value.missing == ("TWINE_PASSWORD",)
+    mock_build.assert_not_called()
+    mock_upload.assert_not_called()
+
+
+def test_ship_pypi_treats_a_whitespace_only_credential_as_missing():
+    with patch("pyforge.mason.package.build") as mock_build, \
+         patch("pyforge.mason.package.twine.upload") as mock_upload:
+        with pytest.raises(ShipCredentialMissingError) as excinfo:
+            ship_pypi("/proj", environ={"TWINE_USERNAME": "   ", "TWINE_PASSWORD": "secret"})
+
+    assert excinfo.value.missing == ("TWINE_USERNAME",)
+    mock_build.assert_not_called()
+    mock_upload.assert_not_called()
+
+
+def test_ship_pypi_happy_path_uploads_and_returns_terminal_result():
+    upload_result = TwineUploadResult(
+        returncode=0, url="https://pypi.org/project/pkg/0.1.0/", stdout="View at:\n...\n",
+    )
+    with patch(
+        "pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT,
+    ) as mock_build, patch(
+        "pyforge.mason.package.twine.upload", return_value=upload_result,
+    ) as mock_upload:
+        result = ship_pypi("/proj", environ=_SHIP_ENVIRON)
+
+    mock_build.assert_called_once_with("/proj", target="library")
+    mock_upload.assert_called_once_with(
+        (_SHIP_BUILD_RESULT.wheel_path, _SHIP_BUILD_RESULT.sdist_path),
+    )
+    assert result == ShipTargetResult(
+        target="pypi",
+        state=ShipState.TERMINAL,
+        reference="https://pypi.org/project/pkg/0.1.0/",
+        message="View at:\n...\n",
+    )
+
+
+def test_ship_pypi_returns_failed_when_build_produces_no_wheel():
+    failed_build = PackageBuildResult(
+        target="library",
+        project_path="/proj",
+        wheel_path=None,
+        sdist_path=None,
+        conda_path=None,
+        wheel_version=None,
+        conda_version=None,
+        pep517_returncode=1,
+        pixi_returncode=0,
+        pep517_stdout="error: build backend failed\n",
+        pixi_stdout="",
+    )
+    with patch("pyforge.mason.package.build", return_value=failed_build), \
+         patch("pyforge.mason.package.twine.upload") as mock_upload:
+        result = ship_pypi("/proj", environ=_SHIP_ENVIRON)
+
+    mock_upload.assert_not_called()
+    assert result == ShipTargetResult(
+        target="pypi",
+        state=ShipState.FAILED,
+        reference=None,
+        message="error: build backend failed\n",
+    )
+
+
+def test_ship_pypi_returns_failed_when_build_produces_a_wheel_but_no_sdist():
+    """spec Always boundary: BOTH `wheel_path` and `sdist_path` must be
+    non-`None` for `twine.upload` to ever be called."""
+    partial_build = PackageBuildResult(
+        target="library",
+        project_path="/proj",
+        wheel_path="/proj/dist/pkg-0.1.0-py3-none-any.whl",
+        sdist_path=None,
+        conda_path=None,
+        wheel_version="0.1.0",
+        conda_version=None,
+        pep517_returncode=0,
+        pixi_returncode=0,
+        pep517_stdout="only the wheel was discovered\n",
+        pixi_stdout="",
+    )
+    with patch("pyforge.mason.package.build", return_value=partial_build), \
+         patch("pyforge.mason.package.twine.upload") as mock_upload:
+        result = ship_pypi("/proj", environ=_SHIP_ENVIRON)
+
+    mock_upload.assert_not_called()
+    assert result.state == ShipState.FAILED
+    assert result.reference is None
+
+
+def test_ship_pypi_returns_failed_when_upload_returns_nonzero():
+    upload_result = TwineUploadResult(returncode=1, url=None, stdout="ERROR HTTPError: 400\n")
+    with patch("pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT), \
+         patch("pyforge.mason.package.twine.upload", return_value=upload_result):
+        result = ship_pypi("/proj", environ=_SHIP_ENVIRON)
+
+    assert result == ShipTargetResult(
+        target="pypi", state=ShipState.FAILED, reference=None, message="ERROR HTTPError: 400\n",
+    )
+
+
+def test_ship_pypi_propagates_engine_absent_from_build():
+    with patch(
+        "pyforge.mason.package.build", side_effect=EngineAbsentError("build", "python-build"),
+    ), patch("pyforge.mason.package.twine.upload") as mock_upload:
+        with pytest.raises(EngineAbsentError):
+            ship_pypi("/proj", environ=_SHIP_ENVIRON)
+
+    mock_upload.assert_not_called()
+
+
+def test_ship_pypi_propagates_package_version_mismatch_from_build():
+    with patch(
+        "pyforge.mason.package.build",
+        side_effect=PackageVersionMismatchError(
+            wheel_version="0.1.0",
+            conda_version="0.2.0",
+            wheel_path="/proj/dist/pkg-0.1.0-py3-none-any.whl",
+            conda_path="/proj/dist-conda/pkg-0.2.0-abc123_0.conda",
+        ),
+    ), patch("pyforge.mason.package.twine.upload") as mock_upload:
+        with pytest.raises(PackageVersionMismatchError):
+            ship_pypi("/proj", environ=_SHIP_ENVIRON)
+
+    mock_upload.assert_not_called()
+
+
+def test_ship_pypi_default_target_is_library():
+    upload_result = TwineUploadResult(returncode=0, url=None, stdout="")
+    with patch(
+        "pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT,
+    ) as mock_build, patch("pyforge.mason.package.twine.upload", return_value=upload_result):
+        ship_pypi("/proj", environ=_SHIP_ENVIRON)
+
+    mock_build.assert_called_once_with("/proj", target="library")
+
+
+def test_ship_pypi_forwards_an_explicit_target():
+    """A value distinct from the default proves `target` is actually
+    threaded through to `build()` rather than a hardcoded literal --
+    `ship_pypi` itself applies no validation of its own to `target` (that is
+    `cli.py`'s `choices=("library",)` job, not wired by this story), so an
+    arbitrary string is a valid probe of the plumbing alone (review pass,
+    2026-08-14)."""
+    upload_result = TwineUploadResult(returncode=0, url=None, stdout="")
+    with patch(
+        "pyforge.mason.package.build", return_value=_SHIP_BUILD_RESULT,
+    ) as mock_build, patch("pyforge.mason.package.twine.upload", return_value=upload_result):
+        ship_pypi("/proj", environ=_SHIP_ENVIRON, target="not-the-default")
+
+    mock_build.assert_called_once_with("/proj", target="not-the-default")

@@ -35,7 +35,8 @@ import pytest
 from pyforge.mason.errors import (
     CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError,
     EngineAbsentError, InvalidShipTargetError, MasonError, PackageBuildTimeoutError,
-    PackageProjectPathError, PackageVersionMismatchError,
+    PackageProjectPathError, PackageVersionMismatchError, ShipCredentialMissingError,
+    ShipUploadTimeoutError,
 )
 
 
@@ -664,5 +665,134 @@ def test_invalid_ship_target_error_survives_pickle_round_trip():
     clone = pickle.loads(pickle.dumps(original))
     assert isinstance(clone, InvalidShipTargetError)
     assert clone.value == original.value
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+# --- Story 3.4: ShipCredentialMissingError ------------------------------------
+
+def test_ship_credential_missing_error_identifier():
+    exc = ShipCredentialMissingError(missing=("TWINE_USERNAME", "TWINE_PASSWORD"))
+    assert exc.identifier == "ship:credential-missing"
+
+
+def test_ship_credential_missing_error_stores_attributes():
+    exc = ShipCredentialMissingError(missing=("TWINE_PASSWORD",))
+    assert exc.missing == ("TWINE_PASSWORD",)
+
+
+def test_ship_credential_missing_error_message_names_every_missing_entry():
+    exc = ShipCredentialMissingError(missing=("TWINE_USERNAME", "TWINE_PASSWORD"))
+    message = str(exc)
+    assert "TWINE_USERNAME" in message
+    assert "TWINE_PASSWORD" in message
+
+
+def test_ship_credential_missing_error_single_missing_entry():
+    exc = ShipCredentialMissingError(missing=("TWINE_PASSWORD",))
+    assert "TWINE_PASSWORD" in str(exc)
+    assert "TWINE_USERNAME" not in str(exc)
+
+
+def test_ship_credential_missing_error_is_a_mason_error():
+    assert issubclass(ShipCredentialMissingError, MasonError)
+    with pytest.raises(MasonError):
+        raise ShipCredentialMissingError(missing=("TWINE_USERNAME",))
+
+
+def test_ship_credential_missing_error_str_format_is_identifier_colon_space_message():
+    exc = ShipCredentialMissingError(missing=("TWINE_USERNAME",))
+    assert str(exc) == f"{exc.identifier}: {exc.message}"
+
+
+def test_ship_credential_missing_error_coerces_missing_to_a_tuple():
+    exc = ShipCredentialMissingError(missing=["TWINE_USERNAME", "TWINE_PASSWORD"])
+    assert exc.missing == ("TWINE_USERNAME", "TWINE_PASSWORD")
+    assert isinstance(exc.missing, tuple)
+
+
+def test_ship_credential_missing_error_rejects_empty_missing():
+    with pytest.raises(ValueError):
+        ShipCredentialMissingError(missing=())
+
+
+def test_ship_credential_missing_error_rejects_a_non_str_missing_item():
+    with pytest.raises(ValueError):
+        ShipCredentialMissingError(missing=(None,))  # type: ignore[list-item]
+
+
+def test_ship_credential_missing_error_rejects_a_whitespace_only_missing_item():
+    with pytest.raises(ValueError):
+        ShipCredentialMissingError(missing=("   ",))
+
+
+def test_ship_credential_missing_error_survives_deepcopy():
+    """Mirrors `InvalidShipTargetError`'s own deepcopy guard: without the
+    `__reduce__` override, `cls(*self.args)` would reconstruct with
+    `missing == "ship:credential-missing"` (the identifier), corrupting the
+    clone's `.args`/`repr()` instead of failing loudly."""
+    original = ShipCredentialMissingError(missing=("TWINE_USERNAME", "TWINE_PASSWORD"))
+    clone = copy.deepcopy(original)
+    assert isinstance(clone, ShipCredentialMissingError)
+    assert clone.missing == original.missing
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+def test_ship_credential_missing_error_survives_pickle_round_trip():
+    original = ShipCredentialMissingError(missing=("TWINE_PASSWORD",))
+    clone = pickle.loads(pickle.dumps(original))
+    assert isinstance(clone, ShipCredentialMissingError)
+    assert clone.missing == original.missing
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+# --- Story 3.4: ShipUploadTimeoutError -----------------------------------------
+
+def test_ship_upload_timeout_error_identifier():
+    exc = ShipUploadTimeoutError(timeout=300.0)
+    assert exc.identifier == "ship:upload-timeout"
+
+
+def test_ship_upload_timeout_error_stores_attributes():
+    exc = ShipUploadTimeoutError(timeout=300.0)
+    assert exc.timeout == 300.0
+
+
+def test_ship_upload_timeout_error_message_names_the_timeout_value():
+    exc = ShipUploadTimeoutError(timeout=300.0)
+    assert "300.0" in str(exc)
+
+
+def test_ship_upload_timeout_error_is_a_mason_error():
+    assert issubclass(ShipUploadTimeoutError, MasonError)
+    with pytest.raises(MasonError):
+        raise ShipUploadTimeoutError(timeout=300.0)
+
+
+def test_ship_upload_timeout_error_str_format_is_identifier_colon_space_message():
+    exc = ShipUploadTimeoutError(timeout=45.5)
+    assert str(exc) == f"{exc.identifier}: {exc.message}"
+
+
+def test_ship_upload_timeout_error_survives_deepcopy():
+    """Mirrors `PackageBuildTimeoutError`'s own deepcopy guard: without the
+    `__reduce__` override, `cls(*self.args)` would reconstruct with
+    `timeout == "ship:upload-timeout"` (the identifier), corrupting the
+    clone instead of failing loudly."""
+    original = ShipUploadTimeoutError(timeout=300.0)
+    clone = copy.deepcopy(original)
+    assert isinstance(clone, ShipUploadTimeoutError)
+    assert clone.timeout == original.timeout
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+def test_ship_upload_timeout_error_survives_pickle_round_trip():
+    original = ShipUploadTimeoutError(timeout=300.0)
+    clone = pickle.loads(pickle.dumps(original))
+    assert isinstance(clone, ShipUploadTimeoutError)
+    assert clone.timeout == original.timeout
     assert clone.identifier == original.identifier
     assert clone.message == original.message
