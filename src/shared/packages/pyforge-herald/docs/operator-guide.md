@@ -23,14 +23,28 @@ of a PyForge Guild station's work over time:
    closed) and an archive.
 
 **Architecture, in one sentence:** every record in Moments 2-4 is created
-by an operator running an explicit `herald` command; there is no webhook,
-database, or scheduled job anywhere in this package. See
-`docs/dreams/herald-moments-2-4-live-backend.md` for the fuller,
-live-backend version of this system that hasn't been built yet, and why.
+either by an operator running an explicit `herald` command, or by the
+HMAC-verified webhook handlers Story 13.4 built, mounted behind a real
+`daphne` ASGI host as of Story 13.6 (see
+[`cli-runbooks.md`](cli-runbooks.md#the-webhook-endpoint-ci-calls-story-134))
+— but the ONLY place that webhook host runs today is inside
+`.github/workflows/herald-live-demo.yml`'s bounded, CI-contained
+demonstration jobs, each writing to its own scratch database that is
+discarded when the job ends, never a persistent host an operator's own
+checkout can reach. A local SQLite database (`.herald/herald.db`, Story
+13.3) backs *your* real storage, and `herald scheduler run` (Story 13.5)
+keeps evidence validation and the progress snapshot current — an operator
+can point an optional local `cron` entry at it
+(see [`cli-runbooks.md`](cli-runbooks.md#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot)).
+See `docs/dreams/herald-moments-2-4-live-backend.md` for the fuller,
+live-backend version of this system that hasn't been fully built yet, and
+why.
 
 Two surfaces exist side by side:
 
-- **The CLI** (`herald`) — the only way to *write* a record.
+- **The CLI** (`herald`) — the only way an operator's own checkout gets a
+  new record written into it. (The webhook can also write a record, but
+  only inside the CI demo's own throwaway database — see above.)
 - **The web dashboard** (`web/`, run with `npm run dev` from
   `src/shared/packages/pyforge-herald/web/`) — a read-only, static view
   over pre-generated JSON snapshots of what the CLI has written. See
@@ -158,15 +172,28 @@ Full walkthrough: [`cli-runbooks.md`](cli-runbooks.md#how-to-author-a-notice).
 
 ## FAQ
 
-**Q: Why doesn't a PR merge automatically create a progress record or a
-success claim?**
+**Q: Why doesn't a PR merge against MY OWN checkout automatically show up
+in `herald progress`/`herald success list`?**
 
-Because there is no webhook (or any other automation trigger) wired up
-yet — this is the scaled-down first pass of Epics 8-10, deliberately built
-without inventing server infrastructure this repo has never had. Run
+Because the webhook that does this (Story 13.4, mounted for real behind
+`daphne` as of Story 13.6 — see
+[`cli-runbooks.md`](cli-runbooks.md#the-webhook-endpoint-ci-calls-story-134))
+only runs inside `.github/workflows/herald-live-demo.yml`'s bounded,
+CI-contained demonstration jobs, each writing into its OWN scratch
+database that is discarded the moment the job ends — never a persistent
+host, and never your checkout's real `.herald/herald.db`. Run
 `herald progress <station> --update` (or `herald success create`) by hand
-instead. The live-backend version that would do this automatically is
-captured, unbuilt, in `docs/dreams/herald-moments-2-4-live-backend.md`.
+for a record you actually want to keep. Two things worth knowing about
+the webhook's own behavior regardless: an `on-ship` delivery *replaces*
+the whole day's record for that station, so a same-day CLI entry and a
+same-day webhook delivery would overwrite each other rather than merge;
+and holding the webhook secret grants progress-write access that the CLI
+grants only to a verified operator. The fuller live-backend version this
+is working toward — a persistent host every checkout shares — is captured
+in `docs/dreams/herald-moments-2-4-live-backend.md`; making Steward's
+`deploy perimeter` able to target an arbitrary ASGI callable (it only
+renders a hardcoded Django placeholder today) is tracked as deferred
+work.
 
 **Q: I ran `herald success publish`, but the web dashboard still shows the
 old data (or nothing). Is the write broken?**
@@ -195,19 +222,24 @@ drop it and re-`create` the claim) and try again.
 **Q: How do I know if a published claim's evidence is still good weeks
 later?**
 
-There's no weekly job doing this automatically (the original spec's
-async re-validation cron is part of the deferred live-backend Dream).
 Run `herald success validate <claim-id>` or `herald success validate
---all` by hand — see
+--all` by hand, or install `herald scheduler run` (Story 13.5) as a
+weekly `crontab` entry so it happens without remembering — see [How to
+run the scheduled job](cli-runbooks.md#how-to-run-the-scheduled-job-evidence-revalidation-and-progress-snapshot)
+in `cli-runbooks.md` and
 [`automation-troubleshooting.md`](automation-troubleshooting.md).
 
 **Q: Where's the REST API / database?**
 
-There isn't one. `.herald/progress.json`, `.herald/claims.json`, and
-`.herald/notices-index.json` in the repo root (or wherever `herald` was
-run from) are the entire backend — plain JSON files written and read by
-the CLI. The web dashboard reads separately-exported static copies of
-these, not the files themselves.
+There's no REST API. There is a local database (Story 13.3): `.herald/herald.db`
+in the repo root (or wherever `herald` was run from) is where
+Progress/Success/Operations' storage lives — a single SQLite file, no
+server, no network. Operations Notices additionally write a git-tracked
+markdown mirror under `notices/`. The web dashboard reads
+separately-exported static JSON copies, not the database itself. It runs
+in WAL mode, so a backup or restore of `.herald/herald.db` must include
+any `.herald/herald.db-wal`/`.herald/herald.db-shm` sidecar files present
+alongside it, taken while no `herald` process is running.
 
 **Q: Which stations does `herald progress` know about?**
 

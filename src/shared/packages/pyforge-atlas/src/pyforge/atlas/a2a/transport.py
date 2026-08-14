@@ -32,6 +32,7 @@ from google.protobuf import json_format, struct_pb2
 from pydantic_core import PydanticSerializationError
 
 from pyforge.atlas.a2a.schema import A2ADecodeError, AtlasPayload, _BasePayload, decode_payload
+from pyforge.core.errors import PyforgeError
 
 # The single DataPart field carrying the canonical payload JSON, and the metadata keys
 # that mirror the discriminator + stamp for envelope-level inspection (never the source of
@@ -40,8 +41,11 @@ _PAYLOAD_KEY = "atlas_payload"
 _KIND_KEY = "atlas_kind"
 
 
-class A2ATransportError(RuntimeError):
-    """Raised when a payload cannot be serialized to / located within an A2A message."""
+class A2ATransportError(PyforgeError, RuntimeError):
+    """Raised when a payload cannot be serialized to / located within an A2A message.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``RuntimeError`` stays in the MRO."""
 
 
 def _deterministic_message_id(payload_json: str) -> str:

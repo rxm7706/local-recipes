@@ -68,40 +68,21 @@ import ast
 from pathlib import Path
 
 import pytest
+from conftest import (
+    PACKAGES_ROOT,
+    parse_module,
+    sibling_station_dirs,
+    station_source_files,
+)
 
-# tests/meta/test_atomic_write_sole_ownership.py -> parents[3] is
-# src/shared/packages/ (parents[0]=meta, [1]=tests, [2]=pyforge-core,
-# [3]=packages) -- mirrors test_leaf_constraint.py's identical arithmetic.
-PACKAGES_ROOT = Path(__file__).resolve().parents[3]
+_sibling_station_dirs = sibling_station_dirs
+_station_source_files = station_source_files
+_parse = parse_module
 
 _WRITE_OPEN_TEMPFILE_ATTRS = frozenset({"mkstemp", "NamedTemporaryFile"})
 _WRITE_OPEN_OS_ATTRS = frozenset({"open", "fdopen"})
 _WRITE_OPEN_METHOD_ATTRS = frozenset({"write_text", "write_bytes"})
 _TEMP_PATH_NAME_HINTS = ("tmp", "temp")
-
-
-def _sibling_station_dirs() -> list[Path]:
-    """Every ``pyforge-*`` package directory under ``PACKAGES_ROOT`` except
-    ``pyforge-core`` -- derived from the filesystem, never a hardcoded
-    roster (a ninth station needs no edit here)."""
-    return sorted(
-        p
-        for p in PACKAGES_ROOT.iterdir()
-        if p.is_dir() and p.name.startswith("pyforge-") and p.name != "pyforge-core"
-    )
-
-
-def _station_source_files() -> list[Path]:
-    files: list[Path] = []
-    for station_dir in _sibling_station_dirs():
-        src_pyforge = station_dir / "src" / "pyforge"
-        if src_pyforge.is_dir():
-            files.extend(sorted(src_pyforge.rglob("*.py")))
-    return files
-
-
-def _parse(path: Path) -> ast.Module:
-    return ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
 
 
 def _module_aliases(tree: ast.AST, module_name: str) -> frozenset[str]:

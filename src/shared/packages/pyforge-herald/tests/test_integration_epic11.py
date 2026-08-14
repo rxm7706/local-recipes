@@ -18,8 +18,6 @@ from __future__ import annotations
 
 import importlib.util
 import json
-import shutil
-import subprocess
 import sys
 from pathlib import Path
 
@@ -27,9 +25,6 @@ import pytest
 from pyforge.herald import auth, cli, evidence
 
 _PACKAGE_ROOT = Path(__file__).resolve().parents[1]
-_WEB_ROOT = _PACKAGE_ROOT / "web"
-_SYNC_PROGRESS_SCRIPT = _WEB_ROOT / "scripts" / "sync-progress.mjs"
-_SYNC_PROGRESS_DEST = _WEB_ROOT / "public" / "progress.json"
 
 
 def _load_script(name: str, relative_path: str):
@@ -50,6 +45,9 @@ export_web_snapshot = _load_script(
 )
 export_notices_snapshot = _load_script(
     "export_notices_snapshot_epic11", "scripts/export_notices_snapshot.py"
+)
+export_progress_snapshot = _load_script(
+    "export_progress_snapshot_epic11", "scripts/export_progress_snapshot.py"
 )
 
 
@@ -78,25 +76,6 @@ def _isolate_cwd(monkeypatch, tmp_path):
     monkeypatch.chdir(tmp_path)
 
 
-@pytest.fixture(autouse=True)
-def _cleanup_web_public():
-    """``sync-progress.mjs``'s destination is fixed relative to its own
-    script location (the real, checked-out ``web/public/`` dir) -- there is
-    no override. ``web/public/*.json`` is gitignored generated data (see
-    ``web/.gitignore``), so writing there is harmless, but this test still
-    cleans up after itself rather than leaving a stray file for the next
-    run to trip over."""
-    yield
-    if _SYNC_PROGRESS_DEST.exists():
-        _SYNC_PROGRESS_DEST.unlink()
-
-
-@pytest.mark.skipif(
-    shutil.which("node") is None,
-    reason="node is not declared in the pyforge-herald pixi feature's "
-    "dependencies -- this test's sync-progress.mjs subprocess only runs "
-    "when node happens to be on PATH from ambient shell state",
-)
 def test_all_three_moments_end_to_end(tmp_path, capsys):
     repo_root = tmp_path
 
@@ -203,23 +182,16 @@ def test_all_three_moments_end_to_end(tmp_path, capsys):
 
     # --- automation: the three static-snapshot-export scripts ------------
 
-    # sync-progress.mjs (Story 8.4) -- a real `node` subprocess, no stub;
-    # this script does no network I/O of its own, only local fs reads.
-    progress_json_path = repo_root / ".herald" / "progress.json"
-    result = subprocess.run(
-        ["node", str(_SYNC_PROGRESS_SCRIPT), str(progress_json_path)],
-        capture_output=True,
-        text=True,
-        check=False,
+    # export_progress_snapshot.py (Story 13.3, replacing sync-progress.mjs)
+    out_dir = tmp_path / "web-out"
+    progress_out = export_progress_snapshot.export_progress_snapshot(
+        repo_root=repo_root, out_dir=out_dir
     )
-    assert result.returncode == 0, result.stderr
-    assert _SYNC_PROGRESS_DEST.exists()
-    synced_progress = json.loads(_SYNC_PROGRESS_DEST.read_text(encoding="utf-8"))
+    synced_progress = json.loads(progress_out.read_text(encoding="utf-8"))
     assert synced_progress
     assert synced_progress[0]["station"] == "warden"
 
     # export_web_snapshot.py's export_success_snapshot (Story 9.4)
-    out_dir = tmp_path / "web-out"
     success_out = export_web_snapshot.export_success_snapshot(
         repo_root=repo_root, out_dir=out_dir
     )

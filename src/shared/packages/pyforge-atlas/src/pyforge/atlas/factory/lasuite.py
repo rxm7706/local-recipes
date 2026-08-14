@@ -29,6 +29,7 @@ from pathlib import Path
 from typing import Any
 
 from pyforge.core.atomic_write import atomic_write_text
+from pyforge.core.errors import PyforgeError
 
 from .crews import parse_frontmatter
 from .wiki import WikiLayout
@@ -100,9 +101,12 @@ def _unconfigured_opener(request: Request) -> Response:
     )
 
 
-class LaSuiteError(RuntimeError):
+class LaSuiteError(PyforgeError, RuntimeError):
     """A CMS request failed. The message is hyper-clear (§ 2.1: agents auto-diagnose) — it names
-    the method, URL, status, and body so a retry/repair can reason about it without a traceback."""
+    the method, URL, status, and body so a retry/repair can reason about it without a traceback.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``RuntimeError`` stays in the MRO."""
 
 
 class LaSuiteClient:

@@ -71,7 +71,9 @@ from pathlib import Path
 from typing import Any
 
 import yaml
+from pyforge.core.errors import PyforgeError
 
+from ..regions.markers import REGION_NAME_PATTERN, RegionFormat
 from .version import InvalidVersionError, ModelVersion, in_range
 
 
@@ -96,8 +98,11 @@ class AppliesTo(StrEnum):
     BOTH = "both"
 
 
-class ManifestError(Exception):
-    """Raised by ``load_manifest`` for any schema violation. The message is
+class ManifestError(PyforgeError, Exception):
+    """Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``Exception`` stays in the MRO.
+
+    Raised by ``load_manifest`` for any schema violation. The message is
     always prefixed with exactly one of three mutually exclusive locators:
     ``"<id>: "`` (the offending entry's id), ``"artifacts[N]: "`` (an entry
     whose own ``id`` could not be read, so it is addressed by position), or
@@ -237,6 +242,16 @@ class Region:
 
     def __post_init__(self) -> None:
         object.__setattr__(self, "name", _require_text("region name", self.name))
+        # A region's name is its identity in the `marshal-seed:*` marker
+        # wire format (AD-53) -- Story 8.1's forward-referenced check,
+        # closed here: the same `REGION_NAME_PATTERN` that
+        # `BeginMarker`/`EndMarker` validate against, so a name this class
+        # accepts can never fail to round-trip through a rendered marker.
+        if REGION_NAME_PATTERN.fullmatch(self.name) is None:
+            raise ValueError(
+                f"region name must match {REGION_NAME_PATTERN.pattern!r}"
+                f" (marker-safe token: lowercase alnum, then alnum/hyphen), got {self.name!r}"
+            )
         object.__setattr__(self, "anchor", tuple(self.anchor) if isinstance(self.anchor, list) else self.anchor)
         if not isinstance(self.anchor, tuple) or not self.anchor:
             # "list", not "tuple": every neighbouring message in this module
@@ -267,7 +282,7 @@ class ManifestEntry:
     applies_to: AppliesTo
     rationale: str
     pin: str | None = None
-    format: str | None = None
+    format: RegionFormat | None = None
     regions: tuple[Region, ...] = ()
     since: ModelVersion | None = None
     until: ModelVersion | None = None
@@ -315,6 +330,18 @@ class ManifestEntry:
         if self.artifact_class is ArtifactClass.HYBRID_MANAGED_REGION:
             if not self.format:
                 raise ValueError("hybrid-managed-region entries require a non-empty format")
+            # Story 8.1's other forward-referenced check, closed here:
+            # S-7.4 accepted any non-blank string; `RegionFormat(...)`
+            # restricts it to the registry AD-53 actually defines
+            # (html/hash/slashstar), the same way `ArtifactClass(...)` and
+            # `AppliesTo(...)` already convert/validate their own raw
+            # strings above -- an unregistered value (`xml`) raises
+            # `ValueError` with the stdlib Enum's own "not a valid
+            # RegionFormat" message, which `load_manifest` wraps as
+            # `ManifestError` prefixed with this entry's id.
+            object.__setattr__(
+                self, "format", RegionFormat(_require_text("format", self.format, suffix=" or None"))
+            )
             if not self.regions:
                 raise ValueError("hybrid-managed-region entries require at least one region")
         else:
@@ -327,7 +354,7 @@ class ManifestEntry:
                     f"regions are only valid on hybrid-managed-region entries, got {self.regions!r}"
                 )
 
-        for name, value in (("pin", self.pin), ("format", self.format), ("legacy_of", self.legacy_of)):
+        for name, value in (("pin", self.pin), ("legacy_of", self.legacy_of)):
             if value is not None:
                 object.__setattr__(self, name, _require_text(name, value, suffix=" or None"))
 

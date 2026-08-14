@@ -63,6 +63,28 @@ than adopting this new enum). No `ShipReceipt` aggregate lands with this
 story either (spec Never boundary) -- Story 2.9's docstring above already
 named that as a later story's addition (Story 3.7), and this story does not
 change that.
+
+Story 3.6 extends `DoctorReport` with two more fields,
+`conda_forge_ship_ready`/`conda_forge_ship_blockers` (FR-23, D-10):
+a recipe-independent PROXY for `package.py::ship_conda_forge`'s shipping
+preconditions -- what `mason doctor` can observe without a recipe-path
+argument -- and which parts of it are unmet. The proxy also covers the
+import floor, which is not one of D-10's two preconditions but gates the
+same path (this target delegates to `recipe.py::submit()`, the verb
+`unavailable_verbs` already reports on). See `doctor.py::build_report`'s
+own module docstring for exactly how the proxy differs from the real
+preconditions. No defaults, matching every other
+field on this dataclass -- a `DoctorReport` with a forgotten conda-forge-
+readiness field is exactly the ambiguity a default would silently paper
+over.
+
+Story 3.7 adds `ShipReceipt` -- the eighth shape in this file, and the
+aggregate both Story 2.9's and Story 3.3's paragraphs above already named as
+a later addition (both said "Story 3.7"): the multi-target ship outcome
+`package.py::build_ship_receipt` composes from however many
+`ShipTargetResult`s a caller already produced (AD-9). See `ShipReceipt`'s
+own docstring below for why `ok` is a plain field, not a property, and what
+it does and does not summarize.
 """
 
 from __future__ import annotations
@@ -101,8 +123,11 @@ class DoctorReport:
     """`mason doctor`'s full self-diagnosis (FR-34): Mason's own version,
     the resolved CFE root and which chain step found it, the selected
     interpreter and which chain step selected it, the import-floor outcome,
-    which verbs are unavailable as a consequence, and every known engine's
-    presence/version."""
+    which verbs are unavailable as a consequence, every known engine's
+    presence/version, and (Story 3.6) a recipe-independent proxy for
+    whether `package.py::ship_conda_forge`'s shipping preconditions (D-10)
+    and the import floor it delegates through are currently met, plus which
+    parts of that proxy are unmet."""
 
     mason_version: str
     cfe_root: str | None
@@ -113,6 +138,8 @@ class DoctorReport:
     cfe_import_floor_missing: tuple[str, ...]
     unavailable_verbs: tuple[str, ...]
     engines: tuple[EngineStatus, ...]
+    conda_forge_ship_ready: bool
+    conda_forge_ship_blockers: tuple[str, ...]
 
 
 @dataclass(frozen=True)
@@ -213,8 +240,12 @@ class ShipTargetKind(StrEnum):
     targets` recognizes (Story 3.3, FR-16, FR-19, spec AC1): `PYPI` (upload
     to PyPI), `CONDA_FORGE` (a staged-recipes pull request), `CHANNEL` (an
     arbitrary named conda channel -- `ShipTarget.channel_name` carries
-    which one). Exactly these three; no `pypi-test` form lands here (spec
-    Never boundary -- Story 3.9/FR-50's own scope, not this vocabulary's).
+    which one), and (Story 3.9, FR-24, FR-50, AD-26) `PYPI_TEST` -- a
+    TestPyPI rehearsal upload. `PYPI_TEST` is NOT a second upload
+    mechanism: it runs through the IDENTICAL code path as `PYPI`
+    (`package.py::ship_pypi`), differing only in a `repository_url` knob
+    forwarded down to `engines.twine.upload` -- AD-26's own "identical code
+    path... differing only in repository configuration."
 
     `StrEnum`, not a plain `Enum`, mirroring `ShipState`'s own precedent
     above for the same reason: this file's shapes eventually reach
@@ -226,6 +257,7 @@ class ShipTargetKind(StrEnum):
     PYPI = "pypi"
     CONDA_FORGE = "conda-forge"
     CHANNEL = "channel"
+    PYPI_TEST = "pypi-test"
 
 
 @dataclass(frozen=True)
@@ -289,3 +321,39 @@ class PackageBuildResult:
     pixi_returncode: int
     pep517_stdout: str
     pixi_stdout: str
+
+
+@dataclass(frozen=True)
+class ShipReceipt:
+    """The aggregate outcome of a multi-target ship (Story 3.7, AD-9): every
+    `ShipTargetResult` an invocation produced, plus a pre-computed `ok`
+    summary field.
+
+    `targets` is every result IN THE ORDER shipped -- no reordering, no
+    deduplication (mirrors `package.py::parse_ship_targets`'s own no-dedup
+    precedent for the same reason: deciding what "duplicate" means for two
+    identical targets shipped in the same invocation is out of this
+    dataclass's own scope). `ok` is a plain FIELD, not a property or method
+    (AD-1: "data carries no behaviour" -- every shape in this module is a
+    frozen dataclass with fields only), computed ONCE by `package.py::
+    build_ship_receipt` as `not any(r.state is ShipState.FAILED for r in
+    results)`: `NOT_ATTEMPTED`, `PENDING`, and `TERMINAL` all count as
+    success for this aggregate (AD-9) -- only an actual `FAILED` target
+    flips `ok` to `False`. A `PENDING` target (an interrogation Story 3.7
+    could not complete, or a confirmed attempt whose durable end state is
+    still unconfirmed -- `ShipState`'s own docstring, above) is deliberately
+    NOT collapsed into failure here any more than it is collapsed into
+    success in `render.py`'s own rendering (`ShipState`'s own docstring:
+    "`pending` is never collapsed into success in any rendering") -- this
+    aggregate's `ok` field answers a narrower question ("did anything
+    definitively fail?"), not "did everything definitively succeed?".
+
+    Nothing constructs a `ShipReceipt` in this story except `package.py::
+    build_ship_receipt` itself -- no `ship()` multi-target dispatcher and no
+    CLI wiring land here (spec Never boundary): `cli.py`'s own `ship` verb
+    (Story 3.9) is the future caller that will gather several
+    `ShipTargetResult`s from `ship_pypi`/`ship_channel`/(eventually)
+    `ship_conda_forge`, once merged, and hand them to `build_ship_receipt`."""
+
+    targets: tuple[ShipTargetResult, ...]
+    ok: bool

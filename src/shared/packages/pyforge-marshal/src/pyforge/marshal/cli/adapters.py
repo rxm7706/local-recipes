@@ -74,6 +74,8 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from pyforge.core.errors import PyforgeError
+
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import (
     BmadLoopHarness,
@@ -1419,10 +1421,13 @@ def run_adapters_probe(
 # =====================================================================
 
 
-class _SmokeProvisionError(Exception):
+class _SmokeProvisionError(PyforgeError, Exception):
     """Raised by ``_provision_smoke_home`` for any git/filesystem failure
     while provisioning the ephemeral smoke home -- ``run_adapters_smoke``
-    converts this to ``MRS-SMOKE-002``."""
+    converts this to ``MRS-SMOKE-002``.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``Exception`` stays in the MRO."""
 
 
 def _add_smoke_worktree(vcs: VcsPort, repo_root: Path, adapter_name: str) -> tuple[Path, str]:

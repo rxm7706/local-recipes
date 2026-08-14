@@ -60,7 +60,16 @@ _FINDING_ID_FAMILIES = (
 )
 
 # The frozen, closed exit-code set (see verdict.py for the projection).
-_VALID_EXIT_CODES = frozenset({0, 1, 2, 130})
+# Story 14.3, SPEC-pyforge-core CAP-3: derived from verdict.py's `LATTICE`
+# rather than hand-typed, via a FUNCTION-LOCAL import inside
+# `__post_init__` below (its only use site) -- a module-level import here
+# would create a models<->verdict circular import (verdict.py already
+# imports Status/StatusDriver/etc from models at ITS OWN module level, so
+# models can't also import verdict at module level without the two
+# modules' load order deciding which one wins). Deferring to the one
+# runtime call site sidesteps the cycle entirely: by the time any code
+# actually constructs a ComplianceReport, both modules are already fully
+# loaded regardless of which was imported first.
 
 
 class Status(StrEnum):
@@ -595,13 +604,19 @@ class ComplianceReport:
     actuation: object | None = None
 
     def __post_init__(self) -> None:
+        # Local import (see the module-level comment above, near the old
+        # `_VALID_EXIT_CODES` constant this replaces): the one runtime call
+        # site, avoiding a models<->verdict circular import.
+        from .verdict import EXIT_SIGINT, LATTICE
+
+        valid_exit_codes = LATTICE.exit_codes | {EXIT_SIGINT}
         # Coerce so a raw string status ("warnings", or even "clean") either
         # resolves to a Status member or fails loud HERE — StrEnum equality
         # would otherwise admit it and crash later in to_json_dict.
         object.__setattr__(self, "status", Status(self.status))
-        if isinstance(self.exit_code, bool) or self.exit_code not in _VALID_EXIT_CODES:
+        if isinstance(self.exit_code, bool) or self.exit_code not in valid_exit_codes:
             raise ValueError(
-                f"exit_code must be one of {sorted(_VALID_EXIT_CODES)}, "
+                f"exit_code must be one of {sorted(valid_exit_codes)}, "
                 f"got {self.exit_code!r}"
             )
         if self.exit_code not in _LEGAL_EXITS_BY_STATUS[self.status]:

@@ -8,7 +8,7 @@ const CATEGORIES = ['deprecation', 'fix', 'eol'];
  * Operations notice board (Story 10.5). Static-JSON-snapshot pattern --
  * Herald has no running server to query live, so this fetches
  * `notices.json` (exported by
- * `scripts/export_notices_snapshot.py` from `.herald/notices-index.json`)
+ * `scripts/export_notices_snapshot.py` from `.herald/herald.db`)
  * once on mount. Category filter is local to this panel (notices don't
  * have a "station"); date range reuses the shared sidebar filter wired in
  * Epic 7.

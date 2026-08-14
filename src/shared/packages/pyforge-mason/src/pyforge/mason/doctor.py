@@ -48,6 +48,51 @@ and `build_report`'s composition logic is otherwise untouched.
 Story 3.1's Engine protocol supersedes only `engines/__init__.py`'s
 probe-only seed (see that module's docstring); this module's composition
 shape is unaffected by that later story.
+
+Story 3.6 extends `build_report` with `conda_forge_ship_ready`/
+`conda_forge_ship_blockers` (FR-23, D-10): a structural PROXY for
+`package.py::ship_conda_forge`'s own shipping preconditions, not an exact
+restatement of them -- `mason doctor` takes no recipe-path argument (out
+of this story's scope), so it can neither see precondition #1 (a recipe
+path was given) nor check #2's exact `<cfe-root>/recipes/<name>/` equality
+for any particular recipe. What it reports instead is the set of
+conditions observable without a recipe: root unresolved is one blocker,
+a root that cannot be expanded/resolved at all is a second, root resolved
+but `<root>/recipes` not a directory is a third, and an incomplete import
+floor is the fourth. Note the proxy is deliberately stricter in one
+direction -- `ship_conda_forge` itself performs no `recipes/` existence
+check (it resolves paths only, matching `recipe.py::submit()`'s own
+no-existence-check precedent), so a `False` here does not by itself prove
+a ship would fail.
+
+The import-floor blocker (follow-up review pass, 2026-08-13) is not one of
+D-10's two preconditions but gates the same path just as structurally:
+`ship_conda_forge` delegates to `recipe.py::submit()`, and an incomplete
+floor is already exactly why `unavailable_verbs` names `"recipe"` above.
+Omitting it let one report answer the same question two ways --
+`conda_forge_ship_ready=True` beside an `unavailable_verbs` naming the
+verb the ship path runs through.
+
+`resolved_root.root` is `.expanduser().resolve()`d again here before the
+`recipes` check (review pass, 2026-08-13): `resolve_cfe_root`'s
+flag/environment steps return an UN-resolved `Path` (e.g. a literal `~` or
+a relative value), and comparing that directly against the filesystem
+would misreport readiness for exactly the inputs `package.py::
+ship_conda_forge` itself resolves against -- mirrors that function's own
+identical resolution. The `is_dir()` check (and the resolution before it)
+runs inside a `try`/`except (OSError, ValueError, RuntimeError)` (review
+pass, 2026-08-13) so a pathological root value cannot break this
+function's own "never raises" invariant: `RuntimeError` is in that tuple
+because `Path.expanduser()` -- NOT an `OSError` subclass for this failure
+-- raises it whenever a leading `~`/`~user` cannot be expanded (an unknown
+user, or `HOME` unset), which a `--cfe-root`/`MASON_CFE_ROOT` value
+reaches this function unvalidated. Each of those failures becomes its own
+blocker rather than a crash, and each names its own cause: a root that
+cannot be resolved says so (follow-up review pass, 2026-08-13 -- calling
+it a missing `recipes/` directory named the wrong cause and implied an
+impossible remedy), a permission-denied stat (`OSError`) is treated as
+`not a directory` while keeping the RESOLVED spelling, and a `None` root
+paired with a non-`not-found` step reports the root as unresolved.
 """
 
 from __future__ import annotations
@@ -86,6 +131,47 @@ def build_report(
     if resolved_root.step == STEP_NOT_FOUND or floor_result.missing:
         unavailable_verbs = ("recipe",)
 
+    blockers: list[str] = []
+    # `root is None` is checked alongside the step, not left to the step
+    # alone: line 122 below still guards the same attribute that way, and
+    # an `AttributeError` from a `None` root would escape the `except`
+    # tuple entirely and break this function's own never-raises invariant.
+    if resolved_root.step == STEP_NOT_FOUND or resolved_root.root is None:
+        blockers.append("the CFE root is unresolved")
+    else:
+        # Resolution and the stat are guarded SEPARATELY, and report
+        # DIFFERENT blockers. A root that cannot be expanded or resolved at
+        # all is not a missing `recipes/` directory: reporting it as one
+        # named a cause that was not the real one and implied a remedy --
+        # create that directory -- impossible at a path that cannot exist.
+        # A denied stat, by contrast, keeps the RESOLVED spelling rather
+        # than falling back to the raw one, so a single input never prints
+        # two spellings of the same path.
+        try:
+            recipes_dir = resolved_root.root.expanduser().resolve() / "recipes"
+        except (OSError, ValueError, RuntimeError) as exc:
+            blockers.append(f"the CFE root {resolved_root.root} cannot be resolved: {exc}")
+        else:
+            try:
+                recipes_dir_is_present = recipes_dir.is_dir()
+            except OSError:
+                recipes_dir_is_present = False
+            if not recipes_dir_is_present:
+                blockers.append(f"{recipes_dir} is not a directory")
+
+    # The import floor gates this target too: `package.py::ship_conda_forge`
+    # delegates to `recipe.py::submit()`, and an incomplete floor is already
+    # why `unavailable_verbs` above names `recipe`. Without this blocker one
+    # report could claim `conda_forge_ship_ready=True` while, three fields
+    # away, `unavailable_verbs` named the very verb the ship path runs
+    # through -- a self-contradiction in the command whose whole job is to
+    # let a user learn the boundary BEFORE attempting a release.
+    if floor_result.missing:
+        blockers.append(
+            "the CFE import floor is incomplete, so the `recipe` verb this target "
+            f"delegates to is unavailable: {', '.join(floor_result.missing)}",
+        )
+
     return DoctorReport(
         mason_version=__version__,
         cfe_root=str(resolved_root.root) if resolved_root.root is not None else None,
@@ -96,4 +182,6 @@ def build_report(
         cfe_import_floor_missing=floor_result.missing,
         unavailable_verbs=unavailable_verbs,
         engines=probe_known_engines(),
+        conda_forge_ship_ready=not blockers,
+        conda_forge_ship_blockers=tuple(blockers),
     )

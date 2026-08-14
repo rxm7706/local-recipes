@@ -19,6 +19,8 @@ from __future__ import annotations
 import re
 from collections.abc import Sequence
 
+from pyforge.core.errors import PyforgeError
+
 # Two lowercase, hyphen-delimited segments joined by a single colon, e.g.
 # "cfe:unresolved" or "ship:credential-missing". Neither segment may be
 # empty, start/end with a hyphen, or contain a double hyphen. `\Z` (not `$`)
@@ -27,8 +29,14 @@ from collections.abc import Sequence
 _IDENTIFIER_PATTERN = re.compile(r"^[a-z0-9]+(-[a-z0-9]+)*:[a-z0-9]+(-[a-z0-9]+)*\Z")
 
 
-class MasonError(Exception):
+class MasonError(PyforgeError):
     """Base class for every anticipated Mason failure.
+
+    Story 14.3, SPEC-pyforge-core CAP-5: re-parented to the shared
+    ``PyforgeError`` marker (no ``__init__`` override on either side, so
+    this changes nothing observable, including for subclasses like
+    ``CfeUnresolvedError``/``CfeTimeoutError`` with their own custom
+    ``__init__``/``__reduce__``) -- they re-parent transitively.
 
     `identifier` must be a string matching `_IDENTIFIER_PATTERN`, and
     `message` must be a string with non-whitespace content that states what
@@ -93,12 +101,17 @@ class CfeUnresolvedError(MasonError):
     chain (FR-5, D-2, NFR-14).
 
     Raised by `cfe.py::ensure_cfe_root` when the already-computed
-    `ResolvedCfeRoot.step` is `STEP_NOT_FOUND`. Unlike `CfeImportFloorError`,
-    there is no per-call variable data to report -- the four steps either
-    matched or did not, and nothing about *which* value was tried is
-    meaningful once resolution has already failed -- so the constructor
-    takes no arguments and the message is a fixed string naming all four
-    step names and how to satisfy the first three.
+    `ResolvedCfeRoot.step` is `STEP_NOT_FOUND`. Also raised directly by
+    `package.py::ship_conda_forge` (Story 3.6, D-10) when its own
+    `resolve_cfe_root` call finds no root, before `recipe.py::submit()` (and
+    therefore `cfe.py::ensure_cfe_root`) is ever reached -- reused rather
+    than a third dedicated class, since this message is already
+    precondition-generic. Unlike `CfeImportFloorError`, there is no per-call
+    variable data to report -- the four steps either matched or did not, and
+    nothing about *which* value was tried is meaningful once resolution has
+    already failed -- so the constructor takes no arguments and the message
+    is a fixed string naming all four step names and how to satisfy the
+    first three.
     """
 
     # `.claude/scripts/conda-forge-expert/` below duplicates `resolve.py`'s
@@ -126,6 +139,42 @@ class CfeUnresolvedError(MasonError):
         # `CfeUnresolvedError(*self.args)` would raise `TypeError` on every
         # deepcopy/pickle round-trip.
         return (self.__class__, ())
+
+
+class RecipeGenerationError(MasonError):
+    """`cfe.py::generate_recipe` reported a non-zero exit for `recipe.py::new`
+    (FR-7, NFR-14).
+
+    `source` is the CFE subcommand name the caller selected (`pypi`/`github`/
+    `cran`/`npm` -- `recipe.py`'s own `--from-*` -> subcommand mapping, spec
+    Always boundary), not a filesystem path or a Mason-invented label.
+    `cfe_message` is CFE's own failure text, embedded verbatim -- the wrapped
+    recipe-generator script's `main()` prints `Error: <e>` to **stdout** on
+    failure (its own trailing `except Exception as e: print(f"Error:
+    {e}")`), not stderr, so `recipe.py` prefers `CfeResult.stdout` over
+    `stderr` when building this argument; this class does no interpretation
+    of its own, only carries the string through. (Script filenames are named
+    once, in `cfe.py` alone -- AD-3, `tests/meta/test_adapter_sole_caller.py`
+    -- so this docstring deliberately never spells the `.py` filename.)
+
+    `__reduce__` mirrors `CfeTimeoutError`'s override immediately below, for
+    the identical reason: `MasonError.__init__` sets `self.args =
+    (identifier, message)` -- two items, but the WRONG two values for this
+    class's own two-argument constructor (`source`, `cfe_message`). Without
+    this override, `RecipeGenerationError(*self.args)` would not raise, but
+    would silently reconstruct with `self.source` bound to the identifier
+    string and `self.cfe_message` bound to the built message, corrupting
+    every deepcopy/pickle round-trip instead of failing loudly.
+    """
+
+    def __init__(self, source: str, cfe_message: str) -> None:
+        self.source = source
+        self.cfe_message = cfe_message
+        message = f"recipe generation from {source} failed: {cfe_message}"
+        super().__init__("recipe:generation-failed", message)
+
+    def __reduce__(self):
+        return (self.__class__, (self.source, self.cfe_message))
 
 
 class CfeTimeoutError(MasonError):
@@ -397,19 +446,21 @@ class PackageProjectPathError(MasonError):
 
 
 class InvalidShipTargetError(MasonError):
-    """A `--ship`/`--to` token failed to parse as one of the three valid
-    ship-target forms (Story 3.3, FR-16, FR-19, NFR-14).
+    """A `--ship`/`--to` token failed to parse as one of the four valid
+    ship-target forms (Story 3.3, FR-16, FR-19, NFR-14; Story 3.9/FR-50 adds
+    the fourth, `pypi-test`).
 
     Raised by `package.py::parse_ship_targets` for a token that is not
-    exactly `"pypi"`, exactly `"conda-forge"`, or `"channel:"` followed by a
-    non-empty name -- the message names the offending token verbatim and
-    lists all three valid forms (spec AC1: "rejected with the valid set
-    listed"), never inventing a partial match or a best guess at what the
-    caller meant. `value` is the ORIGINAL stripped token, not the whole
-    comma-separated input string, so a caller sees exactly which part of a
-    multi-target value was wrong. Construction raises `ValueError` for an
-    empty `value`, matching `PackageProjectPathError`'s validation rigor: an
-    invalid-target error naming no token is incoherent.
+    exactly `"pypi"`, exactly `"pypi-test"`, exactly `"conda-forge"`, or
+    `"channel:"` followed by a non-empty name -- the message names the
+    offending token verbatim and lists all four valid forms (spec AC1:
+    "rejected with the valid set listed"), never inventing a partial match
+    or a best guess at what the caller meant. `value` is the ORIGINAL
+    stripped token, not the whole comma-separated input string, so a caller
+    sees exactly which part of a multi-target value was wrong. Construction
+    raises `ValueError` for an empty `value`, matching
+    `PackageProjectPathError`'s validation rigor: an invalid-target error
+    naming no token is incoherent.
     """
 
     def __init__(self, value: str) -> None:
@@ -421,7 +472,7 @@ class InvalidShipTargetError(MasonError):
         self.value = value
         message = (
             f"{value!r} is not a valid ship target; valid forms are "
-            "'pypi', 'conda-forge', 'channel:<name>'"
+            "'pypi', 'pypi-test', 'conda-forge', 'channel:<name>'"
         )
         super().__init__("ship:invalid-target", message)
 
@@ -452,6 +503,16 @@ class ShipCredentialMissingError(MasonError):
     the incoherent state this class exists to rule out. `missing` is stored
     as a `tuple`, matching every other `Sequence`-typed field in this
     module.
+
+    The message never names a specific repository (review pass 3, Story
+    3.9): `ship_pypi` raises this identically for both a real `pypi` ship
+    and a `pypi-test` rehearsal (AD-26's "identical code path"), and the
+    message is built BEFORE `ship_pypi` computes which of the two it is --
+    "set them before shipping to pypi" was accurate when only `pypi`
+    existed (Story 3.4) but became actively misleading for a `pypi-test`
+    invocation once Story 3.9 added it; genericizing to "before shipping"
+    is correct for both rather than threading a new constructor parameter
+    through for a cosmetic distinction.
     """
 
     def __init__(self, missing: Sequence[str]) -> None:
@@ -470,7 +531,7 @@ class ShipCredentialMissingError(MasonError):
         self.missing = missing
         message = (
             f"missing PyPI upload credential(s) in the environment: "
-            f"{', '.join(missing)}; set them before shipping to pypi"
+            f"{', '.join(missing)}; set them before shipping"
         )
         super().__init__("ship:credential-missing", message)
 
@@ -606,6 +667,106 @@ class ShipChannelUploadTimeoutError(MasonError):
         # "ship:channel-upload-timeout", <built message>)` -- the wrong
         # value for this class's own `(timeout,)` constructor.
         return (self.__class__, (self.timeout,))
+
+
+class ShipCondaForgeRecipeMissingError(MasonError):
+    """`package.py::ship_conda_forge`'s first gate failed: no `recipe_path`
+    was given -- `None` or blank (Story 3.6, FR-23, D-10, NFR-14).
+
+    This is `ship_conda_forge`'s own precursor check, not one of D-10's two
+    shipping preconditions (those are the CFE root resolving, and the
+    recipe's location -- see `ShipCondaForgeRecipeLocationError` below).
+    Raised as `ship_conda_forge`'s FIRST action, before the CFE root is
+    even resolved -- mirrors `ShipCredentialMissingError`/
+    `ShipChannelCredentialMissingError`/`CfeUnresolvedError`'s precedent
+    that a structural precondition is RAISED, not returned as data.
+    Zero-arg constructor, mirroring `CfeUnresolvedError`'s own shape: there
+    is no per-call variable data to report -- a missing recipe path is
+    missing regardless of what else was passed -- so the message is a
+    fixed string naming `mason recipe new` as the remedy. This is what
+    satisfies FR-23's "offers... does not generate silently" requirement:
+    this error's own message is the offer; nothing here prompts
+    interactively or calls `recipe.new()` itself (spec Never boundary --
+    that CLI-level offer is Story 3.9's scope).
+    """
+
+    _MESSAGE = (
+        "no recipe path was given for the conda-forge ship target; run "
+        "`mason recipe new` to generate one, then pass its path"
+    )
+
+    def __init__(self) -> None:
+        super().__init__("ship:conda-forge-recipe-missing", self._MESSAGE)
+
+    def __reduce__(self):
+        # Mirrors `CfeUnresolvedError.__reduce__` above: `Exception.
+        # __reduce__` reconstructs via `cls(*self.args)`, but `MasonError.
+        # __init__` sets `self.args` to a two-item tuple while this class's
+        # constructor takes zero arguments -- without this override,
+        # `ShipCondaForgeRecipeMissingError(*self.args)` would raise
+        # `TypeError` on every deepcopy/pickle round-trip.
+        return (self.__class__, ())
+
+
+class ShipCondaForgeRecipeLocationError(MasonError):
+    """`package.py::ship_conda_forge`'s second D-10 shipping precondition
+    failed: the resolved recipe directory does not sit at exactly
+    `<cfe-root>/recipes/<name>/` (Story 3.6, FR-23, D-10, NFR-14).
+
+    This is the THIRD and last of `ship_conda_forge`'s gates, checked only
+    after `ShipCondaForgeRecipeMissingError`'s precursor and D-10's first
+    precondition (the root resolving, `CfeUnresolvedError`) both pass -- so
+    when several inputs are wrong at once, this is not the error the user
+    sees first.
+
+    D-10 deliberately narrows `recipe.py::submit()`'s own leniency (that
+    verb tolerates an out-of-tree recipe via its `CFE_RECIPES_ROOT` env
+    override, per its own docstring) for the ship-target boundary alone:
+    "Shipping to `conda-forge` works only from a repository where... the
+    recipe sits at `<cfe-root>/recipes/<name>/`" (PRD D-10) -- `mason
+    recipe submit` stays lenient; `mason package ship --to conda-forge`
+    does not. Raised before any CFE subprocess spawns (spec Always
+    boundary), mirroring `PackageProjectPathError`'s precedent that a
+    structural precondition is RAISED, not returned as data.
+
+    `recipe_path`/`expected_path` are both ALREADY-RESOLVED, absolute
+    strings (`ship_conda_forge`'s own `recipe_dir`/`expected_dir`) -- the
+    message names both, so a caller sees exactly what was given and
+    exactly where D-10 requires it to sit. Construction raises `ValueError`
+    for an empty `recipe_path`/`expected_path`, matching
+    `PackageProjectPathError`'s validation rigor: a location error naming
+    no path on either side is incoherent.
+    """
+
+    def __init__(self, recipe_path: str, expected_path: str) -> None:
+        if not isinstance(recipe_path, str) or not recipe_path.strip():
+            raise ValueError(
+                "ShipCondaForgeRecipeLocationError requires a non-empty "
+                "`recipe_path`: a location error naming no recipe path is "
+                "incoherent"
+            )
+        if not isinstance(expected_path, str) or not expected_path.strip():
+            raise ValueError(
+                "ShipCondaForgeRecipeLocationError requires a non-empty "
+                "`expected_path`: a location error naming no expected "
+                "path is incoherent"
+            )
+        self.recipe_path = recipe_path
+        self.expected_path = expected_path
+        message = (
+            f"recipe at {recipe_path!r} is not at the required conda-forge "
+            f"ship location {expected_path!r}: shipping to conda-forge "
+            "requires the recipe to sit at <cfe-root>/recipes/<name>/ (D-10)"
+        )
+        super().__init__("ship:conda-forge-recipe-location", message)
+
+    def __reduce__(self):
+        # Mirrors `PackageProjectPathError.__reduce__` above: `Exception.
+        # __reduce__` reconstructs via `cls(*self.args)`, and `MasonError.
+        # __init__` sets `self.args = ("ship:conda-forge-recipe-location",
+        # <built message>)` -- the wrong two values for this class's own
+        # `(recipe_path, expected_path)` constructor.
+        return (self.__class__, (self.recipe_path, self.expected_path))
 
 
 class EnvironmentLockTimeoutError(MasonError):

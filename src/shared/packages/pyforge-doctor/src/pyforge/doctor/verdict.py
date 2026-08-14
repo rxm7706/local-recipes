@@ -21,12 +21,25 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 
+from pyforge.core.verdict import Lattice
+
 from .models import DoctorReport, DoctorStatus, Finding
 
 EXIT_SIGINT = 130
 
 _EXIT_OK = 0
 _EXIT_FAIL = 2
+
+# Story 14.3, SPEC-pyforge-core CAP-3: the shared domain-declaration
+# mechanism -- `exit_code_for`'s own any-fail predicate below is UNCHANGED
+# (it is not rank-based; see the story's Design Notes), but `.exit_codes`
+# turns the "subset of warden's frozen {0, 1, 2, 130}" docstring claim into
+# a computed fact (`tests/meta/test_verdict_narrows_warden.py`). PUBLIC (not
+# `_LATTICE`): that test imports this name from outside the module.
+LATTICE = Lattice(
+    order=(DoctorStatus.FAIL, DoctorStatus.WARN, DoctorStatus.OK),
+    exit_by_member={DoctorStatus.FAIL: _EXIT_FAIL, DoctorStatus.WARN: _EXIT_OK, DoctorStatus.OK: _EXIT_OK},
+)
 
 
 def exit_code_for(findings: Iterable[Finding] | DoctorReport) -> int:

@@ -91,13 +91,36 @@ parse_success_signal``'s already-parsed ``declared_commands`` tuple and the
 caller's own ``policy_commands`` -- this module performs no spec-file read
 itself, matching every other function in this module's "caller already
 gathered the fact" shape).
+
+Story 2.8's ``classify_review_tier``/``resolve_review_cycles`` (FR-185)
+register no seventh code. A story's review COST, not its pass/fail
+outcome, is a pure SCHEDULING decision -- the same "not every function
+here registers one" precedent ``describe_gate_mode`` (Story 2.5) already
+sets. ``classify_review_tier`` takes two already-gathered facts (a story's
+own ``declared_low_risk`` declaration and its observed ``changed_files``
+diff shape) and classifies into the closed ``{"low", "standard"}``
+vocabulary via an AND-gate -- both must agree, mirroring
+``classify_doc_only_declaration``'s "caller already gathered the fact"
+shape but deliberately NOT its OR-gate leniency (see the spec's own Design
+Notes for why a cost-reduction mechanism owes review-tiering the
+conservative choice doc-only's exemption does not). ``resolve_review_
+cycles`` maps a tier plus the already-composed repo-wide
+``default_max_review_cycles`` ceiling to the cycle allowance that tier
+gets, floored at ``1`` unconditionally on both branches so AC2's "never
+skipped" guarantee holds even against a pathological
+``max_review_cycles: 0``; an out-of-vocabulary ``tier`` raises
+``ValueError`` naming the value, mirroring ``describe_gate_mode``'s own
+precedent for a closed-vocabulary input. Neither function does I/O, calls
+a model, or touches ``gate_mode`` -- the independent reviewer's occurrence
+is untouched; only the cycle allowance varies.
 """
 
 from __future__ import annotations
 
 import fnmatch
 
-from ..ports.process import ProcessResult
+from pyforge.core.process import ProcessResult
+
 from . import policy
 from .journal import FrozenPath
 from .model import Finding, Severity, Status, status_for
@@ -487,4 +510,90 @@ def check_spec_binding(
         )
         for command in dict.fromkeys(declared_commands)
         if " ".join(command.split()) not in normalized_policy
+    )
+
+
+# --- Story 2.8: risk-tiered review depth, cycle count only (FR-185) ---------
+
+# Judgment calls, not discovered constants (see the spec's own Design
+# Notes): no existing threshold in this codebase measures "how many changed
+# files count as a small, plausibly-mechanical diff", and no existing value
+# names the cheapest non-zero review-cycle allowance.
+_LOW_RISK_MAX_CHANGED_FILES = 3
+_LOW_TIER_MAX_REVIEW_CYCLES = 1
+
+_REVIEW_TIERS = frozenset({"low", "standard"})
+
+
+def classify_review_tier(
+    *, declared_low_risk: bool, changed_files: tuple[str, ...]
+) -> dict[str, object]:
+    """Classify a story's already-established low-risk declaration against
+    its already-observed diff shape (Story 2.8, FR-185). Pure, no I/O.
+
+    Both inputs are facts a caller already gathered -- ``declared_low_risk``
+    from the story's own declaration, ``changed_files`` from something like
+    a ``VcsPort`` diff -- never gathered here (AD-4): this function does no
+    I/O, no VCS call, no spec-file read, exactly like
+    ``classify_doc_only_declaration`` takes an already-established
+    ``has_uncommitted_changes``. ``changed_files`` is type-checked exactly
+    like ``check_scope``'s own identically-shaped parameter.
+
+    Tier is ``"low"`` ONLY when BOTH ``declared_low_risk`` is ``True`` AND
+    ``len(changed_files) <= 3`` -- an AND-gate, deliberately NOT
+    ``classify_doc_only_declaration``'s OR-gate: a bare declaration on a
+    wide diff is not evidence of low risk, and a small diff with no
+    declaration is not auto-tiered down either (see the spec's own Design
+    Notes, "Why an AND-gate, not doc-only's OR-gate"). Every other
+    combination is ``"standard"`` -- which also stands in for
+    "unclassified" for any caller that never invokes this function at all.
+
+    The returned report always carries both input facts plus the derived
+    ``tier``, regardless of which branch ran -- mirroring
+    ``classify_doc_only_declaration``'s own report shape -- so a future
+    caller has something to fold into the run record (AC2: "recorded ...,
+    never a silent choice")."""
+    if not isinstance(changed_files, tuple) or not all(
+        isinstance(item, str) for item in changed_files
+    ):
+        raise TypeError(f"changed_files must be a tuple of str, got {changed_files!r}")
+    tier = (
+        "low"
+        if declared_low_risk and len(changed_files) <= _LOW_RISK_MAX_CHANGED_FILES
+        else "standard"
+    )
+    return {
+        "tier": tier,
+        "declared_low_risk": declared_low_risk,
+        "changed_files": changed_files,
+    }
+
+
+def resolve_review_cycles(tier: str, *, default_max_review_cycles: int) -> int:
+    """Map an already-classified ``tier`` plus the already-composed
+    repo-wide ``default_max_review_cycles`` ceiling to the cycle allowance
+    that tier gets (Story 2.8, FR-185). Pure, no I/O.
+
+    ``tier == "low"`` returns ``min(default_max_review_cycles, 1)``, floored
+    at ``1``. ``tier == "standard"`` (which also stands in for
+    "unclassified" -- see ``classify_review_tier``'s own docstring) returns
+    ``default_max_review_cycles`` unchanged, floored at ``1`` (AC3: a
+    higher-risk or unclassified story is never granted a smaller allowance
+    than today's flat ceiling). The floor applies UNCONDITIONALLY to both
+    branches -- it exists solely so AC2's "review never skipped" guarantee
+    holds even against a pathological ``default_max_review_cycles <= 0``
+    (``core/policy.py::_valid_attempt_count`` permits ``0``), never to grant
+    ``"low"`` a SMALLER value than intended.
+
+    An out-of-vocabulary ``tier`` raises ``ValueError`` naming the value --
+    mirrors ``describe_gate_mode``'s own precedent (Story 2.5) for a
+    closed-vocabulary input, never a ``Finding``: this is a programmer-error
+    guard, not a real-world outcome an operator needs a machine-readable
+    result for."""
+    if tier == "low":
+        return max(min(default_max_review_cycles, _LOW_TIER_MAX_REVIEW_CYCLES), 1)
+    if tier == "standard":
+        return max(default_max_review_cycles, 1)
+    raise ValueError(
+        f"tier {tier!r} is not one of the known review tiers {sorted(_REVIEW_TIERS)}"
     )

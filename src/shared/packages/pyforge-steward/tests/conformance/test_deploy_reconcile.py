@@ -147,6 +147,25 @@ def test_deploy_dashboard_via_cli_is_a_zero_commit_noop_when_nothing_changed(tmp
     assert _commit_count(work) == before
 
 
+def test_dashboard_diff_sees_a_brand_new_untracked_file(tmp_path):
+    """Story 9.7 / review pass 2: `dashboard_diff()`'s original `git diff`
+    only sees changes to already-tracked files, so a board's first-ever
+    `steward deploy static` publish (a genuinely new, untracked file under
+    `docs/dashboard/`) was previously invisible -- `git status --porcelain`
+    showed it but `dashboard_diff()` returned `''`. This is the exact gap
+    review pass 2 found and fixed by folding in `git ls-files --others
+    --exclude-standard`."""
+    work = _make_repo_with_origin(tmp_path)
+
+    new_board_dir = work / "docs" / "dashboard" / "newboard"
+    new_board_dir.mkdir(parents=True)
+    (new_board_dir / "index.html").write_text("<html><body>new board</body></html>\n")
+
+    diff_text = dashboard_diff(cwd=work)
+
+    assert diff_text.strip() != ""
+
+
 def test_dashboard_diff_propagates_a_git_failure_outside_a_worktree(tmp_path):
     not_a_repo = tmp_path / "not-a-repo"
     not_a_repo.mkdir()
