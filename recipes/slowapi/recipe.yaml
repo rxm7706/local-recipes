@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.10"
+
+package:
+  name: slowapi
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/slowapi/slowapi-${{ version }}.tar.gz
+  sha256: d320d5bc04d9f171a77fb16700faf3036d85b00f420f22924c8a225f95bd14f9
+
+build:
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - limits >=2.3
+    - starlette
+  run_constraints:
+    - redis-py >=3.4.1
+
+tests:
+  - python:
+      imports:
+        - slowapi
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      - python -c "import slowapi, redis; from limits.storage import storage_from_string; storage_from_string('memory://'); print('redis-py', redis.__version__, 'co-installed OK')"
+    requirements:
+      run:
+        - python
+        - redis-py >=8
+
+about:
+  homepage: https://github.com/laurents/slowapi
+  summary: A rate limiting extension for Starlette and Fastapi
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - mediocretech
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: slowapi
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: slowapi
+  cfe-purls:
+    - pkg:conda/slowapi@${{ version }}?channel=conda-forge
+    - pkg:pypi/slowapi@${{ version }}
+  cfe-upstream-repo: https://github.com/laurentS/slowapi
+  cfe-upstream-homepage: https://github.com/laurentS/slowapi
+  cfe-import-names: [slowapi]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: true
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/slowapi-feedstock
+  cfe-forge-recipe-updates-needed:
+    - "relax run_constrained redis-py <4.0.0 cap (mirror at 0.1.10 build 1; feedstock PR = 0.1.10 build 0 + relaxation, filed 2026-08-14)"
+  cfe-forge-blocker-list: []
+  cfe-last-checked: "2026-08-14T00:00:00Z"
+  cfe-generated-by-version: "8.81.0"
+  cfe-generated-at-datetime: "2026-08-14T00:00:00Z"
+  cfe-local-build-status: success
+  cfe-local-build-datetime: "2026-08-14T20:55:00Z"
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Factory-override mirror of conda-forge/slowapi-feedstock (v0 meta.yaml deployed;
+#    # this recipe.yaml is our v1). Purpose: 0.1.10 at build 1 (ABOVE the feedstock's
+#    # incoming 0.1.10 build 0, so this override wins while its channel is active) relaxing
+#    # run_constrained redis-py ">=3.4.1,<4.0.0" -> ">=3.4.1" so langflow (which hard-deps
+#    # slowapi via langflow-base) can co-install with redis-py 8 in the python-agent-platform
+#    # env. Evidence: slowapi's modules import only `limits` (MemoryStorage,
+#    # storage_from_string) — zero direct `import redis` in package code; the <4 cap mirrors
+#    # upstream's 2020-era poetry caret (^3.4.1), vestigial. Upstream issue + feedstock PR
+#    # retire this override; drop the override channel when the feedstock ships >=build 2.
+# tests:
+#    # The second (script) test is the runtime validation the relaxation requires: co-installs
+#    # redis-py >=8 with slowapi and exercises the limits storage factory — the exact
+#    # combination the old run_constrained forbade.
+####
