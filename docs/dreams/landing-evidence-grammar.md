@@ -2,7 +2,7 @@
 title: A legitimate landing is recognizable no matter which of the three-plus paths landed it
 type: dream
 owner: marshal
-status: dreamt
+status: specified
 ---
 
 # A legitimate landing is recognizable no matter which of the three-plus paths landed it
@@ -90,3 +90,9 @@ different dialect.
   grammars, and a recovery-landing class none of them recognize. Verified against
   `sources/marshal.py` (routes 1-3), `core/promotion.py` (three patterns), and the live recovery
   commits (`accc097e6a`, `5290c9bcd2`, `03d8fc8c86`) that each fail a different predicate.
+- **2026-08-14** — Specified:
+  `_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-landing-evidence-grammar/SPEC.md`
+  (status: ready) carries the contract — CAP-1 the shared grammar artifact (home decided at story
+  level within the doctor-never-imports-marshal boundary), CAP-2 doctor-side adoption, CAP-3
+  marshal-side adoption. Decomposed the same day into epics.md Epic 20 (Stories 20.8–20.10,
+  FR-191).

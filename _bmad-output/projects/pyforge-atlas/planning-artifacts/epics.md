@@ -8,7 +8,7 @@ inputDocuments:
 project: pyforge-atlas
 status: final
 created: 2026-07-17
-updated: '2026-08-10'
+updated: '2026-08-14'
 currency_review: "Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02."
 generatedBy: bmad-create-epics-and-stories (unattended Tier-2 stage 3)
 # The single canonical story source for this station: every `### Story` heading
@@ -1508,4 +1508,131 @@ dropped, not re-proposed.
 **Effort:** XS • **Deps:** S-13.3 • **Status:** done
 **Given** a selected candidate **Then** it hands off as structured data, not prose; Atlas
 proposes and never authors a recipe.
+
+---
+
+## Epic 14: Atlas query dashboards — hand-someone-a-link views
+
+Decomposes **`spec-atlas-query-dashboards`**
+(`planning-artifacts/specs/spec-atlas-query-dashboards/SPEC.md`, CAP-1..CAP-4).
+
+**Value delivered.** A `cf_atlas.db` query stops being CLI-text-only: the 11 atlas query
+CLIs gain linkable Panel/Bokeh views — static HTML fragments first, live filter/drill
+layered on top — no SPA framework, no second data layer, and an air-gap-clean render
+profile. Fenced off: the existing Vizro `dashboard/` module (Story 5.2's surface, reading
+the Parquet catalog through the D1 BSL seam) is untouched — this lands as a separate
+module under a non-colliding name, querying `cf_atlas.db` directly.
+
+### Story 14.1: Static view catalog (CAP-1)
+**Effort:** M • **Deps:** — • **Status:** ready
+**Given** the live `cf_atlas.db` **When** a curated catalog view mirroring one of the 11
+query CLIs (`staleness-report`, `feedstock-health`, `whodepends`, …) renders **Then** it
+emits a self-contained HTML fragment whose rows agree with its CLI counterpart's output on
+the same database snapshot **And** rendering a static view opens zero WebSocket
+connections — the lowest-risk mode ships first and stays the base layer.
+
+### Story 14.2: Pluggable widget registry (CAP-3)
+**Effort:** S • **Deps:** S-14.1 • **Status:** ready
+**Given** the view catalog **When** a view declares its query plus a widget-type NAME
+**Then** a small registry maps name → renderer for both the static-fragment and WebSocket
+modes **And** adding a new widget type is one registry entry plus one renderer with zero
+edits to existing view definitions; the seed set derives from a survey of the 11 mirrored
+CLIs' query shapes (spec open question 1), not the source dream's
+Tabulator/Perspective/PGWalker catalog.
+
+### Story 14.3: Bokeh WebSocket interactivity (CAP-2)
+**Effort:** M • **Deps:** S-14.2 • **Status:** ready
+**Given** the ASGI host chosen in this story's spec (the contract is "any ASGI host" —
+explicitly NOT contingent on DW-H3/Wagtail) **When** at least one catalog view runs live
+**Then** filter/drill/re-sort execute against `cf_atlas.db` over a Bokeh WebSocket
+session **And** swapping the host touches mounting code only, never a view definition —
+the static mode (S-14.1) survives unchanged underneath.
+
+### Story 14.4: Air-gap asset rewriting (CAP-4)
+**Effort:** S • **Deps:** S-14.3 • **Status:** ready
+**Given** the air-gapped render profile **When** any page — static fragment or WebSocket
+app — renders **Then** Bokeh/Panel asset URLs resolve to locally-served or mirrored
+assets and the emitted HTML contains zero references to external CDN hosts
+(grep-verifiable) **And** the default profile's output is unchanged, composing with
+`_http.py`'s runtime-driven enterprise posture (env vars only, never committed config).
+
+---
+
+## Epic 15: Artifactory download intelligence — mock-first AQL
+
+Decomposes **`spec-artifactory-download-intelligence`**
+(`planning-artifacts/specs/spec-artifactory-download-intelligence/SPEC.md`, CAP-1..CAP-4).
+
+**Value delivered.** Atlas answers the org-specific question public crawls structurally
+cannot: what THIS organization pulls from ITS OWN Artifactory, and which pulls have no
+public counterpart at all — built mock-first against an injectable transport (the proven
+`LaSuiteClient` shape), with NO live instance named or contacted anywhere in scope, code,
+config, or tests; live bring-up is a separate, later, attended step outside this epic.
+
+### Story 15.1: Injectable AQL adapter (CAP-1)
+**Effort:** M • **Deps:** — • **Status:** ready
+**Given** a mock AQL transport serving canned topology + download responses **When** the
+adapter runs **Then** it resolves virtual-repo topology to the backing repositories and
+returns name+version-aggregated download rows **And** constructing it without a transport
+fails loudly (no network default), no test path opens a live connection, and credentials
+route only through `_http.py`'s existing truststore + JFrog chain — never a second
+bespoke credential path.
+
+### Story 15.2: Identity join and internal flag (CAP-2, CAP-3)
+**Effort:** M • **Deps:** S-15.1 • **Status:** ready
+**Given** adapter rows for a public package and a mock-only package **When** they join
+into the SAME identity space Phase C/C.5 maintain (parselmouth's
+`compressed_mapping.json` + atlas's source-URL extension) **Then** the public package
+resolves to the identical identity row Phase C/C.5 would produce — no new PyPI-metadata
+or conda-forge-crossref fetch path in the diff **And** exactly the mock-only package
+carries the queryable internal/private flag; identity is enriched, never forked.
+
+### Story 15.3: Kedro pipeline surfacing (CAP-4)
+**Effort:** S • **Deps:** S-15.2 • **Status:** ready
+**Given** the adapter + join **When** the work registers as a new atlas Kedro pipeline
+following the established phase conventions (per-phase caching, env-var concurrency
+knobs, structured logging — `atlas-phase-engineering.md`) **Then** its rows land in the
+atlas DB and export in `export-purls`-shaped form consumable by the existing export
+surface without a bespoke reader **And** no parallel report format is introduced.
+
+---
+
+## Epic 16: Wagtail corporate brain — the narrow DW-H3 contract
+
+Decomposes **`spec-wagtail-corporate-brain`**
+(`planning-artifacts/specs/spec-wagtail-corporate-brain/SPEC.md`, CAP-1..CAP-3).
+
+**Value delivered.** The shipped `LaSuiteClient`/`WikiSyncer` (Story 9.3) stops waiting
+on an improvised server: the minimal live Wagtail/La Suite instance is DEFINED against
+the client's frozen contract and rehearsed locally, so the separately-scheduled ATTENDED
+bring-up (deferred-work ledger DW-H3) runs against a contract instead of improvising one.
+The attended event itself is explicitly OUT of the loop's scope — these stories build
+everything up to it; DW-H3 flips to closed only when that session later runs and passes,
+citing the spec. `factory/lasuite.py` stays a read-only contract surface throughout
+(AC-2: no HTTP client enters package code).
+
+### Story 16.1: Instance deploy definition (CAP-1)
+**Effort:** M • **Deps:** none (consumes Steward's deploy/credential verbs as the mechanism — Charter §5; atlas grows no deploy code) • **Status:** ready
+**Given** `LaSuiteClient`'s frozen REST contract **When** the minimal-instance deploy
+definition lands (the substrate and DW-H1/SQLite open questions resolved in this story's
+spec) **Then** it specifies Bearer-token auth plus the four routes the client calls —
+`POST /api/v1/documents/` (2xx body MUST carry `id`), `PATCH /api/v1/documents/{id}/`,
+`GET /api/v1/documents/{id}/`, `GET /api/v1/documents/all/` — per the shapes
+`MockWagtail` encodes, with `resolve_lasuite_config()` returning a config once
+`LASUITE_BASE_URL` + `LASUITE_API_TOKEN` are exported **And** the definition is
+air-gap-deployable: mirrored indexes only, admin/site static assets served locally with
+zero CDN references, endpoint + token via env/secret-mount — never a committed
+credential.
+
+### Story 16.2: Httpx opener and rehearsal (CAP-2, CAP-3)
+**Effort:** M • **Deps:** S-16.1 • **Status:** ready
+**Given** a locally-stood-up instance per the S-16.1 definition **When** a real
+httpx-backed `Opener` — constructed OUTSIDE package code (a bring-up script / the C1
+Dagster resource) — replaces `_unconfigured_opener` at the module's sole network seam
+**Then** `WikiSyncer.sync_all()` rehearses the mock-proven four-step sequence (first push
+CREATEs every `outputs/` page; unchanged re-push makes NO remote call; a changed page
+yields exactly ONE update; a fresh syncer resumes from `.lasuite_sync.json`) with ZERO
+edits to `factory/lasuite.py` and the no-inline-IO gate green **And** that same sequence
+is recorded as the attended session's acceptance checklist (per the spec's verification-
+home open question) — executing the ATTENDED live bring-up stays out of scope.
 

@@ -351,3 +351,67 @@ revalidation actually run on schedule rather than being operator-remembered.
 **Type:** feature • **Effort:** M • **Deps:** S-13.4, S-13.5 • **FR/AD:** LB-2 + LB-3 composed
 **Given** a real merge on a station **Then** progress and a success-claim draft exist with no
 human action, demonstrated live — the Dream's whole point, proven rather than asserted.
+
+---
+
+## Epic 14: A deck is proven to look right
+
+**Value delivered.** Closes the recorded "render gates prove the page RUNS, never that it
+LOOKS right" gap for Herald's entire deck pipeline: after this epic, one command against any
+built deck yields a PNG per slide, a contact sheet, and a gate-id-keyed machine-readable
+report — evidence a human or LLM reviewer actually looks at instead of trusting "the build
+didn't crash." Decomposes `spec-deck-visual-qa`
+(`planning-artifacts/specs/spec-deck-visual-qa/SPEC.md`).
+
+**Decomposition choice: CAP-3 stays its own story, first — not folded into CAP-1.** The
+report interface is the seam BOTH v1 gates and the three parked `.pptx`-contingent gates
+(`check_xml`, `check_typst_safety`, `audit_overflow`) register into; folding it into the
+render gate's story would make the placeholder scan (and every later gate) depend on that
+gate's internals instead of an interface, and would leave CAP-3's own success criterion — a
+stub gate id added with zero schema change — unverifiable until story two. It is also where
+the Spec's entrypoint-placement open question must be resolved before either gate has
+anywhere to register. With the seam first, the two gate stories are independent (both dep
+only S-14.1) and one-story-per-CAP holds cleanly.
+
+**Spec constraints this epic must not lose:** report-only — the QA step never mutates deck
+sources and never rebuilds; runs against Herald's EXISTING HTML/React pipeline with zero
+dependency on the pptx Dreams (CAP-3 only reserves the parked gates' slot in the report);
+headless-only default; no new headless-browser dependency — playwright-python is already
+pinned in the pixi envs.
+
+### Story 14.1: Gate report interface
+**Type:** foundation • **Effort:** S • **Deps:** none • **FR/AD:** CAP-3
+**Surface:** new `src/pyforge/herald/deck_qa.py` (report schema + gate registry + entrypoint), `cli.py`, tests
+**Given** N registered gates **Then** one machine-readable report keyed by gate id (gate →
+status → per-slide findings → paths to reviewer-facing artifacts) that round-trips — parse it
+back, address each gate's findings by id — and a stub third gate id registers with no change
+to the report schema, the entrypoint, or any consumer: the slot the three parked
+`.pptx`-contingent gates fill later. **First AC: the recorded entrypoint-placement decision**
+(`herald deck qa <slug>` on the Epic-6 CLI dispatcher vs a standalone per-deck `scripts/`
+step alongside `extract-slides.mjs` — the Spec's first open question, resolved here).
+
+### Story 14.2: Headless render gate
+**Type:** feature • **Effort:** M • **Deps:** S-14.1 • **FR/AD:** CAP-1
+**Surface:** render gate in `src/pyforge/herald/deck_qa.py`, tests; verification target `presentations/agentic-sdlc/`
+**Given** any built deck **Then** headless Chromium (playwright-python, already in the pixi
+envs — no new dependency) drives every per-slide `#/<n>` URL-hash route `manifest.json`
+names, screenshots the native 1920×1080 frame, and emits one PNG per slide (named by slide
+index/id) plus one contact sheet into the S-14.1 report. Against
+`presentations/agentic-sdlc/` (45 slides): exactly one PNG per manifest entry plus the sheet,
+and a reviewer can spot a broken slide from the sheet alone; a slide that renders badly still
+yields its PNG — the run reports, never aborts, never mutates deck sources. **First AC: the
+recorded serve-mode decision** (built `dist/` opened as `file://` vs a throwaway local static
+server — the Spec's second open question, resolved by spiking hash-routing under headless
+Chromium against the real deck).
+
+### Story 14.3: Image slot scan
+**Type:** feature • **Effort:** S • **Deps:** S-14.1 • **FR/AD:** CAP-2
+**Surface:** placeholder gate in `src/pyforge/herald/deck_qa.py`, tests; verification target `presentations/agentic-sdlc/`
+**Given** a deck's sources and extracted slides **Then** slides shipping with unfilled image
+slots are flagged in BOTH spellings — `<image-slot placeholder="…">` in prototype/fragment
+sources AND the dashed `.image-slot` placeholder `<div>` the extractor converts them to —
+registered as a second real gate id in the S-14.1 report, proving the multi-gate report shape
+with more than a stub. Against `presentations/agentic-sdlc/` today it flags exactly slide 40
+("In action"), whose three `<image-slot>` panels are documented as deliberately unfilled — a
+live true positive; a deck with every slot filled reports clean. Explicitly NOT the source
+org's PowerPoint-specific "Click to add"/Lorem-ipsum regex.

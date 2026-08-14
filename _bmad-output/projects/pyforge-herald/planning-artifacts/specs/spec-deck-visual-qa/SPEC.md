@@ -1,6 +1,6 @@
 ---
 spec: deck-visual-qa
-status: draft
+status: ready
 owner-dream: docs/dreams/deck-visual-qa.md
 surface:
   - src/shared/packages/pyforge-herald/
