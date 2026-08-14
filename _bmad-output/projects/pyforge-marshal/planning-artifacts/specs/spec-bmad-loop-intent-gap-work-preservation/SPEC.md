@@ -1,6 +1,6 @@
 ---
 spec: bmad-loop-intent-gap-work-preservation
-status: draft
+status: ready
 owner-dream: docs/dreams/bmad-loop-intent-gap-work-preservation.md
 surface:
   - src/shared/packages/pyforge-marshal/src/pyforge/marshal/adapters/harness_bmadloop.py

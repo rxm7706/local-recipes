@@ -1,6 +1,6 @@
 ---
 spec: wagtail-corporate-brain
-status: draft
+status: ready
 owner-dream: docs/dreams/wagtail-corporate-brain.md
 surface:
   - src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/lasuite.py

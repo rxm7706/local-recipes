@@ -1,6 +1,6 @@
 ---
 spec: bmad-switch-scope-enforcement
-status: draft
+status: ready
 owner-dream: docs/dreams/bmad-switch-scope-enforcement.md
 surface:
   - scripts/bmad-switch
