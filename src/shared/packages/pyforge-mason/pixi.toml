@@ -22,13 +22,14 @@ version = "0.*"
 python = ">=3.12"          # AC: requires-python >=3.12 (Mason wraps the CFE craft, which runs on the factory interpreter)
 hatchling = "*"
 
-# Story 3.1: the four engines Mason will drive (pixi/twine/conda-lock/build)
-# are conda run-dependencies, range-pinned to the exact minor this codebase
-# has live evidence for (NOT an exact pin -- engines come from feedstocks,
-# same NFR-C1-style convention pyforge-warden's deptry/osv-scanner pins
-# follow). engines/__init__.py's PIXI_VERSION_RANGE/TWINE_VERSION_RANGE/
-# CONDA_LOCK_VERSION_RANGE/PYTHON_BUILD_VERSION_RANGE SpecifierSet constants
-# must stay byte-for-byte in sync with these four lines -- enforced by
+# Story 3.1 (+ Story 3.7's fifth): the five engines Mason will drive
+# (pixi/twine/conda-lock/build/gh) are conda run-dependencies, range-pinned
+# to the exact minor this codebase has live evidence for (NOT an exact pin
+# -- engines come from feedstocks, same NFR-C1-style convention
+# pyforge-warden's deptry/osv-scanner pins follow). engines/__init__.py's
+# PIXI_VERSION_RANGE/TWINE_VERSION_RANGE/CONDA_LOCK_VERSION_RANGE/
+# PYTHON_BUILD_VERSION_RANGE/GH_VERSION_RANGE SpecifierSet constants must
+# stay byte-for-byte in sync with these five lines -- enforced by
 # tests/meta/test_engine_version_range_sync.py. `packaging` is also a
 # run-dependency: engines/__init__.py imports `packaging.specifiers.
 # SpecifierSet` for those same constants (FR-41's lean-dependency-set floor).
@@ -39,4 +40,5 @@ pixi = ">=0.76.2,<0.77"
 twine = ">=7.0.0,<7.1"
 conda-lock = ">=4.0.2,<4.1"
 python-build = ">=1.5.0,<1.6"
+gh = ">=2.97.0,<2.98"
 pyforge-core = { path = "../pyforge-core" }  # Story 14.3, CAP-5: errors.py's MasonError re-parents to pyforge.core.errors.PyforgeError

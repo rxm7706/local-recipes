@@ -13,7 +13,19 @@ handling).
 
 Story 3.3 extends this file again with `ShipTargetKind`/`ShipTarget`
 coverage: exactly-three-members plus construction/immutability/equality,
-mirroring `ShipTargetResult`'s own test shape."""
+mirroring `ShipTargetResult`'s own test shape.
+
+Story 3.6 extends `DoctorReport`'s two direct construction sites with its
+two new `conda_forge_ship_ready`/`conda_forge_ship_blockers` fields.
+
+Story 3.7 extends this file once more with `ShipReceipt` coverage:
+construction/immutability/equality mirroring the shapes above, plus the
+`ok`-aggregation cases the spec's own I/O & Edge-Case Matrix names ("mixed
+success", "one failure").
+
+Story 3.9 extends `ShipTargetKind`'s coverage to its fourth member,
+`PYPI_TEST` (FR-24, FR-50, AD-26) -- the "exactly three" test above becomes
+"exactly four," mirroring its own established shape."""
 
 from __future__ import annotations
 
@@ -24,7 +36,8 @@ import pytest
 
 from pyforge.mason.engines import EngineStatus
 from pyforge.mason.models import (
-    CfeResult, DoctorReport, ShipState, ShipTarget, ShipTargetKind, ShipTargetResult,
+    CfeResult, DoctorReport, ShipReceipt, ShipState, ShipTarget, ShipTargetKind,
+    ShipTargetResult,
 )
 
 
@@ -76,6 +89,8 @@ def test_doctor_report_constructs_with_its_original_fields():
         cfe_import_floor_missing=(),
         unavailable_verbs=(),
         engines=(EngineStatus(name="pixi", available=True, version="pixi 0.72.2"),),
+        conda_forge_ship_ready=True,
+        conda_forge_ship_blockers=(),
     )
     assert report.cfe_root == "/fake/cfe"
     assert report.engines == (EngineStatus(name="pixi", available=True, version="pixi 0.72.2"),)
@@ -92,6 +107,8 @@ def test_doctor_report_is_frozen():
         cfe_import_floor_missing=("pyyaml",),
         unavailable_verbs=("recipe",),
         engines=(),
+        conda_forge_ship_ready=False,
+        conda_forge_ship_blockers=("the CFE root is unresolved",),
     )
     with pytest.raises(FrozenInstanceError):
         report.mason_version = "9.9.9"  # type: ignore[misc]
@@ -165,8 +182,12 @@ def test_ship_target_result_equality_is_by_value():
 
 # --- ShipTargetKind ----------------------------------------------------------
 
-def test_ship_target_kind_has_exactly_the_three_story_3_3_members():
-    assert {member.value for member in ShipTargetKind} == {"pypi", "conda-forge", "channel"}
+def test_ship_target_kind_has_exactly_the_four_members():
+    """Story 3.9 widens this from three members to four -- `PYPI_TEST`
+    (FR-24, FR-50, AD-26)."""
+    assert {member.value for member in ShipTargetKind} == {
+        "pypi", "conda-forge", "channel", "pypi-test",
+    }
 
 
 def test_ship_target_kind_members_are_real_str_instances():
@@ -175,6 +196,13 @@ def test_ship_target_kind_members_are_real_str_instances():
     test above."""
     assert isinstance(ShipTargetKind.PYPI, str)
     assert ShipTargetKind.CONDA_FORGE == "conda-forge"
+
+
+def test_ship_target_kind_pypi_test_value():
+    """Story 3.9, FR-24/FR-50/AD-26: the TestPyPI rehearsal target's own
+    literal value."""
+    assert ShipTargetKind.PYPI_TEST.value == "pypi-test"
+    assert isinstance(ShipTargetKind.PYPI_TEST, str)
 
 
 # --- ShipTarget ----------------------------------------------------------------
@@ -188,8 +216,10 @@ def test_ship_target_constructs_with_both_fields():
 def test_ship_target_channel_name_accepts_none_for_non_channel_kinds():
     pypi_target = ShipTarget(kind=ShipTargetKind.PYPI, channel_name=None)
     conda_forge_target = ShipTarget(kind=ShipTargetKind.CONDA_FORGE, channel_name=None)
+    pypi_test_target = ShipTarget(kind=ShipTargetKind.PYPI_TEST, channel_name=None)
     assert pypi_target.channel_name is None
     assert conda_forge_target.channel_name is None
+    assert pypi_test_target.channel_name is None
 
 
 def test_ship_target_is_frozen():
@@ -202,3 +232,58 @@ def test_ship_target_equality_is_by_value():
     a = ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg")
     b = ShipTarget(kind=ShipTargetKind.CHANNEL, channel_name="myorg")
     assert a == b
+
+
+# --- ShipReceipt (Story 3.7) ----------------------------------------------------
+
+_TERMINAL_RESULT = ShipTargetResult(
+    target="pypi", state=ShipState.TERMINAL, reference="https://pypi.org/project/pkg/0.1.0/",
+    message="View at:\n...\n",
+)
+_PENDING_RESULT = ShipTargetResult(
+    target="channel:myorg", state=ShipState.PENDING, reference=None,
+    message="could not determine whether channel already has pkg",
+)
+_FAILED_RESULT = ShipTargetResult(
+    target="pypi", state=ShipState.FAILED, reference=None, message="ERROR HTTPError: 400\n",
+)
+_NOT_ATTEMPTED_RESULT = ShipTargetResult(
+    target="conda-forge", state=ShipState.NOT_ATTEMPTED, reference=None, message=None,
+)
+
+
+def test_ship_receipt_constructs_with_both_fields():
+    receipt = ShipReceipt(targets=(_TERMINAL_RESULT,), ok=True)
+    assert receipt.targets == (_TERMINAL_RESULT,)
+    assert receipt.ok is True
+
+
+def test_ship_receipt_is_frozen():
+    receipt = ShipReceipt(targets=(), ok=True)
+    with pytest.raises(FrozenInstanceError):
+        receipt.ok = False  # type: ignore[misc]
+
+
+def test_ship_receipt_equality_is_by_value():
+    a = ShipReceipt(targets=(_TERMINAL_RESULT,), ok=True)
+    b = ShipReceipt(targets=(_TERMINAL_RESULT,), ok=True)
+    assert a == b
+
+
+def test_ship_receipt_mixed_not_attempted_and_pending_is_ok():
+    """spec I/O matrix: 'Receipt aggregate, mixed success' -- targets =
+    (TERMINAL, PENDING) -> ShipReceipt.ok is True."""
+    receipt = ShipReceipt(targets=(_TERMINAL_RESULT, _PENDING_RESULT), ok=True)
+    assert receipt.ok is True
+
+
+def test_ship_receipt_any_failed_target_is_not_ok():
+    """spec I/O matrix: 'Receipt aggregate, one failure' -- targets =
+    (TERMINAL, FAILED) -> ShipReceipt.ok is False."""
+    receipt = ShipReceipt(targets=(_TERMINAL_RESULT, _FAILED_RESULT), ok=False)
+    assert receipt.ok is False
+
+
+def test_ship_receipt_not_attempted_alone_is_ok():
+    receipt = ShipReceipt(targets=(_NOT_ATTEMPTED_RESULT,), ok=True)
+    assert receipt.ok is True
