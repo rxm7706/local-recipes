@@ -622,15 +622,16 @@ def test_referenced_entry_with_legacy_of_set_is_still_present_conformant(tmp_pat
 
 def test_canonical_specs_dir_legacy_worked_example(tmp_path):
     """The AD-59 / epics AC canonical worked example, proven via a
-    self-contained fixture using the real manifest's own ids -- never by
-    editing the shipped ``templates/manifest.yaml`` (see the spec's Design
-    Notes)."""
+    self-contained fixture using the real manifest's own id AND class for
+    ``specs-dir-legacy`` (``templates/manifest.yaml``'s ``generated-derived``,
+    not an arbitrary stand-in) -- never by editing the shipped manifest
+    itself (see the spec's Design Notes)."""
     (tmp_path / "docs" / "specs").mkdir(parents=True)
     manifest = _manifest(
         _whole_file(
             "specs-dir-legacy",
             "docs/specs/",
-            ArtifactClass.COPIED_MANAGED,
+            ArtifactClass.GENERATED_DERIVED,
             legacy_of="planning-artifacts-symlink",
         )
     )
