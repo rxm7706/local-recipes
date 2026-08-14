@@ -17,8 +17,11 @@ letting the index grow unbounded.
 ## Feedback
 
 - [bmad-runs-cfe-retro](feedback/bmad-runs-cfe-retro.md) — Always-on rule — at closeout of any BMAD-driven conda-forge effort, run bmad-retrospective focused on conda-forge-exper…
+- [spec-surface-check-py-s-write-baseline-reads-git-ls-files-so](feedback/spec-surface-check-py-s-write-baseline-reads-git-ls-files-so.md) — spec_surface_check.py's --write-baseline reads git ls-files, so new files must be git add'ed BEFORE stamping or the bas…
 
 ## Project
+
+- [the-stuck-orchestrator-baseline-bug-bmad-loop-s-task-baselin](project/the-stuck-orchestrator-baseline-bug-bmad-loop-s-task-baselin.md) — The stuck-orchestrator-baseline bug: bmad-loop's task.baseline_commit can drift to a later commit while a dev session i…
 
 ## Reference
 
