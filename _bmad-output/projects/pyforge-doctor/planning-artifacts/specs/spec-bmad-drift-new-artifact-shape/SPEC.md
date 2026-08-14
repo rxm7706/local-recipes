@@ -1,13 +1,12 @@
 ---
 spec: bmad-drift-new-artifact-shape
-status: draft
+status: shipped
 owner-dream: docs/dreams/bmad-drift-new-artifact-shape.md
 surface:
   - src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py
 sources:
   - ../../../../../../docs/dreams/bmad-drift-new-artifact-shape.md
-open_questions:
-  - "Exact rule scope (a story-level design decision, not resolved by the Dream): literally spike-*-report.md at planning-artifacts/ root, or a slightly wider pattern anticipating a future Spike-1/Spike-2 report following the same convention."
+open_questions: []
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what
@@ -80,9 +79,3 @@ other file the same story produced (including its sibling
 `implementation-artifacts/spec-7-6-spike-0-copier-api-fit.md`) already matches an existing rule.
 After the fix, re-running `check_coverage` against the same tree returns zero `uncovered`
 findings, and `pixi run -e local-recipes detectors-ci` reports clean for `bmad-drift`.
-
-## Open Questions
-
-- "Exact rule scope (a story-level design decision, not resolved by the Dream): literally
-  `spike-*-report.md` at `planning-artifacts/` root, or a slightly wider pattern anticipating a
-  future Spike-1/Spike-2 report following the same convention."
