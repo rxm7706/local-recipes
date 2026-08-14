@@ -7,7 +7,7 @@ import ErrorState from '../components/ErrorState.jsx';
  * `progress.json` snapshot (there is no live REST API in this scaled-down
  * pass -- see docs/dreams/herald-moments-2-4-live-backend.md). The
  * snapshot is written by `npm run sync-progress` (wired as a `predev`/
- * `prebuild` hook) from the operator's local `.herald/progress.json`.
+ * `prebuild` hook) from the operator's local `.herald/herald.db`.
  *
  * Shows the *latest* record per station as an expandable card, filtered by
  * the sidebar's station/date-range filters -- matches the epics doc's own

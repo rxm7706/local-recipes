@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Export the visible (published + closed) notices from
-``.herald/notices-index.json`` to ``web/public/notices.json`` -- the
+``.herald/herald.db`` to ``web/public/notices.json`` -- the
 static-JSON-snapshot the Operations web tab (Story 10.5) fetches at load,
 since Herald has no running server to query live.
 

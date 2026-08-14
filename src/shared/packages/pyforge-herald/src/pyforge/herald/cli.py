@@ -10,8 +10,13 @@ push-back). ``progress``/``success``/``notice`` are all real as of Epics
 ``notices.py``, all scaled down from the epics doc's live-database/
 webhook/cron design per the 2026-08-08 scope decision -- see
 ``docs/dreams/herald-moments-2-4-live-backend.md``), with an explicit CLI
-command as the sole record-creation path (an operator runs it by hand;
-there is no webhook anywhere in this module).
+command as the primary, operator-run record-creation path. Epic 13 (Story
+13.4) added a second, HMAC-verified path -- ``webhook.py``'s
+``on-ship``/``on-pr-close`` ASGI3 handlers, calling straight through to
+the same ``progress.upsert``/``claims.create`` these CLI verbs call --
+but that module has no subcommand here: it is mounted directly into an
+ASGI host by whatever deploys it (Story 13.6), not dispatched through
+this argparse tree.
 
 **Dispatcher (Story 6.1, AD-11).** One ``herald`` entry point; every
 subcommand routes through ``_route``. Exit-code shape, reconciled with
@@ -62,6 +67,7 @@ from . import (
     errors,
     notices,
     progress,
+    scheduler,
 )
 from . import watch as watch_module
 from .claims import CLAIM_STATUSES
@@ -69,7 +75,7 @@ from .transport import McpTransport
 
 TOOL_NAME = "herald"
 
-TOP_LEVEL_COMMANDS = ("deck", "progress", "success", "notice")
+TOP_LEVEL_COMMANDS = ("deck", "progress", "success", "notice", "scheduler")
 """Every top-level subcommand this dispatcher knows, in help/error-message
 order. Extending this tuple is the whole of what Story 6.1's "Moment 5"
 extensibility promise (AD-20) asks of a future subcommand's wiring here."""
@@ -205,6 +211,7 @@ def _build_parser() -> _HeraldArgumentParser:
             "  herald progress --station warden "
             "--date-range 2026-08-01..2026-08-31\n"
             "  herald success publish claim-123\n"
+            "  herald scheduler run\n"
         ),
         formatter_class=argparse.RawDescriptionHelpFormatter,
     )
@@ -413,7 +420,7 @@ def _build_parser() -> _HeraldArgumentParser:
         "--repo-root",
         type=Path,
         default=None,
-        help="repo root containing .herald/claims.json (default: cwd)",
+        help="repo root containing .herald/herald.db (default: cwd)",
     )
     success_subparsers = success.add_subparsers(
         dest="success_command", required=False, metavar="success_command"
@@ -598,6 +605,58 @@ def _build_parser() -> _HeraldArgumentParser:
         help="redirect OLD component's lookups to NEW (NEW must already have a notice)",
     )
 
+    scheduler_parser = subparsers.add_parser(
+        "scheduler",
+        help="run the scheduled evidence-revalidation + progress-snapshot jobs (Story 13.5)",
+        description=(
+            "Compose evidence revalidation (`success validate --all`'s own "
+            "call) and the progress snapshot export into one operator/"
+            "cron-facing entry point. Both jobs run unconditionally on "
+            "every invocation -- the ~weekly evidence-staleness window is "
+            "enforced by the trigger's cadence (a cron entry), not by "
+            "this command. Never requires the operator role: neither job "
+            "creates or modifies claim/progress content, only refreshes "
+            "derived state."
+        ),
+        epilog=(
+            "examples:\n"
+            "  herald scheduler run\n"
+            "  herald scheduler run --repo-root . --json\n"
+        ),
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+    )
+    scheduler_subparsers = scheduler_parser.add_subparsers(
+        dest="scheduler_command", required=True
+    )
+    scheduler_run = scheduler_subparsers.add_parser(
+        "run",
+        help=(
+            "run both scheduled jobs once: revalidate every claim's "
+            "evidence, then rewrite the progress snapshot"
+        ),
+    )
+    scheduler_run.add_argument(
+        "--repo-root",
+        type=Path,
+        default=None,
+        help="repo root containing .herald/herald.db (default: cwd)",
+    )
+    scheduler_run.add_argument(
+        "--out-dir",
+        type=Path,
+        default=None,
+        help=(
+            "directory to write progress.json into "
+            "(default: <repo-root>/web/public)"
+        ),
+    )
+    scheduler_run.add_argument(
+        "--json",
+        "-j",
+        action="store_true",
+        help="machine-readable JSON output (no colorization)",
+    )
+
     return parser
 
 
@@ -674,6 +733,8 @@ def _route(args: argparse.Namespace) -> int:
         if notice_command == "archive":
             return _run_notice_archive(args)
         return _run_notice_list(args)
+    if args.command == "scheduler" and args.scheduler_command == "run":
+        return _run_scheduler_run(args)
     return 0
 
 
@@ -1038,8 +1099,10 @@ def _run_progress(args: argparse.Namespace) -> int:
 
 
 def _success_claims_path(args: argparse.Namespace) -> Path:
-    """Resolve ``.herald/claims.json`` under ``args.repo_root`` (default:
-    cwd) -- shared by every ``success`` subcommand handler below."""
+    """Resolve ``.herald/herald.db`` under ``args.repo_root`` (default:
+    cwd) -- shared by every ``success`` subcommand handler below. Still
+    named ``claims_path`` throughout: Story 13.3 moved the claims store
+    into the shared database without changing any signature."""
     repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
     return repo_root / claims.DEFAULT_CLAIMS_PATH
 
@@ -1159,7 +1222,7 @@ def _run_success_publish(args: argparse.Namespace) -> int:
 
 def _run_success_list(args: argparse.Namespace) -> int:
     """``herald success`` with no subcommand, or ``herald success list``
-    (Story 9.3): read-only listing over ``claims.json``, optionally
+    (Story 9.3): read-only listing over the claims store, optionally
     filtered by ``--status`` and/or the shared ``--date-range`` (matched
     against each claim's ``shipped_date``)."""
     claims_path = _success_claims_path(args)
@@ -1374,7 +1437,7 @@ def _run_notice_get(args: argparse.Namespace) -> int:
     """``herald notice get <component>`` -- read-only full detail,
     following a rename redirect (Story 10.3). Also shows Story 11.3's
     cross-Moment backlink: every claim citing this notice as evidence
-    (``claims.referenced_by_claims``, computed fresh from ``claims.json`` --
+    (``claims.referenced_by_claims``, computed fresh from the claims store --
     not stored on the notice itself, see ``claims.py``'s module docstring).
 
     Passes ``notices.aliases_for``'s full alias set (the resolved name plus
@@ -1449,6 +1512,69 @@ def _run_notice_archive(args: argparse.Namespace) -> int:
         print(f"redirect recorded: {old_component!r} -> {new_component!r}")
 
     return dispatch(operation)
+
+
+def _run_scheduler_run(args: argparse.Namespace) -> int:
+    """``herald scheduler run`` (Story 13.5) -- the operator/cron-facing
+    entry point composing ``scheduler.run_scheduled_jobs``'s two jobs
+    (evidence revalidation, the progress snapshot export) into one
+    invocation. Never gated on the operator role: mirrors ``success
+    validate``'s own ungated behavior (AD-16) -- neither job creates or
+    modifies claim/progress content, only refreshes derived state.
+
+    ``--out-dir`` defaults to ``<repo-root>/web/public`` -- the same
+    location ``scripts/export_progress_snapshot.py``'s own default
+    resolves to for a normal checkout (where ``--repo-root`` is this
+    package's own directory), without this command needing to locate its
+    own installed package path the way that dev-only script does (this
+    command also runs from a real, installed conda package, where that
+    trick would resolve to nothing meaningful). This default only lands
+    at the web dashboard's real ``web/public/`` when ``--repo-root`` IS
+    this package's own checkout, matching the documented crontab recipe
+    (``docs/cli-runbooks.md``) -- a caller pointing ``--repo-root``
+    somewhere else (e.g. an isolated test directory) and still wanting
+    the real dashboard updated must pass ``--out-dir`` explicitly."""
+    repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
+    out_dir = args.out_dir if args.out_dir is not None else repo_root / "web" / "public"
+    claims_path = repo_root / claims.DEFAULT_CLAIMS_PATH
+    progress_path = repo_root / progress.DEFAULT_PROGRESS_PATH
+
+    def operation() -> None:
+        try:
+            result = scheduler.run_scheduled_jobs(
+                claims_path=claims_path, progress_path=progress_path, out_dir=out_dir
+            )
+        except OSError as exc:
+            raise errors.HeraldError(f"scheduler run failed: {exc}") from exc
+        if args.json:
+            print(
+                json.dumps(
+                    {
+                        "claims_checked": result.claims_checked,
+                        "broken_evidence_claim_ids": list(
+                            result.broken_evidence_claim_ids
+                        ),
+                        "records_aggregated": result.records_aggregated,
+                        "snapshot_path": str(result.snapshot_path),
+                    }
+                )
+            )
+            return
+        print(
+            f"progress: {result.records_aggregated} record(s) aggregated -> "
+            f"{result.snapshot_path}"
+        )
+        if result.broken_evidence_claim_ids:
+            broken = ", ".join(result.broken_evidence_claim_ids)
+            print(
+                f"evidence: {result.claims_checked} claim(s) revalidated, "
+                f"{len(result.broken_evidence_claim_ids)} with broken "
+                f"evidence: {broken}"
+            )
+        else:
+            print(f"evidence: {result.claims_checked} claim(s) revalidated")
+
+    return dispatch(operation, json_output=args.json)
 
 
 def _prompt(

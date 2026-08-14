@@ -17,11 +17,23 @@
 # ABSENT:
 #   * `worktree_seed_paths` -- generated from the project slug, so restating it would
 #     create a second truth that could drift.
-#   * `model_tier_map` -- it maps DIFFICULTY CLASS to {stage: model}, and which
-#     difficulty applies to a story is explicitly "a later story's concern", so the
-#     vocabulary does not exist yet. The rendered template already carries the stage
-#     baselines (`[adapter] model = "sonnet"`, `[adapter.review] model = "fable"`),
-#     so per-stage tiering works without it. Populate when FR-51 tier-batching lands.
+#
+# `model_tier_map` IS present (see the bottom of this file, after the
+# `[[landing_rules]]` array-of-tables entries -- TOML scopes a bare `key = value`
+# line to the most recently opened table, so this dotted-table key must sit last or
+# it would silently swallow `verify_commands`/`gate_mode` into itself). It maps a
+# DIFFICULTY CLASS (a free-form string) to `{stage: model}`. A story declares which
+# class governs its own launch via `difficulty: <key>` in its own Tier-3 spec
+# frontmatter (`.claude/skills/bmad-dev-auto/spec-template.md` /
+# `.claude/skills/bmad-quick-dev/spec-template.md`) -- authored, never derived from
+# `epics.md`'s separate PM-time `Effort:` field. An undeclared or declared-but-unmapped
+# difficulty resolves to "no override": the flat baseline stays unchanged
+# (`[adapter] model = "sonnet"`, `[adapter.review] model = "opus"`). Only the stages
+# present under the matched key get overridden -- an absent stage keeps its own
+# existing baseline (`dev`/`triage` inherit `[adapter].model`; `review` has its own
+# `[adapter.review].model` baseline and is untouched by a tier that omits it -- e.g.
+# `easy` below overrides only `dev`, so an `easy` story's review still runs on the
+# `opus` baseline, not a downgraded value).
 #
 # gate_mode: unattended (operator direction, 2026-07-26). This is the HUMAN approval
 # gate ONLY -- the independent reviewer still runs on every story.
@@ -86,3 +98,14 @@ trigger_path_glob = "pixi.toml"
 trigger_mode = "include"
 required_check = "environment-yaml-sync"
 ungated = true
+
+# model_tier_map (FR-51, Story 3.11): DIFFICULTY CLASS -> {stage: model}. Must stay
+# the LAST thing in this file -- see the comment block above. "heavy"/"easy" reuse
+# Story 6.1's own test-fixture vocabulary (`test_spin.py::_model_tier_map_policy_path`)
+# rather than inventing a second one.
+[model_tier_map.heavy]
+dev = "opus"
+review = "opus"
+
+[model_tier_map.easy]
+dev = "haiku"

@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import urllib.request
+from urllib.parse import unquote
 
 import pytest
 from pyforge.steward.keys import HostScopedCredential
@@ -19,7 +20,9 @@ from pyforge.steward.sync import (
     _parse_baseline,
     get_jira_issue,
     github_graphql_request,
+    list_linked_github_items,
     reconcile,
+    reconcile_schedule_batch,
     transition_jira_issue,
 )
 
@@ -34,6 +37,13 @@ CONFIG = SyncConfig(
     jira_project_key="PROJ",
     jira_link_field_id="jira_link",
     jira_baseline_field_id="jira_baseline",
+    # Identity mapping covering this file's entire fixture vocabulary (every
+    # `push_to_github`-decision test in this file, including the `--schedule`
+    # batch tests) -- Story 8.6. Every existing test's Jira status values
+    # already match their GitHub counterparts 1:1, so translation is a no-op
+    # here; the dedicated translation/unmapped tests below use their own
+    # differently-shaped `status_mapping`.
+    status_mapping={"To Do": "To Do", "In Progress": "In Progress", "Blocked": "Blocked"},
 )
 
 CONFIG_JIRA_WINS = SyncConfig(
@@ -224,6 +234,73 @@ def test_jira_changed_github_did_not_pushes_to_github_and_refreshes_both_baselin
     assert transport.github_fields["gh_status"] == "In Progress"
     assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "In Progress"}
     assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "In Progress"}
+
+
+# ── Row (Story 8.6, AD-6/CAP-5): a mapped Jira status translates before writing to GitHub ──
+
+CONFIG_STATUS_TRANSLATION = SyncConfig(
+    **{**CONFIG.__dict__, "status_mapping": {"Closed": "Done"}}
+)
+
+
+def test_mapped_jira_status_translates_before_writing_to_github():
+    """A Jira status name that differs from its GitHub counterpart must be
+    translated through `status_mapping` before the GitHub write -- GitHub's
+    status field receives the MAPPED value, GitHub's baseline records that
+    mapped value, and Jira's baseline records the original (untranslated)
+    value, since Jira's own value never changed."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "To Do",
+            "gh_baseline": '{"status": "To Do"}',  # matches current -- gh unchanged
+        },
+        jira_fields={
+            "status": {"name": "Closed"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do"}',  # stale -- jira_changed
+        },
+    )
+
+    result = reconcile(jira_issue_key="PROJ-1", config=CONFIG_STATUS_TRANSLATION, transport=transport)
+
+    assert result.ok is True
+    assert result.details["decision"] == "push_to_github"
+    assert transport.github_fields["gh_status"] == "Done"
+    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "Done"}
+    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "Closed"}
+    # `result.details["baseline"]` must mirror the actually-written (translated)
+    # GH value, never the raw pre-translation `target_value` -- a caller reading
+    # the returned details, not the transport, must see the same truth.
+    assert result.details["baseline"] == {"status": "Done"}
+
+
+def test_unmapped_jira_status_pushed_to_github_is_a_named_failure_not_a_passthrough():
+    """AD-6: an unmapped status value crossing into GitHub is a hard, named
+    failure, never passed through as a phantom GitHub state. No GitHub
+    write happens, and neither baseline is written (mirrors
+    `test_no_matching_jira_transition_is_a_named_failure_not_a_guess`'s
+    assertion shape for the symmetric push_to_jira direction)."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "To Do",
+            "gh_baseline": '{"status": "To Do"}',  # matches current -- gh unchanged
+        },
+        jira_fields={
+            "status": {"name": "Triage"},  # not in CONFIG_STATUS_TRANSLATION.status_mapping
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do"}',  # stale -- jira_changed
+        },
+    )
+
+    result = reconcile(jira_issue_key="PROJ-1", config=CONFIG_STATUS_TRANSLATION, transport=transport)
+
+    assert result.ok is False
+    assert "unmapped: jira status 'Triage' has no status_mapping entry for github" in result.summary
+    assert transport.write_calls() == []
+    assert transport.github_fields["gh_baseline"] == '{"status": "To Do"}'
+    assert transport.jira_fields["jira_baseline"] == '{"status": "To Do"}'
 
 
 # ── Row: both changed since their own baseline (real conflict) -> GitHub wins per AD-4 ──
@@ -1103,3 +1180,521 @@ def test_late_delivery_about_a_superseded_value_does_not_regress_state_ad9_rule2
     assert len(transport.write_calls()) == writes_after_second
     assert transport.github_fields == github_snapshot
     assert transport.jira_fields == jira_snapshot
+
+
+# ── Epic 8 Story 8.4: trigger=schedule candidate enumeration + batch dispatch ──
+#
+# `list_linked_github_items`/`reconcile_schedule_batch` are new -- `reconcile()`
+# itself is reused verbatim (Boundaries & Constraints), so the bulk of this
+# section proves the NEW listing/dispatch machinery, not the reconcile
+# decision logic already proven above. `list_linked_github_items` is called
+# once per batch, then `reconcile()` is called once per discovered candidate
+# -- both against the SAME transport instance -- so, unlike `FakeTransport`
+# above (which only ever models ONE linked pair), the fake below must model
+# MULTIPLE independent GitHub-item/Jira-issue pairs.
+
+
+def _issue_key_from_url(url: str) -> str:
+    """`.../rest/api/3/issue/<key>[?fields=...]` or
+    `.../rest/api/3/issue/<key>/transitions` -- pulls `<key>` back out,
+    reversing `sync.py`'s own `quote(issue_key, safe='')` escaping."""
+    after = url.split("/issue/", 1)[1]
+    after = after.split("?", 1)[0]
+    after = after.split("/transitions", 1)[0]
+    return unquote(after)
+
+
+class ScheduleFakeTransport:
+    """A dedicated fake for Story 8.4's batch dispatcher -- serves BOTH the
+    new bulk-listing query (`_LIST_PROJECT_ITEMS_QUERY`, routed on
+    `"projectId"` present / `"itemId"` absent in `variables`, distinct from
+    `FakeTransport`'s single-item query/mutation routing above) AND every
+    single-pair call `reconcile()` itself makes per dispatched candidate.
+
+    `items`: `{github_item_id: {"fields": {field_id: text, ...}, "updated_at": ...}}`.
+    `jira_issues`: `{jira_issue_key: {"fields": {...}, "transitions": [...]}}`
+    -- an issue key absent from this mapping answers every GET/transitions
+    call for it with HTTP 404, simulating a stale/mismatched link (the I/O
+    Matrix's own example of a candidate that fails mid-batch).
+    `page_size` is deliberately small by default so a multi-item fixture
+    exercises real pagination (Design Notes' pagination-loop shape) without
+    a large fixture.
+    """
+
+    def __init__(
+        self,
+        *,
+        items: dict[str, dict[str, object]] | None = None,
+        jira_issues: dict[str, dict[str, object]] | None = None,
+        page_size: int = 2,
+    ) -> None:
+        self.items: dict[str, dict[str, object]] = {
+            item_id: {
+                "fields": dict(entry.get("fields") or {}),
+                "updated_at": entry.get("updated_at"),
+            }
+            for item_id, entry in (items or {}).items()
+        }
+        self.jira_issues: dict[str, dict[str, object]] = {
+            key: {
+                "fields": dict(entry.get("fields") or {}),
+                "transitions": list(entry.get("transitions") or []),
+            }
+            for key, entry in (jira_issues or {}).items()
+        }
+        self.page_size = page_size
+        self.calls: list[dict[str, object]] = []
+
+    def __call__(self, request: urllib.request.Request) -> TransportResponse:
+        method = request.get_method()
+        url = request.full_url
+        body = json.loads(request.data) if request.data else None
+        self.calls.append({"method": method, "url": url, "body": body})
+
+        if url == _GITHUB_GRAPHQL_URL:
+            return self._github(body)
+        return self._jira(method, url, body)
+
+    # -- GitHub GraphQL ------------------------------------------------
+
+    def _github(self, body: dict[str, object]) -> TransportResponse:
+        variables = body["variables"]
+        if "fieldId" in variables:
+            item_id = variables["itemId"]
+            self.items.setdefault(item_id, {"fields": {}, "updated_at": None})
+            self.items[item_id]["fields"][variables["fieldId"]] = variables["value"]["text"]
+            payload = {
+                "data": {"updateProjectV2ItemFieldValue": {"projectV2Item": {"id": item_id}}}
+            }
+            return TransportResponse(status=200, body=json.dumps(payload).encode())
+
+        if "itemId" in variables:
+            item_id = variables["itemId"]
+            entry = self.items.get(item_id, {"fields": {}})
+            node = self._node(item_id, entry)
+            payload = {"data": {"node": node}}
+            return TransportResponse(status=200, body=json.dumps(payload).encode())
+
+        # The bulk-listing query: "projectId" present, "itemId" absent.
+        return self._list_page(variables.get("after"))
+
+    def _node(self, item_id: str, entry: dict[str, object]) -> dict[str, object]:
+        return {
+            "id": item_id,
+            "updatedAt": entry.get("updated_at"),
+            "fieldValues": {
+                "nodes": [
+                    {"text": value, "field": {"id": field_id}}
+                    for field_id, value in entry["fields"].items()
+                ]
+            },
+        }
+
+    def _list_page(self, after: str | None) -> TransportResponse:
+        ids = list(self.items.keys())
+        start = 0 if after is None else ids.index(after) + 1
+        page_ids = ids[start : start + self.page_size]
+        has_next = (start + self.page_size) < len(ids)
+        end_cursor = page_ids[-1] if page_ids else None
+        nodes = [self._node(item_id, self.items[item_id]) for item_id in page_ids]
+        payload = {
+            "data": {
+                "node": {
+                    "items": {
+                        "nodes": nodes,
+                        "pageInfo": {"hasNextPage": has_next, "endCursor": end_cursor},
+                    }
+                }
+            }
+        }
+        return TransportResponse(status=200, body=json.dumps(payload).encode())
+
+    # -- Jira REST v3 ----------------------------------------------------
+
+    def _jira(self, method: str, url: str, body: dict[str, object] | None) -> TransportResponse:
+        issue_key = _issue_key_from_url(url)
+        issue = self.jira_issues.get(issue_key)
+        if issue is None:
+            # No such issue -- a stale/mismatched link, the I/O Matrix's own
+            # example of a candidate that fails mid-batch.
+            return TransportResponse(status=404, body=b'{"errorMessages": ["Issue Does Not Exist"]}')
+
+        if url.endswith("/transitions"):
+            if method == "GET":
+                payload = {"transitions": issue["transitions"]}
+                return TransportResponse(status=200, body=json.dumps(payload).encode())
+            transition_id = body["transition"]["id"]
+            matched = next(t for t in issue["transitions"] if t["id"] == transition_id)
+            issue["fields"]["status"] = {"name": matched["to"]["name"]}
+            return TransportResponse(status=204, body=b"")
+        if method == "GET":
+            payload = {"fields": dict(issue["fields"])}
+            return TransportResponse(status=200, body=json.dumps(payload).encode())
+        if method == "PUT":
+            issue["fields"].update(body["fields"])
+            return TransportResponse(status=204, body=b"")
+        raise AssertionError(f"ScheduleFakeTransport: unexpected jira call {method} {url}")
+
+
+_GH_CREDENTIAL = HostScopedCredential(hosts=("api.github.com",))
+
+
+# ── Row: paginated board (> one page) -- lister follows the cursor to exhaustion ──
+
+
+def test_list_linked_github_items_follows_pagination_across_multiple_pages():
+    transport = ScheduleFakeTransport(
+        items={
+            f"ITEM_{i}": {"fields": {"gh_link": f"PROJ-{i}", "gh_status": "To Do"}}
+            for i in range(1, 6)  # 5 items, page_size=2 below -> forces 3 pages
+        },
+        page_size=2,
+    )
+
+    candidates = list_linked_github_items(config=CONFIG, credential=_GH_CREDENTIAL, transport=transport)
+
+    assert {c["github_item_id"] for c in candidates} == {f"ITEM_{i}" for i in range(1, 6)}
+    # every listing call carries "after" in its variables (even when None on
+    # the first page) -- distinct from a single-item/mutation call, neither
+    # of which ever sets it.
+    listing_calls = [c for c in transport.calls if "after" in (c["body"] or {}).get("variables", {})]
+    assert len(listing_calls) == 3  # 2 + 2 + 1 items per page
+
+
+# ── Row: candidacy is gated on nothing -- every enumerated item is a candidate ──
+
+
+def test_list_linked_github_items_never_filters_on_link_or_baseline():
+    """Story 8.5 (CAP-4 "fail loud, fail alone"): candidacy is never gated on
+    any field value -- not the link field, not the baseline. Every
+    deduplicated node the bulk listing returns becomes a candidate,
+    regardless of whether it is linked. AD-10 rule 1 (an absent baseline is
+    a first link, not a loop candidate) still holds, but is now just one
+    instance of the broader "never gate on field values" rule -- the
+    baseline is never even read during enumeration (Boundaries &
+    Constraints)."""
+    transport = ScheduleFakeTransport(
+        items={
+            "ITEM_1": {"fields": {"gh_link": "PROJ-1"}},  # linked, no baseline -- still a candidate (unchanged)
+            "ITEM_2": {"fields": {"gh_status": "To Do"}},  # no link -- NOW also a candidate (changed)
+            "ITEM_3": {"fields": {"gh_link": "PROJ-3", "gh_baseline": '{"status": "Blocked"}'}},
+        },
+        page_size=10,
+    )
+
+    candidates = list_linked_github_items(config=CONFIG, credential=_GH_CREDENTIAL, transport=transport)
+
+    assert {c["github_item_id"] for c in candidates} == {"ITEM_1", "ITEM_2", "ITEM_3"}
+
+
+def test_list_linked_github_items_malformed_response_is_a_named_failure():
+    def transport(request: urllib.request.Request) -> TransportResponse:
+        return TransportResponse(status=200, body=json.dumps({"data": {"node": None}}).encode())
+
+    with pytest.raises(SyncAPIError, match="malformed response"):
+        list_linked_github_items(config=CONFIG, credential=_GH_CREDENTIAL, transport=transport)
+
+
+# ── Row: batch entirely unlinked items -> ok=False, every entry named "unlinked:" ──
+
+
+def test_schedule_batch_with_all_unlinked_items_fails_every_entry_by_name():
+    """Story 8.5 (CAP-4 "fail loud, fail alone"): an item with no link field
+    value is still a candidate and is still dispatched through `reconcile()`
+    -- it is `reconcile()`'s own `SyncUnlinkedError` (via `_read_both_sides`)
+    that names the failure, not `list_linked_github_items` silently dropping
+    it. An all-unlinked-item batch therefore still enumerates every item,
+    dispatches every one, and fails every one by name -- never a silent
+    "0 candidates" no-op."""
+    transport = ScheduleFakeTransport(
+        items={
+            "ITEM_1": {"fields": {"gh_status": "To Do"}},  # no gh_link -> still a candidate, now fails
+            "ITEM_2": {"fields": {}},
+        },
+    )
+
+    result = reconcile_schedule_batch(config=CONFIG, transport=transport)
+
+    assert result.ok is False
+    candidates = {c["github_item_id"]: c for c in result.details["candidates"]}
+    assert len(candidates) == 2
+    assert candidates["ITEM_1"]["ok"] is False
+    assert "unlinked: github item ITEM_1 has no linked jira issue" in candidates["ITEM_1"]["summary"]
+    assert candidates["ITEM_2"]["ok"] is False
+    assert "unlinked: github item ITEM_2 has no linked jira issue" in candidates["ITEM_2"]["summary"]
+    assert "2 candidates" in result.summary
+    assert "2 failed" in result.summary
+    # reconcile() raises SyncUnlinkedError before ever attempting a Jira
+    # call -- only the GitHub listing + per-item reads ran.
+    assert all(call["url"] == _GITHUB_GRAPHQL_URL for call in transport.calls)
+
+
+# ── Row: multiple candidates, all converge cleanly -> ok=True, 3 entries ───
+
+
+def test_schedule_batch_with_multiple_candidates_all_converge_cleanly():
+    transport = ScheduleFakeTransport(
+        items={
+            "ITEM_1": {
+                "fields": {"gh_link": "PROJ-1", "gh_status": "To Do", "gh_baseline": '{"status": "To Do"}'},
+                "updated_at": "2026-08-13T00:00:00Z",
+            },
+            "ITEM_2": {
+                "fields": {
+                    "gh_link": "PROJ-2",
+                    "gh_status": "In Progress",
+                    "gh_baseline": '{"status": "In Progress"}',
+                }
+            },
+            "ITEM_3": {
+                "fields": {"gh_link": "PROJ-3", "gh_status": "Blocked", "gh_baseline": '{"status": "Blocked"}'}
+            },
+        },
+        jira_issues={
+            "PROJ-1": {
+                "fields": {"status": {"name": "To Do"}, "jira_link": "ITEM_1", "jira_baseline": '{"status": "To Do"}'}
+            },
+            "PROJ-2": {
+                "fields": {
+                    "status": {"name": "In Progress"},
+                    "jira_link": "ITEM_2",
+                    "jira_baseline": '{"status": "In Progress"}',
+                }
+            },
+            "PROJ-3": {
+                "fields": {
+                    "status": {"name": "Blocked"},
+                    "jira_link": "ITEM_3",
+                    "jira_baseline": '{"status": "Blocked"}',
+                }
+            },
+        },
+        page_size=10,
+    )
+
+    result = reconcile_schedule_batch(config=CONFIG, transport=transport)
+
+    assert result.ok is True
+    candidates = result.details["candidates"]
+    assert len(candidates) == 3
+    assert all(c["ok"] for c in candidates)
+    assert {c["github_item_id"] for c in candidates} == {"ITEM_1", "ITEM_2", "ITEM_3"}
+    assert "3 candidates" in result.summary
+    assert "3 ok" in result.summary
+    assert "0 failed" in result.summary
+    # `updated_at` is fetched during enumeration and must be surfaced per
+    # candidate for observability (Boundaries & Constraints), never silently
+    # dropped between the lister and the aggregate result.
+    by_id = {c["github_item_id"]: c for c in candidates}
+    assert by_id["ITEM_1"]["updated_at"] == "2026-08-13T00:00:00Z"
+
+
+def test_schedule_batch_dry_run_threads_through_every_candidate_with_no_writes():
+    """The existing `--dry-run` flag applies uniformly to every candidate in
+    the batch (Boundaries & Constraints) -- proven here with a real,
+    non-empty, multi-candidate board, not just the CLI's zero-candidate
+    smoke test."""
+    transport = ScheduleFakeTransport(
+        items={
+            "ITEM_1": {
+                "fields": {"gh_link": "PROJ-1", "gh_status": "In Progress", "gh_baseline": '{"status": "To Do"}'}
+            },
+            "ITEM_2": {
+                "fields": {"gh_link": "PROJ-2", "gh_status": "Blocked", "gh_baseline": '{"status": "To Do"}'}
+            },
+        },
+        jira_issues={
+            "PROJ-1": {
+                "fields": {"status": {"name": "To Do"}, "jira_link": "ITEM_1", "jira_baseline": '{"status": "To Do"}'}
+            },
+            "PROJ-2": {
+                "fields": {"status": {"name": "To Do"}, "jira_link": "ITEM_2", "jira_baseline": '{"status": "To Do"}'}
+            },
+        },
+        page_size=10,
+    )
+
+    result = reconcile_schedule_batch(config=CONFIG, dry_run=True, transport=transport)
+
+    assert result.ok is True
+    candidates = result.details["candidates"]
+    assert len(candidates) == 2
+    assert all(c["ok"] for c in candidates)
+    # dry_run: both candidates had a real divergence to report, but zero
+    # write calls (mutations) reached the transport for either.
+    write_calls = [
+        call
+        for call in transport.calls
+        if call["url"] == _GITHUB_GRAPHQL_URL and "fieldId" in (call["body"] or {}).get("variables", {})
+    ] + [call for call in transport.calls if call["method"] in ("PUT", "POST") and "/issue/" in call["url"]]
+    assert write_calls == []
+
+
+# ── Row: one candidate fails mid-batch -> others still reconcile, ok=False overall ──
+
+
+def test_schedule_batch_one_candidate_failing_does_not_abort_the_others():
+    transport = ScheduleFakeTransport(
+        items={
+            "ITEM_1": {
+                "fields": {"gh_link": "PROJ-1", "gh_status": "To Do", "gh_baseline": '{"status": "To Do"}'}
+            },
+            "ITEM_2": {"fields": {"gh_link": "PROJ-2", "gh_status": "In Progress"}},
+            "ITEM_3": {
+                "fields": {"gh_link": "PROJ-3", "gh_status": "Blocked", "gh_baseline": '{"status": "Blocked"}'}
+            },
+        },
+        jira_issues={
+            "PROJ-1": {
+                "fields": {"status": {"name": "To Do"}, "jira_link": "ITEM_1", "jira_baseline": '{"status": "To Do"}'}
+            },
+            # PROJ-2 intentionally absent -- a stale/mismatched link (the
+            # I/O Matrix's own example), so ITEM_2's reconcile() fails.
+            "PROJ-3": {
+                "fields": {
+                    "status": {"name": "Blocked"},
+                    "jira_link": "ITEM_3",
+                    "jira_baseline": '{"status": "Blocked"}',
+                }
+            },
+        },
+        page_size=10,
+    )
+
+    result = reconcile_schedule_batch(config=CONFIG, transport=transport)
+
+    assert result.ok is False
+    candidates = {c["github_item_id"]: c for c in result.details["candidates"]}
+    assert len(candidates) == 3
+    assert candidates["ITEM_1"]["ok"] is True
+    assert candidates["ITEM_2"]["ok"] is False
+    assert candidates["ITEM_3"]["ok"] is True
+    assert "1 failed" in result.summary
+    assert "3 candidates" in result.summary
+
+
+# ── Row (Story 8.6): one unmapped status among linked items fails only that entry ──
+
+
+def test_schedule_batch_with_one_unmapped_status_among_linked_items_fails_only_that_entry():
+    """AD-6/CAP-5's batch-composition guarantee: 3 board items, PROJ-2's
+    Jira status ("Triage") has no `status_mapping` entry in `CONFIG`.
+    ITEM_1/ITEM_3 converge cleanly; ITEM_2's entry is `ok=False` with the
+    named, greppable `SyncUnmappedStatusError` summary -- mirrors Story
+    8.5's own unlinked-item batch-isolation test for the symmetric failure
+    mode (`test_schedule_batch_with_one_unlinked_item_among_linked_items_
+    fails_only_that_entry`)."""
+    transport = ScheduleFakeTransport(
+        items={
+            "ITEM_1": {
+                "fields": {"gh_link": "PROJ-1", "gh_status": "To Do", "gh_baseline": '{"status": "To Do"}'}
+            },
+            "ITEM_2": {
+                "fields": {
+                    "gh_link": "PROJ-2",
+                    "gh_status": "In Progress",
+                    "gh_baseline": '{"status": "In Progress"}',  # matches current -- gh unchanged
+                }
+            },
+            "ITEM_3": {
+                "fields": {"gh_link": "PROJ-3", "gh_status": "Blocked", "gh_baseline": '{"status": "Blocked"}'}
+            },
+        },
+        jira_issues={
+            "PROJ-1": {
+                "fields": {"status": {"name": "To Do"}, "jira_link": "ITEM_1", "jira_baseline": '{"status": "To Do"}'}
+            },
+            "PROJ-2": {
+                # no jira_baseline -- jira_changed (first sync); gh
+                # unchanged above, so this is a clean push_to_github
+                # decision, exercising the new unmapped-status path.
+                "fields": {"status": {"name": "Triage"}, "jira_link": "ITEM_2"}
+            },
+            "PROJ-3": {
+                "fields": {
+                    "status": {"name": "Blocked"},
+                    "jira_link": "ITEM_3",
+                    "jira_baseline": '{"status": "Blocked"}',
+                }
+            },
+        },
+        page_size=10,
+    )
+
+    result = reconcile_schedule_batch(config=CONFIG, transport=transport)
+
+    assert result.ok is False
+    candidates = {c["github_item_id"]: c for c in result.details["candidates"]}
+    assert len(candidates) == 3
+    assert candidates["ITEM_1"]["ok"] is True
+    assert candidates["ITEM_3"]["ok"] is True
+    assert candidates["ITEM_2"]["ok"] is False
+    assert (
+        "unmapped: jira status 'Triage' has no status_mapping entry for github"
+        in candidates["ITEM_2"]["summary"]
+    )
+    assert "1 failed" in result.summary
+    assert "3 candidates" in result.summary
+
+
+# ── Row: mixed batch -- one unlinked item among otherwise-linked items ─────
+# (Story 8.5's own frozen I/O Matrix scenario, CAP-4 "fail loud, fail alone")
+
+
+def test_schedule_batch_with_one_unlinked_item_among_linked_items_fails_only_that_entry():
+    """The frozen AC's literal scenario: 3 board items, ITEM_2 has no link
+    field value, ITEM_1/ITEM_3 are linked and converge cleanly. Every linked
+    item's own entry is `ok=True`; the unlinked item's entry is `ok=False`
+    with the named, greppable `"unlinked: github item <id> has no linked
+    jira issue"` summary; the aggregate `DutyResult.ok` is `False`."""
+    transport = ScheduleFakeTransport(
+        items={
+            "ITEM_1": {
+                "fields": {"gh_link": "PROJ-1", "gh_status": "To Do", "gh_baseline": '{"status": "To Do"}'}
+            },
+            "ITEM_2": {"fields": {"gh_status": "In Progress"}},  # no gh_link -- unlinked
+            "ITEM_3": {
+                "fields": {"gh_link": "PROJ-3", "gh_status": "Blocked", "gh_baseline": '{"status": "Blocked"}'}
+            },
+        },
+        jira_issues={
+            "PROJ-1": {
+                "fields": {"status": {"name": "To Do"}, "jira_link": "ITEM_1", "jira_baseline": '{"status": "To Do"}'}
+            },
+            "PROJ-3": {
+                "fields": {
+                    "status": {"name": "Blocked"},
+                    "jira_link": "ITEM_3",
+                    "jira_baseline": '{"status": "Blocked"}',
+                }
+            },
+        },
+        page_size=10,
+    )
+
+    result = reconcile_schedule_batch(config=CONFIG, transport=transport)
+
+    assert result.ok is False
+    candidates = {c["github_item_id"]: c for c in result.details["candidates"]}
+    assert len(candidates) == 3
+    assert candidates["ITEM_1"]["ok"] is True
+    assert candidates["ITEM_3"]["ok"] is True
+    assert candidates["ITEM_2"]["ok"] is False
+    assert "unlinked: github item ITEM_2 has no linked jira issue" in candidates["ITEM_2"]["summary"]
+    assert "1 failed" in result.summary
+    assert "3 candidates" in result.summary
+
+
+# ── Row: bulk listing itself fails -> ok=False before any candidate dispatched ──
+
+
+def test_schedule_batch_listing_failure_is_named_and_dispatches_no_candidates():
+    def failing_transport(request: urllib.request.Request) -> TransportResponse:
+        # malformed: no "items" key under data.node at all
+        return TransportResponse(status=200, body=json.dumps({"data": {"node": None}}).encode())
+
+    result = reconcile_schedule_batch(config=CONFIG, transport=failing_transport)
+
+    assert result.ok is False
+    assert "enumerating candidates" in result.summary
+    assert result.details == {}  # never even entered the per-candidate dispatch loop

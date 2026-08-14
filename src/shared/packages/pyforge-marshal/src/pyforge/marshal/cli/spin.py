@@ -257,6 +257,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING
 
 import tomlkit
+from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
 
 from ..adapters.fs_local import FsError, LocalFs
 from ..adapters.harness_bmadloop import (
@@ -268,7 +269,6 @@ from ..adapters.harness_bmadloop import (
     write_policy_document,
     write_policy_toml,
 )
-from ..adapters.process_posix import PosixProcess, ProcessError
 from ..core import policy
 from ..core.identity import (
     StoryKey,
@@ -292,7 +292,6 @@ from ..core.supervise import EscalationStatus, evaluate_escalation, evaluate_ret
 from ..core.verdict import compute_verdict, exit_code_for, relay_exit_code
 from ..ports.fs import FsPort
 from ..ports.harness import DeferredStory, HarnessPort
-from ..ports.process import ProcessPort
 from .config import (
     PolicyIOError,
     _read_project_policy,

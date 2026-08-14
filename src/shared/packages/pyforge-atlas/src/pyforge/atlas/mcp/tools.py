@@ -24,6 +24,7 @@ from pyforge.atlas.mcp import session as _session
 from pyforge.atlas import nl as _nl
 from pyforge.atlas import provenance as _provenance
 from pyforge.atlas.trending_candidates import query as _trending
+from pyforge.core.errors import PyforgeError
 
 # The authoritative registry mirror: the four registered pipelines from
 # B1/B2 (`find_pipelines()` discovers them from the pipelines/ package).
@@ -46,8 +47,11 @@ PIPELINE_NAMES = (
 )
 
 
-class AtlasMCPError(RuntimeError):
-    """Raised for invalid MCP-surface requests (e.g. an unknown pipeline)."""
+class AtlasMCPError(PyforgeError, RuntimeError):
+    """Raised for invalid MCP-surface requests (e.g. an unknown pipeline).
+
+    Story 14.3, SPEC-pyforge-core CAP-5: gains ``PyforgeError`` as an
+    additional base -- ``RuntimeError`` stays in the MRO."""
 
 
 def run_pipeline(

@@ -20,7 +20,11 @@ EXIT_OK = 0
 EXIT_FAILED = 1
 """An anticipated `MasonError` was raised, or an unanticipated exception
 escaped a command. Also the correction of the pre-Story-1.3 `EXIT_INTERNAL =
-70` (EX_SOFTWARE), which contradicted AD-7/FR-33's mandated `1`."""
+70` (EX_SOFTWARE), which contradicted AD-7/FR-33's mandated `1`. Story 2.5
+adds a non-`MasonError`-driven origin: `recipe validate`'s dispatch branch
+projects a wrapped tool's own non-zero return code directly onto this
+value -- the one verb where a delegated tool's pass/fail outcome becomes
+the process exit code."""
 
 EXIT_USAGE = 2
 """A usage error: a bare noun with no verb, an argparse-rejected invocation,

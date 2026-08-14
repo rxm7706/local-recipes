@@ -15,9 +15,11 @@ from __future__ import annotations
 import json
 import re
 from importlib import resources
+from pathlib import Path
 
 import jsonschema
 import pytest
+from pyforge.core.report import BASE_ENVELOPE_SCHEMA, compose
 
 from pyforge.marshal.core import findings
 from pyforge.marshal.core.model import (
@@ -46,6 +48,15 @@ def _schema() -> dict:
         .read_text(encoding="utf-8")
     )
     return json.loads(schema_text)
+
+
+def _composed_schema() -> dict:
+    """Story 14.3, SPEC-pyforge-core CAP-4: the top-level envelope schema
+    COMPOSED with the shared base -- used for every full-envelope validate()
+    call below. The bare ``_schema()`` stays available for the ``$defs``
+    sub-schema tests (a single finding object, not a full envelope), which
+    ``compose()`` does not apply to."""
+    return compose(BASE_ENVELOPE_SCHEMA, _schema())
 
 
 def _finding(code: str, severity: Severity = Severity.WARN) -> Finding:
@@ -370,10 +381,24 @@ def test_envelope_to_json_dict_shape(registered_code):
 # --- Schema validation -------------------------------------------------------
 
 
+def test_sample_envelope_fixture_validates_against_composed_schema():
+    """Story 14.3, SPEC-pyforge-core CAP-4: a real captured envelope (a real
+    registered finding code, ``build_envelope``-constructed, frozen to disk
+    under ``tests/fixtures/``) validates against the packaged schema
+    COMPOSED with the shared base envelope schema -- proving the composed
+    schema still admits every payload that validated against the station
+    schema alone."""
+    fixture_path = (
+        Path(__file__).resolve().parent.parent / "fixtures" / "sample_envelope_with_finding.json"
+    )
+    document = json.loads(fixture_path.read_text(encoding="utf-8"))
+    jsonschema.validate(document, _composed_schema())
+
+
 def test_envelope_json_dict_validates_against_schema_for_every_verdict(
     registered_code,
 ):
-    schema = _schema()
+    schema = _composed_schema()
     for verdict in Verdict:
         severity = Severity.WARN if status_for(verdict) is Status.OK else Severity.ERROR
         finding = Finding(code=registered_code, severity=severity, message="m")
@@ -398,11 +423,11 @@ def test_schema_rejects_mismatched_status_verdict_pair():
         "assumptions": [],
     }
     with pytest.raises(jsonschema.ValidationError):
-        jsonschema.validate(document, _schema())
+        jsonschema.validate(document, _composed_schema())
     document["status"] = "error"
     document["verdict"] = "warn"
     with pytest.raises(jsonschema.ValidationError):
-        jsonschema.validate(document, _schema())
+        jsonschema.validate(document, _composed_schema())
 
 
 def test_schema_rejects_foreign_schema_version():
@@ -419,7 +444,7 @@ def test_schema_rejects_foreign_schema_version():
         "assumptions": [],
     }
     with pytest.raises(jsonschema.ValidationError):
-        jsonschema.validate(document, _schema())
+        jsonschema.validate(document, _composed_schema())
 
 
 def test_envelope_missing_key_fails_schema():
@@ -434,7 +459,7 @@ def test_envelope_missing_key_fails_schema():
         # "assumptions" deliberately omitted
     }
     with pytest.raises(jsonschema.ValidationError):
-        jsonschema.validate(document, _schema())
+        jsonschema.validate(document, _composed_schema())
 
 
 def test_envelope_unknown_top_level_key_fails_schema():
@@ -450,7 +475,7 @@ def test_envelope_unknown_top_level_key_fails_schema():
         "stauts": "ok",  # typo'd extra key -- additionalProperties: false must catch it
     }
     with pytest.raises(jsonschema.ValidationError):
-        jsonschema.validate(document, _schema())
+        jsonschema.validate(document, _composed_schema())
 
 
 def test_finding_unknown_key_fails_schema():
@@ -487,7 +512,7 @@ def test_schema_rejects_empty_command():
         "assumptions": [],
     }
     with pytest.raises(jsonschema.ValidationError):
-        jsonschema.validate(document, _schema())
+        jsonschema.validate(document, _composed_schema())
 
 
 def test_findings_code_pattern_matches_the_packaged_schema_pattern():

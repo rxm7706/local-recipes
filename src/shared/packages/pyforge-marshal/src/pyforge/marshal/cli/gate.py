@@ -150,8 +150,9 @@ import shlex
 from collections.abc import Mapping
 from pathlib import Path
 
+from pyforge.core.process import PosixProcess, ProcessError, ProcessPort
+
 from ..adapters.fs_local import FsError, LocalFs
-from ..adapters.process_posix import PosixProcess, ProcessError
 from ..adapters.vcs_git import GitVcs, VcsCommandError
 from ..core import gate, identity, journal, policy, spec_binding
 from ..core.identity import StoryKey, render_filename_slug
@@ -159,7 +160,6 @@ from ..core.model import Envelope, Finding, Severity, Status, build_envelope, st
 from ..core.spec_surface import SurfaceParseError, parse_declared_surface
 from ..core.verdict import compute_verdict, exit_code_for
 from ..ports.fs import FsPort
-from ..ports.process import ProcessPort
 from ..ports.vcs import VcsPort
 from .config import (
     ENV_ACTIVE_PROJECT,
@@ -1024,7 +1024,7 @@ def run_evaluate(
         print(rendered, flush=True)
     except UnicodeEncodeError:
         # Review finding: this command is the first to print ARBITRARY child
-        # output, and adapters/process_posix.py decodes it with
+        # output, and pyforge.core.process (Story 14.4) decodes it with
         # errors="replace" -- so a verify command emitting one undecodable
         # byte puts U+FFFD in the text render. When stdout's own encoding
         # cannot represent it (PYTHONIOENCODING=ascii, a non-UTF-8 locale),
