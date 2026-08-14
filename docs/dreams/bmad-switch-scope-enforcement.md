@@ -2,7 +2,7 @@
 title: A BMAD write can never land in the wrong project's artifacts, mechanically
 type: dream
 owner: marshal
-status: dreamt
+status: specified
 ---
 
 # A BMAD write can never land in the wrong project's artifacts, mechanically
@@ -124,3 +124,4 @@ kinship, not a merge)
   own multi-project-wiring ownership survey and `spec-pyforge-marshal/SPEC.md`'s explicit
   "Marshal owns the source of `scripts/bmad-switch`" statement — not Steward, despite most other
   BMAD-infra Dreams in this repo defaulting there.
+- **2026-08-14** — Spec authored (spec-bmad-switch-scope-enforcement, pyforge-marshal) by the 2026-08-14 dream-backlog audit: one shared verify_scope primitive consumed by bmad-switch and cli/init.py, closing DW-1-4-2's product-decision hook.

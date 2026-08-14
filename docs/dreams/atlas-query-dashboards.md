@@ -2,7 +2,7 @@
 title: A query against the atlas DB becomes an interactive dashboard, no SPA framework
 type: dream
 owner: atlas
-status: dreamt
+status: specified
 ---
 
 # A query against the atlas DB becomes an interactive dashboard, no SPA framework
@@ -105,3 +105,4 @@ realized, not a dependency)
   server-side bring-up explicitly deferred as `DW-H3` — real, not speculative, and directly
   relevant to re-scoping [[wagtail-corporate-brain]] far more favorably than this batch's
   first-pass tiering had it.
+- **2026-08-14** — Spec authored (spec-atlas-query-dashboards, pyforge-atlas) by the 2026-08-14 dream-backlog audit: curated CLI-mirroring view catalog, static-fragment mode first, Bokeh-WebSocket interactivity behind a pluggable widget registry, ASGI-host-agnostic, air-gap CDN rewriting from day one.

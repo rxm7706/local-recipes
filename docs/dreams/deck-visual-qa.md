@@ -2,7 +2,7 @@
 title: A deck is proven to look right, not merely to render without crashing
 type: dream
 owner: herald
-status: dreamt
+status: specified
 ---
 
 # A deck is proven to look right, not merely to render without crashing
@@ -85,3 +85,4 @@ format-specific gates this one's structural half depends on)
   right"), applicable to Herald's existing HTML pipeline with no dependency on whether a `.pptx`
   pipeline is ever built — the strongest-evidenced of the three deck dreams in this batch as a
   result.
+- **2026-08-14** — Spec authored (spec-deck-visual-qa, pyforge-herald) by the 2026-08-14 dream-backlog audit: the visual-QA half only (PNG-per-slide headless render + <image-slot> placeholder scan against the existing HTML pipeline); the three .pptx-contingent gates stay parked with their sibling dreams.

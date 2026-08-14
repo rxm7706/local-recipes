@@ -2,7 +2,7 @@
 title: A story's orchestrator-recorded baseline can never drift out from under its own worktree
 type: dream
 owner: marshal
-status: dreamt
+status: specified
 ---
 
 # A story's orchestrator-recorded baseline can never drift out from under its own worktree
@@ -217,3 +217,6 @@ recorded during the 2026-08-14 recovery of 8.1-9.5, 9.6, and — via the mason p
   (`.pixi/envs/local-recipes/.../site-packages/bmad_loop/`), landed the recovered story (PR #484),
   then captured this Dream per the operator's explicit priority request — Dream + Spec in-repo, plus
   a tracked backlog of what reporting it upstream would require.
+- **2026-08-14** — Spec authored (spec-bmad-loop-baseline-drift, pyforge-marshal) by the 2026-08-14
+  dream-backlog audit: Marshal-side loud-defer containment + the gated upstream-report track. The
+  drafted issue stays unfiled pending repo-access + duplicate-search.
