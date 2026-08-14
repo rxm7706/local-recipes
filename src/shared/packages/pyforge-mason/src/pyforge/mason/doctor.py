@@ -48,6 +48,15 @@ and `build_report`'s composition logic is otherwise untouched.
 Story 3.1's Engine protocol supersedes only `engines/__init__.py`'s
 probe-only seed (see that module's docstring); this module's composition
 shape is unaffected by that later story.
+
+Story 3.6 extends `build_report` with `conda_forge_ship_ready`/
+`conda_forge_ship_blockers` (FR-23, D-10): both of `package.py::
+ship_conda_forge`'s own shipping preconditions, reported here
+structurally since `mason doctor` takes no recipe-path argument (out of
+this story's scope) -- root unresolved is one blocker, root resolved but
+`<root>/recipes` not a directory is the other. Computed from the
+already-resolved `resolved_root` this function already has -- no new
+resolution step -- and `build_report` still never raises.
 """
 
 from __future__ import annotations
@@ -86,6 +95,12 @@ def build_report(
     if resolved_root.step == STEP_NOT_FOUND or floor_result.missing:
         unavailable_verbs = ("recipe",)
 
+    blockers: list[str] = []
+    if resolved_root.step == STEP_NOT_FOUND:
+        blockers.append("the CFE root is unresolved")
+    elif not (resolved_root.root / "recipes").is_dir():
+        blockers.append(f"{resolved_root.root / 'recipes'} is not a directory")
+
     return DoctorReport(
         mason_version=__version__,
         cfe_root=str(resolved_root.root) if resolved_root.root is not None else None,
@@ -96,4 +111,6 @@ def build_report(
         cfe_import_floor_missing=floor_result.missing,
         unavailable_verbs=unavailable_verbs,
         engines=probe_known_engines(),
+        conda_forge_ship_ready=not blockers,
+        conda_forge_ship_blockers=tuple(blockers),
     )

@@ -30,7 +30,12 @@ Story 3.4 extends this file again with `ShipCredentialMissingError`/
 `ShipChannelCredentialMissingError`/`ShipChannelUploadTimeoutError`
 coverage, mirroring those two classes' own suites exactly in shape (this
 story's two classes are dedicated, not reused, because the PyPI-worded
-ones would print a factually wrong message for a channel failure)."""
+ones would print a factually wrong message for a channel failure).
+
+Story 3.6 extends this file again with `ShipCondaForgeRecipeMissingError`
+(zero-arg, mirrors `CfeUnresolvedError`'s own suite shape) and
+`ShipCondaForgeRecipeLocationError` (two-arg, mirrors
+`PackageProjectPathError`'s own suite shape) coverage."""
 
 from __future__ import annotations
 
@@ -43,7 +48,8 @@ from pyforge.mason.errors import (
     CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError,
     EngineAbsentError, InvalidShipTargetError, MasonError, PackageBuildTimeoutError,
     PackageProjectPathError, PackageVersionMismatchError, ShipChannelCredentialMissingError,
-    ShipChannelUploadTimeoutError, ShipCredentialMissingError, ShipUploadTimeoutError,
+    ShipChannelUploadTimeoutError, ShipCondaForgeRecipeLocationError,
+    ShipCondaForgeRecipeMissingError, ShipCredentialMissingError, ShipUploadTimeoutError,
 )
 
 
@@ -927,5 +933,138 @@ def test_ship_channel_upload_timeout_error_survives_pickle_round_trip():
     clone = pickle.loads(pickle.dumps(original))
     assert isinstance(clone, ShipChannelUploadTimeoutError)
     assert clone.timeout == original.timeout
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+# --- Story 3.6: ShipCondaForgeRecipeMissingError -------------------------------
+
+def test_ship_conda_forge_recipe_missing_error_identifier():
+    exc = ShipCondaForgeRecipeMissingError()
+    assert exc.identifier == "ship:conda-forge-recipe-missing"
+
+
+def test_ship_conda_forge_recipe_missing_error_message_names_mason_recipe_new():
+    exc = ShipCondaForgeRecipeMissingError()
+    assert "mason recipe new" in str(exc)
+
+
+def test_ship_conda_forge_recipe_missing_error_is_a_mason_error():
+    assert issubclass(ShipCondaForgeRecipeMissingError, MasonError)
+    with pytest.raises(MasonError):
+        raise ShipCondaForgeRecipeMissingError()
+
+
+def test_ship_conda_forge_recipe_missing_error_str_format_is_identifier_colon_space_message():
+    exc = ShipCondaForgeRecipeMissingError()
+    assert str(exc) == f"{exc.identifier}: {exc.message}"
+
+
+def test_ship_conda_forge_recipe_missing_error_takes_no_constructor_arguments():
+    with pytest.raises(TypeError):
+        ShipCondaForgeRecipeMissingError("bogus")  # type: ignore[call-arg]
+
+
+def test_ship_conda_forge_recipe_missing_error_survives_deepcopy():
+    """Mirrors `CfeUnresolvedError`'s own deepcopy guard: without the
+    `__reduce__` override, `cls(*self.args)` would raise `TypeError` --
+    `MasonError.__init__` sets `self.args` to a two-item tuple, but this
+    class's constructor takes zero arguments."""
+    original = ShipCondaForgeRecipeMissingError()
+    clone = copy.deepcopy(original)
+    assert isinstance(clone, ShipCondaForgeRecipeMissingError)
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+def test_ship_conda_forge_recipe_missing_error_survives_pickle_round_trip():
+    original = ShipCondaForgeRecipeMissingError()
+    clone = pickle.loads(pickle.dumps(original))
+    assert isinstance(clone, ShipCondaForgeRecipeMissingError)
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+# --- Story 3.6: ShipCondaForgeRecipeLocationError ------------------------------
+
+_RECIPE_PATH = "/some/other/place/foo"
+_EXPECTED_PATH = "/fake/cfe/recipes/foo"
+
+
+def test_ship_conda_forge_recipe_location_error_identifier():
+    exc = ShipCondaForgeRecipeLocationError(_RECIPE_PATH, _EXPECTED_PATH)
+    assert exc.identifier == "ship:conda-forge-recipe-location"
+
+
+def test_ship_conda_forge_recipe_location_error_stores_attributes():
+    exc = ShipCondaForgeRecipeLocationError(_RECIPE_PATH, _EXPECTED_PATH)
+    assert exc.recipe_path == _RECIPE_PATH
+    assert exc.expected_path == _EXPECTED_PATH
+
+
+def test_ship_conda_forge_recipe_location_error_message_names_both_paths():
+    exc = ShipCondaForgeRecipeLocationError(_RECIPE_PATH, _EXPECTED_PATH)
+    message = str(exc)
+    assert _RECIPE_PATH in message
+    assert _EXPECTED_PATH in message
+
+
+def test_ship_conda_forge_recipe_location_error_is_a_mason_error():
+    assert issubclass(ShipCondaForgeRecipeLocationError, MasonError)
+    with pytest.raises(MasonError):
+        raise ShipCondaForgeRecipeLocationError(_RECIPE_PATH, _EXPECTED_PATH)
+
+
+def test_ship_conda_forge_recipe_location_error_str_format_is_identifier_colon_space_message():
+    exc = ShipCondaForgeRecipeLocationError(_RECIPE_PATH, _EXPECTED_PATH)
+    assert str(exc) == f"{exc.identifier}: {exc.message}"
+
+
+def test_ship_conda_forge_recipe_location_error_rejects_empty_recipe_path():
+    with pytest.raises(ValueError):
+        ShipCondaForgeRecipeLocationError("", _EXPECTED_PATH)
+
+
+def test_ship_conda_forge_recipe_location_error_rejects_empty_expected_path():
+    with pytest.raises(ValueError):
+        ShipCondaForgeRecipeLocationError(_RECIPE_PATH, "")
+
+
+def test_ship_conda_forge_recipe_location_error_rejects_whitespace_only_recipe_path():
+    with pytest.raises(ValueError):
+        ShipCondaForgeRecipeLocationError("   ", _EXPECTED_PATH)
+
+
+def test_ship_conda_forge_recipe_location_error_rejects_whitespace_only_expected_path():
+    with pytest.raises(ValueError):
+        ShipCondaForgeRecipeLocationError(_RECIPE_PATH, "   ")
+
+
+def test_ship_conda_forge_recipe_location_error_rejects_non_string_recipe_path():
+    with pytest.raises(ValueError):
+        ShipCondaForgeRecipeLocationError(None, _EXPECTED_PATH)  # type: ignore[arg-type]
+
+
+def test_ship_conda_forge_recipe_location_error_survives_deepcopy():
+    """Mirrors `PackageProjectPathError`'s own deepcopy guard: without the
+    `__reduce__` override, `cls(*self.args)` would reconstruct with
+    `recipe_path == "ship:conda-forge-recipe-location"` (the identifier)
+    and `expected_path` bound to the built message string, corrupting the
+    clone instead of failing loudly."""
+    original = ShipCondaForgeRecipeLocationError(_RECIPE_PATH, _EXPECTED_PATH)
+    clone = copy.deepcopy(original)
+    assert isinstance(clone, ShipCondaForgeRecipeLocationError)
+    assert clone.recipe_path == original.recipe_path
+    assert clone.expected_path == original.expected_path
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+def test_ship_conda_forge_recipe_location_error_survives_pickle_round_trip():
+    original = ShipCondaForgeRecipeLocationError(_RECIPE_PATH, _EXPECTED_PATH)
+    clone = pickle.loads(pickle.dumps(original))
+    assert isinstance(clone, ShipCondaForgeRecipeLocationError)
+    assert clone.recipe_path == original.recipe_path
+    assert clone.expected_path == original.expected_path
     assert clone.identifier == original.identifier
     assert clone.message == original.message

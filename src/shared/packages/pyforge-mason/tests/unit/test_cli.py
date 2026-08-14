@@ -132,6 +132,8 @@ _FIXED_REPORT = DoctorReport(
         EngineStatus(name="pixi", available=True, version="pixi 0.72.2"),
         EngineStatus(name="twine", available=False, version=None),
     ),
+    conda_forge_ship_ready=False,
+    conda_forge_ship_blockers=("the CFE root is unresolved",),
 )
 
 

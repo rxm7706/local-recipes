@@ -28,10 +28,27 @@ structural-error propagation. Story 3.5 extends it again with `ship_channel`
 coverage, mirroring `ship_pypi`'s own suite exactly in shape (both engine
 adapters mocked at their own call sites, `pyforge.mason.package.pixi.upload`
 for the new one, mirroring this suite's "patch on the calling module's own
-namespace" convention)."""
+namespace" convention).
+
+Story 3.6 extends this file with `ship_conda_forge` coverage: no-recipe-path
+raises before any resolution, CFE-root-unresolved raises, wrong-location
+raises naming both paths with no CFE subprocess spawned, a pathological
+`Path.resolve()` failure returns `FAILED` data rather than raising, a
+mocked happy path, and a real end-to-end test against the `fake_cfe_root`
+fixture (AD-16, no mocking) mirroring `test_recipe.py`'s own
+`test_submit_against_fake_cfe_root_returns_the_fixtures_canned_success`.
+`resolve_cfe_root` is patched on `pyforge.mason.package`'s own namespace
+(`from .resolve import resolve_cfe_root` binds the name directly there,
+mirroring `doctor.py`'s identical precedent); `recipe.submit` is patched on
+`pyforge.mason.recipe`'s own namespace, since `package.py` does `from .
+import recipe` (lazy) and calls `recipe.submit(...)` -- an attribute lookup
+at call time, the same `cfe.probe_import_floor` gotcha `test_doctor.py`
+documents for `doctor.py`'s own lazy `cfe` import."""
 
 from __future__ import annotations
 
+import sys
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -40,15 +57,19 @@ from pyforge.mason.engines.pep517 import Pep517BuildResult
 from pyforge.mason.engines.pixi import PixiBuildResult, PixiUploadResult
 from pyforge.mason.engines.twine import TwineUploadResult
 from pyforge.mason.errors import (
-    EngineAbsentError, InvalidShipTargetError, PackageProjectPathError,
-    PackageVersionMismatchError, ShipChannelCredentialMissingError, ShipCredentialMissingError,
+    CfeUnresolvedError, EngineAbsentError, InvalidShipTargetError, PackageProjectPathError,
+    PackageVersionMismatchError, ShipChannelCredentialMissingError,
+    ShipCondaForgeRecipeLocationError, ShipCondaForgeRecipeMissingError,
+    ShipCredentialMissingError,
 )
 from pyforge.mason.models import (
     PackageBuildResult, ShipState, ShipTarget, ShipTargetKind, ShipTargetResult,
 )
 from pyforge.mason.package import (
-    _versions_disagree, build, parse_ship_targets, plan_ship, ship_channel, ship_pypi,
+    _versions_disagree, build, parse_ship_targets, plan_ship, ship_channel, ship_conda_forge,
+    ship_pypi,
 )
+from pyforge.mason.resolve import STEP_CWD_WALK, STEP_NOT_FOUND, ResolvedCfeRoot
 
 
 def test_package_module_imports_successfully():
@@ -829,3 +850,155 @@ def test_ship_channel_forwards_an_explicit_target():
         ship_channel("/proj", "myorg", environ=_SHIP_CHANNEL_ENVIRON, target="not-the-default")
 
     mock_build.assert_called_once_with("/proj", target="not-the-default")
+
+
+# --- Story 3.6: ship_conda_forge --------------------------------------------
+
+@pytest.mark.parametrize("recipe_path", [None, "", "   "])
+def test_ship_conda_forge_raises_recipe_missing_before_any_resolution(recipe_path):
+    with patch("pyforge.mason.package.resolve_cfe_root") as mock_resolve, \
+         patch("pyforge.mason.recipe.submit") as mock_submit, \
+         patch("pyforge.mason.cfe.subprocess.run") as mock_run:
+        with pytest.raises(ShipCondaForgeRecipeMissingError):
+            ship_conda_forge(
+                recipe_path,
+                environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                start_directory=Path("/start"),
+            )
+
+    mock_resolve.assert_not_called()
+    mock_submit.assert_not_called()
+    mock_run.assert_not_called()
+
+
+def test_ship_conda_forge_raises_cfe_unresolved_when_root_is_not_found():
+    with patch(
+        "pyforge.mason.package.resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=None, step=STEP_NOT_FOUND),
+    ) as mock_resolve, patch("pyforge.mason.recipe.submit") as mock_submit, \
+         patch("pyforge.mason.cfe.subprocess.run") as mock_run:
+        with pytest.raises(CfeUnresolvedError):
+            ship_conda_forge(
+                "/some/recipe/foo",
+                environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                start_directory=Path("/start"),
+            )
+
+    mock_resolve.assert_called_once_with(None, {}, Path("/start"))
+    mock_submit.assert_not_called()
+    mock_run.assert_not_called()
+
+
+def test_ship_conda_forge_wrong_location_raises_naming_both_paths_no_subprocess(tmp_path):
+    root = tmp_path / "cfe-root"
+    recipe_dir = tmp_path / "elsewhere" / "foo"
+    with patch(
+        "pyforge.mason.package.resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=root, step=STEP_CWD_WALK),
+    ), patch("pyforge.mason.recipe.submit") as mock_submit, \
+         patch("pyforge.mason.cfe.subprocess.run") as mock_run:
+        with pytest.raises(ShipCondaForgeRecipeLocationError) as excinfo:
+            ship_conda_forge(
+                str(recipe_dir),
+                environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+                start_directory=tmp_path,
+            )
+
+    expected_dir = root / "recipes" / "foo"
+    assert excinfo.value.recipe_path == str(recipe_dir.resolve())
+    assert excinfo.value.expected_path == str(expected_dir.resolve())
+    mock_submit.assert_not_called()
+    mock_run.assert_not_called()
+
+
+def test_ship_conda_forge_returns_failed_when_path_resolve_raises(tmp_path):
+    """spec Always boundary: a `Path.resolve()` `OSError`/`ValueError` on
+    either `recipe_path` or the resolved root returns `ShipTargetResult(
+    FAILED, message=str(exc))` instead of raising -- mirrors
+    `recipe.py::submit()`'s own established precedent for this exact
+    resolve-failure mode."""
+    with patch(
+        "pyforge.mason.package.resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=tmp_path, step=STEP_CWD_WALK),
+    ), patch(
+        "pyforge.mason.package.Path.resolve", side_effect=OSError("Too many levels of symlinks"),
+    ), patch("pyforge.mason.recipe.submit") as mock_submit:
+        result = ship_conda_forge(
+            "/some/bad/path",
+            environ={}, cfe_root_arg=None, cfe_python_arg=None, cfe_timeout_arg=None,
+            start_directory=tmp_path,
+        )
+
+    assert result == ShipTargetResult(
+        target="conda-forge",
+        state=ShipState.FAILED,
+        reference=None,
+        message="Too many levels of symlinks",
+    )
+    mock_submit.assert_not_called()
+
+
+def test_ship_conda_forge_happy_path_returns_recipe_submit_result_unchanged(tmp_path):
+    root = tmp_path / "cfe-root"
+    recipe_dir = root / "recipes" / "foo"
+    submit_result = ShipTargetResult(
+        target="conda-forge",
+        state=ShipState.PENDING,
+        reference="https://github.com/conda-forge/staged-recipes/pull/123",
+        message="PR created: https://github.com/conda-forge/staged-recipes/pull/123",
+    )
+    with patch(
+        "pyforge.mason.package.resolve_cfe_root",
+        return_value=ResolvedCfeRoot(root=root, step=STEP_CWD_WALK),
+    ), patch("pyforge.mason.recipe.submit", return_value=submit_result) as mock_submit:
+        result = ship_conda_forge(
+            str(recipe_dir),
+            environ={"FOO": "bar"},
+            cfe_root_arg="cfe-root-flag", cfe_python_arg="py-flag", cfe_timeout_arg=42.0,
+            start_directory=tmp_path,
+        )
+
+    assert result is submit_result
+    mock_submit.assert_called_once_with(
+        str(recipe_dir.resolve()),
+        confirm=True,
+        prepare_only=False,
+        cfe_root_arg="cfe-root-flag",
+        cfe_python_arg="py-flag",
+        cfe_timeout_arg=42.0,
+        environ={"FOO": "bar"},
+        start_directory=tmp_path,
+    )
+
+
+# --- Real end-to-end against fake_cfe_root (AD-16, no mocking) -------------
+
+def test_ship_conda_forge_against_fake_cfe_root_returns_the_fixtures_canned_success(
+    fake_cfe_root, monkeypatch,
+):
+    """Mirrors `test_recipe.py::
+    test_submit_against_fake_cfe_root_returns_the_fixtures_canned_success`:
+    a recipe path that resolves to exactly `<fake_cfe_root>/recipes/
+    example-recipe` satisfies both of `ship_conda_forge`'s own
+    preconditions, so the real `recipe.py::submit()` composition runs and
+    returns the fixture's canned `PENDING` result unchanged. No `recipes/`
+    directory needs to exist on disk -- matches `submit()`'s established
+    no-existence-check precedent (path resolution only)."""
+    for var in ("MASON_FIXTURE_STDOUT", "MASON_FIXTURE_EXIT_CODE", "MASON_FIXTURE_PROGRESS_LINE"):
+        monkeypatch.delenv(var, raising=False)
+
+    result = ship_conda_forge(
+        str(fake_cfe_root / "recipes" / "example-recipe"),
+        environ={},
+        cfe_root_arg=str(fake_cfe_root),
+        cfe_python_arg=sys.executable,
+        cfe_timeout_arg=15.0,
+        start_directory=fake_cfe_root,
+    )
+
+    assert result == ShipTargetResult(
+        target="conda-forge",
+        state=ShipState.PENDING,
+        reference="https://github.com/example/example/pull/1",
+        message="PR created: https://github.com/example/example/pull/1",
+    )

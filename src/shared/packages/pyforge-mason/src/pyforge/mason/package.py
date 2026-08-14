@@ -82,11 +82,50 @@ bare, caller-supplied `channel_name` (never a constructed URL) -- see
 `engines.pixi`'s own module docstring for why no equivalent live-verified
 URL exists to parse.
 
-Zero `cfe` reference anywhere in this file (spec Always boundary,
-`tests/meta/test_capability_tiers.py` guards it): `build()` never resolves
-a CFE root or interpreter, unlike every `recipe.py` verb, and Story 3.3's
-two new functions -- and Story 3.4's `ship_pypi()`, and Story 3.5's `ship_
-channel()` -- are pure and CFE-independent too.
+Story 3.6 adds `ship_conda_forge()` (FR-23, D-10, AD-11): the third ship
+target, and the first that neither builds nor uploads anything itself --
+conda-forge ships the recipe SOURCE, not the `.conda` artifact `build()`
+produces (matches `plan_ship`'s own `CONDA_FORGE` message above, spec
+Always boundary). It enforces D-10's two shipping preconditions itself,
+which nothing else in Mason validated or reported before this story: a
+`recipe_path` was given (`ShipCondaForgeRecipeMissingError`, dedicated,
+zero-arg, naming `mason recipe new` as the remedy -- FR-23's "offers...
+does not generate silently" is satisfied by that message alone, never an
+interactive prompt or a call to `recipe.new()`, which is Story 3.9's
+scope), the CFE root resolves (`CfeUnresolvedError`, REUSED rather than a
+third dedicated class -- its message is already precondition-generic), and
+the resolved recipe sits at EXACTLY `<cfe-root>/recipes/<name>/`
+(`ShipCondaForgeRecipeLocationError`, naming both the given and the
+required path) -- deliberately stricter than `recipe.py::submit()`'s own
+`CFE_RECIPES_ROOT`-env-override leniency for an out-of-tree recipe (that
+module's own docstring): D-10 narrows this specifically for the
+ship-target boundary ("Shipping to `conda-forge` works only from a
+repository where... the recipe sits at `<cfe-root>/recipes/<name>/`"), so
+`mason recipe submit` stays lenient while `mason package ship --to
+conda-forge` does not. All three preconditions RAISE, mirroring
+`ship_pypi`/`ship_channel`'s own credential-check precedent that a
+structural precondition is raised, not returned as data -- except a
+`Path.resolve()` `OSError`/`ValueError` on either the recipe path or the
+resolved root, which returns `ShipTargetResult(state=ShipState.FAILED,
+message=str(exc))` instead, mirroring `recipe.py::submit()`'s own
+established precedent for that exact resolve-failure mode. Once every
+precondition passes, `from . import recipe` (lazy, module BODY only --
+never module scope, the one `cfe`-adjacent import this file's opening
+paragraph already reserved for this ship target, AD-6) and calls the
+already-built `recipe.py::submit()` (Story 2.9) unchanged, returning its
+`ShipTargetResult` VERBATIM -- no second result object is constructed for
+its success/failure/pending paths (AD-11: "wraps ITS `ShipTargetResult` --
+never produces a second one").
+
+Zero `cfe` reference anywhere in this file AT MODULE SCOPE (spec Always
+boundary, `tests/meta/test_capability_tiers.py` guards it): `build()`
+never resolves a CFE root or interpreter, unlike every `recipe.py` verb,
+Story 3.3's two new functions -- and Story 3.4's `ship_pypi()`, and Story
+3.5's `ship_channel()` -- are pure and CFE-independent too, and Story
+3.6's `ship_conda_forge()` above is the one exception this file's opening
+paragraph always reserved: it imports `cfe` -- transitively, via `recipe`
+-- but only inside its own function body, after every structural
+precondition already passed, never at import time.
 """
 
 from __future__ import annotations
@@ -98,12 +137,15 @@ from packaging.version import InvalidVersion, Version
 
 from .engines import pep517, pixi, twine
 from .errors import (
-    InvalidShipTargetError, PackageProjectPathError, PackageVersionMismatchError,
-    ShipChannelCredentialMissingError, ShipCredentialMissingError,
+    CfeUnresolvedError, InvalidShipTargetError, PackageProjectPathError,
+    PackageVersionMismatchError, ShipChannelCredentialMissingError,
+    ShipCondaForgeRecipeLocationError, ShipCondaForgeRecipeMissingError,
+    ShipCredentialMissingError,
 )
 from .models import (
     PackageBuildResult, ShipState, ShipTarget, ShipTargetKind, ShipTargetResult,
 )
+from .resolve import resolve_cfe_root
 
 
 def _versions_disagree(wheel_version: str, conda_version: str) -> bool:
@@ -495,4 +537,89 @@ def ship_channel(
         state=ShipState.TERMINAL,
         reference=channel_name,
         message=upload_result.stdout,
+    )
+
+
+def ship_conda_forge(
+    recipe_path: str | None,
+    *,
+    environ: Mapping[str, str],
+    cfe_root_arg: str | None,
+    cfe_python_arg: str | None,
+    cfe_timeout_arg: float | None,
+    start_directory: Path,
+) -> ShipTargetResult:
+    """Ship `recipe_path` to conda-forge/staged-recipes by delegating to
+    `recipe.py::submit()` (Story 3.6, FR-23, D-10, AD-11).
+
+    Validates D-10's two shipping preconditions itself, in order, BEFORE
+    `recipe.py` (and therefore `cfe`) is ever imported:
+
+    1. `recipe_path` must be given (not `None`, not blank) -- raises
+       `ShipCondaForgeRecipeMissingError()` otherwise, naming `mason recipe
+       new` as the remedy (this module's own docstring: satisfies FR-23's
+       "offers... does not generate silently" with no interactive prompt).
+    2. The CFE root must resolve (`resolve_cfe_root`) -- raises
+       `CfeUnresolvedError()` otherwise, reused rather than a dedicated
+       class (its message is already precondition-generic).
+
+    `recipe_dir = Path(recipe_path).expanduser().resolve()` and
+    `root_dir = resolved_root.root.expanduser().resolve()` are both
+    resolved inside one `try`/`except (OSError, ValueError)`: a
+    pathological input (a symlink loop, an embedded NUL byte) returns
+    `ShipTargetResult(target="conda-forge", state=ShipState.FAILED,
+    message=str(exc))` instead of raising -- mirrors `recipe.py::submit()`'s
+    own established precedent for this exact resolve-failure mode (its own
+    docstring, review pass 2026-08-12).
+
+    3. `recipe_dir` must equal `root_dir / "recipes" / recipe_dir.name`
+       exactly -- raises `ShipCondaForgeRecipeLocationError(str(recipe_dir),
+       str(expected_dir))` otherwise, naming both paths (this module's own
+       docstring: deliberately stricter than `submit()`'s own
+       `CFE_RECIPES_ROOT`-env-override leniency, per D-10).
+
+    Only once all three preconditions pass does this function `from . import
+    recipe` (lazy, AD-6 -- this file's opening paragraph reserves exactly
+    this one exception) and call `recipe.submit(str(recipe_dir),
+    confirm=True, prepare_only=False, cfe_root_arg=cfe_root_arg,
+    cfe_python_arg=cfe_python_arg, cfe_timeout_arg=cfe_timeout_arg,
+    environ=environ, start_directory=start_directory)`, returning its
+    `ShipTargetResult` UNCHANGED -- no second result object is ever
+    constructed here (AD-11). `confirm=True` and `prepare_only=False` are
+    both hardcoded: no CLI flag exists yet to set either (spec Never
+    boundary -- `prepare_only` wiring and the `--to conda-forge` CLI surface
+    are both Story 3.9's scope), and `ship_conda_forge` never builds
+    anything itself -- conda-forge ships the recipe SOURCE, not a `.conda`
+    artifact (matches `plan_ship`'s own `CONDA_FORGE` message above).
+    """
+    if not recipe_path or not recipe_path.strip():
+        raise ShipCondaForgeRecipeMissingError()
+
+    resolved_root = resolve_cfe_root(cfe_root_arg, environ, start_directory)
+    if resolved_root.root is None:
+        raise CfeUnresolvedError()
+
+    try:
+        recipe_dir = Path(recipe_path).expanduser().resolve()
+        root_dir = resolved_root.root.expanduser().resolve()
+    except (OSError, ValueError) as exc:
+        return ShipTargetResult(
+            target="conda-forge", state=ShipState.FAILED, reference=None, message=str(exc),
+        )
+
+    expected_dir = root_dir / "recipes" / recipe_dir.name
+    if recipe_dir != expected_dir:
+        raise ShipCondaForgeRecipeLocationError(str(recipe_dir), str(expected_dir))
+
+    from . import recipe  # lazy -- AD-6, see module docstring
+
+    return recipe.submit(
+        str(recipe_dir),
+        confirm=True,
+        prepare_only=False,
+        cfe_root_arg=cfe_root_arg,
+        cfe_python_arg=cfe_python_arg,
+        cfe_timeout_arg=cfe_timeout_arg,
+        environ=environ,
+        start_directory=start_directory,
     )
