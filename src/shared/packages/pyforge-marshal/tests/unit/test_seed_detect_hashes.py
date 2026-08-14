@@ -85,9 +85,12 @@ def test_hash_content_matches_region_shas_own_output_shape_over_normalized_text(
     """The design notes' own cross-check: ``hash_content`` is
     ``region_sha`` applied to already-normalized text, never a differently-
     shaped algorithm (the spec's own "no re-implementation at a different
-    truncation length or digest" Never bullet)."""
-    text = "some content\r\n"
-    assert hash_content(text) == region_sha(normalize_line_endings(text))
+    truncation length or digest" Never bullet). Covers both normalized
+    terminators ``hash_content`` collapses: CRLF and a lone CR."""
+    crlf_text = "some content\r\n"
+    assert hash_content(crlf_text) == region_sha(normalize_line_endings(crlf_text))
+    cr_text = "some content\rmore\r"
+    assert hash_content(cr_text) == region_sha(normalize_line_endings(cr_text))
 
 
 def test_hash_content_differs_for_different_content():
@@ -175,6 +178,15 @@ def test_check_managed_file_returns_hard_finding_when_recorded_sha_is_none():
     assert finding.path == "AGENTS.md"
 
 
+def test_check_managed_file_on_empty_content_does_not_crash():
+    """End-to-end counterpart of ``test_hash_content_of_empty_string_does_not_crash``
+    -- a managed file legitimately reduced to zero bytes still round-trips
+    through the public comparison function, not just the bare hash helper."""
+    recorded = hash_content("")
+
+    assert check_managed_file("EMPTY.md", "", recorded) is None
+
+
 def test_check_managed_file_no_false_positive_across_a_crlf_checkout():
     """I/O Matrix: CRLF checkout, same content -- ``recorded_sha`` computed
     from the LF-authored original still matches the CRLF checkout."""
@@ -209,7 +221,7 @@ def test_check_managed_region_returns_hard_finding_on_mismatch():
     # Names the region too (the AC's "naming the artifact's path and region
     # name, for the region case"), even though `Finding.path` itself only
     # ever carries the bare artifact path.
-    assert "tiers" in finding.message
+    assert finding.message.startswith("AGENTS.md#tiers: ")
 
 
 def test_check_managed_region_returns_hard_finding_when_recorded_sha_is_none():
