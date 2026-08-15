@@ -2614,6 +2614,113 @@ def _attach_churn_skip(
         item["churn_checked_paths"] = list(paths)
 
 
+# --- Story 11.3: mechanical verification of grep-recomputable claims ----------
+#
+# Story 11.2's churn filter leaves genuinely due entries -- but every one
+# still costs a human/agent read, even when the entry's own claim is a fact
+# a grep can recompute deterministically today. This section recognizes ONE
+# such claim shape -- a backtick-quoted bare identifier claimed "unused" (or
+# a synonym) -- and mechanically recomputes its live call-site count,
+# tagging the SAME 11.1/11.2 finding with `mechanical_verdict`: "still-open"
+# (count still 0) or "escalate" (count now nonzero, Story 11.4's agent
+# judges why). Never `"resolved"` -- this story's own vocabulary never
+# asserts a positive resolution (Boundaries).
+
+#: A backtick-quoted BARE identifier -- no dot, no slash, so it never
+#: collides with `_PATH_TOKEN_RE`'s own dotted/path-shaped matches -- followed,
+#: within 80 characters with no intervening backtick, by an "unused"-family
+#: phrase. The identifier group requires the closing backtick to immediately
+#: follow the identifier chars, so a dotted symbol (`` `Foo.bar` ``) never
+#: matches at all: the first char after the identifier's word-chars must be
+#: a backtick, and no backtick is ever immediately adjacent to a dotted
+#: symbol's own trailing segment (Boundaries: "Never recognize a DOTTED
+#: symbol").
+_UNUSED_CLAIM_RE = re.compile(
+    r"`([A-Za-z_][A-Za-z0-9_]*)`[^`]{0,80}?"
+    r"\b(?:unused|unreferenced|never called|no callers|has no callers|dead code)\b",
+    re.IGNORECASE,
+)
+
+
+def _entry_unused_symbol_claims(path: Path) -> list[tuple[str, str | None]]:
+    """``(id, symbol)`` for every ID'd entry in a tracked ledger -- ``symbol``
+    is the entry's own FIRST ``_UNUSED_CLAIM_RE`` match (its claimed-unused
+    bare identifier), or ``None`` when the entry's body carries no
+    recognizable claim of that shape. Duplicates ``_verification()``'s own
+    boundary-walk shape rather than extracting a shared primitive (Design
+    Notes: neither ``_entries()`` nor ``_verification()`` is touched by this
+    story)."""
+    if not _is_file(path):
+        return []
+    text = path.read_text(encoding="utf-8", errors="replace")
+    marks = [(m.start(), m.group(1)) for m in _ENTRY_RE.finditer(text)]
+    out = []
+    for i, (pos, ident) in enumerate(marks):
+        end = marks[i + 1][0] if i + 1 < len(marks) else len(text)
+        match = _UNUSED_CLAIM_RE.search(text[pos:end])
+        out.append((ident, match.group(1) if match else None))
+    return out
+
+
+def _call_site_count(target: Path, symbol: str) -> int | None:
+    """Live call-site count for ``symbol`` across the whole repo --
+    ``git grep -n -w -I -- <symbol>`` (whole repo, whole-word, binary-
+    excluded) via ``run_git``, with ``ok_exit_codes={0, 1}`` since git
+    grep's exit code 1 ("no matches") is the expected, common "still-open"
+    outcome here, never an error (Boundaries).
+
+    Excludes every line matching ``^\\s*(?:def|class)\\s+<symbol>\\b`` -- the
+    symbol's own declaration is not a call site (Boundaries: "call sites
+    means usages, not the declaration").
+
+    Returns ``None`` -- never raises -- on any OTHER git failure, so the
+    caller degrades THIS entry's check to "not evaluated" (I/O matrix: "git
+    grep hard failure")."""
+    try:
+        out = run_git(
+            target, ["grep", "-n", "-w", "-I", "--", symbol],
+            ok_exit_codes=frozenset({0, 1}),
+        )
+    except (CliBridgeError, UnicodeDecodeError):
+        return None
+    decl_re = re.compile(rf"^\s*(?:def|class)\s+{re.escape(symbol)}\b")
+    count = 0
+    for line in out.splitlines():
+        _, _, rest = line.partition(":")
+        _, _, content = rest.partition(":")
+        if decl_re.match(content):
+            continue
+        count += 1
+    return count
+
+
+def _attach_mechanical_verdict(
+    target: Path, item: dict, symbol: str | None,
+) -> None:
+    """Mutate ``item`` IN PLACE, adding ``mechanical_verdict``/
+    ``mechanical_symbol``/``mechanical_call_sites`` when ``symbol`` names a
+    recognized claim AND its live call-site count is resolvable -- ADDITIVE
+    only, mirroring ``_attach_churn_skip``'s own shape (Design Notes: same
+    flat-key style as ``skip_reason``/``churn_checked_paths``).
+
+    ``symbol is None`` (no recognizable claim) returns without attempting a
+    git call at all -- the "no recognizable claim" I/O matrix row. A
+    ``_call_site_count`` failure (``None``) also leaves ``item`` untouched --
+    isolated exactly like ``_churn_since``'s own per-path degradation
+    (Boundaries), never raising past this function."""
+    if symbol is None:
+        return
+    try:
+        count = _call_site_count(target, symbol)
+    except Exception:  # noqa: BLE001 -- see docstring: isolate per-entry.
+        return
+    if count is None:
+        return
+    item["mechanical_verdict"] = "still-open" if count == 0 else "escalate"
+    item["mechanical_symbol"] = symbol
+    item["mechanical_call_sites"] = count
+
+
 def _check_project_due_for_verification(
     target: Path, proj: Path, findings: list[dict], today: date,
 ) -> None:
@@ -2629,9 +2736,15 @@ def _check_project_due_for_verification(
     when the entry has at least one extracted path, so an entry with
     nothing to check never pays for a git call it cannot use.
 
-    Paired with ``zip``, POSITIONALLY, not via an id-keyed dict: both
-    ``_verification()`` and ``_entry_named_paths()`` walk the SAME
-    ``_ENTRY_RE`` marks over the SAME file text, so they produce entries in
+    Story 11.3: a finding that did NOT get 11.2's ``skip_reason: "no-churn"``
+    (i.e. it survives the churn filter) is additionally offered to
+    ``_attach_mechanical_verdict`` with its own ``_entry_unused_symbol_claims``
+    result -- a churn-skipped entry is never evaluated (Boundaries: "same
+    cost-bound purpose CAP-2 established").
+
+    Paired with ``zip``, POSITIONALLY, not via an id-keyed dict: ``_verification()``,
+    ``_entry_named_paths()``, and ``_entry_unused_symbol_claims()`` all walk the
+    SAME ``_ENTRY_RE`` marks over the SAME file text, so they produce entries in
     identical order and count -- but a ledger with a duplicate (malformed,
     invariant-violating) id would silently collapse to one dict entry,
     pairing an EARLIER duplicate's finding with a LATER duplicate's paths
@@ -2639,8 +2752,9 @@ def _check_project_due_for_verification(
     whether ids repeat."""
     tracked_path = proj / TRACKED_REL
     paths_by_entry = _entry_named_paths(tracked_path)
-    for (entry_id, raw_verified), (_, paths) in zip(
-        _verification(tracked_path), paths_by_entry, strict=True,
+    claims_by_entry = _entry_unused_symbol_claims(tracked_path)
+    for (entry_id, raw_verified), (_, paths), (_, symbol) in zip(
+        _verification(tracked_path), paths_by_entry, claims_by_entry, strict=True,
     ):
         parsed = _parse_verified_date(raw_verified) if raw_verified else None
         if parsed is None:
@@ -2651,6 +2765,8 @@ def _check_project_due_for_verification(
             }
             since = _authored_date(target, tracked_path, entry_id) if paths else None
             _attach_churn_skip(target, item, paths, since)
+            if item.get("skip_reason") != "no-churn":
+                _attach_mechanical_verdict(target, item, symbol)
             findings.append(item)
             continue
         days_stale = (today - parsed).days
@@ -2662,6 +2778,8 @@ def _check_project_due_for_verification(
                 "days_stale": days_stale,
             }
             _attach_churn_skip(target, item, paths, parsed)
+            if item.get("skip_reason") != "no-churn":
+                _attach_mechanical_verdict(target, item, symbol)
             findings.append(item)
 
 
@@ -2707,7 +2825,14 @@ def _due_for_verification_message(item: dict) -> str:
     ``skip_reason: no-churn`` value (Design Notes: the epic's own wording
     names the VALUE, not the evidence key) so a human scanning WARN output
     can tell a "no churn, deprioritized" entry apart from one still fully
-    due, without opening the evidence dict."""
+    due, without opening the evidence dict.
+
+    Story 11.3: when ``_attach_mechanical_verdict`` tagged this item, the
+    message additionally reports the mechanical verdict -- spelling the
+    live call-site count so a human scanning WARN output can tell a
+    mechanically-confirmed entry (``still-open``) apart from one that now
+    needs Story 11.4's agent judgment (``escalate``), without opening the
+    evidence dict."""
     kind = item["kind"]
     if kind == "due-for-verification":
         if item["reason"] == "never-verified":
@@ -2723,6 +2848,19 @@ def _due_for_verification_message(item: dict) -> str:
             message += (
                 " Named code path(s) have no commits since then — "
                 "skip_reason: no-churn (deprioritized, not resolved)."
+            )
+        verdict = item.get("mechanical_verdict")
+        if verdict == "still-open":
+            message += (
+                f" Mechanical check: `{item['mechanical_symbol']}` still has "
+                f"0 live call sites — mechanical_verdict: still-open "
+                f"(confirmed without an agent)."
+            )
+        elif verdict == "escalate":
+            message += (
+                f" Mechanical check: `{item['mechanical_symbol']}` now has "
+                f"{item['mechanical_call_sites']} live call site(s) — "
+                f"mechanical_verdict: escalate (needs agent judgment)."
             )
         return message
     return item.get("detail", f"{item['project']}: {kind}")
