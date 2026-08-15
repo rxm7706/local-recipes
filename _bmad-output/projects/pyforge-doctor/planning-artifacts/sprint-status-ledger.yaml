@@ -24,7 +24,7 @@ development_status:
   10-3-the-drift-surfaces-ambiently-never-gates: backlog
   11-1-due-for-verification-entries-are-selected-per-project: done
   11-2-churn-based-cost-filtering-skips-entries-whose-code-has-not-moved: done
-  11-3-mechanically-checkable-claims-are-verified-without-an-agent: backlog
+  11-3-mechanically-checkable-claims-are-verified-without-an-agent: done
   11-4-judgment-requiring-entries-get-an-evidence-grounded-verdict: backlog
   11-5-verification-reaches-across-project-boundaries: backlog
   11-6-near-duplicate-entries-surface-as-one-defect-class: backlog
