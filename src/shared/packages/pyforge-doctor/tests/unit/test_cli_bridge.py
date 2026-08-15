@@ -3,9 +3,10 @@ sole sanctioned subprocess site. Covers: success, script missing, non-zero
 exit, timeout, unparseable JSON, argv-as-a-list (no shell interpretation),
 and the ``NO_COLOR=1`` environment contract.
 
-Story 9.2 adds ``run_git``'s ``ok_exit_codes`` param -- covered against a REAL
-tmp git repository (this test file is not restricted to ``cli_bridge.py``
-itself; a test file driving real ``git`` to set up a fixture is fine, mirrors
+Story 9.2 adds ``run_git``'s ``ok_exit_codes`` param (Story 11.3 is its first
+real caller, in sources/chain.py) -- covered against a REAL tmp git
+repository (this test file is not restricted to ``cli_bridge.py`` itself; a
+test file driving real ``git`` to set up a fixture is fine, mirrors
 ``test_sources_ledger.py``'s own precedent)."""
 
 from __future__ import annotations

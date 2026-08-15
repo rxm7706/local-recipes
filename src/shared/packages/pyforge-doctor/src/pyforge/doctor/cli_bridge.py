@@ -104,7 +104,10 @@ def run_git(
     caller's behavior is byte-identical) lets a caller tolerate a documented
     non-zero exit that isn't a failure — ``git grep``'s exit 1 means "no match",
     not an error. A returncode outside the set still raises :class:`CliBridgeError`
-    exactly as before.
+    exactly as before. Story 11.3 is the first caller to use it: a mechanical
+    call-site check passes ``ok_exit_codes=frozenset({0, 1})`` so ``git grep``'s
+    "no matches in any file" reads as a valid, expected outcome rather than every
+    other ``git`` call site becoming newly tolerant of a non-zero exit too.
 
     Raises :class:`CliBridgeError` on every failure mode (git absent, an exit code
     outside ``ok_exit_codes``, timeout). Callers degrade that into a ``Finding``;
