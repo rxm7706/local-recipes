@@ -79,7 +79,13 @@ def run_cli_json(
         ) from exc
 
 
-def run_git(cwd: Path, args: list[str], *, timeout: float = 30.0) -> str:
+def run_git(
+    cwd: Path,
+    args: list[str],
+    *,
+    timeout: float = 30.0,
+    ok_exit_codes: frozenset[int] = frozenset({0}),
+) -> str:
     """Run ``git *args`` in ``cwd`` and return stdout.
 
     Added 2026-08-08 for ``sources/marshal.py``, which judges the Marshal's
@@ -94,9 +100,16 @@ def run_git(cwd: Path, args: list[str], *, timeout: float = 30.0) -> str:
     ``--no-pager`` keep decoration out of stdout. It differs in one deliberate way —
     it returns **raw text**, because git's payload here is a YAML file, not JSON.
 
-    Raises :class:`CliBridgeError` on every failure mode (git absent, non-zero exit,
-    timeout). Callers degrade that into a ``Finding``; this module has no opinion on
-    Doctor's ``Finding`` shape.
+    ``ok_exit_codes`` (Story 11.3): defaults to ``frozenset({0})`` so every
+    existing call site is unaffected. ``git grep``'s exit code 1 means "no
+    matches in any file" — a valid, expected outcome for a mechanical
+    call-site check, not an error — so a caller that needs that outcome
+    passes ``ok_exit_codes=frozenset({0, 1})`` rather than every other ``git``
+    call site becoming newly tolerant of a non-zero exit too.
+
+    Raises :class:`CliBridgeError` on every failure mode (git absent, an exit
+    code outside ``ok_exit_codes``, timeout). Callers degrade that into a
+    ``Finding``; this module has no opinion on Doctor's ``Finding`` shape.
     """
     env = dict(os.environ)
     env["NO_COLOR"] = "1"
@@ -119,7 +132,7 @@ def run_git(cwd: Path, args: list[str], *, timeout: float = 30.0) -> str:
     except OSError as exc:
         raise CliBridgeError(f"git failed to launch: {exc!r}") from exc
 
-    if result.returncode != 0:
+    if result.returncode not in ok_exit_codes:
         raise CliBridgeError(
             f"git {' '.join(args[:2])} exited {result.returncode}: "
             f"{result.stderr.strip()}"
