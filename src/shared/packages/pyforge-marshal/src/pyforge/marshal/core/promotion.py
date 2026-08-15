@@ -84,13 +84,17 @@ _INVALID_SPEC_CODE = "MRS-DEPLOY-002"
 # GitHub's own PR-merge commit-subject shape -- "Merge pull request #N from
 # <owner>/<branch>" -- the shape every real merge commit in THIS repo's
 # history actually carries (verified live via `git log --merges` at the
-# spec-amendment that added this function). `\S+` (not `[^/]+`) for the
-# owner/branch prefix before the captured `branch` group: it is greedy, so
-# it backtracks to the LAST `/` in the string, meaning `branch` already
-# lands on the final path segment (e.g. "marshal/2-3-title" contributes
-# just "2-3-title") without this regex needing to know how many slashes a
-# real branch name carries.
-_GITHUB_MERGE_SUBJECT_RE = re.compile(r"^Merge pull request #\d+ from \S+/(?P<branch>\S+)$")
+# spec-amendment that added this function). `\S+?` (non-greedy) for the
+# owner prefix before the captured `branch` group: the owner (a single
+# GitHub username, never containing `/`) is matched with the FEWEST
+# characters that still allow the overall match, so it stops at the FIRST
+# `/` -- meaning `branch` captures the FULL remainder, e.g.
+# "marshal/4-2-teardown-..." rather than just "4-2-teardown-...". A prior
+# greedy `\S+` backtracked to the LAST `/` instead, silently discarding
+# any project-identifying prefix segment before `extract_story_key_from_
+# github_merge_subject` ever saw it -- the live cross-project collision
+# that function's own docstring now documents.
+_GITHUB_MERGE_SUBJECT_RE = re.compile(r"^Merge pull request #\d+ from \S+?/(?P<branch>\S+)$")
 
 # bmad-loop's own native merge-commit shape -- "Merge bmad-loop/<run-id>/
 # <key>-<description> into <branch> (bmad-loop)" -- the shape every
@@ -143,27 +147,58 @@ def extract_story_key_from_bmadloop_merge_subject(
         return None
 
 
-def extract_story_key_from_github_merge_subject(subject: str) -> StoryKey | None:
+def extract_story_key_from_github_merge_subject(
+    subject: str, project_slug: str
+) -> StoryKey | None:
     """The second merge-subject pattern ``merged_story_keys`` tries (Story
     4.1's spec amendment, "TWO merge shapes, not one"): matches GitHub's own
     PR-merge subject shape and attempts to parse a story key out of the
     branch's final ``/``-separated path segment (this repo's own observed
     convention, ``marshal/<epic>-<seq>-<description>``).
 
-    Returns ``None`` -- never raises -- for either failure mode: the
-    subject doesn't match the GitHub shape at all, or the extracted
-    segment's leading token isn't a parseable story key
-    (``core.identity.normalize``'s ``MalformedStoryKeyError``, e.g. a
-    branch like ``"marshal/refresh-dashboard-3-7"`` whose digits appear but
-    not as the segment's LEADING token -- ``normalize()`` matches only at
-    position 0, so this correctly does not extract ``3.7``). No new
-    key-parsing logic: the extracted segment is handed straight to
-    ``core.identity.normalize``, which already tolerates trailing
-    descriptive text after the ``<epic>-<seq>`` token."""
+    ``project_slug`` is REQUIRED, not optional (live cross-project
+    collision, found running this for real against local-recipes,
+    2026-08-15: PR #274's branch ``marshal/4-2-teardown-reachability-spec-
+    recovery`` -- a MARSHAL story -- was silently misread as pyforge-
+    MASON's own Story 4.2, making ``marshal land pyforge-mason`` falsely
+    report that story as already landed. The SAME live cross-project risk
+    ``extract_story_key_from_bmadloop_merge_subject``'s own docstring
+    already documents, now closed here too). The branch's leading path
+    segment must equal ``project_slug`` with any ``pyforge-`` prefix
+    stripped (every real ``project_slug`` this module receives is the CLI's
+    full ``pyforge-<name>`` form, but real branch prefixes use the short
+    station name -- confirmed live via ``git log --merges`` across every
+    station) -- or the subject is treated as NOT belonging to this project,
+    same as any other non-matching subject.
+
+    An empty ``station`` (``project_slug`` is ``""`` or exactly
+    ``"pyforge-"``) is ALSO treated as never-matching (review finding,
+    2026-08-15) rather than degrading to ``branch.startswith("/")`` -- an
+    empty prefix would otherwise accept a branch with an empty leading
+    segment (e.g. a subject containing ``"//4-2-evil"``), reopening a
+    narrow version of the exact collision this scoping exists to close.
+    No real project in this factory has an empty short name, so this is a
+    defensive floor, not a live case.
+
+    Returns ``None`` -- never raises -- for any failure mode: the subject
+    doesn't match the GitHub shape at all, the branch's leading segment
+    doesn't belong to ``project_slug``, or the extracted segment's leading
+    token isn't a parseable story key (``core.identity.normalize``'s
+    ``MalformedStoryKeyError``, e.g. a branch like
+    ``"marshal/refresh-dashboard-3-7"`` whose digits appear but not as the
+    segment's LEADING token -- ``normalize()`` matches only at position 0,
+    so this correctly does not extract ``3.7``). No new key-parsing logic:
+    the extracted segment is handed straight to ``core.identity.normalize``,
+    which already tolerates trailing descriptive text after the
+    ``<epic>-<seq>`` token."""
     match = _GITHUB_MERGE_SUBJECT_RE.match(subject)
     if match is None:
         return None
-    segment = match.group("branch").rsplit("/", 1)[-1]
+    branch = match.group("branch")
+    station = project_slug.removeprefix("pyforge-")
+    if not station or not branch.startswith(f"{station}/"):
+        return None
+    segment = branch.rsplit("/", 1)[-1]
     try:
         return normalize(segment)
     except MalformedStoryKeyError:
@@ -176,15 +211,15 @@ def _classify_merge_subject(subject: str, template: str, project_slug: str) -> S
     Factored out so ``merged_story_keys`` (deduplicated by key) and
     ``count_conforming_subjects`` (a raw per-subject diagnostic count) share
     one classification, never copies that could silently diverge.
-    ``project_slug`` scopes the bmad-loop pattern only (see
-    ``extract_story_key_from_bmadloop_merge_subject``'s own docstring for
-    why that scoping is required, not optional, in this shared-history
-    repo)."""
+    ``project_slug`` scopes BOTH the GitHub PR-merge pattern and the
+    bmad-loop pattern (see each extractor's own docstring for the live
+    cross-project collision its own scoping prevents, in this
+    shared-history repo)."""
     try:
         return parse_merge_subject(subject, template)
     except MergeSubjectConformanceError:
         pass
-    key = extract_story_key_from_github_merge_subject(subject)
+    key = extract_story_key_from_github_merge_subject(subject, project_slug)
     if key is not None:
         return key
     return extract_story_key_from_bmadloop_merge_subject(subject, project_slug)
@@ -197,13 +232,14 @@ def merged_story_keys(
     (AD-24, AD-33): each subject is classified via
     ``_classify_merge_subject`` -- first the AD-24 templated form
     (``core.identity.parse_merge_subject``), then, if that doesn't conform,
-    the GitHub PR-merge form, then bmad-loop's own native form (scoped to
-    ``project_slug`` -- see that extractor's own docstring for the live
-    cross-project collision this scoping prevents). A subject matching
-    NONE of the three is silently skipped, never raised -- most of any
-    real repository's commit history is not a story merge for THIS
-    project. Pure: no I/O, no ``VcsPort`` -- ``subjects`` is the caller's
-    already-gathered ``VcsPort.commit_subjects`` result."""
+    the GitHub PR-merge form, then bmad-loop's own native form -- BOTH of
+    the latter two scoped to ``project_slug`` (see each extractor's own
+    docstring for the live cross-project collision its own scoping
+    prevents). A subject matching NONE of the three is silently skipped,
+    never raised -- most of any real repository's commit history is not a
+    story merge for THIS project. Pure: no I/O, no ``VcsPort`` --
+    ``subjects`` is the caller's already-gathered
+    ``VcsPort.commit_subjects`` result."""
     keys: set[StoryKey] = set()
     for subject in subjects:
         key = _classify_merge_subject(subject, template, project_slug)

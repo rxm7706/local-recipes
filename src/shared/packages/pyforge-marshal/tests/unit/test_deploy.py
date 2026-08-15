@@ -487,12 +487,19 @@ def test_promote_reports_subjects_examined_and_matched(tmp_path, capsys, monkeyp
 
 def test_promote_recognizes_a_real_github_merge_subject(tmp_path, capsys, monkeypatch):
     """The spec-amendment's own live regression -- a real GitHub PR-merge
-    subject (never the templated form) must be recognized as durable."""
+    subject (never the templated form) must be recognized as durable.
+
+    Branch prefix is `acme/`, matching `_args()`'s default `project="acme"`
+    slug (2026-08-15 fix: `extract_story_key_from_github_merge_subject` is
+    now scoped to `project_slug`, so a subject's branch prefix must
+    actually match the project under test -- the original fixture reused
+    a real `marshal/` branch against this file's generic `acme` project,
+    which the new cross-project scoping correctly rejects)."""
     monkeypatch.setattr(deploy_module, "repo_root", lambda: tmp_path)
     _write_tier3_spec(tmp_path, "acme", "2-3", _VALID_SPEC)
     vcs = _FakeVcs(
         main_subjects=(
-            "Merge pull request #269 from rxm7706/marshal/2-3-frozen-surface-scope-check",
+            "Merge pull request #269 from rxm7706/acme/2-3-frozen-surface-scope-check",
         )
     )
 

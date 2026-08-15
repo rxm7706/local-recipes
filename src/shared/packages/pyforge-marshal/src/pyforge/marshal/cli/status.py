@@ -1004,18 +1004,21 @@ def _merged_keys_for_slug(
     ``land/<station>-<epic>-<seq>`` merge subject.
 
     "Stronger", not "proof" (review finding, 2026-08-10, pass 4). The
-    positive direction has a known, VERIFIED contamination of its own,
-    recorded as an open deferral against ``core/promotion.py``:
-    ``extract_story_key_from_github_merge_subject`` takes no
+    positive direction previously carried a known, VERIFIED contamination
+    of its own: ``extract_story_key_from_github_merge_subject`` took no
     ``project_slug`` at all -- unlike the bmad-loop pattern, scoped after a
     live collision -- so in this repo's single shared ``git log`` one
-    station's ``<epic>.<seq>`` is "merged" on the sole evidence of a
+    station's ``<epic>.<seq>`` could be "merged" on the sole evidence of a
     DIFFERENT station's PR-merge subject. Measured 2026-08-10 against
     ``main``'s 2,353 subjects, ``pyforge-mason``, ``pyforge-doctor`` and
-    ``pyforge-scribe`` each return ~30 keys, most of them another station's.
-    So the honest reading is: ABSENT proves nothing, PRESENT is good
-    evidence that is nonetheless cross-project blind. Callers must not
-    upgrade "present" to "certainly landed" in prose an operator reads."""
+    ``pyforge-scribe`` each returned ~30 keys, most of them another
+    station's. CLOSED 2026-08-15: ``extract_story_key_from_github_merge_
+    subject`` now requires and scopes on ``project_slug``, threaded through
+    automatically here via the ``slug`` already passed to
+    ``merged_story_keys`` below. So the honest reading now: ABSENT still
+    proves nothing (the squash-merge and ``land/<slug>-<epic>-<seq>`` blind
+    spots below are unrelated and remain real), but PRESENT is no longer
+    cross-project blind."""
     findings: list[Finding] = []
     project_data: Mapping[str, object] = {}
     if policy_core._is_valid_project_slug(slug):
