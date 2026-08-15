@@ -1,0 +1,32 @@
+# Fixture for Story 5.3's delegation-fidelity test (tests/integration/
+# test_delegation_fidelity.py) -- real, parseable v1 recipe.yaml, NOT a
+# real recipes/<feedstock> path (avoids coupling to unrelated drift) and
+# deliberately NOT lint-clean: the comparison is Mason vs. direct CFE
+# output, not "the recipe is valid," and a recipe producing some
+# errors/warnings is a more convincing fidelity proof than a trivial
+# passed:true-on-both-sides case (exercises list equality, not just a bool).
+schema_version: 1
+
+package:
+  name: delegation-fidelity-fixture
+  version: "1.0.0"
+
+source:
+  url: https://pypi.org/packages/source/d/delegation-fidelity-fixture/delegation_fidelity_fixture-1.0.0.tar.gz
+  sha256: ff28d3aff72151022eacf9c8e870f2bbbb8599140378671402db8440509d7fbc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+about:
+  summary: Fixture recipe for Story 5.3's delegation-fidelity test -- not lint-clean by design.
+  license: MIT
