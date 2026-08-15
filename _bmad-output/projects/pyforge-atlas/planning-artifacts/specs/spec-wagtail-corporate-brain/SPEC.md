@@ -6,12 +6,18 @@ surface:
   - src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/lasuite.py
   - src/shared/packages/pyforge-atlas/tests/factory/test_lasuite.py
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md
+  - src/shared/packages/pyforge-atlas/tools/lasuite_bringup.py
+  - src/shared/packages/pyforge-atlas/tests/factory/test_lasuite_live_rehearsal.py
 sources:
   - ../../../../../../docs/dreams/wagtail-corporate-brain.md
+# Verification-home question RESOLVED 2026-08-15 (Story 16.2): the rehearsal lives in the
+# DEFAULT `kedro-test` gate, not a network-marked pytest outside it — a real httpx opener
+# (`tools/lasuite_bringup.py`) driven over a loopback-only stdlib `http.server` stub stays fully
+# offline, so no new pytest marker was needed. See
+# `_bmad-output/implementation-artifacts/spec-16-2-httpx-opener-and-rehearsal.md`.
 open_questions:
   - deployment substrate — conda-forge Wagtail + django-lasuite (DW-H3's own text) vs a container
   - is DW-H1's PostgreSQL/MinIO required, or does a SQLite-backed minimal instance satisfy the contract?
-  - home of the live verification — attended checklist only, or also a network-marked pytest outside the default gate?
 ---
 
 > **Canonical contract.** This SPEC is the complete, preservation-validated contract for what
@@ -113,5 +119,13 @@ later runs and passes, DW-H3 closes citing this SPEC; until then the SPEC holds 
   the minimal instance is that stack or a container is Steward's mechanism call at bring-up.
 - **DW-H1 dependency:** does the minimal instance need DW-H1's PostgreSQL/MinIO, or does a
   SQLite-backed Wagtail satisfy the four-route contract for a first bring-up?
-- **Verification home:** attended checklist only, or also a network-marked pytest kept out of the
-  default offline gate.
+
+**Resolved:**
+
+- **Verification home** (Story 16.2): the rehearsal lives in the DEFAULT `kedro-test` gate — a
+  real httpx-backed opener (`tools/lasuite_bringup.py`) driven over a loopback-only stdlib
+  `http.server` stub (`tests/factory/test_lasuite_live_rehearsal.py`) reproduces the mock-proven
+  create/update/idempotent-skip/resume sequence over REAL HTTP while staying fully offline (no
+  external network, no credentials), so no network-marked pytest outside the default gate was
+  needed. The attended DW-H3 checklist (this story's Design Notes) is additional, not a
+  substitute — it still runs the same script against a real Wagtail/La Suite instance.
