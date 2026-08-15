@@ -153,26 +153,46 @@ def _suppress_close(close: Callable[[], None]) -> None:
     """Run a cleanup callable, swallowing anything it raises -- ported from
     board.py's own ``_suppress_close``: a browser/socket that fails to shut
     down is not a render verdict, and letting it propagate would replace
-    every already-captured slide with one vacuous error."""
+    every already-captured slide with one vacuous error. Catches
+    ``SystemExit`` too, not just ``Exception``: this module's own per-slide
+    capture loop below documents that playwright's internals have raised
+    ``SystemExit`` live, and this function tears down those same playwright
+    objects (``browser.close``, ``page.close``) -- the docstring's own
+    "swallowing anything it raises" promise must hold for that case too."""
     try:
         close()
-    except Exception:  # noqa: BLE001, S110 -- see the docstring above; a
-        # failed teardown must never be able to change what this gate reports.
+    except (Exception, SystemExit):  # noqa: BLE001, S110 -- see the
+        # docstring above; a failed teardown must never be able to change
+        # what this gate reports.
         pass
 
 
 _RESERVED_SLIDE_IDS = frozenset({"contact-sheet"})
 
 
-def _single_path_segment(candidate: str) -> bool:
+def _single_path_segment(candidate: object) -> bool:
     """``True`` only for a string that is exactly one path segment -- no
-    ``/``, no ``..``, no empty/`.`-only component. Guards every id/slug this
-    module turns into a filesystem path (a slide id from ``manifest.json``,
-    or ``context.slug`` itself) against writing/reading outside the
-    directory that name was supposed to select (Review Triage Log)."""
-    if not candidate or candidate in (".", ".."):
+    ``/`` or ``\\``, no ``..``, no empty/`.`-only component. Guards every
+    id/slug this module turns into a filesystem path (a slide id from
+    ``manifest.json``, or ``context.slug`` itself) against writing/reading
+    outside the directory that name was supposed to select (Review Triage
+    Log).
+
+    Checks the raw string for a separator directly rather than routing
+    through ``Path(candidate).parts``: ``Path`` normalizes away a leading
+    ``./`` or trailing ``/.``, so ``"./.."`` measures as the single part
+    ``".."`` post-normalization even though the raw string contains a
+    literal ``/`` -- a disguised traversal string the previous
+    ``len(Path(...).parts) == 1`` check let straight through (Review pass,
+    second round). Also rejects a non-``str`` candidate outright, matching
+    ``_slide_id``'s own ``isinstance`` guard, so a caller passing something
+    other than a string gets this function's own ``False`` -> the caller's
+    documented error, not a raw ``TypeError`` out of ``Path()``."""
+    if not isinstance(candidate, str) or not candidate:
         return False
-    return len(Path(candidate).parts) == 1
+    if candidate in (".", ".."):
+        return False
+    return "/" not in candidate and "\\" not in candidate
 
 
 def _slide_id(entry: object, index: int) -> str:
@@ -226,9 +246,11 @@ def render_gate(context: GateContext) -> GateResult:
     Notes) for the full rationale.
 
     Report-only: never runs a build, never mutates deck sources.
-    ``.herald/deck-qa/<slug>/render/`` is ``rmtree``'d then recreated at the
-    start of each run, so a shrunk manifest never leaves a stale PNG looking
-    current.
+    ``.herald/deck-qa/<slug>/render/`` is ``rmtree``'d then recreated once
+    Chromium is confirmed launchable (not any earlier -- Review pass, second
+    round: wiping it before that point meant a "no usable chromium" failure
+    deleted the previous run's own evidence with nothing to replace it), so
+    a shrunk manifest never leaves a stale PNG looking current.
 
     Raises on a genuinely unusable environment -- ``dist/`` absent,
     ``manifest.json`` absent/malformed, an unusable ``playwright`` install,
@@ -266,9 +288,6 @@ def render_gate(context: GateContext) -> GateResult:
         raise RuntimeError(f"playwright is not usable: {exc}") from exc
 
     render_dir = context.repo_root / ".herald" / "deck-qa" / context.slug / "render"
-    if render_dir.exists():
-        shutil.rmtree(render_dir)
-    render_dir.mkdir(parents=True, exist_ok=True)
 
     httpd, port = _serve_dist_dir(dist_dir)
     findings: list[Finding] = []
@@ -279,14 +298,28 @@ def render_gate(context: GateContext) -> GateResult:
                 browser = p.chromium.launch(
                     channel="chrome", timeout=_RENDER_LAUNCH_TIMEOUT_MS
                 )
-            except Exception:  # noqa: BLE001 -- fall back to bundled chromium,
-                # matching board.py's own fallback order verbatim.
+            except (Exception, SystemExit):  # noqa: BLE001 -- fall back to
+                # bundled chromium, matching board.py's own fallback order
+                # verbatim. SystemExit included for the same reason the
+                # per-slide loop below catches it: playwright's own
+                # internals have raised it live.
                 try:
                     browser = p.chromium.launch(timeout=_RENDER_LAUNCH_TIMEOUT_MS)
-                except Exception as exc:  # noqa: BLE001 -- no usable browser at all
+                except (Exception, SystemExit) as exc:  # noqa: BLE001 -- no
+                    # usable browser at all
                     raise RuntimeError(
                         f"no usable chromium ({type(exc).__name__}): {exc}"
                     ) from exc
+            # Only now that Chromium is known launchable is it safe to wipe
+            # the previous run's evidence (Review pass, second round):
+            # wiping render_dir any earlier meant a "no usable chromium"
+            # failure -- a documented, expected failure mode, see the I/O
+            # matrix -- deleted the last known-good PNGs/contact-sheet with
+            # nothing to replace them, working against this gate's whole
+            # purpose of leaving a reviewer something to look at.
+            if render_dir.exists():
+                shutil.rmtree(render_dir)
+            render_dir.mkdir(parents=True, exist_ok=True)
             seen_ids: set[str] = set(_RESERVED_SLIDE_IDS)
             try:
                 for index, entry in enumerate(manifest):

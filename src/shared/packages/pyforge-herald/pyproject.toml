@@ -25,11 +25,17 @@ authors = [{ name = "rxm7706" }]
 # conda-forge packages (`playwright` the CLI/driver, `playwright-python` the
 # `import playwright` bindings) -- PyPI ships both halves as one
 # distribution, still named `playwright`, so that is the name declared here.
+# Floor matches `pixi.toml`'s own `playwright` floor exactly (review pass,
+# second round: a lower floor here let a `pip install` of the built wheel
+# resolve an older playwright than the conda env's own solve -- playwright's
+# Python package and its bundled browser build are version-coupled, so a
+# mismatch is a real "browser doesn't match driver" failure mode, not just
+# a cosmetic drift).
 dependencies = [
     "mcp>=1.28.1",
     "httpx2>=2.5.0",
     "pyforge-core",
-    "playwright>=1.62.0",
+    "playwright>=1.62.1",
     "pillow>=12.3.0",
 ]
 

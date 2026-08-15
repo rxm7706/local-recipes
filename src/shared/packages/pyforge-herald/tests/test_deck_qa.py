@@ -476,7 +476,12 @@ def test_render_gate_missing_dist_raises_and_run_isolates_it(tmp_path: Path):
     )
     context = deck_qa.GateContext(slug="no-dist-deck", repo_root=tmp_path)
 
-    with pytest.raises(Exception, match="does not exist"):
+    # Matches on "dist does not exist" specifically, not just the generic
+    # "does not exist" both this message and the missing-manifest message
+    # below share -- a substring shared by both would pass even if a
+    # regression swapped which check fired first (Review pass, second
+    # round).
+    with pytest.raises(Exception, match="dist does not exist"):
         deck_qa.render_gate(context)
 
     report = deck_qa.run(
@@ -499,7 +504,9 @@ def test_render_gate_missing_manifest_raises(tmp_path: Path):
     )
     context = deck_qa.GateContext(slug="no-manifest-deck", repo_root=tmp_path)
 
-    with pytest.raises(Exception, match="does not exist"):
+    # See the sibling missing-dist test above for why this matches the
+    # specific filename rather than the generic "does not exist" tail.
+    with pytest.raises(Exception, match=r"manifest\.json does not exist"):
         deck_qa.render_gate(context)
 
 
@@ -528,6 +535,53 @@ def test_render_gate_no_usable_chromium_raises(tmp_path: Path, monkeypatch):
 
     with pytest.raises(Exception, match="no usable chromium"):
         deck_qa.render_gate(context)
+
+
+def test_render_gate_no_usable_chromium_raises_even_on_system_exit(
+    tmp_path: Path, monkeypatch
+):
+    """Playwright's own internals have raised ``SystemExit`` live (Design
+    Notes) -- the launch-fallback except clauses must catch it too, not
+    just ``Exception`` (Review pass, second round). Before that fix, a
+    ``SystemExit`` from the first launch attempt propagated raw instead of
+    falling through to the bundled-chromium fallback and this function's
+    own clean error message."""
+    manifest = [{"id": "cover"}]
+    _write_synthetic_deck(tmp_path, "demo-deck", manifest)
+    context = deck_qa.GateContext(slug="demo-deck", repo_root=tmp_path)
+
+    class _FakeChromium:
+        def launch(self, **kwargs):
+            raise SystemExit("playwright internals raised this")
+
+    class _FakeBrowserType:
+        chromium = _FakeChromium()
+
+    class _FakePlaywrightCtx:
+        def __enter__(self):
+            return _FakeBrowserType()
+
+        def __exit__(self, *exc_info):
+            return False
+
+    monkeypatch.setattr(
+        "playwright.sync_api.sync_playwright", lambda: _FakePlaywrightCtx()
+    )
+
+    with pytest.raises(Exception, match="no usable chromium"):
+        deck_qa.render_gate(context)
+
+
+def test_suppress_close_swallows_system_exit_too():
+    """``_suppress_close``'s own docstring promises "swallowing anything it
+    raises" -- must hold for ``SystemExit``, not just ``Exception`` (Review
+    pass, second round), since it tears down the same playwright objects
+    whose internals are documented (Design Notes) to raise it."""
+
+    def _raises_system_exit():
+        raise SystemExit("playwright internals raised this")
+
+    deck_qa._suppress_close(_raises_system_exit)  # must not propagate
 
 
 def test_render_gate_malformed_manifest_json_raises(tmp_path: Path):
@@ -572,6 +626,30 @@ def test_render_gate_rejects_a_traversal_slug(tmp_path: Path):
 
     with pytest.raises(Exception, match="invalid slug"):
         deck_qa.render_gate(context)
+
+
+def test_render_gate_rejects_a_dotted_slash_traversal_slug(tmp_path: Path):
+    """``"./.."`` normalizes to the single ``Path`` part ``".."`` -- a
+    disguised traversal string the original ``len(Path(...).parts) == 1``
+    guard let straight through (Review pass, second round). Confirmed by
+    direct reproduction: with the pre-fix guard, this slug made
+    ``render_dir`` resolve outside ``.herald/deck-qa/<slug>/`` entirely, and
+    ``render_gate`` unconditionally ``rmtree``'d it."""
+    context = deck_qa.GateContext(slug="./..", repo_root=tmp_path)
+
+    with pytest.raises(Exception, match="invalid slug"):
+        deck_qa.render_gate(context)
+
+
+def test_single_path_segment_rejects_dotted_slash_traversal():
+    assert not deck_qa._single_path_segment("./..")
+    assert not deck_qa._single_path_segment("..//")
+    assert not deck_qa._single_path_segment("x/..")
+
+
+def test_single_path_segment_rejects_non_string_input():
+    assert not deck_qa._single_path_segment(None)
+    assert not deck_qa._single_path_segment(123)
 
 
 def test_render_gate_slide_id_with_path_separator_falls_back_to_positional(
