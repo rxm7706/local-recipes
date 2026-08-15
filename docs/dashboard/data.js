@@ -588,20 +588,10 @@ window.DASHBOARD_DATA = {
         "E3–E5",
         "E6 · multi-axis"
       ],
-      "inflight": {
-        "key": "9.1",
-        "title": "The five hygiene finding classes get testable definitions",
-        "phase": "dev",
-        "attempt": "1",
-        "startEpoch": 1786799848,
-        "median": 112,
-        "lo": 34,
-        "hi": 427,
-        "phaseAsOf": "2026-08-15 13:36 UTC"
-      },
+      "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 18 of 41 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 19 of 41 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -674,26 +664,30 @@ window.DASHBOARD_DATA = {
           [
             "7.4",
             259
+          ],
+          [
+            "9.1",
+            31
           ]
         ],
         "foot": [
           [
-            "~112 min",
+            "~101 min",
             "median / story",
             "var(--done)"
           ],
           [
-            "34–427 min",
+            "31–427 min",
             "observed range",
             ""
           ],
           [
-            "37/41",
+            "38/41",
             "stories complete",
             "var(--done)"
           ],
           [
-            "4",
+            "3",
             "remaining",
             ""
           ]
@@ -702,9 +696,9 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 2913,
-        "totalLabel": "~48.5 h active compute",
-        "note": "Derived from 18 measured stories; a story still in flight contributes only its closed sessions.",
+        "total": 2944,
+        "totalLabel": "~49.1 h active compute",
+        "note": "Derived from 19 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.1": 101,
           "1.2": 65,
@@ -723,17 +717,19 @@ window.DASHBOARD_DATA = {
           "7.1": 99,
           "7.2": 79,
           "7.3": 403,
-          "7.4": 259
+          "7.4": 259,
+          "9.1": 31
         },
         "epicMin": {
           "E1": 715,
           "E6": 1358,
-          "E7": 840
+          "E7": 840,
+          "E9": 31
         }
       },
       "lineState": {
-        "state": "in flight",
-        "at": "9.1"
+        "state": "paused",
+        "at": "9.2"
       },
       "epics": [
         {
@@ -975,7 +971,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "9.1",
-              "active",
+              "done",
               "The five hygiene finding classes get testable definitions"
             ],
             [
@@ -4351,7 +4347,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-15 13:36 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-15 14:05 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6800,7 +6796,7 @@ window.DASHBOARD_DATA = {
           "stories": 12,
           "state": "in-progress",
           "note": "line 2 — consolidative wrap",
-          "done": 37,
+          "done": 38,
           "total": 41
         },
         {
@@ -6913,7 +6909,7 @@ window.DASHBOARD_DATA = {
     "sound": 0,
     "live": 68,
     "reached": 8,
-    "gaps": 87,
+    "gaps": 86,
     "findings": 24,
     "rows": [
       {
@@ -7172,7 +7168,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "37/41",
+        "progress": "38/41",
         "complete": 14,
         "of": 14
       },
@@ -9112,7 +9108,7 @@ window.DASHBOARD_DATA = {
         "dream": "bmad-method-version-drift",
         "owner": "doctor",
         "stages": {
-          "dream": "",
+          "dream": "2026-08-15",
           "deck": "",
           "spec": "",
           "research": "2026-07-25",
@@ -9130,7 +9126,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "",
+          "dream": "2026-08-15",
           "deck": "",
           "spec": "",
           "research": "2026-08-08",
@@ -9183,7 +9179,7 @@ window.DASHBOARD_DATA = {
         "archived": false,
         "dreamStatus": "dreamt",
         "ownerDream": "",
-        "noDream": true,
+        "noDream": false,
         "unowned": false,
         "backfilled": false,
         "openQuestions": 0,
@@ -9198,7 +9194,6 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "dream",
           "deck",
           "spec"
         ],
@@ -9210,7 +9205,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 4
       },
       {
@@ -16385,7 +16380,7 @@ window.DASHBOARD_DATA = {
           "retro": ""
         },
         "updatedAt": {
-          "dream": "2026-08-10",
+          "dream": "2026-08-15",
           "deck": "",
           "spec": "2026-08-09T05:14",
           "research": "2026-08-08",
@@ -19072,7 +19067,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "in flight 9.1",
+        "line": "paused 9.2",
         "load": 4,
         "blocked": 0,
         "dreams": [
@@ -22688,14 +22683,7 @@ window.DASHBOARD_DATA = {
   },
   "status": {
     "source": "sprint-status",
-    "running": [
-      {
-        "station": "Doctor",
-        "story": "9.1",
-        "phase": "dev",
-        "startEpoch": 1786799848
-      }
-    ],
+    "running": [],
     "lastShipped": {
       "station": "doctor",
       "story": "8.4",
@@ -22704,8 +22692,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor: land Story 8.4 -- sprint ledger, dashboard, epics outcome, spec promotion, Epic 8 done"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-15 13:36 UTC",
-    "generatedEpoch": 1786800990
+    "generatedAt": "2026-08-15 14:05 UTC",
+    "generatedEpoch": 1786802740
   },
   "storySpecs": [
     {
@@ -22716,9 +22704,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-doctor",
-      "done": 37,
+      "done": 38,
       "tracked": 32,
-      "gap": 5
+      "gap": 6
     },
     {
       "station": "pyforge-herald",
@@ -22991,14 +22979,13 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md"
           }
         ],
-        "done": 37,
-        "backlog": 4,
+        "done": 38,
+        "backlog": 3,
         "blocked": 0,
         "total": 41,
-        "next": "9-1-the-five-hygiene-finding-classes-get-testable-definitions",
+        "next": "9-2-the-sweep-runs-against-all-eight-stations",
         "blockedKeys": [],
         "backlogKeys": [
-          "9-1-the-five-hygiene-finding-classes-get-testable-definitions",
           "9-2-the-sweep-runs-against-all-eight-stations",
           "9-3-hygiene-findings-report-and-never-mutate",
           "9-4-loop-home-staleness-surfaces-in-the-attention-block"
@@ -23066,8 +23053,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 356,
-      "backlog": 67,
+      "done": 357,
+      "backlog": 66,
       "blocked": 1,
       "total": 424
     }
@@ -23088,13 +23075,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "doctor",
         "stories": 41,
-        "done": 37,
+        "done": 38,
         "blocked": 0,
         "epics": 9,
         "epicsDone": 8,
         "complete": false,
         "running": false,
-        "projected": 37
+        "projected": 38
       },
       {
         "key": "herald",
@@ -23165,7 +23152,7 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 424,
-      "done": 356,
+      "done": 357,
       "blocked": 1,
       "epics": 85,
       "epicsDone": 64
@@ -23173,7 +23160,7 @@ window.DASHBOARD_DATA = {
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
       "running": [],
-      "projected": 356
+      "projected": 357
     }
   }
 };
