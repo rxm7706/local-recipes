@@ -936,6 +936,31 @@ no-op: 0 new writes, 0 findings delta — the same lockstep discipline
 `spec_surface_check.py --write-baseline` already keeps for its own baseline (CAP-7).
 **Deps:** S-8.3.
 
+**Status:** done
+
+**Outcome (2026-08-15).** `scripts/deferred_work_promote.py --fix` now re-stamps a project's
+grandfather baseline (via `scripts/deferred_work_baseline.py`'s reusable `stamp_projects()`)
+immediately after that project's ledger write succeeds, so a second immediate `--fix` run is a
+true no-op -- 0 writes to either file, verified live. Adversarial review found three real HIGH
+bugs before this touched live data: the baseline write itself was non-atomic (now
+`tempfile`+`os.replace`); a failed restamp never affected the process exit code, hiding the
+need for a manual fallback from any automated caller (now fixed); and a hard sibling-module
+import could crash even `--help` if it were missing (now degrades gracefully). **A real,
+live-confirmed design flaw was found in Story 8.3's own already-merged collision guard, not
+this story's code**: once a project is promoted once, any genuinely new orphan added later is
+permanently blocked, because the whole-batch-abort fires on the old, already-promoted entry's
+own now-expected collision. Confirmed live against all 8 real fleet projects. Logged as
+`DW-FU-8-4`, not fixed here -- needs a per-entry skip/promote redesign as its own future story.
+
+**Epic 8 complete (4/4 stories).** The legacy deferred-work backlog now has a real,
+mutation-tested tool (`classify_tier3_entries` + `mint_id_for_entry` + `deferred_work_promote.py
+--fix` + baseline lockstep) replacing the error-prone by-hand process that shipped two real
+bugs during the 2026-08-15 audit. It has not yet been run for real against the live,
+300+-entry fleet-wide backlog (only tmp copies during development) -- and per `DW-FU-8-4`,
+running it for real today would abort on every one of the 8 real projects until that
+follow-on redesign lands. That first real run, and `DW-FU-8-4`'s redesign, are both explicitly
+out of this epic's own scope -- future work, not carried forward silently.
+
 ## Epic 9: The hygiene sweep generalizes, and staleness surfaces itself
 
 > **QUEUED, NOT CLEARED TO DISPATCH, 2026-08-15 (operator, in-session).** Decomposes
