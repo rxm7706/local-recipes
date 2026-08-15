@@ -110,6 +110,15 @@ CONDA_ONLY_RUN_DEPS: dict[str, frozenset[str]] = {
     # warden's deptry/osv-scanner above: not an importable Python
     # distribution, so it cannot be a pip requirement.
     "pyforge-steward": frozenset({"age"}),
+    # mason's five engines (Story 3.1 + Story 3.7's fifth) are external
+    # executables Mason drives via subprocess (pixi.toml:25-35), consumed
+    # from conda-forge feedstocks -- not importable Python distributions, so
+    # none can be a pip requirement. Same shape as warden's deptry/
+    # osv-scanner and steward's age above. Their version ranges are guarded
+    # by the package's own tests/meta/test_engine_version_range_sync.py.
+    "pyforge-mason": frozenset(
+        {"pixi", "twine", "conda-lock", "python-build", "gh"}
+    ),
 }
 
 # The shared namespace package. `pyforge.*` imports are in-repo siblings, never a
