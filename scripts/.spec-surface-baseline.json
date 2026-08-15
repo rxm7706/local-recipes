@@ -2450,7 +2450,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py": "d76418a3058d768325a0d843b932486af1db05c5",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py": "5911e3c598151b91220c40b4599f0b27e8da580d"
   },
-  "memlog": "0d2d0519993cb7748166d594876fc4bc7fd8679a"
+  "memlog": "71553526dccdacc4a934269babfbaaec103f66c6"
  },
  "pyforge-marshal/spec-genesis-installer": {
   "files": {},
@@ -2473,7 +2473,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py": "23e5d409459b7b8e530024eeac3fc13d95d26162",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py": "5911e3c598151b91220c40b4599f0b27e8da580d"
   },
-  "memlog": "2236feadbf63449a04a2a4c58966016ebece7efe"
+  "memlog": "d8d23e9e87af9ca1ce388120ef13c8f61e2d2ac3"
  },
  "pyforge-marshal/spec-loop-home-fleet-refresh": {
   "files": {},
