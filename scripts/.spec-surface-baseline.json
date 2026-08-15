@@ -2447,10 +2447,10 @@
  },
  "pyforge-marshal/spec-fleet-status-supervisor-fallback": {
   "files": {
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py": "6d9daf177a7ea6563091ac6822bf0abe6d1c7a83",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py": "86d6d93a7c7c615c67ed56160626714b783c6688"
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py": "d76418a3058d768325a0d843b932486af1db05c5",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py": "5911e3c598151b91220c40b4599f0b27e8da580d"
   },
-  "memlog": "eda4d3b70a2b3c307f02797f48cc76a556820a3b"
+  "memlog": "ada21d8e34724d53c7275b7114f14b7aac450548"
  },
  "pyforge-marshal/spec-genesis-installer": {
   "files": {},
@@ -2470,14 +2470,18 @@
  "pyforge-marshal/spec-landing-evidence-grammar": {
   "files": {
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py": "ff2b2b81f6adf6ab6e49690c200af7bb1f1f98d3",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py": "68aef73f13c3e7ad0d81e43da3e27d263c171da4",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py": "86d6d93a7c7c615c67ed56160626714b783c6688"
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py": "23e5d409459b7b8e530024eeac3fc13d95d26162",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py": "5911e3c598151b91220c40b4599f0b27e8da580d"
   },
-  "memlog": "e871e0cefec150c2157217d1bbfdbe1a9c4c4c61"
+  "memlog": "6a7e9864c1e4dee61f9c41b960282f938417b2a5"
  },
  "pyforge-marshal/spec-loop-home-fleet-refresh": {
   "files": {},
   "memlog": ""
+ },
+ "pyforge-marshal/spec-marshal-land-cross-project-story-key-collision": {
+  "files": {},
+  "memlog": "0c21f2dbf6dc907d67782cdc4375d8095e488532"
  },
  "pyforge-marshal/spec-marshal-land-merge-subject": {
   "files": {},
