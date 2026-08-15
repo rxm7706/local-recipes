@@ -70,9 +70,21 @@ status_mapping: {}
 # directly, push_to_github uses its computed inverse. A non-null assignee
 # value with no entry in the needed direction is a hard, named
 # `SyncUnmappedUserError` -- never a silent passthrough. An explicit `None`
-# (unassigned) always bypasses translation on either side. Safe to leave
-# empty if you don't want assignee propagated (an item with no assignee on
-# either side never triggers a translation lookup).
+# (unassigned) always bypasses translation on either side.
+#
+# There is no "assignee propagation off" switch: leaving this empty is NOT
+# that. Items with no assignee on either side never trigger a lookup and so
+# never fail, but the first item whose assignee actually diverges is then a
+# hard failure (and under `--schedule`, one failed entry in the batch).
+# List every person who can be assigned on either board.
+#
+# Two GitHub logins must not map to the same Jira accountId -- the inverse
+# is what translates Jira -> GitHub, so a duplicate value is ambiguous and
+# is rejected at load time. Keys and values must be non-empty strings.
+#
+# Writing GitHub's assignee uses the REST issues API, so the token needs
+# write access to the ISSUE's own repository -- a Projects-only token can
+# read the board fine and still be rejected on the assignee write.
 user_mapping: {}
 # user_mapping:
 #   octocat: "5b10a2844c20165700ede21g"

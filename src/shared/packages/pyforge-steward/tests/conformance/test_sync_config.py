@@ -248,6 +248,26 @@ user_mapping:
         load_config(path)
 
 
+def test_user_mapping_rejects_an_empty_value(tmp_path):
+    # Review pass 2: an empty translated value is FALSY, and
+    # `update_github_assignees` skips whichever half of its add/remove pair
+    # is falsy -- so an empty mapping value silently skips the POST while
+    # the DELETE of the current assignee still runs, leaving the item
+    # unassigned and recording "" as converged. A loud config error costs
+    # nothing by comparison.
+    path = _write(tmp_path, _VALID_DOCUMENT + 'user_mapping:\n  octocat: ""\n')
+
+    with pytest.raises(SyncConfigError, match="non-empty"):
+        load_config(path)
+
+
+def test_user_mapping_rejects_an_empty_key(tmp_path):
+    path = _write(tmp_path, _VALID_DOCUMENT + 'user_mapping:\n  "": "5b10a2844c20165700ede21g"\n')
+
+    with pytest.raises(SyncConfigError, match="non-empty"):
+        load_config(path)
+
+
 def test_status_mapping_must_be_a_mapping(tmp_path):
     path = _write(tmp_path, _VALID_DOCUMENT + "status_mapping: not-a-mapping\n")
 

@@ -205,6 +205,18 @@ def load_config(path: str | Path) -> SyncConfig:
                 f"{document_path}: 'user_mapping' keys and values must be strings "
                 f"(got {github_login!r}: {jira_account_id!r})"
             )
+        # Non-empty, too (fix, review-confirmed): an empty translated value
+        # is FALSY, and `update_github_assignees` skips the half of its
+        # add/remove pair whose value is falsy. An empty mapping value
+        # therefore silently skips the POST while the DELETE of the current
+        # assignee still runs, leaving the item unassigned and recording
+        # `""` as the converged baseline -- a silent loss, where a loud
+        # config error at load time costs nothing.
+        if not github_login.strip() or not jira_account_id.strip():
+            raise SyncConfigError(
+                f"{document_path}: 'user_mapping' keys and values must be non-empty "
+                f"(got {github_login!r}: {jira_account_id!r})"
+            )
 
     # Review-confirmed fix: Story 8.7 is what FIRST makes the computed
     # inverse (`{v: k for k, v in user_mapping.items()}`) load-bearing (push
@@ -561,21 +573,46 @@ def _parse_content(
     `(None, None)`, a valid "no assignee" state, never an error. Only the
     FIRST `assignees` node is tracked (Boundaries & Constraints, "Never
     manage more than one GitHub assignee").
+
+    Every nested shape is type-checked rather than assumed (fix,
+    review-confirmed): this parses an externally-sourced response, and a
+    partial/proxied/hostile one whose `repository` or `assignees` came back
+    as a list or a string would otherwise raise a raw `AttributeError` out
+    of `reconcile` -- escaping this module's named-error contract and, under
+    `--schedule`, aborting the whole batch instead of failing one item.
+    `number` is required to be a real `int` for the same reason plus one
+    more: it is interpolated into the REST assignees URL as a path segment
+    (`_github_issue_assignees_url` escapes `owner`/`repo` but cannot
+    meaningfully escape an integer), so a string `number` would build a
+    malformed or injected URL. An unusable `content` shape reads as the
+    same valid "no assignee, no target" state a `DraftIssue` does -- never
+    a guess, never a crash.
     """
     content = node.get("content")
     if not isinstance(content, dict):
         return None, None
     number = content.get("number")
-    repository = content.get("repository") or {}
-    owner = (repository.get("owner") or {}).get("login")
+    repository = content.get("repository")
+    if not isinstance(repository, dict):
+        repository = {}
+    owner_node = repository.get("owner")
+    owner = owner_node.get("login") if isinstance(owner_node, dict) else None
     repo = repository.get("name")
     content_ref: tuple[str, str, int] | None = None
-    if owner is not None and repo is not None and number is not None:
+    if (
+        isinstance(owner, str)
+        and isinstance(repo, str)
+        and isinstance(number, int)
+        and not isinstance(number, bool)
+    ):
         content_ref = (owner, repo, number)
-    assignee_nodes = ((content.get("assignees") or {}).get("nodes")) or []
+    assignees = content.get("assignees")
+    assignee_nodes = assignees.get("nodes") if isinstance(assignees, dict) else None
     assignee = None
-    if assignee_nodes:
-        assignee = (assignee_nodes[0] or {}).get("login")
+    if isinstance(assignee_nodes, list) and assignee_nodes:
+        first = assignee_nodes[0]
+        login = first.get("login") if isinstance(first, dict) else None
+        assignee = login if isinstance(login, str) else None
     return assignee, content_ref
 
 
@@ -768,6 +805,15 @@ def update_github_assignees(
     than either the old or new state. Worst case on a partial failure this
     way is briefly TWO assignees (old + new), which self-heals on the next
     reconcile -- safer than zero.
+
+    `remove == add` is never issued (fix, review-confirmed): the caller
+    passes GitHub's LIVE current assignee as `remove`, so a write whose
+    target happens to already be assigned would otherwise POST that login
+    and immediately DELETE it again, leaving the item unassigned -- the
+    exact zero-assignee outcome the ADD-before-REMOVE ordering above exists
+    to prevent. `reconcile`'s convergence check is what normally keeps such
+    a write from being issued at all; this is the belt-and-braces guard at
+    the only place that can actually cause the loss.
     """
     url = _github_issue_assignees_url(owner, repo, number)
     if add:
@@ -782,7 +828,7 @@ def update_github_assignees(
                 f"GitHub add assignee {add!r} on {owner}/{repo}#{number}: "
                 f"HTTP {response.status}: {response.body[:500]!r}"
             )
-    if remove:
+    if remove and remove != add:
         headers = dict(resolve_headers(credential, url))
         headers["Content-Type"] = "application/json"
         headers["Accept"] = "application/vnd.github+json"
@@ -1031,12 +1077,18 @@ def _read_both_sides(
 
     # Story 8.7: the "one/both side(s) empty" case is no longer a hard
     # failure here (see docstring) -- only a genuine, non-empty MISMATCH
-    # still is. Gating on `gh.link and jira.link` first is what makes that
-    # distinction: an empty link on either side never satisfies this
-    # condition on its own (an empty string trivially "differs" from a real
-    # issue key/item id, which would otherwise misfire this exact check for
-    # the now-relaxed one-side-missing case).
-    if gh.link and jira.link and (gh.link != jira.issue_key or jira.link != gh.item_id):
+    # still is. Each side is judged INDEPENDENTLY (fix, review-confirmed):
+    # an empty link is never a mismatch (that is the now-relaxed AF-5
+    # repair case, since an empty string trivially "differs" from a real
+    # issue key/item id), but a NON-empty link that names something other
+    # than its counterpart is still "not a reciprocal pair" even when the
+    # OTHER side's link happens to be empty. Requiring BOTH sides to be
+    # non-empty before checking either would let the both-identifiers-given
+    # call silently overwrite an existing link: a GitHub item already
+    # linked to a THIRD Jira issue, paired against a Jira issue whose own
+    # link field is empty, would have its real link destroyed and status/
+    # assignee cross-propagated between two items that were never a pair.
+    if (gh.link and gh.link != jira.issue_key) or (jira.link and jira.link != gh.item_id):
         raise SyncUnlinkedError(
             f"mismatched link: github item {gh.item_id} points to jira {gh.link!r}, but "
             f"jira issue {jira.issue_key} points to github {jira.link!r} -- not a reciprocal pair"
@@ -1224,8 +1276,41 @@ def reconcile(
             assignee_decision, assignee_target_value = "push_to_jira", gh.assignee
 
     if assignee_decision != "no_op":
-        assignee_current_dest_value = jira.assignee if assignee_decision == "push_to_jira" else gh.assignee
-        if assignee_target_value == assignee_current_dest_value:
+        # Convergence check -- assignee's analog of status's above, with one
+        # difference status does not have: the comparison MUST be made in
+        # the DESTINATION's own vocabulary (fix, review-confirmed).
+        # `assignee_target_value` is the SOURCE side's spelling (a GitHub
+        # login for push_to_jira, a Jira accountId for push_to_github) while
+        # the destination holds the OTHER system's spelling, so comparing
+        # the two raw can never match under any non-identity `user_mapping`
+        # -- the check silently never fired.
+        #
+        # That is not merely a redundant write. For push_to_github the
+        # redundant write is `add=<mapped login>, remove=gh.assignee` with
+        # BOTH naming the same login whenever the destination already
+        # agrees, which POSTs and then DELETEs that login and leaves the
+        # item with NO assignee at all -- a silent loss the next reconcile
+        # then reads as a genuine unassignment and propagates to Jira,
+        # converging both systems on "unassigned" permanently.
+        #
+        # Translating here is deliberately NON-raising: an unmapped value
+        # must still reach the write phase below and fail there as a named
+        # `SyncUnmappedUserError` exactly as before (an unknown translation
+        # is never evidence of convergence), hence `translation_known`.
+        if assignee_decision == "push_to_jira":
+            assignee_translated_value = (
+                None if assignee_target_value is None else config.user_mapping.get(assignee_target_value)
+            )
+            assignee_current_dest_value = jira.assignee
+        else:
+            assignee_translated_value = (
+                None
+                if assignee_target_value is None
+                else {v: k for k, v in config.user_mapping.items()}.get(assignee_target_value)
+            )
+            assignee_current_dest_value = gh.assignee
+        translation_known = assignee_target_value is None or assignee_translated_value is not None
+        if translation_known and assignee_translated_value == assignee_current_dest_value:
             assignee_decision = "no_op"
 
     link_repairs: list[str] = []
@@ -1303,6 +1388,14 @@ def reconcile(
     # that already succeeded can still get a chance to persist their
     # baseline below.
     write_error: SyncError | None = None
+    # Which link repairs this round ACTUALLY performed, as opposed to which
+    # ones it computed as needed. On the success path the two are identical;
+    # on a failure path they are not, because the link repairs are sequenced
+    # last and an earlier field's `SyncError` skips them entirely. Reporting
+    # the computed list on that path told callers a repair had happened when
+    # nothing was written (fix, review-confirmed) -- `details` reports what
+    # was persisted, the same property `written_value`/`baseline` carry.
+    link_repairs_done: list[str] = []
     try:
         if decision == "push_to_jira":
             transition_jira_issue(
@@ -1418,6 +1511,7 @@ def reconcile(
                 credential=github_credential,
                 transport=transport,
             )
+            link_repairs_done.append("github")
         if link_repair_jira:
             update_jira_issue_fields(
                 jira.issue_key,
@@ -1426,8 +1520,10 @@ def reconcile(
                 credential=jira_credential,
                 transport=transport,
             )
+            link_repairs_done.append("jira")
     except SyncError as exc:
         write_error = exc
+        details["link_repairs"] = link_repairs_done
 
     # Fix (review-confirmed): surface the actually-persisted/translated
     # assignee value (mirrors "baseline" above for status) -- only when
@@ -1532,9 +1628,23 @@ def reconcile(
             # the tracked-field write(s) above already succeeded; only the
             # baseline refresh failed. Reported here rather than rolled
             # back.
+            #
+            # `details` is passed (fix, review-confirmed) -- this was the
+            # one return path that omitted it, defaulting to `{}` and
+            # breaking this function's own stated shape guarantee ("a
+            # caller can read any key unconditionally without a KeyError",
+            # the no-op path's comment above) on exactly the path where a
+            # caller most needs to know what did get written. The summary
+            # names assignee's decision too, for the same reason: status's
+            # alone was misleading once assignee could be the field that
+            # actually moved.
             return DutyResult(
                 ok=False,
-                summary=f"sync reconcile: {decision} but failed refreshing baseline: {exc}",
+                summary=(
+                    f"sync reconcile: status={decision}, assignee={assignee_decision} "
+                    f"but failed refreshing baseline: {exc}"
+                ),
+                details=details,
             )
 
     return DutyResult(
