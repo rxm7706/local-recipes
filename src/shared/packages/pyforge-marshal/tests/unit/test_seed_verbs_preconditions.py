@@ -452,6 +452,88 @@ def test_an_action_targeting_an_ordinary_file_is_not_refused_as_a_symlink(clean_
     assert _check(_plan(_action(artifact_id="agents-md", target_path="AGENTS.md")), clean_repo) is None
 
 
+@pytest.mark.skipif(
+    hasattr(os, "geteuid") and os.geteuid() == 0,
+    reason="root bypasses the directory permission bit this test depends on",
+)
+def test_a_symlink_under_an_unreadable_parent_directory_is_refused(clean_repo):
+    """The rung-5 twin of
+    ``test_a_managed_file_under_an_unreadable_parent_directory_is_refused``
+    (found in review). ``Path.is_symlink()`` swallows every ``OSError`` and
+    answers ``False``, and "not a symlink" is this rung's one PASSING
+    answer -- so under an unreadable PARENT (``EACCES``) a real symlink
+    cleared rung 5 and the runner wrote THROUGH it, to a destination that
+    can sit outside the repo entirely. That defeats SC-05: git cannot undo
+    a write it never saw. ``lstat()`` inside a ``try`` distinguishes "not
+    there" (pass, nothing to write over) from "cannot tell" (refuse).
+
+    ``dry_run=True`` because ``git status`` cannot read the locked
+    directory either -- it bypasses rung 2 and only rung 2, so rung 5 still
+    runs."""
+    parent = clean_repo / "locked"
+    parent.mkdir()
+    (parent / "real.md").write_text("real\n", encoding="utf-8")
+    (parent / "AGENTS.md").symlink_to("real.md")
+    _commit_all(clean_repo)
+
+    parent.chmod(0o000)
+    try:
+        with pytest.raises(PreconditionFailure) as excinfo:
+            _check(
+                _plan(_action(artifact_id="agents-md", target_path="locked/AGENTS.md")),
+                clean_repo,
+                dry_run=True,
+            )
+
+        assert excinfo.value.exit_code == 3
+        assert "symlink-target" in excinfo.value.message
+        assert "cannot be stat'ed to rule out a symlink" in excinfo.value.message
+        assert "agents-md" in excinfo.value.message
+        assert "locked/AGENTS.md" in excinfo.value.message
+        assert excinfo.value.remedy.strip()
+    finally:
+        # Restored unconditionally: a 0o000 directory left behind would
+        # break pytest's own tmp_path teardown for every later test.
+        parent.chmod(0o755)
+
+
+def test_an_action_whose_target_does_not_exist_clears_the_symlink_rung(clean_repo):
+    """The `FileNotFoundError` branch of rung 5's `lstat()`. An artifact that
+    is simply ABSENT is the ordinary create case -- there is nothing on disk
+    to be a symlink -- so it must pass, not be swept up by the fail-closed
+    handling added for "cannot tell".
+
+    No `_commit_all` here: the fixture's repo is already clean and this test
+    writes nothing, and `git commit` with an empty index exits non-zero."""
+    assert _check(
+        _plan(_action(artifact_id="agents-md", target_path="AGENTS.md")), clean_repo
+    ) is None
+
+
+def test_the_symlink_refusal_survives_a_link_that_vanishes_before_it_is_read(clean_repo, monkeypatch):
+    """`lstat()` says "symlink" and `readlink()` reports the destination for
+    the message, but the two are not atomic. If the link is removed in
+    between, a raw `OSError` would escape the ladder and replace a
+    `PreconditionFailure` (exit 3, with a remedy) with a crash -- so the
+    destination degrades to a placeholder instead."""
+    (clean_repo / "real.md").write_text("real\n", encoding="utf-8")
+    (clean_repo / "AGENTS.md").symlink_to("real.md")
+    _commit_all(clean_repo)
+
+    def _vanished(self):
+        raise FileNotFoundError(2, "No such file or directory")
+
+    monkeypatch.setattr(Path, "readlink", _vanished)
+
+    with pytest.raises(PreconditionFailure) as excinfo:
+        _check(_plan(_action(artifact_id="agents-md", target_path="AGENTS.md")), clean_repo)
+
+    assert excinfo.value.exit_code == 3
+    assert "symlink-target" in excinfo.value.message
+    assert "<unreadable>" in excinfo.value.message
+    assert excinfo.value.remedy.strip()
+
+
 def test_a_symlink_pointing_outside_the_repo_is_refused_by_the_earlier_containment_rung(
     clean_repo, tmp_path_factory
 ):

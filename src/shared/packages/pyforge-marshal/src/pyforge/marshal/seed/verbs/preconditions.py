@@ -60,7 +60,7 @@ repo-relative string -- so this gate and the write primitive behind it
 can never disagree about the same path. That deliberately inherits
 `fs.py`'s own documented bound: resolution follows PARENT symlinks, so a
 symlinked ancestor (`docs/dreams -> real/`) is evaluated at its
-destination, and rung 5's `is_symlink()` inspects the LEAF only. Matching
+destination, and rung 5's `lstat()` inspects the LEAF only. Matching
 the unresolved path instead would close that shape here while opening a
 disagreement with `fs.py`, which is the worse trade -- a guard that
 answers differently from the primitive it guards is a guard nobody can
@@ -319,6 +319,21 @@ def _relative_within(repo_root: Path, target_path: str) -> str | None:
         return None
 
 
+def _link_target(path: Path) -> str:
+    """`path`'s link destination for a refusal message, or `<unreadable>`.
+
+    `readlink()` is called only after an `lstat()` has already said "this is
+    a symlink", but the two are not atomic: the link can be removed in
+    between, and an unreadable parent can fail the read outright. A refusal
+    message is not worth replacing a `PreconditionFailure` (exit 3, with a
+    remedy) with a raw `OSError` escaping the ladder, so the destination
+    degrades to a placeholder rather than the refusal degrading to a crash."""
+    try:
+        return str(path.readlink())
+    except OSError:
+        return "<unreadable>"
+
+
 def _read_managed_text(repo_root: Path, record: ManagedRecord) -> str | _Divergence | None:
     """The text of `record`'s target: `None` when the artifact is simply
     absent (nothing was hand-edited, so rung 6 passes for it), a
@@ -376,7 +391,7 @@ def _read_managed_text(repo_root: Path, record: ManagedRecord) -> str | _Diverge
     if S_ISLNK(stat_result.st_mode):
         return _Divergence(
             record.artifact_id,
-            f"{record.path}: is a symlink (to {target.readlink()}), not the regular"
+            f"{record.path}: is a symlink (to {_link_target(target)}), not the regular"
             " file state recorded; its content cannot be attested",
         )
     try:
@@ -611,11 +626,36 @@ def check_preconditions(
 
     for action, relative in contained:
         target = repo_root / action.target_path
-        if target.is_symlink():
+        # `Path.is_symlink()` swallows every `OSError` and answers False, so
+        # an unreadable PARENT directory (`EACCES`) or a symlink loop
+        # (`ELOOP`) made a real symlink report as "not a symlink" -- and
+        # "not a symlink" is this rung's one PASSING answer, so the link
+        # sailed through and the runner wrote THROUGH it, to a destination
+        # that may sit outside the repo entirely (defeating SC-05, since git
+        # cannot undo a write it never saw). `_read_managed_text` was given
+        # exactly this `lstat()`-in-a-`try` treatment for rung 6 in the first
+        # review pass; rung 5 is the same hazard one function away, and
+        # "cannot verify" must never be reported as "verified" here either.
+        try:
+            mode = target.lstat().st_mode
+        except FileNotFoundError:
+            continue
+        except OSError as exc:
+            raise PreconditionFailure(
+                f"symlink-target: action {action.artifact_id!r} targets"
+                f" {action.target_path!r} (resolved: {relative!r}), which cannot be"
+                f" stat'ed to rule out a symlink ({exc})",
+                remedy=(
+                    "make the target and every parent directory readable so seed can"
+                    " verify what it would write over, or leave this artifact alone"
+                    f" with --skip {action.target_path!r}"
+                ),
+            ) from exc
+        if S_ISLNK(mode):
             raise PreconditionFailure(
                 f"symlink-target: action {action.artifact_id!r} targets"
                 f" {action.target_path!r} (resolved: {relative!r}), which is a symlink"
-                f" to {target.readlink()}",
+                f" to {_link_target(target)}",
                 remedy=(
                     "replace the symlink with a regular file if seed should own it,"
                     f" or leave it alone with --skip {action.target_path!r}"
