@@ -1,7 +1,8 @@
 ---
-status: dreamt
+status: specified
 owner: doctor
 date: 2026-08-15
+specified-by: _bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md (CAP-4..7, extending the pre-existing deferred-work-visibility Spec rather than a new one, per operator direction to keep one big process instead of several small ones)
 ---
 
 # Deferred-work audit completeness

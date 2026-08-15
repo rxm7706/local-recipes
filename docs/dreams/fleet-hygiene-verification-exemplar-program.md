@@ -61,9 +61,17 @@ user happens to challenge one.
 ## Category 2 — Has its own Dream already (don't re-derive, just link)
 
 - **Deferred-work promotion** (Tier-3 → tracked ledger, id-collision-safe,
-  format-complete) — `docs/dreams/deferred-work-audit-completeness.md`.
+  format-complete) — `docs/dreams/deferred-work-audit-completeness.md`,
+  **now `status: specified`**: converged into the pre-existing
+  `spec-deferred-work-visibility` (CAP-4..7) rather than a new spec-kernel,
+  after that Spec's own Q2 turned out to have already named this exact
+  follow-on. This Dream's own fleet-wide hygiene-sweep angle (Category 3
+  below) converged the same way, as CAP-8/9.
 - **Deferred-work resolution** (is a tracked entry still true) —
-  `docs/dreams/deferred-work-resolution-sweep.md`.
+  `docs/dreams/deferred-work-resolution-sweep.md` (still `status: dreamt`
+  — deliberately NOT folded into the same Spec; it's a code-verification
+  problem, not a promotion/detection one, and spec-deferred-work-visibility
+  names it as a distinct future effort pending its own convergence check).
 - **`engine.pid` two-field liveness footgun** (a float+identity string
   misread as a bare pid, corrupting `marshal status`, `fleet-picture`,
   and `dashboard-gen`'s in-flight card alike) —
