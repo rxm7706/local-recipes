@@ -40,6 +40,10 @@ def _write_tracked(target: Path, project: str, text: str) -> Path:
     return path
 
 
+def _tracked_rel(project: str) -> str:
+    return f"_bmad-output/projects/{project}/planning-artifacts/deferred-work-ledger.md"
+
+
 # --- git fixture helpers (Story 11.2: churn checks need REAL, dated git
 # history) -- mirrors test_sources_marshal_story_status.py's own
 # _isolate_git_env/_init_repo/_commit pattern; this test file is not subject
@@ -729,3 +733,378 @@ def test_message_omits_skip_decision_text_when_no_skip_reason(tmp_path: Path) ->
 
     assert len(findings) == 1
     assert "skip_reason" not in findings[0].message
+
+
+# === Story 11.3: mechanical verification of grep-recomputable claims ==========
+#
+# One test per I/O & Edge-Case Matrix row (spec's own table), plus regression
+# coverage for four review-pass findings (self-citation exclusion, async def
+# recognition, variable/constant exclusion via has_declaration, --untracked
+# detection). All against REAL `git init`-ed fixtures with dated commits --
+# no mocking of `run_git` itself except in the one test that specifically
+# needs to simulate a real `git grep` failure, mirroring Story 11.2's own
+# testing discipline. None of these entries cite a path token (`.`-extension
+# or `/`), so none is ever churn-skipped by 11.2's own filter -- each
+# survives to be offered to the mechanical check, matching the Boundaries'
+# "only offer... entries that SURVIVE Story 11.2's churn filter" rule. Every
+# ledger in this section is COMMITTED (via `_commit_file`, not the bare
+# `_write_tracked`), matching real production shape -- a tracked ledger is a
+# committed Tier-2 artifact -- so these tests actually exercise the same
+# tracked-file scope `git grep` sees in production, unlike an untracked
+# fixture that would hide a self-citation bug regardless of whether the
+# implementation excludes it.
+
+
+# --- Row 1: claimed unused, still unused (also regression: ledger
+# self-citation must not count as a call site) -----------------------------
+
+
+def test_claimed_unused_still_unused_gets_mechanical_verdict_still_open(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "target"
+    _init_repo(target)
+    _commit_file(
+        target, "src/foo.py", "def _foo(x):\n    return x\n",
+        "2026-01-01T00:00:00+00:00",
+    )
+    # The ledger is COMMITTED and its own claim text backtick-cites `_foo` --
+    # without the `:(exclude,glob)**/deferred-work-ledger.md` pathspec, this
+    # citation alone would count as a call site and force `escalate`.
+    _commit_file(
+        target, _tracked_rel("proj"),
+        "## DW-1\nverified: 2026-07-01 — checked once\n"
+        "Claim: `_foo` is unused and should be removed.\n",
+        "2026-07-01T00:00:00+00:00",
+    )
+
+    findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
+
+    assert len(findings) == 1
+    item = findings[0]
+    assert item["reason"] == "stale"
+    assert "skip_reason" not in item  # no path cited, never churn-skipped
+    assert item["mechanical_verdict"] == "still-open"
+    assert item["mechanical_symbol"] == "_foo"
+    assert item["mechanical_call_sites"] == 0
+
+
+# --- Row 2: claimed unused, now referenced --------------------------------------
+
+
+def test_claimed_unused_now_referenced_gets_mechanical_verdict_escalate(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "target"
+    _init_repo(target)
+    _commit_file(
+        target, "src/foo.py",
+        "def _foo(x):\n    return x\n\n\ndef bar():\n"
+        "    y = _foo(1)\n    z = _foo(2)\n    return y + z\n",
+        "2026-01-01T00:00:00+00:00",
+    )
+    _commit_file(
+        target, _tracked_rel("proj"),
+        "## DW-1\nverified: 2026-07-01 — checked once\n"
+        "Claim: `_foo` is unused and should be removed.\n",
+        "2026-07-01T00:00:00+00:00",
+    )
+
+    findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
+
+    assert len(findings) == 1
+    item = findings[0]
+    assert item["mechanical_verdict"] == "escalate"
+    assert item["mechanical_symbol"] == "_foo"
+    # 2 live call sites -- the `def _foo(x):` declaration line is excluded.
+    assert item["mechanical_call_sites"] == 2
+
+
+# --- Regression: async def is recognized as a declaration -----------------------
+
+
+def test_async_def_declaration_is_recognized_and_excluded(tmp_path: Path) -> None:
+    target = tmp_path / "target"
+    _init_repo(target)
+    _commit_file(
+        target, "src/foo.py", "async def _foo(x):\n    return x\n",
+        "2026-01-01T00:00:00+00:00",
+    )
+    _commit_file(
+        target, _tracked_rel("proj"),
+        "## DW-1\nverified: 2026-07-01 — checked once\n"
+        "Claim: `_foo` is unused and should be removed.\n",
+        "2026-07-01T00:00:00+00:00",
+    )
+
+    findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
+
+    assert len(findings) == 1
+    item = findings[0]
+    # Without async-def recognition, its own declaration line would be
+    # miscounted as a live call site, forcing `escalate` on a dead function.
+    assert item["mechanical_verdict"] == "still-open"
+    assert item["mechanical_call_sites"] == 0
+
+
+# --- Regression: a variable/constant "declaration" gets no verdict --------------
+
+
+def test_variable_declaration_gets_no_mechanical_verdict(tmp_path: Path) -> None:
+    target = tmp_path / "target"
+    _init_repo(target)
+    _commit_file(
+        target, "src/foo.py", "_FOO_CONST = 42\n",
+        "2026-01-01T00:00:00+00:00",
+    )
+    _commit_file(
+        target, _tracked_rel("proj"),
+        "## DW-1\nverified: 2026-07-01 — checked once\n"
+        "Claim: `_FOO_CONST` is unused and should be removed.\n",
+        "2026-07-01T00:00:00+00:00",
+    )
+
+    findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
+
+    assert len(findings) == 1
+    item = findings[0]
+    # `_FOO_CONST` never resolves to a `def`/`class`/`async def` declaration
+    # -- this story mechanically checks "unused function" claims only, so a
+    # bare variable/constant is left for Story 11.4's agent rather than risk
+    # its own assignment line being miscounted as a call site.
+    assert not any(k.startswith("mechanical_") for k in item)
+
+
+# --- Regression: an untracked (not-yet-committed) reference is still seen ------
+
+
+def test_untracked_file_reference_is_still_detected(tmp_path: Path) -> None:
+    target = tmp_path / "target"
+    _init_repo(target)
+    _commit_file(
+        target, "src/foo.py", "def _foo(x):\n    return x\n",
+        "2026-01-01T00:00:00+00:00",
+    )
+    _commit_file(
+        target, _tracked_rel("proj"),
+        "## DW-1\nverified: 2026-07-01 — checked once\n"
+        "Claim: `_foo` is unused and should be removed.\n",
+        "2026-07-01T00:00:00+00:00",
+    )
+    # A brand-new caller, written but NEVER `git add`-ed/committed.
+    (target / "src" / "new_caller.py").write_text(
+        "y = _foo(5)\n", encoding="utf-8",
+    )
+
+    findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
+
+    assert len(findings) == 1
+    item = findings[0]
+    # Without `--untracked`, this reference would be invisible and the
+    # entry would mechanically (and falsely) confirm `still-open`.
+    assert item["mechanical_verdict"] == "escalate"
+    assert item["mechanical_call_sites"] == 1
+
+
+# --- Row 3: entry is churn-skipped ------------------------------------------------
+
+
+def test_churn_skipped_entry_gets_no_mechanical_check(tmp_path: Path) -> None:
+    target = tmp_path / "target"
+    _init_repo(target)
+    _commit_file(target, "src/foo.py", "x = 1\n", "2026-01-01T00:00:00+00:00")
+    _write_tracked(
+        target, "proj",
+        "## DW-1\nverified: 2026-07-01 — checked once\n"
+        "`_foo` is unused. See `src/foo.py:10`.\n",
+    )
+
+    findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
+
+    assert len(findings) == 1
+    item = findings[0]
+    # Churn-free since the verified date -- 11.2 skips it.
+    assert item.get("skip_reason") == "no-churn"
+    # A churn-skipped entry is never offered to the mechanical check, even
+    # though its own body contains a recognizable unused-symbol claim.
+    assert "mechanical_verdict" not in item
+    assert "mechanical_symbol" not in item
+    assert "mechanical_call_sites" not in item
+
+
+# --- Row 4: no recognizable claim --------------------------------------------------
+
+
+def test_no_recognizable_claim_has_no_mechanical_keys(tmp_path: Path) -> None:
+    target = tmp_path / "target"
+    _init_repo(target)
+    _write_tracked(
+        target, "proj",
+        "## DW-1\nverified: 2026-07-01 — checked once\n"
+        "Investigate feasibility of caching this lookup someday.\n",
+    )
+
+    findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
+
+    assert len(findings) == 1
+    item = findings[0]
+    # Byte-identical in shape to what 11.1/11.2 alone would have produced --
+    # no mechanical_* key of any kind.
+    assert not any(k.startswith("mechanical_") for k in item)
+
+
+# --- Row 5: dotted symbol cited -----------------------------------------------------
+
+
+def test_dotted_symbol_claim_is_not_recognized(tmp_path: Path) -> None:
+    target = tmp_path / "target"
+    _init_repo(target)
+    _commit_file(target, "src/other.py", "x = 1\n", "2026-01-01T00:00:00+00:00")
+    _write_tracked(
+        target, "proj",
+        "## DW-1\nverified: 2026-07-01 — checked once\n"
+        "Claim: `Foo.bar` is unused.\n",
+    )
+
+    findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
+
+    assert len(findings) == 1
+    item = findings[0]
+    assert not any(k.startswith("mechanical_") for k in item)
+
+
+# --- Row 6: symbol's only occurrence is its own def -------------------------------
+
+
+def test_symbol_only_occurrence_is_its_own_def_is_still_open(tmp_path: Path) -> None:
+    target = tmp_path / "target"
+    _init_repo(target)
+    _commit_file(
+        target, "src/foo.py", "def _foo(x):\n    return x\n",
+        "2026-01-01T00:00:00+00:00",
+    )
+    _write_tracked(
+        target, "proj",
+        "## DW-1\nverified: 2026-07-01 — checked once\n"
+        "Claim: `_foo` is unused and should be removed.\n",
+    )
+
+    findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
+
+    assert len(findings) == 1
+    item = findings[0]
+    # The definition line itself is excluded from the count -- confirmed
+    # unused, not merely "the only match happens to be its own def".
+    assert item["mechanical_verdict"] == "still-open"
+    assert item["mechanical_call_sites"] == 0
+
+
+# --- Row 7: git grep hard failure is isolated ---------------------------------------
+
+
+def test_git_grep_hard_failure_is_isolated_from_its_project_siblings(
+    tmp_path: Path, monkeypatch,
+) -> None:
+    """Simulates a REAL ``run_git`` failure (``CliBridgeError``) for one
+    entry's mechanical check -- exercises ``_attach_mechanical_verdict``'s
+    own isolation, proving the AC against the real code path rather than an
+    artificial internal-helper exception, mirroring
+    ``test_per_entry_churn_failure_is_isolated_from_its_project_siblings``
+    (Story 11.2)."""
+    target = tmp_path / "target"
+    _init_repo(target)
+    _commit_file(
+        target, "src/foo.py", "def _foo(x):\n    return x\n",
+        "2026-01-01T00:00:00+00:00",
+    )
+    _commit_file(
+        target, "src/bar.py", "def _bar():\n    pass\n",
+        "2026-01-01T00:00:00+00:00",
+    )
+    _commit_file(
+        target, _tracked_rel("proj"),
+        "## DW-1\nverified: 2026-07-01 — checked once\n`_foo` is unused.\n\n"
+        "## DW-2\nverified: 2026-07-01 — checked once\n`_bar` is unused.\n",
+        "2026-07-01T00:00:00+00:00",
+    )
+
+    real_run_git = chain.run_git
+
+    def _flaky_run_git(target_: Path, args: list[str], **kwargs):
+        if args[:1] == ["grep"] and "_foo" in args:
+            raise CliBridgeError("simulated git grep hiccup")
+        return real_run_git(target_, args, **kwargs)
+
+    monkeypatch.setattr(chain, "run_git", _flaky_run_git)
+
+    findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
+
+    by_id = {f["id"]: f for f in findings}
+    assert len(findings) == 2
+    # DW-1's mechanical check failed -- no mechanical_* keys for THIS entry.
+    assert not any(k.startswith("mechanical_") for k in by_id["DW-1"])
+    # DW-2 (a different entry, same project) is entirely unaffected.
+    assert by_id["DW-2"].get("mechanical_verdict") == "still-open"
+
+
+# --- Message text carries the mechanical verdict ------------------------------------
+
+
+def test_message_appends_still_open_text_when_mechanical_verdict_present(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "target"
+    _init_repo(target)
+    _commit_file(
+        target, "src/foo.py", "def _foo(x):\n    return x\n",
+        "2026-01-01T00:00:00+00:00",
+    )
+    _commit_file(
+        target, _tracked_rel("proj"),
+        "## DW-1\nverified: 2026-07-01 — checked once\n"
+        "Claim: `_foo` is unused and should be removed.\n",
+        "2026-07-01T00:00:00+00:00",
+    )
+
+    findings = chain.gather_due_for_verification(target)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.evidence.get("mechanical_verdict") == "still-open"
+    assert "mechanical_verdict: still-open" in finding.message
+    assert "due for re-check" in finding.message  # base message text intact
+
+
+def test_message_appends_escalate_text_when_mechanical_verdict_present(
+    tmp_path: Path,
+) -> None:
+    target = tmp_path / "target"
+    _init_repo(target)
+    _commit_file(
+        target, "src/foo.py", "def _foo(x):\n    return x\n\n\ndef bar():\n"
+        "    y = _foo(1)\n    z = _foo(2)\n    return y + z\n",
+        "2026-01-01T00:00:00+00:00",
+    )
+    _write_tracked(
+        target, "proj",
+        "## DW-1\nverified: 2026-07-01 — checked once\n"
+        "Claim: `_foo` is unused and should be removed.\n",
+    )
+
+    findings = chain.gather_due_for_verification(target)
+
+    assert len(findings) == 1
+    finding = findings[0]
+    assert finding.evidence.get("mechanical_verdict") == "escalate"
+    assert "mechanical_verdict: escalate" in finding.message
+
+
+def test_message_omits_mechanical_text_when_no_mechanical_verdict(
+    tmp_path: Path,
+) -> None:
+    _write_tracked(tmp_path, "proj", "## DW-1\nstatus: open\n")
+
+    findings = chain.gather_due_for_verification(tmp_path)
+
+    assert len(findings) == 1
+    assert "mechanical_verdict" not in findings[0].message
