@@ -6,21 +6,69 @@ name: Platform CI
 # `[tool.importlinter]` -- `src/platform/` never imports `pyforge.*`), and
 # its own cost profile -- entirely disjoint from the conda-forge factory's
 # own detector/linter CI (`detectors.yml`, `staged-recipes-linter.yml`).
-# `paths: [src/platform/**]` on both trigger events below is the cost
-# isolation: this workflow never triggers on a factory-only change, and
-# factory CI never triggers on a platform-only change. `working-directory:
+# The `paths:` filter on both trigger events below is the cost isolation:
+# factory CI never triggers on a platform-only change, and this workflow
+# triggers on a factory change ONLY for the handful of paths the image
+# genuinely builds from (enumerated below). It is NOT true, as an earlier
+# revision of this comment claimed, that this workflow "never triggers on a
+# factory-only change" -- `src/shared/packages/pyforge-{steward,core}/**`
+# ARE factory trees, and they are in the filter because the build-time
+# secrets-scan env is built from them. Note also that `paths:` is
+# WORKFLOW-scoped, not job-scoped: any path below runs BOTH jobs, so a
+# pyforge-steward commit also pays for the pip-based `test` job. That cost
+# is accepted deliberately here and recorded as deferred work; narrowing it
+# would mean splitting this file per job. `working-directory:
 # src/platform` on every run step keeps `manage.py`, `requirements/`, and
 # `pyproject.toml` resolvable by relative path, matching the render root
 # spec-python-agent-platform fixes at `src/platform/`.
+#
+# THE FILTER IS NOT JUST `src/platform/**` (Story 10.3, corrected in
+# review). The `container` job's build context is the REPO ROOT, so its
+# real inputs reach well outside the platform tree: `pixi.toml`/`pixi.lock`
+# (the builder stage's `pixi install --frozen -e python-agent-platform`,
+# plus the `requires-pixi` floor that must match the pinned pixi image),
+# `.dockerignore` (the only ignore file either COPY consults),
+# `.pixi/config.toml` (GIT-TRACKED and load-bearing -- it carries
+# `run-post-link-scripts = "insecure"`, without which `pixi install` skips
+# the post-link scripts gdk-pixbuf/gtk3/librsvg/graphviz ship, changing what
+# the builder materializes into the runtime layer; `.dockerignore` carries an
+# explicit `!.pixi/config.toml` negation for exactly that reason),
+# `scripts/container-gates` (the secrets-scan gate), and
+# `src/shared/packages/pyforge-*` (the build-time-only `pyforge-steward`
+# env that gate runs in). Every one of those can break the image build
+# while leaving `src/platform/**` untouched -- and that is not theoretical:
+# Story 10.3 hit exactly it, a `pixi.toml` `requires-pixi` bump failing the
+# builder stage with `this project requires pixi '>=0.76.2', but you have
+# pixi 0.76.1`. Without these entries such a change lands on main with this
+# workflow never having run.
 
+# The two lists below are duplicated verbatim rather than shared via a YAML
+# anchor: GitHub Actions does not support YAML anchors/aliases in workflow
+# files. Keep them in step by hand.
 on:
   pull_request:
     paths:
       - 'src/platform/**'
+      - 'pixi.toml'
+      - 'pixi.lock'
+      - '.pixi/config.toml'
+      - '.dockerignore'
+      - 'scripts/container-gates'
+      - 'src/shared/packages/pyforge-steward/**'
+      - 'src/shared/packages/pyforge-core/**'
+      - '.github/workflows/platform-ci.yml'
   push:
     branches: [main]
     paths:
       - 'src/platform/**'
+      - 'pixi.toml'
+      - 'pixi.lock'
+      - '.pixi/config.toml'
+      - '.dockerignore'
+      - 'scripts/container-gates'
+      - 'src/shared/packages/pyforge-steward/**'
+      - 'src/shared/packages/pyforge-core/**'
+      - '.github/workflows/platform-ci.yml'
   workflow_dispatch:
 
 permissions:
@@ -98,3 +146,339 @@ jobs:
 
       - name: Full test suite (platformapp app tests, the ASGI seam, and the import boundary)
         run: python -m pytest -v
+
+  # Story 10.3 ("One image, both engines"): builds + smoke-tests
+  # `src/platform/Containerfile` under BOTH engines from the same file --
+  # spec-python-agent-platform's own Constraints name this explicitly ("CI
+  # exercises both engines, not one"). `fail-fast: false` so a podman-only
+  # break doesn't hide a docker-only break (or vice versa) in the same run.
+  #
+  # Build context is the REPO ROOT, not `src/platform` -- the builder
+  # stage's `pixi install --frozen -e python-agent-platform` needs the
+  # workspace-root `pixi.toml`/`pixi.lock`; see the Containerfile's own
+  # top-of-file comment for the full reasoning (this mirrors it exactly).
+  #
+  # This job's `/ht/` + `manage.py check` steps depend on `django-health-
+  # check`'s registration matching `pixi.toml`'s conda-sourced `>=4.5.0`
+  # pin (Story 10.2) rather than Story 10.1's original pip-pinned 3.24.0
+  # API -- `config/settings/base.py`'s `INSTALLED_APPS` and
+  # `config/urls.py`'s `/ht/` route were updated in this same story to the
+  # 4.x registration API (plain `HealthCheckView(checks=[...])`, no more
+  # `health_check.db`/`health_check.cache` sub-apps or `health_check.urls`)
+  # after live verification found `django.setup()` failing with
+  # `ModuleNotFoundError: No module named 'health_check.db'` under the old
+  # wiring -- see spec-10-3-one-image-both-engines.md's Design Notes for
+  # the full investigation and evidence. Both steps are expected green.
+  container:
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [docker, podman]
+    runs-on: ubuntu-latest
+    # 45, not 20: a cold runner has no pixi package cache, and this build
+    # solves + downloads the 395-package `python-agent-platform` env, a
+    # SECOND build-time-only `pyforge-steward` env for the secrets-scan
+    # gate, a pip layer, and three static-asset passes -- all before the
+    # image export. A too-tight cap turns a slow-but-correct build into a
+    # cancelled job that reads exactly like a real regression.
+    timeout-minutes: 45
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Verify src/platform exists on this ref
+        run: test -d src/platform || { echo "::error::src/platform does not exist on this ref"; exit 1; }
+
+      # ubuntu-latest GitHub-hosted runners ship podman preinstalled, and
+      # the runner's own user is already non-root, so this naturally
+      # exercises ROOTLESS podman -- the spec's own reference posture (it
+      # "predicts passing the first deployment target", OCP's
+      # `restricted-v2`). The `command -v` guard makes this correct either
+      # way if that ever stops being true upstream.
+      - name: Ensure podman is available (rootless)
+        if: matrix.engine == 'podman'
+        run: |
+          if ! command -v podman >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y podman
+          fi
+          podman --version
+          id -u
+
+      - name: Build image (${{ matrix.engine }})
+        run: ${{ matrix.engine }} build -f src/platform/Containerfile -t platform-ci-${{ matrix.engine }} .
+
+      - name: Start postgres + redis (${{ matrix.engine }})
+        run: |
+          ${{ matrix.engine }} network create platform-ci-net-${{ matrix.engine }}
+          ${{ matrix.engine }} run -d --name platform-ci-postgres-${{ matrix.engine }} \
+            --network platform-ci-net-${{ matrix.engine }} \
+            -e POSTGRES_USER=platform -e POSTGRES_PASSWORD=platform -e POSTGRES_DB=platform \
+            postgres:17
+          ${{ matrix.engine }} run -d --name platform-ci-redis-${{ matrix.engine }} \
+            --network platform-ci-net-${{ matrix.engine }} \
+            redis:7
+          # `-h 127.0.0.1` is load-bearing, not decoration: it forces a TCP
+          # probe. A socket-only `pg_isready` also answers from the temporary
+          # server the official postgres image runs DURING its initdb
+          # bootstrap (`-c listen_addresses=''`), which then stops and
+          # restarts -- so the loop would break while nothing is listening on
+          # 5432 yet, and the un-retried Migrate step below (which connects
+          # over TCP via DATABASE_URL) would fail with "connection refused"
+          # and read as a real regression. `compose/compose.yml` documents the
+          # same race and absorbs it with `restart: on-failure`; this job has
+          # no restart policy, so it has to wait for the real server.
+          for i in $(seq 1 30); do
+            ${{ matrix.engine }} exec platform-ci-postgres-${{ matrix.engine }} pg_isready -h 127.0.0.1 -p 5432 -U platform >/dev/null 2>&1 && break
+            if [ "$i" = "30" ]; then
+              echo "::error::postgres (${{ matrix.engine }}) never became ready"
+              ${{ matrix.engine }} logs platform-ci-postgres-${{ matrix.engine }}
+              exit 1
+            fi
+            sleep 2
+          done
+          for i in $(seq 1 30); do
+            ${{ matrix.engine }} exec platform-ci-redis-${{ matrix.engine }} redis-cli ping >/dev/null 2>&1 && break
+            if [ "$i" = "30" ]; then
+              echo "::error::redis (${{ matrix.engine }}) never became ready"
+              ${{ matrix.engine }} logs platform-ci-redis-${{ matrix.engine }}
+              exit 1
+            fi
+            sleep 2
+          done
+
+      # `--user 12345:0` proves the image runs under an arbitrary uid that
+      # was never baked into the Containerfile anywhere (the spec's own
+      # I/O & Edge-Case Matrix row for this).
+      - name: Run platform container (${{ matrix.engine }})
+        run: |
+          ${{ matrix.engine }} run -d --name platform-ci-app-${{ matrix.engine }} \
+            --network platform-ci-net-${{ matrix.engine }} \
+            --user 12345:0 \
+            -p 8000:8000 \
+            -e DJANGO_SECRET_KEY=ci-placeholder-not-a-real-secret \
+            -e DJANGO_ADMIN_URL=admin/ \
+            -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1 \
+            -e DJANGO_SECURE_SSL_REDIRECT=False \
+            -e DATABASE_URL=postgres://platform:platform@platform-ci-postgres-${{ matrix.engine }}:5432/platform \
+            -e REDIS_URL=redis://platform-ci-redis-${{ matrix.engine }}:6379/0 \
+            platform-ci-${{ matrix.engine }}
+
+      # The image's own ENTRYPOINT/CMD deliberately does NOT migrate -- on
+      # Kubernetes/OCP that belongs to a separate Job, not to every pod's
+      # boot (concurrent replicas would race the same migration). So CI has
+      # to do it explicitly, exactly as `compose/compose.yml` does for the
+      # local stack, and for the same reason: without it every assertion
+      # below runs against a database with ZERO TABLES and still passes.
+      # That is not hypothetical -- this story shipped exactly that state in
+      # compose and only caught it because someone requested `/admin/login/`
+      # by hand. `/ht/`'s Database check is a bare connectivity probe and
+      # `/` renders with no query at all, so neither notices.
+      # Dumps the app log on failure like every other step here. This one
+      # needs it MOST, not least: it is the first thing to touch the
+      # container, so if the app died during boot (the `uvicorn-worker`
+      # `setup_event_loop` break and the root-owned `$HOME` both did exactly
+      # that, in this story) `exec` fails with a bare "container is not
+      # running" and Teardown then `rm -f`s the only copy of the traceback.
+      - name: Migrate the database (the image's CMD deliberately doesn't)
+        run: |
+          ${{ matrix.engine }} exec platform-ci-app-${{ matrix.engine }} /app/entrypoint.sh python manage.py migrate --noinput || {
+            echo "::error::migrate failed (${{ matrix.engine }})"
+            ${{ matrix.engine }} logs platform-ci-app-${{ matrix.engine }}
+            exit 1
+          }
+
+      # 120s, not 60: a cold runner has already spent its budget on the
+      # build, and a slow-but-correct gunicorn/uvicorn boot that trips a
+      # tight poll reads exactly like a real regression.
+      - name: Poll /ht/ for 200
+        run: |
+          for i in $(seq 1 60); do
+            code="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/ht/ || true)"
+            if [ "$code" = "200" ]; then echo "healthy (200)"; exit 0; fi
+            sleep 2
+          done
+          echo "::error::/ht/ never returned 200 (${{ matrix.engine }})"
+          ${{ matrix.engine }} logs platform-ci-app-${{ matrix.engine }}
+          exit 1
+
+      # The only assertion here that actually QUERIES an application table.
+      # `/admin/login/` reads `django_site`; against an unmigrated database
+      # it 500s with `relation "django_site" does not exist` (observed live
+      # in this story). It is therefore the step that proves the migrate
+      # above ran AND that the conda-sourced psycopg2 driver round-trips the
+      # ORM -- neither of which any other step in this job can fail on.
+      - name: Smoke-test an ORM-backed page (proves migrations ran)
+        run: |
+          code="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/admin/login/ || true)"
+          if [ "$code" != "200" ]; then
+            echo "::error::GET /admin/login/ returned $code, expected 200 (${{ matrix.engine }})"
+            ${{ matrix.engine }} logs platform-ci-app-${{ matrix.engine }}
+            exit 1
+          fi
+
+      # `/ht/` alone is NOT sufficient coverage for this image, and this step
+      # exists because review proved it: `/ht/` renders no `{% static %}`
+      # tag, so it stayed green while the image could not serve a single
+      # real page (`production.py`'s strict WhiteNoise manifest storage +
+      # `COMPRESS_OFFLINE` need the Containerfile's three-pass
+      # `collectstatic` -> `compress --force` -> `collectstatic` sequence;
+      # regress that ordering and only a template-rendering page notices).
+      # `/` extends `templates/base.html`, which carries six `{% static %}`
+      # references and a `{% compress %}` block -- the cheapest request that
+      # actually exercises both mechanisms.
+      - name: Smoke-test a real template page (static manifest + offline compression)
+        run: |
+          code="$(curl -s -o /tmp/home.html -w '%{http_code}' http://localhost:8000/ || true)"
+          if [ "$code" != "200" ]; then
+            echo "::error::GET / returned $code, expected 200 (${{ matrix.engine }})"
+            ${{ matrix.engine }} logs platform-ci-app-${{ matrix.engine }}
+            exit 1
+          fi
+          # A 200 alone is not proof: Django can return a rendered error page.
+          if grep -qE 'OfflineGenerationError|Missing staticfiles manifest entry|Traceback' /tmp/home.html; then
+            echo "::error::GET / returned 200 but the body contains a static/compress failure (${{ matrix.engine }})"
+            exit 1
+          fi
+
+      # ...and a clean page body is still not proof the assets it names are
+      # actually SERVABLE. WhiteNoise's manifest storage rewrites every
+      # `{% static %}` reference to a hashed filename, and django-compressor
+      # emits `/static/CACHE/...` bundles that exist only if pass 2 of the
+      # three-pass sequence ran; a break in either produces a page that
+      # renders fine and 404s every stylesheet. Fetch what the page itself
+      # asked for -- derived from the rendered HTML, never a hardcoded list,
+      # so it keeps testing the right URLs as the templates change.
+      - name: Fetch every static asset the home page references
+        run: |
+          urls="$(grep -oE '/static/[^"]+' /tmp/home.html | sort -u)"
+          if [ -z "$urls" ]; then
+            echo "::error::GET / referenced no /static/ URL at all -- template or manifest regression (${{ matrix.engine }})"
+            exit 1
+          fi
+          rc=0
+          for u in $urls; do
+            code="$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:8000$u" || true)"
+            echo "$code $u"
+            [ "$code" = "200" ] || rc=1
+          done
+          if [ "$rc" != "0" ]; then
+            echo "::error::at least one static asset referenced by / did not return 200 (${{ matrix.engine }})"
+            exit 1
+          fi
+
+      # Every request above lands on the DJANGO half of `config/asgi.py`'s
+      # dispatcher. `/api/*` is routed to `fastapi_application` instead, and
+      # nothing here had ever sent it one -- so the image's whole `/api/`
+      # namespace was untested against the stack it actually ships. That is
+      # not the same coverage the `test` job provides: `fastapi` is on the
+      # pip-layer exclusion list, so the image runs the CONDA fastapi while
+      # `test` runs pip's `fastapi==0.141.1`. `/api/health` is the seam's
+      # only route (`config/fastapi_app.py`).
+      - name: Smoke-test the FastAPI seam (/api/, the other half of the ASGI dispatcher)
+        run: |
+          code="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/api/health || true)"
+          if [ "$code" != "200" ]; then
+            echo "::error::GET /api/health returned $code, expected 200 (${{ matrix.engine }})"
+            ${{ matrix.engine }} logs platform-ci-app-${{ matrix.engine }}
+            exit 1
+          fi
+
+      - name: manage.py check inside the running container
+        run: ${{ matrix.engine }} exec platform-ci-app-${{ matrix.engine }} /app/entrypoint.sh python manage.py check
+
+      # TWO distinct assertions, because they prove different things:
+      #   1. The running container's uid -- but that container was started
+      #      with an explicit `--user 12345:0`, so this only proves the
+      #      ENGINE honored the flag. It is the arbitrary-UID contract
+      #      (OCP `restricted-v2` assigns a random uid at deploy time).
+      #   2. The IMAGE's own default uid, with NO `--user` override -- this
+      #      is what an operator running `docker run <image>` actually gets,
+      #      and the only thing that catches a regression of the
+      #      Containerfile's `USER 1001:0` line. Assertion 1 alone was
+      #      tautological; review caught it.
+      - name: Confirm non-root UID (running container, arbitrary uid honored)
+        run: |
+          uid="$(${{ matrix.engine }} exec platform-ci-app-${{ matrix.engine }} id -u)"
+          echo "running container uid: $uid"
+          if [ "$uid" != "12345" ]; then
+            echo "::error::--user 12345:0 was not honored (got uid $uid)"
+            exit 1
+          fi
+
+      # BOTH halves of `USER 1001:0`, because only the uid half was ever
+      # asserted: the arbitrary-UID model gives the process its write access
+      # through GROUP 0, not through its uid. A regression to `USER
+      # 1001:1001` keeps this uid non-zero while silently making `$HOME` and
+      # `MEDIA_ROOT` unwritable for anyone who runs the image WITHOUT a
+      # `--user` override -- and the probe steps below cannot see it, because
+      # they run in the container started with an explicit `--user 12345:0`.
+      - name: Confirm the image itself declares a non-root USER in group 0
+        run: |
+          uid="$(${{ matrix.engine }} run --rm --entrypoint id platform-ci-${{ matrix.engine }} -u)"
+          gid="$(${{ matrix.engine }} run --rm --entrypoint id platform-ci-${{ matrix.engine }} -g)"
+          echo "image default uid:gid = $uid:$gid"
+          if [ "$uid" = "0" ]; then
+            echo "::error::image defaults to root (uid 0); Containerfile USER directive regressed"
+            exit 1
+          fi
+          if [ "$gid" != "0" ]; then
+            echo "::error::image default gid is $gid, expected 0; the arbitrary-UID write contract depends on group 0"
+            exit 1
+          fi
+
+      # The arbitrary-UID contract is TWO properties, and the uid assertions
+      # above only cover the first (the process is not root). The second is
+      # that a uid with no `/etc/passwd` entry can actually WRITE where the
+      # app needs to: `$HOME` (gunicorn 26 opens a control socket there on
+      # boot) and `MEDIA_ROOT`. Both depend on the Containerfile's `chgrp 0`
+      # /`chmod g+rwX` lines, which have already regressed once in this
+      # story's own history -- `$HOME` was root-owned 0755 and every write
+      # failed, invisible to every other check here. `STATIC_ROOT` is
+      # asserted NON-writable in the same step: it is deliberately `g+rX`,
+      # and a future blanket `chmod -R g+rwX /app` would silently hand every
+      # visitor-facing JS bundle to the runtime user.
+      #
+      # `/app` ITSELF is asserted non-writable for a different reason. On
+      # POSIX, the right to unlink or rename an entry comes from the
+      # DIRECTORY, not the file -- so an earlier revision of this story that
+      # set `$HOME=/app` and made `/app` group-0-writable let the runtime user
+      # `rm /app/entrypoint.sh` and `mv /app/config`, i.e. replace the very
+      # script the next start executes. Nothing in this job could see it. That
+      # is why `$HOME` is now the dedicated `/app/.home`, and why this asserts
+      # the containing directory stayed 0755 root:root.
+      #
+      # Each negative probe requires the target to EXIST first: `touch` on a
+      # missing directory fails with ENOENT exactly like it fails with EACCES,
+      # so without the `test -d` a deleted or renamed `staticfiles` would read
+      # as "the read-only contract holds".
+      - name: Confirm the arbitrary UID can write $HOME and media, but not staticfiles or /app
+        run: |
+          ${{ matrix.engine }} exec platform-ci-app-${{ matrix.engine }} sh -c '
+            set -e
+            test -d "$HOME" || { echo "HOME_MISSING: $HOME"; exit 1; }
+            touch "$HOME/.ci-probe" && rm "$HOME/.ci-probe"
+            test -d /app/platformapp/media || { echo "MEDIA_MISSING"; exit 1; }
+            touch /app/platformapp/media/.ci-probe && rm /app/platformapp/media/.ci-probe
+            test -d /app/staticfiles || { echo "STATICFILES_MISSING"; exit 1; }
+            if touch /app/staticfiles/.ci-probe 2>/dev/null; then
+              rm -f /app/staticfiles/.ci-probe
+              echo "STATICFILES_WRITABLE"
+              exit 1
+            fi
+            if touch /app/.ci-probe 2>/dev/null; then
+              rm -f /app/.ci-probe
+              echo "APP_DIR_WRITABLE: the runtime user can replace /app/entrypoint.sh"
+              exit 1
+            fi
+          ' || { echo "::error::arbitrary-UID filesystem contract regressed (${{ matrix.engine }})"; exit 1; }
+
+      - name: Teardown
+        if: always()
+        run: |
+          ${{ matrix.engine }} rm -f \
+            platform-ci-app-${{ matrix.engine }} \
+            platform-ci-postgres-${{ matrix.engine }} \
+            platform-ci-redis-${{ matrix.engine }} || true
+          ${{ matrix.engine }} network rm platform-ci-net-${{ matrix.engine }} || true
+          ${{ matrix.engine }} rmi platform-ci-${{ matrix.engine }} || true
