@@ -3543,3 +3543,35 @@ def test_environment_check_nonzero_returncode_projects_to_exit_failed_even_when_
     # only the process exit code reflects the failure.
     assert "environment check: ok" in out.out
     assert "returncode: 1" in out.out
+
+
+def test_environment_check_stale_and_nonzero_returncode_together_still_exit_failed(
+    capsys,
+):
+    """Repair pass, 2026-08-15 (S-13.7 verification repair): the two prior
+    `returncode`-aware tests each cover one signal in isolation (stale alone,
+    or a failed check alone) -- neither exercises them together, e.g. a
+    child that partially rewrites the temp copy's hash before crashing.
+    `cli.py`'s `not result.stale and result.returncode == 0` dispatch
+    condition already handles this by inspection; this pins it."""
+    stale_and_failed = CheckResult(
+        lockfile_path="lock.yml",
+        manifest_paths=("environment.yml",),
+        platforms=(),
+        stale=True,
+        engine_name="conda-lock",
+        engine_version="4.0.2",
+        returncode=1,
+        stdout="solver crashed\n",
+    )
+    with patch(
+        "pyforge.mason.cli.environment.check", return_value=stale_and_failed,
+    ):
+        rc = main(
+            ["environment", "check", "environment.yml", "-l", "lock.yml", "--format", "json"],
+        )
+
+    assert rc == EXIT_FAILED
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["data"]["stale"] is True
+    assert doc["data"]["returncode"] == 1
