@@ -337,11 +337,11 @@
  },
  "pyforge-atlas/spec-wagtail-corporate-brain": {
   "files": {
-   "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md": "76fdd15024ff528b56151e27635f74460e733ddd",
+   "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md": "2468aabb98f029c448002696a0516b9b4287aaef",
    "src/shared/packages/pyforge-atlas/src/pyforge/atlas/factory/lasuite.py": "020e93975a82306e91f16a767cb4543ca23aa2b7",
    "src/shared/packages/pyforge-atlas/tests/factory/test_lasuite.py": "2ab990d7940f234a0c47c2731e33118f7d5e410a"
   },
-  "memlog": "77808385851e8c9f2f677c3e511994cd5db64827"
+  "memlog": "06579e6331769149c2c7b43c01e501aa61b3c3e6"
  },
  "pyforge-atlas/spec-wasm-analytics-stack": {
   "files": {},

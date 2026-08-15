@@ -372,3 +372,22 @@ status: open
   evidence: Raised by Blind Hunter against the Story 4.4 verification-repair diff, 2026-08-15. Confirmed by listing `_bmad-output/projects/pyforge-mason/planning-artifacts/specs/`: only Epic 1's ten story specs (`spec-1-1-...` through `spec-1-10-...`) are present, per that directory's own `README.md` ("Status (2026-08-10, Phase 1 audit): all 10 done stories (Epic 1 complete; Epics 2-5 backlog, 28 stories) have a spec here"). Epic 4's stories have no tracked spec despite S-4.1/S-4.3/S-4.4 already being landed per this Spec's own `.memlog.md`. NOT patched in this pass: this is a pre-existing, systemic gap spanning all of Epic 4 (and likely 2-3), not something Story 4.4 introduced alone -- promoting only 4.4 in isolation would leave 4.1-4.3 inconsistently behind and risks re-deriving the wrong boundary (the prior "Phase 1 audit" promoted Epic 1 as one batch, not story-by-story). Belongs with a dedicated promotion sweep covering every unpromoted Epic 2-5 story spec at once, the same shape as the 2026-08-10 Epic 1 audit.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
+
+
+### DW-1-10-2: Follow-up review still recommended for 1-10-configuration-surface-logging-and-child-output-streaming after the damping cap was spent
+  origin: review-budget-followup
+  source_spec: `spec-1-10-configuration-surface-logging-and-child-output-streaming.md`
+  severity: low
+  reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260809-231234-a3cb; this entry preserves the lingering recommendation for a deliberate later review.
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-1` there, review-budget-followup) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-2-3-2: Follow-up review still recommended for 2-3-credential-isolation after the damping cap was spent
+  origin: review-budget-followup
+  source_spec: `spec-2-3-credential-isolation.md`
+  severity: low
+  reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260810-193147-b96d; this entry preserves the lingering recommendation for a deliberate later review.
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-3` there, review-budget-followup) during the pre-shutdown deferred-work audit, pass 2.

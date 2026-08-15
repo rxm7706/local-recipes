@@ -542,3 +542,22 @@ status: open
   evidence: Raised by Blind Hunter during this story's follow-up review pass and confirmed by reading `_run_dashboard` directly: it calls `_tracked_ledger_refusal(cwd=root)` and returns a refusal if Steward's own tracked `sprint-status-ledger.yaml` is missing or malformed (Story 5.2), then calls `build_dashboard(cwd=root)` — which shells out to `pixi run -e local-recipes dashboard-gen`, rebuilding the entire program console in a very large environment — and only afterwards reaches `dashboard_diff(cwd=root)`. Both run on the bare verb, with no flag to skip either. Story 9.7 did not introduce this ordering (it is Story 2.2's build-then-reconcile shape plus Story 5.2's ledger guard, both predating it) and did not change `_run_dashboard` at all; what changed is that 9.7 makes the bare `deploy dashboard` verb the designated publication path for `deploy static`'s output, per its own Approach ("the existing steward deploy dashboard verb then commits/pushes that unchanged — no new git plumbing"). That promise holds for the git plumbing specifically, which is why it is not a defect in this story, but it means a third-party adopter who only wants their own static board published cannot get there without satisfying Steward-internal preconditions unrelated to their board. Deliberately not fixed here: the plausible remedies (a `--skip-build` flag, scoping the ledger guard to the paths that need it, or a dedicated reconcile-only verb) all change the pre-existing `dashboard` verb's contract and its Story 2.2 / 5.2 acceptance criteria, which is outside this story's scope and needs its own decision about that verb's shape. Whoever next revisits `_run_dashboard`'s preconditions, or onboards the first external CAP-8 adopter, should settle it then.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-9-7-2` there) during the pre-shutdown deferred-work audit.
+
+
+### DW-7-1-3: Follow-up review still recommended for 7-1-one-build-whole-guild after the damping cap was spent
+  origin: review-budget-followup
+  source_spec: `spec-7-1-one-build-whole-guild.md`
+  severity: low
+  reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260809-114839-7af9; this entry preserves the lingering recommendation for a deliberate later review.
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-1` there, review-budget-followup) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-9-1-2: Follow-up review still recommended for 9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant after the damping cap was spent
+  origin: review-budget-followup
+  source_spec: `spec-9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant.md`
+  severity: low
+  reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260810-193158-7f2b; this entry preserves the lingering recommendation for a deliberate later review.
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-8` there, review-budget-followup) during the pre-shutdown deferred-work audit, pass 2.

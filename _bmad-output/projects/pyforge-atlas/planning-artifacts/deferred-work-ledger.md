@@ -1587,3 +1587,556 @@ Also excluded: `forge-data/` (Skill-Forge outputs for the `cf-atlas-legacy` cont
   evidence: Reproduced directly while attempting to close a review-pass-2 finding (the "propagates on any later re-query" docstring claim was untested): a test that set a live session's maintainer `TextInput.value` after deleting the backing `cf_atlas.db` (to assert `CfAtlasDbUnavailableError` propagates out of the `on_change` callback) reliably poisoned the process — `tests/views/test_widgets.py::test_get_widget_grid_static_renderer_produces_a_valid_static_fragment` (and, nondeterministically, several `tests/views/test_render.py` tests) started failing with `RuntimeError: Patched curdoc has been previously destroyed` from `bokeh/io/doc.py:59`, reproducibly across 5/5 runs with the offending test present and 0/5 without it (and 3/3 clean on the unpatched pre-review commit). Root-caused by reading `bokeh/io/doc.py`: `patch_curdoc()` is a bare `@contextmanager` — `_PATCHED_CURDOCS.append(weakref.ref(doc)); del doc; yield; _PATCHED_CURDOCS.pop()` — with no `try/finally`, so an exception during `yield` skips the `pop()` forever. The offending test was reverted rather than kept — this story's own `_grid_websocket_renderer`/`_on_maintainer_change` code has no try/except and does propagate the error correctly by direct code inspection; only the TEST's mechanism was unsafe, not the shipped code. This is a genuine upstream Bokeh hazard, not this story's problem to fix (Bokeh internals, not `pyforge` code), but load-bearing knowledge for whoever next tests a live-session error path in this package: raising inside a live `on_change` callback will poison the rest of the test process.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-3-2` there) during the pre-shutdown deferred-work audit.
+
+
+### DW-A1-6: The registered `[verify]` command `pixi run --frozen -e pyforge-atlas kedro-test` cannot run until the workstation re-lo
+- source_spec: `a1-scaffold-the-kedro-pixi-project-via-nebi.md`
+  summary: The registered `[verify]` command `pixi run --frozen -e pyforge-atlas kedro-test` cannot run until the workstation re-lock lands pixi.lock entries for the pyforge-atlas env — until then EVERY bmad-loop story (including pyforge-warden ones) fails at the verify step.
+  evidence: `pixi.lock` has zero `pyforge-atlas` occurrences; `--frozen` cannot materialize an env absent from the lock; container re-lock is blocked by the stubbed `build_artifacts` channel (bmad-ui/bmad-dashboard co-solve — see Story A1 Dev Agent Record). Workstation re-lock is the recorded precondition; do not weaken the gate (NFR-12).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-A1-7: `.bmad-loop/policy.toml [scm] worktree_seed` still lists only pyforge-warden's implementation-artifacts path — an atlas 
+- source_spec: `a1-scaffold-the-kedro-pixi-project-via-nebi.md`
+  summary: `.bmad-loop/policy.toml [scm] worktree_seed` still lists only pyforge-warden's implementation-artifacts path — an atlas loop story's worktree (first: A3) would reproduce the documented missing-artifacts-dir crash until the seed adds `_bmad-output/projects/pyforge-atlas/implementation-artifacts`.
+  evidence: policy.toml `worktree_seed = ["_bmad-output/projects/pyforge-warden/implementation-artifacts", "_bmad/custom/.active-project"]` with the adjacent comment citing crash run 20260712-164312; A3 is the designated first loop story (sprint story_meta). A1's scope note: "the worktree bootstrap is A3's to validate, not A1's" (AD-18).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-A1-8: `[verify].commands` is a flat list — every loop story in either package now materializes BOTH the pyforge-warden and pyf
+- source_spec: `a1-scaffold-the-kedro-pixi-project-via-nebi.md`
+  summary: `[verify].commands` is a flat list — every loop story in either package now materializes BOTH the pyforge-warden and pyforge-atlas envs and runs both suites; a red test in one package blocks the other package's loop, and A3's worktree env-materialization cost measurement will include warden's env. Consider per-project/conditional gating when A3 measures.
+  evidence: `.bmad-loop/policy.toml [verify]` runs all commands after every story review; both `pixi run --frozen -e pyforge-warden pyforge-warden-test` and `pixi run --frozen -e pyforge-atlas kedro-test` are now unconditionally listed.
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-A1-9: kedro-test import provenance is mixed in the lean env — smokes import the INSTALLED conda build of pyforge-atlas while `
+- source_spec: `a1-scaffold-the-kedro-pixi-project-via-nebi.md`
+  summary: kedro-test import provenance is mixed in the lean env — smokes import the INSTALLED conda build of pyforge-atlas while `bootstrap_project()` injects the source tree; if a frozen run ever serves a stale built package for a changed source tree, the gate could go green on old code. Verify pixi-build path-dep rebuild semantics under `--frozen` when the lean env first materializes (A3).
+  evidence: `tests/test_import_smoke.py` imports `pyforge.atlas` before `bootstrap_project(MEMBER_DIR)` prepends `MEMBER_DIR/src` to sys.path; pixi-build rebuild-on-change behavior under `--frozen` is undocumented for sibling path deps (same ambiguity the warden policy comment records).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-A2-1: Dynamic per-host JFrog credential attachment does NOT exist — credential references are static per-entry catalog config,
+- source_spec: `a2-define-the-data-catalog-for-all-sources-outputs.md` (review-pass P4, 2026-07-17)
+  summary: Dynamic per-host JFrog credential attachment does NOT exist — credential references are static per-entry catalog config, and overriding a `*_BASE_URL` to an Artifactory mirror yields UNauthenticated requests until `credentials: jfrog` is hand-added to each mirrored entry. The dynamic attachment mechanism (attach the jfrog key iff the entry's resolved hostname suffix-matches an Artifactory host) is assigned to **Story B5** (external-refresh assets / enterprise store routing). Owner rationale per spine AD-2: credentials are catalog/dataset-level per-host config, not a global hook — so the mechanism belongs with the first story that lands a JFrog-routable dataset surface (B5), not a generic A3 hook. The member README was rewritten in the review pass to describe the static reality and name this OPEN item.
+  evidence: member README § 3 formerly claimed jfrog attaches to "datasets whose endpoint-base actually resolves to an Artifactory host" — no code implements that; `tests/catalog/test_credential_scoping.py` enforces the static allowlist + suffix-matched hostnames (the guard the future mechanism must satisfy).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-A3-1: No epoch-seconds-vs-milliseconds magnitude guard on the `fetched_at` stamp/read in `IncrementalParquetDataset`. If a fut
+- source_spec: `a3-implement-incrementalparquetdataset-for-ttl-gating.md` (review-pass P10, 2026-07-17)
+  summary: No epoch-seconds-vs-milliseconds magnitude guard on the `fetched_at` stamp/read in `IncrementalParquetDataset`. If a future producer ever wrote ms-epoch timestamps, `stale_mask` (`fetched_at < now - ttl_seconds`, both in seconds) would silently treat every ms row as far-future-fresh. Deferred as SPECULATIVE — no ms producer exists today; the B1 node contract owns the `fetched_at` unit (Spine timestamp convention = epoch SECONDS). Revisit iff a node is authored that could emit ms.
+  evidence: `stale_mask`/`save` operate purely in `int(time.time())` seconds; there is no order-of-magnitude assertion. No B-wave node yet writes these datasets (B1 is the first). Simplicity First — a guard now would be dead code.
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-A3-2: `IncrementalParquetDataset` reaches into the composed dataset's PRIVATE internals — `self._inner._describe()` and `self
+- source_spec: `a3-implement-incrementalparquetdataset-for-ttl-gating.md` (review-pass P11, 2026-07-17)
+  summary: `IncrementalParquetDataset` reaches into the composed dataset's PRIVATE internals — `self._inner._describe()` and `self._inner._exists()` — which are not part of the kedro_datasets public API and could break on a `kedro_datasets` bump. Deferred: verified against **kedro_datasets 9.5.0** (the in-env version); both methods present with the used signatures. Revisit on the next `kedro_datasets` version bump (add a compatibility check or switch to a public accessor if one lands).
+  evidence: `incremental_parquet.py` `_describe`/`_exists` delegate to `self._inner._describe()` / `self._inner._exists()`; kedro_datasets exposes no documented public equivalent for the composed-dataset describe/exists at 9.5.0.
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-A3-3: One-tick TTL boundary parity is UNVERIFIED against the legacy gate. Legacy `atlas_phase` treated a row as stale when `ag
+- source_spec: `a3-implement-incrementalparquetdataset-for-ttl-gating.md` (review-pass, TTL-parity, 2026-07-17)
+  summary: One-tick TTL boundary parity is UNVERIFIED against the legacy gate. Legacy `atlas_phase` treated a row as stale when `age >= ttl` (stale at EXACTLY ttl); the new `stale_mask` uses `fetched_at < now - ttl_seconds`, i.e. a row stamped exactly `now - ttl` is FRESH (the current unit test pins boundary=fresh). Whether the off-by-one-tick difference matters is a B1 verification item — B1 (first phase-port that writes these datasets) should confirm the intended edge against legacy parity evidence and adjust the comparison (`<=` vs `<`) if parity requires it.
+  evidence: `test_stale_mask_gates_old_stale_recent_fresh` asserts `now - ttl` → fresh; legacy `_TTL_GATED` semantics (cf-atlas-legacy `write-paths-and-checkpoints.md`) gate on `>= ttl`. Non-blocking for A3 (the dataset owns a self-consistent, tested boundary); flagged so B1 makes the parity call deliberately.
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-10-4-1: A future pandera `Column(str)` contract registered in `DEFAULT_CONTRACTS` (`validation.py`) will spuriously halt on a le
+- source_spec: `_bmad-output/implementation-artifacts/spec-10-4-preserve-null-identity-under-pandas-3-0.md`
+  summary: A future pandera `Column(str)` contract registered in `DEFAULT_CONTRACTS` (`validation.py`) will spuriously halt on a legitimately EMPTY, naturally-`object`-dtype DataFrame — pandera dtype-checks an empty column's literal declared dtype (no values to infer from), and it always expects `string[pyarrow]` there, independent of this package's `future.infer_string` pin.
+  evidence: reproduced directly in this worktree's pinned pandas 3.0.3 / pandera env — `PYPI_SCHEMA.validate(pd.DataFrame({"name": pd.Series([], dtype=str)}))` raises `WRONG_DATATYPE: expected string[pyarrow], got object` under the pin, while an identically-constructed NON-empty frame (`pd.DataFrame({"name": ["numpy"]})`, also `object` dtype) validates fine. Confirmed independently by both the Blind Hunter and Edge Case Hunter review passes on this story's diff. Dormant today only because `DEFAULT_CONTRACTS` ships empty; the first real `Column(str)` contract that can see an empty result set will hit this.
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-10-4-2: `pyforge.atlas/__init__.py`'s `future.infer_string` pin is process-wide mutable pandas state, not scoped to this package
+- source_spec: `_bmad-output/implementation-artifacts/spec-10-4-preserve-null-identity-under-pandas-3-0.md`
+  summary: `pyforge.atlas/__init__.py`'s `future.infer_string` pin is process-wide mutable pandas state, not scoped to this package — any OTHER package sharing the same Python process (e.g. a future shared Dagster/MCP deployment importing multiple `pyforge-*` packages together) inherits the pin the moment `pyforge.atlas` is imported first, with no opt-out; conversely, if some OTHER package's own DataFrame construction runs before `pyforge.atlas` is ever imported in that process, it is NOT covered by the pin.
+  evidence: `pd.set_option` mutates global `pandas.options` state with no per-caller scoping; verified the `pyforge-atlas` `kedro-test` task only collects `src/shared/packages/pyforge-atlas/tests` today so this is not currently exercised, but it is a real cross-package coupling risk for the monorepo's future shared-process deployments. Flagged by the Blind Hunter and Edge Case Hunter review passes on this story's diff; worth a scoped (`pd.option_context`) redesign in a future consistency pass if/when `pyforge-*` packages start sharing a process.
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-10-4-3: `ci_red`'s business logic is duplicated as raw SQL outside the declared-once `semantic/metrics.py` definition — `wasm/in
+- source_spec: `_bmad-output/implementation-artifacts/spec-10-4-preserve-null-identity-under-pandas-3-0.md`
+  summary: `ci_red`'s business logic is duplicated as raw SQL outside the declared-once `semantic/metrics.py` definition — `wasm/index.html` projects `(ci_status IN ('failure','error')) AS ci_red` and `tests/publish/test_emit_range.py` re-encodes it as a `FILTER (WHERE ...)` — and the AUD-ATLAS-012 NULL-coalesce (`.fill_null(False)`) now exists only in the metrics.py copy, so the surfaces agree on a NULL `ci_status` only through downstream accidents.
+  evidence: `semantic/metrics.py`'s module discipline (AD-8) says business logic "is declared ONCE here"; the WASM projected column yields SQL NULL for a NULL `ci_status` (rendered not-red only because the row renderer checks `=== true || === 1`), and the publish test's raw FILTER relies on SQL's NULL-excludes behavior. No behavioral divergence today, but the next consumer of the projected `ci_red` column (or an edit to the WASM row-rendering) silently inherits the un-coalesced semantics. Found by the Blind Hunter review pass on story 10-4's diff (2026-07-28, review pass 2).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-10-5-1: The dashboard's per-page AD-17 provenance is resolved once at `build_dashboard()` time while each page's grid data is a 
+- source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
+  summary: The dashboard's per-page AD-17 provenance is resolved once at `build_dashboard()` time while each page's grid data is a lazily-registered `data_manager` loader re-invoked per render — in a long-running server, the Card's stated provenance can drift out of sync with the (independently, live-reloaded) grid data it describes.
+  evidence: `dashboard/app.py::build_dashboard` calls `_provenance.resolve_for_file(...)` synchronously before constructing the page list, while `_data_page`'s `loader` closure genuinely re-reads the backing Parquet on each `data_manager` invocation. This mirrors the SAME pre-existing pattern `factory-status`'s own `build_stamp` already uses (out of scope to change per this story's Never boundary) — this story's own prior (reverted) attempt already triaged the identical finding as `[low][defer]` ("pre-existing, extended by this story"). Independently re-surfaced by both Blind Hunter and Edge Case Hunter on review pass 2.
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-10-5-2: `provenance.py`'s `resolve_for_catalog_dataset` reaches into kedro's underscore-prefixed `_describe()` (`"filepath"`, `"
+- source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
+  summary: `provenance.py`'s `resolve_for_catalog_dataset` reaches into kedro's underscore-prefixed `_describe()` (`"filepath"`, `"fetched_at_column"`) with no fallback if a future `kedro_datasets`/`IncrementalParquetDataset` change restructures that dict, and does not isolate provenance-dispatch failures from an already-successful `catalog.load(name)` — a `_describe()` KeyError or similar would crash the whole `read_dataset` call even though the data load itself succeeded.
+  evidence: `_describe()` is a protected, non-semver-guaranteed introspection hook on third-party dataset classes; verified stable under the currently-installed `kedro_datasets` version but with no defensive fallback. Flagged by the Blind Hunter review pass on story 10-5's diff (2026-07-28, review pass 2).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-10-5-3: `resolve_for_catalog_dataset`'s `ParquetDataset` branch uses `dataset._describe()["filepath"]` unconditionally, which fo
+- source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
+  summary: `resolve_for_catalog_dataset`'s `ParquetDataset` branch uses `dataset._describe()["filepath"]` unconditionally, which for a Kedro-versioned dataset (`versioned: true`) is the un-versioned base path, not the actually-loaded version's file — the reported mtime could describe the wrong file. No current `catalog.yml` entry sets `versioned: true` on a `pandas.ParquetDataset`, so this is latent.
+  evidence: Flagged by the Edge Case Hunter review pass on story 10-5's diff (2026-07-28, review pass 2); not reproducible against the live catalog today.
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-10-5-4: The dashboard's `_provenance_line` never renders `ProvenanceInfo.build_stamp_newest`, so a future dashboard page wired t
+- source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
+  summary: The dashboard's `_provenance_line` never renders `ProvenanceInfo.build_stamp_newest`, so a future dashboard page wired to a `row-fetched-at`-kind dataset (none exist today — all 3 grounded/bsl-shell pages resolve via `resolve_for_file`, never `resolve_for_catalog_dataset`) would silently drop the "newest recorded" half of its provenance range from the rendered Card.
+  evidence: `app.py::_provenance_line` only formats `provenance.build_stamp`; confirmed no dashboard page currently reaches the `row-fetched-at` kind. Independently flagged by both Blind Hunter and Edge Case Hunter on review pass 2.
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-10-5-5: `resolve_for_catalog_dataset`'s kind dispatch covers 61 of the catalog's 86 entries; 8 of the remaining 25 (7 `json.JSON
+- source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
+  summary: `resolve_for_catalog_dataset`'s kind dispatch covers 61 of the catalog's 86 entries; 8 of the remaining 25 (7 `json.JSONDataset` + 1 `yaml.YAMLDataset`) expose a `filepath` + `protocol` pair in `_describe()` that is byte-identical in shape to what the existing `ParquetDataset` branch already consumes, so genuine file-mtime provenance is available for them and is reported as `unavailable` instead.
+  evidence: live type census of `conf/base/catalog.yml` — 24 `api.APIDataset`, 22 `pandas.ParquetDataset`, 15 `IncrementalParquetDataset`, 7 `json.JSONDataset`, 5 `MigrationCategoryDataset`, 1 `yaml.YAMLDataset`, 1 `partitions.PartitionedDataset`, 10 other custom types; `JSONDataset(filepath=...)._describe()` returns `{'filepath': PurePosixPath(...), 'protocol': 'file', 'save_args': ..., 'version': None}`. NOT a defect against the frozen contract — the intent-contract's I/O matrix explicitly specifies `json.JSONDataset` -> `unavailable` — so this is a coverage EXTENSION for a later pass, not a deviation. Flagged by the Blind Hunter review pass on story 10-5's diff (2026-07-29, review pass 4).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-10-5-6: Three catalog entries (`AnacondaDownloadsDataset`, `GitHubRequestDataset`, `PyPIJsonRequestDataset`) perform a real live
+- source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
+  summary: Three catalog entries (`AnacondaDownloadsDataset`, `GitHubRequestDataset`, `PyPIJsonRequestDataset`) perform a real live HTTP fetch on read but report `provenance_kind="unavailable"`, because they COMPOSE `kedro_datasets.api.APIDataset` rather than subclass it, so the `isinstance(dataset, APIDataset)` live-fetch branch never matches — the one case where "now" is provably correct provenance by this module's own rule.
+  evidence: `src/pyforge/atlas/datasets/request_datasets.py` — `_RequestParameterizedAPIDataset(AbstractDataset)` holds `self._inner` (an `APIDataset`) and its `load()` is `self.scheduler.acquire(); return self._inner.load()`. The module already recognises this exact compose-not-subclass shape for `IncrementalParquetDataset` (which likewise composes `ParquetDataset`); the reasoning was simply not carried to the API branch. Contract-valid today (C4 makes `unavailable` + a reason a REQUIRED valid response), so this is a coverage EXTENSION, not a deviation. Flagged by the Blind Hunter review pass on story 10-5's diff (2026-07-29, review pass 4).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-10-5-7: The dashboard and the MCP read surface resolve the SAME logical dataset's backing file through two independent path mech
+- source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
+  summary: The dashboard and the MCP read surface resolve the SAME logical dataset's backing file through two independent path mechanisms — the dashboard via `dashboard/data.py`'s hand-maintained relpath constants anchored on `default_data_root()` (which walks up to `.git`), the MCP surface via the catalog's bare relative `filepath:` (resolved against the process CWD) — so the two surfaces can stamp different files, or one can report a real mtime while the other reports "backing file not found".
+  evidence: `dashboard/data.py:27` already labels its constants a hand-maintained MIRROR of the catalog `filepath`s, and `default_data_root()`'s own docstring records the CWD-relative catalog default (review-pass P9); `conf/base/catalog.yml:157` declares `filepath: data/primary/core_feedstock_health/core_feedstock_health.parquet` with no `${globals:...}` templating. Each surface is INTERNALLY consistent (each stamps the same file it loads), so nothing is wrong today when both run from the repo root — this is the pre-existing mirror divergence made newly VISIBLE by stamping, not a defect introduced by this story. Worth collapsing onto one catalog-driven resolver in a later consistency pass. Flagged by the Blind Hunter review pass on story 10-5's diff (2026-07-29, review pass 4).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-10-5-8: Reusing `IncrementalParquetDataset._to_epoch_seconds` on the READ path makes its `logger.warning` ("normalizing N ms-mag
+- source_spec: `_bmad-output/implementation-artifacts/spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
+  summary: Reusing `IncrementalParquetDataset._to_epoch_seconds` on the READ path makes its `logger.warning` ("normalizing N ms-magnitude fetched_at value(s) …", written for the once-per-`save()` write boundary) fire on EVERY `read_dataset` of a ms-magnitude dataset — log noise proportional to read volume on datasets as large as `core_downloads`.
+  evidence: `datasets/incremental_parquet.py:202-209` — the warning is unconditional inside `_to_epoch_seconds`, which has no `warn=` parameter; `provenance.py::_resolve_row_fetched_at` calls it per read. Observed firing during review-pass-4 verification runs. Deliberately NOT patched in-pass: the spec's Design Notes mandate reusing `_to_epoch_seconds` DIRECTLY ("not reimplemented, so the two stay in lockstep by construction"), so the only clean fix adds a `warn: bool = True` parameter to a shared dataset classmethod — a wider blast radius than a review patch should take unilaterally. Flagged by the Blind Hunter review pass on story 10-5's diff (2026-07-29, review pass 4).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-10-6-1: `AtlasObservabilityHooks.__deepcopy__` (and any hook copying this pattern) hand-copies a fixed list of attributes via `c
+- source_spec: `_bmad-output/implementation-artifacts/spec-10-6-make-run-admission-real-or-stop-claiming-it.md`
+  summary: `AtlasObservabilityHooks.__deepcopy__` (and any hook copying this pattern) hand-copies a fixed list of attributes via `cls.__new__`, so a future `__init__` field silently vanishes from the Dagster-plane clone and surfaces as an `AttributeError` at run time rather than at build time.
+  evidence: `observability.py:210-229` copies exactly `_provider` / `_ol` / `_namespace` / `_tracer_cache` / `_pipelines` / `_nodes`; nothing asserts the copied attribute set matches `__init__`'s. Surfaced while reviewing Story I5's new hook, which necessarily mirrors the same pattern. A single test comparing `vars(hook).keys()` before and after `copy.deepcopy` would cover every hook at once.
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-10-6-2: Run admission is writer-writer exclusion only, and the concurrency it deliberately PERMITS is reader-writer unsafe: `pan
+- source_spec: `_bmad-output/implementation-artifacts/spec-10-6-make-run-admission-real-or-stop-claiming-it.md`
+  summary: Run admission is writer-writer exclusion only, and the concurrency it deliberately PERMITS is reader-writer unsafe: `pandas.ParquetDataset.save` truncates its target in place (no temp+rename), so a pipeline admitted concurrently because its OUTPUT set is disjoint can read a half-written Parquet another admitted run is rewriting. Not a defect in Story 10.6 — the hazard predates it and the story strictly reduces interleaving — but AD-23's per-dataset-set granularity is now documented as a feature ("genuinely disjoint pipelines still run concurrently"), which makes the reader-writer gap the natural next thing a reader will over-assume.
+  evidence: measured against the live registry — the 7 pipelines share no output name (so the granularity claim is literally true) but carry 12 cross-pipeline write→read edges: `core` writes `core_downloads` / `core_packages_enumerated` / `core_version_download_history` which `vcs_health` and `vulnerability` read; `pypi_intelligence` writes `pypi_conda_mapping` / `pypi_intelligence_enriched` which `seed_gaps` reads; `vulnerability`→`seed_gaps`; `derived_artifacts`→`universal_sbom`. `core_packages_enumerated` is a `pandas.ParquetDataset`, whose `save` is `with self._fs.open(save_path, "wb"): data.to_parquet(...)`. Closing it means either atomic writes (temp + rename) at the dataset layer or extending admission to lock a pipeline's INPUT set as a shared/read lock — both wider than an admission story. Flagged by the Blind Hunter review pass on story 10-6's diff (2026-07-29, review pass 3).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-10-6-3: `observability.py` states, in three places, that "C1's `KedroProjectTranslator` deep-copies the settings hooks at `to_da
+- source_spec: `_bmad-output/implementation-artifacts/spec-10-6-make-run-admission-real-or-stop-claiming-it.md`
+  summary: `observability.py` states, in three places, that "C1's `KedroProjectTranslator` deep-copies the settings hooks at `to_dagster()` build time" — and the installed kedro-dagster does not. The lazy-`TracerProvider` design at `observability.py:188-195` exists specifically to make the instance deepcopy-able for that build, so its stated justification is unfounded (the design is harmless, but it is carried as a measured constraint when it is not one).
+  evidence: measured against the installed `kedro_dagster` 0.7.x in the `pyforge-atlas` env — `translator.py:253,262` pass `hook_manager=self._context._hook_manager` BY REFERENCE, and the only `deepcopy` anywhere in the package is in `datasets/partitioned_dataset.py` (`grep -rn deepcopy` over the installed tree). Pre-existing and untouched by Story 10.6; surfaced because the new `RunAdmissionHooks.__deepcopy__` copied the same claim verbatim (corrected there in review pass 4). Not patched here: `observability.py` is E2-owned and out of this story's scope, and the lazy-tracer construction should not be re-litigated on a review pass. Flagged by the Blind Hunter review pass on story 10-6's diff (2026-07-29, review pass 4).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-12-1-1: Unconfirmed whether `src/shared/packages/pyforge-atlas/.claude/skills/catalog-config/` — the first nested, directory-sco
+- source_spec: `spec-12-1-kedro-skills-audit-then-adopt.md`
+  summary: Unconfirmed whether `src/shared/packages/pyforge-atlas/.claude/skills/catalog-config/` — the first nested, directory-scoped `.claude/skills/` tree anywhere in this repo — is actually discovered by a live Claude Code session working inside that subtree, versus this repo's established single-root `.claude/skills/` convention being the only path Claude Code reliably surfaces.
+  evidence: `kedro skills install` has no `--target-dir` (confirmed by reading `kedro_skills/utils.py::find_project_root`, which always resolves the nearest Kedro project root) so this is the tool's only possible output location; the Skill tool's own description documents directory-scoped resolution (`apps/web:deploy`-style path prefixes) as a real capability, but this review session's own available-skills listing (generated from the repo root, same worktree) does not surface `catalog-config`, which is at minimum consistent with (though not proof of) the mechanism not statically preloading nested skill trees. Flagged by the Blind Hunter review pass on story 12-1's diff (2026-08-09, review pass 1); re-raised independently by the Blind Hunter pass on review pass 2 with the same evidence.
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-12-1-2: The two upstream-issue texts drafted in `kedro-skills-audit-report.md` (layer-tag nesting; the numbered 8-layer director
+- source_spec: `spec-12-1-kedro-skills-audit-then-adopt.md`
+  summary: The two upstream-issue texts drafted in `kedro-skills-audit-report.md` (layer-tag nesting; the numbered 8-layer directory table) have no tracked follow-up forcing a human to actually decide whether to file them against `kedro-org/kedro-skills` — they exist only as prose inside the report and could go unnoticed once nobody is actively reading it.
+  evidence: The story's own Never clause correctly forbids filing them unattended (verified: `gh api repos/kedro-org/kedro-skills/issues` shows only the 3 pre-existing issues, none from this story), but nothing else tracks the pending human decision. Converged finding — raised independently by both Blind Hunter and Edge Case Hunter on review pass 1, and again by both on review pass 2, with no new counter-evidence either time.
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-12-1-3: The live `sprint-status.yaml`'s `story_meta.depends_on` lists still reference the retired `d1-`/`d2-` key spelling for E
+- source_spec: `spec-12-1-kedro-skills-audit-then-adopt.md`
+  summary: The live `sprint-status.yaml`'s `story_meta.depends_on` lists still reference the retired `d1-`/`d2-` key spelling for Epic 5's stories (lines ~381, ~394, ~471), even though PR #322 (2026-08-08) renamed the corresponding `development_status` keys to the current `5-1-`/`5-2-` Epic.Story convention — so any future code resolving `depends_on` entries against `development_status` keys would silently fail to match.
+  evidence: `grep -n "depends_on:.*d[12]-" _bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml` hits 3 lines still spelling `d1-define-the-boring-semantic-layer-bsl-models` / `d2-build-the-vizro-dashboard-port-the-28-clis-to-pages`, while `development_status` itself now keys the same two stories `5-1-...`/`5-2-...` (confirmed identical between this worktree and the canonical repo checkout). No shipped code currently reads `depends_on` from this file (`grep -rn depends_on src/shared/packages/pyforge-atlas/src/` is empty) so nothing is broken today — inert but drift-prone. Surfaced by the Blind Hunter review pass repairing story 12-1's `kedro-test` verification failure (2026-08-09); out of that repair's scope since `sprint-status.yaml` is a generated, gitignored artifact PR #322 didn't fully sweep.
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-12-2-1: `kedro-viz-publish.yml`'s trigger path filter (`src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/**` only, 
+- source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
+  summary: `kedro-viz-publish.yml`'s trigger path filter (`src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/**` only, matching the upstream epic-level Spec's literal wording) won't catch a real DAG-shape change made via `pipeline_registry.py`, `settings.py`, or `conf/base/catalog.yml`/`parameters.yml` — none of which live under `pipelines/`, so a change to any of them lands on `main` without triggering a republish.
+  evidence: Verified these files exist outside the triggering path glob (`src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipeline_registry.py`, `.../settings.py`, `.../conf/base/catalog.yml`, `.../conf/base/parameters.yml`) and each can independently change what `kedro viz build` renders (registry controls which pipelines exist; catalog controls dataset/layer metadata). Not fixed in this story: the path is a faithful, literal implementation of the upstream `SPEC-kedro-org-tooling-adoption` kernel's own named trigger path (`_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-kedro-org-tooling-adoption/SPEC.md`), so widening it unilaterally would be a scope decision belonging to that Spec, not this story. Flagged by the Blind Hunter review pass on story 12-2's diff (2026-08-09, review pass 1).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-12-2-2: `kedro-viz-publish.yml` pushes directly to `main` with the default `GITHUB_TOKEN` and no PR; if branch protection is eve
+- source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
+  summary: `kedro-viz-publish.yml` pushes directly to `main` with the default `GITHUB_TOKEN` and no PR; if branch protection is ever added to `main` (none exists today), the workflow will start failing silently (a red run, no code change needed to explain it) with nothing in this diff anticipating that dependency.
+  evidence: Verified via `gh api repos/rxm7706/local-recipes/branches/main/protection` → 404 (not protected) at spec time. The workflow's own design (mirrors `steward deploy dashboard`'s CLI, built for direct-push use) has no fallback path if that changes. Flagged by the Blind Hunter review pass on story 12-2's diff (2026-08-09, review pass 1).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-12-2-3: A narrow non-fast-forward race exists in `kedro-viz-publish.yml`: if two pipeline-touching pushes to `main` land in quic
+- source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
+  summary: A narrow non-fast-forward race exists in `kedro-viz-publish.yml`: if two pipeline-touching pushes to `main` land in quick succession, the second (queued, `cancel-in-progress: false`) run's `actions/checkout` pins the SHA from its own (now-stale) trigger, so its later `git push` could be rejected as non-fast-forward against a `main` the first run already advanced.
+  evidence: `commit_and_push_dashboard` (`pyforge-steward/src/pyforge/steward/deploy.py`) does a plain `git push origin <branch>` with no rebase/retry; a rejected push surfaces as a `DutyResult(ok=False, ...)` (a failed CI run), not a silent loss, and the SAME run's *next* invocation would pick up the still-uncommitted local diff via `_push_pending_commit_if_ahead`'s stuck-push retry — but only if that run is re-triggered, which a failed push alone does not do. Low-probability (requires two pipeline-touching pushes within the same CI run's duration) and partially self-healing, not fixed in this story. Flagged by the Blind Hunter review pass on story 12-2's diff (2026-08-09, review pass 1).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-12-2-4: No end-to-end GitHub Actions execution of `kedro-viz-publish.yml` was exercised before this story's PR — only the underl
+- source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
+  summary: No end-to-end GitHub Actions execution of `kedro-viz-publish.yml` was exercised before this story's PR — only the underlying pixi tasks (`viz-build`, `viz-publish-stage`) and the Steward CLI's `--dry-run` path were verified locally/in this sandboxed environment, which cannot run a real `push` event through an actual GitHub Actions runner.
+  evidence: This environment has no live GitHub Actions execution capability; the workflow YAML was validated for syntax (`yaml.safe_load`) and its constituent commands were verified to work when run manually in sequence, but the composed CI-specific behavior (real ubuntu-latest runner, real `actions/checkout` detached-HEAD state, real `GITHUB_TOKEN` push) is unverified until the first real run after merge. Flagged by the Blind Hunter review pass on story 12-2's diff (2026-08-09, review pass 1).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-12-2-5: `normalize_viz_build.py`'s `_iter_text_files` silently skips any file under `build/` that isn't valid UTF-8 (via a bare 
+- source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
+  summary: `normalize_viz_build.py`'s `_iter_text_files` silently skips any file under `build/` that isn't valid UTF-8 (via a bare `except UnicodeDecodeError: continue`) in BOTH the strip pass and the verifying re-scan — a future kedro-viz version that embeds the checkout-anchored path inside a non-UTF-8 file (e.g. a binary source-map or compiled asset) would be invisible to this script's "zero anchor occurrences remain" guarantee.
+  evidence: Verified every file under `build/` in this repo's real DAG is UTF-8 JSON/text today (`file` reports "JSON text data" or similar on every `build/api/*` entry; `build/assets/*.js`/`*.css` are plain text) — currently inert, not a live leak, but the code doesn't enforce or check for this property going forward. Flagged by the Edge Case Hunter review pass on story 12-2's diff (2026-08-09, review pass 3).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-12-2-6: `normalize_viz_build.py`'s anchor-strip uses a literal `str.replace()` substring match with no path-boundary check — a f
+- source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
+  summary: `normalize_viz_build.py`'s anchor-strip uses a literal `str.replace()` substring match with no path-boundary check — a future sibling directory under `src/shared/packages/` whose name shares the `pyforge-atlas` prefix (e.g. a hypothetical `pyforge-atlas-legacy`) would have its own unrelated absolute paths partially mangled into `<PYFORGE_ATLAS_ROOT>-legacy/...` if it were ever built by the same mechanism.
+  evidence: Verified no such sibling exists today (`ls src/shared/packages/ | grep pyforge-atlas` returns only `pyforge-atlas` itself) — currently inert. A boundary-safe fix would need a regex (e.g. `re.escape(anchor) + r'(?=[/"])'`), which reintroduces the exact path-escaping fragility `str.replace()` was deliberately chosen over `sed`/regex to avoid for arbitrary filesystem paths — not fixed here as a result. Flagged by the Blind Hunter review pass on story 12-2's diff (2026-08-09, review pass 3).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-12-2-7: The live `sprint-status.yaml`'s `story_meta.depends_on` lists still reference the retired `d1-`/`d2-` key spelling for E
+- source_spec: `spec-12-2-publish-the-real-dag-continuously.md`
+  summary: The live `sprint-status.yaml`'s `story_meta.depends_on` lists still reference the retired `d1-`/`d2-` key spelling for Epic 5's stories, even though PR #322 (2026-08-08) renamed the corresponding `development_status` keys to the current `5-1-`/`5-2-` Epic.Story convention — so any future code resolving `depends_on` entries against `development_status` keys would silently fail to match.
+  evidence: Re-confirmed live in this worktree (`grep -n "depends_on:.*d[12]-" .../implementation-artifacts/sprint-status.yaml` still hits 3 lines); no shipped code currently reads `depends_on` (`grep -rn depends_on src/shared/packages/pyforge-atlas/src/` is empty), so nothing is broken today — inert but drift-prone. Same underlying issue already deferred on story 12-1's behalf (2026-08-09); re-flagged here because story 12-2 independently hit and repaired the same `kedro-test` failure this drift was surfaced during, and `sprint-status.yaml` is a generated, gitignored artifact outside both stories' Code Maps — PR #322's sweep is what missed it, not either repair pass. Flagged by the Blind Hunter review pass repairing story 12-2's `kedro-test` verification failure (2026-08-09, review pass 4).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-1-1: The GitHub Search API fallback query (`sort=stars&order=desc`, no date/activity filter) doesn't represent "trending" at 
+- source_spec: `spec-13-1-trending-ingest.md`
+  summary: The GitHub Search API fallback query (`sort=stars&order=desc`, no date/activity filter) doesn't represent "trending" at all — it's an effectively static top-N all-time-most-starred Python list, so exactly when the primary scrape degrades (the fallback's whole reason to exist), `trending_candidates` silently fills with near-constant "most starred" data under the same dataset name, giving CAP-1's discovery purpose little real signal for that batch.
+  evidence: `conf/base/catalog.yml`'s `search_api_url` has no `created:`/`pushed:` window; GitHub's Search API has no "trending" concept, only point-in-time sort. Fixing this requires a product decision on what date-window semantics approximate "trending" for a fallback corroboration source — beyond a trivial patch, and CAP-1's own success criteria (a non-empty snapshot, graceful degradation) still hold regardless. Flagged by the Blind Hunter review pass on story 13.1's diff (2026-08-09, review pass 1).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-1-2: `TrendingSnapshotDataset.STORE_FILENAME` is a single fixed filename, so each refresh fully overwrites the prior snapshot
+- source_spec: `spec-13-1-trending-ingest.md`
+  summary: `TrendingSnapshotDataset.STORE_FILENAME` is a single fixed filename, so each refresh fully overwrites the prior snapshot — no historical retention. If Story 13.2's tier classification ever wants a multi-day trend signal (streak length, day-over-day delta), that signal has already been discarded at the raw layer by CAP-1 as built.
+  evidence: `_write` always atomic-writes to the same `trending_candidates.parquet` path; no date-partitioned or append-only variant exists. Deliberately out of CAP-1's stated scope (a "fresh snapshot" is the whole contract) — worth a look at Story 13.2 planning time, not a defect in this story. Flagged by the Blind Hunter review pass on story 13.1's diff (2026-08-09, review pass 1).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-1-3: `parse_trending_html`'s `article.find("h2")`/`article.find("p")` grab the FIRST matching tag anywhere in a repo card's s
+- source_spec: `spec-13-1-trending-ingest.md`
+  summary: `parse_trending_html`'s `article.find("h2")`/`article.find("p")` grab the FIRST matching tag anywhere in a repo card's subtree rather than a scoped selector — an unrelated heading/paragraph earlier in the card (e.g. a future sponsored-listing badge GitHub might add) would silently misattribute `repo_full_name`/`description` rather than failing loudly.
+  evidence: No live GitHub markup was fetched to verify current card structure exhaustively (offline dev environment); the risk is real but low-probability given GitHub's trending page has used a stable `article.Box-row` > `h2` > `a` structure for years. Flagged by the Blind Hunter review pass on story 13.1's diff (2026-08-09, review pass 1).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-1-4: Row dicts mix Python `int` and `None` for `stars_total`/`stars_today`/`forks_total`; `pd.DataFrame(rows)` upcasts any su
+- source_spec: `spec-13-1-trending-ingest.md`
+  summary: Row dicts mix Python `int` and `None` for `stars_total`/`stars_today`/`forks_total`; `pd.DataFrame(rows)` upcasts any such column to `float64` the moment one `None` appears in a batch, so the persisted Parquet schema for these count columns can flip between `int64` and `float64` day to day depending on whether every row happened to parse cleanly that run — a downstream consumer (Story 13.2's classifier) reading this column across multiple days could hit an unexpected dtype.
+  evidence: `TrendingSnapshotDataset._write` does not coerce dtypes before `frame.to_parquet(...)`; pandas' well-documented int-with-NaN-upcasts-to-float64 behavior applies directly to the `stars_total`/`stars_today`/`forks_total` columns as constructed. A fix (pandas nullable `Int64` extension dtype) is a real but non-trivial design call, not a one-line patch. Flagged by the Blind Hunter review pass on story 13.1's diff (2026-08-09, review pass 1).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-1-5: `parse_trending_html`'s `repo_full_name` is built by stripping slashes off the scraped `href`, assuming it is always a r
+- source_spec: `spec-13-1-trending-ingest.md`
+  summary: `parse_trending_html`'s `repo_full_name` is built by stripping slashes off the scraped `href`, assuming it is always a relative path (`/owner/repo`); an absolute href (`https://github.com/owner/repo`) would double-prefix into a broken `repo_url` (`https://github.com/https://github.com/owner/repo`) with no detection.
+  evidence: `repo_full_name = (link.get("href") or "").strip("/").strip()` then `repo_url = f"https://github.com/{repo_full_name}"` unconditionally prepends the host with no absolute-URL guard. Low-probability (GitHub's trending page has used relative hrefs consistently) but undetected if it ever changes. Flagged by the Edge Case Hunter review pass on story 13.1's diff (2026-08-09, review pass 2).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-1-6: `pipelines/upstream_discovery/nodes.py::_coerce_cadence` (post-patch) and the precedent it mirrors, `pipelines/vulnerabi
+- source_spec: `spec-13-1-trending-ingest.md`
+  summary: `pipelines/upstream_discovery/nodes.py::_coerce_cadence` (post-patch) and the precedent it mirrors, `pipelines/vulnerability/nodes.py::_coerce_cadence`, both accept a config-authored `0` or negative cadence without validation — a `ttls.trending_candidates: 0` typo in `parameters.yml` would make every `save()` call treat a refresh as always-due, defeating the daily-cadence contract, silently.
+  evidence: Both functions do `int(raw)` with only `(TypeError, ValueError)` guarded; no positivity check exists anywhere in this codebase's cadence-coercion helpers. Not fixed here: this story's own `_coerce_cadence` faithfully mirrors the established precedent (per the spec's explicit instruction to mirror `refresh_vdb_store`), and fixing only the new copy while leaving the precedent unguarded would be an inconsistent, story-local patch to a codebase-wide pattern. Flagged by the Edge Case Hunter review pass on story 13.1's diff (2026-08-09, review pass 2).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-1-7: `_STARS_DELTA_RE` searches the WHOLE card's concatenated text (`article.get_text(" ", strip=True)`), not a scoped stars-
+- source_spec: `spec-13-1-trending-ingest.md`
+  summary: `_STARS_DELTA_RE` searches the WHOLE card's concatenated text (`article.get_text(" ", strip=True)`), not a scoped stars-delta element — if a repo's description text ever happens to contain a phrase matching "N stars this week/month/today", `stars_today` would be misattributed from the description rather than the actual stats row.
+  evidence: `article_text = article.get_text(" ", strip=True)` then `_STARS_DELTA_RE.search(article_text)` has no element-scoping guard (unlike `stars_tag`/`forks_tag`, which use `article.select_one('a[href$="/stargazers"]')`-style scoped selectors). No fixture in the test suite exercises a description containing that exact phrase shape, so the risk is real but unverified either way. Distinct from the already-deferred first-`<h2>`/first-`<p>` mismatch (that one misattributes `repo_full_name`/`description`; this one misattributes `stars_today`). Flagged by the Edge Case Hunter follow-up review pass on story 13.1's diff (2026-08-09, review pass 3).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-1-8: `_parse_count`'s `_DIGITS_RE = re.compile(r"[\d,]+")` only captures digit/comma runs — an abbreviated count like "1.2k s
+- source_spec: `spec-13-1-trending-ingest.md`
+  summary: `_parse_count`'s `_DIGITS_RE = re.compile(r"[\d,]+")` only captures digit/comma runs — an abbreviated count like "1.2k stars" (if GitHub's markup ever renders one on the trending page, as it does elsewhere in its UI) would parse as `1` instead of `1200`, silently truncating rather than failing.
+  evidence: No live GitHub HTML was fetched to confirm whether the trending page ever renders abbreviated counts (offline dev environment, no live fetcher wired in this story by design); GitHub's own UI does use abbreviated forms elsewhere (e.g. the repo header star badge), so the risk is plausible but unconfirmed for this specific page. Flagged by the Edge Case Hunter follow-up review pass on story 13.1's diff (2026-08-09, review pass 3).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-1-9: `TrendingSnapshotDataset._write`'s malformed-frame guard checks only that `_REQUIRED_COLUMNS` are PRESENT, not that they
+- source_spec: `spec-13-1-trending-ingest.md`
+  summary: `TrendingSnapshotDataset._write`'s malformed-frame guard checks only that `_REQUIRED_COLUMNS` are PRESENT, not that they contain non-null values row by row — a future refactor that bypassed the parser's own `if not repo_full_name: continue` guards could persist rows with blank identifiers and this check would not catch it.
+  evidence: `missing = [c for c in self._REQUIRED_COLUMNS if c not in frame.columns]` is a columns-only check. This exactly mirrors `VDBStoreDataset._write`'s identical column-presence-only pattern in the same module (`refresh.py`) — an established, deliberate precedent this story's `_write` was told to mirror, not a gap unique to this story. Fixing it here alone would leave the sibling class inconsistently guarded; fixing both is a `refresh.py`-wide design decision, not a one-file patch. Flagged by the Blind Hunter follow-up review pass on story 13.1's diff (2026-08-09, review pass 3).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-2-1: `_resolve_pypi_name` is fully implemented and tested but unused in `classify_trending_candidates`'s hot path, which inli
+- source_spec: `spec-13-2-tier-classification.md`
+  summary: `_resolve_pypi_name` is fully implemented and tested but unused in `classify_trending_candidates`'s hot path, which inlines the same normalize-and-lookup logic against a pre-built index for performance; a future refactor that naively swapped the inline logic for a per-row call to `_resolve_pypi_name` would silently reintroduce an O(rows × universe) index rebuild on every call, since `_resolve_pypi_name` rebuilds the full `pypi_universe` index from scratch each invocation.
+  evidence: `_resolve_pypi_name(repo_full_name, pypi_universe)` calls `_normalized_pypi_index(pypi_universe)` internally — correct for a single lookup, but `classify_trending_candidates`'s loop deliberately builds the index ONCE outside the loop instead of calling `_resolve_pypi_name` per row. No current call site exercises the O(n²) path, so this is a latent maintenance risk, not a live bug. Flagged by the Blind Hunter review pass on story 13.2's diff (2026-08-09, review pass 1).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-2-2: `trending_candidates_classified` re-materializes only in the WEEKLY `bootstrap_data` job while its own source `trending_
+- source_spec: `spec-13-2-tier-classification.md`
+  summary: `trending_candidates_classified` re-materializes only in the WEEKLY `bootstrap_data` job while its own source `trending_candidates` refreshes DAILY, so the classification trails the snapshot it describes by up to 6 days; CAP-3 (Story 13.3, the first consumer) must decide the cadence deliberately.
+  evidence: `orchestration/definitions.py` SCHEDULED_JOBS entry `("upstream_discovery_trending", ["refresh_trending_candidates"], "0 5 * * *", "daily", ...)` selects the refresh op ALONE; the classifier reaches Dagster only via `bootstrap_ops = sorted(node_ops - set(PHASE_P_OPS))` at `BOOTSTRAP_CRON = "0 2 * * 0"`. Not patched here: the story's intent contract explicitly scoped scheduling ("it only needs a `NODE_TIMEOUTS` entry, not a `SCHEDULED_JOBS` row"), and adding the classifier to the daily job would couple a currently self-contained, uncredentialed daily job to three other pipelines' materialized outputs — a design call, not a one-line patch. The catalog comment that overclaimed "re-materialized whenever trending_candidates or its join signals change" WAS corrected in this pass. Flagged independently by both the Blind Hunter and Edge Case Hunter review passes on story 13.2's diff (2026-08-09, follow-up review pass).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-2-3: The license gate emits the affirmative reason `not-osi-license` for two states that are actually "signal unavailable" — 
+- source_spec: `spec-13-2-tier-classification.md`
+  summary: The license gate emits the affirmative reason `not-osi-license` for two states that are actually "signal unavailable" — a NULL/unmapped `license_spdx`, and a valid OSI license expressed in a form the 24-entry exact-match allowlist cannot represent (PEP 639 expressions like `MIT OR Apache-2.0`, `Apache-2.0 WITH LLVM-exception`, or OSI IDs outside the curated set such as `Python-2.0`, `Artistic-2.0`, `EUPL-1.2`). Genuinely OSI-licensed candidates are therefore dropped with a factually wrong reason and never escalated to a human.
+  evidence: `_classify_row` does `if not isinstance(license_spdx, str) or license_spdx not in _OSI_APPROVED_SPDX_IDS: return "skip", "not-osi-license"`. `tier-taxonomy.md` defines `unclassified-needs-human` as exactly "the classifier's safety valve when a joined signal is unavailable", which fits both states better. NULL `license_spdx` is a known-common state in this codebase — `seed_gaps/nodes.py::report_license_map_gap` exists solely to report "rows the in-code `_LICENSE_TO_SPDX` map missed — i.e. `license_spdx` is NULL"; and `phase_r_fetch_one` carries `license_spdx` through verbatim from the upstream record, so PEP 639 expressions arrive unnormalized. Not patched here: the story's intent contract's I/O matrix explicitly specifies "`license_spdx` absent or not in the OSI allowlist -> `not-osi-license`", so changing it is a contract amendment, not a patch. Flagged independently by both the Blind Hunter and Edge Case Hunter review passes on story 13.2's diff (2026-08-09, follow-up review pass).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-2-4: The repo-name -> PyPI-name heuristic has an undocumented FALSE-POSITIVE direction: an unrelated repo whose name collides
+- source_spec: `spec-13-2-tier-classification.md`
+  summary: The repo-name -> PyPI-name heuristic has an undocumented FALSE-POSITIVE direction: an unrelated repo whose name collides with a popular PyPI package (e.g. any `someorg/requests`) resolves to that package and inherits ITS `license_spdx`/`packaging_shape`, so a confident tier-1/tier-2 recommendation can be issued for the wrong project entirely. The spec's Design Notes document only the false-NEGATIVE direction (a package published under a name different from its repo).
+  evidence: `_resolve_pypi_name` matches the PEP-503-normalized repo segment against `pypi_universe` with nothing corroborating that the resolved package and the repo are the same project. No zero-new-fetch corroboration signal exists today: `pypi_intelligence_enriched`'s columns are `pypi_name, packaging_shape, license_spdx, license_raw, notes` — it carries no `project_urls`/repository field to cross-check the trending row's `repo_url` against, so this cannot be patched inside CAP-2's stated zero-new-fetch constraint. Flagged by the Edge Case Hunter review pass on story 13.2's diff (2026-08-09, follow-up review pass).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-2-5: `pypi_intelligence_enriched` is a bounded top-N enrichment slice, which structurally excludes freshly-trending packages 
+- source_spec: `spec-13-2-tier-classification.md`
+  summary: `pypi_intelligence_enriched` is a bounded top-N enrichment slice, which structurally excludes freshly-trending packages — exactly CAP-2's input population — so in production the tier-1/tier-2 branches will rarely fire and most resolved rows will degrade to `unclassified-needs-human`. Nothing records the unmatched names as an enrichment backlog, so the gap never closes on its own.
+  evidence: `conf/base/catalog.yml` describes `pypi_intelligence_enriched` as the "Phase R top-N enrichment slice" and `pypi_intelligence/nodes.py::enrich_pypi_intelligence` states "Enrich the top-N candidate slice (bounded at dataset level)"; `_classify_row` returns `"skip", "unclassified-needs-human"` whenever `intel is None`. Every tier-1/tier-2 test in `tests/pipelines/upstream_discovery/test_nodes.py` hand-builds an intel row for the exact package under test, so no gate measures the real-world yield. Not a defect of this story's code (it behaves per contract, and the taxonomy's safety valve is the correct degradation) — but the capability's practical yield is unverified and likely low until an enrichment-request path exists. Flagged by the Blind Hunter review pass on story 13.2's diff (2026-08-09, follow-up review pass).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-2-6: A repo trending in more than one window appears up to 3x in `trending_candidates` (once per `daily`/`weekly`/`monthly` p
+- source_spec: `spec-13-2-tier-classification.md`
+  summary: A repo trending in more than one window appears up to 3x in `trending_candidates` (once per `daily`/`weekly`/`monthly` page), so it is classified and emitted up to 3x in `trending_candidates_classified` — inflating any "how many tier-1 candidates" count and making CAP-3/CAP-5 propose the same package repeatedly.
+  evidence: `datasets/upstream_discovery.py::_do_refresh` loops the 3 period URLs doing `rows.extend(period_rows)` with no dedup, and `_write` validates columns only; `tests/datasets/test_upstream_discovery.py` asserts `set(out["period"]) == {"daily", "weekly", "monthly"}`, confirming the multi-period shape is intended. Originates in CAP-1's dataset (Story 13.1), not in this story's classifier, and cannot be fixed inside the classifier without violating its explicit "every input row produces exactly one output row" invariant — the dedup belongs either in the dataset or in CAP-3's read path. Flagged by the Edge Case Hunter review pass on story 13.2's diff (2026-08-09, follow-up review pass).
+  resolved_by: Story 13.5 (CAP-5, FR-68, 2026-08-10) — `trending_candidates/handoff.py::_select_candidate_row` dedupes a multi-window duplicate to exactly ONE handoff record at the point a candidate actually leaves the dataflow for a human/downstream consumer, via the same deterministic sort `query_trending_candidates` already uses (`stars_total` desc / `repo_full_name` asc / `period` asc, first row wins). This resolves the concrete harm named above (CAP-5 proposing the same package repeatedly) WITHOUT touching CAP-1's dataset or CAP-3's own read path — `query_trending_candidates`/`trending-candidates` still returns every window's row un-deduped by design (`--period all`'s documented purpose is to surface those duplicates), so this is a handoff-time resolution, not a dataset-level or CAP-3-display-level fix. See `tier-taxonomy.md`'s "Downstream handoff (CAP-5)" As-built note.
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-3-1: `query_trending_candidates`'s `with _session.bootstrapped_session(...) as s: catalog = _session.loaded_catalog(s)` is NO
+- source_spec: `spec-13-3-trending-candidates-operator-surface.md`
+  summary: `query_trending_candidates`'s `with _session.bootstrapped_session(...) as s: catalog = _session.loaded_catalog(s)` is NOT guarded against a session-bootstrap-time failure (e.g. a missing/incomplete `conf/local/credentials.yml` — `KeyError` from `CatalogConfigResolver` eagerly resolving every catalog entry's credentials at bootstrap) — only the subsequent `load_with_provenance` call is guarded, against `DatasetError`. A bootstrap failure crashes uncaught: the CLI's broadened `except Exception` (added this same story, patch) turns it into a clean stderr message + exit 1 instead of a raw traceback, but the MCP tool still propagates it raw, and neither degrades to the documented `count: 0` "missing dataset" shape.
+  evidence: Confirmed live during this story's own implementation — a fresh worktree with no `conf/local/credentials.yml` makes ANY real (non-mocked) `bootstrapped_session` call, for ANY dataset, fail with `KeyError: 'bigquery_adc'`. This is a PRE-EXISTING gap in the shared `_session` seam, not introduced by this story: `mcp/tools.py::read_dataset` has the identical unguarded `with _session.bootstrapped_session(...) as s: catalog = _session.loaded_catalog(s)` shape with no try/except around it either, and `query_trending_candidates` deliberately mirrors that exact seam usage (Design Notes: "the exact seam `mcp/tools.py::read_dataset` already uses"). Fixing it here alone would leave `read_dataset`/`list_datasets` inconsistently guarded — a `_session`-seam-wide design decision, not a one-file patch. Flagged by the Edge Case Hunter review pass on story 13.3's diff (2026-08-09, review pass 1).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-3-2: CAP-3's literal success signal in `spec-upstream-discovery/SPEC.md` is "JSON output validates against a documented schem
+- source_spec: `spec-13-3-trending-candidates-operator-surface.md`
+  summary: CAP-3's literal success signal in `spec-upstream-discovery/SPEC.md` is "JSON output validates against a documented schema", but no schema artifact for the `query_trending_candidates` envelope exists anywhere in the repo — and the envelope's own `schema_version` is borrowed from `_provenance.SCHEMA_VERSION` (the PROVENANCE envelope's version), so a breaking change to the candidate payload cannot be signalled to a consumer at all.
+  evidence: A repo-wide search finds the sentence in SPEC.md and no corresponding JSON-Schema/pydantic artifact. The `candidates` array is whatever columns `trending_candidates_classified` happens to carry at read time, so its shape changes silently whenever CAP-2's classifier adds or renames a column — with `schema_version` pinned to an unrelated module's constant, nothing moves when it does. The follow-up review pass DID make the output strictly RFC-8259-valid (the `NaN` leak is fixed and pinned by a `parse_constant`-rejecting test), so "valid JSON" now holds; "validates against a documented schema" still does not. Authoring that schema is a new deliverable beyond this story's Code Map and touches CAP-5's consumer contract, so it belongs to whichever story owns the Mason handoff. Flagged independently by both the Blind Hunter and the Edge Case Hunter on story 13.3's diff (2026-08-09, follow-up review pass).
+  resolved_by: Story 13.5 (CAP-5, FR-68, 2026-08-10) — landed the repo's first documented candidate-envelope schema, `trending_candidates/handoff.py::HANDOFF_ENVELOPE_SCHEMA` (a plain dict, JSON-Schema-draft-2020-12 vocabulary; no new `jsonschema` pixi dependency), versioned independently via `HANDOFF_SCHEMA_VERSION` (an int, deliberately NOT `_provenance.SCHEMA_VERSION` — the exact borrowed-constant gap this entry names). PARTIAL, scoped honestly: this documents the CAP-5 HANDOFF envelope (`hand_off_candidate`'s single-record output), not CAP-3's own `query_trending_candidates` envelope (the `candidates` array's shape) — that surface's `schema_version` is still borrowed from `_provenance.SCHEMA_VERSION`, and its shape still changes silently whenever CAP-2's classifier adds/renames a column. The two envelopes overlap heavily (the handoff record IS a selected `query_trending_candidates` row plus the handoff-specific fields), and this story establishes the schema-artifact PRECEDENT + pattern (a plain dict, hand-rolled structural conformance test, no external validator) a future CAP-3 story can apply directly to close the remaining half.
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-3-3: `build_stamp_newest` is `null` in every real `query_trending_candidates` response, because `provenance.py` populates it 
+- source_spec: `spec-13-3-trending-candidates-operator-surface.md`
+  summary: `build_stamp_newest` is `null` in every real `query_trending_candidates` response, because `provenance.py` populates it only on the `row-fetched-at` code path and `trending_candidates_classified` is a plain `ParquetDataset` (which resolves to `file-mtime`) — so the AD-17 staleness envelope this surface advertises is half-populated by construction, not by circumstance.
+  evidence: Confirmed live — a real `ParquetDataset`-backed query returns `provenance_kind: "file-mtime"`, a correct `build_stamp`, and `build_stamp_newest: null`. This is pre-existing behaviour in the shared `pyforge.atlas.provenance` seam that `mcp/tools.py::read_dataset` has had since AD-17 landed, not something story 13.3 introduced; 13.3 only surfaces the field. The catalog.yml cadence comment and the CLI's new table header both name `build_stamp`/`build_stamp_newest` together, so either provenance should derive a newest-row stamp for file-backed datasets or the pairing should stop being advertised for dataset types that cannot produce it. A `provenance`-seam-wide decision, not a one-file patch in this story. Flagged by the Blind Hunter on story 13.3's diff (2026-08-09, follow-up review pass).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-3-4: The default `--not-on-cf` filter excludes only the exact reason `already-on-conda-forge`, but CAP-2 also emits `unclassi
+- source_spec: `spec-13-3-trending-candidates-operator-surface.md`
+  summary: The default `--not-on-cf` filter excludes only the exact reason `already-on-conda-forge`, but CAP-2 also emits `unclassified-needs-human` for the state "the conda-forge mapping was unusable, so on-cf could NOT be determined" — so a repo that IS on conda-forge can be returned as a not-yet-on-conda-forge candidate whenever `--tier all`/`--tier skip` is used.
+  evidence: Confirmed live — running the real `classify_trending_candidates` with an empty `pypi_conda_mapping` (the fresh-atlas state) classified `psf/requests` as `reason="unclassified-needs-human"`, and `query_trending_candidates(tier="all")` then returned it with `filters.not_on_cf: true`. `nodes.py::_classify_row` returns that reason from `if not mapping_usable:` — i.e. BEFORE the `if on_cf:` branch is even reachable — so the reason genuinely means "unknown", not "not on cf". NOT patched here: the story's `<intent-contract>` states the rule explicitly ("`--not-on-cf` filters out `reason == \"already-on-conda-forge\"` ... ALWAYS derived from `reason`"), so widening the exclusion set is a contract amendment, not a patch. It is also unreachable under the DEFAULT `--tier 1,2` (every `unclassified-needs-human` row is tier `skip`), and both surfaces display the `reason` column, so today's operator sees the ambiguity rather than being misled silently. The exposure becomes real when CAP-5's Mason handoff (Story 13.5) consumes this surface programmatically on `not_on_cf` alone — that story should decide whether "unknown" belongs in a not-on-cf result set. Flagged independently by both the Blind Hunter and the Edge Case Hunter on story 13.3's diff (2026-08-09, second follow-up review pass).
+  resolved_by: Story 13.5 (CAP-5, FR-68, 2026-08-10) — answered the question this entry left open ("that story should decide whether 'unknown' belongs in a not-on-cf result set") by NOT consuming `query_trending_candidates`'s `not_on_cf` filter programmatically at all. `hand_off_candidate` gates eligibility on the candidate row's `tier` directly (`tier in {"1","2"}`), never on a `not_on_cf`/`--not-on-cf` boolean — `_classify_row` (nodes.py) only ever pairs tier `"1"`/`"2"` with a resolved OSI-license reason, so `"already-on-conda-forge"` AND `"unclassified-needs-human"` are BOTH always tier `"skip"` and BOTH excluded by construction. This closes the exposure this entry named at the exact seam it named it against (CAP-5's Mason handoff) without widening `--not-on-cf`'s own reason-based exclusion set inside `query_trending_candidates` — the contract-amendment concern the original finding also flagged as out of scope for a patch. `query_trending_candidates`'s own `--not-on-cf`/`--tier all` combination still has the documented ambiguity for any OTHER programmatic consumer; only CAP-5's handoff path is closed. See `tier-taxonomy.md`'s "Downstream handoff (CAP-5)" As-built note.
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-3-5: Every MCP tool that bootstraps a Kedro session (`read_dataset`, `list_datasets`, and now `query_trending_candidates`) in
+- source_spec: `spec-13-3-trending-candidates-operator-surface.md`
+  summary: Every MCP tool that bootstraps a Kedro session (`read_dataset`, `list_datasets`, and now `query_trending_candidates`) inherits kedro's rich logging handler, which sits on the ROOT logger and writes to STDOUT — the same channel FastMCP's default stdio transport uses for JSON-RPC, so a stdio-launched server would interleave kedro log lines into the protocol stream.
+  evidence: That the handler is on the root logger and writes to stdout was established live during this story (it is exactly why `__main__.py`'s `--json` path needs a process-global `logging.disable` floor at CRITICAL: an INFO-only floor let kedro's own "Credentials not found in your Kedro project config." WARNING print into the envelope and `json.loads(stdout)` fail). The CLI half is fixed and pinned by a test; the MCP half has no equivalent. Marked plausible rather than confirmed: `build_server()` is only a factory and no stdio launcher exists in-repo, so the exposure depends on a deployment that does not exist yet. Pre-existing and seam-wide — `read_dataset`/`list_datasets` have carried it since B3, and it is fixed once at the server-construction seam (redirect root handlers to stderr when serving over stdio), not per tool. Flagged by the Blind Hunter on story 13.3's diff (2026-08-09, second follow-up review pass).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-3-6: `mcp/tools.py::read_dataset` — the seam `query_trending_candidates` was modelled on — returns `result.to_dict(orient="re
+- source_spec: `spec-13-3-trending-candidates-operator-surface.md`
+  summary: `mcp/tools.py::read_dataset` — the seam `query_trending_candidates` was modelled on — returns `result.to_dict(orient="records")` with NO NaN/±inf masking, so every MCP read of a Parquet-backed dataset carrying a null in a numeric column emits the bare, non-RFC-8259 `NaN`/`Infinity` tokens that two separate review passes classed as `high` defects when story 13.3's own path had them.
+  evidence: Confirmed by construction and live — `pd.DataFrame({'a':[1.0,None]}).to_dict(orient='records')` yields `{'a': nan}` and `json.dumps` renders it `{"a": NaN}` (run in the pyforge-atlas env, pandas 3.0.5); `tools.py`'s coercion block duck-types DataFrame/Series/ndarray/set into JSON-native SHAPES but never touches cell VALUES. Nulls in numeric columns are the norm across the atlas catalog, not an edge case. NOT patched here: `read_dataset` is deliberately pandas-free to satisfy the AD-7 no-business-logic AST gate, so the fix belongs either in `provenance.py` (a shared json-safe coercion the whole read surface calls) or in an equivalent duck-typed masking step — a seam-wide decision touching every MCP read tool, not a one-file patch in this story. Pre-existing since B3; 13.3's own surface is already immune (its `query.py` masks both NaN and ±inf and pins it with a `parse_constant`-rejecting round-trip). Flagged during the third follow-up review pass on story 13.3's diff (2026-08-10).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-4-1: `classify_trending_candidates` can only ever reach a tier via a resolved PyPI name, so a genuinely PyPI-less candidate (
+- source_spec: `spec-13-4-fixed-source-audit-track.md`
+  summary: `classify_trending_candidates` can only ever reach a tier via a resolved PyPI name, so a genuinely PyPI-less candidate (a pure Rust/Go CLI, or a C++ library with no Python bindings) can never reach the Tier-2 outcome `tier-taxonomy.md`'s own definition allows for ("Rust/Go CLI, native/compiled" is listed as Tier-2-eligible with no PyPI-published precondition, unlike Tier-1's explicit "PyPI-published AND" requirement) — it permanently classifies as `no-pypi-artifact`/`unclassified-needs-human` instead.
+  evidence: `_classify_row`'s decision tree (Story 13.2) gates every branch on a resolved `pypi_name`; step 1 returns `skip`/`no-pypi-artifact` (or `unclassified-needs-human`) whenever `_resolve_pypi_name` returns `None`, with no path to tier `"2"` from an unresolved name regardless of shape. Two of this story's own nine seeded org-audit candidates (`microsoft/edit`, a Rust CLI; `microsoft/SEAL`, C++/CMake) are plausibly this exact shape. Pre-existing in the Story 13.2 classifier — CAP-4 reuses it unchanged (`<intent-contract>` Never: "No change to classify_trending_candidates's signature, decision tree, helpers") — but newly consequential because a fixed-source org audit is precisely the kind of batch where compiled/no-PyPI candidates are common, unlike the trending feed CAP-2 was originally tuned against. Flagged by the Blind Hunter on story 13.4's diff (2026-08-10, review pass 1).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-4-2: The exact-normalized-repo-segment PyPI-name resolution heuristic (`_resolve_pypi_name`, Story 13.2, already an accepted 
+- source_spec: `spec-13-4-fixed-source-audit-track.md`
+  summary: The exact-normalized-repo-segment PyPI-name resolution heuristic (`_resolve_pypi_name`, Story 13.2, already an accepted v1 limitation) false-negatives whenever a repo's real PyPI package name differs from its own repo name — `org-audit-precedent.md`'s own data demonstrates this directly: `agent-framework-core` is listed as already shipped at audit time under the "Already shipped" bucket, while `microsoft/agent-framework` (the repo this story seeds) sits in "Material gaps" as a distinct, separately-tracked entry.
+  evidence: `_resolve_pypi_name` normalizes only the bare repo segment (`agent-framework`) and exact-matches it against `pypi_universe.pypi_name` — it has no mechanism to associate a repo with a differently-named PyPI package such as `agent-framework-core`. If the real not-yet-packaged PyPI artifact for `microsoft/agent-framework` is named anything other than exactly `agent-framework`, this story's seeded candidate false-negatives to `no-pypi-artifact` regardless of actual packaging readiness. Pre-existing in the Story 13.2 classifier (its own Design Notes already accepted this v1 limitation and explicitly named "Story 13.4 (org-audit, reusing this classifier)" as a story that might need to revisit it); not introduced by this diff, but the first case where the precedent doc's own evidence demonstrates it concretely rather than hypothetically. Flagged by the Blind Hunter on story 13.4's diff (2026-08-10, review pass 1).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-5-1: The two CLI entrypoints now living in `trending_candidates/` enforce incompatible exit-code contracts for the same failu
+- source_spec: `spec-13-5-downstream-handoff-to-mason.md`
+  summary: The two CLI entrypoints now living in `trending_candidates/` enforce incompatible exit-code contracts for the same failure classes — `__main__.py` (Story 13.3, untouched by this diff) maps EVERY failure (a bad filter, `BrokenPipeError`, any other exception) to exit 1 with no distinct "unexpected error" code and no explicit 130 for `KeyboardInterrupt`, while `handoff_main.py` (this story) introduces the NFR-6 0/1/2/130 scheme and specifically maps `BrokenPipeError` to 2 where `__main__.py` maps the identical condition to 1.
+  evidence: Confirmed by direct comparison of the two files' `except` blocks. `handoff_main.py` is the MORE correct of the two against `project-context.md`'s own binding NFR-6 convention ("Exit code 1 = policy fail... 2 = error... 130 = interrupted... never use other exit codes"); `__main__.py` predates that convention's application here and was out of this story's scope to change (Never list: no touches to `query.py`/`__main__.py`'s own filter/exit semantics). A consumer (Mason, or any script) gating uniformly on `pyforge.atlas.trending_candidates`'s CLI exit codes across BOTH entrypoints would get different answers from the two for the same failure class today. Flagged by the Blind Hunter on story 13.5's diff (2026-08-10, review pass 1).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-5-2: `scripts/spec_surface_check.py`'s `--write-baseline` has no structural safeguard against stamping a stale or incomplete 
+- source_spec: `spec-13-5-downstream-handoff-to-mason.md` (repair pass, 2026-08-10)
+  summary: `scripts/spec_surface_check.py`'s `--write-baseline` has no structural safeguard against stamping a stale or incomplete baseline — it hashes working-tree bytes rather than the committed git blob, never asserts every currently-governed file for the target spec is actually captured, never cross-checks that the spec's `.memlog.md` names the files being newly baselined, and (per a multi-owner surface) only refreshes the ONE named `--spec`'s entry even when a file is also governed by another spec's glob — and no test pins any of this. This exact failure class (code committed, baseline never re-stamped because the write happened before the new files were `git add`-ed) is what broke this story's deterministic verification and can recur on any future story.
+  evidence: Reproduced directly on this story: the previous session's `.memlog.md` entry already documented the 3 new files, but `scripts/.spec-surface-baseline.json`'s `pyforge-atlas/spec-pyforge-atlas` entry never captured their hashes, producing 3 hard `[drift]` findings this repair pass had to fix with a bare re-run of `--write-baseline --spec pyforge-atlas/spec-pyforge-atlas`. Flagged independently by both the Blind Hunter and the Edge Case Hunter reviewing this repair pass's diff (2026-08-10) — Blind Hunter: "the root cause... has no structural preventer... nothing... stops the identical failure from recurring on the very next story"; Edge Case Hunter: sha1 should read `git show HEAD:<path>` not working-tree bytes, and the write path never checks the memlog names the files it is about to baseline. Both empirically checked and NOT live today (a full pre-fix run showed exactly the 3 expected findings and nothing else; a full post-fix run showed 0 findings across all 54 specs) — this defers the missing guardrail, not a live defect.
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-5-3: `scripts/spec_surface_check.py --write-baseline` does an unlocked read-modify-write of `scripts/.spec-surface-baseline.j
+- source_spec: `spec-13-5-downstream-handoff-to-mason.md` (repair pass, 2026-08-10)
+  summary: `scripts/spec_surface_check.py --write-baseline` does an unlocked read-modify-write of `scripts/.spec-surface-baseline.json` — two concurrent invocations for different `--spec` targets (plausible under this repo's own documented parallel-BMAD-agent pattern) can race, and the second writer's read (based on the pre-first-writer file) silently drops the first writer's just-stamped entry.
+  evidence: `main()`'s `--write-baseline` path (`scripts/spec_surface_check.py` merge block) reads `BASELINE.read_text()` into `merged`, mutates only `args.spec`'s key(s), then does one `BASELINE.write_text(...)` with no file lock or compare-and-swap — a classic last-writer-wins race. Flagged by the Edge Case Hunter reviewing this repair pass's diff (2026-08-10). Not exercised by this repair (single sequential invocation) but plausible given `CLAUDE.md`'s own documented incidents of concurrent BMAD/loop agents mutating shared per-worktree state (e.g. the 2026-07-25 `bmad-switch` symlink race).
+
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (previously un-headed / no id there, bmad-dev-auto step-04 defer append) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-10-5-9: Follow-up review still recommended for 10-5-stamp-advisory-data-with-its-build-provenance after the damping cap was spent
+  origin: review-budget-followup
+  source_spec: `spec-10-5-stamp-advisory-data-with-its-build-provenance-2.md`
+  severity: low
+  reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260728-201438-15bd; this entry preserves the lingering recommendation for a deliberate later review.
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-1` there, review-budget-followup) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-10-6-4: Follow-up review still recommended for 10-6-make-run-admission-real-or-stop-claiming-it after the damping cap was spent
+  origin: review-budget-followup
+  source_spec: `spec-10-6-make-run-admission-real-or-stop-claiming-it.md`
+  severity: low
+  reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260729-112237-3139; this entry preserves the lingering recommendation for a deliberate later review.
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-2` there, review-budget-followup) during the pre-shutdown deferred-work audit, pass 2.
+
+### DW-13-3-7: Follow-up review still recommended for 13-3-trending-candidates-operator-surface after the damping cap was spent
+  origin: review-budget-followup
+  source_spec: `spec-13-3-trending-candidates-operator-surface.md`
+  severity: low
+  reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260809-184330-203b; this entry preserves the lingering recommendation for a deliberate later review.
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-3` there, review-budget-followup) during the pre-shutdown deferred-work audit, pass 2.

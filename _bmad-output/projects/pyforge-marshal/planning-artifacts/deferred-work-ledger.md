@@ -1041,3 +1041,13 @@ status: open
   evidence: Raised by this story's review pass (Blind Hunter). Verified by reading `build.py`: `build_plan` and `write_plan` are two entirely independent, composable functions with no call-order relationship to each other or to whatever future code materializes a target repo's `.gitignore` -- this story never writes to a target repo at all (Never list: "No apply integration"). The self-referential fragility is real but only reachable once a LATER story (Epic 10's `apply`, or whichever `seed/verbs/` story first sequences `init`/`adopt`) starts calling `write_plan` against a real target repo; nothing in Story 9.6's own test suite triggers it, since none of `build_plan`'s tests call `write_plan` against a repo that also has a real `.gitignore` file. Not fixed here: the correct fix is a write-order guarantee ("materialize `.gitignore`'s `model-ignores` region before writing `plan.json`, or write `plan.json` outside the target repo's own tree entirely") that belongs to whichever future story actually sequences those writes -- outside this story's Surface (`plan/types.py`, `plan/build.py`) and explicitly outside its Never list's "no apply integration" boundary.
   status: open
   promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-9-6-2` there) during the pre-shutdown deferred-work audit.
+
+
+### DW-4-14-1: Follow-up review still recommended for 4-14-the-failed-story-safety-net-is-reported after the damping cap was spent
+  origin: review-budget-followup
+  source_spec: `spec-4-14-the-failed-story-safety-net-is-reported.md`
+  severity: low
+  reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260809-231524-abb9; this entry preserves the lingering recommendation for a deliberate later review.
+  status: open
+
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-8` there, review-budget-followup) during the pre-shutdown deferred-work audit, pass 2.
