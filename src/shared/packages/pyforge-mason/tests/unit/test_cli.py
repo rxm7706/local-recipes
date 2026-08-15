@@ -149,14 +149,16 @@ from pyforge.mason.engines import EngineStatus
 from pyforge.mason.cfe import ImportFloorResult
 from pyforge.mason.errors import (
     CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError, EngineAbsentError,
-    EnvironmentLockTimeoutError, InvalidShipTargetError, MasonError,
-    PackageVersionMismatchError, RecipeGenerationError,
+    EnvironmentCheckTimeoutError, EnvironmentLockfileMalformedError,
+    EnvironmentLockfileMissingError, EnvironmentLockTimeoutError, InvalidShipTargetError,
+    MasonError, PackageVersionMismatchError, RecipeGenerationError,
 )
 from pyforge.mason.exit_codes import (
     EXIT_CFE_UNAVAILABLE, EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
 )
 from pyforge.mason.models import (
-    BuildResult, CfeResult, LockResult, PackageBuildResult, ShipState, ShipTargetResult,
+    BuildResult, CfeResult, CheckResult, LockResult, PackageBuildResult, ShipState,
+    ShipTargetResult,
 )
 
 _FIXED_REPORT = DoctorReport(
@@ -3303,3 +3305,273 @@ def test_environment_lock_timeout_error_projects_to_exit_failed(capsys):
     assert rc == EXIT_FAILED
     err = capsys.readouterr().err
     assert "600" in err
+
+
+# --- Story 4.4: `environment check` verb dispatch -----------------------------
+
+_FIXED_CHECK_RESULT_CURRENT = CheckResult(
+    lockfile_path="lock.yml",
+    manifest_paths=("environment.yml",),
+    platforms=(),
+    stale=False,
+    engine_name="conda-lock",
+    engine_version="4.0.2",
+    returncode=0,
+    stdout="",
+)
+
+_FIXED_CHECK_RESULT_STALE = CheckResult(
+    lockfile_path="lock.yml",
+    manifest_paths=("environment.yml",),
+    platforms=(),
+    stale=True,
+    engine_name="conda-lock",
+    engine_version="4.0.2",
+    returncode=0,
+    stdout="",
+)
+
+_FIXED_CHECK_RESULT_WITH_PLATFORMS = CheckResult(
+    lockfile_path="lock.yml",
+    manifest_paths=("environment.yml",),
+    platforms=("linux-64", "osx-arm64"),
+    stale=False,
+    engine_name="conda-lock",
+    engine_version="4.0.2",
+    returncode=0,
+    stdout="",
+)
+
+
+def test_environment_check_help_works(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["environment", "check", "--help"])
+    assert exc.value.code == 0
+    assert "check" in capsys.readouterr().out
+
+
+def test_environment_check_happy_path_current_text_mode_returns_exit_ok(capsys):
+    with patch(
+        "pyforge.mason.cli.environment.check", return_value=_FIXED_CHECK_RESULT_CURRENT,
+    ) as mock_check:
+        rc = main(["environment", "check", "environment.yml", "-l", "lock.yml"])
+
+    assert rc == EXIT_OK
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert "environment check: ok" in out.out
+    assert "stale: False" in out.out
+
+    mock_check.assert_called_once()
+    args, kwargs = mock_check.call_args
+    assert args[0] == "lock.yml"
+    assert args[1] == ["environment.yml"]
+    assert kwargs["platforms"] is None
+
+
+def test_environment_check_happy_path_current_json_mode(capsys):
+    with patch(
+        "pyforge.mason.cli.environment.check", return_value=_FIXED_CHECK_RESULT_CURRENT,
+    ):
+        rc = main(
+            ["environment", "check", "environment.yml", "-l", "lock.yml", "--format", "json"],
+        )
+    assert rc == EXIT_OK
+
+    out = capsys.readouterr()
+    assert out.err == ""
+    doc = json.loads(out.out)
+    assert doc["command"] == "environment check"
+    assert doc["status"] == "ok"
+    assert doc["errors"] == []
+    assert doc["data"] == _json_roundtripped(_FIXED_CHECK_RESULT_CURRENT)
+
+
+def test_environment_check_stale_result_returns_exit_failed_text_mode(capsys):
+    """A stale verdict is DATA, never raised (AD-4) -- the process exit code
+    projects it (spec Intent, mirrors `recipe validate`'s own pass/fail ->
+    exit code precedent), but the JSON envelope's own `status` stays "ok"."""
+    with patch(
+        "pyforge.mason.cli.environment.check", return_value=_FIXED_CHECK_RESULT_STALE,
+    ):
+        rc = main(["environment", "check", "environment.yml", "-l", "lock.yml"])
+
+    assert rc == EXIT_FAILED
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert "environment check: ok" in out.out
+    assert "stale: True" in out.out
+
+
+def test_environment_check_stale_result_returns_exit_failed_json_mode(capsys):
+    with patch(
+        "pyforge.mason.cli.environment.check", return_value=_FIXED_CHECK_RESULT_STALE,
+    ):
+        rc = main(
+            ["environment", "check", "environment.yml", "-l", "lock.yml", "--format", "json"],
+        )
+
+    assert rc == EXIT_FAILED
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["status"] == "ok"
+    assert doc["data"]["stale"] is True
+
+
+def test_environment_check_passes_platform_flag_through_unparsed(capsys):
+    with patch(
+        "pyforge.mason.cli.environment.check", return_value=_FIXED_CHECK_RESULT_CURRENT,
+    ) as mock_check:
+        main(
+            ["environment", "check", "environment.yml", "-l", "lock.yml",
+             "--platform", "linux-64,osx-arm64"],
+        )
+
+    assert mock_check.call_args.kwargs["platforms"] == "linux-64,osx-arm64"
+
+
+def test_environment_check_renders_populated_platforms(capsys):
+    with patch(
+        "pyforge.mason.cli.environment.check",
+        return_value=_FIXED_CHECK_RESULT_WITH_PLATFORMS,
+    ):
+        rc = main(
+            ["environment", "check", "environment.yml", "-l", "lock.yml", "--format", "json"],
+        )
+    assert rc == EXIT_OK
+
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["data"] == _json_roundtripped(_FIXED_CHECK_RESULT_WITH_PLATFORMS)
+    assert doc["data"]["platforms"] == ["linux-64", "osx-arm64"]
+
+
+def test_environment_check_missing_manifest_path_is_a_usage_error(capsys):
+    with patch("pyforge.mason.cli.environment.check") as mock_check:
+        rc = main(["environment", "check", "-l", "lock.yml"])
+
+    assert rc == EXIT_USAGE
+    err = capsys.readouterr().err
+    assert "MANIFEST_PATH" in err
+    mock_check.assert_not_called()
+
+
+def test_environment_check_missing_lockfile_flag_is_a_usage_error(capsys):
+    with patch("pyforge.mason.cli.environment.check") as mock_check:
+        rc = main(["environment", "check", "environment.yml"])
+
+    assert rc == EXIT_USAGE
+    err = capsys.readouterr().err
+    assert "--lockfile" in err
+    mock_check.assert_not_called()
+
+
+def test_environment_check_lockfile_missing_error_projects_to_exit_failed(capsys):
+    with patch(
+        "pyforge.mason.cli.environment.check",
+        side_effect=EnvironmentLockfileMissingError("lock.yml"),
+    ):
+        rc = main(["environment", "check", "environment.yml", "-l", "lock.yml"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert "lock.yml" in err
+
+
+def test_environment_check_engine_absent_error_projects_to_exit_failed(capsys):
+    with patch(
+        "pyforge.mason.cli.environment.check",
+        side_effect=EngineAbsentError(name="conda-lock", conda_package="conda-lock"),
+    ):
+        rc = main(["environment", "check", "environment.yml", "-l", "lock.yml"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert "conda-lock" in err
+
+
+def test_environment_check_timeout_error_projects_to_exit_failed(capsys):
+    with patch(
+        "pyforge.mason.cli.environment.check",
+        side_effect=EnvironmentCheckTimeoutError(timeout=600.0),
+    ):
+        rc = main(["environment", "check", "environment.yml", "-l", "lock.yml"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert "600" in err
+
+
+def test_environment_check_lockfile_malformed_error_projects_to_exit_failed(capsys):
+    with patch(
+        "pyforge.mason.cli.environment.check",
+        side_effect=EnvironmentLockfileMalformedError("lock.yml", "'metadata'"),
+    ):
+        rc = main(["environment", "check", "environment.yml", "-l", "lock.yml"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert "lock.yml" in err
+
+
+def test_environment_check_nonzero_returncode_projects_to_exit_failed_even_when_not_stale(
+    capsys,
+):
+    """Review pass, 2026-08-15: a genuine `conda-lock` failure (bad
+    manifest, solver crash, network error) that leaves the temp copy
+    unrewritten reports `stale=False` (the before/after hash comparison
+    trivially holds) -- `cli.py`'s dispatch must still fail the process on a
+    non-zero `returncode`, or a CI gate would silently green-light on its
+    own internal failure."""
+    failed_but_not_stale = CheckResult(
+        lockfile_path="lock.yml",
+        manifest_paths=("environment.yml",),
+        platforms=(),
+        stale=False,
+        engine_name="conda-lock",
+        engine_version="4.0.2",
+        returncode=1,
+        stdout="solver crashed\n",
+    )
+    with patch(
+        "pyforge.mason.cli.environment.check", return_value=failed_but_not_stale,
+    ):
+        rc = main(["environment", "check", "environment.yml", "-l", "lock.yml"])
+
+    assert rc == EXIT_FAILED
+    out = capsys.readouterr()
+    assert out.err == ""
+    # The JSON envelope's own status still stays "ok" (spec I/O matrix) --
+    # only the process exit code reflects the failure.
+    assert "environment check: ok" in out.out
+    assert "returncode: 1" in out.out
+
+
+def test_environment_check_stale_and_nonzero_returncode_together_still_exit_failed(
+    capsys,
+):
+    """Repair pass, 2026-08-15 (S-13.7 verification repair): the two prior
+    `returncode`-aware tests each cover one signal in isolation (stale alone,
+    or a failed check alone) -- neither exercises them together, e.g. a
+    child that partially rewrites the temp copy's hash before crashing.
+    `cli.py`'s `not result.stale and result.returncode == 0` dispatch
+    condition already handles this by inspection; this pins it."""
+    stale_and_failed = CheckResult(
+        lockfile_path="lock.yml",
+        manifest_paths=("environment.yml",),
+        platforms=(),
+        stale=True,
+        engine_name="conda-lock",
+        engine_version="4.0.2",
+        returncode=1,
+        stdout="solver crashed\n",
+    )
+    with patch(
+        "pyforge.mason.cli.environment.check", return_value=stale_and_failed,
+    ):
+        rc = main(
+            ["environment", "check", "environment.yml", "-l", "lock.yml", "--format", "json"],
+        )
+
+    assert rc == EXIT_FAILED
+    doc = json.loads(capsys.readouterr().out)
+    assert doc["data"]["stale"] is True
+    assert doc["data"]["returncode"] == 1

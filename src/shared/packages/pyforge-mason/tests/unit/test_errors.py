@@ -57,8 +57,9 @@ import pytest
 
 from pyforge.mason.errors import (
     CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError,
-    EngineAbsentError, EnvironmentLockTimeoutError, InvalidShipTargetError, MasonError,
-    PackageBuildTimeoutError, PackageProjectPathError, PackageVersionMismatchError,
+    EngineAbsentError, EnvironmentCheckTimeoutError, EnvironmentLockfileMalformedError,
+    EnvironmentLockfileMissingError, EnvironmentLockTimeoutError, InvalidShipTargetError,
+    MasonError, PackageBuildTimeoutError, PackageProjectPathError, PackageVersionMismatchError,
     ShipChannelCredentialMissingError, ShipChannelUploadTimeoutError,
     ShipCondaForgeRecipeLocationError, ShipCondaForgeRecipeMissingError,
     ShipCredentialMissingError, ShipUploadTimeoutError,
@@ -1146,6 +1147,185 @@ def test_environment_lock_timeout_error_survives_pickle_round_trip():
     original = EnvironmentLockTimeoutError(timeout=600.0)
     clone = pickle.loads(pickle.dumps(original))
     assert isinstance(clone, EnvironmentLockTimeoutError)
+    assert clone.timeout == original.timeout
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+# --- Story 4.4: EnvironmentLockfileMissingError -------------------------------
+
+def test_environment_lockfile_missing_error_identifier():
+    exc = EnvironmentLockfileMissingError("/no/such/lock.yml")
+    assert exc.identifier == "environment:lockfile-missing"
+
+
+def test_environment_lockfile_missing_error_stores_attributes():
+    exc = EnvironmentLockfileMissingError("/no/such/lock.yml")
+    assert exc.lockfile_path == "/no/such/lock.yml"
+
+
+def test_environment_lockfile_missing_error_message_names_the_path():
+    exc = EnvironmentLockfileMissingError("/no/such/lock.yml")
+    assert "/no/such/lock.yml" in str(exc)
+
+
+def test_environment_lockfile_missing_error_is_a_mason_error():
+    assert issubclass(EnvironmentLockfileMissingError, MasonError)
+    with pytest.raises(MasonError):
+        raise EnvironmentLockfileMissingError("/no/such/lock.yml")
+
+
+def test_environment_lockfile_missing_error_str_format_is_identifier_colon_space_message():
+    exc = EnvironmentLockfileMissingError("/no/such/lock.yml")
+    assert str(exc) == f"{exc.identifier}: {exc.message}"
+
+
+def test_environment_lockfile_missing_error_accepts_an_empty_path():
+    """Review pass, 2026-08-15: unlike most sibling classes, an empty
+    `lockfile_path` is a real, reachable CLI input (`--lockfile ""`), not a
+    caller bug -- construction must not raise so this class's own clean
+    diagnostic reaches `main()`'s `except MasonError` handler."""
+    exc = EnvironmentLockfileMissingError("")
+    assert exc.lockfile_path == ""
+    assert "no --lockfile path was given" in str(exc)
+
+
+def test_environment_lockfile_missing_error_names_a_whitespace_only_path():
+    """Review pass, 2026-08-15 second: the empty-path branch keyed on
+    `.strip()`, so `--lockfile "   "` -- a path the user really did supply --
+    was told "no --lockfile path was given". Only the genuinely empty string
+    takes that branch."""
+    exc = EnvironmentLockfileMissingError("   ")
+    assert exc.lockfile_path == "   "
+    assert "does not exist or is not a file" in str(exc)
+    assert "no --lockfile path was given" not in str(exc)
+
+
+def test_environment_lockfile_missing_error_rejects_a_non_str_path():
+    with pytest.raises(TypeError):
+        EnvironmentLockfileMissingError(None)
+
+
+def test_environment_lockfile_missing_error_survives_deepcopy():
+    original = EnvironmentLockfileMissingError("/no/such/lock.yml")
+    clone = copy.deepcopy(original)
+    assert isinstance(clone, EnvironmentLockfileMissingError)
+    assert clone.lockfile_path == original.lockfile_path
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+def test_environment_lockfile_missing_error_survives_pickle_round_trip():
+    original = EnvironmentLockfileMissingError("/no/such/lock.yml")
+    clone = pickle.loads(pickle.dumps(original))
+    assert isinstance(clone, EnvironmentLockfileMissingError)
+    assert clone.lockfile_path == original.lockfile_path
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+# --- Story 4.4 (review pass, 2026-08-15): EnvironmentLockfileMalformedError ---
+
+def test_environment_lockfile_malformed_error_identifier():
+    exc = EnvironmentLockfileMalformedError("lock.yml", "'metadata'")
+    assert exc.identifier == "environment:lockfile-malformed"
+
+
+def test_environment_lockfile_malformed_error_stores_attributes():
+    exc = EnvironmentLockfileMalformedError("lock.yml", "'metadata'")
+    assert exc.lockfile_path == "lock.yml"
+    assert exc.reason == "'metadata'"
+
+
+def test_environment_lockfile_malformed_error_message_names_the_path_and_reason():
+    exc = EnvironmentLockfileMalformedError("lock.yml", "'metadata'")
+    message = str(exc)
+    assert "lock.yml" in message
+    assert "'metadata'" in message
+
+
+def test_environment_lockfile_malformed_error_is_a_mason_error():
+    assert issubclass(EnvironmentLockfileMalformedError, MasonError)
+    with pytest.raises(MasonError):
+        raise EnvironmentLockfileMalformedError("lock.yml", "boom")
+
+
+def test_environment_lockfile_malformed_error_str_format_is_identifier_colon_space_message():
+    exc = EnvironmentLockfileMalformedError("lock.yml", "boom")
+    assert str(exc) == f"{exc.identifier}: {exc.message}"
+
+
+def test_environment_lockfile_malformed_error_rejects_empty_lockfile_path():
+    with pytest.raises(ValueError):
+        EnvironmentLockfileMalformedError("", "boom")
+
+
+def test_environment_lockfile_malformed_error_rejects_empty_reason():
+    with pytest.raises(ValueError):
+        EnvironmentLockfileMalformedError("lock.yml", "")
+
+
+def test_environment_lockfile_malformed_error_survives_deepcopy():
+    original = EnvironmentLockfileMalformedError("lock.yml", "boom")
+    clone = copy.deepcopy(original)
+    assert isinstance(clone, EnvironmentLockfileMalformedError)
+    assert clone.lockfile_path == original.lockfile_path
+    assert clone.reason == original.reason
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+def test_environment_lockfile_malformed_error_survives_pickle_round_trip():
+    original = EnvironmentLockfileMalformedError("lock.yml", "boom")
+    clone = pickle.loads(pickle.dumps(original))
+    assert isinstance(clone, EnvironmentLockfileMalformedError)
+    assert clone.lockfile_path == original.lockfile_path
+    assert clone.reason == original.reason
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+# --- Story 4.4: EnvironmentCheckTimeoutError ----------------------------------
+
+def test_environment_check_timeout_error_identifier():
+    exc = EnvironmentCheckTimeoutError(timeout=600.0)
+    assert exc.identifier == "environment:check-timeout"
+
+
+def test_environment_check_timeout_error_stores_attributes():
+    exc = EnvironmentCheckTimeoutError(timeout=600.0)
+    assert exc.timeout == 600.0
+
+
+def test_environment_check_timeout_error_message_names_the_timeout_value():
+    exc = EnvironmentCheckTimeoutError(timeout=600.0)
+    assert "600.0" in str(exc)
+
+
+def test_environment_check_timeout_error_is_a_mason_error():
+    assert issubclass(EnvironmentCheckTimeoutError, MasonError)
+    with pytest.raises(MasonError):
+        raise EnvironmentCheckTimeoutError(timeout=600.0)
+
+
+def test_environment_check_timeout_error_str_format_is_identifier_colon_space_message():
+    exc = EnvironmentCheckTimeoutError(timeout=45.5)
+    assert str(exc) == f"{exc.identifier}: {exc.message}"
+
+
+def test_environment_check_timeout_error_survives_deepcopy():
+    original = EnvironmentCheckTimeoutError(timeout=600.0)
+    clone = copy.deepcopy(original)
+    assert isinstance(clone, EnvironmentCheckTimeoutError)
+    assert clone.timeout == original.timeout
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+def test_environment_check_timeout_error_survives_pickle_round_trip():
+    original = EnvironmentCheckTimeoutError(timeout=600.0)
+    clone = pickle.loads(pickle.dumps(original))
+    assert isinstance(clone, EnvironmentCheckTimeoutError)
     assert clone.timeout == original.timeout
     assert clone.identifier == original.identifier
     assert clone.message == original.message
