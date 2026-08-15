@@ -2157,9 +2157,9 @@
  "pyforge-marshal/spec-bmad-loop-baseline-drift": {
   "files": {
    "docs/dreams/bmad-loop-baseline-drift.md": "56f5ee0420aecca7acc42b5437b92cab563fddf7",
-   "pixi.toml": "0f9455fd5fd81f4314f49f35d680edc7d0349ddb"
+   "pixi.toml": "d10e69829cb8e026bb9755bec7df97fb3dd6a8e9"
   },
-  "memlog": "789c8a2817ce1654ac57391dc3faa931e42edb75"
+  "memlog": "7f1b59d2dc13c12ba4ab12c8f7425390405e1eea"
  },
  "pyforge-marshal/spec-bmad-loop-forward-dependency-blindness": {
   "files": {
