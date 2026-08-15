@@ -171,6 +171,15 @@ def extract_story_key_from_github_merge_subject(
     station) -- or the subject is treated as NOT belonging to this project,
     same as any other non-matching subject.
 
+    An empty ``station`` (``project_slug`` is ``""`` or exactly
+    ``"pyforge-"``) is ALSO treated as never-matching (review finding,
+    2026-08-15) rather than degrading to ``branch.startswith("/")`` -- an
+    empty prefix would otherwise accept a branch with an empty leading
+    segment (e.g. a subject containing ``"//4-2-evil"``), reopening a
+    narrow version of the exact collision this scoping exists to close.
+    No real project in this factory has an empty short name, so this is a
+    defensive floor, not a live case.
+
     Returns ``None`` -- never raises -- for any failure mode: the subject
     doesn't match the GitHub shape at all, the branch's leading segment
     doesn't belong to ``project_slug``, or the extracted segment's leading
@@ -187,7 +196,7 @@ def extract_story_key_from_github_merge_subject(
         return None
     branch = match.group("branch")
     station = project_slug.removeprefix("pyforge-")
-    if not branch.startswith(f"{station}/"):
+    if not station or not branch.startswith(f"{station}/"):
         return None
     segment = branch.rsplit("/", 1)[-1]
     try:

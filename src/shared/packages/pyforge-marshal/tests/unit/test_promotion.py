@@ -111,6 +111,17 @@ def test_github_pattern_still_recognizes_the_owning_projects_own_key():
     ) == StoryKey(4, 2)
 
 
+def test_github_pattern_rejects_an_empty_station_rather_than_matching_any_branch():
+    """Edge Case Hunter finding (2026-08-15): an empty station (project_slug
+    `""` or exactly `"pyforge-"`) must never degrade to `branch.startswith("/")`
+    -- a subject with an empty leading branch segment (double slash) would
+    otherwise pass, reopening a narrow version of the collision this
+    scoping exists to close."""
+    evil_subject = "Merge pull request #1 from a//4-2-evil"
+    assert extract_story_key_from_github_merge_subject(evil_subject, "") is None
+    assert extract_story_key_from_github_merge_subject(evil_subject, "pyforge-") is None
+
+
 def test_github_pattern_rejects_an_unrelated_branch_for_any_project():
     """A routine dependency-bump branch with no story association at all
     (PR #441) must never resolve to a key for ANY project."""
