@@ -907,6 +907,27 @@ a manufactured collision fixture (duplicate id **or** duplicate summary-text) ab
 with **no partial output** — mutation-tested, because a partial write is how the by-hand pass
 corrupted content twice (CAP-6). **Deps:** S-8.2.
 
+**Status:** done
+
+**Outcome (2026-08-15).** `scripts/deferred_work_promote.py --fix` (new, standalone -- Doctor's
+own package stays read-only) promotes Story 8.1's classified orphans via Story 8.2's minting,
+writing once in memory after full validation, mirroring `spec_surface_check.py`'s pattern.
+Adversarial review found real risks before this ever touched live data: a reproduced
+concurrent-write data-loss race (now a loud abort, via a re-read-and-compare check
+immediately before the write); a content-fidelity bug, live-confirmed on 13 real orphans, that
+dropped a `resolution:` field and force-overwrote an orphan's own `status:` (now preserved
+verbatim); a crash-safety gap (`write_text` truncation, now `tempfile`+`os.replace`, matching
+`seed_claude_consent.py`'s in-repo precedent); and an uncaught-exception path that crashed the
+whole multi-project run instead of isolating one project's failure. **Correction to this
+story's own AC:** `tier3-entry-unidentified` does not fully clear from `--fix` alone -- that
+finding is baseline-count-driven and needs Story 8.4's re-stamp too (see the spec's Design
+Notes); `tier3-only-deferral` is what clears per newly-promoted id. Live backlog counts were
+also stale in the epics.md text (72 total quoted vs. 300+ found live via `classify_tier3_entries`
+today) -- noted, not corrected here, since re-measuring the fleet-wide count is not this
+story's job. The script has not yet been run for real against the live fleet backlog (only
+tmp copies during development) -- that first real run is deliberately out of this story's own
+scope.
+
 ### Story 8.4: The baseline re-stamps so a second run is a no-op
 **Given** a completed `--fix` run **When** the grandfather baseline
 (`scripts/.deferred-work-baseline.json`, CAP-3's own mechanism) is re-stamped **Then**
