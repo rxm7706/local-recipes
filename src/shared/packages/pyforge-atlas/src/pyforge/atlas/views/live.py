@@ -14,11 +14,10 @@ so this module stays reusable behind any future mounting layer.
 
 from __future__ import annotations
 
-from typing import Any
-
 from bokeh.application import Application
 from bokeh.application.handlers.function import FunctionHandler
 from bokeh.server.server import Server
+from tornado.ioloop import IOLoop
 
 from .registry import STATIC_VIEWS, View
 from .widgets import get_widget
@@ -53,7 +52,7 @@ def build_live_server(
     *,
     port: int = 0,
     allow_websocket_origin: list[str] | None = None,
-    io_loop: Any = None,
+    io_loop: IOLoop | None = None,
 ) -> Server:
     """Build a ``bokeh.server.server.Server`` serving one ``Application`` per ``views`` entry,
     each mounted at ``/<view.name>`` (mirroring the ASGI layer's ``/live/{view_name}`` ->

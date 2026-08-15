@@ -217,6 +217,25 @@ def test_db_unavailable_at_load_propagates_not_swallowed(tmp_path, monkeypatch):
         application.create_document()
 
 
+def test_maintainer_filter_is_case_insensitive(atlas_db_path, monkeypatch):
+    """Regression (review pass 2): conftest.py documents the maintainer join as
+    LOWER(m.handle) = LOWER(?), but every other test in this file filters with the exact
+    stored case ("alice"). Proves the live filter's case-insensitivity actually holds at this
+    layer, not just in the join's SQL text."""
+    view = get_view("staleness-report")
+    _loaded_module(view, atlas_db_path, monkeypatch)
+
+    doc = build_application(view).create_document()
+    table = _select_one(doc, DataTable)
+    maintainer_input = _select_one(doc, TextInput)
+
+    maintainer_input.value = "ALICE"
+    assert table.source.data["conda_name"] == ["alpha-pkg"]
+
+    maintainer_input.value = "AliCe"
+    assert table.source.data["conda_name"] == ["alpha-pkg"]
+
+
 def test_asgi_unknown_view_returns_404_not_a_raw_traceback():
     """UNKNOWN_LIVE_VIEW: GET /live/{unregistered name} on the real ASGI app translates
     registry.py::get_view's KeyError into a plain 404 -- never a raw traceback / 500."""
