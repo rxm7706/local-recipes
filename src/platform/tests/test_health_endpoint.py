@@ -67,4 +67,6 @@ def test_home_page_does_not_shadow_the_health_route() -> None:
     # `reverse("home")` would keep returning "/" while `/ht/` was being
     # routed somewhere else entirely, so it proves nothing about the pair.
     assert reverse("home") == "/"
-    assert resolve("/ht/").func.view_class is HealthCheckView
+    # `view_class` is attached dynamically by `View.as_view()`'s closure, not
+    # declared on the `Callable` django-stubs types `ResolverMatch.func` as.
+    assert resolve("/ht/").func.view_class is HealthCheckView  # type: ignore[attr-defined]
