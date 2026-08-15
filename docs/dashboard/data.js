@@ -4445,7 +4445,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-15 14:28 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-15 14:56 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4974,6 +4974,16 @@ window.DASHBOARD_DATA = {
       "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-land-merge-subject"
+      }
+    },
+    {
+      "slug": "marshal-status-harness-run-id-poisoning",
+      "title": "A spin-time poll timeout never permanently blinds marshal status to a healthy run",
+      "status": "dreamt",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-status-harness-run-id-poisoning"
       }
     },
     {
@@ -5880,6 +5890,16 @@ window.DASHBOARD_DATA = {
       "updated": "2026-08-14",
       "dream": "marshal-land-merge-subject",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-land-merge-subject"
+    },
+    {
+      "slug": "marshal-status-harness-run-id-poisoning",
+      "project": "pyforge-marshal",
+      "title": "A spin-time poll timeout never permanently blinds marshal status to a healthy run",
+      "caps": 2,
+      "companions": 0,
+      "updated": "",
+      "dream": "marshal-status-harness-run-id-poisoning",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-status-harness-run-id-poisoning"
     },
     {
       "slug": "multi-loop-isolation",
@@ -7041,9 +7061,9 @@ window.DASHBOARD_DATA = {
       "retro": null
     },
     "sound": 0,
-    "live": 68,
+    "live": 69,
     "reached": 8,
-    "gaps": 83,
+    "gaps": 85,
     "findings": 24,
     "rows": [
       {
@@ -12772,7 +12792,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-14",
           "deck": "",
-          "spec": "2026-08-14",
+          "spec": "2026-08-15T09:54",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -13486,6 +13506,113 @@ window.DASHBOARD_DATA = {
         "version": "",
         "progress": "",
         "complete": 2,
+        "of": 3
+      },
+      {
+        "label": "marshal-status-harness-run-id-poisoning",
+        "slug": "marshal-status-harness-run-id-poisoning",
+        "project": "pyforge-marshal",
+        "dream": "marshal-status-harness-run-id-poisoning",
+        "owner": "marshal",
+        "stages": {
+          "dream": "",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "",
+          "deck": "",
+          "spec": "2026-08-15T09:34",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "marshal-status-harness-run-id-poisoning",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "dream",
+          "ux"
+        ],
+        "required": [
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-15",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 1,
         "of": 3
       },
       {
@@ -18442,6 +18569,16 @@ window.DASHBOARD_DATA = {
         "chain": {}
       },
       {
+        "slug": "marshal-status-harness-run-id-poisoning",
+        "title": "A spin-time poll timeout never permanently blinds marshal status to a healthy run",
+        "status": "dreamt",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-status-harness-run-id-poisoning"
+        }
+      },
+      {
         "slug": "miniforge-installer",
         "title": "A custom-branded Python distributable, if this repo ever needs one",
         "status": "dreamt",
@@ -18509,7 +18646,7 @@ window.DASHBOARD_DATA = {
     "blocked": 0,
     "byOwner": {
       "steward": 3,
-      "marshal": 2,
+      "marshal": 3,
       "atlas": 1,
       "mason": 3,
       "warden": 1,
@@ -18656,9 +18793,9 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "marshal",
-        "total": 37,
+        "total": 38,
         "counts": {
-          "dreamt": 2,
+          "dreamt": 3,
           "pitched": 0,
           "specified": 4,
           "realized": 12,
@@ -18666,7 +18803,7 @@ window.DASHBOARD_DATA = {
           "practice": 4
         },
         "line": "paused 8.5",
-        "load": 2,
+        "load": 3,
         "blocked": 0,
         "dreams": [
           {
@@ -18791,6 +18928,13 @@ window.DASHBOARD_DATA = {
           {
             "slug": "dashboard-velocity-captures-hand-driven-work",
             "title": "Dashboard velocity counts every story's real effort, not just bmad-loop-journaled ones",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "marshal-status-harness-run-id-poisoning",
+            "title": "A spin-time poll timeout never permanently blinds marshal status to a healthy run",
             "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
@@ -22799,8 +22943,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor: land Story 9.1 -- sprint ledger, dashboard, epics outcome, spec promotion"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-15 14:28 UTC",
-    "generatedEpoch": 1786804138
+    "generatedAt": "2026-08-15 14:56 UTC",
+    "generatedEpoch": 1786805819
   },
   "storySpecs": [
     {

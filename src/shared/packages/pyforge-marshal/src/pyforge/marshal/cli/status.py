@@ -29,7 +29,12 @@ supervisor's own self-journaled pid (``cli/spin.py``'s own spin-launch
 outcome payload, ``{"pid": spin_result.pid, "harness_run_id": ...}``) and,
 best-effort, the last ``"budget-usage"`` observation's ``cost_estimate``
 (Story 3.6's own supervisor-journaled quantity -- reported, never
-recomputed live, per NFR-14). ``HarnessPort.run_status_snapshot`` (keyed by
+recomputed live, per NFR-14). When that payload's own ``harness_run_id``
+was journaled ``null`` (a launch-time poll timeout, ``MRS-SPIN-004``) and
+``_resolve_harness_run_id_for_resume`` can't recover it either (it re-reads
+the SAME poisoned field), ``_discover_harness_run_id_by_filesystem``
+(2026-08-15) recovers it by listing ``<home>/.bmad-loop/runs/`` directly --
+see that function's own docstring. ``HarnessPort.run_status_snapshot`` (keyed by
 the SAME recovered ``harness_run_id``) supplies bmad-loop's own
 ``paused_stage``/``finished``/``tasks``. ``core.status.derive_home_state``
 (Story 5.1's own new pure function) turns those facts into one of the
@@ -496,6 +501,119 @@ def _gather_run_journal_facts(
     )
 
 
+# Correlation window for `_discover_harness_run_id_by_filesystem` -- TIGHT
+# (5 minutes) once the local/UTC conversion below is applied correctly.
+# Deliberately narrow: a real loop home's `.bmad-loop/runs/` accumulates
+# many historical entries over weeks (observed live, 2026-08-15 review:
+# 15 in one home, 9 in another, none archived) -- a wide window would
+# routinely match the WRONG sibling run. The poisoning scenario this
+# helper recovers from (a launch-time poll timeout) means the correct
+# run's own directory is created within seconds of `launched_at`, so 5
+# minutes is generous headroom for real scheduling/clock jitter while
+# still rejecting every other same-day run in a busy loop home.
+_HARNESS_RUN_ID_DISCOVERY_WINDOW_SECONDS = 5 * 60
+
+
+def _discover_harness_run_id_by_filesystem(
+    home: Path, launched_at: datetime | None
+) -> str | None:
+    """Third fallback for a POISONED ``harness_run_id`` (2026-08-15,
+    ``spec-marshal-status-harness-run-id-poisoning``): when
+    ``cli/spin.py``'s own launch-time poll to confirm bmad-loop's
+    self-minted run id times out (``MRS-SPIN-004``), the launch OUTCOME
+    entry journals ``harness_run_id: null`` PERMANENTLY -- nothing ever
+    corrects it later, and ``_resolve_harness_run_id_for_resume`` (the
+    only fallback before this one) re-reads that SAME poisoned field, so
+    it can never recover either. Reproduced live: a real, healthy run
+    (``pyforge-doctor`` story 9.1, 2026-08-15) reported ``unknown`` for its
+    entire ~40-minute life despite ``<home>/.bmad-loop/runs/<id>/
+    state.json`` being real, readable, and correctly updating throughout.
+
+    This is NOT ``cli/spin.py::_latest_run_dir`` reused -- that function
+    globs a DIFFERENT filesystem location entirely (Marshal's own Tier-3
+    run store, ``<tier3>/runs/<slug>-*``), unrelated to where bmad-loop
+    itself keeps state. ``HarnessPort.run_status_snapshot`` (see
+    ``adapters/harness_bmadloop.py``) keys directly on
+    ``<home>/.bmad-loop/runs/<run_id>/`` -- this helper lists THAT
+    directory.
+
+    **Correlated by embedded creation timestamp, converted to local time,
+    within a tight window -- never a bare lexicographic-latest pick**
+    (adversarial review, 2026-08-15, second pass: both Blind Hunter and
+    Edge Case Hunter independently flagged the first draft's "latest by
+    name" heuristic as HIGH-severity -- live evidence from that review
+    shows a loop home's ``.bmad-loop/runs/`` routinely holds a DOZEN OR
+    MORE historical entries, never garbage-collected by Marshal, so
+    "latest" is frequently wrong, not an edge case). Blindly trusting the
+    wrong entry silently blends a DIFFERENT run's ``paused_stage``/
+    ``tasks``/``finished`` facts into this home's row -- strictly worse
+    than the honest ``unknown`` this function exists to avoid. Directory
+    ``mtime`` was considered and rejected as the correlation signal: it
+    drifts forward across a long run's own life (new ``tasks/``/
+    ``worktrees/`` subdirectories keep touching the parent dir's mtime),
+    so a still-young, low-activity run can spuriously sort "more recent"
+    than the actually-correct, longer-running one.
+
+    The run id's OWN embedded ``YYYYMMDD-HHMMSS`` prefix is immutable from
+    creation, so it is compared against ``launched_at`` (the SAME
+    launch-OUTCOME timestamp ``_gather_run_journal_facts`` already
+    recovered) instead. The prefix is bmad-loop's own LOCAL wall-clock
+    time, while ``launched_at`` is parsed as UTC-aware
+    (``_gather_run_journal_facts``'s own ``datetime.fromisoformat``) --
+    comparing them naively (stripping tzinfo, never converting) would
+    leave a residual offset equal to the system's real UTC offset, large
+    enough to swamp any tight window. ``launched_at.astimezone()`` (no
+    argument -- converts to the SAME system's local timezone, the one
+    that minted the run id in the first place, since both run in the same
+    process's environment) removes that offset properly, which is what
+    makes a genuinely tight window (5 minutes, not 24 hours) both correct
+    and safe. The candidate closest to that converted target, within
+    ``_HARNESS_RUN_ID_DISCOVERY_WINDOW_SECONDS``, wins; ``None`` if
+    nothing qualifies (CAP-2: an honest ``unknown`` beats a wrong guess).
+    A candidate whose name does not parse as that prefix (unexpected
+    shape) is skipped, never guessed at. A candidate directory with no
+    ``state.json`` inside is also skipped -- mirrors bmad-loop's own
+    ``runs.py::list_run_dirs``/``latest_run_dir`` reference
+    implementation's identical filter, cheap precision this fallback
+    should not skip just because ``run_status_snapshot``'s own broad
+    exception guard would otherwise degrade safely anyway.
+
+    A plain ``Path.iterdir`` read, no ``FsPort`` routing (NFR-14; mirrors
+    ``_latest_run_dir``'s own disproportionate-primitive precedent) --
+    ``Path.is_dir()`` degrades every ``OSError`` (including a permission
+    failure) to ``False`` internally (verified directly against CPython's
+    own ``genericpath.isdir`` source, contra an initial adversarial-review
+    claim that it propagates) -- never raises past this function's own
+    ``except OSError``, which guards only ``runs_dir`` itself being
+    absent/unreadable."""
+    if launched_at is None:
+        return None
+    runs_dir = home / ".bmad-loop" / "runs"
+    try:
+        candidates = [
+            p.name
+            for p in runs_dir.iterdir()
+            if p.is_dir() and (p / "state.json").is_file()
+        ]
+    except OSError:
+        return None
+    target = launched_at.astimezone().replace(tzinfo=None)
+    best_name: str | None = None
+    best_delta: float | None = None
+    for name in candidates:
+        try:
+            candidate_time = datetime.strptime(name[:15], "%Y%m%d-%H%M%S")
+        except ValueError:
+            continue
+        delta = abs((candidate_time - target).total_seconds())
+        if delta > _HARNESS_RUN_ID_DISCOVERY_WINDOW_SECONDS:
+            continue
+        if best_delta is None or delta < best_delta:
+            best_delta = delta
+            best_name = name
+    return best_name
+
+
 def _gather_home_facts(
     *,
     fs: FsPort,
@@ -534,8 +652,14 @@ def _gather_home_facts(
     # journal's own launch/resume entry never recorded one (should not
     # happen in practice, but the injected seam stays available rather
     # than silently reporting "no run state" for a recoverable gap).
-    harness_run_id = journal_facts.harness_run_id or resolve_harness_run_id(
-        fs, run_dir, run_id
+    # A THIRD fallback, `_discover_harness_run_id_by_filesystem`, engages
+    # only when BOTH of those return nothing -- a poisoned journal whose
+    # poll timed out at launch (2026-08-15, see that helper's own
+    # docstring) -- and never overrides either already-trusted source.
+    harness_run_id = (
+        journal_facts.harness_run_id
+        or resolve_harness_run_id(fs, run_dir, run_id)
+        or _discover_harness_run_id_by_filesystem(home, journal_facts.launched_at)
     )
     snapshot = (
         harness.run_status_snapshot(home, harness_run_id) if harness_run_id else None
