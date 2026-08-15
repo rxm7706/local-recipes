@@ -1,8 +1,9 @@
 """Story 6.9: one thin, target-less CLI dispatcher for Doctor's ported
 sources -- ``python -m pyforge.doctor.sources <name> [--json] [--groundtruth]``.
-Eleven total today: the ten Story 6.9 originally dispatched, plus Story
-11.1's ``due-for-verification`` -- the first genuinely NEW (non-ported)
-member (see its own DISPATCH row below).
+Twelve total today: the ten Story 6.9 originally dispatched, plus Story
+11.1's ``due-for-verification`` and Story 10.1's
+``bmad-method-version-drift`` -- both genuinely NEW (non-ported) members
+(see their own DISPATCH rows below).
 
 WHY THIS EXISTS. Stories 6.4-6.8 ported ten ``scripts/*_check.py`` (plus
 ``docs/dashboard/check_layout.py``) verdicts into library ``gather(target)``
@@ -42,7 +43,7 @@ from pathlib import Path
 
 from ..models import Finding, Source
 from ..verdict import EXIT_SIGINT, exit_code_for
-from . import board, chain, deps, factory, ledger, marshal
+from . import bmad_method, board, chain, deps, factory, ledger, marshal
 
 __all__ = ("main", "DISPATCH")
 
@@ -70,6 +71,9 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     # `Callable[[Path], tuple[Finding, ...]]` shape as every ported entry
     # above (Design Notes).
     Source.DUE_FOR_VERIFICATION.value: chain.gather_due_for_verification,
+    # Story 10.1 (Epic 10/CAP-1) -- another genuinely NEW (non-ported)
+    # DISPATCH member, same shape as DUE_FOR_VERIFICATION above.
+    Source.BMAD_METHOD_VERSION_DRIFT.value: bmad_method.gather,
 }
 
 # `--groundtruth` is bmad-drift-only -- it prints `factory.ground_truth`'s six

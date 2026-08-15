@@ -9,10 +9,11 @@ usage error, the ``--groundtruth`` scoping error, JSON output shape, and
 
 Story 11.1 (Epic 11/CAP-1) added ``due-for-verification`` -- the first
 genuinely NEW (non-ported) ``DISPATCH`` member, alongside the ten Story 6.9
-originally dispatched (the retiring ``scripts/*_check.py`` origins). The
-member COUNT is deliberately not in a test's name, per ``test_models.py``'s
-own documented lesson: a number there goes stale the next time a story
-appends an entry.
+originally dispatched (the retiring ``scripts/*_check.py`` origins). Story
+10.1 (Epic 10/CAP-1) added ``bmad-method-version-drift``, another genuinely
+NEW member. The member COUNT is deliberately not in a test's name, per
+``test_models.py``'s own documented lesson: a number there goes stale the
+next time a story appends an entry.
 """
 
 from __future__ import annotations
@@ -23,7 +24,15 @@ from pathlib import Path
 import pytest
 from pyforge.doctor.models import DoctorStatus, Finding, Source
 from pyforge.doctor.sources import __main__ as dispatch
-from pyforge.doctor.sources import board, chain, deps, factory, ledger, marshal
+from pyforge.doctor.sources import (
+    bmad_method,
+    board,
+    chain,
+    deps,
+    factory,
+    ledger,
+    marshal,
+)
 
 # --- DISPATCH: name -> the exact function the Code Map names ----------------
 
@@ -39,6 +48,7 @@ _EXPECTED_DISPATCH = {
     "forward-dependency": deps.gather_forward_dependency,
     "bmad-drift": factory.gather,
     "due-for-verification": chain.gather_due_for_verification,
+    "bmad-method-version-drift": bmad_method.gather,
 }
 
 

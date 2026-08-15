@@ -128,6 +128,18 @@ class Source(StrEnum):
     # artifact (the tracked ledger); see sources/chain.py for the
     # independence rationale.
     DUE_FOR_VERIFICATION = "due-for-verification"
+    # Story 10.1 (Epic 10/CAP-1): the closed taxonomy EXTENDED once more --
+    # Doctor's verdict on whether the INSTALLED BMAD-METHOD framework version
+    # (`_bmad/_config/manifest.yaml`'s `installation.version`) meets
+    # `pixi.toml`'s own declared `bmad-method` floor. Distinct from the
+    # existing BMAD_DRIFT above: that member judges `pyforge-marshal`'s own
+    # project-doc currency (skill version, schema version, MCP tool counts,
+    # ...), a wholly different artifact class -- this one judges the
+    # installed framework tool itself. Like DUE_FOR_VERIFICATION, this
+    # informs rather than gates (always WARN or OK, never FAIL). Judges a
+    # Marshal-produced artifact (the factory's own tooling-installation
+    # surface); see sources/bmad_method.py for the independence rationale.
+    BMAD_METHOD_VERSION_DRIFT = "bmad-method-version-drift"
 
 
 class Partition(StrEnum):

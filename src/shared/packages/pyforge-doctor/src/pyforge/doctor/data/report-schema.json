@@ -73,7 +73,8 @@
             "deferred-work",
             "forward-dependency",
             "bmad-drift",
-            "due-for-verification"
+            "due-for-verification",
+            "bmad-method-version-drift"
           ]
         },
         "check": { "type": "string" },
