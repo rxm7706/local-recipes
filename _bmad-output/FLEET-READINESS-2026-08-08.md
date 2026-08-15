@@ -1,5 +1,34 @@
 # Fleet readiness — 2026-08-08
 
+**SUPERSEDED (2026-08-15) — a dated snapshot, kept as historical record; do not read its
+table or its methodology section as current.** Fact-checked against live state:
+
+- **Per-station counts are stale by roughly 2x.** This doc: atlas 38/8/0/46 stories/epics/
+  blocked/total, marshal 50/35/1/86, mason 4/34/0/38, steward 18/10/5/33 (6 blocked fleet-
+  wide). Live (`pixi run -e local-recipes fleet-picture`, 2026-08-15): atlas 49/6/0/55,
+  marshal 98/37/1/136, mason 32/10/0/42, steward 44/10/0/54 (1 blocked fleet-wide — every
+  station roughly doubled in scope, and steward's 5 blocked stories are now fully resolved).
+- **Its central methodology claim did not hold.** § *How to measure this correctly* asserts
+  atlas's `a1-scaffold-…`/`story(A1)` alias convention is permanent-by-design ("DO NOT fix
+  this by teaching the parser atlas's convention — tried and reverted 2026-07-30") and that
+  atlas's board line must stay hand-authored forever. **The opposite happened, the same
+  week**: the alias was normalized in the DATA (not the parser) on 2026-08-08 — 38 headings,
+  32 ledger keys, 64 Tier-3 feed keys, 32 story-spec filenames, 32 board ids all moved to
+  canonical form in lockstep, verified byte-identical detector output before/after. Full
+  account in `EXEMPLAR-STANDARD.md` § INV-5. `epics.md` now reads fully canonical
+  `### Story 1.1:`-style headings throughout — checked directly.
+- **The "7 standing practices" list is mostly resolved**: of the 7 Dreams this doc frames as
+  "tended, never finished," 6 now carry a terminal `status:` (`archived` or `realized`) —
+  only `agentic-sdlc-autonomy` (`pitched`) still matches the doc's framing.
+- Cited pixi tasks (`chain-completeness-check`, `dashboard-drift-check`, `dream-chain-check`,
+  `ledger-regression-check`, `forward-dependency-check`) and `docs/dashboard/check_render.js`
+  still exist under those names — the commands below still run, just against current state,
+  not the 2026-08-08 numbers quoted in this file's body.
+
+Original document follows, unedited, as a record of the 2026-08-08 readiness gate:
+
+---
+
 Measured state of all 8 stations after the PR #318/#319/#320/#321 sequence, plus what is
 actually runnable and what is not. **Derived, not asserted** — every number below came
 from `sprint-status-ledger.yaml` via `generate.py::parse_sprint_status`, not from a
