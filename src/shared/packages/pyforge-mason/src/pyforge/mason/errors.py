@@ -837,7 +837,13 @@ class EnvironmentLockfileMissingError(MasonError):
                 f"be a str, got {type(lockfile_path).__name__}"
             )
         self.lockfile_path = lockfile_path
-        if lockfile_path.strip():
+        # Truthiness, NOT `.strip()` (review pass, 2026-08-15 second): a
+        # whitespace-only `--lockfile "   "` IS a path the user supplied, and
+        # `.strip()` sent it down the "no path was given" branch below,
+        # contradicting what they typed. Only the genuinely empty string --
+        # `--lockfile ""`, which argparse's `required=True` still accepts --
+        # takes that branch now.
+        if lockfile_path:
             message = (
                 f"lockfile {lockfile_path!r} does not exist or is not a file; run "
                 "`mason environment lock` to create it"

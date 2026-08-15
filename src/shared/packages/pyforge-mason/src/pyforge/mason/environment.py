@@ -107,9 +107,14 @@ def check(
     subprocess spawns) -- this function does not duplicate that check.
 
     Raises `EngineAbsentError`/`EnvironmentLockfileMissingError`/
-    `EnvironmentCheckTimeoutError` (all already defined, Story 4.1/4.4),
-    propagated unchanged from `engines.condalock.check()`. Never raises for
-    a stale verdict (AD-4) -- `stale` is DATA on the returned `CheckResult`.
+    `EnvironmentLockfileMalformedError`/`EnvironmentCheckTimeoutError` (all
+    already defined, Story 4.1/4.4), propagated unchanged from
+    `engines.condalock.check()` -- the same four `cli.py`'s own dispatch
+    branch documents (review pass, 2026-08-15 second: this list omitted
+    `EnvironmentLockfileMalformedError`, so the use-case layer and the
+    dispatch layer published different contracts for the same call). Never
+    raises for a stale verdict (AD-4) -- `stale` is DATA on the returned
+    `CheckResult`.
     """
     if platforms:
         parsed_platforms = tuple(

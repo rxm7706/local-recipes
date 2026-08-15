@@ -146,8 +146,9 @@ _ENVIRONMENT_LOCK_HELP = (
 )
 _ENVIRONMENT_CHECK_HELP = (
     "check whether an existing lockfile is stale relative to one or more manifests via "
-    "conda-lock (--platform comma-separated; omit for conda-lock's own default; process exit "
-    "code reflects the stale/current verdict; CFE-independent)"
+    "conda-lock (--platform comma-separated; pass the same platforms the lockfile was "
+    "locked with; exit code is non-zero when the lockfile is stale OR the check itself "
+    "failed; CFE-independent)"
 )
 
 # AD-13: every global setting has a flag and an environment-variable form,
@@ -848,8 +849,10 @@ def build_parser() -> argparse.ArgumentParser:
     )
     environment_check_parser.add_argument(
         "--platform", metavar="PLATFORMS", default=None,
-        help="comma-separated platforms to check (e.g. linux-64,osx-arm64); omit to let "
-        "conda-lock apply its own default",
+        help="comma-separated platforms to check (e.g. linux-64,osx-arm64); pass the same "
+        "platforms the lockfile was locked with -- omitting this delegates to conda-lock's "
+        "own default (linux-64,osx-arm64,osx-64,win-64 when the manifests name none), which "
+        "reports a narrower lockfile as stale",
     )
 
     # Same `.choices`-derived metavar fixup as `recipe`/`package` above, now

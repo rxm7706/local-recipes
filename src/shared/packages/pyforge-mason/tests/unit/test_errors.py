@@ -1190,6 +1190,17 @@ def test_environment_lockfile_missing_error_accepts_an_empty_path():
     assert "no --lockfile path was given" in str(exc)
 
 
+def test_environment_lockfile_missing_error_names_a_whitespace_only_path():
+    """Review pass, 2026-08-15 second: the empty-path branch keyed on
+    `.strip()`, so `--lockfile "   "` -- a path the user really did supply --
+    was told "no --lockfile path was given". Only the genuinely empty string
+    takes that branch."""
+    exc = EnvironmentLockfileMissingError("   ")
+    assert exc.lockfile_path == "   "
+    assert "does not exist or is not a file" in str(exc)
+    assert "no --lockfile path was given" not in str(exc)
+
+
 def test_environment_lockfile_missing_error_rejects_a_non_str_path():
     with pytest.raises(TypeError):
         EnvironmentLockfileMissingError(None)
