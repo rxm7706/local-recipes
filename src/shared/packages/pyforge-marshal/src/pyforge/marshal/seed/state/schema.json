@@ -1,0 +1,184 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:local-recipes:pyforge-marshal:seed-state.v1",
+  "title": "MarshalSeedState",
+  "description": "The shape of `.marshal/seed-state.yml` (Story 10.2, FR-102/FR-104): the tool-owned record of what Genesis established in a target repo. Exactly eleven top-level keys, all required, additionalProperties false -- FR-102's ten plus `opted_out`, which the epics AC adds. Unlike every other schema this package ships (schemas/*.json, validated in tests only), this one is validated at RUNTIME on every `state.store.read_state` call: state is the artifact whose corruption must degrade to a StateInvalid finding rather than a traceback (FR-104), so its wire contract is checked before any field is consumed. The document is written as YAML and read as YAML, but its value space is strict JSON (strings, integers, nulls, arrays, objects) -- no YAML tags, no dates, no anchors are ever emitted by `write_state`.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "model_version",
+    "seed_model_version",
+    "adopted_at",
+    "last_update",
+    "mode",
+    "agents",
+    "managed",
+    "skips",
+    "legacy",
+    "migrations_applied",
+    "opted_out"
+  ],
+  "properties": {
+    "model_version": {
+      "$ref": "#/$defs/modelVersion",
+      "description": "A-05's first clock: the operating-model version this repo is established at -- the same value a manifest entry's since/until bounds are keyed against. Round-trips through seed.model.version.ModelVersion.parse/__str__, so the pattern is SemVer 2.0.0's own grammar verbatim."
+    },
+    "seed_model_version": {
+      "$ref": "#/$defs/packageVersion",
+      "description": "A-05's second clock: the pyforge-marshal release that wrote this file, as reported by its own installed distribution metadata (store.seed_model_version()). Deliberately laxer than model_version above -- an installed distribution version is PEP 440, not SemVer, so a development or editable install can legitimately report a local/dev segment SemVer's grammar rejects; this field is a provenance record, never an ordering key."
+    },
+    "adopted_at": {
+      "$ref": "#/$defs/timestamp",
+      "description": "When Genesis first established this repo (the `init`/`adopt` run that created this file). Never rewritten by a later update."
+    },
+    "last_update": {
+      "$ref": "#/$defs/timestamp",
+      "description": "When this file was last written. Equal to adopted_at on the establishing run."
+    },
+    "mode": {
+      "enum": ["init", "adopt"],
+      "description": "Which verb established this repo. Only `init` and `adopt` materialize a repo at all -- `check` is read-only and `update` moves model_version without re-establishing origin -- so those two are the whole vocabulary."
+    },
+    "agents": {
+      "type": "array",
+      "uniqueItems": true,
+      "description": "The agent/adapter ids this repo was established for (FR-115). Constrained by SHAPE (lowercase kebab, unique), not by an enumeration: the canonical adapter spellings are Story 10.6's surface, and no adapter-id constant exists under seed/ yet to mirror.",
+      "items": {
+        "type": "string",
+        "pattern": "^[a-z][a-z0-9-]*(?![\\s\\S])"
+      }
+    },
+    "managed": {
+      "type": "array",
+      "description": "Every artifact the tool currently claims, with enough recorded detail for a future `eject` to withdraw the claim without touching content (AD-58).",
+      "items": { "$ref": "#/$defs/managedArtifact" }
+    },
+    "skips": {
+      "type": "array",
+      "description": "Glob patterns the operator asked this repo's runs to skip.",
+      "items": { "$ref": "#/$defs/nonBlankString" }
+    },
+    "legacy": {
+      "type": "array",
+      "description": "Every entry classified present-legacy, mirroring detect.inventory.LegacyRecord's own three fields (entry_id/path/legacy_of) on the wire as id/path/legacy_of.",
+      "items": { "$ref": "#/$defs/legacyArtifact" }
+    },
+    "migrations_applied": {
+      "type": "array",
+      "uniqueItems": true,
+      "description": "The model versions whose migrations have already run against this repo (AD-62). Applying one twice is exactly what this list exists to prevent, so entries are unique.",
+      "items": { "$ref": "#/$defs/modelVersion" }
+    },
+    "opted_out": {
+      "type": "array",
+      "uniqueItems": true,
+      "description": "`<artifact-id>#<region>` pairs the operator opted out of (Story 8.5's own shape). The two halves use DIFFERENT grammars on purpose. The region half matches regions.markers.REGION_NAME_PATTERN exactly, so an opted-out region name can always be rendered into a marker. The artifact half is any non-blank token carrying no `#` (the separator) and no whitespace -- deliberately as permissive as managed[].id, which is a nonBlankString because model/manifest.py imposes no kebab rule on entry ids: a stricter grammar here would make a legally-named entry's opt-out UNREPRESENTABLE, which is the one thing this field must never do.",
+      "items": {
+        "type": "string",
+        "pattern": "^[^\\s#]+#[a-z0-9][a-z0-9-]*(?![\\s\\S])"
+      }
+    }
+  },
+  "$defs": {
+    "modelVersion": {
+      "type": "string",
+      "pattern": "^(0|[1-9]\\d*)\\.(0|[1-9]\\d*)\\.(0|[1-9]\\d*)(?:-(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*)(?:\\.(?:0|[1-9]\\d*|\\d*[a-zA-Z-][0-9a-zA-Z-]*))*)?(?:\\+[0-9a-zA-Z-]+(?:\\.[0-9a-zA-Z-]+)*)?(?![\\s\\S])",
+      "description": "SemVer 2.0.0, transcribed from seed/model/version.py's own grammar so a value this schema accepts can never fail ModelVersion.parse. Terminated with `(?![\\s\\S])` rather than `$` -- see the note on `timestamp`."
+    },
+    "packageVersion": {
+      "type": "string",
+      "pattern": "^[0-9][0-9A-Za-z.+-]*(?![\\s\\S])",
+      "description": "An installed distribution's version string (PEP 440): starts with a digit, then dotted alphanumerics plus the local/pre-release punctuation PEP 440 allows."
+    },
+    "timestamp": {
+      "type": "string",
+      "pattern": "^[0-9]{4}-(0[1-9]|1[0-2])-(0[1-9]|[12][0-9]|3[01])T([01][0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]Z(?![\\s\\S])",
+      "description": "Second-precision UTC RFC-3339, 'T'/'Z' only -- ONE canonical spelling, produced by store.utc_timestamp() and by nothing else. Pinned by pattern, not by `format`: jsonschema does not enforce `format` unless a format checker is installed, so `format` alone would validate any string at all. Coarser than journal.json's millisecond shape deliberately: these two fields are provenance, never a total-order sort key. EVERY anchored pattern in this schema ends with `(?![\\s\\S])`, never a bare `$`: jsonschema compiles `pattern` with Python's `re`, whose `$` also matches immediately BEFORE a final newline -- so `^...$` admitted a trailing-newline value ('0123abcd\\n' passed `^[0-9a-f]{8}$`, confirmed), falsifying every guarantee stated below about a value 'always' round-tripping. `(?![\\s\\S])` means 'no character of any kind follows' and is portable across ECMA-262 and Python, unlike `\\Z`, which ECMA-262 does not have."
+    },
+    "nonBlankString": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "\\S",
+      "description": "A string carrying actual content. The \\S pattern rejects a whitespace-only value that minLength alone admits, matching journal.json's own convention and model/manifest.py::_require_text's .strip() check."
+    },
+    "managedArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "class", "body_sha", "inserted_region_span"],
+      "description": "One claimed artifact (AD-58). `inserted_region_span` is required but nullable rather than omissible: a null says 'this claim covers the whole file', an absent key would say nothing at all, and the two must not be spelled the same way. Which of the two it must be is NOT free: the if/then/else below couples it to `class` as an iff -- an object exactly when the class is hybrid-managed-region, null for every other class. Uncoupled, a hybrid entry with a null span (an eject could not withdraw it -- no offsets) and a `referenced` entry carrying a span (an eject would splice a file it was meant to remove outright) both validated, contradicting this very description. store.py's ManagedArtifact.__post_init__ states the same rule for a code-constructed value.",
+      "if": {
+        "required": ["class"],
+        "properties": { "class": { "const": "hybrid-managed-region" } }
+      },
+      "then": {
+        "properties": { "inserted_region_span": { "type": "object" } }
+      },
+      "else": {
+        "properties": { "inserted_region_span": { "type": "null" } }
+      },
+      "properties": {
+        "id": {
+          "$ref": "#/$defs/nonBlankString",
+          "description": "The manifest entry id this claim belongs to (AD-55's stable addressing)."
+        },
+        "path": {
+          "$ref": "#/$defs/nonBlankString",
+          "description": "The artifact's repo-relative, POSIX-separated path."
+        },
+        "class": {
+          "enum": [
+            "referenced",
+            "copied-managed",
+            "copied-seeded",
+            "generated-derived",
+            "hybrid-managed-region",
+            "unclassified-deferred"
+          ],
+          "description": "The artifact's class, as a WIRE value. Hardcoded rather than generated from model.manifest.ArtifactClass: a schema is a wire contract, not a mirror of a Python enum. tests/unit/test_seed_state_store.py asserts the two agree, so the duplication cannot drift."
+        },
+        "body_sha": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{8}(?![\\s\\S])",
+          "description": "detect/hashes.py::hash_content's shipped output shape: sha256 over line-ending-normalized UTF-8, truncated to 8 lowercase hex, no prefix. Enforced HERE so a shape-invalid recorded hash is a StateInvalid at read time and can never reach check_managed_file/check_managed_region at all (closes DW-FU-9-3 by construction)."
+        },
+        "inserted_region_span": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["name", "start", "end"],
+          "description": "For a hybrid-managed-region claim: the region name plus the UTF-8 BYTE offsets of its body, markers excluded -- mirroring regions/parse.py::RegionSpan.name + .body_span, which is exactly what AD-58's eject needs to strip the claim without touching surrounding content. Null for every non-region claim.",
+          "properties": {
+            "name": {
+              "type": "string",
+              "pattern": "^[a-z0-9][a-z0-9-]*(?![\\s\\S])",
+              "description": "regions.markers.REGION_NAME_PATTERN verbatim -- a name this schema accepts always round-trips through a rendered marker. markers.py itself matches with .fullmatch() and carries no anchors for exactly the reason the `(?![\\s\\S])` terminator here exists (see `timestamp`): the `$`-anchored spelling this pattern used to carry admitted 'tiers\\n', which REGION_NAME_PATTERN.fullmatch rejects -- so the two disagreed on the one value the description claims can never happen."
+            },
+            "start": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "First body byte, counted in UTF-8 bytes from the start of the file."
+            },
+            "end": {
+              "type": "integer",
+              "minimum": 0,
+              "description": "One past the last body byte. Equal to start for an empty region body."
+            }
+          }
+        }
+      }
+    },
+    "legacyArtifact": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["id", "path", "legacy_of"],
+      "description": "One present-legacy entry, the serialized form of detect.inventory.LegacyRecord.",
+      "properties": {
+        "id": { "$ref": "#/$defs/nonBlankString" },
+        "path": { "$ref": "#/$defs/nonBlankString" },
+        "legacy_of": {
+          "$ref": "#/$defs/nonBlankString",
+          "description": "The successor entry's id, from the manifest's own legacy_of field."
+        }
+      }
+    }
+  }
+}
