@@ -156,7 +156,7 @@ from pyforge.mason.exit_codes import (
     EXIT_CFE_UNAVAILABLE, EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
 )
 from pyforge.mason.models import (
-    BuildResult, CfeResult, PackageBuildResult, ShipState, ShipTargetResult,
+    BuildResult, CfeResult, LockResult, PackageBuildResult, ShipState, ShipTargetResult,
 )
 
 _FIXED_REPORT = DoctorReport(
@@ -3146,3 +3146,119 @@ def test_package_ship_combined_with_an_explicit_verb_is_a_usage_error(argv, caps
     assert "--ship" in err
     mock_ship.assert_not_called()
     mock_build.assert_not_called()
+
+
+# --- Story 4.3: `environment lock` verb dispatch -----------------------------
+
+_FIXED_LOCK_RESULT = LockResult(
+    manifest_paths=("environment.yml",),
+    output_path="lock.yml",
+    platforms=(),
+    engine_name="conda-lock",
+    engine_version="4.0.2",
+    returncode=0,
+)
+
+
+def test_environment_lock_help_works(capsys):
+    with pytest.raises(SystemExit) as exc:
+        build_parser().parse_args(["environment", "lock", "--help"])
+    assert exc.value.code == 0
+    assert "lock" in capsys.readouterr().out
+
+
+def test_environment_lock_happy_path_text_mode(capsys):
+    with patch(
+        "pyforge.mason.cli.environment.lock", return_value=_FIXED_LOCK_RESULT,
+    ) as mock_lock:
+        assert main(["environment", "lock", "environment.yml", "-o", "lock.yml"]) == EXIT_OK
+
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert "environment lock: ok" in out.out
+    assert "engine_name: conda-lock" in out.out
+
+    mock_lock.assert_called_once()
+    args, kwargs = mock_lock.call_args
+    assert args[0] == ["environment.yml"]
+    assert args[1] == "lock.yml"
+    assert kwargs["platforms"] is None
+
+
+def test_environment_lock_happy_path_json_mode(capsys):
+    with patch("pyforge.mason.cli.environment.lock", return_value=_FIXED_LOCK_RESULT):
+        rc = main(
+            ["environment", "lock", "environment.yml", "-o", "lock.yml", "--format", "json"],
+        )
+    assert rc == EXIT_OK
+
+    out = capsys.readouterr()
+    assert out.err == ""
+    doc = json.loads(out.out)
+    assert doc["command"] == "environment lock"
+    assert doc["status"] == "ok"
+    assert doc["errors"] == []
+    assert doc["data"] == _json_roundtripped(_FIXED_LOCK_RESULT)
+
+
+def test_environment_lock_passes_platform_flag_through_unparsed(capsys):
+    with patch(
+        "pyforge.mason.cli.environment.lock", return_value=_FIXED_LOCK_RESULT,
+    ) as mock_lock:
+        main(
+            ["environment", "lock", "environment.yml", "-o", "lock.yml",
+             "--platform", "linux-64,osx-arm64"],
+        )
+
+    assert mock_lock.call_args.kwargs["platforms"] == "linux-64,osx-arm64"
+
+
+def test_environment_lock_missing_manifest_path_is_a_usage_error(capsys):
+    with patch("pyforge.mason.cli.environment.lock") as mock_lock:
+        rc = main(["environment", "lock", "-o", "lock.yml"])
+
+    assert rc == EXIT_USAGE
+    mock_lock.assert_not_called()
+
+
+def test_environment_lock_missing_output_is_a_usage_error(capsys):
+    with patch("pyforge.mason.cli.environment.lock") as mock_lock:
+        rc = main(["environment", "lock", "environment.yml"])
+
+    assert rc == EXIT_USAGE
+    err = capsys.readouterr().err
+    assert "--output" in err
+    mock_lock.assert_not_called()
+
+
+def test_environment_lock_failed_child_still_renders_ok(capsys):
+    """A non-zero delegated engine returncode is DATA, never raised (AD-4)
+    -- mirrors `package build`'s own established "the gap is data"
+    precedent."""
+    failed_result = LockResult(
+        manifest_paths=("environment.yml",),
+        output_path="lock.yml",
+        platforms=(),
+        engine_name="conda-lock",
+        engine_version="4.0.2",
+        returncode=1,
+    )
+    with patch("pyforge.mason.cli.environment.lock", return_value=failed_result):
+        assert main(["environment", "lock", "environment.yml", "-o", "lock.yml"]) == EXIT_OK
+
+    out = capsys.readouterr()
+    assert out.err == ""
+    assert "environment lock: ok" in out.out
+    assert "returncode: 1" in out.out
+
+
+def test_environment_lock_engine_absent_error_projects_to_exit_failed(capsys):
+    with patch(
+        "pyforge.mason.cli.environment.lock",
+        side_effect=EngineAbsentError(name="conda-lock", conda_package="conda-lock"),
+    ):
+        rc = main(["environment", "lock", "environment.yml", "-o", "lock.yml"])
+
+    assert rc == EXIT_FAILED
+    err = capsys.readouterr().err
+    assert "conda-lock" in err
