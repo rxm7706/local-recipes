@@ -1,16 +1,19 @@
-"""Deck visual-QA gate report interface (Story 14.1).
+"""Deck visual-QA gate report interface (Story 14.1) + the headless-render
+gate (Story 14.2).
 
 Herald's deck pipeline needs a shared, extensible way for visual-QA gates
--- a future headless-render gate (Story 14.2), an image-slot scan (Story
-14.3), and three parked ``.pptx``-contingent gates -- to report findings
-against one deck slug. This module defines that report's JSON-round-
-trippable schema and the ``run()`` entrypoint that executes a caller-
-supplied gate mapping, without deciding what any individual gate checks.
+-- the headless-render gate below, an image-slot scan (Story 14.3), and
+three parked ``.pptx``-contingent gates -- to report findings against one
+deck slug. This module defines that report's JSON-round-trippable schema,
+the ``run()`` entrypoint that executes a caller-supplied gate mapping
+without deciding what any individual gate checks, and (as of Story 14.2)
+the first real gate: ``render_gate``, registered under ``DEFAULT_GATES["render"]``.
 
-``DEFAULT_GATES`` ships empty in this story on purpose: 14.2/14.3 each add
-one entry here (a ``GateFn`` registered under a gate id) with zero change
-to this module's public shape, to ``run()``'s signature, or to ``cli.py``
--- the whole point of the interface existing ahead of any real gate.
+``DEFAULT_GATES`` shipped empty in Story 14.1 on purpose: each later story
+adds one entry here (a ``GateFn`` registered under a gate id) with zero
+change to this module's public shape, to ``run()``'s signature, or to
+``cli.py`` -- the whole point of the interface existing ahead of any real
+gate, now proven by ``render_gate``'s own addition.
 
 **A gate failure is isolated, never fatal to the report.** A gate raising
 an exception is a realistic first failure mode (a missing browser binary,
@@ -32,6 +35,13 @@ rather than silently dropping or coercing it.
 
 from __future__ import annotations
 
+import functools
+import http.server
+import json
+import math
+import shutil
+import socketserver
+import threading
 from collections.abc import Callable, Mapping
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
@@ -89,10 +99,256 @@ GateFn = Callable[[GateContext], GateResult]
 
 
 DEFAULT_GATES: dict[str, GateFn] = {}
-"""Ships empty in this story -- see module docstring. A plain module-level
+"""Shipped empty in Story 14.1 -- see module docstring. A plain module-level
 dict, not a decorator-based registry: every gate lives in this one file per
 the epic's Surface lines, so there is no cross-module registration to
-build."""
+build. Story 14.2 populates the first real entry (``"render"``, below) with
+zero change to this dict's shape, ``run()``'s signature, or ``cli.py``."""
+
+
+# === render_gate (Story 14.2) ================================================
+#
+# Drives headless Chromium through every `#/<n>` slide of a built deck
+# (`presentations/<slug>/dist/`), screenshotting each to
+# `.herald/deck-qa/<slug>/render/` and composing a Pillow contact sheet --
+# evidence a reviewer looks at instead of trusting a clean build (this
+# story's spec: Intent). Mirrors `pyforge-doctor/sources/board.py`'s own
+# `_serve_layout_dir` (ephemeral loopback static server) and
+# `_run_check_layout` (Chromium-launch-fallback chain, per-item isolation,
+# `_suppress_close` teardown) patterns -- see that module for the full
+# rationale behind each pattern. This module does NOT import from
+# `pyforge.doctor` (a different station's package); the patterns are
+# re-implemented locally here per this story's own Code Map.
+
+_RENDER_VIEWPORT = {"width": 1920, "height": 1080}
+_RENDER_LAUNCH_TIMEOUT_MS = 30_000
+_RENDER_GOTO_TIMEOUT_MS = 20_000
+_RENDER_SCREENSHOT_TIMEOUT_MS = 20_000
+
+
+class _DeckQuietHandler(http.server.SimpleHTTPRequestHandler):
+    """``SimpleHTTPRequestHandler`` logs every GET to stderr, which buries
+    whatever this gate is supposed to report. Ported from board.py's own
+    ``_LayoutQuietHandler``; renamed only for this module's naming
+    convention."""
+
+    def log_message(self, *_args):  # noqa: D102
+        pass
+
+
+def _serve_dist_dir(directory: Path) -> tuple[socketserver.TCPServer, int]:
+    """Serve a built deck's ``dist/`` over an ephemeral loopback port --
+    ported from board.py's own ``_serve_layout_dir``. Chromium needs a real
+    HTTP origin, not ``file://``: the deck is a Vite bundle with
+    dynamically-imported JS chunks, and Chromium blocks cross-origin
+    fetch/module-import under ``file://`` (this story's spec: Boundaries &
+    Constraints)."""
+    handler = functools.partial(_DeckQuietHandler, directory=str(directory))
+    httpd = socketserver.TCPServer(("127.0.0.1", 0), handler)
+    threading.Thread(target=httpd.serve_forever, daemon=True).start()
+    return httpd, httpd.server_address[1]
+
+
+def _suppress_close(close: Callable[[], None]) -> None:
+    """Run a cleanup callable, swallowing anything it raises -- ported from
+    board.py's own ``_suppress_close``: a browser/socket that fails to shut
+    down is not a render verdict, and letting it propagate would replace
+    every already-captured slide with one vacuous error."""
+    try:
+        close()
+    except Exception:  # noqa: BLE001, S110 -- see the docstring above; a
+        # failed teardown must never be able to change what this gate reports.
+        pass
+
+
+_RESERVED_SLIDE_IDS = frozenset({"contact-sheet"})
+
+
+def _single_path_segment(candidate: str) -> bool:
+    """``True`` only for a string that is exactly one path segment -- no
+    ``/``, no ``..``, no empty/`.`-only component. Guards every id/slug this
+    module turns into a filesystem path (a slide id from ``manifest.json``,
+    or ``context.slug`` itself) against writing/reading outside the
+    directory that name was supposed to select (Review Triage Log)."""
+    if not candidate or candidate in (".", ".."):
+        return False
+    return len(Path(candidate).parts) == 1
+
+
+def _slide_id(entry: object, index: int) -> str:
+    """``manifest[index]["id"]`` when present and safe, else a positional
+    fallback.
+
+    The manifest is documented (this story's spec: Boundaries & Constraints)
+    as a flat JSON array whose entries always carry a stable string ``id``,
+    but a malformed OR path-unsafe entry must still resolve to SOME slide id
+    so its own capture failure can be recorded as an isolated ``Finding``
+    rather than raise out of the whole gate or escape ``render_dir``."""
+    if isinstance(entry, dict):
+        raw_id = entry.get("id")
+        if isinstance(raw_id, str) and _single_path_segment(raw_id):
+            return raw_id
+    return f"slide-{index + 1}"
+
+
+def _build_contact_sheet(png_paths: list[Path], out_path: Path) -> None:
+    """A Pillow grid composite of every captured slide, labeled by slide id
+    -- the evidence a reviewer looks at instead of trusting a clean build.
+
+    Skipped (no file written) when ``png_paths`` is empty -- a contact sheet
+    of zero images is not evidence of anything, and every I/O matrix row
+    where nothing captures also records no ``"contact-sheet"`` artifact."""
+    if not png_paths:
+        return
+    from PIL import Image, ImageDraw
+
+    thumb_w, thumb_h, label_h = 320, 180, 20
+    cols = math.ceil(math.sqrt(len(png_paths)))
+    rows = math.ceil(len(png_paths) / cols)
+    cell_w, cell_h = thumb_w, thumb_h + label_h
+    sheet = Image.new("RGB", (cols * cell_w, rows * cell_h), "white")
+    draw = ImageDraw.Draw(sheet)
+    for index, path in enumerate(png_paths):
+        with Image.open(path) as source:
+            thumb = source.convert("RGB").resize((thumb_w, thumb_h))
+        col, row = index % cols, index // cols
+        x, y = col * cell_w, row * cell_h
+        sheet.paste(thumb, (x, y))
+        draw.text((x + 4, y + thumb_h + 2), path.stem, fill="black")
+    sheet.save(out_path)
+
+
+def render_gate(context: GateContext) -> GateResult:
+    """Drive headless Chromium through every ``#/<n>`` slide of
+    ``presentations/<slug>/dist/``, screenshotting each to
+    ``.herald/deck-qa/<slug>/render/<slide-id>.png`` and composing a contact
+    sheet. See this story's spec (Intent, Boundaries & Constraints, Design
+    Notes) for the full rationale.
+
+    Report-only: never runs a build, never mutates deck sources.
+    ``.herald/deck-qa/<slug>/render/`` is ``rmtree``'d then recreated at the
+    start of each run, so a shrunk manifest never leaves a stale PNG looking
+    current.
+
+    Raises on a genuinely unusable environment -- ``dist/`` absent,
+    ``manifest.json`` absent/malformed, an unusable ``playwright`` install,
+    or no launchable Chromium -- which ``run()``'s own per-gate isolation
+    (Story 14.1) turns into ``GateResult(status="error", ...)`` for the
+    ``"render"`` gate id alone; every other gate is unaffected. A single
+    slide's own ``goto``/``screenshot`` failure is isolated instead: it
+    becomes one ``Finding`` and every other slide still captures, mirroring
+    board.py's per-width isolation in ``_run_check_layout`` -- the gate's own
+    ``status`` stays ``"ok"`` even when every slide fails this way."""
+    if not _single_path_segment(context.slug):
+        raise RuntimeError(f"invalid slug {context.slug!r}")
+
+    deck_dir = context.repo_root / "presentations" / context.slug
+    dist_dir = deck_dir / "dist"
+    manifest_path = deck_dir / "src" / "slides" / "manifest.json"
+
+    if not dist_dir.is_dir():
+        raise RuntimeError(
+            f"{dist_dir} does not exist -- build the deck first (npm run build)"
+        )
+    if not manifest_path.is_file():
+        raise RuntimeError(f"{manifest_path} does not exist")
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception as exc:  # noqa: BLE001 -- surfaced as a clear render-gate error
+        raise RuntimeError(f"cannot parse {manifest_path}: {exc}") from exc
+    if not isinstance(manifest, list):
+        raise RuntimeError(f"{manifest_path} must contain a JSON array")
+
+    try:
+        from playwright.sync_api import sync_playwright
+    except Exception as exc:  # noqa: BLE001 -- an unimportable/broken install
+        # is "no usable Chromium" for this gate's purposes; see the I/O matrix.
+        raise RuntimeError(f"playwright is not usable: {exc}") from exc
+
+    render_dir = context.repo_root / ".herald" / "deck-qa" / context.slug / "render"
+    if render_dir.exists():
+        shutil.rmtree(render_dir)
+    render_dir.mkdir(parents=True, exist_ok=True)
+
+    httpd, port = _serve_dist_dir(dist_dir)
+    findings: list[Finding] = []
+    png_paths: list[Path] = []
+    try:
+        with sync_playwright() as p:
+            try:
+                browser = p.chromium.launch(
+                    channel="chrome", timeout=_RENDER_LAUNCH_TIMEOUT_MS
+                )
+            except Exception:  # noqa: BLE001 -- fall back to bundled chromium,
+                # matching board.py's own fallback order verbatim.
+                try:
+                    browser = p.chromium.launch(timeout=_RENDER_LAUNCH_TIMEOUT_MS)
+                except Exception as exc:  # noqa: BLE001 -- no usable browser at all
+                    raise RuntimeError(
+                        f"no usable chromium ({type(exc).__name__}): {exc}"
+                    ) from exc
+            seen_ids: set[str] = set(_RESERVED_SLIDE_IDS)
+            try:
+                for index, entry in enumerate(manifest):
+                    slide_id = _slide_id(entry, index)
+                    if slide_id in seen_ids:
+                        # A duplicate manifest id (or one colliding with a
+                        # reserved name like "contact-sheet") would otherwise
+                        # silently overwrite an earlier slide's own PNG.
+                        slide_id = f"{slide_id}-{index}"
+                    seen_ids.add(slide_id)
+                    try:
+                        page = browser.new_page(viewport=_RENDER_VIEWPORT)
+                        try:
+                            page.goto(
+                                f"http://127.0.0.1:{port}/#/{index + 1}",
+                                wait_until="networkidle",
+                                timeout=_RENDER_GOTO_TIMEOUT_MS,
+                            )
+                            out_path = render_dir / f"{slide_id}.png"
+                            page.screenshot(
+                                path=str(out_path),
+                                timeout=_RENDER_SCREENSHOT_TIMEOUT_MS,
+                            )
+                            png_paths.append(out_path)
+                        finally:
+                            _suppress_close(page.close)
+                    except (Exception, SystemExit) as exc:  # noqa: BLE001 --
+                        # SystemExit: defense-in-depth against playwright's
+                        # own internals raising it (board.py's per-width loop
+                        # catches the identical pair after reproducing this
+                        # live; a bare `except Exception` here would let it
+                        # unwind the loop and discard every already-captured
+                        # slide). One slide's own capture failure must not
+                        # unwind the loop or the gate's own "ok" status
+                        # (spec: Boundaries).
+                        findings.append(Finding(slide_id=slide_id, message=str(exc)))
+            finally:
+                _suppress_close(browser.close)
+    finally:
+        _suppress_close(httpd.shutdown)
+        _suppress_close(httpd.server_close)
+
+    artifacts = [str(p) for p in png_paths]
+    if png_paths:
+        contact_sheet_path = render_dir / "contact-sheet.png"
+        try:
+            _build_contact_sheet(png_paths, contact_sheet_path)
+        except Exception as exc:  # noqa: BLE001 -- a contact-sheet failure
+            # (corrupt PNG, disk full) must not discard every already-
+            # captured slide's own Finding/artifact -- the same masking
+            # bug the per-slide isolation above exists to avoid.
+            findings.append(Finding(slide_id="contact-sheet", message=str(exc)))
+        else:
+            artifacts.append(str(contact_sheet_path))
+
+    return GateResult(status="ok", findings=findings, artifacts=artifacts)
+
+
+DEFAULT_GATES["render"] = render_gate
+"""Registers the render gate under id ``"render"`` -- the only production
+change this story makes to ``DEFAULT_GATES``'s contents; its shape, and
+``run()``'s own signature, are untouched (module docstring)."""
 
 
 def run(

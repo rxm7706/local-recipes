@@ -1724,6 +1724,16 @@ hatchling = ">=1.31.0"                    # Python build backend (drives both co
 python-build = ">=1.5.0"                 # PyPA `python -m build` frontend (wheel + sdist)
 pytest = ">=9.1.1"                       # test runner
 daphne = ">=4.2.2,<5.0"                   # Story 13.6: the ASGI host `webhook_host.py` mounts behind (`webhook-host` extra) -- MUST stay byte-identical to pyproject.toml's `webhook-host` extra pin, itself byte-identical to [feature.pyforge-steward.dependencies]'s own daphne pin (line ~174) and to this file's pre-existing wagtail/coderedcms pin (line ~1253)
+# Story 14.2: deck_qa.py's headless-render gate drives Chromium via playwright
+# and composes a Pillow contact sheet from the captured PNGs. BOTH playwright
+# entries are required and are different things: conda-forge `playwright`
+# ships only the CLI/browser driver (bin/playwright, no site-packages module),
+# while the Python bindings `import playwright` come from `playwright-python`
+# -- declaring only one resolves cleanly and still fails at import (mirrors
+# [feature.pyforge-atlas.dependencies]'s own AUD-ATLAS-010 comment).
+playwright = ">=1.62.1"                  # CLI + browser driver
+playwright-python = ">=1.62.0"           # the `import playwright` bindings
+pillow = ">=12.3.0"                      # Pillow -- render_gate's contact-sheet compositing
 # --- pyforge-core (Core): pixi build workspace member (pyforge-scribe mirror, Story 14.1) --
 # Source + package manifest live in ./src/shared/packages/pyforge-core (its
 # own [package] table, no [workspace]) — same src/shared/packages convention as

@@ -17,13 +17,19 @@ def test_deck_qa_help_exits_zero():
 
 
 def test_deck_qa_returns_0_and_prints_a_parseable_report(tmp_path: Path, capsys):
+    # Story 14.2 registers "render" into DEFAULT_GATES; with no
+    # presentations/pyforge-warden/dist/ under tmp_path, render_gate raises
+    # and run()'s own per-gate isolation (Story 14.1) turns it into
+    # GateResult(status="error", ...) for "render" alone -- the report is
+    # still well-formed and this command still exits 0.
     exit_code = cli.main(["deck", "qa", "pyforge-warden", "--repo-root", str(tmp_path)])
 
     assert exit_code == 0
     out = capsys.readouterr().out
     parsed = deck_qa.parse_report(json.loads(out))
     assert parsed.slug == "pyforge-warden"
-    assert parsed.gates == {}
+    assert set(parsed.gates) == {"render"}
+    assert parsed.gates["render"].status == "error"
 
 
 def test_deck_qa_defaults_repo_root_to_cwd(monkeypatch, tmp_path: Path, capsys):
