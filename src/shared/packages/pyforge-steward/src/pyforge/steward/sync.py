@@ -85,12 +85,14 @@ _REQUIRED_JIRA_FIELDS: tuple[str, ...] = (
 # while still reverting to default authority.
 _VALID_OVERRIDE_AUTHORITY = "jira"
 
-# The only field name `reconcile` actually consults an override for. An
+# The only field names `reconcile` actually consults an override for. An
 # unrecognized key (e.g. a typo'd "statuz") must fail loud too -- otherwise
 # it loads successfully and is silently ignored, which is exactly the
 # "typo must fail loud" property this module already enforces for the
-# authority value but not, before this check, for the key.
-_VALID_OVERRIDE_FIELDS: tuple[str, ...] = ("status",)
+# authority value but not, before this check, for the key. Story 8.7 adds
+# "assignee" -- it follows status's exact decision shape (AD-4 conflict
+# authority), so it is a valid override target too.
+_VALID_OVERRIDE_FIELDS: tuple[str, ...] = ("status", "assignee")
 
 
 class SyncConfigError(ValueError):
@@ -192,6 +194,34 @@ def load_config(path: str | Path) -> SyncConfig:
     user_mapping = document.get("user_mapping") or {}
     if not isinstance(user_mapping, dict):
         raise SyncConfigError(f"{document_path}: 'user_mapping' must be a mapping")
+    for github_login, jira_account_id in user_mapping.items():
+        # Type safety only -- mirrors status_mapping's own check above (Story
+        # 8.6 precedent). Story 8.7: user_mapping is consulted now (assignee
+        # translation), so an unquoted-YAML-gotcha value (e.g. an accountId
+        # that YAML parses as a number/bool) must fail loud at config-load
+        # time, not surface later as a malformed GitHub/Jira write.
+        if not isinstance(github_login, str) or not isinstance(jira_account_id, str):
+            raise SyncConfigError(
+                f"{document_path}: 'user_mapping' keys and values must be strings "
+                f"(got {github_login!r}: {jira_account_id!r})"
+            )
+
+    # Review-confirmed fix: Story 8.7 is what FIRST makes the computed
+    # inverse (`{v: k for k, v in user_mapping.items()}`) load-bearing (push
+    # to github translation) -- two different github logins accidentally
+    # mapped to the same jira accountId (a plausible copy-paste mistake)
+    # would otherwise silently collapse to whichever entry iterates last in
+    # that inverse, with no load-time warning. Mirrors this module's own
+    # "a typo/misconfiguration must fail loud" convention.
+    value_counts: dict[str, int] = {}
+    for jira_account_id in user_mapping.values():
+        value_counts[jira_account_id] = value_counts.get(jira_account_id, 0) + 1
+    duplicate_values = sorted(value for value, count in value_counts.items() if count > 1)
+    if duplicate_values:
+        raise SyncConfigError(
+            f"{document_path}: 'user_mapping' has duplicate values (two github logins "
+            f"mapped to the same jira accountId) -- {duplicate_values!r}"
+        )
 
     status_mapping = document.get("status_mapping") or {}
     if not isinstance(status_mapping, dict):
@@ -244,6 +274,12 @@ class SyncUnlinkedError(SyncError):
 class SyncUnmappedStatusError(SyncError):
     """A non-null status value crossing into GitHub has no `status_mapping`
     entry."""
+
+
+class SyncUnmappedUserError(SyncError):
+    """A non-null assignee value crossing into GitHub or Jira has no
+    `user_mapping` entry in the needed direction (mirrors
+    `SyncUnmappedStatusError` exactly)."""
 
 
 class SyncBaselineTooLargeError(SyncError):
@@ -360,6 +396,12 @@ def _serialize_baseline(baseline: dict[str, object], *, side: str, ceiling: int)
 
 # ── GitHub Projects V2 (GraphQL) client ─────────────────────────────────────
 
+# Story 8.7: the `content` fragment reads the item's underlying Issue/PR --
+# GitHub's assignee is native to the CONTENT, never a custom Projects V2
+# field (Boundaries & Constraints). `content` is a `DraftIssue` (or absent)
+# for a draft item -- neither branch below matches, so it parses as "no
+# assignee, no content_ref" (a valid state, never an error; see
+# `_parse_content`).
 _GET_PROJECT_ITEM_QUERY = """
 query($itemId: ID!) {
   node(id: $itemId) {
@@ -371,6 +413,18 @@ query($itemId: ID!) {
             text
             field { ... on ProjectV2FieldCommon { id } }
           }
+        }
+      }
+      content {
+        ... on Issue {
+          number
+          assignees(first: 10) { nodes { login } }
+          repository { owner { login } name }
+        }
+        ... on PullRequest {
+          number
+          assignees(first: 10) { nodes { login } }
+          repository { owner { login } name }
         }
       }
     }
@@ -451,12 +505,23 @@ def github_graphql_request(
 class GitHubItemState:
     """One GitHub Projects V2 item's current state, as read fresh (the
     reconcile-not-propagate paradigm — a webhook payload is never trusted as
-    this state; AD-9)."""
+    this state; AD-9).
+
+    `assignee` (Story 8.7) is the FIRST `content.assignees` login, or `None`
+    if the content has no assignee, is a `DraftIssue`, or is absent --
+    tracks only one assignee, never more (Boundaries & Constraints, "Never
+    manage more than one GitHub assignee"). `content_ref` is
+    `(owner, repo, number)` for a real Issue/PR, or `None` for a
+    `DraftIssue`/absent content -- a write targeted at a `None` ref has
+    nothing to address and must raise `SyncAPIError` naming the item, never
+    guess a target."""
 
     item_id: str
     link: str | None
     status: str | None
     baseline: dict[str, object]
+    assignee: str | None = None
+    content_ref: tuple[str, str, int] | None = None
 
 
 def _parse_field_values(node: dict[str, object]) -> dict[str, str]:
@@ -484,6 +549,36 @@ def _parse_field_values(node: dict[str, object]) -> dict[str, str]:
     return field_values
 
 
+def _parse_content(
+    node: dict[str, object],
+) -> tuple[str | None, tuple[str, str, int] | None]:
+    """Parse a `ProjectV2Item` node's `content` into `(assignee_login,
+    content_ref)` (Story 8.7).
+
+    `content` is a `DraftIssue` (no `number`/`repository`/`assignees` --
+    those fields don't exist on that type, so GraphQL simply omits them) or
+    absent entirely for every pre-8.7 test fixture -- both read as
+    `(None, None)`, a valid "no assignee" state, never an error. Only the
+    FIRST `assignees` node is tracked (Boundaries & Constraints, "Never
+    manage more than one GitHub assignee").
+    """
+    content = node.get("content")
+    if not isinstance(content, dict):
+        return None, None
+    number = content.get("number")
+    repository = content.get("repository") or {}
+    owner = (repository.get("owner") or {}).get("login")
+    repo = repository.get("name")
+    content_ref: tuple[str, str, int] | None = None
+    if owner is not None and repo is not None and number is not None:
+        content_ref = (owner, repo, number)
+    assignee_nodes = ((content.get("assignees") or {}).get("nodes")) or []
+    assignee = None
+    if assignee_nodes:
+        assignee = (assignee_nodes[0] or {}).get("login")
+    return assignee, content_ref
+
+
 def get_project_item(
     item_id: str, *, config: SyncConfig, credential: HostScopedCredential, transport: TransportFn
 ) -> GitHubItemState:
@@ -506,6 +601,7 @@ def get_project_item(
         raise SyncAPIError(f"GitHub project item {item_id}: not found")
 
     field_values = _parse_field_values(node)
+    assignee, content_ref = _parse_content(node)
 
     baseline_raw = field_values.get(config.github_baseline_field_id)
     return GitHubItemState(
@@ -513,6 +609,8 @@ def get_project_item(
         link=field_values.get(config.github_link_field_id),
         status=field_values.get(config.github_status_field_id),
         baseline=_parse_baseline(baseline_raw, side="github item", identifier=item_id),
+        assignee=assignee,
+        content_ref=content_ref,
     )
 
 
@@ -633,6 +731,71 @@ def update_project_item_field(
         ) from exc
 
 
+def _github_issue_assignees_url(owner: str, repo: str, number: int) -> str:
+    """`https://api.github.com/repos/{owner}/{repo}/issues/{number}/assignees`
+    -- `owner`/`repo` are escaped, matching `_jira_issue_url`'s own
+    "never trust an externally-sourced path segment" precedent."""
+    return (
+        f"https://{_GITHUB_API_HOST}/repos/{quote(owner, safe='')}/"
+        f"{quote(repo, safe='')}/issues/{number}/assignees"
+    )
+
+
+def update_github_assignees(
+    owner: str,
+    repo: str,
+    number: int,
+    *,
+    add: str | None,
+    remove: str | None,
+    credential: HostScopedCredential,
+    transport: TransportFn,
+) -> None:
+    """`POST`/`DELETE .../issues/{number}/assignees` -- write GitHub's
+    assignee via REST, never GraphQL (Boundaries & Constraints: avoids a
+    second login-to-node-ID resolution call).
+
+    Removes ONLY `remove` (the previously-tracked login, from baseline) and
+    adds ONLY `add` (the new one) -- never touches an assignee this module
+    didn't itself add. Either may be `None`/falsy, in which case that half
+    of the operation is simply skipped -- never an empty-body request. A 2xx
+    status is success (this module accepts any status `< 300`, mirroring
+    `update_jira_issue_fields`'s own status-check shape).
+
+    ADD happens before REMOVE (never the reverse) -- a review-confirmed fix:
+    DELETE-then-POST left a window where a POST failure after a successful
+    DELETE would leave the GitHub item with ZERO assignees, strictly worse
+    than either the old or new state. Worst case on a partial failure this
+    way is briefly TWO assignees (old + new), which self-heals on the next
+    reconcile -- safer than zero.
+    """
+    url = _github_issue_assignees_url(owner, repo, number)
+    if add:
+        headers = dict(resolve_headers(credential, url))
+        headers["Content-Type"] = "application/json"
+        headers["Accept"] = "application/vnd.github+json"
+        body = json.dumps({"assignees": [add]}).encode("utf-8")
+        request = urllib.request.Request(url, data=body, headers=headers, method="POST")
+        response = transport(request)
+        if response.status >= 300:
+            raise SyncAPIError(
+                f"GitHub add assignee {add!r} on {owner}/{repo}#{number}: "
+                f"HTTP {response.status}: {response.body[:500]!r}"
+            )
+    if remove:
+        headers = dict(resolve_headers(credential, url))
+        headers["Content-Type"] = "application/json"
+        headers["Accept"] = "application/vnd.github+json"
+        body = json.dumps({"assignees": [remove]}).encode("utf-8")
+        request = urllib.request.Request(url, data=body, headers=headers, method="DELETE")
+        response = transport(request)
+        if response.status >= 300:
+            raise SyncAPIError(
+                f"GitHub remove assignee {remove!r} on {owner}/{repo}#{number}: "
+                f"HTTP {response.status}: {response.body[:500]!r}"
+            )
+
+
 # ── Jira Cloud (REST API v3) client ─────────────────────────────────────────
 
 
@@ -646,12 +809,16 @@ def _jira_issue_url(config: SyncConfig, issue_key: str) -> str:
 @dataclass(frozen=True)
 class JiraIssueState:
     """One Jira issue's current state, as read fresh (same
-    reconcile-not-propagate rationale as `GitHubItemState`)."""
+    reconcile-not-propagate rationale as `GitHubItemState`).
+
+    `assignee` (Story 8.7) is `fields.assignee.accountId`, or `None` if
+    unassigned."""
 
     issue_key: str
     link: str | None
     status: str | None
     baseline: dict[str, object]
+    assignee: str | None = None
 
 
 def get_jira_issue(
@@ -664,7 +831,7 @@ def get_jira_issue(
     Raises `SyncAPIError` for a non-2xx status, malformed JSON, or a
     missing/malformed `fields` -- never a raw `KeyError`.
     """
-    requested_fields = f"status,{config.jira_link_field_id},{config.jira_baseline_field_id}"
+    requested_fields = f"status,assignee,{config.jira_link_field_id},{config.jira_baseline_field_id}"
     url = f"{_jira_issue_url(config, issue_key)}?fields={requested_fields}"
     headers = dict(resolve_headers(credential, url))
     headers["Accept"] = "application/json"
@@ -683,6 +850,8 @@ def get_jira_issue(
 
     status_field = fields.get("status")
     status = status_field.get("name") if isinstance(status_field, dict) else None
+    assignee_field = fields.get("assignee")
+    assignee = assignee_field.get("accountId") if isinstance(assignee_field, dict) else None
     return JiraIssueState(
         issue_key=issue_key,
         link=fields.get(config.jira_link_field_id),
@@ -690,6 +859,7 @@ def get_jira_issue(
         baseline=_parse_baseline(
             fields.get(config.jira_baseline_field_id), side="jira issue", identifier=issue_key
         ),
+        assignee=assignee,
     )
 
 
@@ -781,10 +951,11 @@ def transition_jira_issue(
 
 # ── The reconcile core ──────────────────────────────────────────────────────
 
-# This story's one tracked field (matches field_overrides's own
+# This story's tracked fields (matches field_overrides's own
 # _VALID_OVERRIDE_FIELDS). _MISSING is a sentinel distinct from `None` -- see
 # `reconcile`'s own comment for why the distinction matters (AD-10 rule 2).
 _TRACKED_FIELD = "status"
+_ASSIGNEE_FIELD = "assignee"
 _MISSING = object()
 
 
@@ -823,13 +994,21 @@ def _read_both_sides(
     given", never leave `gh`/`jira` unset before dereferencing them (the
     class of bug an inconsistent `is None`/truthiness mix produces).
 
-    Raises `SyncUnlinkedError` naming whichever side has no link value --
-    covers both the "resolve via the other side's link" path AND the
-    both-identifiers-given path (a linked pair might still each carry an
-    empty link field independently) -- and also raises it when both sides
-    DO carry a link value but they don't reciprocally point at each other
-    (a mismatched pair silently treated as linked would otherwise
-    cross-propagate status to the wrong item).
+    Raises `SyncUnlinkedError` naming whichever DRIVING side has no link
+    value of its own -- there is nothing to resolve the pair from (the
+    single-identifier paths below). Also raises it when both sides DO
+    carry a non-empty link value but they don't reciprocally point at each
+    other (a mismatched pair silently treated as linked would otherwise
+    cross-propagate status to the wrong item) -- "not a reciprocal pair".
+
+    Story 8.7: the ONE case this no longer hard-fails is "one side is
+    already resolved (has a link value, or was given directly), the OTHER
+    side's OWN link field reads empty" -- the literal AF-5 gap. That case
+    (and the "both sides empty, both identifiers given directly" case) now
+    returns the resolved `(gh, jira)` pair unchanged in shape; `reconcile`'s
+    link-repair step writes whichever side doesn't already match, since
+    both sides' correct values are always independently, statelessly
+    derivable from the resolved pair itself (Design Notes).
     """
     if github_item_id and jira_issue_key:
         _validate_jira_project(jira_issue_key, config)
@@ -850,11 +1029,14 @@ def _read_both_sides(
     else:
         raise ValueError("_read_both_sides requires github_item_id and/or jira_issue_key")
 
-    if not gh.link:
-        raise SyncUnlinkedError(f"unlinked: github item {gh.item_id} has no linked jira issue")
-    if not jira.link:
-        raise SyncUnlinkedError(f"unlinked: jira issue {jira.issue_key} has no linked github item")
-    if gh.link != jira.issue_key or jira.link != gh.item_id:
+    # Story 8.7: the "one/both side(s) empty" case is no longer a hard
+    # failure here (see docstring) -- only a genuine, non-empty MISMATCH
+    # still is. Gating on `gh.link and jira.link` first is what makes that
+    # distinction: an empty link on either side never satisfies this
+    # condition on its own (an empty string trivially "differs" from a real
+    # issue key/item id, which would otherwise misfire this exact check for
+    # the now-relaxed one-side-missing case).
+    if gh.link and jira.link and (gh.link != jira.issue_key or jira.link != gh.item_id):
         raise SyncUnlinkedError(
             f"mismatched link: github item {gh.item_id} points to jira {gh.link!r}, but "
             f"jira issue {jira.issue_key} points to github {jira.link!r} -- not a reciprocal pair"
@@ -916,13 +1098,68 @@ def reconcile(
     gh_changed = gh_base is _MISSING or gh.status != gh_base
     jira_changed = jira_base is _MISSING or jira.status != jira_base
 
-    if not gh_changed and not jira_changed:
-        # True no-op: neither side diverged from its own baseline -- zero
-        # writes, baseline left untouched. This is the zero-loop property,
-        # and it holds regardless of when reconcile runs. `details` keeps
-        # the same shape every other return path uses (including "baseline",
-        # here None since it was never touched) so a caller can read
-        # `details["baseline"]` unconditionally without a KeyError.
+    # Story 8.7 (Design Notes, "Why a missing baseline key doesn't always
+    # mean 'first sync'"): AD-10 rule 1 is a statement about the PAIR ("has
+    # this pair ever converged"), not about each field independently. A side
+    # whose baseline map is WHOLLY EMPTY (`{}`) has genuinely never synced
+    # anything -- assignee is a real first-sync there too, exactly like
+    # status (`_MISSING` stays `_MISSING`, below). A side whose baseline map
+    # is non-empty (an established pair predating this story) but simply
+    # lacks the newer "assignee" key has NOT "never synced" -- it reads as
+    # "not yet observed": adopt that side's own CURRENT assignee value as
+    # its baseline right here, without comparing it to the other side and
+    # without ever propagating it. This is what makes a pre-8.7 pair's first
+    # post-upgrade reconcile silently backfill (whether the two sides
+    # secretly already agree or disagree) rather than spuriously fire on
+    # every single already-linked item at once.
+    # Review-confirmed fix: gated at the PAIR level (either side wholly
+    # empty), not per side independently. Gating on each side's OWN baseline
+    # truthiness independently can produce an asymmetric outcome: if one
+    # side's baseline is genuinely `{}` (reachable via the existing accepted
+    # partial-baseline-write-failure precedent) while the OTHER side's
+    # baseline is non-empty but merely missing the "assignee" key, per-side
+    # gating makes the empty side undergo a genuine (arbitrary) AD-4
+    # decision while the established side silently adopts-and-loses its own
+    # real value -- the established side's correct assignee can get
+    # overwritten by the other side's essentially-arbitrary current value,
+    # and that wrong result then becomes permanently "converged". Only when
+    # BOTH sides' baseline dicts are non-empty (a genuinely established
+    # pair) does "missing key -> not yet observed, adopt current, no
+    # comparison" apply; a wholly-empty baseline on EITHER side means the
+    # PAIR has never converged this field, so it's a real first-sync AD-4
+    # decision for BOTH sides (original, unchanged AD-10 rule 1 semantics).
+    pair_has_established_baseline = bool(gh.baseline) and bool(jira.baseline)
+    gh_assignee_base = gh.baseline.get(_ASSIGNEE_FIELD, _MISSING)
+    if gh_assignee_base is _MISSING and pair_has_established_baseline:
+        gh_assignee_base = gh.assignee
+    jira_assignee_base = jira.baseline.get(_ASSIGNEE_FIELD, _MISSING)
+    if jira_assignee_base is _MISSING and pair_has_established_baseline:
+        jira_assignee_base = jira.assignee
+    gh_assignee_changed = gh_assignee_base is _MISSING or gh.assignee != gh_assignee_base
+    jira_assignee_changed = jira_assignee_base is _MISSING or jira.assignee != jira_assignee_base
+
+    # Identity-link repair need (Boundaries & Constraints): stateless and
+    # independently derivable from the resolved pair alone, no extra read
+    # required. Never baselined, never routed through field_overrides/AD-4 --
+    # see the module Design Notes for why this can't share status/assignee's
+    # "which side wins" decision shape.
+    link_repair_github = gh.link != jira.issue_key
+    link_repair_jira = jira.link != gh.item_id
+
+    if (
+        not gh_changed
+        and not jira_changed
+        and not gh_assignee_changed
+        and not jira_assignee_changed
+        and not link_repair_github
+        and not link_repair_jira
+    ):
+        # True no-op: neither tracked field diverged from its own baseline
+        # on either side, AND both identity links already reciprocally
+        # match -- zero writes, baseline left untouched. This is the
+        # zero-loop property, and it holds regardless of when reconcile
+        # runs. `details` keeps the same shape every other return path uses
+        # so a caller can read any key unconditionally without a KeyError.
         return DutyResult(
             ok=True,
             summary=f"sync reconcile: no_op (github={gh.item_id}, jira={jira.issue_key}, dry_run={dry_run})",
@@ -932,10 +1169,19 @@ def reconcile(
                 "jira_issue_key": jira.issue_key,
                 "target_value": None,
                 "baseline": None,
+                "assignee": {"decision": "no_op", "target_value": None, "written_value": None},
+                "link_repairs": [],
             },
         )
 
-    if gh_changed and not jira_changed:
+    # -- Status decision -- explicitly guarded for "status itself didn't
+    # change" (unreachable pre-8.7, since the fast path above always
+    # short-circuited first whenever both status flags were False; now
+    # reachable when only assignee or a link repair carries execution past
+    # it) so a still-converged status can never be misread as a conflict.
+    if not gh_changed and not jira_changed:
+        decision, target_value = "no_op", None
+    elif gh_changed and not jira_changed:
         decision, target_value = "push_to_jira", gh.status
     elif jira_changed and not gh_changed:
         decision, target_value = "push_to_github", jira.status
@@ -948,91 +1194,292 @@ def reconcile(
         else:
             decision, target_value = "push_to_jira", gh.status
 
-    # Convergence check -- still required, now for a narrower reason than
-    # the mechanism it replaces. Two sides can independently change to the
-    # SAME new value (both diverge from their own stale baseline, but agree
-    # with each other); this catches "the destination already holds
-    # target_value" and downgrades to no_op. It is NOT the early return
-    # above -- the baseline still needs refreshing below, since both sides
-    # were still stale relative to their own prior baseline.
-    current_dest_value = jira.status if decision == "push_to_jira" else gh.status
-    if target_value == current_dest_value:
-        decision = "no_op"
+    if decision != "no_op":
+        # Convergence check -- still required, now for a narrower reason
+        # than the mechanism it replaces. Two sides can independently change
+        # to the SAME new value (both diverge from their own stale
+        # baseline, but agree with each other); this catches "the
+        # destination already holds target_value" and downgrades to no_op.
+        # It is NOT the early return above -- the baseline still needs
+        # refreshing below, since both sides were still stale relative to
+        # their own prior baseline.
+        current_dest_value = jira.status if decision == "push_to_jira" else gh.status
+        if target_value == current_dest_value:
+            decision = "no_op"
+
+    # -- Assignee decision -- structurally parallel to status's (duplicated,
+    # not shared, per the Code Map), translated through `user_mapping`
+    # (push_to_jira) or its computed inverse (push_to_github) rather than
+    # status's `status_mapping`.
+    if not gh_assignee_changed and not jira_assignee_changed:
+        assignee_decision, assignee_target_value = "no_op", None
+    elif gh_assignee_changed and not jira_assignee_changed:
+        assignee_decision, assignee_target_value = "push_to_jira", gh.assignee
+    elif jira_assignee_changed and not gh_assignee_changed:
+        assignee_decision, assignee_target_value = "push_to_github", jira.assignee
+    else:
+        if config.field_overrides.get(_ASSIGNEE_FIELD) == "jira":
+            assignee_decision, assignee_target_value = "push_to_github", jira.assignee
+        else:
+            assignee_decision, assignee_target_value = "push_to_jira", gh.assignee
+
+    if assignee_decision != "no_op":
+        assignee_current_dest_value = jira.assignee if assignee_decision == "push_to_jira" else gh.assignee
+        if assignee_target_value == assignee_current_dest_value:
+            assignee_decision = "no_op"
+
+    link_repairs: list[str] = []
+    if link_repair_github:
+        link_repairs.append("github")
+    if link_repair_jira:
+        link_repairs.append("jira")
 
     # "baseline" defaults to None (overwritten below once actually written)
     # so every return path from here on shares one consistent details shape.
+    # The top-level "decision"/"target_value"/"baseline" keys keep meaning
+    # STATUS's own, unchanged, for backward compatibility with pre-8.7
+    # assertions; assignee's own decision lives under "assignee".
     details: dict[str, object] = {
         "decision": decision,
         "github_item_id": gh.item_id,
         "jira_issue_key": jira.issue_key,
         "target_value": target_value,
         "baseline": None,
+        "assignee": {
+            "decision": assignee_decision,
+            "target_value": assignee_target_value,
+            # Fix (review-confirmed): populated below, after the write phase,
+            # with the actually-persisted/translated value -- mirrors how
+            # "baseline" above reflects status's actually-written value
+            # rather than its raw pre-translation `target_value`. Stays
+            # `None` for --dry-run (nothing was written) and whenever
+            # assignee_decision is "no_op".
+            "written_value": None,
+        },
+        "link_repairs": link_repairs,
     }
 
     if dry_run:
         return DutyResult(
             ok=True,
-            summary=f"sync reconcile: {decision} (github={gh.item_id}, jira={jira.issue_key}, dry_run=True)",
+            summary=(
+                f"sync reconcile: status={decision}, assignee={assignee_decision}, "
+                f"link_repairs={link_repairs} (github={gh.item_id}, jira={jira.issue_key}, dry_run=True)"
+            ),
             details=details,
         )
 
-    # `github_write_value` defaults to `target_value` unchanged -- the
-    # `push_to_jira` and no_op paths never assign it, so they keep writing
-    # exactly what they write today. Only the `push_to_github` branch below
-    # translates it (AD-6/CAP-5: every status value crossing into GitHub
-    # passes through `status_mapping`; an unmapped value is a hard, named
-    # failure, never passed through).
-    github_write_value = target_value
-    if decision != "no_op":
-        try:
-            if decision == "push_to_jira":
-                transition_jira_issue(
-                    jira.issue_key, target_value, config=config, credential=jira_credential, transport=transport
-                )
-            else:  # push_to_github
-                if target_value is None:
-                    # An explicit clear is not a status word to translate
-                    # (AD-10: an absent baseline key and an explicit null
-                    # mean opposite things) -- bypasses the mapping lookup.
-                    github_write_value = None
-                else:
-                    mapped = config.status_mapping.get(target_value)
-                    if mapped is None:
-                        raise SyncUnmappedStatusError(
-                            f"unmapped: jira status {target_value!r} has no status_mapping "
-                            "entry for github"
-                        )
-                    github_write_value = mapped
-                update_project_item_field(
-                    gh.item_id,
-                    config.github_status_field_id,
-                    github_write_value,
-                    config=config,
-                    credential=github_credential,
-                    transport=transport,
-                )
-        except SyncError as exc:
-            return DutyResult(ok=False, summary=f"sync reconcile: {exc}")
+    # Per-side "resulting" values -- default to each side's own CURRENT
+    # value (nothing written there this round) and are only overridden below
+    # when this round actually writes to that specific side. This is what
+    # lets the merge below safely carry forward an unchanged field (status
+    # OR assignee) even when the OTHER field is what triggered this write --
+    # using the frozen pre-downgrade decision/target_value here instead
+    # would, under a non-identity status_mapping, misrecord a status that
+    # never actually changed (see this story's own dev-notes: the old
+    # single-field code never had to handle "this field didn't move, but we
+    # got this far anyway", because before Story 8.7 that combination could
+    # never reach past the true no-op fast path above).
+    github_status_result = gh.status
+    jira_status_result = jira.status
+    github_assignee_result = gh.assignee
+    jira_assignee_result = jira.assignee
 
-    # Baseline refresh -- ALWAYS runs from here on (both the "converged
-    # already" no_op path and the real-push path reach this), because at
-    # least one side diverged from ITS OWN prior baseline and every future
-    # reconcile of this pair would otherwise see it as "changed" forever.
-    # The GitHub-side baseline records the TRANSLATED (actually-written)
-    # value -- `github_write_value`, never the raw `target_value` -- or the
-    # next reconcile's `gh.status != gh_base` comparison would permanently
-    # mismatch (a zero-loop regression, AD-5). The Jira-side baseline stays
-    # keyed on `target_value`: Jira's own value did not change.
+    # Fix (review-confirmed): tracks, independently per tracked field,
+    # whether that field's OWN write this round is safe to persist to the
+    # baseline -- True once that field's block below completes without
+    # raising (including trivially, when its own decision was "no_op" and
+    # nothing needed writing). A LATER field's failure (or a link-repair
+    # failure, which is not itself baselined) must not strand an EARLIER
+    # field's already-successful write's baseline forever -- see the
+    # baseline-refresh section below for how these flags are used.
+    status_persist_ok = False
+    assignee_persist_ok = False
+
+    # Field writes proceed in this fixed order -- status, then assignee,
+    # then link repairs; a `SyncError` from any step stops immediately
+    # (never attempts a later step after an earlier one failed) -- captured
+    # as `write_error` rather than returned immediately, so the field(s)
+    # that already succeeded can still get a chance to persist their
+    # baseline below.
+    write_error: SyncError | None = None
     try:
+        if decision == "push_to_jira":
+            transition_jira_issue(
+                jira.issue_key, target_value, config=config, credential=jira_credential, transport=transport
+            )
+            jira_status_result = target_value
+        elif decision == "push_to_github":
+            if target_value is None:
+                # An explicit clear is not a status word to translate
+                # (AD-10: an absent baseline key and an explicit null mean
+                # opposite things) -- bypasses the mapping lookup.
+                github_write_value = None
+            else:
+                mapped = config.status_mapping.get(target_value)
+                if mapped is None:
+                    raise SyncUnmappedStatusError(
+                        f"unmapped: jira status {target_value!r} has no status_mapping "
+                        "entry for github"
+                    )
+                github_write_value = mapped
+            update_project_item_field(
+                gh.item_id,
+                config.github_status_field_id,
+                github_write_value,
+                config=config,
+                credential=github_credential,
+                transport=transport,
+            )
+            github_status_result = github_write_value
+        status_persist_ok = True
+
+        if assignee_decision == "push_to_jira":
+            # gh.assignee (a GitHub login) -> Jira accountId, via
+            # user_mapping directly. An explicit None (unassigned) bypasses
+            # translation (mirrors status_mapping's None-bypass precedent).
+            if assignee_target_value is None:
+                jira_assignee_write_value = None
+            else:
+                mapped_account_id = config.user_mapping.get(assignee_target_value)
+                if mapped_account_id is None:
+                    raise SyncUnmappedUserError(
+                        f"unmapped: github login {assignee_target_value!r} has no "
+                        "user_mapping entry for jira"
+                    )
+                jira_assignee_write_value = mapped_account_id
+            update_jira_issue_fields(
+                jira.issue_key,
+                {
+                    "assignee": (
+                        {"accountId": jira_assignee_write_value}
+                        if jira_assignee_write_value is not None
+                        else None
+                    )
+                },
+                config=config,
+                credential=jira_credential,
+                transport=transport,
+            )
+            jira_assignee_result = jira_assignee_write_value
+        elif assignee_decision == "push_to_github":
+            # jira.assignee (a Jira accountId) -> GitHub login, via
+            # user_mapping's computed inverse. An explicit None bypasses
+            # translation the same way.
+            if assignee_target_value is None:
+                github_assignee_write_value = None
+            else:
+                inverse_user_mapping = {v: k for k, v in config.user_mapping.items()}
+                mapped_login = inverse_user_mapping.get(assignee_target_value)
+                if mapped_login is None:
+                    raise SyncUnmappedUserError(
+                        f"unmapped: jira accountId {assignee_target_value!r} has no "
+                        "user_mapping entry for github"
+                    )
+                github_assignee_write_value = mapped_login
+            if gh.content_ref is None:
+                # Never guess a target -- a DraftIssue (or absent content)
+                # has no owner/repo/number to address.
+                raise SyncAPIError(
+                    f"github item {gh.item_id}: cannot write assignee -- content is a "
+                    "draft issue (or absent), no owner/repo/number to target"
+                )
+            owner, repo, number = gh.content_ref
+            update_github_assignees(
+                owner,
+                repo,
+                number,
+                add=github_assignee_write_value,
+                # Remove GH's own LIVE current assignee (`gh.assignee`, just
+                # freshly read this call) -- review-confirmed fix: the
+                # baseline value can be stale relative to what's actually
+                # assigned on GitHub right now (reachable in the
+                # both-changed/jira-wins conflict branch), and targeting a
+                # login that isn't actually assigned is a no-op DELETE
+                # against the real API while the additive POST above still
+                # adds the new person -- leaving BOTH the drifted-away live
+                # assignee and the new one assigned simultaneously, which
+                # this module must never do (Boundaries & Constraints:
+                # "never manage more than one GitHub assignee"). `None`
+                # (nobody currently assigned) means nothing to remove.
+                remove=gh.assignee,
+                credential=github_credential,
+                transport=transport,
+            )
+            github_assignee_result = github_assignee_write_value
+        assignee_persist_ok = True
+
+        if link_repair_github:
+            update_project_item_field(
+                gh.item_id,
+                config.github_link_field_id,
+                jira.issue_key,
+                config=config,
+                credential=github_credential,
+                transport=transport,
+            )
+        if link_repair_jira:
+            update_jira_issue_fields(
+                jira.issue_key,
+                {config.jira_link_field_id: gh.item_id},
+                config=config,
+                credential=jira_credential,
+                transport=transport,
+            )
+    except SyncError as exc:
+        write_error = exc
+
+    # Fix (review-confirmed): surface the actually-persisted/translated
+    # assignee value (mirrors "baseline" above for status) -- only when
+    # assignee's own write this round actually happened (never during
+    # --dry-run, never when its own decision was "no_op", never when its
+    # own write is what failed).
+    if assignee_persist_ok and assignee_decision != "no_op":
+        details["assignee"]["written_value"] = (
+            jira_assignee_result if assignee_decision == "push_to_jira" else github_assignee_result
+        )
+
+    # Baseline refresh -- runs whenever at least one TRACKED field (status
+    # or assignee) diverged from ITS OWN prior baseline on EITHER side AND
+    # that field's own write this round is safe to persist (`status_persist_
+    # ok`/`assignee_persist_ok`), because every future reconcile of this
+    # pair would otherwise see an unpersisted field as "changed" forever
+    # (AD-5's zero-loop property). Deliberately NOT gated on the
+    # link-repair flags -- the identity link is never baselined (Boundaries
+    # & Constraints), so a link-repair-only round makes exactly the link
+    # write(s) above and nothing else.
+    should_persist_status = status_persist_ok and (gh_changed or jira_changed)
+    should_persist_assignee = assignee_persist_ok and (gh_assignee_changed or jira_assignee_changed)
+
+    def _persist_merged_baseline() -> None:
+        """Serialize and write both sides' merged baseline maps. Each
+        side's baseline records that side's own ACTUALLY-RESULTING value
+        for a tracked field ONLY WHEN that field's own write this round is
+        `*_persist_ok` -- this is both how a pre-8.7 item's first
+        post-upgrade reconcile backfills its missing "assignee" baseline
+        key for free the moment any OTHER field's divergence already
+        triggered a write (Design Notes), AND (fix, review-confirmed) how a
+        LATER field's write failure no longer strands an EARLIER field's
+        already-successful write's baseline forever: a field whose OWN
+        write just failed is excluded from the override (its prior baseline
+        value, if any, is carried forward untouched by `**gh.baseline`/
+        `**jira.baseline` instead) so it is never falsely marked
+        "converged" -- it is correctly re-attempted on the next reconcile.
+        Raises `SyncError` on failure; the caller decides how to report it.
+        """
+        gh_overrides: dict[str, object] = {}
+        jira_overrides: dict[str, object] = {}
+        if status_persist_ok:
+            gh_overrides[_TRACKED_FIELD] = github_status_result
+            jira_overrides[_TRACKED_FIELD] = jira_status_result
+        if assignee_persist_ok:
+            gh_overrides[_ASSIGNEE_FIELD] = github_assignee_result
+            jira_overrides[_ASSIGNEE_FIELD] = jira_assignee_result
         new_gh_baseline = _serialize_baseline(
-            {**gh.baseline, _TRACKED_FIELD: github_write_value},
-            side="github",
-            ceiling=_GITHUB_BASELINE_FIELD_CEILING,
+            {**gh.baseline, **gh_overrides}, side="github", ceiling=_GITHUB_BASELINE_FIELD_CEILING
         )
         new_jira_baseline = _serialize_baseline(
-            {**jira.baseline, _TRACKED_FIELD: target_value},
-            side="jira",
-            ceiling=_JIRA_BASELINE_FIELD_CEILING,
+            {**jira.baseline, **jira_overrides}, side="jira", ceiling=_JIRA_BASELINE_FIELD_CEILING
         )
         update_project_item_field(
             gh.item_id,
@@ -1049,27 +1496,52 @@ def reconcile(
             credential=jira_credential,
             transport=transport,
         )
-    except SyncError as exc:
-        # Known, accepted non-atomicity (same risk class as
-        # keys.rotate_identity's documented partial-completion state): the
-        # tracked-field write above already succeeded (if decision != no_op);
-        # only the baseline refresh failed. Reported here rather than rolled
-        # back.
-        return DutyResult(
-            ok=False,
-            summary=f"sync reconcile: {decision} but failed refreshing baseline: {exc}",
-        )
+        if status_persist_ok:
+            # `github_status_result` mirrors what the GH-side baseline write
+            # above actually persisted for status, not the raw pre-translation
+            # value -- matches the pre-8.7 detail shape callers already assert.
+            details["baseline"] = {_TRACKED_FIELD: github_status_result}
 
-    # `github_write_value` (== `target_value` on every path except a
-    # translated push_to_github) so this returned detail matches what the
-    # GH-side baseline write above actually persisted, not the raw
-    # pre-translation status.
-    details["baseline"] = {_TRACKED_FIELD: github_write_value}
+    if write_error is not None:
+        # Fix (review-confirmed): a LATER field's write failure must not
+        # strand an EARLIER field's already-successful write's baseline
+        # forever -- the same "Known, accepted non-atomicity" risk class as
+        # the baseline-refresh-itself-failing case below, just for a new
+        # cause. Whichever field(s) already completed (or needed nothing
+        # this round) still get a chance to persist here.
+        if should_persist_status or should_persist_assignee:
+            try:
+                _persist_merged_baseline()
+            except SyncError as baseline_exc:
+                return DutyResult(
+                    ok=False,
+                    summary=(
+                        f"sync reconcile: {write_error} (baseline refresh for the "
+                        f"field(s) that already succeeded also failed: {baseline_exc})"
+                    ),
+                    details=details,
+                )
+        return DutyResult(ok=False, summary=f"sync reconcile: {write_error}", details=details)
+
+    if should_persist_status or should_persist_assignee:
+        try:
+            _persist_merged_baseline()
+        except SyncError as exc:
+            # Known, accepted non-atomicity (same risk class as
+            # keys.rotate_identity's documented partial-completion state):
+            # the tracked-field write(s) above already succeeded; only the
+            # baseline refresh failed. Reported here rather than rolled
+            # back.
+            return DutyResult(
+                ok=False,
+                summary=f"sync reconcile: {decision} but failed refreshing baseline: {exc}",
+            )
+
     return DutyResult(
         ok=True,
         summary=(
-            f"sync reconcile: {decision} -> {target_value!r} "
-            f"(github={gh.item_id}, jira={jira.issue_key}); baseline refreshed"
+            f"sync reconcile: status={decision}, assignee={assignee_decision}, "
+            f"link_repairs={link_repairs} (github={gh.item_id}, jira={jira.issue_key})"
         ),
         details=details,
     )
