@@ -33,13 +33,23 @@ detector" code that duplication risks silently diverging from, and the
 Code Map for this story calls for an import explicitly.
 
 **Never** modifies the Tier-3 file itself (append-only by this repo's
-established convention) or the grandfather baseline
-(`scripts/.deferred-work-baseline.json` -- re-stamping that is Story 8.4's
-job, deliberately sequenced after this one). Writes via a single
-`write_text` call per project, only after every promotion in that project's
-batch has been computed and validated in memory -- mirrors
-`spec_surface_check.py`'s own `--write-baseline` atomicity pattern (logical
-atomicity via one terminal write, not filesystem-level atomicity).
+established convention). Writes via a single `write_text` call per project,
+only after every promotion in that project's batch has been computed and
+validated in memory -- mirrors `spec_surface_check.py`'s own
+`--write-baseline` atomicity pattern (logical atomicity via one terminal
+write, not filesystem-level atomicity).
+
+**Story 8.4:** immediately after a project's ledger write succeeds (only
+when it actually promoted `N>0` orphans), this script re-stamps that SAME
+project's grandfather baseline (`scripts/.deferred-work-baseline.json`) to
+its current anonymous-entry count, by importing and calling
+`deferred_work_baseline.stamp_projects` -- reusing that script's own
+already-tested scoped-stamp/merge logic rather than a second
+implementation. A project where nothing was promoted this run (no orphans,
+or an aborted batch) never has its baseline touched. A baseline re-stamp
+failure AFTER a successful ledger write is caught and reported as a
+distinct warning appended to that project's own "promoted" outcome -- it
+never rolls back or reclassifies the already-successful promotion.
 
 Usage (plain `python`, no pixi task -- mirrors `deferred_work_baseline.py`'s
 own precedent):
@@ -79,6 +89,35 @@ from pyforge.doctor.sources.chain import (  # noqa: E402
     classify_tier3_entries,
     mint_id_for_entry,
 )
+
+# Story 8.4: `deferred_work_baseline.py` lives alongside this script in
+# `scripts/` -- a plain stdlib-only sibling module, not a package -- so
+# importing its reusable `stamp_projects` needs its own directory on
+# `sys.path`, same convention as the `pyforge.doctor` insertion above,
+# scoped to just this one directory. Importing (not duplicating) it is the
+# whole point of Story 8.4's Boundaries: "reuse... rather than
+# reimplementing baseline JSON merge semantics."
+#
+# UNLIKE the `pyforge.doctor` import above, a failure here is NOT left to
+# raise loudly: this sibling is an optional, best-effort re-stamp step, not
+# this script's core job (promoting Tier-3 orphans still works fine without
+# it). If the sibling is ever missing/unimportable -- e.g. this script
+# copied standalone without it -- even a bare invocation or `--help` used to
+# crash with a raw traceback before argument parsing ever ran (Review
+# Triage Log 2026-08-15, item 3). Degrading `deferred_work_baseline` to
+# `None` here lets the script still run normally; `_promote_project`'s own
+# re-stamp call below reports a clear "baseline module unavailable" warning
+# for that project instead of crashing, if/when it's actually reached.
+_SCRIPTS_DIR = REPO_ROOT / "scripts"
+if str(_SCRIPTS_DIR) not in sys.path:
+    sys.path.insert(0, str(_SCRIPTS_DIR))
+try:
+    import deferred_work_baseline  # noqa: E402
+except ImportError as _baseline_import_exc:  # noqa: N816
+    deferred_work_baseline = None
+    _BASELINE_IMPORT_ERROR: ImportError | None = _baseline_import_exc
+else:
+    _BASELINE_IMPORT_ERROR = None
 
 TIER3_REL = Path("implementation-artifacts") / "deferred-work.md"
 TRACKED_REL = Path("planning-artifacts") / "deferred-work-ledger.md"
@@ -138,6 +177,13 @@ class _Outcome:
     slug: str
     status: str  # "promoted" | "no-op" | "aborted"
     message: str
+    # Story 8.4, Review Triage Log 2026-08-15, item 2: set when a
+    # "promoted" outcome's baseline re-stamp failed -- the ledger write
+    # itself still genuinely succeeded, so `status`/`message` stay
+    # "promoted" (never rewritten to look like a failure), but `main()`
+    # must still end the whole run non-zero so a caller checking only the
+    # exit code (CI, cron) learns the manual fallback is needed.
+    baseline_warning: bool = False
 
 
 def _project_slug_map() -> dict[str, str]:
@@ -435,7 +481,39 @@ def _promote_project(slug: str, project_dir: Path) -> _Outcome:
         Path(tmp_name).unlink(missing_ok=True)
         raise
     ids_str = ", ".join(new_id for _, new_id in minted)
-    return _Outcome(slug, "promoted", f"{slug}: promoted {len(minted)} orphan(s) -- {ids_str}")
+    message = f"{slug}: promoted {len(minted)} orphan(s) -- {ids_str}"
+
+    # Story 8.4: re-stamp THIS project's grandfather baseline to its
+    # current anonymous-entry count, now that the promotion above landed
+    # (promoted_count > 0, ledger write already succeeded). `project_dir.
+    # name` (e.g. "pyforge-mason"), not the short `slug` ("mason") -- that
+    # is the key `deferred_work_baseline.py`'s own `_live_state()` uses. A
+    # failure here must NOT roll back or reclassify the already-successful
+    # ledger write -- caught and reported as a distinct, separately-labeled
+    # warning naming the manual fallback instead (Boundaries "Block If"),
+    # and `main()` still ends the overall run non-zero for it (item 2)
+    # even though this project's own `status` stays "promoted".
+    baseline_warning = False
+    try:
+        if deferred_work_baseline is None:
+            # The sibling module itself failed to import (item 3) -- never
+            # reached the actual stamp call, so name that specifically
+            # rather than an opaque AttributeError on `None`.
+            raise RuntimeError(
+                f"baseline module unavailable: {_BASELINE_IMPORT_ERROR}"
+            )
+        deferred_work_baseline.stamp_projects([project_dir.name])
+    except Exception as exc:  # noqa: BLE001 -- see the docstring above:
+        # this must degrade to a warning, never abort or unwind the
+        # already-successful promotion.
+        baseline_warning = True
+        message += (
+            f"; WARNING: baseline re-stamp failed -- "
+            f"{exc.__class__.__name__}: {exc} -- run `python "
+            f"scripts/deferred_work_baseline.py --write-baseline --project "
+            f"{project_dir.name}` by hand"
+        )
+    return _Outcome(slug, "promoted", message, baseline_warning=baseline_warning)
 
 
 def main() -> int:
@@ -455,9 +533,10 @@ def main() -> int:
         print(
             "this script promotes Tier-3 legacy deferred-work orphans (Story 8.1/8.2's "
             "classify_tier3_entries/mint_id_for_entry) into their project's tracked "
-            "ledger -- never Tier-3 itself, never the grandfather baseline (Story "
-            "8.4's job). Nothing is written without --fix. Pass "
-            "--fix [--project SLUG ...].",
+            "ledger -- never Tier-3 itself. A successful promotion also re-stamps "
+            "that project's grandfather baseline (scripts/.deferred-work-baseline.json) "
+            "via deferred_work_baseline.py's stamp_projects (Story 8.4). Nothing is "
+            "written without --fix. Pass --fix [--project SLUG ...].",
             file=sys.stderr,
         )
         return 2
@@ -499,6 +578,14 @@ def main() -> int:
             continue
         print(outcome.message)
         if outcome.status == "aborted":
+            exit_code = 1
+        # Story 8.4, Review Triage Log 2026-08-15, item 2: a baseline
+        # re-stamp warning must also make the OVERALL run non-zero, even
+        # though every ledger write succeeded and this project's own
+        # `status` correctly stays "promoted" -- a caller checking only the
+        # exit code (CI, cron) must still learn the manual fallback command
+        # is needed.
+        if outcome.baseline_warning:
             exit_code = 1
     return exit_code
 

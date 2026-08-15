@@ -242,16 +242,20 @@ def test_project_given_without_write_baseline_is_a_usage_error(tmp_path: Path):
     assert not (repo / "scripts" / ".deferred-work-baseline.json").exists()
 
 
-def test_bare_invocation_explains_purpose_without_claiming_a_detector_reads_it(tmp_path: Path):
-    """No flags at all must not silently do nothing -- and must not claim the
-    detector already consumes this file, since Story 7.3 is what will."""
+def test_bare_invocation_explains_purpose_and_names_the_detector_that_reads_it(tmp_path: Path):
+    """No flags at all must not silently do nothing -- and, since Story 7.3
+    landed (Review Triage Log 2026-08-15, item 10), must no longer claim no
+    detector reads this file (that claim is now false) nor stay silent
+    about `deferred_work_promote.py --fix` writing it automatically."""
     repo = _fixture_repo(tmp_path)
     stamper = _patched_stamper(repo)
     r = subprocess.run([sys.executable, str(stamper)],
                        capture_output=True, text=True, cwd=repo)
     assert r.returncode == 2
     assert "--write-baseline" in r.stderr
-    assert "No detector reads this file yet" in r.stderr
+    assert "No detector reads this file yet" not in r.stderr
+    assert "Story 7.3" in r.stderr
+    assert "deferred_work_promote.py --fix" in r.stderr
     assert not (repo / "scripts" / ".deferred-work-baseline.json").exists()
 
 
