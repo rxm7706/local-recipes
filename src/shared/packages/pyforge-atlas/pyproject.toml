@@ -68,6 +68,12 @@ dependencies = [
     # script+div fragment. Floor matches the root pixi.toml `bokeh` pin already used
     # by `local-recipes`.
     "bokeh>=3.9.2",
+    # Story 14.3 (CAP-2): `views/live.py` hard-imports `bokeh.server.server.Server`
+    # (Tornado-backed) and `views/asgi.py` hard-imports `starlette` for the ASGI mounting
+    # layer. Kept byte-for-byte in step with the member pixi.toml run-dependencies
+    # (AUD-ATLAS-010) — floors pinned to the versions resolved in the working env.
+    "tornado>=6.5.8",
+    "starlette>=1.6.0",
 ]
 
 [project.optional-dependencies]

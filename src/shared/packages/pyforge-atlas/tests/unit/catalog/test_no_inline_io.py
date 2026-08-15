@@ -439,6 +439,42 @@ def test_no_great_expectations_in_shipped_validation_path():
     )
 
 
+# AD-1 (Story 14.3): ``starlette`` (the ASGI host) is REPLACEABLE mounting glue — only
+# ``views/asgi.py`` may import it, so the swappable "any ASGI host" seam Story 14.3's
+# Boundaries & Constraints assert stays a STRUCTURAL invariant, not prose (mirrors the C1
+# dagster-glue single-FILE exemption above; review-pass patch — this test did not exist when
+# that boundary was first written). ``tornado``/``bokeh.server`` are Story 14.3's WebSocket
+# RUNTIME (``views/live.py``) — deliberately NOT banned here: banning them would ban
+# ``live.py``'s own legitimate WebSocket code, a different module and a different concern from
+# the ASGI-host mounting layer this test polices.
+ASGI_HOST_DENYLIST = ("starlette", "fastapi", "uvicorn")
+ASGI_HOST_GLUE_EXEMPT = frozenset({"views/asgi.py"})
+
+
+def test_asgi_host_only_in_views_asgi_module():
+    """Story 14.3 Boundaries & Constraints, made structural: only
+    ``pyforge/atlas/views/asgi.py`` may import an ASGI host library — every other module
+    (``views/live.py`` included) stays host-agnostic, so swapping hosts later touches only
+    this one file (mirrors the C1 dagster-glue single-file containment)."""
+    violations = _violations(ASGI_HOST_DENYLIST, exempt=ASGI_HOST_GLUE_EXEMPT)
+    assert not violations, (
+        "Story 14.3 boundary violation — only views/asgi.py may import an ASGI host "
+        f"(starlette/fastapi/uvicorn): {violations}"
+    )
+    # positive: the mounting seam DOES import starlette (not a dead exemption).
+    asgi_mod = ATLAS_PKG / "views" / "asgi.py"
+    assert asgi_mod.is_file(), "views/asgi.py missing"
+    assert any(_denylisted(n, ("starlette",)) for n in _imported_names(asgi_mod)), (
+        "views/asgi.py does not import starlette"
+    )
+    # live.py genuinely stays host-agnostic (not exempted, not importing an ASGI host).
+    live_mod = ATLAS_PKG / "views" / "live.py"
+    assert live_mod.is_file(), "views/live.py missing"
+    assert not any(_denylisted(n, ASGI_HOST_DENYLIST) for n in _imported_names(live_mod)), (
+        "views/live.py imports an ASGI host — it must stay host-agnostic"
+    )
+
+
 def test_dagster_only_in_glue():
     """Positive AD-1 assertion: the glue module DOES import the orchestration
     libs (so it is genuinely the seam) and NO OTHER package file does — the
