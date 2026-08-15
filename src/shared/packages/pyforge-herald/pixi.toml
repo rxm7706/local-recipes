@@ -34,3 +34,13 @@ python = ">=3.12"
 mcp = ">=1.28.1"
 httpx2 = ">=2.5.0"        # Story 6.4's evidence-link HTTP client -- already a transitive `mcp` dep, declared explicitly since evidence.py imports it directly
 pyforge-core = { path = "../pyforge-core" }
+# Story 14.2: deck_qa.py's render_gate imports `playwright.sync_api` and
+# composes a Pillow contact sheet from the captured PNGs. conda-forge splits
+# what PyPI ships as one `playwright` distribution into two packages: `playwright`
+# (the CLI/browser driver, no site-packages module) and `playwright-python`
+# (the `import playwright` bindings) -- both are required; declaring only one
+# resolves cleanly and still fails at import. Floors match pyproject.toml's
+# own `playwright`/`pillow` floors exactly.
+playwright = ">=1.62.1"          # CLI + browser driver
+playwright-python = ">=1.62.0"   # the `import playwright` bindings
+pillow = ">=12.3.0"              # render_gate's contact-sheet compositing
