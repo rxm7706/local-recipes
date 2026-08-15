@@ -18,6 +18,8 @@ rendered content):
 
 from __future__ import annotations
 
+from dataclasses import replace
+
 import pytest
 
 from pyforge.atlas.views import cli_bridge
@@ -38,9 +40,10 @@ def test_render_rows_dispatches_through_the_registry_with_exact_args_and_return_
     monkeypatch,
 ):
     """render_rows's one-line dispatch (get_widget(view.widget).static_renderer(view, rows))
-    calls the registered widget's renderer with exactly (view, rows) and returns its result
-    unchanged -- a pure dispatch-correctness check, independent of Bokeh's own rendering."""
-    view = get_view("staleness-report")
+    reads the widget name from view.widget itself (not a hardcoded "grid") and calls the
+    resolved widget's renderer with exactly (view, rows), returning its result unchanged --
+    registering the spy under a name distinct from "grid" proves the lookup key comes from
+    the view, not from a literal in render_rows."""
     rows = [{"conda_name": "alpha-pkg"}]
     calls = []
 
@@ -49,8 +52,9 @@ def test_render_rows_dispatches_through_the_registry_with_exact_args_and_return_
         return ("<script>spy</script>", "<div>spy</div>")
 
     monkeypatch.setitem(
-        WIDGETS, "grid", Widget(name="grid", static_renderer=_spy_static_renderer)
+        WIDGETS, "spy-only", Widget(name="spy-only", static_renderer=_spy_static_renderer)
     )
+    view = replace(get_view("staleness-report"), widget="spy-only")
 
     result = render_rows(view, rows)
 
@@ -88,8 +92,9 @@ def test_get_widget_unknown_name_raises_key_error_naming_known_widget_types():
 
 
 def test_get_widget_extensibility_via_monkeypatch_needs_no_registry_edit(monkeypatch):
-    """EXTENSIBILITY: a throwaway widget type registered only inside the test leaves the 6
+    """EXTENSIBILITY: a throwaway widget type registered only inside the test leaves the
     existing STATIC_VIEWS/View entries unmodified — no edit to registry.py was needed."""
+    views_before = STATIC_VIEWS
 
     def _fake_static_renderer(view, rows):
         return ("<script>fake</script>", "<div>fake</div>")
@@ -98,7 +103,7 @@ def test_get_widget_extensibility_via_monkeypatch_needs_no_registry_edit(monkeyp
     monkeypatch.setitem(WIDGETS, "fake", fake_widget)
 
     assert get_widget("fake") is fake_widget
-    assert len(STATIC_VIEWS) == 6
+    assert STATIC_VIEWS is views_before
     assert all(view.widget == "grid" for view in STATIC_VIEWS)
 
 
