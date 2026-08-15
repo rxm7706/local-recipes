@@ -23,7 +23,7 @@ development_status:
   1-7-retiring-a-credential-leaves-a-record-not-a-silent-gap: done
   10-1-the-host-renders-into-src-platform: done
   10-2-one-factory-sourced-environment: done
-  10-3-one-image-both-engines: backlog
+  10-3-one-image-both-engines: done
   10-4-the-bcrypt-pin-stops-blocking-3-14: backlog
   11-1-langflow-joins-as-a-pluggable-app: backlog
   11-2-db-gpt-joins-as-a-pluggable-app: backlog

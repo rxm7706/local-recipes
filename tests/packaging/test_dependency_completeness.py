@@ -134,6 +134,12 @@ CONDA_ONLY_RUN_DEPS: dict[str, frozenset[str]] = {
     "pyforge-mason": frozenset(
         {"conda-lock", "gh", "pixi", "python-build", "twine"}
     ),
+    # herald's `playwright` (Story 14.2, deck_qa.py's headless-render gate):
+    # conda-forge splits what PyPI ships as one `playwright` distribution into
+    # two packages -- `playwright` (the CLI/browser driver, matched by name to
+    # pyproject.toml's own `playwright` entry) and `playwright-python` (the
+    # `import playwright` bindings, no separate PyPI name to declare against).
+    "pyforge-herald": frozenset({"playwright-python"}),
 }
 
 # The shared namespace package. `pyforge.*` imports are in-repo siblings, never a
