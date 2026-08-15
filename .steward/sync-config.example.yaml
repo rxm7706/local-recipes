@@ -65,10 +65,14 @@ status_mapping: {}
 #   "In Progress": "In Progress"
 #   "Closed": "Done"
 
-# GitHub login -> Jira accountId. Reserved for a future assignee-sync field
-# (the architecture's CAP-1 names status/assignee/identity-link; this story
-# wires status only -- see ARCHITECTURE-SPINE.md's Deferred section). Safe
-# to leave empty for now.
+# GitHub login -> Jira accountId (Story 8.7). Translates assignee values
+# crossing between the two systems: push_to_jira uses this mapping
+# directly, push_to_github uses its computed inverse. A non-null assignee
+# value with no entry in the needed direction is a hard, named
+# `SyncUnmappedUserError` -- never a silent passthrough. An explicit `None`
+# (unassigned) always bypasses translation on either side. Safe to leave
+# empty if you don't want assignee propagated (an item with no assignee on
+# either side never triggers a translation lookup).
 user_mapping: {}
 # user_mapping:
 #   octocat: "5b10a2844c20165700ede21g"
