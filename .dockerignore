@@ -221,14 +221,19 @@ src/platform/config/settings/test.py
 # `src/platform/`, so the gap stops being theoretical the moment one does.
 src/platform/.env
 src/platform/.env.*
-# Build-host-generated app output. Both are in `src/platform/.gitignore`
-# (`staticfiles/`, `platform/media/`) so they never reach a commit -- but
-# .dockerignore is a SEPARATE list, and `COPY src/platform/ /app/` consults
-# only this file. A developer who ran `manage.py collectstatic` locally
-# would otherwise ship their host's assets into the image, where the
-# runtime stage's own three-pass collectstatic runs over (never `--clear`s)
-# them -- making image content depend on which machine built it. The image
-# generates both directories itself; neither is ever an input.
+# Build-host-generated app output. .dockerignore is a SEPARATE list from
+# .gitignore, and `COPY src/platform/ /app/` consults only this file. A
+# developer who ran `manage.py collectstatic` locally would otherwise ship
+# their host's assets into the image, where the runtime stage's own
+# three-pass collectstatic runs over (never `--clear`s) them -- making image
+# content depend on which machine built it. The image generates both
+# directories itself; neither is ever an input.
+# NOTE, because an earlier revision of this comment got it wrong: only
+# `staticfiles/` is also gitignored. `src/platform/.gitignore` carries a
+# stale cookiecutter `platform/media/` pattern, and this app's package is
+# `platformapp`, so `platformapp/media/` is NOT gitignored -- verified with
+# `git check-ignore`. These two lines cover the IMAGE; the repo-side gap is
+# recorded as deferred work against Story 10.1's tree.
 src/platform/staticfiles/
 src/platform/platformapp/media/
 

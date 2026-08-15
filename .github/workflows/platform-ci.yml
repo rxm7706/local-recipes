@@ -7,8 +7,17 @@ name: Platform CI
 # its own cost profile -- entirely disjoint from the conda-forge factory's
 # own detector/linter CI (`detectors.yml`, `staged-recipes-linter.yml`).
 # The `paths:` filter on both trigger events below is the cost isolation:
-# this workflow never triggers on a factory-only change, and factory CI
-# never triggers on a platform-only change. `working-directory:
+# factory CI never triggers on a platform-only change, and this workflow
+# triggers on a factory change ONLY for the handful of paths the image
+# genuinely builds from (enumerated below). It is NOT true, as an earlier
+# revision of this comment claimed, that this workflow "never triggers on a
+# factory-only change" -- `src/shared/packages/pyforge-{steward,core}/**`
+# ARE factory trees, and they are in the filter because the build-time
+# secrets-scan env is built from them. Note also that `paths:` is
+# WORKFLOW-scoped, not job-scoped: any path below runs BOTH jobs, so a
+# pyforge-steward commit also pays for the pip-based `test` job. That cost
+# is accepted deliberately here and recorded as deferred work; narrowing it
+# would mean splitting this file per job. `working-directory:
 # src/platform` on every run step keeps `manage.py`, `requirements/`, and
 # `pyproject.toml` resolvable by relative path, matching the render root
 # spec-python-agent-platform fixes at `src/platform/`.
@@ -238,9 +247,25 @@ jobs:
             -e REDIS_URL=redis://platform-ci-redis-${{ matrix.engine }}:6379/0 \
             platform-ci-${{ matrix.engine }}
 
+      # The image's own ENTRYPOINT/CMD deliberately does NOT migrate -- on
+      # Kubernetes/OCP that belongs to a separate Job, not to every pod's
+      # boot (concurrent replicas would race the same migration). So CI has
+      # to do it explicitly, exactly as `compose/compose.yml` does for the
+      # local stack, and for the same reason: without it every assertion
+      # below runs against a database with ZERO TABLES and still passes.
+      # That is not hypothetical -- this story shipped exactly that state in
+      # compose and only caught it because someone requested `/admin/login/`
+      # by hand. `/ht/`'s Database check is a bare connectivity probe and
+      # `/` renders with no query at all, so neither notices.
+      - name: Migrate the database (the image's CMD deliberately doesn't)
+        run: ${{ matrix.engine }} exec platform-ci-app-${{ matrix.engine }} /app/entrypoint.sh python manage.py migrate --noinput
+
+      # 120s, not 60: a cold runner has already spent its budget on the
+      # build, and a slow-but-correct gunicorn/uvicorn boot that trips a
+      # tight poll reads exactly like a real regression.
       - name: Poll /ht/ for 200
         run: |
-          for i in $(seq 1 30); do
+          for i in $(seq 1 60); do
             code="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/ht/ || true)"
             if [ "$code" = "200" ]; then echo "healthy (200)"; exit 0; fi
             sleep 2
@@ -248,6 +273,21 @@ jobs:
           echo "::error::/ht/ never returned 200 (${{ matrix.engine }})"
           ${{ matrix.engine }} logs platform-ci-app-${{ matrix.engine }}
           exit 1
+
+      # The only assertion here that actually QUERIES an application table.
+      # `/admin/login/` reads `django_site`; against an unmigrated database
+      # it 500s with `relation "django_site" does not exist` (observed live
+      # in this story). It is therefore the step that proves the migrate
+      # above ran AND that the conda-sourced psycopg2 driver round-trips the
+      # ORM -- neither of which any other step in this job can fail on.
+      - name: Smoke-test an ORM-backed page (proves migrations ran)
+        run: |
+          code="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/admin/login/ || true)"
+          if [ "$code" != "200" ]; then
+            echo "::error::GET /admin/login/ returned $code, expected 200 (${{ matrix.engine }})"
+            ${{ matrix.engine }} logs platform-ci-app-${{ matrix.engine }}
+            exit 1
+          fi
 
       # `/ht/` alone is NOT sufficient coverage for this image, and this step
       # exists because review proved it: `/ht/` renders no `{% static %}`
@@ -270,6 +310,32 @@ jobs:
           # A 200 alone is not proof: Django can return a rendered error page.
           if grep -qE 'OfflineGenerationError|Missing staticfiles manifest entry|Traceback' /tmp/home.html; then
             echo "::error::GET / returned 200 but the body contains a static/compress failure (${{ matrix.engine }})"
+            exit 1
+          fi
+
+      # ...and a clean page body is still not proof the assets it names are
+      # actually SERVABLE. WhiteNoise's manifest storage rewrites every
+      # `{% static %}` reference to a hashed filename, and django-compressor
+      # emits `/static/CACHE/...` bundles that exist only if pass 2 of the
+      # three-pass sequence ran; a break in either produces a page that
+      # renders fine and 404s every stylesheet. Fetch what the page itself
+      # asked for -- derived from the rendered HTML, never a hardcoded list,
+      # so it keeps testing the right URLs as the templates change.
+      - name: Fetch every static asset the home page references
+        run: |
+          urls="$(grep -oE '/static/[^"]+' /tmp/home.html | sort -u)"
+          if [ -z "$urls" ]; then
+            echo "::error::GET / referenced no /static/ URL at all -- template or manifest regression (${{ matrix.engine }})"
+            exit 1
+          fi
+          rc=0
+          for u in $urls; do
+            code="$(curl -s -o /dev/null -w '%{http_code}' "http://localhost:8000$u" || true)"
+            echo "$code $u"
+            [ "$code" = "200" ] || rc=1
+          done
+          if [ "$rc" != "0" ]; then
+            echo "::error::at least one static asset referenced by / did not return 200 (${{ matrix.engine }})"
             exit 1
           fi
 
@@ -303,6 +369,30 @@ jobs:
             echo "::error::image defaults to root (uid 0); Containerfile USER directive regressed"
             exit 1
           fi
+
+      # The arbitrary-UID contract is TWO properties, and the uid assertions
+      # above only cover the first (the process is not root). The second is
+      # that a uid with no `/etc/passwd` entry can actually WRITE where the
+      # app needs to: `$HOME` (gunicorn 26 opens a control socket there on
+      # boot) and `MEDIA_ROOT`. Both depend on the Containerfile's `chgrp 0`
+      # /`chmod g+rwX` lines, which have already regressed once in this
+      # story's own history -- `$HOME` was root-owned 0755 and every write
+      # failed, invisible to every other check here. `STATIC_ROOT` is
+      # asserted NON-writable in the same step: it is deliberately `g+rX`,
+      # and a future blanket `chmod -R g+rwX /app` would silently hand every
+      # visitor-facing JS bundle to the runtime user.
+      - name: Confirm the arbitrary UID can write $HOME and media, but not staticfiles
+        run: |
+          ${{ matrix.engine }} exec platform-ci-app-${{ matrix.engine }} sh -c '
+            set -e
+            touch "$HOME/.ci-probe" && rm "$HOME/.ci-probe"
+            touch /app/platformapp/media/.ci-probe && rm /app/platformapp/media/.ci-probe
+            if touch /app/staticfiles/.ci-probe 2>/dev/null; then
+              rm -f /app/staticfiles/.ci-probe
+              echo "STATICFILES_WRITABLE"
+              exit 1
+            fi
+          ' || { echo "::error::arbitrary-UID filesystem contract regressed (${{ matrix.engine }})"; exit 1; }
 
       - name: Teardown
         if: always()

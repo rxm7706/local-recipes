@@ -50,6 +50,26 @@ urlpatterns = [
     # installed. `checks` defaults to `[Cache, Database, DNS, Mail, Storage]`;
     # pinned here to exactly `[Database, Cache]` to preserve Story 10.1's
     # original scope (PostgreSQL + the configured cache backend only).
+    #
+    # WHAT THIS ENDPOINT DOES AND DOES NOT PROVE, stated because the
+    # behaviour changed here and a probe is easy to over-trust:
+    # `health_check.Database` is a CONNECTIVITY probe (3.24.0's
+    # `DatabaseHeartBeatCheck`, 4.5.0's `Database` -- both a bare `SELECT`),
+    # NOT the `TestModel` write/read/delete round-trip the removed
+    # `health_check.db` sub-app registered. A 200 here therefore means "the
+    # database answers", not "the schema is migrated" or "writes succeed":
+    # an unmigrated database, a read-only replica, or a full disk all still
+    # return 200. That is the right shape for a kubelet liveness/readiness
+    # probe (cheap and non-mutating), but anything that needs to know the
+    # app can actually serve ORM-backed pages has to assert that separately
+    # -- `platform-ci.yml`'s `container` job does it with `/admin/login/`.
+    # The change is inherent to leaving the deprecated app-based mechanism;
+    # it is recorded rather than fixed.
+    #
+    # This route is regression-tested by `tests/test_health_endpoint.py`,
+    # which is the ONLY thing that exercises the string-vs-class trap above
+    # against the pip-pinned 3.24.0 -- `manage.py check` cannot, because
+    # `get_plugins()` is reached only from a real request.
     path(
         "ht/",
         HealthCheckView.as_view(checks=["health_check.Database", "health_check.Cache"]),
