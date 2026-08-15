@@ -118,6 +118,7 @@ SOURCE_MODULE: dict[Source, str] = {
     Source.DEFERRED_WORK: "chain.py",
     Source.FORWARD_DEPENDENCY: "deps.py",
     Source.BMAD_DRIFT: "factory.py",
+    Source.BMAD_OUTPUT_HYGIENE: "hygiene.py",
 }
 
 #: The one allowlisted exception (AD-11) -- a mapping, not a bare ``if``

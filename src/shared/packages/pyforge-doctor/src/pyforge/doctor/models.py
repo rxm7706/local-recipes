@@ -117,6 +117,17 @@ class Source(StrEnum):
     # Charter §6 sweep). Judges a Marshal-produced artifact; see
     # sources/factory.py for the independence rationale.
     BMAD_DRIFT = "bmad-drift"
+    # Story 9.2 (CAP-8): the closed taxonomy EXTENDED once more -- Doctor's
+    # verdict on the fleet's OWN planning-artifact hygiene: Story 9.1's five
+    # pure predicates (dead test scaffolding, a hollow Tier-3 sprint-status,
+    # an orphan planning-artifact, a README still carrying its unfilled
+    # template stub, a Dream's status lagging its station's own completed
+    # work) given production evidence by sources/hygiene.py, which walks all
+    # 8 stations' own conventional planning-artifact locations in one sweep
+    # (not every file a station may hold) -- see that module and
+    # sources/__init__.py's own row for why subject_station="fleet" (a new
+    # value, not a single station) is correct here.
+    BMAD_OUTPUT_HYGIENE = "bmad-output-hygiene"
 
 
 class Partition(StrEnum):

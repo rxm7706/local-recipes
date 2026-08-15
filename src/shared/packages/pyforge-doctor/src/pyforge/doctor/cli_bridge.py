@@ -79,7 +79,13 @@ def run_cli_json(
         ) from exc
 
 
-def run_git(cwd: Path, args: list[str], *, timeout: float = 30.0) -> str:
+def run_git(
+    cwd: Path,
+    args: list[str],
+    *,
+    timeout: float = 30.0,
+    ok_exit_codes: frozenset[int] = frozenset({0}),
+) -> str:
     """Run ``git *args`` in ``cwd`` and return stdout.
 
     Added 2026-08-08 for ``sources/marshal.py``, which judges the Marshal's
@@ -94,9 +100,15 @@ def run_git(cwd: Path, args: list[str], *, timeout: float = 30.0) -> str:
     ``--no-pager`` keep decoration out of stdout. It differs in one deliberate way —
     it returns **raw text**, because git's payload here is a YAML file, not JSON.
 
-    Raises :class:`CliBridgeError` on every failure mode (git absent, non-zero exit,
-    timeout). Callers degrade that into a ``Finding``; this module has no opinion on
-    Doctor's ``Finding`` shape.
+    ``ok_exit_codes`` (Story 9.2, keyword-only, default ``{0}`` — every existing
+    caller's behavior is byte-identical) lets a caller tolerate a documented
+    non-zero exit that isn't a failure — ``git grep``'s exit 1 means "no match",
+    not an error. A returncode outside the set still raises :class:`CliBridgeError`
+    exactly as before.
+
+    Raises :class:`CliBridgeError` on every failure mode (git absent, an exit code
+    outside ``ok_exit_codes``, timeout). Callers degrade that into a ``Finding``;
+    this module has no opinion on Doctor's ``Finding`` shape.
     """
     env = dict(os.environ)
     env["NO_COLOR"] = "1"
@@ -119,7 +131,7 @@ def run_git(cwd: Path, args: list[str], *, timeout: float = 30.0) -> str:
     except OSError as exc:
         raise CliBridgeError(f"git failed to launch: {exc!r}") from exc
 
-    if result.returncode != 0:
+    if result.returncode not in ok_exit_codes:
         raise CliBridgeError(
             f"git {' '.join(args[:2])} exited {result.returncode}: "
             f"{result.stderr.strip()}"

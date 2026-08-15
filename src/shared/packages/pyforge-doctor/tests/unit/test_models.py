@@ -148,6 +148,9 @@ def test_source_taxonomy_is_exactly_this_closed_set():
     # Story 6.8 (FR-15) added BMAD_DRIFT, porting scripts/bmad_drift_check.py's
     # judgement on the pyforge-marshal project docs' own currency -- the tenth
     # and last of Epic 6's Charter §6 sweep.
+    # Story 9.2 (CAP-8) added BMAD_OUTPUT_HYGIENE, giving Story 9.1's five
+    # pure hygiene predicates their first production caller (sources/hygiene.py),
+    # walking every station's own planning artifacts at once.
     assert {member.value for member in Source} == {
         "warden-doctor",
         "staleness-report",
@@ -168,6 +171,7 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         "deferred-work",
         "forward-dependency",
         "bmad-drift",
+        "bmad-output-hygiene",
     }
 
 

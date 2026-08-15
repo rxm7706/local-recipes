@@ -72,7 +72,8 @@
             "spec-surface",
             "deferred-work",
             "forward-dependency",
-            "bmad-drift"
+            "bmad-drift",
+            "bmad-output-hygiene"
           ]
         },
         "check": { "type": "string" },
