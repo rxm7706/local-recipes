@@ -710,7 +710,15 @@ vs legacy CFA:3854), plus the Phase E ~44-feedstock maintainer-universe delta (P
     at the attended bring-up (DW-H3)" rather than reaching for the network.
     `tests/factory/test_lasuite.py` proves the round-trip + idempotency (zero remote calls on an
     unchanged re-push) + mapping-resume against the mock opener. `resolve_lasuite_config` returns
-    `None` unless BOTH env vars are set.
+    `None` unless BOTH env vars are set. Story 16.1
+    (`../implementation-artifacts/spec-16-1-instance-deploy-definition.md`) resolved the parent
+    SPEC's deployment-substrate open question: django-lasuite 0.0.26 is confirmed live on the real
+    conda-forge channel, Wagtail 7.4.1 has a working recipe in this repo but its upstream feedstock
+    status is unconfirmed, no container. It also resolves the DW-H1 dependency question for the
+    LOCAL-REHEARSAL scope only — SQLite satisfies Story 16.2's local rehearsal instance; this
+    entry's own PostgreSQL/MinIO assumption for the ATTENDED PRODUCTION bring-up above is
+    unchanged and still owed to DW-H1. The definition is documentation only — this entry stays
+    open until the live bring-up itself runs.
 
   status: open
 
