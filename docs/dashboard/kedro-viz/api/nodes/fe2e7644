@@ -1,0 +1,15 @@
+{
+  "code": "def join_artifactory_identity(\n    artifactory_downloads_raw: pd.DataFrame,\n    pypi_conda_mapping: pd.DataFrame,\n    pypi_universe: pd.DataFrame,\n) -> pd.DataFrame:\n    \"\"\"Thin ``pd.DataFrame`` <-> dataclass adapter around Story 15.2's pure\n    :func:`~pyforge.atlas.artifactory.join_identity`. Converts each\n    ``artifactory_downloads_raw`` row to a :class:`~pyforge.atlas.artifactory.DownloadRow`,\n    delegates the actual join to ``join_identity`` UNCHANGED, then flattens the resulting\n    :class:`~pyforge.atlas.artifactory.JoinedDownloadRow` list back to a DataFrame. An\n    empty/malformed ``artifactory_downloads_raw`` (missing one of ``name``/``version``/\n    ``download_count``, or a row carrying a ``None``/NaN cell in one of those columns)\n    degrades to an empty frame carrying the full joined schema (that row's degraded\n    version, respectively -- the malformed row is skipped, not raised on) -- never raises.\"\"\"\n    if (\n        artifactory_downloads_raw is None\n        or getattr(artifactory_downloads_raw, \"empty\", True)\n        or not set(_RAW_COLS) <= set(getattr(artifactory_downloads_raw, \"columns\", []))\n    ):\n        return pd.DataFrame(columns=_JOINED_COLS)\n\n    rows = []\n    for r in artifactory_downloads_raw.itertuples(index=False):\n        if _is_missing(r.name) or _is_missing(r.version) or _is_missing(r.download_count):\n            continue\n        try:\n            download_count = int(r.download_count)\n        except (TypeError, ValueError):\n            continue\n        rows.append(DownloadRow(name=str(r.name), version=str(r.version), download_count=download_count))\n    joined = join_identity(rows, pypi_conda_mapping, pypi_universe)\n    return pd.DataFrame(\n        [\n            {\n                \"pypi_name\": j.pypi_name,\n                \"version\": j.version,\n                \"download_count\": j.download_count,\n                \"conda_name\": j.conda_name,\n                \"match_source\": j.match_source,\n                \"is_internal\": j.is_internal,\n            }\n            for j in joined\n        ],\n        columns=_JOINED_COLS,\n    )\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/artifactory_downloads/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='join_artifactory_identity'",
+  "inputs": [
+    "artifactory_downloads_raw",
+    "pypi_conda_mapping",
+    "pypi_universe"
+  ],
+  "outputs": [
+    "artifactory_downloads_joined"
+  ],
+  "preview": null
+}

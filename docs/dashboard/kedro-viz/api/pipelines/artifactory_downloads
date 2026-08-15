@@ -1,0 +1,272 @@
+{
+  "nodes": [
+    {
+      "id": "27bdea9a",
+      "name": "pypi_universe",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom",
+        "artifactory_downloads",
+        "upstream_discovery",
+        "pypi_intelligence"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
+    },
+    {
+      "id": "50b23cac",
+      "name": "fetch_artifactory_downloads",
+      "tags": [],
+      "pipelines": [
+        "artifactory_downloads",
+        "__default__"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {
+        "artifactory": {
+          "virtual_repos": []
+        }
+      },
+      "full_name": "fetch_artifactory_downloads"
+    },
+    {
+      "id": "8df5e6ee",
+      "name": "params:artifactory",
+      "tags": [],
+      "pipelines": [
+        "artifactory_downloads",
+        "__default__"
+      ],
+      "type": "parameters",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": null
+    },
+    {
+      "id": "ee2c8711",
+      "name": "artifactory_downloads_raw",
+      "tags": [],
+      "pipelines": [
+        "artifactory_downloads",
+        "__default__"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "984bc0c0",
+      "name": "pypi_conda_mapping",
+      "tags": [],
+      "pipelines": [
+        "__default__",
+        "universal_sbom",
+        "vcs_health",
+        "seed_gaps",
+        "artifactory_downloads",
+        "upstream_discovery",
+        "pypi_intelligence",
+        "derived_artifacts"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "fe2e7644",
+      "name": "join_artifactory_identity",
+      "tags": [],
+      "pipelines": [
+        "artifactory_downloads",
+        "__default__"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "join_artifactory_identity"
+    },
+    {
+      "id": "3f2b029e",
+      "name": "artifactory_downloads_joined",
+      "tags": [],
+      "pipelines": [
+        "artifactory_downloads",
+        "__default__"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "5884fa1b",
+      "name": "format_artifactory_purl_export",
+      "tags": [],
+      "pipelines": [
+        "artifactory_downloads",
+        "__default__"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "format_artifactory_purl_export"
+    },
+    {
+      "id": "22ab97d3",
+      "name": "derived_purl_exports",
+      "tags": [],
+      "pipelines": [
+        "artifactory_downloads",
+        "__default__"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "partitions.partitioned_dataset.PartitionedDataset"
+    }
+  ],
+  "edges": [
+    {
+      "source": "ee2c8711",
+      "target": "fe2e7644"
+    },
+    {
+      "source": "984bc0c0",
+      "target": "fe2e7644"
+    },
+    {
+      "source": "27bdea9a",
+      "target": "fe2e7644"
+    },
+    {
+      "source": "50b23cac",
+      "target": "ee2c8711"
+    },
+    {
+      "source": "8df5e6ee",
+      "target": "50b23cac"
+    },
+    {
+      "source": "3f2b029e",
+      "target": "5884fa1b"
+    },
+    {
+      "source": "fe2e7644",
+      "target": "3f2b029e"
+    },
+    {
+      "source": "5884fa1b",
+      "target": "22ab97d3"
+    }
+  ],
+  "layers": [],
+  "tags": [],
+  "pipelines": [
+    {
+      "id": "__default__",
+      "name": "__default__"
+    },
+    {
+      "id": "vcs_health",
+      "name": "vcs_health"
+    },
+    {
+      "id": "universal_sbom",
+      "name": "universal_sbom"
+    },
+    {
+      "id": "seed_gaps",
+      "name": "seed_gaps"
+    },
+    {
+      "id": "upstream_discovery",
+      "name": "upstream_discovery"
+    },
+    {
+      "id": "pypi_intelligence",
+      "name": "pypi_intelligence"
+    },
+    {
+      "id": "vulnerability",
+      "name": "vulnerability"
+    },
+    {
+      "id": "core",
+      "name": "core"
+    },
+    {
+      "id": "artifactory_downloads",
+      "name": "artifactory_downloads"
+    },
+    {
+      "id": "derived_artifacts",
+      "name": "derived_artifacts"
+    }
+  ],
+  "modular_pipelines": {
+    "__root__": {
+      "id": "__root__",
+      "name": "__root__",
+      "inputs": [],
+      "outputs": [],
+      "children": [
+        {
+          "id": "984bc0c0",
+          "type": "data"
+        },
+        {
+          "id": "8df5e6ee",
+          "type": "parameters"
+        },
+        {
+          "id": "50b23cac",
+          "type": "task"
+        },
+        {
+          "id": "27bdea9a",
+          "type": "data"
+        },
+        {
+          "id": "8df5e6ee",
+          "type": "data"
+        },
+        {
+          "id": "fe2e7644",
+          "type": "task"
+        },
+        {
+          "id": "5884fa1b",
+          "type": "task"
+        },
+        {
+          "id": "22ab97d3",
+          "type": "data"
+        },
+        {
+          "id": "3f2b029e",
+          "type": "data"
+        },
+        {
+          "id": "ee2c8711",
+          "type": "data"
+        }
+      ]
+    }
+  },
+  "selected_pipeline": "artifactory_downloads"
+}

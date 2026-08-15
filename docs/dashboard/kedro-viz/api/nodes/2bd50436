@@ -63,7 +63,10 @@
       {
         "repo_full_name": "microsoft/DiskANN"
       }
-    ]
+    ],
+    "artifactory": {
+      "virtual_repos": []
+    }
   },
   "run_command": "kedro run --to-nodes='run_dependency_hygiene'",
   "inputs": [

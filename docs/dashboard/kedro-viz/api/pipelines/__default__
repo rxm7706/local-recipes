@@ -493,16 +493,63 @@
       "name": "pypi_universe",
       "tags": [],
       "pipelines": [
-        "upstream_discovery",
         "__default__",
-        "pypi_intelligence",
-        "universal_sbom"
+        "universal_sbom",
+        "artifactory_downloads",
+        "upstream_discovery",
+        "pypi_intelligence"
       ],
       "type": "data",
       "modular_pipelines": null,
       "node_extras": null,
       "layer": null,
       "dataset_type": "datasets.incremental_parquet.IncrementalParquetDataset"
+    },
+    {
+      "id": "50b23cac",
+      "name": "fetch_artifactory_downloads",
+      "tags": [],
+      "pipelines": [
+        "artifactory_downloads",
+        "__default__"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {
+        "artifactory": {
+          "virtual_repos": []
+        }
+      },
+      "full_name": "fetch_artifactory_downloads"
+    },
+    {
+      "id": "8df5e6ee",
+      "name": "params:artifactory",
+      "tags": [],
+      "pipelines": [
+        "artifactory_downloads",
+        "__default__"
+      ],
+      "type": "parameters",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": null
+    },
+    {
+      "id": "ee2c8711",
+      "name": "artifactory_downloads_raw",
+      "tags": [],
+      "pipelines": [
+        "artifactory_downloads",
+        "__default__"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
     },
     {
       "id": "b4350c4d",
@@ -888,7 +935,10 @@
           {
             "repo_full_name": "microsoft/DiskANN"
           }
-        ]
+        ],
+        "artifactory": {
+          "virtual_repos": []
+        }
       },
       "full_name": "normalize_intake_to_cyclonedx"
     },
@@ -1172,7 +1222,10 @@
           {
             "repo_full_name": "microsoft/DiskANN"
           }
-        ]
+        ],
+        "artifactory": {
+          "virtual_repos": []
+        }
       },
       "full_name": "run_dependency_hygiene"
     },
@@ -1844,6 +1897,7 @@
         "universal_sbom",
         "vcs_health",
         "seed_gaps",
+        "artifactory_downloads",
         "upstream_discovery",
         "pypi_intelligence",
         "derived_artifacts"
@@ -1927,7 +1981,10 @@
           {
             "repo_full_name": "microsoft/DiskANN"
           }
-        ]
+        ],
+        "artifactory": {
+          "virtual_repos": []
+        }
       },
       "full_name": "build_universe_sbom"
     },
@@ -2059,6 +2116,34 @@
       "dataset_type": "datasets.refresh.MappingCacheDataset"
     },
     {
+      "id": "fe2e7644",
+      "name": "join_artifactory_identity",
+      "tags": [],
+      "pipelines": [
+        "artifactory_downloads",
+        "__default__"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "join_artifactory_identity"
+    },
+    {
+      "id": "3f2b029e",
+      "name": "artifactory_downloads_joined",
+      "tags": [],
+      "pipelines": [
+        "artifactory_downloads",
+        "__default__"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
       "id": "80a889cb",
       "name": "report_lts_registry_gap",
       "tags": [],
@@ -2113,6 +2198,34 @@
       "node_extras": null,
       "layer": null,
       "dataset_type": "pandas.parquet_dataset.ParquetDataset"
+    },
+    {
+      "id": "5884fa1b",
+      "name": "format_artifactory_purl_export",
+      "tags": [],
+      "pipelines": [
+        "artifactory_downloads",
+        "__default__"
+      ],
+      "type": "task",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "parameters": {},
+      "full_name": "format_artifactory_purl_export"
+    },
+    {
+      "id": "22ab97d3",
+      "name": "derived_purl_exports",
+      "tags": [],
+      "pipelines": [
+        "artifactory_downloads",
+        "__default__"
+      ],
+      "type": "data",
+      "modular_pipelines": null,
+      "node_extras": null,
+      "layer": null,
+      "dataset_type": "partitions.partitioned_dataset.PartitionedDataset"
     },
     {
       "id": "1444471b",
@@ -2187,7 +2300,10 @@
           {
             "repo_full_name": "microsoft/DiskANN"
           }
-        ]
+        ],
+        "artifactory": {
+          "virtual_repos": []
+        }
       },
       "full_name": "match_against_universe"
     },
@@ -2278,7 +2394,10 @@
           {
             "repo_full_name": "microsoft/DiskANN"
           }
-        ]
+        ],
+        "artifactory": {
+          "virtual_repos": []
+        }
       },
       "full_name": "assemble_and_gate"
     },
@@ -2355,6 +2474,10 @@
       "target": "b29d34ce"
     },
     {
+      "source": "50b23cac",
+      "target": "ee2c8711"
+    },
+    {
       "source": "58d2a753",
       "target": "e3ada3b4"
     },
@@ -2377,6 +2500,10 @@
     {
       "source": "99907eca",
       "target": "595030c3"
+    },
+    {
+      "source": "984bc0c0",
+      "target": "fe2e7644"
     },
     {
       "source": "984bc0c0",
@@ -2441,6 +2568,10 @@
     {
       "source": "437ccc69",
       "target": "b17d345f"
+    },
+    {
+      "source": "27bdea9a",
+      "target": "fe2e7644"
     },
     {
       "source": "27bdea9a",
@@ -2517,6 +2648,10 @@
     {
       "source": "18664949",
       "target": "45ea5d06"
+    },
+    {
+      "source": "fe2e7644",
+      "target": "3f2b029e"
     },
     {
       "source": "6d0063d1",
@@ -2603,8 +2738,16 @@
       "target": "54bd4fd5"
     },
     {
+      "source": "8df5e6ee",
+      "target": "50b23cac"
+    },
+    {
       "source": "654c06a4",
       "target": "d5dd2817"
+    },
+    {
+      "source": "5884fa1b",
+      "target": "22ab97d3"
     },
     {
       "source": "359db7ba",
@@ -2747,6 +2890,10 @@
       "target": "69c4954c"
     },
     {
+      "source": "ee2c8711",
+      "target": "fe2e7644"
+    },
+    {
       "source": "18664949",
       "target": "f952fa75"
     },
@@ -2757,6 +2904,10 @@
     {
       "source": "032c79e7",
       "target": "eda40cd0"
+    },
+    {
+      "source": "3f2b029e",
+      "target": "5884fa1b"
     },
     {
       "source": "015741d1",
@@ -2899,36 +3050,40 @@
       "name": "__default__"
     },
     {
-      "id": "pypi_intelligence",
-      "name": "pypi_intelligence"
+      "id": "vcs_health",
+      "name": "vcs_health"
     },
     {
       "id": "universal_sbom",
       "name": "universal_sbom"
     },
     {
-      "id": "derived_artifacts",
-      "name": "derived_artifacts"
-    },
-    {
-      "id": "vcs_health",
-      "name": "vcs_health"
+      "id": "seed_gaps",
+      "name": "seed_gaps"
     },
     {
       "id": "upstream_discovery",
       "name": "upstream_discovery"
     },
     {
+      "id": "pypi_intelligence",
+      "name": "pypi_intelligence"
+    },
+    {
       "id": "vulnerability",
       "name": "vulnerability"
     },
     {
-      "id": "seed_gaps",
-      "name": "seed_gaps"
-    },
-    {
       "id": "core",
       "name": "core"
+    },
+    {
+      "id": "artifactory_downloads",
+      "name": "artifactory_downloads"
+    },
+    {
+      "id": "derived_artifacts",
+      "name": "derived_artifacts"
     }
   ],
   "modular_pipelines": {
@@ -2951,6 +3106,10 @@
           "type": "data"
         },
         {
+          "id": "8df5e6ee",
+          "type": "data"
+        },
+        {
           "id": "9674688d",
           "type": "data"
         },
@@ -2969,6 +3128,10 @@
         {
           "id": "a3c2e51b",
           "type": "data"
+        },
+        {
+          "id": "8df5e6ee",
+          "type": "parameters"
         },
         {
           "id": "5a66560e",
@@ -3107,6 +3270,10 @@
           "type": "data"
         },
         {
+          "id": "22ab97d3",
+          "type": "data"
+        },
+        {
           "id": "f5f9cc68",
           "type": "task"
         },
@@ -3239,6 +3406,10 @@
           "type": "parameters"
         },
         {
+          "id": "3f2b029e",
+          "type": "data"
+        },
+        {
           "id": "b6de49da",
           "type": "data"
         },
@@ -3343,7 +3514,7 @@
           "type": "data"
         },
         {
-          "id": "5b2cec6e",
+          "id": "ee2c8711",
           "type": "data"
         },
         {
@@ -3351,7 +3522,15 @@
           "type": "data"
         },
         {
+          "id": "5b2cec6e",
+          "type": "data"
+        },
+        {
           "id": "b4132c13",
+          "type": "task"
+        },
+        {
+          "id": "5884fa1b",
           "type": "task"
         },
         {
@@ -3431,7 +3610,15 @@
           "type": "task"
         },
         {
+          "id": "50b23cac",
+          "type": "task"
+        },
+        {
           "id": "d5dd2817",
+          "type": "task"
+        },
+        {
+          "id": "fe2e7644",
           "type": "task"
         },
         {

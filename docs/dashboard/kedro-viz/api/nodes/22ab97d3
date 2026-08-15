@@ -1,0 +1,8 @@
+{
+  "type": "partitions.partitioned_dataset.PartitionedDataset",
+  "filepath": "<PYFORGE_ATLAS_ROOT>/data/derived/derived_purl_exports",
+  "run_command": "kedro run --to-outputs=derived_purl_exports",
+  "preview": null,
+  "preview_type": null,
+  "stats": null
+}

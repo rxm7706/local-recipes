@@ -1,0 +1,17 @@
+{
+  "code": "def fetch_artifactory_downloads(artifactory_params: dict) -> pd.DataFrame:\n    \"\"\"PURE ``params:artifactory -> pd.DataFrame`` fetch node.\n\n    ``virtual_repos`` empty (the committed default) -> an empty, correctly-columned\n    DataFrame, with ZERO :class:`ArtifactoryConfig`/:class:`ArtifactoryAqlAdapter`\n    construction -- no live instance is named, selected, or contacted. A non-empty\n    ``virtual_repos`` calls Story 15.1's ``fetch_download_rows`` once per virtual repo and\n    sums duplicate ``(name, version)`` rows ACROSS repos (the adapter itself only sums\n    duplicates WITHIN one virtual repo's raw AQL rows) -- never a real network call unless\n    a test also supplies a ``transport`` (never present in the committed\n    ``conf/base/parameters.yml``). A ``virtual_repos`` that is present but not a list/tuple\n    (e.g. a bare string, which would otherwise iterate per-character) raises ``ValueError``\n    immediately rather than issuing bogus per-character AQL calls.\"\"\"\n    params = artifactory_params or {}\n    virtual_repos = params.get(\"virtual_repos\") or []\n    if not virtual_repos:\n        return pd.DataFrame(columns=_RAW_COLS)\n    if not isinstance(virtual_repos, (list, tuple)):\n        raise ValueError(\n            f\"params:artifactory.virtual_repos must be a list, got {type(virtual_repos).__name__}\"\n        )\n\n    config = ArtifactoryConfig(base_url=params.get(\"base_url\") or \"\")\n    transport = params.get(\"transport\")\n    adapter = (\n        ArtifactoryAqlAdapter(config, transport=transport)\n        if transport is not None\n        else ArtifactoryAqlAdapter(config)\n    )\n\n    totals: dict[tuple[str, str], int] = {}\n    for virtual_repo in virtual_repos:\n        for row in adapter.fetch_download_rows(virtual_repo):\n            key = (row.name, row.version)\n            totals[key] = totals.get(key, 0) + row.download_count\n\n    return pd.DataFrame(\n        [{\"name\": n, \"version\": v, \"download_count\": c} for (n, v), c in totals.items()],\n        columns=_RAW_COLS,\n    )\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/artifactory_downloads/nodes.py",
+  "parameters": {
+    "artifactory": {
+      "virtual_repos": []
+    }
+  },
+  "run_command": "kedro run --to-nodes='fetch_artifactory_downloads'",
+  "inputs": [
+    "params:artifactory"
+  ],
+  "outputs": [
+    "artifactory_downloads_raw"
+  ],
+  "preview": null
+}

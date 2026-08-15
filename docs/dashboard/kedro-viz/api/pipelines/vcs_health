@@ -439,6 +439,7 @@
         "universal_sbom",
         "vcs_health",
         "seed_gaps",
+        "artifactory_downloads",
         "upstream_discovery",
         "pypi_intelligence",
         "derived_artifacts"
@@ -600,36 +601,40 @@
       "name": "__default__"
     },
     {
-      "id": "pypi_intelligence",
-      "name": "pypi_intelligence"
+      "id": "vcs_health",
+      "name": "vcs_health"
     },
     {
       "id": "universal_sbom",
       "name": "universal_sbom"
     },
     {
-      "id": "derived_artifacts",
-      "name": "derived_artifacts"
-    },
-    {
-      "id": "vcs_health",
-      "name": "vcs_health"
+      "id": "seed_gaps",
+      "name": "seed_gaps"
     },
     {
       "id": "upstream_discovery",
       "name": "upstream_discovery"
     },
     {
+      "id": "pypi_intelligence",
+      "name": "pypi_intelligence"
+    },
+    {
       "id": "vulnerability",
       "name": "vulnerability"
     },
     {
-      "id": "seed_gaps",
-      "name": "seed_gaps"
-    },
-    {
       "id": "core",
       "name": "core"
+    },
+    {
+      "id": "artifactory_downloads",
+      "name": "artifactory_downloads"
+    },
+    {
+      "id": "derived_artifacts",
+      "name": "derived_artifacts"
     }
   ],
   "modular_pipelines": {

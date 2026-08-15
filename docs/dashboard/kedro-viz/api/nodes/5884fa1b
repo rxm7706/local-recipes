@@ -1,0 +1,13 @@
+{
+  "code": "def format_artifactory_purl_export(artifactory_downloads_joined: pd.DataFrame) -> dict[str, str]:\n    \"\"\"Format the joined rows into the ``derived_purl_exports`` partition this story\n    contributes (``artifactory_downloads.tsv``). Includes ONLY rows with a resolved\n    ``conda_name`` -- ``is_internal=True``/unmatched rows are excluded, mirroring\n    ``export_purls.py::mapped_tsv_lines``'s own \"skip rows missing the join partner\" rule\n    for the reversed pypi->conda direction. ``match_confidence`` is always blank -- this\n    data source never carried a confidence column (Design Notes), matching the legacy\n    code's own ``p['match_confidence'] or ''`` fallback rather than inventing a value.\n    An empty/``None`` ``artifactory_downloads_joined`` yields the header-only content.\"\"\"\n    lines = [_MAPPED_TSV_HEADER]\n    if artifactory_downloads_joined is not None and not getattr(\n        artifactory_downloads_joined, \"empty\", True\n    ):\n        for row in artifactory_downloads_joined.itertuples(index=False):\n            conda_name = getattr(row, \"conda_name\", None)\n            if _is_missing(conda_name) or not isinstance(conda_name, str):\n                continue\n            pypi_name = getattr(row, \"pypi_name\", None)\n            match_source = getattr(row, \"match_source\", None)\n            lines.append(\n                f\"pkg:conda/{conda_name}{CHANNEL_QUALIFIER}\\t\"\n                f\"pkg:pypi/{g98_pypi_name(str(pypi_name))}\\t\"\n                f\"{match_source if isinstance(match_source, str) else ''}\\t\"\n            )\n    content = \"\".join(f\"{line}\\n\" for line in lines)\n    return {_PARTITION_KEY: content}\n",
+  "filepath": "pyforge-atlas/src/pyforge/atlas/pipelines/artifactory_downloads/nodes.py",
+  "parameters": {},
+  "run_command": "kedro run --to-nodes='format_artifactory_purl_export'",
+  "inputs": [
+    "artifactory_downloads_joined"
+  ],
+  "outputs": [
+    "derived_purl_exports"
+  ],
+  "preview": null
+}

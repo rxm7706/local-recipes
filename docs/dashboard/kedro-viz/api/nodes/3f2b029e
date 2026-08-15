@@ -1,0 +1,8 @@
+{
+  "type": "pandas.parquet_dataset.ParquetDataset",
+  "filepath": "<PYFORGE_ATLAS_ROOT>/data/derived/artifactory_downloads_joined/artifactory_downloads_joined.parquet",
+  "run_command": "kedro run --to-outputs=artifactory_downloads_joined",
+  "preview": null,
+  "preview_type": null,
+  "stats": null
+}
