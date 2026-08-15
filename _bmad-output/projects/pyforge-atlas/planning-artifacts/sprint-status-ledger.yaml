@@ -32,11 +32,11 @@ development_status:
   14-1-static-view-catalog: done
   14-2-pluggable-widget-registry: done
   14-3-bokeh-websocket-interactivity: done
-  14-4-air-gap-asset-rewriting: backlog
-  15-1-injectable-aql-adapter: backlog
-  15-2-identity-join-and-internal-flag: backlog
-  15-3-kedro-pipeline-surfacing: backlog
-  16-1-instance-deploy-definition: backlog
+  14-4-air-gap-asset-rewriting: done
+  15-1-injectable-aql-adapter: done
+  15-2-identity-join-and-internal-flag: done
+  15-3-kedro-pipeline-surfacing: done
+  16-1-instance-deploy-definition: done
   16-2-httpx-opener-and-rehearsal: backlog
   2-1-scaffold-the-kedro-pixi-project-via-nebi: done
   2-2-define-the-data-catalog-for-all-sources-outputs: done

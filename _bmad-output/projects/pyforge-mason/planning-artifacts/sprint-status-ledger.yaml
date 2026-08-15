@@ -44,12 +44,12 @@ development_status:
   3-8-mason-ships-mason: done
   3-9-the-ship-verb-and-testpypi-rehearsal: done
   4-1-lock-engine-adapter-and-provenance: done
-  4-2-manifest-discovery: backlog
+  4-2-manifest-discovery: done
   4-3-mason-environment-lock: done
   4-4-mason-environment-check: done
-  5-1-cfe-independence-test: backlog
-  5-2-governance-test: backlog
-  5-3-delegation-fidelity-test: backlog
+  5-1-cfe-independence-test: done
+  5-2-governance-test: done
+  5-3-delegation-fidelity-test: done
   5-4-free-inheritance-verification: backlog
   5-5-rule-2-conda-forge-expert-retrospective: backlog
   6-1-slice-map-and-campaign-state: backlog
