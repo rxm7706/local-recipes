@@ -6,21 +6,53 @@ name: Platform CI
 # `[tool.importlinter]` -- `src/platform/` never imports `pyforge.*`), and
 # its own cost profile -- entirely disjoint from the conda-forge factory's
 # own detector/linter CI (`detectors.yml`, `staged-recipes-linter.yml`).
-# `paths: [src/platform/**]` on both trigger events below is the cost
-# isolation: this workflow never triggers on a factory-only change, and
-# factory CI never triggers on a platform-only change. `working-directory:
+# The `paths:` filter on both trigger events below is the cost isolation:
+# this workflow never triggers on a factory-only change, and factory CI
+# never triggers on a platform-only change. `working-directory:
 # src/platform` on every run step keeps `manage.py`, `requirements/`, and
 # `pyproject.toml` resolvable by relative path, matching the render root
 # spec-python-agent-platform fixes at `src/platform/`.
+#
+# THE FILTER IS NOT JUST `src/platform/**` (Story 10.3, corrected in
+# review). The `container` job's build context is the REPO ROOT, so its
+# real inputs reach well outside the platform tree: `pixi.toml`/`pixi.lock`
+# (the builder stage's `pixi install --frozen -e python-agent-platform`,
+# plus the `requires-pixi` floor that must match the pinned pixi image),
+# `.dockerignore` (the only ignore file either COPY consults),
+# `scripts/container-gates` (the secrets-scan gate), and
+# `src/shared/packages/pyforge-*` (the build-time-only `pyforge-steward`
+# env that gate runs in). Every one of those can break the image build
+# while leaving `src/platform/**` untouched -- and that is not theoretical:
+# Story 10.3 hit exactly it, a `pixi.toml` `requires-pixi` bump failing the
+# builder stage with `this project requires pixi '>=0.76.2', but you have
+# pixi 0.76.1`. Without these entries such a change lands on main with this
+# workflow never having run.
 
+# The two lists below are duplicated verbatim rather than shared via a YAML
+# anchor: GitHub Actions does not support YAML anchors/aliases in workflow
+# files. Keep them in step by hand.
 on:
   pull_request:
     paths:
       - 'src/platform/**'
+      - 'pixi.toml'
+      - 'pixi.lock'
+      - '.dockerignore'
+      - 'scripts/container-gates'
+      - 'src/shared/packages/pyforge-steward/**'
+      - 'src/shared/packages/pyforge-core/**'
+      - '.github/workflows/platform-ci.yml'
   push:
     branches: [main]
     paths:
       - 'src/platform/**'
+      - 'pixi.toml'
+      - 'pixi.lock'
+      - '.dockerignore'
+      - 'scripts/container-gates'
+      - 'src/shared/packages/pyforge-steward/**'
+      - 'src/shared/packages/pyforge-core/**'
+      - '.github/workflows/platform-ci.yml'
   workflow_dispatch:
 
 permissions:
@@ -127,7 +159,13 @@ jobs:
       matrix:
         engine: [docker, podman]
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # 45, not 20: a cold runner has no pixi package cache, and this build
+    # solves + downloads the 395-package `python-agent-platform` env, a
+    # SECOND build-time-only `pyforge-steward` env for the secrets-scan
+    # gate, a pip layer, and three static-asset passes -- all before the
+    # image export. A too-tight cap turns a slow-but-correct build into a
+    # cancelled job that reads exactly like a real regression.
+    timeout-minutes: 45
 
     steps:
       - uses: actions/checkout@v7
@@ -211,15 +249,58 @@ jobs:
           ${{ matrix.engine }} logs platform-ci-app-${{ matrix.engine }}
           exit 1
 
+      # `/ht/` alone is NOT sufficient coverage for this image, and this step
+      # exists because review proved it: `/ht/` renders no `{% static %}`
+      # tag, so it stayed green while the image could not serve a single
+      # real page (`production.py`'s strict WhiteNoise manifest storage +
+      # `COMPRESS_OFFLINE` need the Containerfile's three-pass
+      # `collectstatic` -> `compress --force` -> `collectstatic` sequence;
+      # regress that ordering and only a template-rendering page notices).
+      # `/` extends `templates/base.html`, which carries six `{% static %}`
+      # references and a `{% compress %}` block -- the cheapest request that
+      # actually exercises both mechanisms.
+      - name: Smoke-test a real template page (static manifest + offline compression)
+        run: |
+          code="$(curl -s -o /tmp/home.html -w '%{http_code}' http://localhost:8000/ || true)"
+          if [ "$code" != "200" ]; then
+            echo "::error::GET / returned $code, expected 200 (${{ matrix.engine }})"
+            ${{ matrix.engine }} logs platform-ci-app-${{ matrix.engine }}
+            exit 1
+          fi
+          # A 200 alone is not proof: Django can return a rendered error page.
+          if grep -qE 'OfflineGenerationError|Missing staticfiles manifest entry|Traceback' /tmp/home.html; then
+            echo "::error::GET / returned 200 but the body contains a static/compress failure (${{ matrix.engine }})"
+            exit 1
+          fi
+
       - name: manage.py check inside the running container
         run: ${{ matrix.engine }} exec platform-ci-app-${{ matrix.engine }} /app/entrypoint.sh python manage.py check
 
-      - name: Confirm non-root UID
+      # TWO distinct assertions, because they prove different things:
+      #   1. The running container's uid -- but that container was started
+      #      with an explicit `--user 12345:0`, so this only proves the
+      #      ENGINE honored the flag. It is the arbitrary-UID contract
+      #      (OCP `restricted-v2` assigns a random uid at deploy time).
+      #   2. The IMAGE's own default uid, with NO `--user` override -- this
+      #      is what an operator running `docker run <image>` actually gets,
+      #      and the only thing that catches a regression of the
+      #      Containerfile's `USER 1001:0` line. Assertion 1 alone was
+      #      tautological; review caught it.
+      - name: Confirm non-root UID (running container, arbitrary uid honored)
         run: |
           uid="$(${{ matrix.engine }} exec platform-ci-app-${{ matrix.engine }} id -u)"
-          echo "container uid: $uid"
+          echo "running container uid: $uid"
+          if [ "$uid" != "12345" ]; then
+            echo "::error::--user 12345:0 was not honored (got uid $uid)"
+            exit 1
+          fi
+
+      - name: Confirm the image itself declares a non-root USER
+        run: |
+          uid="$(${{ matrix.engine }} run --rm --entrypoint id platform-ci-${{ matrix.engine }} -u)"
+          echo "image default uid: $uid"
           if [ "$uid" = "0" ]; then
-            echo "::error::container is running as root (uid 0)"
+            echo "::error::image defaults to root (uid 0); Containerfile USER directive regressed"
             exit 1
           fi
 

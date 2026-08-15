@@ -49,7 +49,13 @@
 # build failure here at exactly that mismatch (`this project requires pixi
 # '>=0.76.2', but you have pixi 0.76.1`) before landing on 0.76.2 below.
 # Fixing the root Containerfile's own drifted pin is out of this story's
-# scope (Code Map marks it reference-only).
+# scope (Code Map marks it reference-only). This tag IS registered as the
+# TENTH site in `pixi.toml`'s own enumerated pin list (that comment was
+# updated in this same story -- it previously said "NINE places" and
+# "ALL NINE ARE 0.76.1", both untrue the moment this file landed). That
+# enumeration is comment-maintained and unenforced by design (DW-7-1-2), so
+# an unregistered tenth site is exactly how the drift it documents happens
+# again.
 FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.76.2 AS builder
 
 # WORKDIR /app -- fixed and short, mirrors the repo-root Containerfile's own
@@ -88,28 +94,92 @@ RUN pixi shell-hook -e python-agent-platform -s bash > /app/shell-hook.sh
 # a second venv) -- generated from the union of requirements/base.txt +
 # requirements/production.txt (the same files `pip install -r
 # production.txt` would resolve, since production.txt's own `-r base.txt`
-# line is a nested include), filtered down by EXCLUDING five package lines
-# this pixi env already conda-sources: `django` and `psycopg[c]` (named
-# explicitly in the spec -- installing either via pip would shadow the
-# pinned conda version), plus `fastapi`, `django-health-check`, and bare
-# `redis` (all three are ALSO conda-sourced by this exact env --
-# `[feature.python-agent-platform.dependencies]` in pixi.toml -- for the
-# identical shadowing reason; the spec's own Boundaries & Constraints
-# enumerates the intended pip-install set by name and none of these five
-# appear in it). `hiredis` is NOT excluded: it is the separate C-accelerator
-# package for redis-py, not conda-sourced by this env, and IS in the
-# enumerated set.
+# line is a nested include), filtered down by EXCLUDING every package line
+# this pixi env ALREADY CONDA-SOURCES.
 #
-# The exclude regex is anchored (`^pkg==`) so it only matches the exact
-# package line, never a same-prefixed sibling: `^django==` does NOT match
-# `django-health-check==`/`django-redis==`/`django-environ==`/etc (checked
-# for every base.txt/production.txt line before landing this pattern), and
-# `^redis==` does NOT match `hiredis==` (no `^` anchor collision -- `hiredis`
-# does not start with the substring `redis`).
+# THE EXCLUSION SET IS DERIVED FROM THE LOCK, NOT FROM THE SPEC'S PROSE.
+# The spec's Boundaries & Constraints enumerate the intended pip set by
+# name and name only `Django`/`psycopg[c]` as the MINUS list, but that
+# enumeration was written against `[feature.python-agent-platform.
+# dependencies]`'s NINE DECLARED deps -- not against the 395-package
+# TRANSITIVE solve `pixi.lock` actually materializes. Review caught five
+# more requirement lines whose packages arrive transitively (via langflow /
+# dbgpt / their own chains) and were therefore being silently REPLACED by
+# an older pip build, four of them outright DOWNGRADES:
+#     conda (lock)        pip (requirements)   effect
+#     pillow      12.3.0  Pillow==11.3.0       downgrade
+#     celery       5.6.3  celery==5.5.3        downgrade (see kombu below)
+#     uvicorn     0.52.3  uvicorn[standard]    downgrade (also strands the
+#                         ==0.35.0             co-installed conda
+#                                              `uvicorn-standard 0.52.3`)
+#     gunicorn    26.0.0  gunicorn==23.0.0     downgrade
+#     argon2-cffi 25.1.0  argon2-cffi==25.1.0  same version, pip build
+#                                              replaces the conda build
+# conda-forge python packages ship real `.dist-info`, so pip sees them as
+# installed distributions and UNINSTALLS them before writing its own -- the
+# replacement is silent and total. The celery one was actively incoherent:
+# pip's celery 5.5.3 declares `kombu<5.6,>=5.5.2` while this env's conda
+# `kombu` is 5.6.2, i.e. OUT OF RANGE -- `--no-deps` suppresses the very
+# check that would have caught it, and `config/__init__.py` imports
+# `celery_app` on every Django boot. Excluding celery restores the coherent
+# conda pairing (celery 5.6.3 + kombu 5.6.2).
+#
+# So the rule this list implements is the spec's RATIONALE ("both already
+# conda-sourced; pip-installing them would shadow the pinned conda
+# versions"), applied to every line rather than to the two the spec happened
+# to name. Regenerate it against the lock, never against this comment:
+#   pixi list -e python-agent-platform            # what conda provides
+#   grep -hE '^[A-Za-z]' requirements/{base,production}.txt   # what pip wants
+# and exclude the intersection. `hiredis`, `whitenoise`, `python-slugify`,
+# `rcssmin`, and every `django-*` line except `django-health-check` are NOT
+# conda-sourced by this env (verified against the same lock) and stay in the
+# pip layer at their pinned versions.
+#
+# ONE PIP PIN HAD TO BE RAISED, NOT JUST KEPT: `uvicorn-worker`.
+# `requirements/base.txt` pins `uvicorn-worker==0.3.0`, whose
+# `init_process()` calls `uvicorn.Config.setup_event_loop()` -- a method
+# REMOVED in uvicorn 0.36.0. Against this env's conda `uvicorn 0.52.3` that
+# is a hard boot failure, not a warning: gunicorn's worker dies with
+# `AttributeError: The setup_event_loop method was replaced by
+# get_loop_factory in uvicorn 0.36.0` and the master shuts down with
+# "Worker failed to boot" (reproduced live in review). The previous version
+# of this pip layer did not hit it only because it was ALSO pip-downgrading
+# uvicorn to 0.35.0 -- i.e. one bug was accidentally masking the other, and
+# fixing the shadowing exposed this. `uvicorn-worker 0.4.0` is the release
+# that moved to `get_loop_factory`; its own metadata requires
+# `uvicorn>=0.36.0` + `gunicorn>=21.0.0`, both satisfied by this env's
+# conda 0.52.3 / 26.0.0. So `uvicorn-worker` is excluded from the
+# requirements-derived list and re-added below as an explicit
+# `uvicorn-worker>=0.4.0` (leaving both lines in one requirements file
+# would just make pip reject it as a double requirement).
+# NOTE for whoever bumps `[feature.python-agent-platform]`: uvicorn and
+# uvicorn-worker are now a COUPLED pair here. `config.asgi:application` is
+# served through `uvicorn_worker.UvicornWorker` (this file's own `CMD`), so
+# a uvicorn move across another API break needs the matching worker
+# release, and the failure mode is a boot loop, not an import error.
+#
+# The exclude regex is anchored at both ends -- `^pkg` plus a following
+# NON-NAME character (`[^A-Za-z0-9._-]`, i.e. anything that cannot continue
+# a PEP 503 distribution name) -- so it matches the exact package line under
+# ANY pin form (`==`, `>=`, `~=`, `[extra]`) and never a same-prefixed
+# sibling: `^django[^A-Za-z0-9._-]` does NOT match `django-health-check==`/
+# `django-redis==`/`django-environ==`/`django-celery-beat==`/etc, and
+# `^uvicorn[^A-Za-z0-9._-]` does NOT match `uvicorn-worker==`, because `-`
+# IS a name character. Verified against the real requirements files: 14
+# lines kept, 10 excluded, zero false matches.
+# The trailing delimiter matters: the earlier `^pkg==` form would have
+# silently stopped excluding a line the moment someone relaxed a pin from
+# `django==5.1.11` to `django>=5.2`, reopening exactly the shadowing this
+# list exists to prevent. A negated name class (rather than an explicit
+# `[=<>~!\[]` list) also avoids the POSIX bracket-expression ambiguity of a
+# literal `[` inside a character class.
 #
 # EIGHT EXTRA PACKAGES, not in requirements/base.txt or production.txt:
 # `django-timezone-field`, `python-crontab`, `cron-descriptor`,
-# `django-appconf`, `rjsmin`, `text-unidecode`, `fido2`, `qrcode`. These are
+# `django-appconf`, `rjsmin`, `text-unidecode`, `fido2`, `qrcode`. (A ninth
+# explicit line, `uvicorn-worker>=0.4.0`, is NOT one of these -- it is a
+# RAISED version of a package that IS in base.txt, excluded from the
+# requirements-derived list for the reason documented above.) These are
 # REQUIRED (non-`extra`-gated) transitive dependencies of packages already
 # in the enumerated pip-install set -- a plain `pip install -r
 # production.txt` (no `--no-deps`) would resolve them silently, but
@@ -145,11 +215,23 @@ RUN pixi shell-hook -e python-agent-platform -s bash > /app/shell-hook.sh
 # `cffi`, `pycparser`, `pydantic`, `pydantic_core`, `anyio`, `starlette`,
 # `annotated-types`, `annotated-doc`, `typing-inspection`,
 # `typing_extensions`.
+#
+# `psycopg[c]` is the ONE exclusion that is not a shadowing case, and the
+# distinction matters for whoever revisits this list: this env conda-sources
+# `psycopg2` (2.9.12), which is a DIFFERENT DISTRIBUTION from `psycopg` v3 --
+# no `psycopg` of any version is in the lock, so pip-installing `psycopg[c]`
+# would not overwrite anything. Excluding it is a deliberate DRIVER
+# SUBSTITUTION (psycopg 3 -> psycopg 2), mandated by the spec's own
+# Boundaries & Constraints and by "the Python layer is exactly the pixi env";
+# Django's `postgresql` backend fully supports both, but the image therefore
+# runs a different major driver than `requirements/production.txt` pins and
+# than the `test` job exercises. That coverage gap is tracked as its own
+# deferred item (see this story's deferred-work entries), not closed here.
 RUN bash -c "source /app/shell-hook.sh \
     && grep -hE '^[A-Za-z]' /app/src/platform/requirements/base.txt /app/src/platform/requirements/production.txt \
-       | grep -viE '^(django|psycopg\[c\]|fastapi|django-health-check|redis)==' \
+       | grep -viE '^(django|psycopg|fastapi|django-health-check|redis|pillow|celery|uvicorn|gunicorn|argon2-cffi|uvicorn-worker)[^A-Za-z0-9._-]' \
        > /tmp/platform-pip-layer.txt \
-    && printf 'django-timezone-field>=5.0\npython-crontab>=2.3.4\ncron-descriptor>=1.2.32\ndjango-appconf>=1.0.3\nrjsmin==1.2.2\ntext-unidecode>=1.3\nfido2>=1.1.2,<3\nqrcode>=7.0.0,<9\n' >> /tmp/platform-pip-layer.txt \
+    && printf 'django-timezone-field>=5.0\npython-crontab>=2.3.4\ncron-descriptor>=1.2.32\ndjango-appconf>=1.0.3\nrjsmin==1.2.2\ntext-unidecode>=1.3\nfido2>=1.1.2,<3\nqrcode>=7.0.0,<9\nuvicorn-worker>=0.4.0\n' >> /tmp/platform-pip-layer.txt \
     && python3 -m pip install --no-cache-dir --no-deps -r /tmp/platform-pip-layer.txt \
     && rm /tmp/platform-pip-layer.txt"
 
@@ -174,15 +256,29 @@ RUN bash -c "source /app/shell-hook.sh \
 # The safety property the spec's wording protects -- "a finding fails
 # `docker build`/`podman build` itself, not a later `docker run`" -- holds
 # identically here: a nonzero `RUN` in ANY stage aborts the whole build.
-# Scoped to `src/platform` (this story's own human-authored tree, the only
-# thing this Containerfile's runtime stage actually copies in) rather than
-# the whole `/app` checkout the builder stage happens to also contain --
-# scanning the rest of the monorepo here would just re-run Story 7.3's own
-# already-proven-clean gate for content this image never ships.
+# SCOPE = exactly what the runtime stage ships that this build produced:
+# `src/platform` (the human-authored tree its `COPY src/platform/ /app/`
+# brings in, already narrowed by the same repo-root `.dockerignore` that
+# governs that COPY) PLUS `/app/shell-hook.sh` (generated above by `pixi
+# shell-hook` and `COPY --from=builder`'d into the runtime stage, so it is
+# genuinely shipped content and not builder-only). Scanning the hook matches
+# Story 7.1's own precedent, which scans `/shell-hook.sh` and
+# `/entrypoint.sh` alongside its code tree -- `pixi shell-hook` renders
+# activation-time environment variables into that file, which is exactly the
+# shape a build-host credential would take if one ever leaked into the
+# builder's environment. (Today it emits only `PATH`/`CONDA_*`/`PIXI_*`;
+# the gate is what keeps that true rather than assumed.)
+# NOT scanned, deliberately: the rest of the `/app` monorepo checkout (never
+# copied into the runtime stage -- scanning it would just re-run Story 7.3's
+# already-proven-clean gate over content this image never ships) and the
+# materialized conda env under `.pixi/envs/` (third-party package payload
+# from the lock, not authored here). `/app/entrypoint.sh` is generated in
+# the runtime stage from a fixed `printf` literal with no build-time
+# interpolation, so it carries no leak surface to scan.
 RUN pixi install --frozen -e pyforge-steward
 RUN pixi shell-hook -e pyforge-steward -s bash > /app/steward-shell-hook.sh
 RUN bash -c "source /app/steward-shell-hook.sh \
-    && python3 /app/scripts/container-gates secrets-scan /app/src/platform"
+    && python3 /app/scripts/container-gates secrets-scan /app/src/platform /app/shell-hook.sh"
 
 FROM --platform=linux/amd64 registry.access.redhat.com/ubi9/ubi-minimal:9.6 AS runtime
 
@@ -257,6 +353,19 @@ ENV DJANGO_SETTINGS_MODULE=config.settings.production
 #      compression enabled but key "..." is missing from offline manifest`
 #      (confirmed live, the collectstatic-then-compress-only two-pass
 #      attempt still 500'd the home page for exactly this reason).
+#
+# VENDORED-ASSET PRECONDITION, recorded here because this RUN is where it
+# fails: `CompressedManifestStaticFilesStorage` also hard-fails on any file
+# a collected asset REFERENCES but that isn't vendored alongside it. Story
+# 10.1's `platformapp/static/{css,js}/vendor/bootstrap.min.*` each ended
+# with a `sourceMappingURL=bootstrap.min.*.map` comment while neither `.map`
+# was ever vendored, so pass 1 aborted the build with `ValueError: The file
+# 'css/vendor/bootstrap.min.css.map' could not be found`. Fixed by stripping
+# those two trailing comments (a pure DevTools debugging hint; the app is
+# unaffected, and the tree stays fully offline/zero-CDN rather than pulling
+# two more binary artifacts). IF YOU RE-VENDOR BOOTSTRAP FROM A CDN, the
+# comments come back and this RUN fails again -- either strip them the same
+# way or vendor the two `.map` files too.
 RUN DJANGO_SECRET_KEY=build-time-collectstatic-placeholder-not-a-real-secret \
     DJANGO_ADMIN_URL=admin/ \
     bash -c "source /app/shell-hook.sh \
@@ -279,9 +388,22 @@ RUN DJANGO_SECRET_KEY=build-time-collectstatic-placeholder-not-a-real-secret \
 # UID a writable, already-owned-by-group-0 `$HOME` so any library that reads
 # it (e.g. for a cache/config dir) doesn't hit a permission error against
 # `/`, the default `$HOME` an unknown UID would otherwise resolve to.
+#
+# `/app` ITSELF is in the chgrp/chmod list, not just its two writable
+# subtrees -- caught live in review: `WORKDIR /app` creates the directory
+# root:root 0755, so GID 0 had `r-x` and an arbitrary UID could not create a
+# single entry in its own `$HOME` (`docker run --user 24680:0 ... touch
+# /app/.probe` -> `Permission denied`, reproduced before this fix). The
+# comment above already claimed `$HOME` was writable; it wasn't. This is
+# NON-recursive on `/app` (`chgrp 0 /app && chmod g+rwX /app`, no `-R`) so
+# the app's own source tree stays read-only to the runtime user -- only the
+# directory entry itself becomes group-writable, which is all a library
+# needs to `mkdir $HOME/.cache`.
 RUN mkdir -p /app/platformapp/media \
     && chgrp -R 0 /app/staticfiles /app/platformapp/media \
-    && chmod -R g+rwX /app/staticfiles /app/platformapp/media
+    && chmod -R g+rwX /app/staticfiles /app/platformapp/media \
+    && chgrp 0 /app \
+    && chmod g+rwX /app
 
 # USER 1001:0 -- an arbitrary example non-root uid paired with GID 0, never
 # read by anything in this image (nothing here branches on "is my uid
@@ -292,6 +414,13 @@ RUN mkdir -p /app/platformapp/media \
 # Containerfile has to deliver -- 1001 itself carries no significance
 # beyond "not 0".
 USER 1001:0
+
+# Declares the port `CMD`'s gunicorn actually binds. Pure metadata (it opens
+# nothing by itself), but it is what makes `docker/podman run -P` publish
+# anything at all and what compose/orchestrator tooling reads to discover the
+# service port -- without it this image advertises no port despite existing
+# to serve one.
+EXPOSE 8000
 
 ENTRYPOINT ["/app/entrypoint.sh"]
 CMD ["gunicorn", "config.asgi:application", "--bind", "0.0.0.0:8000", "--worker-class", "uvicorn_worker.UvicornWorker"]

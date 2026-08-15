@@ -66,8 +66,37 @@ services:
     command: >
       bash -c "python manage.py migrate --noinput &&
                exec gunicorn config.asgi:application --bind 0.0.0.0:8000 --worker-class uvicorn_worker.UvicornWorker"
+    # `migrate` runs against a postgres that `depends_on` only guarantees is
+    # ANSWERING pg_isready -- which the official image also does during its
+    # initdb bootstrap, from a temporary server that then restarts. That
+    # narrow race makes migrate exit nonzero and, with no restart policy,
+    # leaves the service permanently dead after a `docker compose up` that
+    # reported success. `on-failure` retries it; a genuinely broken image
+    # still fails, just after a few attempts instead of one.
+    restart: on-failure
     ports:
       - "8000:8000"
+    # postgres and redis both declare a healthcheck; without one here the
+    # platform service can only ever report "running", never "healthy" --
+    # so `docker compose up --wait` returns as soon as the process exists
+    # (before migrate finishes, before gunicorn binds), and this story's own
+    # acceptance wording ("brings up platform+postgres+redis all healthy")
+    # has nothing to read. Uses the env's own python rather than curl: the
+    # UBI9-minimal runtime stage ships no curl, and `/app/entrypoint.sh` is
+    # what puts the conda env on PATH.
+    healthcheck:
+      test:
+        - "CMD"
+        - "/app/entrypoint.sh"
+        - "python"
+        - "-c"
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/ht/', timeout=5).status == 200 else 1)"
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      # Covers the migrate step + gunicorn/uvicorn boot before the first
+      # failure is counted against `retries`.
+      start_period: 60s
     environment:
       # DJANGO_SETTINGS_MODULE is already baked into the image (Containerfile
       # `ENV`) -- not repeated here.
