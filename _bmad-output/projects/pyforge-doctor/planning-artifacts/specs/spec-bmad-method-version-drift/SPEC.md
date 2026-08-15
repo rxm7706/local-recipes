@@ -21,8 +21,8 @@ Doctor already reports staleness for every other class of fleet dependency — f
   - **success:** Given today's real state (`pixi.toml` `>=6.11.0`, `manifest.yaml` `6.10.0`), the new Source's Finding fires; given both agree, no Finding fires. Needs zero new infrastructure — both are already-tracked repo files.
 
 - **CAP-2 — installed-vs-upstream-latest drift.**
-  - **intent:** An operator or agent sees when the installed core is behind the latest published upstream `bmad-method` release, not just behind the repo's own declared floor.
-  - **success:** Given the installed `manifest.yaml` version is older than the latest upstream release, a Finding fires naming both versions. Data source for "latest upstream release" is undecided — see Open Questions.
+  - **intent:** An operator or agent sees when the installed core is behind the latest published upstream `bmad-method` release, not just behind the repo's own declared floor. Data source: a live npm registry query (`https://registry.npmjs.org/bmad-method/latest` or equivalent) issued at check time — an operator-approved, deliberate exception to the fleet's general "no live query per home" discipline, scoped narrowly to this one ambient, non-gating, warn-only Finding (CAP-3).
+  - **success:** Given the installed `manifest.yaml` version is older than the latest upstream release returned by the live query, a Finding fires naming both versions. Given the query fails or times out (offline, registry unreachable), no Finding fires and no error surfaces — CAP-2 degrades silently to CAP-1-only, never blocking or failing the check-suite (CAP-3's constraint applies here too).
 
 - **CAP-3 — ambient, non-gating surface.**
   - **intent:** The drift Finding appears where operators already look — Doctor's own report/verdict shape and `fleet-picture`'s ATTENTION block — and never blocks or fails a check-suite run on its own.
