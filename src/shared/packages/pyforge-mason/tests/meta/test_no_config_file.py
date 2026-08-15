@@ -191,6 +191,43 @@ def test_no_module_imports_a_config_file_parser():
     )
 
 
+def test_every_sanctioned_yaml_exception_is_live_and_import_form_scoped():
+    """Guard the carve-out itself (review pass, 2026-08-15 second).
+
+    `_SANCTIONED_YAML_EXCEPTIONS` keys on `(path, banned_module)`, which is
+    all `_find_config_file_parser_imports` reports -- so on its own it
+    exempts every possible yaml import in that file, including `from yaml
+    import unsafe_load`, the exact thing AD-13's safe-load-only invariant
+    exists to keep out. It also cannot notice its own rot: were
+    `condalock.py` to stop importing yaml, the stale entry would sit there
+    silently re-authorizing reintroduction.
+
+    Both halves are closed here rather than by teaching the detector about
+    exceptions (which would cost it the exception-free property the
+    regression fixtures below depend on): every sanctioned file must still
+    actually trip the detector, and must import the banned module ONLY in
+    the bare `import <module>` form -- never `from <module> import ...`,
+    which is what would bind `unsafe_load`.
+    """
+    violators = set(_find_config_file_parser_imports(PKG_ROOT))
+    for path, banned in sorted(_SANCTIONED_YAML_EXCEPTIONS):
+        assert (path, banned) in violators, (
+            f"AD-13: the sanctioned carve-out for ({path.name}, {banned}) is "
+            "stale -- that file no longer imports it. Drop the entry rather "
+            "than leaving it to re-authorize a future reintroduction."
+        )
+        tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.level == 0:
+                assert _matches_banned(node.module or "") != banned, (
+                    f"AD-13: {path.name} imports {banned} via `from {banned} "
+                    "import ...`; the carve-out sanctions only a bare `import "
+                    f"{banned}` (whose sole sanctioned use is `yaml.safe_load`). "
+                    "A from-import can bind `unsafe_load`, which the carve-out "
+                    "does not cover."
+                )
+
+
 # --- Regression fixtures proving the detection logic itself (mirrors
 # test_dependency_direction.py's rigor): synthetic trees, not the real
 # package, so these assert the scanner's behavior independent of what

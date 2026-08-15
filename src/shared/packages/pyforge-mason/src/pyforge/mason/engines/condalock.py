@@ -68,11 +68,21 @@ vendored solver is what resolves the dependency graph.
 
 Story 4.4 adds `check()`, `mason environment check`'s own engine operation
 (FR-25, FR-27, FR-29): re-runs `conda-lock lock --check-input-hash` against a
-**temporary copy** of the given lockfile, never the real `lockfile_path`
-(Design Notes: `conda_lock.py::run_lock` calls `write_conda_lock_file` on its
-`--lockfile` target unconditionally once `new_lock_content` resolves --
-including the "nothing changed" branch -- so pointing `--lockfile` at the
-caller's real file would rewrite it on every check, current or stale).
+**temporary copy** of the given lockfile, never the real `lockfile_path`.
+Why the copy (corrected against installed `conda-lock` 4.0.2's own source,
+review pass, 2026-08-15 second): `conda_lock.py::run_lock` writes its
+`--lockfile` target on exactly the branch that matters here -- the
+`write_conda_lock_file` call sits inside the `else:` of `if not
+platforms_to_lock:`, so a check that finds nothing to re-solve writes
+NOTHING, while a check that finds a stale input runs a real solve and
+rewrites the target with the merged result. Pointing `--lockfile` at the
+caller's real file would therefore regenerate it precisely when it is stale
+-- both a mutation nowhere in this command's contract and a self-erasing
+one, since the freshly-rewritten file would report itself current on the
+very next check. (An earlier revision of this docstring claimed the write
+was unconditional, including the "nothing changed" branch; that was wrong.
+The copy is still required, for the stale branch alone.)
+
 Staleness is decided by `yaml.safe_load`-parsing the copy's `metadata.
 content_hash` before vs. after invoking conda-lock and comparing the two
 parsed dicts for equality -- never conda-lock's own returncode (Design Notes:
@@ -281,10 +291,17 @@ def check(
     those two parsed values differ (module docstring: why parsed dicts, not
     raw bytes or conda-lock's own returncode). The caller's own
     `lockfile_path` is never opened for writing at any point -- only read
-    once, by `shutil.copyfile`'s source side; a failure there (including the
-    narrow TOCTOU race between the earlier `os.path.isfile` check and this
-    copy -- review pass, 2026-08-15) is translated to
-    `EnvironmentLockfileMissingError` rather than a raw `OSError`.
+    once, by `shutil.copyfile`'s source side. A failure there is translated
+    by cause, never as a blanket (review pass, 2026-08-15 second: catching
+    bare `OSError` and re-raising "does not exist" reported an unreadable
+    lockfile, a full `$TMPDIR`, or an I/O error as a missing file, and
+    prescribed `mason environment lock` as a remedy that could not help):
+    `FileNotFoundError` -- the narrow TOCTOU race between the earlier
+    `os.path.isfile` check and this copy, the case that translation was
+    added for -- raises `EnvironmentLockfileMissingError`, while every other
+    `OSError` raises `EnvironmentLockfileMalformedError` carrying the OS's
+    own diagnostic verbatim (AD-1). Both are typed `MasonError`s (NFR-14);
+    neither leaks a raw `OSError`.
 
     A non-zero `completed.returncode` is surfaced as DATA on the returned
     result (AD-4, mirrors `lock()`'s own precedent) -- but review pass,
@@ -306,6 +323,23 @@ def check(
     text=True, encoding="utf-8", errors="replace", check=False`, a mandatory
     `timeout=`).
 
+    An omitted `platforms` delegates the platform set to conda-lock, never
+    to Mason (spec Always boundary) -- but note what conda-lock's own
+    default actually is (review pass, 2026-08-15 second, read from installed
+    4.0.2): `src_parser/__init__.py::make_lock_spec` falls back to
+    `DEFAULT_PLATFORMS`, FOUR platforms (`linux-64`, `osx-arm64`, `osx-64`,
+    `win-64`), whenever neither `-p` nor the manifests themselves name any.
+    `run_lock` then adds every platform the lockfile does not already cover
+    to `platforms_to_lock` REGARDLESS of `--check-input-hash`, so checking a
+    deliberately narrow lockfile (one locked with an explicit `-p` subset)
+    without repeating that same subset here runs a real, network-touching
+    solve for the uncovered platforms and reports `stale=True` for manifests
+    that never changed. Pass the same `platforms` the lockfile was locked
+    with. Defaulting instead to the lockfile's own recorded
+    `metadata.platforms` would remove that footgun, but is a change to this
+    command's contract rather than to its implementation -- deferred, see
+    the station's deferred-work ledger.
+
     `timeout` defaults to `_CONDA_LOCK_TIMEOUT_SECONDS` when `None` --
     reused from `lock()` above (identical underlying `conda-lock lock`
     invocation) -- but a timeout raises `EnvironmentCheckTimeoutError`, NOT
@@ -325,8 +359,10 @@ def check(
     try:
         try:
             shutil.copyfile(lockfile_path, temp_lockfile_path)
-        except OSError as exc:
+        except FileNotFoundError as exc:
             raise EnvironmentLockfileMissingError(lockfile_path) from exc
+        except OSError as exc:
+            raise EnvironmentLockfileMalformedError(lockfile_path, str(exc)) from exc
 
         before = _read_content_hash(temp_lockfile_path, lockfile_path)
 

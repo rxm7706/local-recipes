@@ -501,9 +501,13 @@ def test_check_reports_stale_false_when_the_temp_copys_content_hash_is_unchanged
     _write_lockfile(lockfile, {"linux-64": "abc"})
 
     def _side_effect(argv, **kwargs):
-        # conda-lock re-serializes even the "nothing changed" branch (module
-        # docstring) -- only formatting differs, so the parsed dict is
-        # identical and this must NOT be reported as stale.
+        # Installed conda-lock 4.0.2 writes NOTHING on its "nothing changed"
+        # branch (module docstring, corrected 2026-08-15 second) -- but if a
+        # future version did re-serialize there, only formatting would
+        # differ, the parsed dict would be identical, and that must still
+        # NOT be reported as stale. That forward-compatibility is exactly
+        # what comparing parsed dicts rather than raw bytes buys, so this
+        # rewrite stays as the case that proves it.
         _write_lockfile(_check_lockfile_path(argv), {"linux-64": "abc"})
         return _fake_completed()
 
@@ -681,7 +685,46 @@ def test_check_translates_a_copy_race_to_lockfile_missing_error(tmp_path):
     mock_run.assert_not_called()
 
 
+def test_check_translates_a_non_vanished_copy_failure_to_lockfile_malformed_error(tmp_path):
+    """Review pass, 2026-08-15 second: the race translation above used to
+    catch bare `OSError`, so an unreadable lockfile, a full `$TMPDIR`, or an
+    I/O error all reported "lockfile does not exist" and prescribed `mason
+    environment lock` -- a remedy that cannot help. Only `FileNotFoundError`
+    means "vanished"; every other `OSError` carries the OS's own diagnostic
+    into `EnvironmentLockfileMalformedError` instead. Both stay typed
+    `MasonError`s (NFR-14)."""
+    lockfile = tmp_path / "conda-lock.yml"
+    _write_lockfile(lockfile, {"linux-64": "abc"})
+    with patch(
+        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
+    ), patch(
+        "pyforge.mason.engines.condalock.shutil.copyfile",
+        side_effect=PermissionError(13, "Permission denied"),
+    ), patch("pyforge.mason.engines.condalock.subprocess.run") as mock_run:
+        with pytest.raises(EnvironmentLockfileMalformedError) as excinfo:
+            condalock.check(str(lockfile), _MANIFEST_PATHS)
+
+    assert excinfo.value.lockfile_path == str(lockfile)
+    assert "Permission denied" in excinfo.value.reason
+    mock_run.assert_not_called()
+
+
 # --- check(): malformed lockfile content --------------------------------------------
+
+def test_check_raises_lockfile_malformed_error_when_the_file_is_not_utf8(tmp_path):
+    """`_read_content_hash` enumerates `UnicodeDecodeError` among the
+    failures it translates, but nothing exercised that branch until this
+    review pass (2026-08-15 second)."""
+    lockfile = tmp_path / "conda-lock.yml"
+    lockfile.write_bytes(b"metadata:\n  content_hash:\n    linux-64: \xff\xfe\n")
+    with patch(
+        "pyforge.mason.engines.condalock.require_engine", return_value="conda-lock 4.0.2",
+    ), patch("pyforge.mason.engines.condalock.subprocess.run") as mock_run:
+        with pytest.raises(EnvironmentLockfileMalformedError) as excinfo:
+            condalock.check(str(lockfile), _MANIFEST_PATHS)
+
+    assert excinfo.value.lockfile_path == str(lockfile)
+    mock_run.assert_not_called()
 
 def test_check_raises_lockfile_malformed_error_when_metadata_key_missing(tmp_path):
     lockfile = tmp_path / "conda-lock.yml"
