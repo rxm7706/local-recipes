@@ -110,6 +110,36 @@ CONDA_ONLY_RUN_DEPS: dict[str, frozenset[str]] = {
     # warden's deptry/osv-scanner above: not an importable Python
     # distribution, so it cannot be a pip requirement.
     "pyforge-steward": frozenset({"age"}),
+    # mason's five ENGINES (Stories 3.1 + 3.7, FR-18/AD-10/AD-12), same shape
+    # as warden's and steward's above: every one is located with
+    # `shutil.which` and driven by `subprocess.run` from `engines/*.py`.
+    # `pyforge.mason` IMPORTS none of them, so a wheel install has nothing to
+    # import and declaring them would put five CLI tools on every `pip install
+    # pyforge-mason`, against FR-41's lean-dependency floor.
+    #
+    # Note the precise claim, because it is weaker than warden's and steward's
+    # (review finding): `pixi` (Rust) and `gh` (Go) are genuinely not Python
+    # distributions, but `twine`, `conda-lock`, and `python-build` (the
+    # conda-forge spelling of `build`, whose PATH binary is `pyproject-build`)
+    # ARE importable PyPI distributions. What justifies exempting those three
+    # is that mason drives them as subprocesses and never imports them -- a
+    # property of today's code, not of the packages. So it is asserted rather
+    # than trusted, by test_conda_only_run_deps_are_never_imported below.
+    #
+    # Their version ranges are guarded, exactly like warden's, by the package's
+    # own tests/meta/test_engine_version_range_sync.py, which holds these five
+    # pixi.toml lines byte-for-byte in sync with engines/__init__.py's
+    # PIXI_VERSION_RANGE/TWINE_VERSION_RANGE/CONDA_LOCK_VERSION_RANGE/
+    # PYTHON_BUILD_VERSION_RANGE/GH_VERSION_RANGE constants.
+    "pyforge-mason": frozenset(
+        {"conda-lock", "gh", "pixi", "python-build", "twine"}
+    ),
+    # herald's `playwright` (Story 14.2, deck_qa.py's headless-render gate):
+    # conda-forge splits what PyPI ships as one `playwright` distribution into
+    # two packages -- `playwright` (the CLI/browser driver, matched by name to
+    # pyproject.toml's own `playwright` entry) and `playwright-python` (the
+    # `import playwright` bindings, no separate PyPI name to declare against).
+    "pyforge-herald": frozenset({"playwright-python"}),
 }
 
 # The shared namespace package. `pyforge.*` imports are in-repo siblings, never a
@@ -401,6 +431,72 @@ def test_baseline_entries_carry_a_rationale():
         if len(reason.strip()) < 40
     ]
     assert not thin, f"baseline entries need a real reason: {thin}"
+
+
+def test_conda_only_entries_are_still_conda_run_deps():
+    """Give `CONDA_ONLY_RUN_DEPS` the same ratchet its two sibling tables have.
+
+    `BASELINE_UNDECLARED_IMPORTS` and `MODULE_ALIASES` are both guarded against
+    rotting into permanent excuses (`test_baseline_entries_are_still_violated`,
+    `test_alias_map_carries_no_redundant_entries`); this table was not, and it
+    is the one that grants a package a standing exemption from parity. An entry
+    naming a run-dep the package no longer declares is either already fixed or
+    misspelled — either way it suppresses nothing and must not sit there
+    implying it does.
+
+    The `"*"` row is exempt: it is the interpreter pin every package carries.
+    """
+    stale: list[str] = []
+    for package, names in CONDA_ONLY_RUN_DEPS.items():
+        if package == "*":
+            continue
+        assert package in PACKAGES, f"CONDA_ONLY_RUN_DEPS names unknown package {package!r}"
+        run_deps = set(_run_dependencies(package))
+        for name in sorted(names):
+            if _normalize(name) not in run_deps:
+                stale.append(
+                    f"{package}:{name} — not in pixi.toml [package.run-dependencies]"
+                )
+    assert not stale, (
+        "CONDA_ONLY_RUN_DEPS entries no longer describe a real conda run-dep:\n  "
+        + "\n  ".join(stale)
+        + "\n\nDelete them — an exemption for something that is not there suppresses nothing."
+    )
+
+
+@pytest.mark.parametrize("package", PACKAGES)
+def test_conda_only_run_deps_are_never_imported(package):
+    """The premise of every `CONDA_ONLY_RUN_DEPS` entry is that the package
+    drives that engine as a SUBPROCESS and never imports it — which is why it
+    can be absent from the wheel's metadata without breaking the wheel.
+
+    `test_every_hard_import_is_a_declared_dependency` does not cover this. It
+    checks module-level imports only, and both its call sites discard
+    `_scan_imports`' `deferred` bucket (`hard, _ = ...`), so a lazy or
+    try/except import inside a function is invisible to it — while parity now
+    exempts these names permanently. That gap matters most for the three
+    exempted names that ARE real importable distributions (`twine`,
+    `conda-lock`, `python-build`/`build`): adding `import twine` inside a
+    function would ship a wheel that cannot run, with no gate firing.
+
+    So assert the premise directly, over BOTH buckets.
+    """
+    exempt = _conda_only(package) - {"python"}
+    if not exempt:
+        return
+    hard, deferred = _scan_imports(PACKAGES_DIR / package / "src")
+    imported = {
+        dist
+        for module in set(hard) | set(deferred)
+        for dist in _candidate_distributions(module)
+    }
+    violating = sorted(exempt & imported)
+    assert not violating, (
+        f"{package}: {violating} are exempted from wheel/.conda parity by "
+        "CONDA_ONLY_RUN_DEPS on the grounds that they are subprocess engines, "
+        "never imported — but the source imports them. Either declare them in "
+        "pyproject.toml [project.dependencies], or drop the import."
+    )
 
 
 def test_alias_map_carries_no_redundant_entries():

@@ -85,6 +85,26 @@ a later addition (both said "Story 3.7"): the multi-target ship outcome
 `ShipTargetResult`s a caller already produced (AD-9). See `ShipReceipt`'s
 own docstring below for why `ok` is a plain field, not a property, and what
 it does and does not summarize.
+
+Story 4.3 adds `LockResult` -- the ninth shape in this file, and the one
+this module's own docstring (above, Story 2.9's paragraph) already named as
+a future addition: `environment.py::lock()`'s own return type (FR-25,
+FR-27, FR-29), composed from `engines.condalock`'s single `CondaLockResult`
+plus the orchestration-level context (`manifest_paths`, `platforms` as
+actually requested) that engine-layer shape does not itself carry -- mirrors
+`PackageBuildResult` wrapping `engines.pep517`/`engines.pixi`'s independent
+outcomes above, the same "engine-layer shape stays in `engines/*.py`,
+the layer-boundary-crossing shape lands here" split that shape's own
+paragraph documents.
+
+Story 4.4 adds `CheckResult` -- the tenth shape in this file, and
+`environment.py::check()`'s own return type (FR-25, FR-27, FR-29):
+`engines.condalock.check()`'s `CondaLockCheckResult` wrapped with the same
+kind of orchestration-level context `LockResult` above already establishes
+the pattern for, plus `lockfile_path` (the EXISTING lockfile `check()` was
+told to verify, never a write target like `LockResult.output_path`) and
+`stale`, the verdict itself -- the one field neither `LockResult` nor any
+other shape in this file carries.
 """
 
 from __future__ import annotations
@@ -357,3 +377,70 @@ class ShipReceipt:
 
     targets: tuple[ShipTargetResult, ...]
     ok: bool
+
+
+@dataclass(frozen=True)
+class LockResult:
+    """The outcome of one `environment lock` invocation (Story 4.3, FR-25,
+    FR-27, FR-29): `engines.condalock.lock()`'s own `CondaLockResult`
+    wrapped with the orchestration-level context that engine-layer shape
+    does not itself carry.
+
+    `manifest_paths`/`output_path`/`platforms` are the caller's own
+    resolved inputs, carried straight through unchanged -- `platforms`
+    empty means no `--platform` was given, so conda-lock's own default
+    applied (never invented by Mason, spec Always boundary). `engine_name`/
+    `engine_version` are `CondaLockResult`'s own fields, threaded through so
+    a renderer surfaces "which engine ran" (FR-29) with no `render.py`
+    change required, mirroring `CondaLockResult`'s own docstring precedent.
+    `returncode` is the delegated `conda-lock` subprocess's raw exit code --
+    non-zero is DATA here, never raised (AD-4), mirroring
+    `PackageBuildResult.pep517_returncode`'s own precedent. `stdout` is the
+    subprocess's captured stdout in full (review pass, 2026-08-14) -- mirrors
+    `PackageBuildResult.pep517_stdout`/`pixi_stdout`'s own precedent: a
+    failed solve (`condalock.py`'s own docstring calls this "the routine
+    expected outcome of resolving a real dependency graph") investigated
+    outside a live terminal needs diagnostic text, not a bare returncode
+    integer -- `CondaLockResult.stdout` already carries it, this field just
+    was not threaded through in the first pass."""
+
+    manifest_paths: tuple[str, ...]
+    output_path: str
+    platforms: tuple[str, ...]
+    engine_name: str
+    engine_version: str | None
+    returncode: int
+    stdout: str
+
+
+@dataclass(frozen=True)
+class CheckResult:
+    """The outcome of one `environment check` invocation (Story 4.4, FR-25,
+    FR-27, FR-29): `engines.condalock.check()`'s own `CondaLockCheckResult`
+    wrapped with the orchestration-level context that engine-layer shape
+    does not itself carry.
+
+    `lockfile_path` is the EXISTING lockfile the caller asked to verify --
+    never written to under any outcome (spec Never boundary), unlike
+    `LockResult.output_path`'s write-target semantics above; `--lockfile` is
+    deliberately not named `--output` for the same reason (spec Always
+    boundary). `manifest_paths`/`platforms` mirror `LockResult`'s own
+    identical fields and rationale -- the caller's own resolved inputs,
+    carried straight through unchanged. `stale` is the verdict itself
+    (Intent): `True` when the lockfile's parsed `metadata.content_hash`
+    differs before vs. after conda-lock's own `--check-input-hash` re-run
+    against a temporary copy, `False` when it does not -- DATA on this
+    dataclass, never raised (AD-4); `check()` itself never raises for a
+    stale verdict. `engine_name`/`engine_version`/`returncode`/`stdout`
+    mirror `LockResult`'s own identical fields and rationale -- `returncode`
+    is the delegated `conda-lock` subprocess's raw exit code, `stdout` its
+    captured stdout in full."""
+
+    lockfile_path: str
+    manifest_paths: tuple[str, ...]
+    platforms: tuple[str, ...]
+    stale: bool
+    engine_name: str
+    engine_version: str | None
+    returncode: int
+    stdout: str

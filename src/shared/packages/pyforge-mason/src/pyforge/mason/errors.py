@@ -802,3 +802,164 @@ class EnvironmentLockTimeoutError(MasonError):
         # "environment:lock-timeout", <built message>)` -- the wrong value
         # for this class's own `(timeout,)` constructor.
         return (self.__class__, (self.timeout,))
+
+
+class EnvironmentLockfileMissingError(MasonError):
+    """`engines.condalock.check()`'s own lockfile-presence precondition
+    failed: the caller's `--lockfile`/`-l` path does not exist on disk, is
+    not a regular file (e.g. a directory or a broken symlink -- `os.path.
+    isfile()` returns `False` for both), or vanished in the narrow race
+    between that check and the temp copy (Story 4.4, FR-25, FR-27, FR-29,
+    NFR-14).
+
+    Raised before any subprocess spawns or temp copy is made, or -- for the
+    race case -- from `check()`'s own `shutil.copyfile` failure translation
+    (spec Always boundary) -- a deliberate departure from `lock()`'s own "no
+    Mason-side pre-validation" default, forced by `check()`'s copy-before-
+    invoke design (Design Notes): there is no existing file to copy when
+    none exists, and conda-lock's own returncode cannot be trusted to
+    distinguish "missing" from "stale" (Design Notes: `--check-input-hash`'s
+    exit code 4 is dead in installed `conda-lock` 4.0.2). Construction
+    raises `TypeError` for a non-`str` `lockfile_path` -- unlike most
+    sibling `MasonError` subclasses, an EMPTY string is accepted (review
+    pass, 2026-08-15): `argparse`'s `required=True` on `--lockfile` only
+    demands the flag be given, not that its value be non-blank, so `mason
+    environment check ... --lockfile ""` is a real, reachable CLI input, not
+    a caller bug -- rejecting it here with `ValueError` would escape
+    `main()`'s `except MasonError` handler and surface a raw traceback
+    instead of this class's own clean diagnostic.
+    """
+
+    def __init__(self, lockfile_path: str) -> None:
+        if not isinstance(lockfile_path, str):
+            raise TypeError(
+                "EnvironmentLockfileMissingError requires `lockfile_path` to "
+                f"be a str, got {type(lockfile_path).__name__}"
+            )
+        self.lockfile_path = lockfile_path
+        # Truthiness, NOT `.strip()` (review pass, 2026-08-15 second): a
+        # whitespace-only `--lockfile "   "` IS a path the user supplied, and
+        # `.strip()` sent it down the "no path was given" branch below,
+        # contradicting what they typed. Only the genuinely empty string --
+        # `--lockfile ""`, which argparse's `required=True` still accepts --
+        # takes that branch now.
+        if lockfile_path:
+            message = (
+                f"lockfile {lockfile_path!r} does not exist or is not a file; run "
+                "`mason environment lock` to create it"
+            )
+        else:
+            message = (
+                "no --lockfile path was given; run `mason environment lock` to "
+                "create one, then pass its path"
+            )
+        super().__init__("environment:lockfile-missing", message)
+
+    def __reduce__(self):
+        # Mirrors `PackageProjectPathError.__reduce__` above: `Exception.
+        # __reduce__` reconstructs via `cls(*self.args)`, and `MasonError.
+        # __init__` sets `self.args = ("environment:lockfile-missing", <built
+        # message>)` -- the wrong value for this class's own
+        # `(lockfile_path,)` constructor.
+        return (self.__class__, (self.lockfile_path,))
+
+
+class EnvironmentLockfileMalformedError(MasonError):
+    """`engines.condalock.check()`'s own lockfile-content precondition
+    failed: the temp copy of `lockfile_path` could not be read as a
+    conda-lock lockfile after `yaml.safe_load` (Story 4.4, FR-25, FR-27,
+    FR-29, NFR-14; review pass, 2026-08-15).
+
+    Raised when the lockfile at `lockfile_path` is not valid YAML, is empty
+    (`yaml.safe_load` returns `None`), is not valid UTF-8, or does not carry
+    the `metadata.content_hash` shape every conda-lock-produced lockfile has
+    (spec `LockMeta.content_hash` is a required field) -- a foreign or
+    corrupted file passed as `--lockfile` is not `EngineAbsentError` (the
+    engine IS present) nor `EnvironmentLockfileMissingError` (the file DOES
+    exist), and reaching it must never surface a raw `KeyError`/`TypeError`/
+    `yaml.YAMLError`/`UnicodeDecodeError`/`OSError` past this module's own
+    boundary, mirroring `EngineAbsentError`'s own "never leak a subprocess
+    implementation detail" precedent for a different failure class.
+    `reason` is `str(exc)` from whichever exception was caught -- the
+    underlying library's own diagnostic text, verbatim (AD-1), never a
+    Mason-side re-authoring of it. Construction raises `ValueError` for an
+    empty `lockfile_path`/`reason`, matching `PackageProjectPathError`'s
+    validation rigor: a malformed-lockfile error naming no path, or giving
+    no reason, is incoherent -- unlike `EnvironmentLockfileMissingError`
+    above, an empty `lockfile_path` can never reach this class (`check()`'s
+    own `os.path.isfile`/`shutil.copyfile` gates already raise the sibling
+    error first for any path that does not resolve to a readable file, so by
+    the time this class's own raise site runs, `lockfile_path` is known
+    non-empty).
+    """
+
+    def __init__(self, lockfile_path: str, reason: str) -> None:
+        if not isinstance(lockfile_path, str) or not lockfile_path.strip():
+            raise ValueError(
+                "EnvironmentLockfileMalformedError requires a non-empty "
+                "`lockfile_path`: a malformed-lockfile error naming no path "
+                "is incoherent"
+            )
+        if not isinstance(reason, str) or not reason.strip():
+            raise ValueError(
+                "EnvironmentLockfileMalformedError requires a non-empty "
+                "`reason`: a malformed-lockfile error giving no reason is "
+                "incoherent"
+            )
+        self.lockfile_path = lockfile_path
+        self.reason = reason
+        message = (
+            f"lockfile {lockfile_path!r} could not be read as a conda-lock lockfile: "
+            f"{reason}; run `mason environment lock` to regenerate it"
+        )
+        super().__init__("environment:lockfile-malformed", message)
+
+    def __reduce__(self):
+        # Mirrors `PackageProjectPathError.__reduce__` above: `Exception.
+        # __reduce__` reconstructs via `cls(*self.args)`, and `MasonError.
+        # __init__` sets `self.args = ("environment:lockfile-malformed",
+        # <built message>)` -- the wrong two values for this class's own
+        # `(lockfile_path, reason)` constructor.
+        return (self.__class__, (self.lockfile_path, self.reason))
+
+
+class EnvironmentCheckTimeoutError(MasonError):
+    """A `engines.condalock.check()` invocation exceeded its mandatory
+    timeout (Story 4.4, FR-25, FR-27, FR-29, AD-25, NFR-14) -- mirrors
+    `EnvironmentLockTimeoutError`'s own shape and rationale exactly; only the
+    wrapped operation differs (`condalock.check`'s own `--check-input-hash`
+    re-run against a temporary lockfile copy rather than `condalock.lock`'s
+    plain solve).
+
+    A dedicated class, NOT a reuse of `EnvironmentLockTimeoutError` (spec
+    Always boundary): that class hardcodes "environment lock" into its
+    message text (`"the environment lock did not complete..."`), which would
+    be a factually wrong diagnostic for a staleness-check timeout -- mirrors
+    `ShipUploadTimeoutError`/`ShipChannelUploadTimeoutError`'s identical
+    precedent of one dedicated timeout class per distinct operation even when
+    the same binary is wrapped.
+
+    `subprocess.run`'s own `timeout=` kill-and-reap-before-raising behaviour
+    is what guarantees "no orphaned process" here -- this class only names
+    the failure; it does not itself do any process cleanup. `timeout` is the
+    number of seconds that elapsed before the child was killed, echoed
+    verbatim into the message. v1 exposes no per-check timeout override (spec
+    Never boundary) -- the message says so rather than pointing at a knob
+    that does not exist.
+    """
+
+    def __init__(self, timeout: float) -> None:
+        self.timeout = timeout
+        message = (
+            f"the environment check did not complete within {timeout}s and was "
+            "killed; this is not a currently configurable v1 knob"
+        )
+        super().__init__("environment:check-timeout", message)
+
+    def __reduce__(self):
+        # Mirrors `EnvironmentLockTimeoutError.__reduce__` above:
+        # `Exception.__reduce__` reconstructs via `cls(*self.args)`, and
+        # `MasonError.__init__` sets `self.args = (
+        # "environment:check-timeout", <built message>)` -- the wrong value
+        # for this class's own `(timeout,)` constructor.
+        return (self.__class__, (self.timeout,))

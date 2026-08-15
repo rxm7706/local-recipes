@@ -38,6 +38,23 @@ delegates to a build yet), so `tomllib`/`tomli` stay unconditionally banned
 here; a future story that legitimately needs that carve-out will have to
 extend this guard deliberately, not rediscover the gap as a test failure.
 
+Story 4.4 is that future story, for `yaml` rather than `tomllib`:
+`engines/condalock.py::check()` needs `yaml.safe_load` to read
+`metadata.content_hash` out of a lockfile CONDA-LOCK itself produced -- not
+a Mason-owned settings/config file (spec Design Notes for
+`environment check`), the identical "reading a *target*/third-party
+artifact's own structured output is not a second Mason configuration
+system" distinction the `pyproject.toml` paragraph above already draws for
+TOML. `_SANCTIONED_YAML_EXCEPTIONS` below encodes this deliberately and
+narrowly: only a bare `yaml` import in exactly `engines/condalock.py` is
+exempted from the real-package assertion below -- the detector itself
+(`_find_config_file_parser_imports`) stays unmodified and un-aware of any
+exception, so every regression fixture below still proves it flags a plain
+`import yaml`/`from yaml import ...` unconditionally; every OTHER banned
+module, and every OTHER file (including every other line in
+`condalock.py` itself, were it to import e.g. `tomllib`), stays fully
+covered by this guard.
+
 Relative imports (`from .yaml import X`, `level > 0`) are never flagged even
 when the trailing segment matches a banned name -- that names a local
 sibling module (e.g. a hypothetical `mason/yaml.py`), not the third-party
@@ -64,6 +81,15 @@ _BANNED_MODULES = (
     "configparser", "tomllib", "tomli", "toml", "tomlkit",
     "yaml", "ruamel.yaml", "configobj", "dotenv",
 )
+
+_SANCTIONED_YAML_EXCEPTIONS = {
+    (PKG_ROOT / "engines" / "condalock.py", "yaml"),
+}
+"""Story 4.4's narrow, deliberate carve-out (module docstring) -- applied
+only in `test_no_module_imports_a_config_file_parser` below, never inside
+`_find_config_file_parser_imports` itself, so the detector stays exception-
+free and every regression fixture below keeps proving it fires
+unconditionally on a plain `yaml` import."""
 
 
 def _matches_banned(dotted_name: str) -> str | None:
@@ -150,15 +176,56 @@ def test_no_module_imports_a_config_file_parser():
         f"AD-13 guard is scanning nothing — package root moved? {PKG_ROOT}"
     )
     violators = _find_config_file_parser_imports(PKG_ROOT)
-    assert not violators, (
+    # Story 4.4's one deliberate, narrow carve-out (module docstring,
+    # `_SANCTIONED_YAML_EXCEPTIONS`) -- filtered here, not inside the
+    # detector, so the detector itself stays exception-free.
+    unsanctioned = [v for v in violators if v not in _SANCTIONED_YAML_EXCEPTIONS]
+    assert not unsanctioned, (
         # Derived from _BANNED_MODULES, never re-typed (review pass,
         # 2026-08-10, third): the hand-written list here named 5 of the 9
         # banned modules, so a developer who tripped the guard with `import
         # dotenv` read a message that did not mention dotenv and could
         # reasonably conclude the guard had misfired.
         "AD-13: no module under pyforge/mason/ may import a config-file "
-        f"parser ({'/'.join(_BANNED_MODULES)}); found: {violators}"
+        f"parser ({'/'.join(_BANNED_MODULES)}); found: {unsanctioned}"
     )
+
+
+def test_every_sanctioned_yaml_exception_is_live_and_import_form_scoped():
+    """Guard the carve-out itself (review pass, 2026-08-15 second).
+
+    `_SANCTIONED_YAML_EXCEPTIONS` keys on `(path, banned_module)`, which is
+    all `_find_config_file_parser_imports` reports -- so on its own it
+    exempts every possible yaml import in that file, including `from yaml
+    import unsafe_load`, the exact thing AD-13's safe-load-only invariant
+    exists to keep out. It also cannot notice its own rot: were
+    `condalock.py` to stop importing yaml, the stale entry would sit there
+    silently re-authorizing reintroduction.
+
+    Both halves are closed here rather than by teaching the detector about
+    exceptions (which would cost it the exception-free property the
+    regression fixtures below depend on): every sanctioned file must still
+    actually trip the detector, and must import the banned module ONLY in
+    the bare `import <module>` form -- never `from <module> import ...`,
+    which is what would bind `unsafe_load`.
+    """
+    violators = set(_find_config_file_parser_imports(PKG_ROOT))
+    for path, banned in sorted(_SANCTIONED_YAML_EXCEPTIONS):
+        assert (path, banned) in violators, (
+            f"AD-13: the sanctioned carve-out for ({path.name}, {banned}) is "
+            "stale -- that file no longer imports it. Drop the entry rather "
+            "than leaving it to re-authorize a future reintroduction."
+        )
+        tree = ast.parse(path.read_text(encoding="utf-8-sig"), filename=str(path))
+        for node in ast.walk(tree):
+            if isinstance(node, ast.ImportFrom) and node.level == 0:
+                assert _matches_banned(node.module or "") != banned, (
+                    f"AD-13: {path.name} imports {banned} via `from {banned} "
+                    "import ...`; the carve-out sanctions only a bare `import "
+                    f"{banned}` (whose sole sanctioned use is `yaml.safe_load`). "
+                    "A from-import can bind `unsafe_load`, which the carve-out "
+                    "does not cover."
+                )
 
 
 # --- Regression fixtures proving the detection logic itself (mirrors

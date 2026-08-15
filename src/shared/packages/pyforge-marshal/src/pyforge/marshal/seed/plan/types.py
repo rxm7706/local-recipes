@@ -24,7 +24,8 @@ carriers plus their own JSON codec.
 to round-trip through `from_json_dict` as well (this package's first: no
 prior `from_json_dict` precedent exists to follow beyond `to_json_dict`'s
 own shape). A JSON array has no tuple type, so every tuple field
-(`Action.chosen_anchor`, `RepoFingerprint.artifact_hashes`, `Plan.actions`)
+(`Action.chosen_anchor`, `RepoFingerprint.artifact_hashes`, `Plan.actions`,
+`Plan.skipped`)
 serializes as a JSON array and is rebuilt as a tuple on the way back in --
 `Plan.from_json_dict(json.loads(json.dumps(plan.to_json_dict()))) == plan`
 must hold for every `Plan` `build_plan()` can produce (the Always bullet's
@@ -79,6 +80,24 @@ def _require_str(value: Any, *, context: str) -> str:
     if not isinstance(value, str):
         raise ValueError(f"{context}: expected a str, got {value!r}")
     return value
+
+
+def _require_non_blank_str(value: Any, *, context: str) -> str:
+    """`_require_str` plus a blank rejection, for the fields where an empty
+    string is not a value but a hole.
+
+    `SkippedArtifact`'s three fields are all identifiers a human READS out
+    of `plan.json` -- an artifact id, the path it names, and the `--skip`
+    glob responsible -- so a blank one renders as an empty line in the
+    artifact under review, saying nothing while looking like a record
+    (review finding). Both of this field's siblings already refuse the same
+    shape at their own boundaries: `NeverWrite.__post_init__` for a
+    never-write pattern, `seed.verbs.skips.record_skip` for the skip pattern
+    it is handed. This is that rule at the load boundary."""
+    text = _require_str(value, context=context)
+    if not text.strip():
+        raise ValueError(f"{context}: expected a non-blank str, got {value!r}")
+    return text
 
 
 def _require_optional_str(value: Any, *, context: str) -> str | None:
@@ -271,10 +290,66 @@ class RepoFingerprint:
 
 
 @dataclass(frozen=True)
+class SkippedArtifact:
+    """One artifact a caller's `--skip` glob removed from this run
+    (Story 10.4, FR-87), recorded IN the plan rather than only in a
+    rendering of it.
+
+    A `Plan` is a serialized artifact (`build.write_plan`/`build.load_plan`)
+    that a human reviews as a diff, so "a skip is visible rather than
+    invisible" only holds if the skip survives into `plan.json` itself --
+    a skip that exists solely in a terminal rendering would leave the
+    reviewed file lying by omission about the one thing the requirement
+    exists to surface.
+
+    `pattern` is the glob that matched -- the FIRST one in the caller's
+    given order when several match (`seed.verbs.skips.first_match`'s own
+    rule), so the reviewer can see WHICH `--skip` argument is responsible
+    rather than having to re-derive it from the pattern list.
+
+    Deliberately a separate carrier from `Action`, and a separate `Plan`
+    field rather than a flag on a member of `Plan.actions`: an apply runner
+    iterates `plan.actions`, so an artifact it must not touch is
+    structurally unreachable here instead of merely protected by every
+    future consumer remembering to test a flag."""
+
+    artifact_id: str
+    target_path: str
+    pattern: str
+
+    def to_json_dict(self) -> dict[str, Any]:
+        return {
+            "artifact_id": self.artifact_id,
+            "target_path": self.target_path,
+            "pattern": self.pattern,
+        }
+
+    @classmethod
+    def from_json_dict(cls, data: dict[str, Any]) -> SkippedArtifact:
+        if not isinstance(data, dict):
+            raise ValueError(f"SkippedArtifact: expected a JSON object, got {data!r}")
+        return cls(
+            artifact_id=_require_non_blank_str(
+                _require_key(data, "artifact_id", context="SkippedArtifact"),
+                context="SkippedArtifact.artifact_id",
+            ),
+            target_path=_require_non_blank_str(
+                _require_key(data, "target_path", context="SkippedArtifact"),
+                context="SkippedArtifact.target_path",
+            ),
+            pattern=_require_non_blank_str(
+                _require_key(data, "pattern", context="SkippedArtifact"),
+                context="SkippedArtifact.pattern",
+            ),
+        )
+
+
+@dataclass(frozen=True)
 class Plan:
     """The single artifact a human reviews before Genesis writes anything
     (P-04): an ordered, deterministic list of `Action`s plus the
-    `RepoFingerprint` they were computed against.
+    `RepoFingerprint` they were computed against, plus whatever this run's
+    `--skip` globs took OUT of that list.
 
     `actions` is sorted by `artifact_id` (`seed.plan.build.build_plan`'s
     own determinism requirement, mirrored here rather than re-validated --
@@ -282,15 +357,27 @@ class Plan:
     docstring). `Plan(actions=(), repo_fingerprint=...)` is a fully valid,
     constructible, serializable result (AD-60: idempotence is defined as
     plan-emptiness) -- nothing in this class, or in `to_json_dict`/
-    `from_json_dict`, special-cases an empty `actions` tuple."""
+    `from_json_dict`, special-cases an empty `actions` tuple.
+
+    `skipped` (Story 10.4) is `()` for every `Plan` `build_plan` itself
+    produces -- it is populated only by `seed.verbs.skips.apply_skips`,
+    which MOVES an entry out of `actions` into it. Last field, with a
+    default, so every existing `Plan(actions=..., repo_fingerprint=...)`
+    construction site keeps working unchanged. It is sorted by
+    `artifact_id`, unique, and shares no id with `actions` -- an artifact
+    is either being acted on or being skipped, never both -- all three
+    re-checked in `from_json_dict` against a hand-corrupted file, the same
+    boundary discipline `actions` already gets."""
 
     actions: tuple[Action, ...]
     repo_fingerprint: RepoFingerprint
+    skipped: tuple[SkippedArtifact, ...] = ()
 
     def to_json_dict(self) -> dict[str, Any]:
         return {
             "actions": [action.to_json_dict() for action in self.actions],
             "repo_fingerprint": self.repo_fingerprint.to_json_dict(),
+            "skipped": [entry.to_json_dict() for entry in self.skipped],
         }
 
     @classmethod
@@ -313,8 +400,47 @@ class Plan:
             raise ValueError(f"Plan.actions: artifact_id values must be unique, got {ids!r}")
         if ids != sorted(ids):
             raise ValueError(f"Plan.actions: entries must be ordered by artifact_id, got {ids!r}")
+        # Each key is required AND ITS VALUE VALIDATED in `to_json_dict`'s
+        # own emission order -- `actions`, `repo_fingerprint`, then
+        # `skipped` -- so a document broken in several places reports the
+        # FIRST problem a reader would look for rather than whichever this
+        # method happens to reach first. The fingerprint is parsed HERE, not
+        # deferred into the `cls(...)` call below (review finding): deferred,
+        # a document with both a malformed `repo_fingerprint` and an
+        # out-of-order `skipped` reported only the `skipped` error and never
+        # mentioned the broken fingerprint at all, which made the ordering
+        # claim above false for exactly the documents it matters for.
         raw_fingerprint = _require_key(data, "repo_fingerprint", context="Plan")
-        return cls(
-            actions=actions,
-            repo_fingerprint=RepoFingerprint.from_json_dict(raw_fingerprint),
-        )
+        fingerprint = RepoFingerprint.from_json_dict(raw_fingerprint)
+        # `skipped` is REQUIRED, not defaulted-on-absence: the dataclass
+        # default exists so Python construction sites stay short, but a
+        # `plan.json` missing the key is a file this module's own
+        # `to_json_dict` did not write, and silently reading it as "nothing
+        # was skipped" would turn a truncated or foreign document into a
+        # plan that looks complete. Every other `Plan` key is required for
+        # the same reason.
+        raw_skipped = _require_key(data, "skipped", context="Plan")
+        if not isinstance(raw_skipped, list):
+            raise ValueError(f"Plan.skipped: expected a list, got {raw_skipped!r}")
+        skipped = tuple(SkippedArtifact.from_json_dict(entry) for entry in raw_skipped)
+        skipped_ids = [entry.artifact_id for entry in skipped]
+        if len(set(skipped_ids)) != len(skipped_ids):
+            raise ValueError(
+                f"Plan.skipped: artifact_id values must be unique, got {skipped_ids!r}"
+            )
+        if skipped_ids != sorted(skipped_ids):
+            raise ValueError(
+                f"Plan.skipped: entries must be ordered by artifact_id, got {skipped_ids!r}"
+            )
+        # Disjointness: `apply_skips` MOVES an action into `skipped`, so an
+        # id appearing on both sides means the file was hand-edited into a
+        # state no producer can reach -- and one whose meaning is genuinely
+        # ambiguous ("write it" and "leave it alone" at once), so it must
+        # not load at all rather than resolve silently in either direction.
+        shared = sorted(set(ids) & set(skipped_ids))
+        if shared:
+            raise ValueError(
+                "Plan: an artifact_id may appear in actions or skipped, never both, "
+                f"got {shared!r}"
+            )
+        return cls(actions=actions, repo_fingerprint=fingerprint, skipped=skipped)
