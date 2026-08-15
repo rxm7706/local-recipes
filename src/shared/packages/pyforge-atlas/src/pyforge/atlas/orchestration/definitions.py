@@ -262,6 +262,10 @@ NODE_TIMEOUTS: dict[str, int] = {
     "classify_trending_candidates": 120,  # CAP-2 (pure in-memory join, no network)
     "load_org_audit_candidates": 30,  # CAP-4 (pure in-memory params->DataFrame, no network)
     "classify_org_audit_candidates": 120,  # CAP-4 (reuses CAP-2's classifier, no network)
+    # -- artifactory_downloads --------------------------------------------- #
+    "fetch_artifactory_downloads": 600,  # Story 15.3 CAP-4 (network-capable once configured; inert by default)
+    "join_artifactory_identity": 120,  # Story 15.3 CAP-4 (pure in-memory join, no network)
+    "format_artifactory_purl_export": 120,  # Story 15.3 CAP-4 (pure in-memory formatting, no network)
 }
 
 # Fallback for kedro-dagster's synthetic pipeline-run hook ops (they are cheap

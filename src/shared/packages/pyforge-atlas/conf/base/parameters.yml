@@ -94,3 +94,14 @@ org_audit_candidates:
   - repo_full_name: "microsoft/torchscale"
   - repo_full_name: "microsoft/SEAL"
   - repo_full_name: "microsoft/DiskANN"
+
+# `artifactory:` — Story 15.3 (CAP-4, Epic 15) fetch config for the
+# artifactory_downloads pipeline. `virtual_repos` defaults to EMPTY — the
+# committed, functionally-inert default that keeps the pipeline structurally
+# wired but contacts no live instance (fetch_artifactory_downloads short-
+# circuits to an empty DataFrame with zero ArtifactoryConfig/
+# ArtifactoryAqlAdapter construction whenever this list is empty). Real
+# config/credential resolution for an actual Artifactory instance is a later,
+# attended bring-up — out of scope here (Story 15.1 Design Notes).
+artifactory:
+  virtual_repos: []
