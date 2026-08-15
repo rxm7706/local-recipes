@@ -33,6 +33,50 @@ import subprocess
 import sys
 
 REPO = pathlib.Path(__file__).resolve().parent.parent
+LOOP_ROOT = pathlib.Path.home() / ".bmad-loops"
+# 20 is not derived from the 2026-08-15 incident's 55-60 (the magnitude at
+# which it was noticed by accident, not a chosen threshold) -- it's picked to
+# catch drift well before reaching that magnitude while tolerating the small,
+# routine gap a loop home carries between other stations' independent merges.
+STALE_BEHIND_THRESHOLD = 20
+
+
+def loop_home_staleness(
+    loop_root: pathlib.Path = LOOP_ROOT, threshold: int = STALE_BEHIND_THRESHOLD
+) -> list[tuple[str, str, int]]:
+    """(slug, branch, commits_behind) for each loop home whose branch is
+    `threshold`+ commits behind a live-fetched `origin/main`.
+
+    Live-fetches before measuring -- a stale local remote-tracking ref would
+    defeat the point (the 2026-08-15 incident happened because nobody had
+    fetched). Any per-home failure (detached HEAD, no `origin` remote,
+    network error) skips that home rather than raising, matching
+    `running_stations()`'s fault-tolerant idiom."""
+    if not loop_root.is_dir():
+        return []
+    stale = []
+    for home in sorted(p for p in loop_root.iterdir() if (p / ".git").exists()):
+        slug = home.name.replace("pyforge-", "")
+        try:
+            branch = subprocess.run(
+                ["git", "branch", "--show-current"],
+                cwd=home, capture_output=True, text=True, timeout=30,
+            ).stdout.strip()
+            if not branch:
+                continue  # detached HEAD
+            subprocess.run(
+                ["git", "fetch", "--quiet", "origin", "main"],
+                cwd=home, capture_output=True, text=True, timeout=60, check=True,
+            )
+            count = subprocess.run(
+                ["git", "rev-list", "--count", f"{branch}..origin/main"],
+                cwd=home, capture_output=True, text=True, timeout=30, check=True,
+            ).stdout.strip()
+            if count.isdigit() and int(count) >= threshold:
+                stale.append((slug, branch, int(count)))
+        except Exception:
+            continue
+    return stale
 
 
 def running_stations() -> tuple[set[str], dict[str, dict]]:
@@ -179,6 +223,13 @@ def main() -> int:
                          f"docs/dreams/bmad-loop-baseline-drift.md")
     except Exception:
         watch.append("could not run baseline-drift-check")
+
+    try:
+        for slug, branch, n in loop_home_staleness():
+            needs.append(f"{slug}: loop home ({branch}) is {n} commit(s) behind "
+                         f"origin/main -- resync the loop home before its next spin")
+    except Exception:
+        watch.append("could not check loop-home staleness")
 
     print("\nATTENTION:")
     if needs:
