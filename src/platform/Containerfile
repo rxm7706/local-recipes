@@ -258,13 +258,37 @@ RUN pixi shell-hook -e python-agent-platform -s bash > /app/shell-hook.sh
 # deferred-work entry, which lives in this story's Tier-3 ledger and is
 # therefore NOT readable from a clone of this repo -- which is why the gap
 # is written out in full here instead of cited.
-RUN bash -c "source /app/shell-hook.sh \
+# THE EXCLUSION LIST ABOVE IS HAND-MAINTAINED AGAINST A 395-PACKAGE SOLVE,
+# AND THAT IS THE FAILURE MODE THIS STEP GUARDS. It was derived once from
+# the lock; nothing re-derives it, so a `pixi.lock` refresh that starts
+# providing a package this filter KEEPS (whitenoise, python-slugify, ...)
+# silently reopens the exact defect review already found here once: five
+# conda builds replaced by older pip ones, including a `celery` downgrade
+# whose `kombu<5.6` requirement `--no-deps` suppressed, and a `uvicorn`
+# downgrade that was the only reason the image booted at all.
+#
+# pip announces every such replacement with `Attempting uninstall:` (conda-
+# forge ships real `.dist-info`, so pip finds and removes the conda build
+# rather than skipping it). Since NOTHING in this layer should ever displace
+# anything -- every kept line is by definition a package the env does not
+# provide -- that string appearing at all means the filter has gone stale,
+# and the build stops here instead of shipping a quietly-different env.
+# `set -o pipefail` is required for the `| tee`: without it the pipeline's
+# status would be tee's, and a genuinely failing `pip install` would pass.
+RUN bash -c "set -o pipefail \
+    && source /app/shell-hook.sh \
     && grep -hE '^[A-Za-z]' /app/src/platform/requirements/base.txt /app/src/platform/requirements/production.txt \
        | grep -viE '^(django|psycopg|fastapi|django-health-check|redis|pillow|celery|uvicorn|gunicorn|argon2-cffi|uvicorn-worker)[^A-Za-z0-9._-]' \
        > /tmp/platform-pip-layer.txt \
     && printf 'django-timezone-field==7.2.2\npython-crontab==3.3.0\ncron-descriptor==2.1.0\ndjango-appconf==1.2.0\nrjsmin==1.2.2\ntext-unidecode==1.3\nfido2==2.2.1\nqrcode==8.2\nuvicorn-worker==0.4.0\n' >> /tmp/platform-pip-layer.txt \
-    && python3 -m pip install --no-cache-dir --no-deps -r /tmp/platform-pip-layer.txt \
-    && rm /tmp/platform-pip-layer.txt"
+    && python3 -m pip install --no-cache-dir --no-deps -r /tmp/platform-pip-layer.txt 2>&1 | tee /tmp/platform-pip-layer.log \
+    && if grep -q 'Attempting uninstall:' /tmp/platform-pip-layer.log; then \
+         echo 'ERROR: the pip layer displaced a package the conda env already provides.'; \
+         echo 'ERROR: the exclusion alternation above is stale -- re-derive it from pixi.lock.'; \
+         grep -A2 'Attempting uninstall:' /tmp/platform-pip-layer.log; \
+         exit 1; \
+       fi \
+    && rm /tmp/platform-pip-layer.txt /tmp/platform-pip-layer.log"
 
 # Story 7.3 ("Credentials never enter image layers") gate, reused verbatim
 # (AD-2 -- no second scanner) -- see that story's spec for the full

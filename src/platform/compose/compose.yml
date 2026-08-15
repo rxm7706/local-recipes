@@ -71,8 +71,19 @@ services:
     # initdb bootstrap, from a temporary server that then restarts. That
     # narrow race makes migrate exit nonzero and, with no restart policy,
     # leaves the service permanently dead after a `docker compose up` that
-    # reported success. `on-failure` retries it; a genuinely broken image
-    # still fails, just after a few attempts instead of one.
+    # reported success. `on-failure` retries it.
+    #
+    # Read the retry bound correctly: the short form below is UNBOUNDED (the
+    # bounded form is `on-failure:N`), so a genuinely broken image restarts
+    # forever rather than "failing after a few attempts". What still makes
+    # `docker compose up --wait` TERMINATE with a nonzero status is the
+    # `healthcheck:` right below, not the restart policy -- verified live
+    # during exactly such a boot loop in this story, where `--wait` reported
+    # `container compose-platform-1 is unhealthy` and exited nonzero. The
+    # bound is left off deliberately: the race this absorbs is postgres
+    # finishing its initdb restart, whose duration is not something a fixed
+    # retry count can be chosen against, and the healthcheck already supplies
+    # the terminal verdict a count would otherwise be needed for.
     restart: on-failure
     ports:
       - "8000:8000"

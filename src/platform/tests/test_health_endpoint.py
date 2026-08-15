@@ -29,7 +29,8 @@ from http import HTTPStatus
 from typing import TYPE_CHECKING
 
 import pytest
-from django.urls import reverse
+from django.urls import resolve, reverse
+from health_check.views import HealthCheckView
 
 if TYPE_CHECKING:
     from django.test import Client
@@ -61,5 +62,8 @@ def test_ht_is_reachable_without_authentication(client: Client) -> None:
 def test_home_page_does_not_shadow_the_health_route() -> None:
     # `/ht/` is wired as a bare `path()` rather than an `include()`, so a
     # future `include()` at "" could swallow it without any other test
-    # noticing. Resolving the home name proves the two coexist.
+    # noticing. This has to assert FORWARD resolution of `/ht/` itself:
+    # `reverse("home")` would keep returning "/" while `/ht/` was being
+    # routed somewhere else entirely, so it proves nothing about the pair.
     assert reverse("home") == "/"
+    assert resolve("/ht/").func.view_class is HealthCheckView

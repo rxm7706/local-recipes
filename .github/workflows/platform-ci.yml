@@ -28,6 +28,11 @@ name: Platform CI
 # (the builder stage's `pixi install --frozen -e python-agent-platform`,
 # plus the `requires-pixi` floor that must match the pinned pixi image),
 # `.dockerignore` (the only ignore file either COPY consults),
+# `.pixi/config.toml` (GIT-TRACKED and load-bearing -- it carries
+# `run-post-link-scripts = "insecure"`, without which `pixi install` skips
+# the post-link scripts gdk-pixbuf/gtk3/librsvg/graphviz ship, changing what
+# the builder materializes into the runtime layer; `.dockerignore` carries an
+# explicit `!.pixi/config.toml` negation for exactly that reason),
 # `scripts/container-gates` (the secrets-scan gate), and
 # `src/shared/packages/pyforge-*` (the build-time-only `pyforge-steward`
 # env that gate runs in). Every one of those can break the image build
@@ -46,6 +51,7 @@ on:
       - 'src/platform/**'
       - 'pixi.toml'
       - 'pixi.lock'
+      - '.pixi/config.toml'
       - '.dockerignore'
       - 'scripts/container-gates'
       - 'src/shared/packages/pyforge-steward/**'
@@ -57,6 +63,7 @@ on:
       - 'src/platform/**'
       - 'pixi.toml'
       - 'pixi.lock'
+      - '.pixi/config.toml'
       - '.dockerignore'
       - 'scripts/container-gates'
       - 'src/shared/packages/pyforge-steward/**'
@@ -211,8 +218,18 @@ jobs:
           ${{ matrix.engine }} run -d --name platform-ci-redis-${{ matrix.engine }} \
             --network platform-ci-net-${{ matrix.engine }} \
             redis:7
+          # `-h 127.0.0.1` is load-bearing, not decoration: it forces a TCP
+          # probe. A socket-only `pg_isready` also answers from the temporary
+          # server the official postgres image runs DURING its initdb
+          # bootstrap (`-c listen_addresses=''`), which then stops and
+          # restarts -- so the loop would break while nothing is listening on
+          # 5432 yet, and the un-retried Migrate step below (which connects
+          # over TCP via DATABASE_URL) would fail with "connection refused"
+          # and read as a real regression. `compose/compose.yml` documents the
+          # same race and absorbs it with `restart: on-failure`; this job has
+          # no restart policy, so it has to wait for the real server.
           for i in $(seq 1 30); do
-            ${{ matrix.engine }} exec platform-ci-postgres-${{ matrix.engine }} pg_isready -U platform >/dev/null 2>&1 && break
+            ${{ matrix.engine }} exec platform-ci-postgres-${{ matrix.engine }} pg_isready -h 127.0.0.1 -p 5432 -U platform >/dev/null 2>&1 && break
             if [ "$i" = "30" ]; then
               echo "::error::postgres (${{ matrix.engine }}) never became ready"
               ${{ matrix.engine }} logs platform-ci-postgres-${{ matrix.engine }}
@@ -257,8 +274,19 @@ jobs:
       # compose and only caught it because someone requested `/admin/login/`
       # by hand. `/ht/`'s Database check is a bare connectivity probe and
       # `/` renders with no query at all, so neither notices.
+      # Dumps the app log on failure like every other step here. This one
+      # needs it MOST, not least: it is the first thing to touch the
+      # container, so if the app died during boot (the `uvicorn-worker`
+      # `setup_event_loop` break and the root-owned `$HOME` both did exactly
+      # that, in this story) `exec` fails with a bare "container is not
+      # running" and Teardown then `rm -f`s the only copy of the traceback.
       - name: Migrate the database (the image's CMD deliberately doesn't)
-        run: ${{ matrix.engine }} exec platform-ci-app-${{ matrix.engine }} /app/entrypoint.sh python manage.py migrate --noinput
+        run: |
+          ${{ matrix.engine }} exec platform-ci-app-${{ matrix.engine }} /app/entrypoint.sh python manage.py migrate --noinput || {
+            echo "::error::migrate failed (${{ matrix.engine }})"
+            ${{ matrix.engine }} logs platform-ci-app-${{ matrix.engine }}
+            exit 1
+          }
 
       # 120s, not 60: a cold runner has already spent its budget on the
       # build, and a slow-but-correct gunicorn/uvicorn boot that trips a
@@ -339,6 +367,23 @@ jobs:
             exit 1
           fi
 
+      # Every request above lands on the DJANGO half of `config/asgi.py`'s
+      # dispatcher. `/api/*` is routed to `fastapi_application` instead, and
+      # nothing here had ever sent it one -- so the image's whole `/api/`
+      # namespace was untested against the stack it actually ships. That is
+      # not the same coverage the `test` job provides: `fastapi` is on the
+      # pip-layer exclusion list, so the image runs the CONDA fastapi while
+      # `test` runs pip's `fastapi==0.141.1`. `/api/health` is the seam's
+      # only route (`config/fastapi_app.py`).
+      - name: Smoke-test the FastAPI seam (/api/, the other half of the ASGI dispatcher)
+        run: |
+          code="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/api/health || true)"
+          if [ "$code" != "200" ]; then
+            echo "::error::GET /api/health returned $code, expected 200 (${{ matrix.engine }})"
+            ${{ matrix.engine }} logs platform-ci-app-${{ matrix.engine }}
+            exit 1
+          fi
+
       - name: manage.py check inside the running container
         run: ${{ matrix.engine }} exec platform-ci-app-${{ matrix.engine }} /app/entrypoint.sh python manage.py check
 
@@ -361,12 +406,24 @@ jobs:
             exit 1
           fi
 
-      - name: Confirm the image itself declares a non-root USER
+      # BOTH halves of `USER 1001:0`, because only the uid half was ever
+      # asserted: the arbitrary-UID model gives the process its write access
+      # through GROUP 0, not through its uid. A regression to `USER
+      # 1001:1001` keeps this uid non-zero while silently making `$HOME` and
+      # `MEDIA_ROOT` unwritable for anyone who runs the image WITHOUT a
+      # `--user` override -- and the probe steps below cannot see it, because
+      # they run in the container started with an explicit `--user 12345:0`.
+      - name: Confirm the image itself declares a non-root USER in group 0
         run: |
           uid="$(${{ matrix.engine }} run --rm --entrypoint id platform-ci-${{ matrix.engine }} -u)"
-          echo "image default uid: $uid"
+          gid="$(${{ matrix.engine }} run --rm --entrypoint id platform-ci-${{ matrix.engine }} -g)"
+          echo "image default uid:gid = $uid:$gid"
           if [ "$uid" = "0" ]; then
             echo "::error::image defaults to root (uid 0); Containerfile USER directive regressed"
+            exit 1
+          fi
+          if [ "$gid" != "0" ]; then
+            echo "::error::image default gid is $gid, expected 0; the arbitrary-UID write contract depends on group 0"
             exit 1
           fi
 
@@ -381,15 +438,37 @@ jobs:
       # asserted NON-writable in the same step: it is deliberately `g+rX`,
       # and a future blanket `chmod -R g+rwX /app` would silently hand every
       # visitor-facing JS bundle to the runtime user.
-      - name: Confirm the arbitrary UID can write $HOME and media, but not staticfiles
+      #
+      # `/app` ITSELF is asserted non-writable for a different reason. On
+      # POSIX, the right to unlink or rename an entry comes from the
+      # DIRECTORY, not the file -- so an earlier revision of this story that
+      # set `$HOME=/app` and made `/app` group-0-writable let the runtime user
+      # `rm /app/entrypoint.sh` and `mv /app/config`, i.e. replace the very
+      # script the next start executes. Nothing in this job could see it. That
+      # is why `$HOME` is now the dedicated `/app/.home`, and why this asserts
+      # the containing directory stayed 0755 root:root.
+      #
+      # Each negative probe requires the target to EXIST first: `touch` on a
+      # missing directory fails with ENOENT exactly like it fails with EACCES,
+      # so without the `test -d` a deleted or renamed `staticfiles` would read
+      # as "the read-only contract holds".
+      - name: Confirm the arbitrary UID can write $HOME and media, but not staticfiles or /app
         run: |
           ${{ matrix.engine }} exec platform-ci-app-${{ matrix.engine }} sh -c '
             set -e
+            test -d "$HOME" || { echo "HOME_MISSING: $HOME"; exit 1; }
             touch "$HOME/.ci-probe" && rm "$HOME/.ci-probe"
+            test -d /app/platformapp/media || { echo "MEDIA_MISSING"; exit 1; }
             touch /app/platformapp/media/.ci-probe && rm /app/platformapp/media/.ci-probe
+            test -d /app/staticfiles || { echo "STATICFILES_MISSING"; exit 1; }
             if touch /app/staticfiles/.ci-probe 2>/dev/null; then
               rm -f /app/staticfiles/.ci-probe
               echo "STATICFILES_WRITABLE"
+              exit 1
+            fi
+            if touch /app/.ci-probe 2>/dev/null; then
+              rm -f /app/.ci-probe
+              echo "APP_DIR_WRITABLE: the runtime user can replace /app/entrypoint.sh"
               exit 1
             fi
           ' || { echo "::error::arbitrary-UID filesystem contract regressed (${{ matrix.engine }})"; exit 1; }

@@ -47,9 +47,16 @@ urlpatterns = [
     # the `health_check` package ROOT identically in both 3.24.0 and 4.5.0
     # (confirmed by reading both installed packages directly), so the same
     # two dotted strings resolve correctly regardless of which version is
-    # installed. `checks` defaults to `[Cache, Database, DNS, Mail, Storage]`;
-    # pinned here to exactly `[Database, Cache]` to preserve Story 10.1's
-    # original scope (PostgreSQL + the configured cache backend only).
+    # installed. The DEFAULT `checks` is itself version-dependent, so it is
+    # not a safe thing to fall back on here (read from both installed
+    # packages): 3.24.0 defaults to `("health_check.Cache", ".Database",
+    # ".Mail", ".Storage")`, while 4.5.0 defaults to
+    # `("health_check.checks.Cache", ".Database", ".DNS", ".Mail",
+    # ".Storage")` -- a different module path AND an extra DNS check that
+    # would make this endpoint depend on outbound name resolution. Pinned
+    # here to exactly `[Database, Cache]` to preserve Story 10.1's original
+    # scope (PostgreSQL + the configured cache backend only); dropping the
+    # explicit list is therefore a behaviour change, not a simplification.
     #
     # WHAT THIS ENDPOINT DOES AND DOES NOT PROVE, stated because the
     # behaviour changed here and a probe is easy to over-trust:

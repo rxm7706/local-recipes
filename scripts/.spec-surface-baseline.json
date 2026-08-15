@@ -3133,9 +3133,9 @@
    "src/platform/.pre-commit-config.yaml": "2be31bff6f382a5045434cde7512f11c4368f64b",
    "src/platform/.python-version": "2c561ed018185a0ab382c0d28e718aa1debe8756",
    "src/platform/.readthedocs.yml": "aad6792ceba6b9654ac7cc40c3fd100459ec6242",
-   "src/platform/Containerfile": "e7794cba0b74aeebf253839ef495a74923b9e3ef",
+   "src/platform/Containerfile": "90cff153f9ea285b763d479fe64f03b83cf48d8f",
    "src/platform/README.md": "7545abd88f7c9203778e30087a9c86ac26f908a5",
-   "src/platform/compose/compose.yml": "336b23df0d52f4c305f5223ece164d9b5f3bc06d",
+   "src/platform/compose/compose.yml": "abbb238ca978dc26fd20bcbcbe40b9abc6080e12",
    "src/platform/config/__init__.py": "89262e354c0c805013d44b3c2ec6359dec0474ff",
    "src/platform/config/asgi.py": "397242e2534d120f7cd6b234d3dda0237407bb0e",
    "src/platform/config/celery_app.py": "8e399e616d50d87bc615392d275c247db9c0ca2d",
@@ -3145,7 +3145,7 @@
    "src/platform/config/settings/local.py": "bd1de55b8fe76abf47bb0760870cbc4e3caf37ae",
    "src/platform/config/settings/production.py": "744310b196fa06bebdc07474f50ffa052d3686a9",
    "src/platform/config/settings/test.py": "e867ee655727d33b41e8f84579498e8340d87d95",
-   "src/platform/config/urls.py": "bb514a404f29cecf017128d5d4913c9b1d072b39",
+   "src/platform/config/urls.py": "635da69aff2e41521671eafc745d9a1430255542",
    "src/platform/config/websocket.py": "e22e66aa9ef7f84a56a66c279c236667bf8e10fe",
    "src/platform/config/wsgi.py": "71f9c342acd71b047dabd37915a94aeacf6f0fcc",
    "src/platform/docs/Makefile": "155f8c5c679db5576819eb0bc0ce1496d91ada72",
@@ -3223,7 +3223,7 @@
    "src/platform/tests/meta/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/platform/tests/meta/test_no_pyforge_import.py": "4688555dac521905a13e16d26e64e0c732a9d3ba",
    "src/platform/tests/test_asgi_seam.py": "2a6fb806cff3f377bcf00e1485ea9b9b60cfebb0",
-   "src/platform/tests/test_health_endpoint.py": "d8e2ea3b717a5f8e52f57a211977fe17a2caca29",
+   "src/platform/tests/test_health_endpoint.py": "c1448caac53fd7f117516c94ed6ea07b01aa3761",
    "src/platform/utility/install_os_dependencies.sh": "bef4a6b36e028175010152eb749fb4ecd38e031c",
    "src/platform/utility/install_python_dependencies.sh": "a848d209892538c7f2821b4a36a0906fc68a030c",
    "src/platform/utility/requirements-bionic.apt": "a3c8f3428904066bd93650a9d91b2c2f4e9a934c",
@@ -3251,7 +3251,7 @@
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/navigation.py": "c1ea4dd03bca3dcfae7d97a7817e878596115353",
    "src/shared/packages/pyforge-steward/src/pyforge/steward/dashboard/views.py": "6d03b3930f2b060287c8c93916425e3839f973b8"
   },
-  "memlog": "d6dfc8967e44d82e109c3c024335566e29a7e0cd"
+  "memlog": "2ad33a5c574d2f7926665d89298b0a0d8971ac64"
  },
  "pyforge-mason/spec-fleet-stewardship": {
   "files": {},
@@ -3849,16 +3849,16 @@
  "pyforge-steward/spec-python-agent-platform": {
   "files": {
    "environment.yaml": "a7394e9ac491d921acc22e4ebfe742d0fa400aba",
-   "pixi.toml": "ee848c344f52e503d91e17a3696155c9fdc9666b",
+   "pixi.toml": "f853aa0ac38bcbca3c0763126786c3e7dfd74394",
    "src/platform/.editorconfig": "c241cc74e556577f3fafca63942d74d0c8764396",
    "src/platform/.gitattributes": "6c04362d1bfb9effdd6645bf5d171a298af084be",
    "src/platform/.gitignore": "7085a5f6068c1cf766528e1eb1a569c4baf5c358",
    "src/platform/.pre-commit-config.yaml": "2be31bff6f382a5045434cde7512f11c4368f64b",
    "src/platform/.python-version": "2c561ed018185a0ab382c0d28e718aa1debe8756",
    "src/platform/.readthedocs.yml": "aad6792ceba6b9654ac7cc40c3fd100459ec6242",
-   "src/platform/Containerfile": "e7794cba0b74aeebf253839ef495a74923b9e3ef",
+   "src/platform/Containerfile": "90cff153f9ea285b763d479fe64f03b83cf48d8f",
    "src/platform/README.md": "7545abd88f7c9203778e30087a9c86ac26f908a5",
-   "src/platform/compose/compose.yml": "336b23df0d52f4c305f5223ece164d9b5f3bc06d",
+   "src/platform/compose/compose.yml": "abbb238ca978dc26fd20bcbcbe40b9abc6080e12",
    "src/platform/config/__init__.py": "89262e354c0c805013d44b3c2ec6359dec0474ff",
    "src/platform/config/asgi.py": "397242e2534d120f7cd6b234d3dda0237407bb0e",
    "src/platform/config/celery_app.py": "8e399e616d50d87bc615392d275c247db9c0ca2d",
@@ -3868,7 +3868,7 @@
    "src/platform/config/settings/local.py": "bd1de55b8fe76abf47bb0760870cbc4e3caf37ae",
    "src/platform/config/settings/production.py": "744310b196fa06bebdc07474f50ffa052d3686a9",
    "src/platform/config/settings/test.py": "e867ee655727d33b41e8f84579498e8340d87d95",
-   "src/platform/config/urls.py": "bb514a404f29cecf017128d5d4913c9b1d072b39",
+   "src/platform/config/urls.py": "635da69aff2e41521671eafc745d9a1430255542",
    "src/platform/config/websocket.py": "e22e66aa9ef7f84a56a66c279c236667bf8e10fe",
    "src/platform/config/wsgi.py": "71f9c342acd71b047dabd37915a94aeacf6f0fcc",
    "src/platform/docs/Makefile": "155f8c5c679db5576819eb0bc0ce1496d91ada72",
@@ -3946,7 +3946,7 @@
    "src/platform/tests/meta/__init__.py": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
    "src/platform/tests/meta/test_no_pyforge_import.py": "4688555dac521905a13e16d26e64e0c732a9d3ba",
    "src/platform/tests/test_asgi_seam.py": "2a6fb806cff3f377bcf00e1485ea9b9b60cfebb0",
-   "src/platform/tests/test_health_endpoint.py": "d8e2ea3b717a5f8e52f57a211977fe17a2caca29",
+   "src/platform/tests/test_health_endpoint.py": "c1448caac53fd7f117516c94ed6ea07b01aa3761",
    "src/platform/utility/install_os_dependencies.sh": "bef4a6b36e028175010152eb749fb4ecd38e031c",
    "src/platform/utility/install_python_dependencies.sh": "a848d209892538c7f2821b4a36a0906fc68a030c",
    "src/platform/utility/requirements-bionic.apt": "a3c8f3428904066bd93650a9d91b2c2f4e9a934c",
@@ -3961,7 +3961,7 @@
    "src/platform/utility/requirements-trusty.apt": "e10d1cbf221b4f02656dd749e24500125974de20",
    "src/platform/utility/requirements-xenial.apt": "755c0266e7b97cbf9e90ee9936e2d2f6943c67c5"
   },
-  "memlog": "2cec71679071896c9942463a93bbd2edfe615157"
+  "memlog": "1e73f2df9435b0fe25e544eaaefe683b2e73cf40"
  },
  "pyforge-steward/spec-scratch-worktree-lifecycle": {
   "files": {

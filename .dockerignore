@@ -213,6 +213,15 @@ src/platform/utility/
 # is still the same class of hygiene gap this section exists to close.
 src/platform/config/settings/local.py
 src/platform/config/settings/test.py
+# The local compose stack, by the same rule: it is dev-only, nothing in the
+# image reads it, and it carries a placeholder `DJANGO_SECRET_KEY` and a
+# local `POSTGRES_PASSWORD` in plain text -- inert inside the image, but the
+# same hygiene class as the two settings modules above. NOTE the asymmetry
+# with `requirements/`, which CANNOT be excluded here even though the runtime
+# image has no use for it either: `.dockerignore` governs the whole build
+# context, and the BUILDER stage's pip layer reads
+# `src/platform/requirements/{base,production}.txt` out of it.
+src/platform/compose/
 # The root `.env`/`.secrets`/`.private` patterns above (this file's
 # documented root-anchored convention) don't reach `src/platform/.env` --
 # django-environ's natural local-secrets location for this app. No such
