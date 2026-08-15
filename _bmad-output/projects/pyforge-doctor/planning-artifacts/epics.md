@@ -9,7 +9,7 @@ inputDocuments:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
 updated: '2026-08-15'
-currency_review: "Reviewed 2026-08-15 — Epics 8 and 9 appended, decomposing spec-deferred-work-visibility's CAP-4..10 (added to that Spec the same day; operator answered its Q5 with decompose-directly). Epic 8 cleared to dispatch; Epic 9 queued behind its own Story 9.1 definition gate. Prior review 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md."
+currency_review: "Reviewed 2026-08-15 (later same day) — Epics 10/11/12 appended, decomposing the 3 newly-authored doctor Specs (spec-bmad-method-version-drift, spec-deferred-work-resolution-sweep, spec-fleet-hygiene-verification-exemplar-program) directly, matching Epic 8/9's own decompose-directly precedent (no new FR-N minted; CAP-N referenced directly per epic). Story 10.1/10.3/12.1-12.5 cleared to dispatch; Story 10.2 and 11.8 blocked pending open-question resolution named in their own Specs; Epic 11's Stories 11.1-11.7 form a dependent pipeline, cleared to dispatch as a whole. Stories only — none dispatched this pass. Story 9.1 landed same day (PR #530), Epic 9's own definition gate now cleared. Prior: Reviewed 2026-08-15 — Epics 8 and 9 appended, decomposing spec-deferred-work-visibility's CAP-4..10 (added to that Spec the same day; operator answered its Q5 with decompose-directly). Epic 8 cleared to dispatch; Epic 9 queued behind its own Story 9.1 definition gate. Prior review 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
 epics_role: canonical
@@ -1032,3 +1032,157 @@ without a separate manual check — proven against a synthetically-staled branch
 is already the ambient home for cross-cutting fleet signals and grew a baseline-drift line the
 same 2026-08-15 session; this is one more line in the same block, and it stays a **report**,
 never a gate (CAP-10). **Deps:** —
+
+## Epic 10: Doctor notices when BMAD-METHOD's own installed core falls behind upstream
+
+Decomposes `spec-bmad-method-version-drift` CAP-1..3. Split off `bmad-method-core-upgrade`
+(now steward's — the apply/reconcile half) the same 2026-08-15 session; this epic is the
+ambient, read-only detection half only. Live, present-tense proof the gap is real: `pixi.toml`
+already requires `bmad-method >=6.11.0` while the installed `_bmad/_config/manifest.yaml`
+still reports `6.10.0`, undetected until an operator happened to ask.
+
+**Value delivered.** Doctor already reports staleness for feedstocks and CVE-affected floors;
+this closes the one blind spot in an otherwise-consistent story — its own installed
+BMAD-METHOD core, a governance-layer dependency with local customizations to protect, not an
+ordinary pinned one.
+
+### Story 10.1: The declared floor and the installed core are compared and reported
+**Given** `pixi.toml`'s declared `bmad-method` floor and `_bmad/_config/manifest.yaml`'s
+installed version **When** doctor's report/monitor runs **Then** a new read-only Source
+(fitting the existing closed `Source` enum, FR-12's `adoption-stage` precedent) reports a
+Finding whenever the two disagree — proven against today's real drift (`>=6.11.0` declared,
+`6.10.0` installed) (CAP-1). **Deps:** —
+
+### Story 10.2: The installed core is compared against the latest upstream release
+**Given** Story 10.1's Source and a resolved data-source decision for "latest published
+`bmad-method` release" **When** the installed version is older than that release **Then** a
+Finding names both versions (CAP-2). **Blocked:** the Spec's own Open Questions leave "how is
+the latest release sourced" unresolved — no npm-registry-lookup infrastructure exists anywhere
+in this fleet (atlas's `behind-upstream`/`version-downloads` machinery is conda-forge/PyPI-scoped
+only), and a live network query at check time cuts against Marshal's own "no live query per
+home" discipline this fleet otherwise favors. Needs an operator/architecture decision (live
+query vs. a periodically-refreshed cached feed) before this can be scoped further — tracked
+openly, not silently dropped, the same way marshal's own 1 blocked story already is in this
+fleet's status reporting. **Deps:** S-10.1.
+
+### Story 10.3: The drift surfaces ambiently, never gates
+**Given** a Finding from Story 10.1 (and Story 10.2, once unblocked) **When** doctor's report
+runs or `fleet-picture` runs **Then** the Finding appears in both places as a `warn`, never
+failing the check-suite on its own (CAP-3). **Deps:** S-10.1.
+
+**Epic 10 clears to dispatch on Stories 10.1/10.3 alone** — Story 10.2 stays blocked pending
+the operator decision above; 10.3 surfaces whatever Findings exist (10.1's today, 10.2's once
+unblocked) rather than waiting on the blocked story.
+
+## Epic 11: Tracked deferred-work entries get periodically re-verified against live code
+
+Decomposes `spec-deferred-work-resolution-sweep` CAP-1..8. A tracked ledger entry is a claim
+about code truth *at authoring time* — nobody re-checks it once it lands. Proven valuable to
+fix, exactly once, by hand, never made repeatable: PR #147 (2026-07-30) individually
+re-verified 145 entries and found 12 already-resolved-but-still-open, 2 that got *worse*, 5
+that understated scope, and 1 only verifiable by reading a different project's code. That gap
+has since grown, not shrunk — three stations have never been verified once, and every entry
+promoted since (including this session's) is unverified from day one. Full precedent evidence
+in the Spec's own `precedent-2026-07-30-campaign.md` companion.
+
+**Value delivered.** The fleet stops carrying stale `status: open` lines that actively hide
+drift (in either direction) and cross-project fixes a per-project sweep structurally cannot
+see, without requiring a human to re-run a six-week-old manual campaign by hand again.
+
+### Story 11.1: Due-for-verification entries are selected, per project
+**Given** the fleet's tracked deferred-work ledgers **When** a sweep selector runs **Then** it
+returns exactly the entries with no `verified:` line or a `verified:` date past a staleness
+threshold, batched per project (CAP-1). **Deps:** —
+
+### Story 11.2: Churn-based cost filtering skips entries whose code has not moved
+**Given** an entry selected by Story 11.1 **When** its named path has zero commits since its
+last-verified date (or since authoring) **Then** it is skipped (`skip-reason: no-churn`)
+rather than re-read — the structural cost bound this sweep needs at ~400+ entries and growing
+(CAP-2). **Deps:** S-11.1.
+
+### Story 11.3: Mechanically-checkable claims are verified without an agent
+**Given** an entry that survives Story 11.2's filter **When** its claim is grep-recomputable
+(a raised exception, an absent `try/except`, an unused function, a call-site count) **Then**
+the mechanical check alone produces a verdict, reusing `spec_surface_check.py`'s own two-tier
+mechanical/agent-escalation shape rather than inventing a new one (CAP-3). **Deps:** S-11.2.
+
+### Story 11.4: Judgment-requiring entries get an evidence-grounded verdict
+**Given** an entry Story 11.3 escalates **When** a verification agent reads it and locates the
+named code **Then** it writes a `verified: <date> — <verdict>` line citing a `file:line` or a
+reproduced/measured fact — one of four verdicts (still-open, resolved, moot/superseded, or
+pending-on-precondition), never a forced false confirm, and a scope correction (2 packages
+claimed, 8 found) is written as the corrected number, never left stale (CAP-4). **Deps:** S-11.3.
+
+### Story 11.5: Verification reaches across project boundaries
+**Given** an entry in project A whose defect was actually fixed by a commit in project B (the
+precedent's real `atlas DW-I5-1` case) **When** Story 11.4's verification runs **Then** it can
+read project B's tree and correctly close the entry — a per-project-only sweep structurally
+cannot catch this class at all (CAP-5). **Deps:** S-11.4.
+
+### Story 11.6: Near-duplicate entries surface as one defect class
+**Given** two or more tracked entries across different projects naming the same file/symbol
+or near-identical summary text **When** the sweep reports **Then** they are grouped as a
+single defect class, not independent low-priority entries nobody connects — the shape of the
+precedent's sharpest finding (one root cause hit 3x across 3 projects) (CAP-6). **Deps:** S-11.4.
+
+### Story 11.7: Verification staleness surfaces in the ambient fleet report
+**Given** Story 11.1's selector data **When** `fleet-picture` runs **Then** its ATTENTION block
+shows a "% of tracked entries verified within N days, per project" line, so the next
+six-week staleness gap is visible incrementally instead of requiring another pointed
+challenge to notice it (CAP-7). **Deps:** S-11.1.
+
+### Story 11.8: Backlog-intake surfaces deferred entries during story drafting
+**Given** a new story/spec drafted for an epic **When** tracked deferred-work entries name
+that epic or story in their `owner:`/prose **Then** they surface as candidate acceptance
+criteria (CAP-8). **Blocked:** the Spec's own Open Questions leave this capability's scope
+boundary unresolved — it is write-adjacent to story-drafting, a different subsystem than the
+read-only sweep Stories 11.1–11.7, and may belong in its own follow-on Spec rather than this
+epic. Tracked openly rather than silently dropped. **Deps:** —
+
+**Epic 11 clears to dispatch on Stories 11.1–11.7** (a natural pipeline, each depending on the
+last); **Story 11.8 stays blocked** pending the scope-boundary decision above, same treatment
+as Epic 10's Story 10.2.
+
+## Epic 12: The fleet's own hygiene/verification tooling gets its documented sharp edges fixed
+
+Decomposes `spec-fleet-hygiene-verification-exemplar-program` CAP-1..5 — deliberately narrow,
+since the source Dream is an explicit catalog ("Not a commitment to build all of this...
+none of these categories are sized, prioritized, or scoped for implementation here"). These
+5 are the leftover items the catalog flags as concrete and not already claimed by Epic 9
+(CAP-8/9/10) or Epic 11 (CAP-7). Full catalog in the Spec's own `hygiene-gap-catalog.md`
+companion.
+
+**Value delivered.** Five independent, self-contained fixes to tooling this fleet already
+depends on and already found broken this session — none blocks the others, none has an open
+question, all clear to dispatch immediately.
+
+### Story 12.1: The hygiene/verification catalog stays a maintained, current artifact
+**Given** a newly-discovered "nothing actually checks for X" gap **When** it is checked
+against the catalog's six categories **Then** it returns a match or confirms genuine novelty,
+and the catalog stays cross-referenced with which items moved from cataloged to specced to
+shipped (CAP-1). **Deps:** —
+
+### Story 12.2: The exemplar standard conformance table is refreshed and re-verified
+**Given** the DW-ledger column currently shows only `pyforge-atlas` compliant while 7 other
+projects now carry real, git-tracked `deferred-work-ledger.md` files **When** the refresh
+runs **Then** the table is corrected to the live state, and every other column (companions,
+story specs, delivery records, README) is checked for the same staleness (CAP-2). **Deps:** —
+
+### Story 12.3: Chain completeness parses capability ids, not a bare substring match
+**Given** a Spec that grew from 3 capabilities to 10 with only 3 ever decomposed into stories
+**When** `chain-completeness` runs **Then** it reports the real 7-capability gap instead of
+`ok` — reproduces and fixes `DW-CHAIN-COMPLETENESS-1`, found this session against
+`spec-deferred-work-visibility` itself (CAP-3). **Deps:** —
+
+### Story 12.4: Dream chain gap count surfaces in the ambient ATTENTION block
+**Given** N Dreams fleet-wide with no Spec **When** `fleet-picture` runs **Then** its
+ATTENTION block names the count without a separate `dream-chain` invocation being remembered
+(CAP-4). **Deps:** —
+
+### Story 12.5: The spec surface baseline write race is closed
+**Given** two concurrent `--write-baseline` invocations against
+`scripts/.spec-surface-baseline.json` **When** both run **Then** the race is closed (locked,
+atomic, or serialized) such that neither write is silently lost — reproduces and fixes
+`DW-13-5-2` (CAP-5). **Deps:** —
+
+**Epic 12 clears to dispatch in full** — all 5 stories are independent and concrete.
