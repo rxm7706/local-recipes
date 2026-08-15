@@ -22,7 +22,13 @@ from pyforge.atlas.views.render import render_rows, render_view
 
 # Never allowed to appear in a rendered fragment — the story's rendering-primitive
 # boundary (components() only, never server_document/autoload_server/any live session).
-FORBIDDEN_MARKERS = ("ws://", "wss://", "autoload_server", "session_id")
+# "cdn.bokeh.org" (Story 14.4, CAP-4) is a structural invariant pin, not a BOKEH_RESOURCES-
+# dependent behavioral check: components() never reads that env var or emits any asset URL at
+# all, so this can never fail today -- it guards against a FUTURE change (e.g. a full-page
+# wrapper) silently introducing one. test_resources.py's
+# test_static_fragment_stays_cdn_free_even_under_an_explicit_cdn_profile is the dynamic
+# counterpart, proving the claim under BOKEH_RESOURCES=cdn specifically.
+FORBIDDEN_MARKERS = ("ws://", "wss://", "autoload_server", "session_id", "cdn.bokeh.org")
 
 
 def _rows_for(view, db_path, monkeypatch):

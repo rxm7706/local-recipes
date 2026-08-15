@@ -10,7 +10,8 @@ skill CLIs all require a package-name/path argument and are deferred to a future
 ``live.py``'s ``LIVE_VIEWS``/``build_application``/``build_live_server`` are re-exported here
 (the host-agnostic Bokeh WebSocket runtime); ``asgi.py``'s ``app`` is deliberately NOT —
 it is a deployment entrypoint (mount target for an ASGI server), not a package-level symbol
-(Boundaries & Constraints, Story 14.3).
+(Boundaries & Constraints, Story 14.3). ``resources.py``'s ``current_mode``/``is_airgapped``
+(Story 14.4) are re-exported here too, matching every other module's public surface.
 """
 
 from __future__ import annotations
@@ -19,6 +20,7 @@ from .cli_bridge import CfAtlasDbUnavailableError
 from .live import LIVE_VIEWS, build_application, build_live_server
 from .registry import STATIC_VIEWS
 from .render import render_view
+from .resources import current_mode, is_airgapped
 from .widgets import WIDGETS, Widget, get_widget
 
 __all__ = [
@@ -31,4 +33,6 @@ __all__ = [
     "LIVE_VIEWS",
     "build_application",
     "build_live_server",
+    "current_mode",
+    "is_airgapped",
 ]
