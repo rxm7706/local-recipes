@@ -10,7 +10,7 @@ from __future__ import annotations
 import argparse
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 
 import jsonschema
@@ -1566,6 +1566,19 @@ def _open_intent_line(
     return prepare_for_write(entry).line
 
 
+def _local_run_id(launch_ts: str, *, offset_seconds: float, suffix: str = "abcd") -> str:
+    """A bmad-loop-shaped run id (``YYYYMMDD-HHMMSS-<suffix>``) whose
+    embedded prefix is ``launch_ts`` (an ISO-8601 UTC ``_outcome_line``
+    timestamp) plus ``offset_seconds``, converted to the SAME local
+    timezone ``_discover_harness_run_id_by_filesystem`` itself converts
+    to (``.astimezone()``, no argument) -- keeps these tests correct
+    under any timezone the suite happens to run in, mirroring the
+    production conversion exactly rather than assuming UTC."""
+    launched_at = datetime.fromisoformat(launch_ts.replace("Z", "+00:00"))
+    local = (launched_at + timedelta(seconds=offset_seconds)).astimezone()
+    return f"{local.strftime('%Y%m%d-%H%M%S')}-{suffix}"
+
+
 def _seed_run_journal(tmp_path: Path, *, run_id: str, lines: list[str]) -> Path:
     run_dir = tmp_path / "runs" / run_id
     run_dir.mkdir(parents=True)
@@ -1608,6 +1621,77 @@ def _snapshot(
         finished=finished,
         tasks=tasks,
     )
+
+
+class TestDiscoverHarnessRunIdByFilesystem:
+    """Isolated unit tests of ``_discover_harness_run_id_by_filesystem``
+    itself (adversarial review, 2026-08-15, second pass -- Blind Hunter's
+    own LOW finding: coverage was previously only indirect, through the
+    full ``run_status`` path with exactly one seeded directory)."""
+
+    def test_no_runs_directory_returns_none(self, tmp_path):
+        launched_at = datetime(2026, 8, 6, tzinfo=timezone.utc)
+        assert (
+            status_cli._discover_harness_run_id_by_filesystem(tmp_path, launched_at)
+            is None
+        )
+
+    def test_launched_at_none_returns_none_without_touching_disk(self, tmp_path):
+        # No `.bmad-loop/runs/` created at all -- if this read the
+        # filesystem before checking `launched_at`, it would still
+        # correctly return None here, so this test only pins the
+        # documented short-circuit contract, not a behavior difference.
+        assert status_cli._discover_harness_run_id_by_filesystem(tmp_path, None) is None
+
+    def test_picks_the_closest_candidate_not_the_lexicographic_latest(self, tmp_path):
+        launch_ts = "2026-08-06T00:00:00.000Z"
+        launched_at = datetime.fromisoformat(launch_ts.replace("Z", "+00:00"))
+        closest = _local_run_id(launch_ts, offset_seconds=10)
+        # Lexicographically LATER than `closest` (later suffix), but
+        # further away in real time -- must NOT win.
+        farther_but_later_name = _local_run_id(launch_ts, offset_seconds=200, suffix="zzzz")
+        for run_id in (closest, farther_but_later_name):
+            d = tmp_path / ".bmad-loop" / "runs" / run_id
+            d.mkdir(parents=True)
+            (d / "state.json").write_text("{}", encoding="utf-8")
+
+        result = status_cli._discover_harness_run_id_by_filesystem(tmp_path, launched_at)
+
+        assert result == closest
+
+    def test_ignores_a_directory_with_no_state_json(self, tmp_path):
+        launch_ts = "2026-08-06T00:00:00.000Z"
+        launched_at = datetime.fromisoformat(launch_ts.replace("Z", "+00:00"))
+        no_state = _local_run_id(launch_ts, offset_seconds=1)
+        (tmp_path / ".bmad-loop" / "runs" / no_state).mkdir(parents=True)
+        # (deliberately no state.json written inside `no_state`)
+
+        result = status_cli._discover_harness_run_id_by_filesystem(tmp_path, launched_at)
+
+        assert result is None
+
+    def test_ignores_a_plain_file_entry(self, tmp_path):
+        launch_ts = "2026-08-06T00:00:00.000Z"
+        launched_at = datetime.fromisoformat(launch_ts.replace("Z", "+00:00"))
+        runs_dir = tmp_path / ".bmad-loop" / "runs"
+        runs_dir.mkdir(parents=True)
+        stray_name = _local_run_id(launch_ts, offset_seconds=1)
+        (runs_dir / stray_name).write_text("not a directory", encoding="utf-8")
+
+        result = status_cli._discover_harness_run_id_by_filesystem(tmp_path, launched_at)
+
+        assert result is None
+
+    def test_ignores_a_directory_whose_name_does_not_parse_as_a_timestamp(self, tmp_path):
+        launch_ts = "2026-08-06T00:00:00.000Z"
+        launched_at = datetime.fromisoformat(launch_ts.replace("Z", "+00:00"))
+        d = tmp_path / ".bmad-loop" / "runs" / "not-a-timestamp-shaped-name"
+        d.mkdir(parents=True)
+        (d / "state.json").write_text("{}", encoding="utf-8")
+
+        result = status_cli._discover_harness_run_id_by_filesystem(tmp_path, launched_at)
+
+        assert result is None
 
 
 class TestRunStatus:
@@ -1840,6 +1924,146 @@ class TestRunStatus:
             vcs=vcs,
             fs=LocalFs(),
             harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        row = payload["data"]["homes"][0]
+        assert row["state"] == "unknown"
+        codes = [f["code"] for f in payload["findings"]]
+        assert "MRS-STATUS-002" in codes
+        assert payload["verdict"] == "warn"
+        assert exit_code == 0
+
+    def test_poisoned_harness_run_id_recovers_via_filesystem_discovery(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """2026-08-15, ``spec-marshal-status-harness-run-id-poisoning``
+        CAP-1: a launch-time poll timeout (``MRS-SPIN-004``) journals
+        ``harness_run_id: null`` PERMANENTLY -- reproduced live against a
+        real, healthy ``pyforge-doctor`` run that reported `unknown` for
+        its entire life despite a real, readable bmad-loop run directory
+        sitting on disk the whole time. This test seeds exactly that
+        shape, PLUS a supervisor-attach line and a stale, out-of-window
+        sibling run directory -- proving both real recovery (a healthy
+        `running` state, not just an unattributed `current_story`) and
+        that the discovery correctly ignores an unrelated older run
+        sitting in the same `.bmad-loop/runs/` directory (adversarial
+        review, 2026-08-15, second pass: a bare single-directory fixture
+        does not exercise the disambiguation the fix actually needs)."""
+        launch_ts = "2026-08-06T00:00:00.000Z"
+        run_dir = _seed_run_journal(
+            tmp_path,
+            run_id="acme-run1",
+            lines=[
+                _outcome_line("acme-run1", pid=4242, harness_run_id=None, ts=launch_ts),
+                _supervisor_attach_line("acme-run1", pid=5252),
+            ],
+        )
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+        home = tmp_path / "loop-homes" / "acme"
+        correct_id = _local_run_id(launch_ts, offset_seconds=8)  # 8s after launch
+        stale_id = _local_run_id(launch_ts, offset_seconds=-3 * 3600)  # 3h before -- must be ignored
+        for run_id in (correct_id, stale_id):
+            run_dir_bmad = home / ".bmad-loop" / "runs" / run_id
+            run_dir_bmad.mkdir(parents=True)
+            (run_dir_bmad / "state.json").write_text("{}", encoding="utf-8")
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+        harness = _FakeHarness(
+            snapshots={
+                (str(home), correct_id): _snapshot(
+                    finished=False, tasks=(_task(story_key="9.1", phase="dev-running"),)
+                ),
+                # A DIFFERENT run's snapshot -- if the stale sibling were
+                # ever wrongly picked, this is what would leak into the row.
+                (str(home), stale_id): _snapshot(finished=True),
+            }
+        )
+        process = _FakeProcess(alive_pids=frozenset({5252}))
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
+            process=process,
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        row = payload["data"]["homes"][0]
+        assert row["state"] == "running"
+        assert row["current_story"] == "9.1"
+        codes = [f["code"] for f in payload["findings"]]
+        assert "MRS-STATUS-002" not in codes
+        assert exit_code == 0
+
+    def test_poisoned_harness_run_id_with_no_run_dir_still_reports_unknown(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """CAP-2 regression guard: the filesystem fallback must not turn
+        a GENUINELY unrecoverable poisoned journal into a false-positive
+        state. No `.bmad-loop/runs/` directory exists at all here --
+        `MRS-STATUS-002`/`unknown` must fire exactly as it did before this
+        fallback existed."""
+        run_dir = _seed_run_journal(
+            tmp_path,
+            run_id="acme-run1",
+            lines=[_outcome_line("acme-run1", pid=4242, harness_run_id=None)],
+        )
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+        home = tmp_path / "loop-homes" / "acme"
+        # No `.bmad-loop/runs/` directory created at all.
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=_FakeHarness(),
+            process=_FakeProcess(),
+            clock=_FakeClock(now=_FIXED_NOW),
+        )
+
+        payload = _payload(capsys)
+        row = payload["data"]["homes"][0]
+        assert row["state"] == "unknown"
+        codes = [f["code"] for f in payload["findings"]]
+        assert "MRS-STATUS-002" in codes
+        assert payload["verdict"] == "warn"
+        assert exit_code == 0
+
+    def test_poisoned_harness_run_id_only_stale_siblings_still_reports_unknown(
+        self, tmp_path, capsys, monkeypatch
+    ):
+        """CAP-2 regression guard, disambiguation variant: real
+        `.bmad-loop/runs/` entries exist, but ALL of them fall outside the
+        correlation window -- the fallback must refuse to guess rather
+        than attribute a stale, unrelated run's state to this home."""
+        launch_ts = "2026-08-06T00:00:00.000Z"
+        run_dir = _seed_run_journal(
+            tmp_path,
+            run_id="acme-run1",
+            lines=[_outcome_line("acme-run1", pid=4242, harness_run_id=None, ts=launch_ts)],
+        )
+        _stub_latest_run_dir(monkeypatch, run_dir_map={"acme": run_dir})
+        home = tmp_path / "loop-homes" / "acme"
+        stale_id = _local_run_id(launch_ts, offset_seconds=-2 * 24 * 3600)  # 2 days before
+        stale_dir = home / ".bmad-loop" / "runs" / stale_id
+        stale_dir.mkdir(parents=True)
+        (stale_dir / "state.json").write_text("{}", encoding="utf-8")
+        vcs = _FakeVcs(worktrees=(WorktreeEntry(path=home, branch="loop/acme"),))
+        # A snapshot IS registered for the stale id -- if it were ever
+        # (wrongly) selected, this would prove it by returning "stopped"
+        # instead of "unknown".
+        harness = _FakeHarness(snapshots={(str(home), stale_id): _snapshot(finished=True)})
+
+        exit_code = status_cli.run_status(
+            _args(),
+            vcs=vcs,
+            fs=LocalFs(),
+            harness=harness,
             process=_FakeProcess(),
             clock=_FakeClock(now=_FIXED_NOW),
         )

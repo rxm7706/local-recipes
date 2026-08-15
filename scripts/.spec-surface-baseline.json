@@ -2447,10 +2447,10 @@
  },
  "pyforge-marshal/spec-fleet-status-supervisor-fallback": {
   "files": {
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py": "46fe78f3e6de76096f23bb9713d6d4fb84eb0cb0",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py": "223de07ed83583a56d9e9463aa39af9bf9a11232"
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py": "6d9daf177a7ea6563091ac6822bf0abe6d1c7a83",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py": "86d6d93a7c7c615c67ed56160626714b783c6688"
   },
-  "memlog": "9cddad1c91e6fec100b04cf7d6da9b9af5ffe312"
+  "memlog": "eda4d3b70a2b3c307f02797f48cc76a556820a3b"
  },
  "pyforge-marshal/spec-genesis-installer": {
   "files": {},
@@ -2482,6 +2482,10 @@
  "pyforge-marshal/spec-marshal-land-merge-subject": {
   "files": {},
   "memlog": "ea501c527cc57309410c126b67b044f1370a49db"
+ },
+ "pyforge-marshal/spec-marshal-status-harness-run-id-poisoning": {
+  "files": {},
+  "memlog": "41bf509adf6ac475633d1a78450d9f9c03b8f135"
  },
  "pyforge-marshal/spec-multi-loop-isolation": {
   "files": {
