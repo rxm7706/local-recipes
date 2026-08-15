@@ -189,6 +189,63 @@ miniforge3/
 # package under src/shared/packages/* grows its own `tests/` directory.
 **/tests/
 
+# src/platform/ (Story 10.3, "One image, both engines") -- dev-only content
+# under the platform's own tree that `src/platform/Containerfile`'s runtime
+# stage would otherwise ship via its `COPY src/platform/ /app/` line.
+# `**/tests/` (above) and `.git/`/`.pixi/` (also above) already cover that
+# Containerfile's other exclusion needs -- this section is the REMAINING
+# platform-specific gap. NOTE: this governs the platform build too, even
+# though it lives in the repo-root ignore file rather than a
+# `src/platform/.dockerignore` -- see the Containerfile's own top-of-file
+# comment for why: its build context is the repo root (required so the
+# builder stage can reach the workspace's `pixi.toml`/`pixi.lock`), so the
+# repo-root `.dockerignore` is the one Docker/Podman actually consult; a
+# separate `src/platform/.dockerignore` would sit there unused and mislead
+# a future reader into thinking it's what governs the build.
+src/platform/requirements/local.txt
+src/platform/docs/
+src/platform/utility/
+# DEBUG=True + a fallback SECRET_KEY default (config/settings/local.py) and
+# the test-only settings module (config/settings/test.py) have no business
+# in a "production" image -- DJANGO_SETTINGS_MODULE is fixed to
+# `config.settings.production` by the Containerfile's own `ENV`, so neither
+# is ever imported at runtime, but shipping dev-only config as inert files
+# is still the same class of hygiene gap this section exists to close.
+src/platform/config/settings/local.py
+src/platform/config/settings/test.py
+# The local compose stack, by the same rule: it is dev-only, nothing in the
+# image reads it, and it carries a placeholder `DJANGO_SECRET_KEY` and a
+# local `POSTGRES_PASSWORD` in plain text -- inert inside the image, but the
+# same hygiene class as the two settings modules above. NOTE the asymmetry
+# with `requirements/`, which CANNOT be excluded here even though the runtime
+# image has no use for it either: `.dockerignore` governs the whole build
+# context, and the BUILDER stage's pip layer reads
+# `src/platform/requirements/{base,production}.txt` out of it.
+src/platform/compose/
+# The root `.env`/`.secrets`/`.private` patterns above (this file's
+# documented root-anchored convention) don't reach `src/platform/.env` --
+# django-environ's natural local-secrets location for this app. No such
+# file exists in this repo today (checked), but this Containerfile is the
+# first thing in the repo to actually build a runtime image FROM
+# `src/platform/`, so the gap stops being theoretical the moment one does.
+src/platform/.env
+src/platform/.env.*
+# Build-host-generated app output. .dockerignore is a SEPARATE list from
+# .gitignore, and `COPY src/platform/ /app/` consults only this file. A
+# developer who ran `manage.py collectstatic` locally would otherwise ship
+# their host's assets into the image, where the runtime stage's own
+# three-pass collectstatic runs over (never `--clear`s) them -- making image
+# content depend on which machine built it. The image generates both
+# directories itself; neither is ever an input.
+# NOTE, because an earlier revision of this comment got it wrong: only
+# `staticfiles/` is also gitignored. `src/platform/.gitignore` carries a
+# stale cookiecutter `platform/media/` pattern, and this app's package is
+# `platformapp`, so `platformapp/media/` is NOT gitignored -- verified with
+# `git check-ignore`. These two lines cover the IMAGE; the repo-side gap is
+# recorded as deferred work against Story 10.1's tree.
+src/platform/staticfiles/
+src/platform/platformapp/media/
+
 # Editor/IDE metadata -- `**/` because `recipes/.idea/` is tracked too.
 **/.idea/
 **/.vscode/
