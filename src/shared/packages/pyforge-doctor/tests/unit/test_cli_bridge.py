@@ -1,16 +1,22 @@
 """Unit tests for ``pyforge.doctor.cli_bridge`` (Story 2.1, AD-5) -- the
 sole sanctioned subprocess site. Covers: success, script missing, non-zero
 exit, timeout, unparseable JSON, argv-as-a-list (no shell interpretation),
-and the ``NO_COLOR=1`` environment contract."""
+and the ``NO_COLOR=1`` environment contract.
+
+Story 9.2 adds ``run_git``'s ``ok_exit_codes`` param -- covered against a REAL
+tmp git repository (this test file is not restricted to ``cli_bridge.py``
+itself; a test file driving real ``git`` to set up a fixture is fine, mirrors
+``test_sources_ledger.py``'s own precedent)."""
 
 from __future__ import annotations
 
+import subprocess
 import textwrap
 from pathlib import Path
 
 import pytest
 
-from pyforge.doctor.cli_bridge import CliBridgeError, run_cli_json
+from pyforge.doctor.cli_bridge import CliBridgeError, run_cli_json, run_git
 
 
 def _write_script(tmp_path: Path, body: str) -> Path:
@@ -99,3 +105,78 @@ def test_no_color_is_set_in_subprocess_environment(tmp_path: Path):
     )
     result = run_cli_json(script, [], timeout=10)
     assert result == {"no_color": "1"}
+
+
+# --- run_git's ok_exit_codes (Story 9.2) ---------------------------------
+
+# Mirrors test_sources_hygiene.py's own `_isolate_git_env` fixture -- a
+# nested worktree's environment (e.g. this very session) can leak any of
+# these six vars into a `git` subprocess and point it at the WRONG repo
+# instead of the tmp fixture. Review pass 1 found the original three tests
+# here only scrubbed 2 of the 6, an inconsistency within this same diff.
+_LEAKY_GIT_VARS = (
+    "GIT_DIR",
+    "GIT_WORK_TREE",
+    "GIT_INDEX_FILE",
+    "GIT_OBJECT_DIRECTORY",
+    "GIT_CEILING_DIRECTORIES",
+    "GIT_COMMON_DIR",
+)
+
+
+@pytest.fixture(autouse=True)
+def _isolate_git_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    for var in _LEAKY_GIT_VARS:
+        monkeypatch.delenv(var, raising=False)
+
+
+def _init_repo(repo: Path) -> None:
+    repo.mkdir(parents=True, exist_ok=True)
+    subprocess.run(["git", "init", "-q"], cwd=repo, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "doctor-test@example.com"],
+        cwd=repo, check=True,
+    )
+    subprocess.run(["git", "config", "user.name", "Doctor Test"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "commit.gpgsign", "false"], cwd=repo, check=True)
+
+
+def test_run_git_tolerates_exit_1_when_in_ok_exit_codes(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _init_repo(repo)
+    (repo / "a.txt").write_text("hello\n", encoding="utf-8")
+    subprocess.run(["git", "add", "-A"], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-q", "-m", "seed"], cwd=repo, check=True)
+
+    # `git grep` exits 1 when nothing matches -- must NOT raise here, and the
+    # empty stdout must come back rather than being swallowed as an error.
+    output = run_git(
+        repo,
+        ["grep", "-l", "--fixed-strings", "-e", "no-such-string-anywhere"],
+        ok_exit_codes=frozenset({0, 1}),
+    )
+    assert output == ""
+
+
+def test_run_git_still_raises_for_an_exit_code_outside_the_set(tmp_path: Path) -> None:
+    not_a_repo = tmp_path / "not-a-repo"
+    not_a_repo.mkdir()
+
+    # `git grep` outside any repository exits >=2 -- outside {0, 1}, so this
+    # must still raise, exactly like the default (no ok_exit_codes) behavior.
+    with pytest.raises(CliBridgeError, match="exited"):
+        run_git(
+            not_a_repo,
+            ["grep", "-l", "--fixed-strings", "-e", "anything"],
+            ok_exit_codes=frozenset({0, 1}),
+        )
+
+
+def test_run_git_default_ok_exit_codes_is_unchanged(tmp_path: Path) -> None:
+    """Every existing caller (no ``ok_exit_codes`` argument) must keep
+    raising on ANY non-zero exit -- the default ``{0}`` preserves that."""
+    repo = tmp_path / "empty-repo"
+    _init_repo(repo)  # a real repo, but with no commits yet
+
+    with pytest.raises(CliBridgeError, match="exited"):
+        run_git(repo, ["rev-parse", "--verify", "--quiet", "HEAD"])
