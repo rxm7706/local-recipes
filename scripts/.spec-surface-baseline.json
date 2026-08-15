@@ -3869,7 +3869,7 @@
  "pyforge-steward/spec-python-agent-platform": {
   "files": {
    "environment.yaml": "a7394e9ac491d921acc22e4ebfe742d0fa400aba",
-   "pixi.toml": "4b1ade39186257b3c0dee8922a079a5b56c02c31",
+   "pixi.toml": "ed050b01df8ac4aef993cb2b14d405ddc6e46543",
    "src/platform/.editorconfig": "c241cc74e556577f3fafca63942d74d0c8764396",
    "src/platform/.gitattributes": "6c04362d1bfb9effdd6645bf5d171a298af084be",
    "src/platform/.gitignore": "7085a5f6068c1cf766528e1eb1a569c4baf5c358",
@@ -3981,7 +3981,7 @@
    "src/platform/utility/requirements-trusty.apt": "e10d1cbf221b4f02656dd749e24500125974de20",
    "src/platform/utility/requirements-xenial.apt": "755c0266e7b97cbf9e90ee9936e2d2f6943c67c5"
   },
-  "memlog": "d86feb264bc7fcf5a81e69dda161d056ed1cd9c6"
+  "memlog": "40f92723b09cad179534cee81a364cb02f673b83"
  },
  "pyforge-steward/spec-scratch-worktree-lifecycle": {
   "files": {
