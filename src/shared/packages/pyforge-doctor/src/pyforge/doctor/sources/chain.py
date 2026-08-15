@@ -51,6 +51,7 @@ import os
 import re
 import stat
 from dataclasses import dataclass
+from datetime import date
 from enum import StrEnum
 from pathlib import Path, PurePosixPath
 
@@ -64,6 +65,7 @@ __all__ = (
     "gather_dream_chain",
     "gather_deferred_work",
     "gather_spec_surface",
+    "gather_due_for_verification",
     "Tier3Shape",
     "LegacyEntry",
     "classify_tier3_entries",
@@ -2343,6 +2345,210 @@ def _gather_deferred_work(target: Path) -> tuple[Finding, ...]:
             check=item["kind"],
             status=DoctorStatus.WARN if item.get("warn") else DoctorStatus.FAIL,
             message=_deferred_work_message(item),
+            evidence={
+                k: v for k, v in item.items()
+                if k not in ("kind", "warn")
+            },
+        )
+        for item in raw
+    )
+
+
+# === gather_due_for_verification ===============================================
+#
+# Epic 11/CAP-1 (Story 11.1). Tracked `deferred-work-ledger.md` entries are
+# claims about code truth AT AUTHORING TIME; nothing previously batched
+# "which entries have never been re-checked, or were re-checked too long
+# ago" without hand-enumerating ~400+ entries across the fleet's 8 projects.
+# This selector answers that, per project, mirroring `gather_deferred_work`'s
+# shape end to end (Code Map) -- but it INFORMS rather than gates: status is
+# always WARN, never FAIL (Boundaries), and every ID'd entry is considered
+# regardless of its `status:` (closed/done entries are not exempt -- the
+# 2026-07-30 precedent found regressions among them too).
+
+#: Resolved (Design Notes): no fleet precedent judges "code-claim
+#: re-verification cadence" directly (checked warden's
+#: `DEFAULT_FEED_MAX_AGE_DAYS=7`, `DB_MAX_AGE_DAYS=7`,
+#: `_REGISTRY_MAX_AGE_DAYS=180`, `waiver_default_expiry_days=14` -- none
+#: fits) -- roughly double the closest human-judgment analog
+#: (`waiver_default_expiry_days=14`), rounded to a full month, since
+#: re-verifying 400+ entries fleet-wide is heavier than one waiver review.
+#: A named constant so it can be retuned later without touching any call
+#: site (review finding, patch: the prior comment's "double 14" read as
+#: 28, not 30 -- corrected to "roughly double, rounded to a month").
+DUE_FOR_VERIFICATION_STALENESS_DAYS = 30
+
+_VERIFIED_RE = re.compile(r"^\s*verified:\s*(.+)$", re.M)
+
+
+def _verification(path: Path) -> list[tuple[str, str | None]]:
+    """``(id, raw_verified_text)`` for every ID'd entry in a tracked ledger --
+    duplicates ``_entries()``'s own ~10-line boundary-walk shape rather than
+    extracting a shared primitive from a function documented as "verbatim
+    from the original" (Design Notes: `_entries()` stays untouched).
+    ``raw_verified_text`` is the entry's own MOST RECENT ``verified:`` line,
+    unparsed (``None`` when the entry carries no such line at all) -- date
+    PARSING happens one layer up (`_parse_verified_date`), so a malformed
+    date degrades to "never-verified" rather than raising here.
+
+    Takes the LAST ``verified:`` line in the entry's span, not the first:
+    reconciliation appends a fresh ``verified:`` line rather than replacing
+    the old one (review finding, patch), so the first match would pin
+    staleness to an entry's OLDEST re-check forever, even after a genuinely
+    fresh re-verification landed right below it."""
+    if not _is_file(path):
+        return []
+    text = path.read_text(encoding="utf-8", errors="replace")
+    marks = [(m.start(), m.group(1)) for m in _ENTRY_RE.finditer(text)]
+    out = []
+    for i, (pos, ident) in enumerate(marks):
+        end = marks[i + 1][0] if i + 1 < len(marks) else len(text)
+        matches = list(_VERIFIED_RE.finditer(text[pos:end]))
+        out.append((ident, matches[-1].group(1).strip() if matches else None))
+    return out
+
+
+def _parse_verified_date(raw: str) -> date | None:
+    """The leading ``YYYY-MM-DD`` token of a raw ``verified:`` line's value,
+    or ``None`` when it cannot be parsed as one -- a malformed date must fail
+    toward re-checking ("never-verified"), never raise (I/O matrix)."""
+    token = raw.strip().split(maxsplit=1)[0] if raw.strip() else ""
+    try:
+        return date.fromisoformat(token)
+    except ValueError:
+        return None
+
+
+def _check_project_due_for_verification(
+    target: Path, proj: Path, findings: list[dict], today: date,
+) -> None:
+    """Append one project's due-for-verification findings to the CALLER's
+    ``findings`` list -- mirrors ``_check_project_deferred_work``'s own
+    per-project shape (Design Notes/Code Map); one project's unreadable
+    ledger is isolated by this function's own CALLER, not here."""
+    tracked_path = proj / TRACKED_REL
+    for entry_id, raw_verified in _verification(tracked_path):
+        parsed = _parse_verified_date(raw_verified) if raw_verified else None
+        if parsed is None:
+            findings.append({
+                "kind": "due-for-verification", "reason": "never-verified",
+                "project": proj.name, "id": entry_id,
+                "tracked": str(tracked_path.relative_to(target)),
+            })
+            continue
+        days_stale = (today - parsed).days
+        if days_stale > DUE_FOR_VERIFICATION_STALENESS_DAYS:
+            findings.append({
+                "kind": "due-for-verification", "reason": "stale",
+                "project": proj.name, "id": entry_id,
+                "tracked": str(tracked_path.relative_to(target)),
+                "days_stale": days_stale,
+            })
+
+
+def _due_for_verification_findings(
+    target: Path, *, today: date | None = None,
+) -> list[dict]:
+    """Every project's due-for-verification findings. Each project is
+    evaluated inside its own try/except: one project's unreadable tracked
+    ledger must not discard another, ALREADY-COMPUTED project's real
+    findings -- the same isolation discipline as ``_deferred_work_findings``
+    above (Design Notes).
+
+    ``today`` is the injectable "as of" date (Boundaries) -- ``None``
+    resolves to ``date.today()`` HERE, at the one call boundary, so every
+    inner helper stays deterministic and every test can pass a fixed date
+    rather than depending on wall-clock time."""
+    as_of = today if today is not None else date.today()
+    findings: list[dict] = []
+    projects_dir = target / "_bmad-output" / "projects"
+    if not _is_dir(projects_dir):
+        return findings
+    for proj in sorted(p for p in projects_dir.iterdir() if p.is_dir()):
+        try:
+            _check_project_due_for_verification(target, proj, findings, as_of)
+        except Exception as exc:  # noqa: BLE001 -- one project's unreadable
+            # ledger must not discard findings already appended for a
+            # different project.
+            findings.append({
+                "kind": "due-for-verification-unevaluable",
+                "project": proj.name, "id": "",
+                "detail": (f"{proj.name}: could not be evaluated here — "
+                           f"{exc.__class__.__name__}: {exc}"),
+                "warn": True,
+            })
+    return findings
+
+
+def _due_for_verification_message(item: dict) -> str:
+    """Human-readable message text per finding."""
+    kind = item["kind"]
+    if kind == "due-for-verification":
+        if item["reason"] == "never-verified":
+            return (f"{item['project']}/{item['id']}: no `verified:` line "
+                     f"in {item['tracked']} — never re-checked against live "
+                     f"code.")
+        return (f"{item['project']}/{item['id']}: last verified "
+                f"{item['days_stale']} days ago in {item['tracked']} "
+                f"(> {DUE_FOR_VERIFICATION_STALENESS_DAYS}-day threshold) — "
+                f"due for re-check.")
+    return item.get("detail", f"{item['project']}: {kind}")
+
+
+def gather_due_for_verification(target: Path) -> tuple[Finding, ...]:
+    """Batch every tracked ledger entry due for re-verification, per
+    project -- the library form the story's own Intent names, mirroring
+    ``gather_deferred_work``'s DISPATCH-facing wrapper shape end to end.
+    Status is always WARN, never FAIL -- this selector informs, it never
+    gates (Boundaries). No due entries anywhere degrades to a vacuous OK
+    rather than an empty tuple (I/O matrix), mirroring
+    ``gather_deferred_work``'s own vacuous-OK shape.
+    """
+    return degrade_on_exception(
+        Source.DUE_FOR_VERIFICATION, "due-for-verification",
+        lambda: _gather_due_for_verification(target),
+    )
+
+
+def _gather_due_for_verification(target: Path) -> tuple[Finding, ...]:
+    raw = _due_for_verification_findings(target)
+    if not raw:
+        projects_dir = target / "_bmad-output" / "projects"
+        # No projects tree at all: `target` is not a monorepo root -- same
+        # reasoning as `_gather_deferred_work`'s own guard above.
+        if not _is_dir(projects_dir):
+            return (
+                Finding(
+                    source=Source.DUE_FOR_VERIFICATION,
+                    check="due-for-verification-unevaluable",
+                    status=DoctorStatus.WARN,
+                    message=(
+                        f"_bmad-output/projects/ does not exist under "
+                        f"{target} — due-for-verification cannot be "
+                        f"evaluated here"
+                    ),
+                    evidence={"target": str(target)},
+                ),
+            )
+        scanned = [
+            p.name for p in projects_dir.iterdir()
+            if p.is_dir() and (p / TRACKED_REL).is_file()
+        ]
+        return (
+            Finding(
+                source=Source.DUE_FOR_VERIFICATION,
+                check="due-for-verification",
+                status=DoctorStatus.OK,
+                message="no tracked ledger entry is due for re-verification",
+                evidence={"projects_scanned": len(scanned)},
+            ),
+        )
+    return tuple(
+        Finding(
+            source=Source.DUE_FOR_VERIFICATION,
+            check=item["kind"],
+            status=DoctorStatus.WARN,
+            message=_due_for_verification_message(item),
             evidence={
                 k: v for k, v in item.items()
                 if k not in ("kind", "warn")
