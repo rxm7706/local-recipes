@@ -2419,31 +2419,250 @@ def _parse_verified_date(raw: str) -> date | None:
         return None
 
 
+# --- Story 11.2: churn-based cost filtering ------------------------------------
+#
+# A due entry is a claim about code truth AT AUTHORING TIME (module banner
+# above); most of the ~400+ due entries fleet-wide name code that has not
+# moved SINCE that claim was made, so the next story's (11.3) expensive
+# mechanical/agent re-verification would be spending budget on entries
+# nothing could have invalidated. This section computes -- but never acts
+# on -- that signal: which due entries have zero git commits, anywhere in
+# this repo, to any of their own ledger-cited code paths since the entry's
+# churn window opened. It tags the SAME 11.1 finding with an ADDITIVE
+# `skip_reason: "no-churn"` evidence key; it never adds, removes, or
+# reshapes a Finding (Boundaries).
+
+#: A backtick-quoted token that names a code path: a bare word (an id, a
+#: flag, a function name) is ambiguous prose, but a `.`-extension or a `/`
+#: path separator is not -- optionally followed by a `:<LINE>` locator
+#: (`foo.py:10`), captured OUTSIDE the path group and discarded, since git
+#: operates on files, never on lines within one. Matching only WITHIN
+#: backticks (never bare prose) mirrors how every ledger entry already
+#: cites code today. Over-matching (e.g. a dotted version string) is safe
+#: by design: an extracted token that is not a real path simply fails to
+#: resolve in `_churn_since`'s own step 1 and falls back to "not skipped"
+#: -- the same fail-safe direction as every other edge case here
+#: (Boundaries), so this pattern does not need to be exhaustively precise.
+_PATH_TOKEN_RE = re.compile(
+    r"`([\w][\w./-]*(?:\.[A-Za-z0-9]+|/[\w.-]+))(?::\d+)?`"
+)
+
+#: Any physical line carrying a `source_spec:` field, bulleted (`-
+#: source_spec: ...`) or plain (`source_spec: ...`) -- both shapes occur
+#: live (`Tier3Shape`'s own docstring above). `_entry_named_paths` strips
+#: these lines before extracting path tokens: `source_spec:` names WHERE
+#: the entry came from, not the code under its claim, so a `.md` spec path
+#: living there must never become a churn-check candidate (Boundaries).
+_SOURCE_SPEC_LINE_RE = re.compile(r"^.*\bsource_spec:.*$", re.M)
+
+
+def _entry_named_paths(path: Path) -> list[tuple[str, list[str]]]:
+    """``(id, [paths])`` for every ID'd entry in a tracked ledger --
+    duplicates ``_verification()``'s own boundary-walk shape rather than
+    extracting a shared primitive (Design Notes: neither `_entries()` nor
+    `_verification()` is touched by this story).
+
+    ``paths`` are the entry's own body's `_PATH_TOKEN_RE` matches, in
+    first-seen order with duplicates removed, computed AFTER stripping any
+    `source_spec:` line from the body (`_SOURCE_SPEC_LINE_RE`) so that
+    field's own path-shaped value is never a candidate. The strip removes
+    the WHOLE physical line, not just the field's value (review finding:
+    documented precisely, since the ledger format's one-field-per-line
+    convention means no real entry co-locates a legitimate code citation
+    on the same line as `source_spec:` -- narrowing the strip to just the
+    value would add regex complexity for a case that does not occur)."""
+    if not _is_file(path):
+        return []
+    text = path.read_text(encoding="utf-8", errors="replace")
+    marks = [(m.start(), m.group(1)) for m in _ENTRY_RE.finditer(text)]
+    out = []
+    for i, (pos, ident) in enumerate(marks):
+        end = marks[i + 1][0] if i + 1 < len(marks) else len(text)
+        body = _SOURCE_SPEC_LINE_RE.sub("", text[pos:end])
+        seen: list[str] = []
+        for m in _PATH_TOKEN_RE.finditer(body):
+            token = m.group(1)
+            if token not in seen:
+                seen.append(token)
+        out.append((ident, seen))
+    return out
+
+
+def _authored_date(target: Path, tracked_path: Path, entry_id: str) -> date | None:
+    """The date ``entry_id`` was first introduced into ``tracked_path``'s
+    own git history -- the "since authoring" churn-window start for a
+    never-verified entry, which carries no ``verified:`` date of its own.
+
+    The ``-G`` pickaxe pattern anchors the id's right boundary with
+    ``[^A-Za-z0-9-]`` (any character NOT in the id charset, ``_ENTRY_RE``'s
+    own ``[A-Za-z0-9-]``) rather than searching for the bare id via ``-S``:
+    verified live (Boundaries) that a plain substring search for a SHORTER
+    id collides with any LONGER id sharing the same prefix (``DW-1-1-1`` is
+    a left-anchor prefix of ``DW-1-1-10``) and silently returns the WRONG,
+    earlier introduction date -- the longer id's own commit, not the
+    entry's own. The id charset contains no regex metacharacters (Design
+    Notes), so ``entry_id`` needs no escaping before interpolation.
+
+    ``--reverse`` + first line gives the EARLIEST matching commit -- the
+    entry's own introduction, not a later edit. ``--follow`` is a no-op
+    unless git detects ``tracked_path`` was renamed somewhere in its
+    history, in which case it lets the search see the pre-rename history
+    too -- safe to always pass, and closes an otherwise-real gap: without
+    it, a ledger rename would truncate the search to only post-rename
+    history and could resolve too LATE a date, narrowing the churn window
+    and masking real earlier churn (review finding, patch). Returns
+    ``None`` -- never raises -- on any git failure, an empty match (the
+    ledger was never committed, or genuinely has no commit whose diff
+    introduced this id's literal text), or an unparseable date, so the
+    caller fails toward "not skipped" (I/O matrix)."""
+    rel = str(tracked_path.relative_to(target))
+    try:
+        out = run_git(
+            target,
+            [
+                "log", "--reverse", "--follow", "--format=%ad", "--date=short",
+                "-G", f"{entry_id}[^A-Za-z0-9-]",
+                "--", rel,
+            ],
+        )
+    except (CliBridgeError, UnicodeDecodeError):
+        return None
+    first = out.splitlines()[0].strip() if out.strip() else ""
+    if not first:
+        return None
+    try:
+        return date.fromisoformat(first)
+    except ValueError:
+        return None
+
+
+def _churn_since(target: Path, rel_paths: list[str], since: date) -> bool:
+    """``True`` only when EVERY path in ``rel_paths`` is both tracked in
+    this repo's history (step 1) and untouched since ``since`` (step 2) --
+    the two-step algorithm the Boundaries section spells out, short-
+    circuiting to ``False`` on the first disqualifying path so an entry
+    citing several paths does not pay for git calls on the rest once one
+    has already blocked the skip.
+
+    Step 1, ``git log --oneline -1 -- <path>``: empty means the path has
+    NO history in this repo at all -- a typo, an external package, or a
+    cross-repo reference -- and must NOT read as churn-free (I/O matrix:
+    "path never tracked here"). Step 2, ``git log --oneline -1 --since
+    <date> -- <path>``: non-empty means at least one commit landed inside
+    the window, i.e. the path DID change -- ``-1`` here too, since only
+    existence-inside-the-window is asked, never the full matching set (a
+    frequently-touched path would otherwise pay for git to enumerate every
+    matching commit just to answer a yes/no question, working against the
+    story's own cost-bound purpose -- review finding, patch).
+
+    A ``run_git`` failure for ANY path -- ``CliBridgeError`` or
+    ``UnicodeDecodeError`` -- degrades the WHOLE check to ``False`` (not
+    churn-free), indistinguishable by design from a path with no tracked
+    history, never raised past this function."""
+    for rel in rel_paths:
+        try:
+            tracked = run_git(target, ["log", "--oneline", "-1", "--", rel])
+        except (CliBridgeError, UnicodeDecodeError):
+            return False
+        if not tracked.strip():
+            return False
+        try:
+            since_out = run_git(
+                target,
+                [
+                    "log", "--oneline", "-1", "--since", since.isoformat(),
+                    "--", rel,
+                ],
+            )
+        except (CliBridgeError, UnicodeDecodeError):
+            return False
+        if since_out.strip():
+            return False
+    return True
+
+
+def _attach_churn_skip(
+    target: Path, item: dict, paths: list[str], since: date | None,
+) -> None:
+    """Mutate ``item`` IN PLACE, adding ``skip_reason``/
+    ``churn_checked_paths`` when every one of ``paths`` is confirmed
+    churn-free since ``since`` -- ADDITIVE only, ``item`` is otherwise left
+    exactly as 11.1 built it (Boundaries: the SAME finding, never a new or
+    removed one).
+
+    ``since is None`` (an unresolvable never-verified authoring date) or
+    ``not paths`` (nothing extractable) both fail toward "not skipped"
+    WITHOUT attempting a git call at all -- the zero-path and unresolvable-
+    date I/O matrix rows, and a real cost saving: most due entries cite no
+    path at all, and every avoided git call matters at ~400+ entries
+    fleet-wide.
+
+    Any OTHER exception here -- a hiccup this function's own callees did
+    not already catch internally -- still degrades to "not skipped" for
+    THIS entry alone: it must never propagate to the project-level
+    try/except in ``_due_for_verification_findings``, which exists to
+    isolate a whole project's unreadable LEDGER, not a routine per-entry
+    git-call failure (Boundaries)."""
+    if since is None or not paths:
+        return
+    try:
+        churn_free = _churn_since(target, paths, since)
+    except Exception:  # noqa: BLE001 -- see docstring: isolate per-entry.
+        return
+    if churn_free:
+        item["skip_reason"] = "no-churn"
+        item["churn_checked_paths"] = list(paths)
+
+
 def _check_project_due_for_verification(
     target: Path, proj: Path, findings: list[dict], today: date,
 ) -> None:
     """Append one project's due-for-verification findings to the CALLER's
     ``findings`` list -- mirrors ``_check_project_deferred_work``'s own
     per-project shape (Design Notes/Code Map); one project's unreadable
-    ledger is isolated by this function's own CALLER, not here."""
+    ledger is isolated by this function's own CALLER, not here.
+
+    Story 11.2: each finding this appends is additionally offered to
+    ``_attach_churn_skip``, using the SAME already-parsed ``verified:``
+    date as the churn window's start for a stale entry, or
+    ``_authored_date``'s proxy for a never-verified one -- computed only
+    when the entry has at least one extracted path, so an entry with
+    nothing to check never pays for a git call it cannot use.
+
+    Paired with ``zip``, POSITIONALLY, not via an id-keyed dict: both
+    ``_verification()`` and ``_entry_named_paths()`` walk the SAME
+    ``_ENTRY_RE`` marks over the SAME file text, so they produce entries in
+    identical order and count -- but a ledger with a duplicate (malformed,
+    invariant-violating) id would silently collapse to one dict entry,
+    pairing an EARLIER duplicate's finding with a LATER duplicate's paths
+    (review finding, patch). Positional pairing is correct regardless of
+    whether ids repeat."""
     tracked_path = proj / TRACKED_REL
-    for entry_id, raw_verified in _verification(tracked_path):
+    paths_by_entry = _entry_named_paths(tracked_path)
+    for (entry_id, raw_verified), (_, paths) in zip(
+        _verification(tracked_path), paths_by_entry, strict=True,
+    ):
         parsed = _parse_verified_date(raw_verified) if raw_verified else None
         if parsed is None:
-            findings.append({
+            item = {
                 "kind": "due-for-verification", "reason": "never-verified",
                 "project": proj.name, "id": entry_id,
                 "tracked": str(tracked_path.relative_to(target)),
-            })
+            }
+            since = _authored_date(target, tracked_path, entry_id) if paths else None
+            _attach_churn_skip(target, item, paths, since)
+            findings.append(item)
             continue
         days_stale = (today - parsed).days
         if days_stale > DUE_FOR_VERIFICATION_STALENESS_DAYS:
-            findings.append({
+            item = {
                 "kind": "due-for-verification", "reason": "stale",
                 "project": proj.name, "id": entry_id,
                 "tracked": str(tracked_path.relative_to(target)),
                 "days_stale": days_stale,
-            })
+            }
+            _attach_churn_skip(target, item, paths, parsed)
+            findings.append(item)
 
 
 def _due_for_verification_findings(
@@ -2481,17 +2700,31 @@ def _due_for_verification_findings(
 
 
 def _due_for_verification_message(item: dict) -> str:
-    """Human-readable message text per finding."""
+    """Human-readable message text per finding.
+
+    Story 11.2: when ``_attach_churn_skip`` tagged this item, the message
+    additionally reports the skip decision -- spelling the literal
+    ``skip_reason: no-churn`` value (Design Notes: the epic's own wording
+    names the VALUE, not the evidence key) so a human scanning WARN output
+    can tell a "no churn, deprioritized" entry apart from one still fully
+    due, without opening the evidence dict."""
     kind = item["kind"]
     if kind == "due-for-verification":
         if item["reason"] == "never-verified":
-            return (f"{item['project']}/{item['id']}: no `verified:` line "
-                     f"in {item['tracked']} — never re-checked against live "
-                     f"code.")
-        return (f"{item['project']}/{item['id']}: last verified "
-                f"{item['days_stale']} days ago in {item['tracked']} "
-                f"(> {DUE_FOR_VERIFICATION_STALENESS_DAYS}-day threshold) — "
-                f"due for re-check.")
+            message = (f"{item['project']}/{item['id']}: no `verified:` line "
+                        f"in {item['tracked']} — never re-checked against live "
+                        f"code.")
+        else:
+            message = (f"{item['project']}/{item['id']}: last verified "
+                        f"{item['days_stale']} days ago in {item['tracked']} "
+                        f"(> {DUE_FOR_VERIFICATION_STALENESS_DAYS}-day threshold) — "
+                        f"due for re-check.")
+        if item.get("skip_reason") == "no-churn":
+            message += (
+                " Named code path(s) have no commits since then — "
+                "skip_reason: no-churn (deprioritized, not resolved)."
+            )
+        return message
     return item.get("detail", f"{item['project']}: {kind}")
 
 
