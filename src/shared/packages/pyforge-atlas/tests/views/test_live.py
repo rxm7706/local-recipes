@@ -250,7 +250,14 @@ def test_asgi_unknown_view_returns_404_not_a_raw_traceback():
 def test_asgi_registered_view_embeds_a_server_document_script():
     """The AC: a registered view's /live/{view_name} response HTML contains a
     server_document-shaped embed script referencing the configured live-server URL, and that
-    response itself is just markup -- no ws://scheme, no live server contacted to build it."""
+    response itself is just markup -- no ws://scheme, no live server contacted to build it.
+
+    "cdn.bokeh.org" (Story 14.4, CAP-4) is a structural invariant pin, not a live check of the
+    render profile: server_document() only ever embeds a small autoload-script pointer at this
+    app's own configured URL, never a resource-loading URL, regardless of BOKEH_RESOURCES. The
+    profile-dependent behavior actually lives in the Bokeh server that URL points at --
+    test_resources.py's DEFAULT_PROFILE_LIVE / CDN_PROFILE_NEGATIVE_CONTROL tests exercise that
+    dynamically against a real running server."""
     client = TestClient(asgi_app)
 
     response = client.get("/live/staleness-report")
@@ -261,6 +268,7 @@ def test_asgi_registered_view_embeds_a_server_document_script():
     assert "http://localhost:5006/staleness-report" in body
     assert "ws://" not in body
     assert "wss://" not in body
+    assert "cdn.bokeh.org" not in body
 
 
 def test_asgi_live_bokeh_url_env_override(monkeypatch):

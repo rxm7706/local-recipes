@@ -18,14 +18,22 @@ section exactly: the same `--platform` parsing cases (not re-derived, since
 `engines.condalock.check()`'s `CondaLockCheckResult` into `models.
 CheckResult`, including `stale` passthrough. `condalock.check` is mocked the
 same way, at `pyforge.mason.environment.condalock.check`.
+
+Story 4.2 adds `discover_manifests()`'s own coverage below, mirroring
+`test_resolve.py`'s style for this codebase's other pure directory-walking
+function: real `tmp_path` trees, no mocking -- this function does no
+subprocess/engine work, so there is nothing to patch.
 """
 
 from __future__ import annotations
 
 from unittest.mock import patch
 
+import pytest
+
 from pyforge.mason.engines.condalock import CondaLockCheckResult, CondaLockResult
-from pyforge.mason.environment import check, lock
+from pyforge.mason.environment import check, discover_manifests, lock
+from pyforge.mason.errors import EnvironmentManifestsNotFoundError
 from pyforge.mason.models import CheckResult, LockResult
 
 
@@ -251,3 +259,81 @@ def test_check_platforms_empty_string_passes_through_as_empty_tuple():
         check("lock.yml", ["environment.yml"], platforms="")
 
     mock_check.assert_called_once_with("lock.yml", ["environment.yml"], platforms=())
+
+
+# --- Story 4.2: discover_manifests -- I/O & Edge-Case Matrix ----------------
+
+def test_discover_manifests_all_four_kinds_present(tmp_path):
+    (tmp_path / "pyproject.toml").write_text("")
+    (tmp_path / "environment.yml").write_text("")
+    (tmp_path / "requirements.txt").write_text("")
+    (tmp_path / "pixi.toml").write_text("")
+
+    result = discover_manifests(tmp_path)
+
+    assert result == (
+        str(tmp_path / "pyproject.toml"),
+        str(tmp_path / "environment.yml"),
+        str(tmp_path / "requirements.txt"),
+        str(tmp_path / "pixi.toml"),
+    )
+
+
+def test_discover_manifests_subset_present_returns_a_one_element_tuple(tmp_path):
+    (tmp_path / "pixi.toml").write_text("")
+
+    result = discover_manifests(tmp_path)
+
+    assert result == (str(tmp_path / "pixi.toml"),)
+
+
+def test_discover_manifests_multiple_requirements_files_sorted_lexically(tmp_path):
+    """Both `requirements*.txt` matches are returned, sorted lexically, and
+    positioned between `environment.yml` and `pixi.toml` (spec I/O matrix)."""
+    (tmp_path / "environment.yml").write_text("")
+    (tmp_path / "requirements.txt").write_text("")
+    (tmp_path / "requirements-dev.txt").write_text("")
+    (tmp_path / "pixi.toml").write_text("")
+
+    result = discover_manifests(tmp_path)
+
+    assert result == (
+        str(tmp_path / "environment.yml"),
+        str(tmp_path / "requirements-dev.txt"),
+        str(tmp_path / "requirements.txt"),
+        str(tmp_path / "pixi.toml"),
+    )
+
+
+def test_discover_manifests_ignores_a_directory_matching_the_requirements_glob(tmp_path):
+    """A directory (or symlink-to-directory) whose name matches
+    `requirements*.txt` is excluded, not silently treated as a manifest
+    (review pass, 2026-08-15) -- `.is_file()` applies to every match, not
+    just the three literal names."""
+    (tmp_path / "requirements-lock.txt").mkdir()
+    (tmp_path / "pixi.toml").write_text("")
+
+    result = discover_manifests(tmp_path)
+
+    assert result == (str(tmp_path / "pixi.toml"),)
+
+
+def test_discover_manifests_empty_directory_raises(tmp_path):
+    with pytest.raises(EnvironmentManifestsNotFoundError) as exc_info:
+        discover_manifests(tmp_path)
+
+    exc = exc_info.value
+    assert exc.directory == str(tmp_path)
+    assert exc.filenames == (
+        "pyproject.toml", "environment.yml", "requirements*.txt", "pixi.toml",
+    )
+
+
+def test_discover_manifests_ignores_unrelated_files(tmp_path):
+    (tmp_path / "pixi.toml").write_text("")
+    (tmp_path / "README.md").write_text("")
+    (tmp_path / "setup.py").write_text("")
+
+    result = discover_manifests(tmp_path)
+
+    assert result == (str(tmp_path / "pixi.toml"),)

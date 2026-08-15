@@ -1062,12 +1062,13 @@
       if (c.kind === "planning") {
         rows = c.rows.map(r => {
           const na = r.depth === "prd+arch" ? ["epics"] : [];
-          // pyforge-genesis was dissolved 2026-08-02 (constitutive, no project dir left) --
-          // its two load-bearing specs live under docs/governance/, not a planning-artifacts
-          // tree. Every other slug's real tree is `planning_project` (identity unless the
-          // chain was absorbed into a Smith, e.g. presenton-pixi-image -> pyforge-mason).
-          const slugHref = r.slug === "pyforge-genesis"
-            ? REPO + "/tree/main/docs/governance"
+          // `redirect` is resolved server-side by resolve_project() -- set only
+          // for a dissolved slug with no project tree of its own (pyforge-genesis
+          // -> docs/governance). Every other slug's real tree is `planning_project`
+          // (identity unless the chain was absorbed into a Smith, e.g.
+          // presenton-pixi-image -> pyforge-mason). This never re-derives a path.
+          const slugHref = r.redirect
+            ? REPO + "/tree/main/" + esc(r.redirect)
             : REPO + "/tree/main/_bmad-output/projects/" + esc(r.planning_project || r.slug) + "/planning-artifacts";
           return '<div class="camprow">' +
             '<span class="camp-wave">' + esc(r.wave || "") + '</span>' +
@@ -1084,14 +1085,10 @@
         }).join("");
       } else {
         rows = c.rows.map(r => {
-          // `epics_path` is explicit for satellite slugs whose real epics.md lives
-          // under a DIFFERENT project's tree (e.g. genesis-installer's stories are
-          // epics-genesis-installer.md inside pyforge-marshal, not a pyforge-genesis
-          // dir that no longer exists) -- the generic `<slug>/planning-artifacts/
-          // epics.md` guess 404s for those. `epics_path: null` (wasm/unity: no
-          // epics.md exists yet) renders plain text instead of a dead link.
-          const path = "epics_path" in r ? r.epics_path
-                       : "_bmad-output/projects/" + r.slug + "/planning-artifacts/epics.md";
+          // `epics_path` is resolved server-side by resolve_project() for every
+          // row (null when no epics.md exists for the slug, e.g. wasm/unity's
+          // PRD+arch-only rows) -- this never re-derives the path.
+          const path = r.epics_path;
           const slugCell = path
             ? '<a href="' + REPO + '/blob/main/' + esc(path) + '" title="' + esc(r.note || "") + '">' + esc(r.slug) + '</a>'
             : '<span title="' + esc(r.note || "") + '">' + esc(r.slug) + '</span>';
