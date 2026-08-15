@@ -1,0 +1,99 @@
+---
+title: Scribe reaches past curated memory into the raw session transcripts underneath it
+type: dream
+owner: scribe
+status: dreamt
+---
+
+# Scribe reaches past curated memory into the raw session transcripts underneath it
+
+## The Dream
+
+Scribe already promotes personal memory into the team's shared knowledge: `scribe capture
+--promote` (Story 1.3, shipped) scans a contributor's **curated** personal auto-memory
+(`~/.claude/projects/<repo>/memory/*.md`) and proposes team-relevant entries for
+`.claude/memory/`. That closes one gap. It leaves a deeper one open: curated memory is
+itself a filter — only what an agent judged worth writing down, in the moment, survives
+into it. Everything discussed in a session but never promoted even to *personal* memory —
+an idea floated and dropped, a design considered and rejected, a fact mentioned once in
+passing — exists only in that session's raw transcript, and nothing scans those.
+
+Confirmed live, 2026-08-15: this repo's own personal-memory directory holds 22 raw session
+transcripts (`.jsonl`, 161MB total) alongside its curated `.md` files. Every one of those
+transcripts is a superset of whatever got curated from it. Scribe's own planned Epic 2
+knowledge-graph compile sources (per this Dream's own text: "git history, memlogs, retros,
+CHANGELOGs, `docs/dreams/`") don't currently name these transcripts either — so even the
+NEXT layer of Scribe, once built, would still miss this. The mechanism to recover from them
+already exists as precedent, just not as a systematized capability: CLAUDE.md's own "Story
+specs are durable" recovery-source hierarchy names Claude Code session transcripts as the
+highest-fidelity recovery source, and it is how pyforge-warden's 13 lost story specs were
+actually recovered verbatim on 2026-07-25 — proof the raw signal is real and recoverable,
+done once by hand, never generalized.
+
+## Whose job this is
+
+Squarely Scribe's, by its own already-written charter — no investigation needed the way
+[[bmad-method-core-upgrade]] needed one. Scribe's Dream states outright: "what the team
+knows, every agent and every session knows... knowledge is lossy; the graph is there;
+nobody writes it down." A raw session transcript IS exactly the un-written-down knowledge
+that Dream already claims as its territory; this is a depth extension of `scribe capture
+--promote`'s already-shipped mechanism (mine one layer deeper) and a new named source for
+the not-yet-built Epic 2 compile step, not a new station or a new charter.
+
+## What it looks like when real
+
+- `scribe capture --promote` (or a sibling verb) gains a mode that scans raw session
+  transcripts, not just curated personal memory — proposing candidate team-relevant facts
+  it finds THERE that never made it into a curated entry, with the same proposal-then-
+  confirm discipline the existing promote path already uses (never silently promotes).
+- Epic 2's compile step, when built, lists session transcripts as a named source alongside
+  git history/memlogs/retros/CHANGELOGs — so `scribe recall` can eventually answer "what did
+  we discuss about X" even when X was never curated by any agent in the moment.
+- A contributor (human or agent) can ask "did we already talk about this" and get a real
+  answer grounded in what was actually said, not just what someone remembered to write down
+  — closing the exact loss mode [[sentinel]] originally diagnosed, at the layer underneath
+  where Scribe currently stops.
+
+## What is real
+
+Nothing yet. `scribe capture --promote` (Story 1.3) is real but scoped to curated personal
+memory only. Epic 2 (the knowledge graph this would extend) is entirely backlog — 4 of 4
+stories, untouched.
+
+## Constraints
+
+- Air-gapped by construction, same as the rest of Scribe — no outbound calls, matching the
+  existing capture/compile/recall discipline.
+- Must not raw-dump transcript content into team memory — 161MB of tool-call noise across
+  22 sessions needs the SAME curation discipline the existing `--promote` path already has
+  (propose, don't silently promote; team-voice rewrite; provenance citation), not a bigger,
+  noisier version of the same problem it's trying to solve.
+- Provenance matters more here, not less — a fact recovered from a raw transcript needs to
+  cite which session/turn it came from, the same way the existing mechanism's "every graph
+  node traces back to the source file or commit" already requires for committed sources.
+
+## Non-goals
+
+- Not re-scoping Epic 1/2's own already-planned sequencing — this is a new source for the
+  SAME planned compile step, not a reason to reorder Scribe's existing backlog.
+- Not a real-time/live transcript-watching capability — mining PAST transcripts (a sweep,
+  or an on-demand `--promote`-style scan), not live capture during an active session (that's
+  what `scribe capture` already does, from the agent's own in-session judgment).
+
+## Kinships
+
+[[pyforge-scribe]] (owner, the charter this Dream extends) · [[pyforge-scribe-team-memory]]
+· [[sentinel]] (the original knowledge-loss diagnosis this closes one more layer of) ·
+[[dashboard-velocity-captures-hand-driven-work]] / [[bmad-method-core-upgrade]] (captured
+the same session this gap itself was noticed, from the same underlying observation: things
+discussed but not carried forward).
+
+## Realization log
+
+- **2026-08-15** — Dream captured. Surfaced when the user asked how to scan across all
+  prior Claude session memory for pyforge-related content, noting conversational ideas get
+  lost when not explicitly saved. Investigation confirmed raw transcripts exist and are
+  greppable (22 files, 161MB, this repo's own personal-memory directory) but nothing scans
+  them systematically — `scribe capture --promote` only reaches curated personal memory, one
+  layer up from where this gap actually lives. Folded into Scribe's own territory per the
+  user's explicit direction, rather than treated as a one-off sweep.
