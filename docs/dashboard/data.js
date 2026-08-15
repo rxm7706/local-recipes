@@ -591,7 +591,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 19 of 41 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 19 of 57 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -682,12 +682,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "38/41",
+            "38/57",
             "stories complete",
             "var(--done)"
           ],
           [
-            "3",
+            "19",
             "remaining",
             ""
           ]
@@ -988,6 +988,104 @@ window.DASHBOARD_DATA = {
               "9.4",
               "pending",
               "Loop-home staleness surfaces in the ATTENTION block"
+            ]
+          ]
+        },
+        {
+          "badge": "E10",
+          "title": "Doctor notices when BMAD-METHOD's own installed core falls behind upstream",
+          "stories": [
+            [
+              "10.1",
+              "pending",
+              "The declared floor and the installed core are compared and reported"
+            ],
+            [
+              "10.2",
+              "pending",
+              "The installed core is compared against the latest upstream release"
+            ],
+            [
+              "10.3",
+              "pending",
+              "The drift surfaces ambiently, never gates"
+            ]
+          ]
+        },
+        {
+          "badge": "E11",
+          "title": "Tracked deferred-work entries get periodically re-verified against live code",
+          "stories": [
+            [
+              "11.1",
+              "pending",
+              "Due-for-verification entries are selected, per project"
+            ],
+            [
+              "11.2",
+              "pending",
+              "Churn-based cost filtering skips entries whose code has not moved"
+            ],
+            [
+              "11.3",
+              "pending",
+              "Mechanically-checkable claims are verified without an agent"
+            ],
+            [
+              "11.4",
+              "pending",
+              "Judgment-requiring entries get an evidence-grounded verdict"
+            ],
+            [
+              "11.5",
+              "pending",
+              "Verification reaches across project boundaries"
+            ],
+            [
+              "11.6",
+              "pending",
+              "Near-duplicate entries surface as one defect class"
+            ],
+            [
+              "11.7",
+              "pending",
+              "Verification staleness surfaces in the ambient fleet report"
+            ],
+            [
+              "11.8",
+              "pending",
+              "Backlog-intake surfaces deferred entries during story drafting"
+            ]
+          ]
+        },
+        {
+          "badge": "E12",
+          "title": "The fleet's own hygiene/verification tooling gets its documented sharp edges fixed",
+          "stories": [
+            [
+              "12.1",
+              "pending",
+              "The hygiene/verification catalog stays a maintained, current artifact"
+            ],
+            [
+              "12.2",
+              "pending",
+              "The exemplar standard conformance table is refreshed and re-verified"
+            ],
+            [
+              "12.3",
+              "pending",
+              "Chain completeness parses capability ids, not a bare substring match"
+            ],
+            [
+              "12.4",
+              "pending",
+              "Dream chain gap count surfaces in the ambient ATTENTION block"
+            ],
+            [
+              "12.5",
+              "pending",
+              "The spec surface baseline write race is closed"
             ]
           ]
         }
@@ -4347,7 +4445,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-15 14:20 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-15 14:28 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5449,7 +5547,7 @@ window.DASHBOARD_DATA = {
       "title": "Doctor notices when BMAD-METHOD's own installed core falls behind upstream",
       "caps": 3,
       "companions": 0,
-      "updated": "",
+      "updated": "2026-08-15",
       "dream": "bmad-method-version-drift",
       "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-bmad-method-version-drift"
     },
@@ -5459,7 +5557,7 @@ window.DASHBOARD_DATA = {
       "title": "Deferred-work resolution sweep",
       "caps": 8,
       "companions": 2,
-      "updated": "",
+      "updated": "2026-08-15",
       "dream": "deferred-work-resolution-sweep",
       "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-resolution-sweep"
     },
@@ -5479,7 +5577,7 @@ window.DASHBOARD_DATA = {
       "title": "Fleet hygiene, verification & exemplar-standard catalog",
       "caps": 7,
       "companions": 1,
-      "updated": "",
+      "updated": "2026-08-15",
       "dream": "fleet-hygiene-verification-exemplar-program",
       "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-fleet-hygiene-verification-exemplar-program"
     },
@@ -5489,7 +5587,7 @@ window.DASHBOARD_DATA = {
       "title": "Doctor (pyforge-doctor) — one bedside manner for the whole fleet",
       "caps": 9,
       "companions": 1,
-      "updated": "2026-08-13",
+      "updated": "2026-08-15",
       "dream": "pyforge-doctor",
       "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-pyforge-doctor"
     },
@@ -6833,7 +6931,7 @@ window.DASHBOARD_DATA = {
           "state": "in-progress",
           "note": "line 2 — consolidative wrap",
           "done": 38,
-          "total": 41
+          "total": 57
         },
         {
           "slug": "pyforge-scribe",
@@ -6945,7 +7043,7 @@ window.DASHBOARD_DATA = {
     "sound": 0,
     "live": 68,
     "reached": 8,
-    "gaps": 86,
+    "gaps": 83,
     "findings": 24,
     "rows": [
       {
@@ -7204,7 +7302,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "38/41",
+        "progress": "38/57",
         "complete": 14,
         "of": 14
       },
@@ -9146,7 +9244,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-15",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-15",
           "research": "2026-07-25",
           "brief": "",
           "prd": "",
@@ -9230,8 +9328,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -9241,7 +9338,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 3
       },
       {
@@ -9360,7 +9457,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-15",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-15",
           "research": "2026-07-25",
           "brief": "",
           "prd": "",
@@ -9444,8 +9541,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -9455,7 +9551,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 3
       },
       {
@@ -9573,7 +9669,7 @@ window.DASHBOARD_DATA = {
         "stages": {
           "dream": "2026-08-15",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-15",
           "research": "2026-07-25",
           "brief": "",
           "prd": "",
@@ -9657,8 +9753,7 @@ window.DASHBOARD_DATA = {
           "research"
         ],
         "gaps": [
-          "deck",
-          "spec"
+          "deck"
         ],
         "partial": [],
         "staleBy": [],
@@ -9668,7 +9763,7 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 1,
+        "complete": 2,
         "of": 3
       },
       {
@@ -18323,32 +18418,12 @@ window.DASHBOARD_DATA = {
         "chain": {}
       },
       {
-        "slug": "bmad-method-version-drift",
-        "title": "Doctor notices when BMAD-METHOD's own installed core falls behind upstream",
-        "status": "dreamt",
-        "owner": "doctor",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-bmad-method-version-drift"
-        }
-      },
-      {
         "slug": "dashboard-velocity-captures-hand-driven-work",
         "title": "Dashboard velocity counts every story's real effort, not just bmad-loop-journaled ones",
         "status": "dreamt",
         "owner": "marshal",
         "blockedOn": "",
         "chain": {}
-      },
-      {
-        "slug": "deferred-work-resolution-sweep",
-        "title": "deferred-work-resolution-sweep",
-        "status": "dreamt",
-        "owner": "doctor",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-resolution-sweep"
-        }
       },
       {
         "slug": "enterprise-data-models-and-apis",
@@ -18365,16 +18440,6 @@ window.DASHBOARD_DATA = {
         "owner": "steward",
         "blockedOn": "",
         "chain": {}
-      },
-      {
-        "slug": "fleet-hygiene-verification-exemplar-program",
-        "title": "fleet-hygiene-verification-exemplar-program",
-        "status": "dreamt",
-        "owner": "doctor",
-        "blockedOn": "",
-        "chain": {
-          "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-fleet-hygiene-verification-exemplar-program"
-        }
       },
       {
         "slug": "miniforge-installer",
@@ -18445,12 +18510,12 @@ window.DASHBOARD_DATA = {
     "byOwner": {
       "steward": 3,
       "marshal": 2,
-      "doctor": 4,
       "atlas": 1,
       "mason": 3,
       "warden": 1,
       "herald": 2,
-      "scribe": 1
+      "scribe": 1,
+      "doctor": 1
     },
     "practices": [
       {
@@ -19110,7 +19175,7 @@ window.DASHBOARD_DATA = {
           "practice": 0
         },
         "line": "paused 9.2",
-        "load": 4,
+        "load": 1,
         "blocked": 0,
         "dreams": [
           {
@@ -22734,8 +22799,8 @@ window.DASHBOARD_DATA = {
       "subject": "doctor: land Story 9.1 -- sprint ledger, dashboard, epics outcome, spec promotion"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-15 14:20 UTC",
-    "generatedEpoch": 1786803628
+    "generatedAt": "2026-08-15 14:28 UTC",
+    "generatedEpoch": 1786804138
   },
   "storySpecs": [
     {
@@ -22883,6 +22948,37 @@ window.DASHBOARD_DATA = {
         "state": "ready"
       },
       {
+        "station": "doctor",
+        "project": "pyforge-doctor",
+        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-deferred-work-visibility",
+            "status": "in-progress",
+            "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md"
+          }
+        ],
+        "done": 38,
+        "backlog": 19,
+        "blocked": 0,
+        "total": 57,
+        "next": "10-1-the-declared-floor-and-the-installed-core-are-compared-and-reported",
+        "blockedKeys": [],
+        "backlogKeys": [
+          "10-1-the-declared-floor-and-the-installed-core-are-compared-and-reported",
+          "10-2-the-installed-core-is-compared-against-the-latest-upstream-release",
+          "10-3-the-drift-surfaces-ambiently-never-gates",
+          "11-1-due-for-verification-entries-are-selected-per-project",
+          "11-2-churn-based-cost-filtering-skips-entries-whose-code-has-not-moved",
+          "11-3-mechanically-checkable-claims-are-verified-without-an-agent",
+          "11-4-judgment-requiring-entries-get-an-evidence-grounded-verdict",
+          "11-5-verification-reaches-across-project-boundaries"
+        ],
+        "state": "ready"
+      },
+      {
         "station": "mason",
         "project": "pyforge-mason",
         "epicsPath": "_bmad-output/projects/pyforge-mason/planning-artifacts/epics.md",
@@ -23009,32 +23105,6 @@ window.DASHBOARD_DATA = {
         "state": "ready"
       },
       {
-        "station": "doctor",
-        "project": "pyforge-doctor",
-        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
-        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
-        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
-        "openSpecs": [
-          {
-            "slug": "spec-deferred-work-visibility",
-            "status": "in-progress",
-            "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md"
-          }
-        ],
-        "done": 38,
-        "backlog": 3,
-        "blocked": 0,
-        "total": 41,
-        "next": "9-2-the-sweep-runs-against-all-eight-stations",
-        "blockedKeys": [],
-        "backlogKeys": [
-          "9-2-the-sweep-runs-against-all-eight-stations",
-          "9-3-hygiene-findings-report-and-never-mutate",
-          "9-4-loop-home-staleness-surfaces-in-the-attention-block"
-        ],
-        "state": "ready"
-      },
-      {
         "station": "herald",
         "project": "pyforge-herald",
         "epicsPath": "_bmad-output/projects/pyforge-herald/planning-artifacts/epics.md",
@@ -23096,9 +23166,9 @@ window.DASHBOARD_DATA = {
     ],
     "totals": {
       "done": 357,
-      "backlog": 66,
+      "backlog": 82,
       "blocked": 1,
-      "total": 424
+      "total": 440
     }
   },
   "fleetProgress": {
@@ -23116,10 +23186,10 @@ window.DASHBOARD_DATA = {
       },
       {
         "key": "doctor",
-        "stories": 41,
+        "stories": 57,
         "done": 38,
         "blocked": 0,
-        "epics": 9,
+        "epics": 12,
         "epicsDone": 8,
         "complete": false,
         "running": false,
@@ -23193,10 +23263,10 @@ window.DASHBOARD_DATA = {
       }
     ],
     "total": {
-      "stories": 424,
+      "stories": 440,
       "done": 357,
       "blocked": 1,
-      "epics": 85,
+      "epics": 88,
       "epicsDone": 64
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",

@@ -12,13 +12,29 @@
 # reads both, so there is no second parser to drift.
 #
 # project: doctor
-# stories: 59
+# stories: 81
 development_status:
   1-1-package-scaffold-frozen-finding-doctorreport-contract-exit-code-module: done
   1-2-wrap-wardens-engine-availability-self-check: done
   1-3-tri-state-individually-addressable-checks: done
   1-4-credential-environment-hygiene-check: done
   1-5-doctor-check-cli-wiring-json-and-the-speed-budget: done
+  10-1-the-declared-floor-and-the-installed-core-are-compared-and-reported: backlog
+  10-2-the-installed-core-is-compared-against-the-latest-upstream-release: backlog
+  10-3-the-drift-surfaces-ambiently-never-gates: backlog
+  11-1-due-for-verification-entries-are-selected-per-project: backlog
+  11-2-churn-based-cost-filtering-skips-entries-whose-code-has-not-moved: backlog
+  11-3-mechanically-checkable-claims-are-verified-without-an-agent: backlog
+  11-4-judgment-requiring-entries-get-an-evidence-grounded-verdict: backlog
+  11-5-verification-reaches-across-project-boundaries: backlog
+  11-6-near-duplicate-entries-surface-as-one-defect-class: backlog
+  11-7-verification-staleness-surfaces-in-the-ambient-fleet-report: backlog
+  11-8-backlog-intake-surfaces-deferred-entries-during-story-drafting: backlog
+  12-1-the-hygiene-verification-catalog-stays-a-maintained-current-artifact: backlog
+  12-2-the-exemplar-standard-conformance-table-is-refreshed-and-re-verified: backlog
+  12-3-chain-completeness-parses-capability-ids-not-a-bare-substring-match: backlog
+  12-4-dream-chain-gap-count-surfaces-in-the-ambient-attention-block: backlog
+  12-5-the-spec-surface-baseline-write-race-is-closed: backlog
   2-1-atlas-gather-filter-staleness-axis-mcp-first-with-cli-fallback: done
   2-2-cve-and-abandonment-watch-axes: done
   2-3-doctor-monitor-fleet-cli-wiring-default-axis-set-json: done
@@ -57,6 +73,12 @@ development_status:
   9-4-loop-home-staleness-surfaces-in-the-attention-block: backlog
   epic-1: done
   epic-1-retrospective: optional
+  epic-10: backlog
+  epic-10-retrospective: optional
+  epic-11: backlog
+  epic-11-retrospective: optional
+  epic-12: backlog
+  epic-12-retrospective: optional
   epic-2: done
   epic-2-retrospective: optional
   epic-3: done
