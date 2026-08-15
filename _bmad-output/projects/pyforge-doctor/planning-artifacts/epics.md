@@ -988,6 +988,27 @@ from what that sweep actually fixed rather than invented. This is a **definition
 sweep's own success criterion (CAP-8) is stated against warden's classes as a fixture, so
 those classes must be pinned before any sweep can be written against them. **Deps:** —
 
+**Status:** done
+
+**Outcome (2026-08-15).** `pyforge/doctor/hygiene_definitions.py` (new, dependency-free, sibling
+to `models.py`/`verdict.py`/`prescribe.py`, deliberately outside `sources/`) adds
+`HygieneFindingKind` (the closed 5-member enum) and five pure predicates —
+`is_dead_test_scaffolding`, `is_hollow_sprint_status`, `is_readme_placeholder`,
+`is_stale_dream_status`, `is_orphan_file` — each taking only caller-supplied evidence and each
+docstring-cited against the real commit that first fixed a live instance of its class. All five
+cited SHAs verified to exist and match the spec's own summary before any code was written.
+Adversarial review (Blind Hunter + Edge Case Hunter) found and fixed 5 real issues before this
+landed (0 high / 4 medium / 1 low; 10 further findings rejected with recorded rationale, 0
+deferred) — most notably two crash guards (`is_hollow_sprint_status` on `None`/non-dict input
+and a `None`-valued `summary:` key) and an explicit station-relative-path precondition added to
+`is_orphan_file`'s docstring so Story 9.2's gather cannot misuse it. `is_orphan_file` — the one
+class flagged last session as needing extra definitional care — deliberately does **not**
+require a "closed" banner: both real fixtures (`RESUME-EPIC-10.md`'s self-marked banner and a
+bannerless herald intake draft) classify `True` under the same mechanical rule
+(non-conventional name + zero inbound references), an evidence-driven narrowing verified
+against both, not an oversight. 20 new tests, 929 passed / 2 skipped (pre-existing, unrelated)
+in the full suite. No production callers yet — Story 9.2 is this module's first consumer.
+
 ### Story 9.2: The sweep runs against all eight stations
 **Given** the definitions from Story 9.1 **When** the hygiene sweep runs across
 atlas/doctor/herald/marshal/mason/scribe/steward/warden **Then** it reproduces warden's own
