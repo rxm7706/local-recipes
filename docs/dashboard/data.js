@@ -678,12 +678,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "36/41",
+            "37/41",
             "stories complete",
             "var(--done)"
           ],
           [
-            "5",
+            "4",
             "remaining",
             ""
           ]
@@ -723,7 +723,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "8.4"
+        "at": "9.1"
       },
       "epics": [
         {
@@ -954,7 +954,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "8.4",
-              "pending",
+              "done",
               "The baseline re-stamps so a second run is a no-op"
             ]
           ]
@@ -4341,7 +4341,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-15 11:53 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-15 12:47 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6758,7 +6758,7 @@ window.DASHBOARD_DATA = {
           "stories": 12,
           "state": "in-progress",
           "note": "line 2 — consolidative wrap",
-          "done": 36,
+          "done": 37,
           "total": 41
         },
         {
@@ -7130,7 +7130,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "36/41",
+        "progress": "37/41",
         "complete": 14,
         "of": 14
       },
@@ -18561,7 +18561,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "paused 8.4",
+        "line": "paused 9.1",
         "load": 3,
         "blocked": 0,
         "dreams": [
@@ -22159,14 +22159,14 @@ window.DASHBOARD_DATA = {
     "running": [],
     "lastShipped": {
       "station": "doctor",
-      "story": "8.2",
-      "epoch": 1786791637,
-      "sha": "0addcaba5",
-      "subject": "doctor: land Story 8.2 -- sprint ledger, dashboard, epics outcome, spec promotion"
+      "story": "8.3",
+      "epoch": 1786794850,
+      "sha": "f71a381c3",
+      "subject": "doctor: land Story 8.3 -- sprint ledger, dashboard, epics outcome, spec promotion"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-15 11:53 UTC",
-    "generatedEpoch": 1786794827
+    "generatedAt": "2026-08-15 12:47 UTC",
+    "generatedEpoch": 1786798056
   },
   "storySpecs": [
     {
@@ -22177,8 +22177,8 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-doctor",
-      "done": 36,
-      "tracked": 30,
+      "done": 37,
+      "tracked": 31,
       "gap": 6
     },
     {
@@ -22452,14 +22452,13 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md"
           }
         ],
-        "done": 36,
-        "backlog": 5,
+        "done": 37,
+        "backlog": 4,
         "blocked": 0,
         "total": 41,
-        "next": "8-4-the-baseline-re-stamps-so-a-second-run-is-a-no-op",
+        "next": "9-1-the-five-hygiene-finding-classes-get-testable-definitions",
         "blockedKeys": [],
         "backlogKeys": [
-          "8-4-the-baseline-re-stamps-so-a-second-run-is-a-no-op",
           "9-1-the-five-hygiene-finding-classes-get-testable-definitions",
           "9-2-the-sweep-runs-against-all-eight-stations",
           "9-3-hygiene-findings-report-and-never-mutate",
@@ -22528,8 +22527,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 355,
-      "backlog": 68,
+      "done": 356,
+      "backlog": 67,
       "blocked": 1,
       "total": 424
     }
@@ -22550,13 +22549,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "doctor",
         "stories": 41,
-        "done": 36,
+        "done": 37,
         "blocked": 0,
         "epics": 9,
-        "epicsDone": 7,
+        "epicsDone": 8,
         "complete": false,
         "running": false,
-        "projected": 36
+        "projected": 37
       },
       {
         "key": "herald",
@@ -22627,15 +22626,15 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 424,
-      "done": 355,
+      "done": 356,
       "blocked": 1,
       "epics": 85,
-      "epicsDone": 63
+      "epicsDone": 64
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
       "running": [],
-      "projected": 355
+      "projected": 356
     }
   }
 };

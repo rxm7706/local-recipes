@@ -27,12 +27,17 @@ carry no summary collision against that project's own tracked ledger.
 """
 from __future__ import annotations
 
+import json
+import os
 import subprocess
 import sys
 from pathlib import Path
 
+import pytest
+
 REPO_ROOT = Path(__file__).resolve().parents[2]
 PROMOTER = REPO_ROOT / "scripts" / "deferred_work_promote.py"
+BASELINE_SCRIPT = REPO_ROOT / "scripts" / "deferred_work_baseline.py"
 
 sys.path.insert(0, str(REPO_ROOT / "src" / "shared" / "packages" / "pyforge-doctor" / "src"))
 sys.path.insert(0, str(REPO_ROOT / "src" / "shared" / "packages" / "pyforge-core" / "src"))
@@ -172,6 +177,35 @@ def _fixture_repo(tmp_path: Path) -> Path:
     return tmp_path
 
 
+def _patched_baseline_module(repo: Path) -> Path:
+    """A copy of ``deferred_work_baseline.py`` staged into the fixture
+    repo's own ``scripts/`` dir, ``REPO_ROOT``-patched the same way
+    ``_patched_promoter`` patches the promoter itself (Story 8.4).
+
+    The promoter's own ``import deferred_work_baseline`` (module-level,
+    resolved via ``sys.path.insert(0, str(REPO_ROOT / "scripts"))``) needs
+    a same-named sibling file to actually import from a subprocess launched
+    with ``cwd=repo`` and a patched ``REPO_ROOT`` -- and, just as
+    importantly, that sibling's OWN ``REPO_ROOT`` must also point at the
+    fixture repo, or its ``stamp_projects``/``_live_state()`` would read and
+    write the REAL committed ``scripts/.deferred-work-baseline.json``
+    instead of the fixture's. Kept as a same-named file (not renamed, unlike
+    ``test_deferred_work_baseline.py``'s own ``stamper.py``) because the
+    promoter's import statement names it literally."""
+    src = BASELINE_SCRIPT.read_text(encoding="utf-8")
+    marker = "REPO_ROOT = Path(__file__).resolve().parent.parent"
+    assert marker in src, (
+        "REPO_ROOT line not found in scripts/deferred_work_baseline.py -- "
+        "update this test's substitution target, or every test below that "
+        "reaches a successful promotion would silently re-stamp the real "
+        "repo's baseline instead of the fixture's"
+    )
+    src = src.replace(marker, f"REPO_ROOT = Path({str(repo)!r})")
+    dst = repo / "scripts" / "deferred_work_baseline.py"
+    dst.write_text(src, encoding="utf-8")
+    return dst
+
+
 def _patched_promoter(repo: Path) -> Path:
     """A copy of the promoter script rooted at the fixture repo, not this
     one.
@@ -182,7 +216,12 @@ def _patched_promoter(repo: Path) -> Path:
     keep pointing at the REAL repo, and every test below would then run
     against (and mutate) the actual committed ``_bmad-output/projects/``
     tree instead of the tmp_path fixture. Assert the substitution actually
-    fired."""
+    fired.
+
+    Also stages a fixture-patched ``deferred_work_baseline.py`` alongside
+    it (Story 8.4's ``_patched_baseline_module``) -- the promoter now
+    imports that module unconditionally at load time, so every test below
+    needs it present, not just the ones that reach a successful promotion."""
     src = PROMOTER.read_text(encoding="utf-8")
     marker = "REPO_ROOT = Path(__file__).resolve().parent.parent"
     assert marker in src, (
@@ -193,6 +232,7 @@ def _patched_promoter(repo: Path) -> Path:
     src = src.replace(marker, f"REPO_ROOT = Path({str(repo)!r})")
     dst = repo / "scripts" / "promoter.py"
     dst.write_text(src, encoding="utf-8")
+    _patched_baseline_module(repo)
     return dst
 
 
@@ -210,6 +250,17 @@ def _tracked_text(repo: Path, slug: str) -> str | None:
 
 def _tier3_text(repo: Path, slug: str) -> str:
     return (repo / "_bmad-output" / "projects" / slug / TIER3_REL).read_text(encoding="utf-8")
+
+
+def _baseline_path(repo: Path) -> Path:
+    return repo / "scripts" / ".deferred-work-baseline.json"
+
+
+def _baseline(repo: Path) -> dict | None:
+    """The stamped baseline JSON, or ``None`` if it doesn't exist yet --
+    mirrors ``test_deferred_work_baseline.py``'s own ``_baseline`` helper."""
+    p = _baseline_path(repo)
+    return json.loads(p.read_text(encoding="utf-8")) if p.is_file() else None
 
 
 # --- I/O matrix row: clean batch -- N orphans, no collisions, one write ---
@@ -873,3 +924,204 @@ def test_tracked_path_is_a_directory_gets_a_friendly_error(tmp_path: Path):
     assert "IsADirectoryError" not in r.stdout  # the FRIENDLY message, not a raw traceback
 
     assert _tier3_text(repo, "pyforge-doctor") == tier3_before
+
+
+# --- Story 8.4: the baseline re-stamps so a second run is a no-op ---------------
+
+
+def test_successful_promotion_restamps_baseline_and_clears_anonymous_backlog(
+    tmp_path: Path,
+):
+    """The full CAP-6/CAP-7 loop this story closes: after a clean `--fix`
+    promotion, `pyforge-mason`'s grandfather baseline is re-stamped to its
+    current `_anonymous()` count -- and, critically, `chain.py`'s own
+    `_anonymous(t3_path)` sliced from that new count onward is empty, i.e.
+    `tier3-entry-unidentified` would report ZERO findings for this project
+    immediately after (the story's own Acceptance Criteria)."""
+    from pyforge.doctor.sources.chain import _anonymous
+
+    repo = _fixture_repo(tmp_path)
+    promoter = _patched_promoter(repo)
+    assert _baseline(repo) is None
+
+    r = _run(promoter, repo, "--project", "mason")
+    assert r.returncode == 0, r.stderr
+    assert "promoted 2 orphan(s)" in r.stdout
+
+    baseline = _baseline(repo)
+    assert baseline is not None
+
+    tier3_path = repo / "_bmad-output" / "projects" / "pyforge-mason" / TIER3_REL
+    anon_positions = _anonymous(tier3_path)
+    new_count = baseline["pyforge-mason"]
+    assert new_count == len(anon_positions)
+    assert anon_positions[new_count:] == [], (
+        "tier3-entry-unidentified would still report findings for "
+        "pyforge-mason immediately after a clean --fix promotion"
+    )
+
+
+def test_no_orphans_project_leaves_baseline_absent(tmp_path: Path):
+    """`--fix` finding 0 orphans for a project must never touch its
+    baseline -- re-grandfathering a genuinely still-open backlog that was
+    never actually promoted would hide real findings."""
+    repo = _fixture_repo(tmp_path)
+    herald = repo / "_bmad-output" / "projects" / "pyforge-herald"
+    _write_tier3(
+        herald,
+        "### DW-9-1: already identified, nothing to promote\n\n"
+        "- source_spec: `spec-9-1-fixture.md`\n"
+        "  summary: already has an id.\n"
+        "  evidence: fixture.\n"
+        "  status: open\n",
+    )
+    promoter = _patched_promoter(repo)
+    assert _baseline(repo) is None
+
+    r = _run(promoter, repo, "--project", "herald")
+    assert r.returncode == 0, r.stderr
+    assert "no orphans to promote" in r.stdout
+    assert _baseline(repo) is None
+
+
+def test_no_orphans_project_leaves_an_existing_baseline_byte_identical(tmp_path: Path):
+    """Same guarantee as above, but against an ALREADY-stamped baseline
+    (from a sibling project's own clean promotion) -- proves byte-identical
+    preservation, not merely "still absent"."""
+    repo = _fixture_repo(tmp_path)
+    herald = repo / "_bmad-output" / "projects" / "pyforge-herald"
+    _write_tier3(
+        herald,
+        "### DW-9-1: already identified, nothing to promote\n\n"
+        "- source_spec: `spec-9-1-fixture.md`\n"
+        "  summary: already has an id.\n"
+        "  evidence: fixture.\n"
+        "  status: open\n",
+    )
+    promoter = _patched_promoter(repo)
+
+    r0 = _run(promoter, repo, "--project", "doctor")
+    assert r0.returncode == 0, r0.stderr
+    before = _baseline_path(repo).read_bytes()
+
+    r = _run(promoter, repo, "--project", "herald")
+    assert r.returncode == 0, r.stderr
+    assert "no orphans to promote" in r.stdout
+    assert _baseline_path(repo).read_bytes() == before
+    assert "pyforge-herald" not in _baseline(repo)
+
+
+def test_collision_aborted_project_leaves_baseline_byte_identical(tmp_path: Path):
+    """A batch that ABORTS on a collision must leave the baseline
+    byte-identical -- no findings silently hidden for backlog that was
+    never actually promoted (the story's own third Acceptance Criterion)."""
+    repo = _fixture_repo(tmp_path)
+    mason = repo / "_bmad-output" / "projects" / "pyforge-mason"
+    _write_tier3(mason, _DUP_SUMMARY_A + "\n" + _DUP_SUMMARY_B)
+    promoter = _patched_promoter(repo)
+
+    # Seed an existing baseline via doctor's own clean promotion, so this
+    # proves the mason collision leaves the FILE byte-identical, not merely
+    # "still absent".
+    r0 = _run(promoter, repo, "--project", "doctor")
+    assert r0.returncode == 0, r0.stderr
+    before = _baseline_path(repo).read_bytes()
+
+    r = _run(promoter, repo, "--project", "mason")
+    assert r.returncode != 0
+    assert "mason: ABORTED" in r.stdout
+
+    assert _baseline_path(repo).read_bytes() == before
+    assert "pyforge-mason" not in _baseline(repo)
+
+
+def test_second_fix_run_against_the_same_fixture_is_a_true_noop(tmp_path: Path):
+    """Running `--fix` twice in a row against the SAME (untouched) Tier-3
+    content: the second run makes 0 new ledger writes (Story 8.3's own
+    duplicate-summary collision guard fires, since the first run's
+    promotions are now in the tracked ledger) AND 0 baseline writes
+    (nothing newly promoted the second time) -- confirmed byte-identical
+    on BOTH files across the two runs."""
+    repo = _fixture_repo(tmp_path)
+    promoter = _patched_promoter(repo)
+
+    r1 = _run(promoter, repo)  # bare --fix: both mason and doctor discovered
+    assert r1.returncode == 0, r1.stderr
+    assert "mason: promoted 2 orphan(s)" in r1.stdout
+    assert "doctor: promoted 1 orphan(s)" in r1.stdout
+
+    mason_tracked_after_1 = _tracked_text(repo, "pyforge-mason")
+    doctor_tracked_after_1 = _tracked_text(repo, "pyforge-doctor")
+    tier3_mason_after_1 = _tier3_text(repo, "pyforge-mason")
+    tier3_doctor_after_1 = _tier3_text(repo, "pyforge-doctor")
+    baseline_after_1 = _baseline_path(repo).read_bytes()
+
+    # Content-correctness for a MULTI-project single-invocation restamp
+    # (Review Triage Log 2026-08-15, item 8): two sequential read-merge-
+    # write cycles against the shared baseline file in one bare --fix run
+    # -- exactly what this real, unscoped invocation just did. Both
+    # fixtures' Tier-3 bodies carry no headings of their own, so every
+    # bullet in each is anonymous: 2 for mason (_REAL_ORPHAN_A +
+    # _REAL_ORPHAN_B), 1 for doctor (_REAL_ORPHAN_C) -- matching the
+    # "promoted N orphan(s)" counts already asserted above.
+    assert json.loads(baseline_after_1) == {"pyforge-mason": 2, "pyforge-doctor": 1}
+
+    r2 = _run(promoter, repo)
+    # Both projects' re-classified orphans now share a summary with their
+    # own just-promoted tracked twin -- the batch correctly aborts.
+    assert r2.returncode != 0
+    assert "mason: ABORTED" in r2.stdout
+    assert "doctor: ABORTED" in r2.stdout
+
+    assert _tracked_text(repo, "pyforge-mason") == mason_tracked_after_1
+    assert _tracked_text(repo, "pyforge-doctor") == doctor_tracked_after_1
+    assert _tier3_text(repo, "pyforge-mason") == tier3_mason_after_1
+    assert _tier3_text(repo, "pyforge-doctor") == tier3_doctor_after_1
+    assert _baseline_path(repo).read_bytes() == baseline_after_1, (
+        "the second run wrote to the baseline despite promoting nothing new"
+    )
+
+
+@pytest.mark.skipif(
+    hasattr(os, "geteuid") and os.geteuid() == 0,
+    reason="root bypasses permission checks -- chmod(0o555) would not "
+           "actually block the write this test exercises",
+)
+def test_baseline_write_failure_after_successful_ledger_write_is_a_separate_warning(
+    tmp_path: Path,
+):
+    """Simulated baseline-write failure (Story 8.4's "Block If"): a
+    read-only `scripts/` parent directory blocks CREATING the baseline
+    file. The ledger promotion must still be reported SUCCESSFUL -- never
+    rolled back, never reclassified as a failure -- with a separate,
+    clearly-labeled warning naming the manual fallback command. The overall
+    exit code is still non-zero, though (Review Triage Log 2026-08-15, item
+    2): a caller checking only the exit code must still learn the manual
+    fallback is needed, even though this project's own status is
+    "promoted", not "aborted"."""
+    repo = _fixture_repo(tmp_path)
+    promoter = _patched_promoter(repo)
+    scripts_dir = repo / "scripts"
+
+    scripts_dir.chmod(0o555)
+    try:
+        r = _run(promoter, repo, "--project", "doctor")
+    finally:
+        scripts_dir.chmod(0o755)
+
+    assert r.returncode != 0, (
+        "a baseline re-stamp warning must make the overall exit code "
+        "non-zero even though the ledger promotion itself succeeded"
+    )
+    assert "doctor: promoted 1 orphan(s)" in r.stdout
+    assert "WARNING: baseline re-stamp failed" in r.stdout
+    assert "PermissionError" in r.stdout
+    assert "could not write:" in r.stdout
+    assert (
+        "python scripts/deferred_work_baseline.py --write-baseline "
+        "--project pyforge-doctor" in r.stdout
+    )
+
+    tracked = _tracked_text(repo, "pyforge-doctor")
+    assert tracked is not None
+    assert not (repo / "scripts" / ".deferred-work-baseline.json").exists()
