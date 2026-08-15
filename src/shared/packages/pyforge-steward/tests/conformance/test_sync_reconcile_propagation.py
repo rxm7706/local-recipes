@@ -16,14 +16,17 @@ from pyforge.steward.keys import HostScopedCredential
 from pyforge.steward.sync import (
     SyncAPIError,
     SyncConfig,
+    SyncMultipleAssigneesError,
     TransportResponse,
     _parse_baseline,
+    _parse_content,
     get_jira_issue,
     github_graphql_request,
     list_linked_github_items,
     reconcile,
     reconcile_schedule_batch,
     transition_jira_issue,
+    update_github_assignees,
 )
 
 _GITHUB_GRAPHQL_URL = "https://api.github.com/graphql"
@@ -50,6 +53,21 @@ CONFIG_JIRA_WINS = SyncConfig(
     **{**CONFIG.__dict__, "field_overrides": {"status": "jira"}}
 )
 
+# Story 8.7: github login -> jira accountId, covering this file's assignee
+# fixture vocabulary. "ghost"/"acc_ghost" are deliberately absent -- the
+# dedicated unmapped-assignee tests below rely on that.
+CONFIG_USER_MAPPING = SyncConfig(
+    **{**CONFIG.__dict__, "user_mapping": {"octocat": "acc_octocat", "hubot": "acc_hubot"}}
+)
+
+# An IDENTITY user_mapping (github login string == jira accountId string) --
+# isolates the assignee convergence-check test from translation noise, the
+# same technique CONFIG's own identity status_mapping already uses for the
+# symmetric status convergence tests.
+CONFIG_USER_MAPPING_IDENTITY = SyncConfig(
+    **{**CONFIG.__dict__, "user_mapping": {"octocat": "octocat", "hubot": "hubot"}}
+)
+
 
 class FakeTransport:
     """Routes GitHub GraphQL POSTs and Jira REST calls against small,
@@ -63,12 +81,24 @@ class FakeTransport:
         *,
         github_item_id: str = "ITEM_1",
         github_fields: dict[str, str] | None = None,
+        github_content: dict[str, object] | None = None,
+        github_content_unreadable: bool = False,
         jira_issue_key: str = "PROJ-1",
         jira_fields: dict[str, object] | None = None,
         jira_transitions: list[dict[str, object]] | None = None,
     ) -> None:
         self.github_item_id = github_item_id
         self.github_fields: dict[str, str] = dict(github_fields or {})
+        # Story 8.7: the `content` fragment (assignees/repository/number) --
+        # `None` (the default, every pre-8.7 fixture) reads as "no content"
+        # KEY ABSENT, matching a DraftIssue exactly (both parse to
+        # assignee=None, content_ref=None, assignee_unknown=False).
+        self.github_content = github_content
+        # RESOLVED 2026-08-15 (escalation, finding 3): distinct from the
+        # above -- an explicit `content: null` (a partial-response
+        # signature, e.g. a permission gap), which reads as UNKNOWN, never
+        # a confident "no assignee".
+        self.github_content_unreadable = github_content_unreadable
         self.jira_issue_key = jira_issue_key
         self.jira_fields: dict[str, object] = dict(jira_fields or {})
         self.jira_transitions = jira_transitions or []
@@ -82,6 +112,8 @@ class FakeTransport:
 
         if url == _GITHUB_GRAPHQL_URL:
             return self._github(body)
+        if url.startswith("https://api.github.com/repos/"):
+            return self._github_rest_assignees(method, url, body)
         return self._jira(method, url, body)
 
     # -- GitHub GraphQL ------------------------------------------------
@@ -108,8 +140,44 @@ class FakeTransport:
                 ]
             },
         }
+        if self.github_content_unreadable:
+            node["content"] = None
+        elif self.github_content is not None:
+            node["content"] = self.github_content
         payload = {"data": {"node": node}}
         return TransportResponse(status=200, body=json.dumps(payload).encode())
+
+    # -- GitHub REST v3 (Story 8.7: assignee writes only) -----------------
+
+    def _github_rest_assignees(
+        self, method: str, url: str, body: dict[str, object] | None
+    ) -> TransportResponse:
+        """Distinct from `_jira` (Story 8.7: both are non-GraphQL HTTP
+        calls, routed by URL host/path in `__call__` above, never
+        conflated). Records the call (already done in `__call__`) and
+        reports success.
+
+        The write is APPLIED to `github_content["assignees"]["nodes"]`
+        (review pass 2): asserting only on the requests issued cannot
+        distinguish "assigned the right person" from "POSTed then DELETEd
+        the same login and left the item unassigned" -- the two are the
+        same request list. Tests that care about the resulting state read
+        `_github_assignees(transport)`; tests that care about the calls are
+        unaffected, since applying the write changes no recorded call."""
+        if method not in ("POST", "DELETE"):
+            raise AssertionError(f"FakeTransport: unexpected github REST call {method} {url}")
+        if self.github_content is not None:
+            logins = [
+                node["login"]
+                for node in ((self.github_content.get("assignees") or {}).get("nodes") or [])
+            ]
+            for login in (body or {}).get("assignees", []):
+                if method == "POST" and login not in logins:
+                    logins.append(login)
+                elif method == "DELETE" and login in logins:
+                    logins.remove(login)
+            self.github_content["assignees"] = {"nodes": [{"login": login} for login in logins]}
+        return TransportResponse(status=200, body=b"{}")
 
     # -- Jira REST v3 ----------------------------------------------------
 
@@ -134,13 +202,15 @@ class FakeTransport:
 
     def write_calls(self) -> list[dict[str, object]]:
         """Every call that mutated state: a GitHub field write (has
-        `fieldId` in its GraphQL variables), a Jira transition POST, or a
-        Jira PUT."""
+        `fieldId` in its GraphQL variables), a GitHub REST assignee
+        POST/DELETE, a Jira transition POST, or a Jira PUT."""
         writes = []
         for call in self.calls:
             if call["url"] == _GITHUB_GRAPHQL_URL:
                 if "fieldId" in call["body"]["variables"]:
                     writes.append(call)
+            elif call["url"].startswith("https://api.github.com/repos/"):
+                writes.append(call)
             elif call["method"] in ("POST", "PUT"):
                 writes.append(call)
         return writes
@@ -206,8 +276,8 @@ def test_github_changed_jira_did_not_pushes_to_jira_and_refreshes_both_baselines
     assert result.ok is True
     assert result.details["decision"] == "push_to_jira"
     assert _jira_status(transport) == "In Progress"
-    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "In Progress"}
-    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "In Progress"}
+    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "In Progress", "assignee": None}
+    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "In Progress", "assignee": None}
 
 
 # ── Row: Jira changed, GH didn't -> GH item field updated, both baselines refreshed ──
@@ -232,8 +302,8 @@ def test_jira_changed_github_did_not_pushes_to_github_and_refreshes_both_baselin
     assert result.ok is True
     assert result.details["decision"] == "push_to_github"
     assert transport.github_fields["gh_status"] == "In Progress"
-    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "In Progress"}
-    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "In Progress"}
+    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "In Progress", "assignee": None}
+    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "In Progress", "assignee": None}
 
 
 # ── Row (Story 8.6, AD-6/CAP-5): a mapped Jira status translates before writing to GitHub ──
@@ -267,8 +337,8 @@ def test_mapped_jira_status_translates_before_writing_to_github():
     assert result.ok is True
     assert result.details["decision"] == "push_to_github"
     assert transport.github_fields["gh_status"] == "Done"
-    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "Done"}
-    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "Closed"}
+    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "Done", "assignee": None}
+    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "Closed", "assignee": None}
     # `result.details["baseline"]` must mirror the actually-written (translated)
     # GH value, never the raw pre-translation `target_value` -- a caller reading
     # the returned details, not the transport, must see the same truth.
@@ -355,12 +425,14 @@ def test_neither_changed_is_a_no_op_with_zero_writes():
         github_fields={
             "gh_link": "PROJ-1",
             "gh_status": "In Progress",
-            "gh_baseline": '{"status": "In Progress"}',  # matches current -- unchanged
+            # this pair has already synced once post-upgrade -- both fields
+            # present in the baseline, matching current -- unchanged
+            "gh_baseline": '{"status": "In Progress", "assignee": null}',
         },
         jira_fields={
             "status": {"name": "In Progress"},
             "jira_link": "ITEM_1",
-            "jira_baseline": '{"status": "In Progress"}',  # matches current -- unchanged
+            "jira_baseline": '{"status": "In Progress", "assignee": null}',  # matches current -- unchanged
         },
     )
 
@@ -493,8 +565,8 @@ def test_first_link_no_baseline_and_differing_values_ad4_decides_and_writes_both
     assert result.ok is True
     assert result.details["decision"] == "push_to_jira"
     assert _jira_status(transport) == "In Progress"
-    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "In Progress"}
-    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "In Progress"}
+    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "In Progress", "assignee": None}
+    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "In Progress", "assignee": None}
 
 
 def test_first_link_no_baseline_and_matching_values_is_a_no_op_but_still_writes_both_baselines():
@@ -519,8 +591,8 @@ def test_first_link_no_baseline_and_matching_values_is_a_no_op_but_still_writes_
     assert result.ok is True
     assert result.details["decision"] == "no_op"
     assert _status_push_calls(transport) == []
-    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "In Progress"}
-    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "In Progress"}
+    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "In Progress", "assignee": None}
+    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "In Progress", "assignee": None}
 
 
 # ── Row: field cleared on one side (explicit null CURRENT value, not the baseline) ──
@@ -559,8 +631,8 @@ def test_field_cleared_on_jira_side_is_a_genuine_change_pushed_to_github():
     assert result.details["target_value"] is None
     assert transport.github_fields["gh_status"] is None
     assert not any(c["url"].endswith("/transitions") for c in transport.calls)
-    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": None}
-    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": None}
+    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": None, "assignee": None}
+    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": None, "assignee": None}
 
 
 # ── Row: baseline exceeds the vendor field-size ceiling -> named failure, not a sidecar ──
@@ -642,8 +714,8 @@ def test_both_diverged_to_the_same_value_is_a_no_op_but_still_refreshes_baseline
     assert result.details["decision"] == "no_op"
     assert _status_push_calls(transport) == []  # no push write to either side's tracked field
     assert len(_baseline_write_calls(transport)) == 2  # both baselines still refreshed
-    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "Blocked"}
-    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "Blocked"}
+    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "Blocked", "assignee": None}
+    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "Blocked", "assignee": None}
 
 
 def test_both_diverged_to_the_same_value_short_circuits_even_with_jira_wins_override():
@@ -856,6 +928,882 @@ def test_parse_baseline_rejects_a_falsy_non_string_value_instead_of_treating_it_
         _parse_baseline(0, side="jira issue", identifier="PROJ-1")
     with pytest.raises(SyncAPIError, match="malformed baseline field"):
         _parse_baseline(False, side="jira issue", identifier="PROJ-1")
+
+
+# ── Epic 8 Story 8.7: assignee and identity-link propagation ───────────────
+#
+# Assignee follows status's exact per-field baseline/AD-4 decision shape,
+# translated through `user_mapping` (push_to_jira) or its computed inverse
+# (push_to_github). Every fixture below sets both sides' baselines to an
+# explicit `"assignee": null` UNLESS the test is specifically about a
+# pre-8.7 pair's missing "assignee" key (the adoption/accepted-limitation
+# tests) -- an explicit null means "already observed, currently unassigned",
+# isolating each test to the ONE thing it's about.
+
+
+def _github_assignee_rest_calls(transport: FakeTransport) -> list[dict[str, object]]:
+    return [call for call in transport.calls if call["url"].endswith("/assignees")]
+
+
+def _github_assignees(transport: FakeTransport) -> list[str]:
+    """GitHub's RESULTING assignee logins, after the fake applied every
+    REST write (review pass 2) -- the end state, as opposed to the requests
+    that produced it."""
+    content = transport.github_content or {}
+    return [node["login"] for node in ((content.get("assignees") or {}).get("nodes") or [])]
+
+
+def test_assignee_changed_on_github_only_translates_and_pushes_to_jira():
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "To Do",
+            "gh_baseline": '{"status": "To Do", "assignee": null}',
+        },
+        github_content={
+            "number": 42,
+            "assignees": {"nodes": [{"login": "octocat"}]},
+            "repository": {"owner": {"login": "acme"}, "name": "widgets"},
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do", "assignee": null}',
+        },
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG_USER_MAPPING, transport=transport)
+
+    assert result.ok is True
+    assert result.details["decision"] == "no_op"  # status untouched -- isolates the assertion
+    assert result.details["assignee"] == {
+        "decision": "push_to_jira",
+        "target_value": "octocat",
+        # written_value mirrors the actually-persisted (translated) value --
+        # never the raw pre-translation login.
+        "written_value": "acc_octocat",
+    }
+    assert transport.jira_fields["assignee"] == {"accountId": "acc_octocat"}
+    assert _github_assignee_rest_calls(transport) == []  # GH's own value was the source, never written
+    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "To Do", "assignee": "octocat"}
+    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "To Do", "assignee": "acc_octocat"}
+
+
+def test_assignee_changed_on_jira_only_translates_and_pushes_to_github():
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "To Do",
+            "gh_baseline": '{"status": "To Do", "assignee": null}',
+        },
+        github_content={
+            "number": 42,
+            "assignees": {"nodes": []},
+            "repository": {"owner": {"login": "acme"}, "name": "widgets"},
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            "assignee": {"accountId": "acc_octocat"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do", "assignee": null}',
+        },
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG_USER_MAPPING, transport=transport)
+
+    assert result.ok is True
+    assert result.details["assignee"] == {
+        "decision": "push_to_github",
+        "target_value": "acc_octocat",
+        # written_value mirrors the actually-persisted (translated) value --
+        # never the raw pre-translation accountId.
+        "written_value": "octocat",
+    }
+    rest_calls = _github_assignee_rest_calls(transport)
+    assert len(rest_calls) == 1
+    assert rest_calls[0]["url"] == "https://api.github.com/repos/acme/widgets/issues/42/assignees"
+    assert rest_calls[0]["method"] == "POST"
+    assert rest_calls[0]["body"] == {"assignees": ["octocat"]}
+    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "To Do", "assignee": "octocat"}
+    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "To Do", "assignee": "acc_octocat"}
+
+
+def test_unmapped_github_login_pushed_to_jira_is_a_named_failure_not_a_passthrough():
+    """AD-6/CAP-5's mirror for assignee: an unmapped value crossing into
+    Jira is a hard, named failure, never a phantom passthrough. No write
+    happens to either side (mirrors
+    `test_unmapped_jira_status_pushed_to_github_is_a_named_failure_not_a_passthrough`'s
+    assertion shape for the symmetric field)."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "To Do",
+            "gh_baseline": '{"status": "To Do", "assignee": null}',
+        },
+        github_content={
+            "number": 42,
+            "assignees": {"nodes": [{"login": "unknown_user"}]},
+            "repository": {"owner": {"login": "acme"}, "name": "widgets"},
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do", "assignee": null}',
+        },
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG_USER_MAPPING, transport=transport)
+
+    assert result.ok is False
+    assert "unmapped: github login 'unknown_user' has no user_mapping entry for jira" in result.summary
+    assert transport.write_calls() == []
+    assert transport.github_fields["gh_baseline"] == '{"status": "To Do", "assignee": null}'
+    assert transport.jira_fields["jira_baseline"] == '{"status": "To Do", "assignee": null}'
+
+
+def test_unmapped_jira_account_id_pushed_to_github_is_a_named_failure_not_a_passthrough():
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "To Do",
+            "gh_baseline": '{"status": "To Do", "assignee": null}',
+        },
+        github_content={
+            "number": 42,
+            "assignees": {"nodes": []},
+            "repository": {"owner": {"login": "acme"}, "name": "widgets"},
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            "assignee": {"accountId": "acc_unknown"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do", "assignee": null}',
+        },
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG_USER_MAPPING, transport=transport)
+
+    assert result.ok is False
+    assert "unmapped: jira accountId 'acc_unknown' has no user_mapping entry for github" in result.summary
+    assert transport.write_calls() == []
+
+
+def test_assignee_explicitly_cleared_on_github_bypasses_translation_and_clears_jira():
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "To Do",
+            "gh_baseline": '{"status": "To Do", "assignee": "octocat"}',
+        },
+        github_content={
+            "number": 42,
+            "assignees": {"nodes": []},  # cleared
+            "repository": {"owner": {"login": "acme"}, "name": "widgets"},
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            "assignee": {"accountId": "acc_octocat"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do", "assignee": "acc_octocat"}',
+        },
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG_USER_MAPPING, transport=transport)
+
+    assert result.ok is True
+    assert result.details["assignee"] == {
+        "decision": "push_to_jira",
+        "target_value": None,
+        "written_value": None,
+    }
+    assert transport.jira_fields["assignee"] is None
+    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "To Do", "assignee": None}
+    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "To Do", "assignee": None}
+
+
+def test_assignee_explicitly_cleared_on_jira_bypasses_translation_and_removes_only_the_tracked_github_login():
+    """The GitHub-side mirror: only the PREVIOUSLY-tracked login is removed
+    (Boundaries & Constraints, 'never touch an assignee this module didn't
+    itself add') -- never a blind wipe of whatever GitHub currently shows."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "To Do",
+            "gh_baseline": '{"status": "To Do", "assignee": "octocat"}',
+        },
+        github_content={
+            "number": 42,
+            "assignees": {"nodes": [{"login": "octocat"}]},
+            "repository": {"owner": {"login": "acme"}, "name": "widgets"},
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            # no "assignee" key -> reads as None (cleared)
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do", "assignee": "acc_octocat"}',
+        },
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG_USER_MAPPING, transport=transport)
+
+    assert result.ok is True
+    assert result.details["assignee"] == {
+        "decision": "push_to_github",
+        "target_value": None,
+        "written_value": None,
+    }
+    rest_calls = _github_assignee_rest_calls(transport)
+    assert len(rest_calls) == 1
+    assert rest_calls[0]["method"] == "DELETE"
+    assert rest_calls[0]["body"] == {"assignees": ["octocat"]}
+    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "To Do", "assignee": None}
+    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "To Do", "assignee": None}
+
+
+def test_assignee_push_to_a_draft_issue_content_is_a_named_failure_never_a_guess():
+    """`content_ref is None` (a DraftIssue, or absent content) has no
+    owner/repo/number to target -- raises SyncAPIError naming the item,
+    never guesses. No write attempted to any side."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "To Do",
+            "gh_baseline": '{"status": "To Do", "assignee": null}',
+        },
+        github_content={},  # DraftIssue (or absent) -- no owner/repo/number
+        jira_fields={
+            "status": {"name": "To Do"},
+            "assignee": {"accountId": "acc_octocat"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do", "assignee": null}',
+        },
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG_USER_MAPPING, transport=transport)
+
+    assert result.ok is False
+    assert "cannot write assignee" in result.summary
+    assert "draft issue" in result.summary
+    assert "ITEM_1" in result.summary
+    assert transport.write_calls() == []
+
+
+def test_pre_8_7_pair_assignees_already_agree_is_a_true_no_op_with_zero_writes():
+    """Design Notes' accepted-limitation row: an established pair (baseline
+    has 'status' only, no 'assignee' key) whose GitHub/Jira assignees
+    already happen to agree (both None here, no content configured) must
+    not spuriously backfill -- the missing key is silently adopted, without
+    comparison, and the call remains a true, zero-write no-op."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "In Progress",
+            "gh_baseline": '{"status": "In Progress"}',  # no "assignee" key -- pre-8.7
+        },
+        jira_fields={
+            "status": {"name": "In Progress"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "In Progress"}',  # no "assignee" key -- pre-8.7
+        },
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
+
+    assert result.ok is True
+    assert result.details["decision"] == "no_op"
+    assert result.details["assignee"]["decision"] == "no_op"
+    assert transport.write_calls() == []
+
+
+def test_pre_8_7_pair_assignees_already_disagree_is_resolved_via_ad4():
+    """RESOLVED 2026-08-15 (escalation, finding 1, decision (b)): a
+    pre-existing real-world assignee mismatch (GitHub says 'octocat', Jira
+    says hubot's accountId) observed for the first time on an established
+    pair's post-upgrade reconcile is now a real first-sync AD-4 decision
+    for the assignee field alone -- GitHub wins by default -- exactly one
+    write, never the prior design's silent, un-compared, permanently-inert
+    adoption."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "In Progress",
+            "gh_baseline": '{"status": "In Progress"}',  # no "assignee" key -- pre-8.7
+        },
+        github_content={
+            "number": 42,
+            "assignees": {"nodes": [{"login": "octocat"}]},
+            "repository": {"owner": {"login": "acme"}, "name": "widgets"},
+        },
+        jira_fields={
+            "status": {"name": "In Progress"},
+            "assignee": {"accountId": "acc_hubot"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "In Progress"}',  # no "assignee" key -- pre-8.7
+        },
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG_USER_MAPPING, transport=transport)
+
+    assert result.ok is True
+    assert result.details["decision"] == "no_op"  # status itself did not change
+    assert result.details["assignee"]["decision"] == "push_to_jira"  # GitHub wins by default
+    assert result.details["assignee"]["written_value"] == "acc_octocat"
+    assert len(transport.write_calls()) > 0
+
+
+def test_identity_link_missing_on_jira_side_is_self_healed_without_touching_baseline():
+    """The literal AF-5 gap: GitHub's link field already names the Jira
+    issue, but Jira's OWN link field was never written back. Previously a
+    hard `SyncUnlinkedError`; now a silent, unconditional repair -- no
+    human action, and never routed through the baseline (Boundaries &
+    Constraints)."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "To Do",
+            "gh_baseline": '{"status": "To Do", "assignee": null}',
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            # no "jira_link" entry at all -> reads as unset
+            "jira_baseline": '{"status": "To Do", "assignee": null}',
+        },
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
+
+    assert result.ok is True
+    assert result.details["link_repairs"] == ["jira"]
+    assert transport.jira_fields["jira_link"] == "ITEM_1"
+    # never baselined -- status/assignee both stayed converged, so no
+    # baseline write was triggered by the link repair alone.
+    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "To Do", "assignee": None}
+    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "To Do", "assignee": None}
+
+
+# ── Story 8.7 retro: adversarial-review-confirmed fixes ────────────────────
+
+
+def test_assignee_both_diverged_to_the_same_translated_value_is_a_no_op_but_still_refreshes_baselines():
+    """Assignee's own analog of `test_both_diverged_to_the_same_value_is_a_
+    no_op_but_still_refreshes_baselines` for status: an established pair
+    where BOTH sides' assignee changed relative to their own stale
+    baseline, but the two sides' CURRENT values already agree once
+    translated (an identity user_mapping isolates this from translation
+    noise, mirroring CONFIG's own identity status_mapping) -- no push is
+    needed, but both baselines are still stale relative to their OWN prior
+    value and must be refreshed."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "To Do",
+            "gh_baseline": '{"status": "To Do", "assignee": "hubot"}',  # stale -- gh_assignee_changed
+        },
+        github_content={
+            "number": 42,
+            "assignees": {"nodes": [{"login": "octocat"}]},
+            "repository": {"owner": {"login": "acme"}, "name": "widgets"},
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            "assignee": {"accountId": "octocat"},  # already matches gh's NEW value (identity-mapped)
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do", "assignee": "hubot"}',  # stale -- jira_assignee_changed
+        },
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG_USER_MAPPING_IDENTITY, transport=transport)
+
+    assert result.ok is True
+    assert result.details["decision"] == "no_op"  # status untouched -- isolates the assertion
+    assert result.details["assignee"]["decision"] == "no_op"
+    assert _github_assignee_rest_calls(transport) == []  # no push write to either side's assignee field
+    assert len(_baseline_write_calls(transport)) == 2  # both baselines still refreshed
+    assert json.loads(transport.github_fields["gh_baseline"]) == {"status": "To Do", "assignee": "octocat"}
+    assert json.loads(transport.jira_fields["jira_baseline"]) == {"status": "To Do", "assignee": "octocat"}
+
+
+def test_update_github_assignees_non_2xx_response_is_a_named_failure():
+    """A non-2xx/3xx response from GitHub's REST assignees endpoint must
+    raise SyncAPIError, surfaced by `reconcile` as a named ok=False
+    failure -- never swallowed or treated as success."""
+    inner = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "To Do",
+            "gh_baseline": '{"status": "To Do", "assignee": null}',
+        },
+        github_content={
+            "number": 42,
+            "assignees": {"nodes": []},
+            "repository": {"owner": {"login": "acme"}, "name": "widgets"},
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            "assignee": {"accountId": "acc_octocat"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do", "assignee": null}',
+        },
+    )
+
+    def failing_transport(request: urllib.request.Request) -> TransportResponse:
+        if request.full_url.endswith("/assignees"):
+            return TransportResponse(status=422, body=b'{"message": "Validation Failed"}')
+        return inner(request)
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG_USER_MAPPING, transport=failing_transport)
+
+    assert result.ok is False
+    assert "add assignee" in result.summary
+    assert "422" in result.summary
+
+
+def test_status_push_commits_and_baselines_even_when_assignee_fails_in_the_same_call():
+    """Fix (review-confirmed): a LATER field's write failure must not
+    strand an EARLIER field's already-successful write's baseline forever.
+    Status changes and successfully pushes to Jira; assignee's own login
+    ('unknown_user') has no `user_mapping` entry and fails. Status's push
+    already committed live and its baseline gets recorded despite the
+    later failure; the overall result is still ok=False, naming the
+    unmapped-assignee failure."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "In Progress",
+            "gh_baseline": '{"status": "To Do", "assignee": null}',  # stale status -- gh_changed
+        },
+        github_content={
+            "number": 42,
+            "assignees": {"nodes": [{"login": "unknown_user"}]},
+            "repository": {"owner": {"login": "acme"}, "name": "widgets"},
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do", "assignee": null}',  # unchanged
+        },
+        jira_transitions=[{"id": "31", "to": {"name": "In Progress"}}],
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG_USER_MAPPING, transport=transport)
+
+    assert result.ok is False
+    assert "unmapped: github login 'unknown_user' has no user_mapping entry for jira" in result.summary
+    # status's push already committed live...
+    assert _jira_status(transport) == "In Progress"
+    # ...and its baseline got recorded despite the later assignee failure
+    assert json.loads(transport.github_fields["gh_baseline"])["status"] == "In Progress"
+    assert json.loads(transport.jira_fields["jira_baseline"])["status"] == "In Progress"
+    # assignee's own baseline stays untouched -- the failed field is never
+    # falsely marked converged, so it's correctly retried next time
+    assert json.loads(transport.github_fields["gh_baseline"])["assignee"] is None
+    assert json.loads(transport.jira_fields["jira_baseline"])["assignee"] is None
+
+
+def test_assignee_established_side_is_not_silently_overwritten_by_a_wholly_empty_baseline_side():
+    """Fix (review-confirmed, AD-10 rule 1 read at the PAIR level): GitHub's
+    baseline is non-empty (an established pair predating this story) but
+    has no "assignee" key yet; Jira's baseline is WHOLLY empty (`{}` --
+    reachable via the accepted partial-baseline-write-failure precedent,
+    e.g. a first reconcile where GH's baseline write succeeded but Jira's
+    failed). Before the fix, GH's side (non-empty) would silently ADOPT its
+    own current value with no comparison while Jira's side (wholly empty)
+    underwent a genuine but essentially-arbitrary AD-4 decision -- and the
+    resulting "jira changed, gh unchanged" outcome would silently overwrite
+    GH's real, established assignee with Jira's unrelated current value.
+    After the fix, a wholly-empty baseline on EITHER side makes this a
+    genuine AD-4 conflict decision for BOTH sides -- GitHub's established
+    value wins by default authority instead of being clobbered."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "In Progress",
+            "gh_baseline": '{"status": "In Progress"}',  # non-empty, established; no "assignee" key
+        },
+        github_content={
+            "number": 42,
+            "assignees": {"nodes": [{"login": "octocat"}]},  # GH's real, established assignee
+            "repository": {"owner": {"login": "acme"}, "name": "widgets"},
+        },
+        jira_fields={
+            "status": {"name": "In Progress"},
+            "assignee": {"accountId": "acc_hubot"},  # jira's own unrelated current value
+            "jira_link": "ITEM_1",
+            # no "jira_baseline" entry at all -> {} (wholly empty)
+        },
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG_USER_MAPPING, transport=transport)
+
+    assert result.ok is True
+    # A genuine, consistent AD-4 decision for BOTH sides -- GitHub's
+    # ESTABLISHED assignee wins by default authority rather than being
+    # silently overwritten by Jira's essentially-arbitrary current value.
+    assert result.details["assignee"]["decision"] == "push_to_jira"
+    assert transport.jira_fields["assignee"] == {"accountId": "acc_octocat"}
+    assert json.loads(transport.github_fields["gh_baseline"])["assignee"] == "octocat"
+    assert json.loads(transport.jira_fields["jira_baseline"])["assignee"] == "acc_octocat"
+
+
+def test_update_github_assignees_adds_before_removing_when_swapping():
+    """Fix (review-confirmed): ADD happens before REMOVE -- proven by
+    inspecting `transport.calls`' ordering directly, not just the end
+    state, when reconcile swaps GitHub's assignee from one tracked login to
+    another."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "To Do",
+            "gh_baseline": '{"status": "To Do", "assignee": "octocat"}',
+        },
+        github_content={
+            "number": 42,
+            "assignees": {"nodes": [{"login": "octocat"}]},  # current live assignee
+            "repository": {"owner": {"login": "acme"}, "name": "widgets"},
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            "assignee": {"accountId": "acc_hubot"},  # jira changed to a different, mapped user
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do", "assignee": "acc_octocat"}',  # stale -- jira_assignee_changed
+        },
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG_USER_MAPPING, transport=transport)
+
+    assert result.ok is True
+    rest_calls = _github_assignee_rest_calls(transport)
+    assert [c["method"] for c in rest_calls] == ["POST", "DELETE"]
+    assert rest_calls[0]["body"] == {"assignees": ["hubot"]}
+    assert rest_calls[1]["body"] == {"assignees": ["octocat"]}
+    assert _github_assignees(transport) == ["hubot"]  # exactly one, the new one
+
+
+# ── Review pass 2 findings ─────────────────────────────────────────────────
+
+
+def test_assignee_already_converged_under_a_real_mapping_is_a_no_op_not_a_self_cancelling_write():
+    """The convergence check must compare in the DESTINATION's vocabulary.
+
+    Jira's assignee moved off its own stale baseline, but the person it now
+    names is -- once translated -- ALREADY GitHub's live assignee. Comparing
+    the untranslated values (a Jira accountId against a GitHub login) can
+    never match under a real `user_mapping`, so the check never fired and a
+    push_to_github was issued with `add` and `remove` naming the SAME login:
+    POST octocat, DELETE octocat, item left with NO assignee, which the next
+    reconcile then propagates to Jira as a genuine unassignment. The whole
+    point is proven on the END STATE, not the request list."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "To Do",
+            "gh_baseline": '{"status": "To Do", "assignee": "octocat"}',  # unchanged
+        },
+        github_content={
+            "number": 42,
+            "assignees": {"nodes": [{"login": "octocat"}]},
+            "repository": {"owner": {"login": "acme"}, "name": "widgets"},
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            # The same human, in Jira's spelling -- diverged from jira's own
+            # stale baseline, but already converged with GitHub.
+            "assignee": {"accountId": "acc_octocat"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do", "assignee": "acc_hubot"}',  # stale
+        },
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG_USER_MAPPING, transport=transport)
+
+    assert result.ok is True
+    assert result.details["assignee"]["decision"] == "no_op"
+    assert _github_assignee_rest_calls(transport) == []  # no churn at all
+    assert _github_assignees(transport) == ["octocat"]  # NOT unassigned
+    # Both baselines still refresh -- both were stale against their own
+    # prior value, exactly like status's convergent-same-value case.
+    assert json.loads(transport.github_fields["gh_baseline"])["assignee"] == "octocat"
+    assert json.loads(transport.jira_fields["jira_baseline"])["assignee"] == "acc_octocat"
+
+
+def test_update_github_assignees_never_deletes_the_login_it_just_added():
+    """Belt-and-braces guard at the only place that can cause the loss:
+    even called directly with `add == remove`, the DELETE is not issued, so
+    the item cannot end up unassigned."""
+    calls: list[tuple[str, object]] = []
+
+    def transport(request):
+        calls.append((request.method, json.loads(request.data) if request.data else None))
+        return TransportResponse(status=201, body=b"{}")
+
+    update_github_assignees(
+        "acme",
+        "widgets",
+        42,
+        add="octocat",
+        remove="octocat",
+        credential=HostScopedCredential(hosts=("api.github.com",)),
+        transport=transport,
+    )
+
+    assert calls == [("POST", {"assignees": ["octocat"]})]
+
+
+def test_one_sided_link_mismatch_is_rejected_even_when_the_other_side_is_empty():
+    """A GitHub item already linked to a DIFFERENT Jira issue, paired
+    against a Jira issue whose own link field is empty. The empty side is
+    not evidence of a pair -- the non-empty side actively contradicts it.
+    Story 8.7 relaxed the reciprocity check for the empty-side repair, and
+    must not have relaxed it for this: repairing here would destroy a real
+    link to PROJ-99 and cross-propagate between two items that were never
+    a pair."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-99",  # already linked -- to something else
+            "gh_status": "In Progress",
+            "gh_baseline": '{"status": "To Do"}',
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            "jira_link": "",  # empty
+            "jira_baseline": '{"status": "To Do"}',
+        },
+    )
+
+    result = reconcile(
+        github_item_id="ITEM_1", jira_issue_key="PROJ-1", config=CONFIG, transport=transport
+    )
+
+    assert result.ok is False
+    assert "not a reciprocal pair" in result.summary
+    assert transport.write_calls() == []
+    assert transport.github_fields["gh_link"] == "PROJ-99"  # untouched
+
+
+def test_link_repair_is_not_reported_as_done_when_an_earlier_field_write_failed():
+    """Link repairs are sequenced last, so an earlier field's SyncError
+    skips them entirely. `details["link_repairs"]` reports what was
+    PERSISTED, never what was merely computed as needed -- otherwise a
+    caller reads "the link was repaired" about a link that is still
+    broken."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "To Do",
+            "gh_baseline": '{"status": "To Do", "assignee": null}',
+        },
+        github_content={
+            "number": 42,
+            "assignees": {"nodes": [{"login": "ghost"}]},  # deliberately unmapped
+            "repository": {"owner": {"login": "acme"}, "name": "widgets"},
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            "assignee": None,
+            "jira_link": "",  # the AF-5 gap -- a repair IS needed
+            "jira_baseline": '{"status": "To Do", "assignee": null}',
+        },
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG_USER_MAPPING, transport=transport)
+
+    assert result.ok is False
+    assert "unmapped" in result.summary
+    assert result.details["link_repairs"] == []  # computed ["jira"], performed none
+    assert transport.jira_fields["jira_link"] == ""  # and it really did not happen
+
+
+def test_baseline_refresh_failure_still_returns_the_full_details_shape():
+    """The one return path that omitted `details` entirely, defaulting to
+    `{}` and breaking the "read any key unconditionally" guarantee on
+    exactly the path where a caller most needs to know what DID get
+    written.
+
+    Reuses the established over-the-ceiling technique (a status value past
+    Jira's 255-char baseline-field ceiling) rather than a new fixture knob.
+    """
+    long_status = "X" * 300
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": long_status,
+            "gh_baseline": '{"status": "To Do"}',  # stale -- gh_changed
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do"}',
+        },
+        jira_transitions=[{"id": "99", "to": {"name": long_status}}],
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
+
+    assert result.ok is False
+    assert "failed refreshing baseline" in result.summary
+    assert result.details["decision"] == "push_to_jira"  # never a KeyError
+    assert result.details["assignee"]["decision"] == "no_op"
+    assert result.details["link_repairs"] == []
+
+
+def test_real_conflict_honors_field_overrides_assignee_jira_wins():
+    """`_VALID_OVERRIDE_FIELDS` gained "assignee", and this is the branch
+    that override actually selects -- both sides' assignee diverged from
+    their own baseline, and the override sends Jira's value to GitHub
+    instead of AD-4's GitHub-wins default."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "To Do",
+            "gh_baseline": '{"status": "To Do", "assignee": null}',  # stale -- gh_assignee_changed
+        },
+        github_content={
+            "number": 42,
+            "assignees": {"nodes": [{"login": "octocat"}]},
+            "repository": {"owner": {"login": "acme"}, "name": "widgets"},
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            "assignee": {"accountId": "acc_hubot"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "To Do", "assignee": null}',  # stale -- jira_assignee_changed
+        },
+    )
+    config = SyncConfig(
+        **{**CONFIG_USER_MAPPING.__dict__, "field_overrides": {"assignee": "jira"}}
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=config, transport=transport)
+
+    assert result.ok is True
+    assert result.details["assignee"]["decision"] == "push_to_github"
+    assert result.details["assignee"]["written_value"] == "hubot"
+    assert _github_assignees(transport) == ["hubot"]  # jira's value won, exactly one assignee
+
+
+def test_dry_run_reports_a_pending_link_repair_and_writes_nothing():
+    """--dry-run predates the link-repair step, which is the one write in
+    this module NOT gated on a "changed" flag -- assert directly that it
+    stays behind the dry-run early return."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "To Do",
+            "gh_baseline": '{"status": "To Do", "assignee": null}',
+        },
+        jira_fields={
+            "status": {"name": "To Do"},
+            "assignee": None,
+            "jira_link": "",  # repair needed
+            "jira_baseline": '{"status": "To Do", "assignee": null}',
+        },
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG, dry_run=True, transport=transport)
+
+    assert result.ok is True
+    assert result.details["link_repairs"] == ["jira"]  # reported as pending
+    assert transport.write_calls() == []
+    assert transport.jira_fields["jira_link"] == ""  # and not actually written
+
+
+def test_malformed_content_shapes_never_raw_crash_and_unreadable_assignees_are_unknown():
+    """`content` is externally sourced. A partial or proxied response whose
+    `repository`/`assignees` came back as a list or a string must read as a
+    type-safe result, never a raw `AttributeError` escaping this module's
+    named-error contract (which would, under `--schedule`, abort the whole
+    batch instead of one item). RESOLVED 2026-08-15 (escalation, finding
+    3): a malformed `assignees` sub-shape specifically is UNKNOWN, not a
+    confident "no assignee" -- distinct from a well-formed, genuinely-empty
+    one."""
+    for content in (
+        {"number": 42, "assignees": [], "repository": "acme/widgets"},
+        {"number": 42, "assignees": {"nodes": ["octocat"]}, "repository": {"owner": []}},
+    ):
+        assignee, content_ref, unknown = _parse_content({"content": content})
+        assert content_ref is None or isinstance(content_ref[2], int)
+        assert assignee is None
+        assert unknown is True
+
+    # A malformed `number`/`repository` alone (not `assignees`) does not
+    # make a well-formed assignee reading unknown -- content_ref simply
+    # fails independently.
+    assignee, content_ref, unknown = _parse_content(
+        {"content": {"number": "42", "assignees": {"nodes": [{"login": "octocat"}]}, "repository": {}}}
+    )
+    assert content_ref is None
+    assert assignee == "octocat"
+    assert unknown is False
+
+
+def test_unreadable_content_is_unknown_not_a_confident_unassignment():
+    """RESOLVED 2026-08-15 (escalation, finding 3): `content` present but
+    explicit `None` (a partial-response signature, e.g. a permission gap on
+    a Projects-only token) is DISTINCT from `content` absent entirely (a
+    genuine `DraftIssue`, every pre-8.7 fixture) -- the former is UNKNOWN,
+    the latter a confident "no assignee". Reproduces the live data-loss
+    path: a converged pair whose GitHub read comes back unreadable must
+    never clear Jira's real assignee."""
+    assignee, content_ref, unknown = _parse_content({"content": None})
+    assert assignee is None
+    assert content_ref is None
+    assert unknown is True
+
+    assignee, content_ref, unknown = _parse_content({})
+    assert assignee is None
+    assert content_ref is None
+    assert unknown is False
+
+
+def test_reconcile_downgrades_to_no_op_when_github_assignee_is_unknown():
+    """End-to-end (escalation, finding 3): a converged pair whose GitHub
+    assignee read comes back UNREADABLE (explicit `content: null`, e.g. a
+    permission gap) must never clear Jira's real assignee -- the assignee
+    decision downgrades to `no_op`, neither baseline is touched, and the
+    round is re-attempted on the next reconcile rather than "converging"
+    on data loss."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "In Progress",
+            "gh_baseline": '{"status": "In Progress", "assignee": "octocat"}',
+        },
+        github_content_unreadable=True,
+        jira_fields={
+            "status": {"name": "In Progress"},
+            "assignee": {"accountId": "acc_octocat"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "In Progress", "assignee": "acc_octocat"}',
+        },
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG_USER_MAPPING, transport=transport)
+
+    assert result.ok is True
+    assert result.details["assignee"]["decision"] == "no_op"
+    assert result.details["assignee"]["written_value"] is None
+    assert transport.write_calls() == []
+    # Jira's real assignee must survive untouched.
+    assert transport.jira_fields["assignee"]["accountId"] == "acc_octocat"
+
+
+def test_github_item_with_a_co_assignee_is_refused_named():
+    """RESOLVED 2026-08-15 (escalation, finding 4, decision (a)): a GitHub
+    item carrying more than one assignee is refused named
+    (`SyncMultipleAssigneesError`) rather than silently tracking only the
+    first, which could leave the item with two assignees or silently
+    revert a human's later Jira reassignment."""
+    with pytest.raises(SyncMultipleAssigneesError) as exc_info:
+        _parse_content(
+            {
+                "content": {
+                    "number": 42,
+                    "assignees": {"nodes": [{"login": "octocat"}, {"login": "hubot"}]},
+                    "repository": {"owner": {"login": "acme"}, "name": "widgets"},
+                }
+            }
+        )
+    assert "octocat" in str(exc_info.value) or "hubot" in str(exc_info.value)
 
 
 # ── Epic 8 Story 8.2: the zero-loop guarantee, proven by N round trips ──────
@@ -1232,6 +2180,10 @@ class ScheduleFakeTransport:
             item_id: {
                 "fields": dict(entry.get("fields") or {}),
                 "updated_at": entry.get("updated_at"),
+                # Story 8.7: an optional `content` fragment, same shape as
+                # `FakeTransport.github_content` -- `None` (the default,
+                # every pre-8.7 fixture) reads as "no content".
+                "content": entry.get("content"),
             }
             for item_id, entry in (items or {}).items()
         }
@@ -1253,6 +2205,8 @@ class ScheduleFakeTransport:
 
         if url == _GITHUB_GRAPHQL_URL:
             return self._github(body)
+        if url.startswith("https://api.github.com/repos/"):
+            return self._github_rest_assignees(method, url, body)
         return self._jira(method, url, body)
 
     # -- GitHub GraphQL ------------------------------------------------
@@ -1261,7 +2215,7 @@ class ScheduleFakeTransport:
         variables = body["variables"]
         if "fieldId" in variables:
             item_id = variables["itemId"]
-            self.items.setdefault(item_id, {"fields": {}, "updated_at": None})
+            self.items.setdefault(item_id, {"fields": {}, "updated_at": None, "content": None})
             self.items[item_id]["fields"][variables["fieldId"]] = variables["value"]["text"]
             payload = {
                 "data": {"updateProjectV2ItemFieldValue": {"projectV2Item": {"id": item_id}}}
@@ -1270,7 +2224,7 @@ class ScheduleFakeTransport:
 
         if "itemId" in variables:
             item_id = variables["itemId"]
-            entry = self.items.get(item_id, {"fields": {}})
+            entry = self.items.get(item_id, {"fields": {}, "content": None})
             node = self._node(item_id, entry)
             payload = {"data": {"node": node}}
             return TransportResponse(status=200, body=json.dumps(payload).encode())
@@ -1279,7 +2233,7 @@ class ScheduleFakeTransport:
         return self._list_page(variables.get("after"))
 
     def _node(self, item_id: str, entry: dict[str, object]) -> dict[str, object]:
-        return {
+        node = {
             "id": item_id,
             "updatedAt": entry.get("updated_at"),
             "fieldValues": {
@@ -1289,6 +2243,18 @@ class ScheduleFakeTransport:
                 ]
             },
         }
+        if entry.get("content") is not None:
+            node["content"] = entry["content"]
+        return node
+
+    # -- GitHub REST v3 (Story 8.7: assignee writes only) -----------------
+
+    def _github_rest_assignees(
+        self, method: str, url: str, body: dict[str, object] | None
+    ) -> TransportResponse:
+        if method not in ("POST", "DELETE"):
+            raise AssertionError(f"ScheduleFakeTransport: unexpected github REST call {method} {url}")
+        return TransportResponse(status=200, body=b"{}")
 
     def _list_page(self, after: str | None) -> TransportResponse:
         ids = list(self.items.keys())
@@ -1698,3 +2664,121 @@ def test_schedule_batch_listing_failure_is_named_and_dispatches_no_candidates():
     assert result.ok is False
     assert "enumerating candidates" in result.summary
     assert result.details == {}  # never even entered the per-candidate dispatch loop
+
+
+# ── Story 8.7: assignee/link-repair composition with --schedule ────────────
+
+
+def test_schedule_batch_with_one_unmapped_assignee_among_linked_items_fails_only_that_entry():
+    """Mirrors `test_schedule_batch_with_one_unmapped_status_among_linked_
+    items_fails_only_that_entry`'s batch-isolation shape for the symmetric
+    assignee failure mode: 3 board items, ITEM_2's GitHub assignee ('ghost')
+    has no `user_mapping` entry in `CONFIG_USER_MAPPING`. ITEM_1/ITEM_3
+    converge cleanly; ITEM_2's entry is `ok=False` with the named,
+    greppable `SyncUnmappedUserError` summary."""
+    transport = ScheduleFakeTransport(
+        items={
+            "ITEM_1": {
+                "fields": {
+                    "gh_link": "PROJ-1",
+                    "gh_status": "To Do",
+                    "gh_baseline": '{"status": "To Do", "assignee": null}',
+                },
+            },
+            "ITEM_2": {
+                "fields": {
+                    "gh_link": "PROJ-2",
+                    "gh_status": "To Do",
+                    "gh_baseline": '{"status": "To Do", "assignee": null}',
+                },
+                "content": {
+                    "number": 7,
+                    "assignees": {"nodes": [{"login": "ghost"}]},
+                    "repository": {"owner": {"login": "acme"}, "name": "widgets"},
+                },
+            },
+            "ITEM_3": {
+                "fields": {
+                    "gh_link": "PROJ-3",
+                    "gh_status": "Blocked",
+                    "gh_baseline": '{"status": "Blocked", "assignee": null}',
+                },
+            },
+        },
+        jira_issues={
+            "PROJ-1": {
+                "fields": {
+                    "status": {"name": "To Do"},
+                    "jira_link": "ITEM_1",
+                    "jira_baseline": '{"status": "To Do", "assignee": null}',
+                }
+            },
+            "PROJ-2": {
+                "fields": {
+                    "status": {"name": "To Do"},
+                    "jira_link": "ITEM_2",
+                    "jira_baseline": '{"status": "To Do", "assignee": null}',
+                }
+            },
+            "PROJ-3": {
+                "fields": {
+                    "status": {"name": "Blocked"},
+                    "jira_link": "ITEM_3",
+                    "jira_baseline": '{"status": "Blocked", "assignee": null}',
+                }
+            },
+        },
+        page_size=10,
+    )
+
+    result = reconcile_schedule_batch(config=CONFIG_USER_MAPPING, transport=transport)
+
+    assert result.ok is False
+    candidates = {c["github_item_id"]: c for c in result.details["candidates"]}
+    assert len(candidates) == 3
+    assert candidates["ITEM_1"]["ok"] is True
+    assert candidates["ITEM_3"]["ok"] is True
+    assert candidates["ITEM_2"]["ok"] is False
+    assert (
+        "unmapped: github login 'ghost' has no user_mapping entry for jira"
+        in candidates["ITEM_2"]["summary"]
+    )
+    assert "1 failed" in result.summary
+    assert "3 candidates" in result.summary
+
+
+def test_schedule_batch_composes_with_identity_link_self_heal():
+    """A `--schedule` candidate whose Jira counterpart's own link field was
+    never written back is still discovered (candidacy is gated only on
+    GitHub's own link field, unchanged -- Boundaries & Constraints) and
+    self-healed by the per-candidate `reconcile()` call, exactly like the
+    single-pair case."""
+    transport = ScheduleFakeTransport(
+        items={
+            "ITEM_1": {
+                "fields": {
+                    "gh_link": "PROJ-1",
+                    "gh_status": "To Do",
+                    "gh_baseline": '{"status": "To Do", "assignee": null}',
+                },
+            },
+        },
+        jira_issues={
+            "PROJ-1": {
+                "fields": {
+                    "status": {"name": "To Do"},
+                    # no "jira_link" -- resolved via GH's own link, self-healed
+                    "jira_baseline": '{"status": "To Do", "assignee": null}',
+                }
+            },
+        },
+        page_size=10,
+    )
+
+    result = reconcile_schedule_batch(config=CONFIG, transport=transport)
+
+    assert result.ok is True
+    candidates = result.details["candidates"]
+    assert len(candidates) == 1
+    assert candidates[0]["ok"] is True
+    assert transport.jira_issues["PROJ-1"]["fields"]["jira_link"] == "ITEM_1"

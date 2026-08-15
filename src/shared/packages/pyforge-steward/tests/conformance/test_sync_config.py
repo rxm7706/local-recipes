@@ -201,6 +201,73 @@ def test_user_mapping_must_be_a_mapping(tmp_path):
         load_config(path)
 
 
+def test_user_mapping_rejects_a_non_string_value(tmp_path):
+    # Story 8.7: user_mapping is consulted now (assignee translation), so a
+    # YAML authoring gotcha (an unquoted accountId parsing as a number/bool)
+    # must fail loud at config-load time -- mirrors status_mapping's own
+    # check (Story 8.6 precedent).
+    path = _write(tmp_path, _VALID_DOCUMENT + "user_mapping:\n  octocat: 12345\n")
+
+    with pytest.raises(SyncConfigError, match="user_mapping"):
+        load_config(path)
+
+
+def test_user_mapping_rejects_a_non_string_key(tmp_path):
+    # YAML's `on`/`off`/`yes`/`no` parse to booleans -- a common authoring
+    # gotcha for a GitHub login key too.
+    path = _write(tmp_path, _VALID_DOCUMENT + "user_mapping:\n  yes: \"5b10a2844c20165700ede21g\"\n")
+
+    with pytest.raises(SyncConfigError, match="user_mapping"):
+        load_config(path)
+
+
+def test_user_mapping_rejects_a_null_value(tmp_path):
+    path = _write(tmp_path, _VALID_DOCUMENT + "user_mapping:\n  octocat:\n")
+
+    with pytest.raises(SyncConfigError, match="user_mapping"):
+        load_config(path)
+
+
+def test_user_mapping_rejects_duplicate_values(tmp_path):
+    # Story 8.7 retro fix: two different github logins mapped to the same
+    # jira accountId (a plausible copy-paste mistake) must fail loud at
+    # config-load time -- the computed inverse ({v: k for k, v in
+    # user_mapping.items()}) would otherwise silently collapse to whichever
+    # entry iterates last, with no load-time warning.
+    path = _write(
+        tmp_path,
+        _VALID_DOCUMENT
+        + """\
+user_mapping:
+  octocat: "5b10a2844c20165700ede21g"
+  hubot: "5b10a2844c20165700ede21g"
+""",
+    )
+
+    with pytest.raises(SyncConfigError, match="duplicate"):
+        load_config(path)
+
+
+def test_user_mapping_rejects_an_empty_value(tmp_path):
+    # Review pass 2: an empty translated value is FALSY, and
+    # `update_github_assignees` skips whichever half of its add/remove pair
+    # is falsy -- so an empty mapping value silently skips the POST while
+    # the DELETE of the current assignee still runs, leaving the item
+    # unassigned and recording "" as converged. A loud config error costs
+    # nothing by comparison.
+    path = _write(tmp_path, _VALID_DOCUMENT + 'user_mapping:\n  octocat: ""\n')
+
+    with pytest.raises(SyncConfigError, match="non-empty"):
+        load_config(path)
+
+
+def test_user_mapping_rejects_an_empty_key(tmp_path):
+    path = _write(tmp_path, _VALID_DOCUMENT + 'user_mapping:\n  "": "5b10a2844c20165700ede21g"\n')
+
+    with pytest.raises(SyncConfigError, match="non-empty"):
+        load_config(path)
+
+
 def test_status_mapping_must_be_a_mapping(tmp_path):
     path = _write(tmp_path, _VALID_DOCUMENT + "status_mapping: not-a-mapping\n")
 
