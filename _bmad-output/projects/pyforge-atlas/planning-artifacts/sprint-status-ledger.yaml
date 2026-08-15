@@ -30,7 +30,7 @@ development_status:
   13-4-fixed-source-audit-track: done
   13-5-downstream-handoff-to-mason: done
   14-1-static-view-catalog: done
-  14-2-pluggable-widget-registry: backlog
+  14-2-pluggable-widget-registry: done
   14-3-bokeh-websocket-interactivity: backlog
   14-4-air-gap-asset-rewriting: backlog
   15-1-injectable-aql-adapter: backlog
