@@ -7,10 +7,17 @@ non-git-target repo fingerprint fallback, two-runs determinism, the
 write/load round trip, and a real-packaged-manifest regression test
 (mirrors S-9.5's own real-manifest regression-test convention against
 ``templates/manifest.yaml``).
+
+Story 10.3 appends the ``fingerprint_drift`` section at the end of this
+file: the verifier lives beside the fingerprint's sole producer (P-07 --
+see its own docstring), so its tests live beside the producer's tests too,
+driven against a real ``tmp_path`` git repo through the same ``_git``/
+``_init_git_repo`` helpers.
 """
 
 from __future__ import annotations
 
+import dataclasses
 import json
 import subprocess
 from importlib import resources
@@ -31,6 +38,7 @@ from pyforge.marshal.seed.model.version import ModelVersion
 from pyforge.marshal.seed.plan.build import (
     build_plan,
     default_plan_path,
+    fingerprint_drift,
     load_plan,
     write_plan,
 )
@@ -512,3 +520,226 @@ def test_real_manifest_plan_over_an_empty_repo_round_trips_through_write_and_loa
     write_plan(plan, path)
 
     assert load_plan(path) == plan
+
+
+# --- fingerprint_drift (Story 10.3) -----------------------------------------
+
+# Every case below builds a plan with `build_plan` and then verifies it with
+# `fingerprint_drift` against the SAME repo -- producer and verifier in one
+# assertion, which is the whole reason the two live in one module.
+#
+# Isolating one divergence at a time takes some care: editing or creating a
+# file in a CLEAN git repo also flips `dirty`, so the artifact-level cases
+# below deliberately build their plan against an ALREADY-dirty repo (one
+# untracked file), leaving `git_head`/`dirty` unchanged by the mutation
+# under test and the artifact entry as the only reported drift.
+
+
+def test_fingerprint_drift_is_empty_for_a_plan_just_built_against_a_clean_git_repo(tmp_path):
+    _init_git_repo(tmp_path)
+    manifest = _manifest(_whole_file("a", "missing.txt", ArtifactClass.COPIED_MANAGED))
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+
+    assert fingerprint_drift(plan, tmp_path) == ()
+
+
+def test_fingerprint_drift_is_empty_for_a_plan_just_built_against_a_non_git_repo(tmp_path):
+    # `_git_head`/`_repo_is_dirty` degrade to `None`/`True` for a non-git
+    # target; the verifier must compare against those same degraded values
+    # rather than treating "not a git repo" as drift on its own.
+    plan = _sample_plan(tmp_path)
+    assert fingerprint_drift(plan, tmp_path) == ()
+
+
+def test_fingerprint_drift_names_git_head_once_a_new_commit_lands(tmp_path):
+    _init_git_repo(tmp_path)
+    plan = _sample_plan(tmp_path)
+    assert fingerprint_drift(plan, tmp_path) == ()
+
+    _git(tmp_path, "commit", "--allow-empty", "-m", "second")
+
+    drift = fingerprint_drift(plan, tmp_path)
+    assert len(drift) == 1
+    assert "git_head" in drift[0]
+
+
+def test_fingerprint_drift_names_dirty_once_the_worktree_is_dirtied(tmp_path):
+    _init_git_repo(tmp_path)
+    plan = _sample_plan(tmp_path)
+    assert fingerprint_drift(plan, tmp_path) == ()
+
+    (tmp_path / "untracked.txt").write_text("new\n", encoding="utf-8")
+
+    drift = fingerprint_drift(plan, tmp_path)
+    assert len(drift) == 1
+    assert "dirty" in drift[0]
+
+
+def test_fingerprint_drift_names_the_artifact_id_when_an_actioned_file_is_hand_edited(tmp_path):
+    _init_git_repo(tmp_path)
+    (tmp_path / "CLAUDE.md").write_text(_doc("no markers in this file at all"), encoding="utf-8")
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+    assert plan.actions[0].current_state == ArtifactState.PRESENT_DIVERGENT
+    assert fingerprint_drift(plan, tmp_path) == ()
+
+    (tmp_path / "CLAUDE.md").write_text(_doc("hand-edited since the plan"), encoding="utf-8")
+
+    drift = fingerprint_drift(plan, tmp_path)
+    assert len(drift) == 1
+    # `startswith`, not `in`: a bare `"h" in message` would pass on the word
+    # "hashed" alone and prove nothing about the artifact id.
+    assert drift[0].startswith("h:")
+    assert "CLAUDE.md" in drift[0]
+
+
+def test_fingerprint_drift_names_the_artifact_id_when_an_absent_artifact_has_appeared(tmp_path):
+    # The case a `current_state`-gated read would miss entirely: `build_plan`
+    # recorded `hash_content("")` for an ABSENT artifact WITHOUT touching the
+    # filesystem, so re-hashing through that same gate would match forever
+    # and let apply clobber a file that appeared in between (AR-5).
+    _init_git_repo(tmp_path)
+    (tmp_path / "unrelated.txt").write_text("dirties the worktree\n", encoding="utf-8")
+    manifest = _manifest(_whole_file("a", "seeded.txt", ArtifactClass.COPIED_SEEDED))
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+    assert plan.actions[0].current_state == ArtifactState.ABSENT
+    assert fingerprint_drift(plan, tmp_path) == ()
+
+    (tmp_path / "seeded.txt").write_text("appeared out of nowhere\n", encoding="utf-8")
+
+    drift = fingerprint_drift(plan, tmp_path)
+    assert len(drift) == 1
+    assert drift[0].startswith("a:")
+    assert "seeded.txt" in drift[0]
+
+
+def test_fingerprint_drift_names_a_hashed_id_that_no_action_carries(tmp_path):
+    # `build_plan` emits exactly one hash per action, so an orphan pair can
+    # only come from a corrupted or hand-edited plan.json -- a Plan that no
+    # longer holds its own construction invariant, which must be refused
+    # rather than partially verified.
+    plan = _sample_plan(tmp_path)
+    tampered = dataclasses.replace(
+        plan,
+        repo_fingerprint=dataclasses.replace(
+            plan.repo_fingerprint,
+            artifact_hashes=plan.repo_fingerprint.artifact_hashes + (("ghost", "deadbeef"),),
+        ),
+    )
+
+    drift = fingerprint_drift(tampered, tmp_path)
+    assert len(drift) == 1
+    assert "ghost" in drift[0]
+
+
+@pytest.mark.parametrize(
+    "reappeared",
+    [b"\xff\xfe hand-written latin-1 \xe9\n", b""],
+    ids=["undecodable-bytes", "empty-file"],
+)
+def test_fingerprint_drift_names_an_absent_artifact_that_reappeared_unreadable(
+    tmp_path, reappeared
+):
+    """Review finding, reproduced by executing the real code: an `ABSENT`
+    artifact is recorded as `hash_content("")`, and the verification read
+    degrades an undecodable or empty target back to `''` -- so a pure
+    CONTENT comparison matches, reports no drift, and apply destroys a file
+    a human put there. Existence, not the hash, is what separates "still
+    absent" from "something appeared here"."""
+    plan = _sample_plan(tmp_path)
+    absent = next(
+        action
+        for action in plan.actions
+        if action.current_state is ArtifactState.ABSENT
+    )
+    target = tmp_path / absent.target_path
+    target.parent.mkdir(parents=True, exist_ok=True)
+    target.write_bytes(reappeared)
+
+    drift = fingerprint_drift(plan, tmp_path)
+    assert any(absent.artifact_id in line for line in drift), drift
+
+
+def test_fingerprint_drift_names_a_present_artifact_that_became_unreadable(tmp_path):
+    """The mirror of the case above: a target present and readable when the
+    plan was built, now undecodable. A hash comparison alone would miss this
+    whenever the recorded hash happens to be `hash_content("")` -- i.e. a
+    genuinely empty artifact -- so readability is compared, not inferred."""
+    (tmp_path / "CLAUDE.md").write_text("", encoding="utf-8")
+    manifest = _manifest(_hybrid("claude-md", "CLAUDE.md", "tiers"))
+    plan = build_plan(manifest, classify(manifest, tmp_path))
+    assert plan.actions, "fixture must produce an action"
+
+    (tmp_path / "CLAUDE.md").write_bytes(b"\xff\xfe not utf-8 at all \xe9\n")
+
+    drift = fingerprint_drift(plan, tmp_path)
+    assert any("claude-md" in line for line in drift), drift
+
+
+def test_fingerprint_drift_names_a_duplicate_artifact_id(tmp_path):
+    """Review finding: the id -> target lookup is a dict, so two actions
+    sharing an `artifact_id` silently collapse onto the last one and the
+    first one's target is never verified. `Plan.from_json_dict` rejects
+    duplicates, but `Plan` carries no `__post_init__` and direct
+    construction is a supported entry path, so `fingerprint_drift` must
+    refuse rather than partially verify."""
+    (tmp_path / "a.txt").write_text("a\n", encoding="utf-8")
+    (tmp_path / "b.txt").write_text("b\n", encoding="utf-8")
+    plan = _sample_plan(tmp_path)
+    first = plan.actions[0]
+    tampered = dataclasses.replace(
+        plan,
+        actions=(
+            dataclasses.replace(first, target_path="a.txt"),
+            dataclasses.replace(first, target_path="b.txt"),
+        ),
+        repo_fingerprint=dataclasses.replace(
+            plan.repo_fingerprint,
+            artifact_hashes=((first.artifact_id, hash_content("a\n")),),
+        ),
+    )
+
+    drift = fingerprint_drift(tampered, tmp_path)
+    assert any("more than one Action" in line for line in drift), drift
+
+
+def test_fingerprint_drift_names_an_actioned_id_the_fingerprint_never_hashed(tmp_path):
+    """Review finding: the correspondence has to be checked in BOTH
+    directions. `Plan.from_json_dict` validates that `actions` are unique
+    and sorted but never cross-checks them against `artifact_hashes`, so a
+    hand-edited plan.json that DROPS a pair would leave that artifact
+    silently unverified -- the one hole through which exactly the stale
+    content `fingerprint_drift` exists to catch could still reach apply."""
+    plan = _sample_plan(tmp_path)
+    assert plan.repo_fingerprint.artifact_hashes, "fixture must hash at least one artifact"
+    dropped_id = plan.repo_fingerprint.artifact_hashes[0][0]
+    tampered = dataclasses.replace(
+        plan,
+        repo_fingerprint=dataclasses.replace(
+            plan.repo_fingerprint,
+            artifact_hashes=plan.repo_fingerprint.artifact_hashes[1:],
+        ),
+    )
+
+    drift = fingerprint_drift(tampered, tmp_path)
+    assert len(drift) == 1
+    assert dropped_id in drift[0]
+
+
+def test_fingerprint_drift_reports_every_divergence_not_just_the_first(tmp_path):
+    _init_git_repo(tmp_path)
+    manifest = _manifest(_whole_file("a", "seeded.txt", ArtifactClass.COPIED_SEEDED))
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+
+    (tmp_path / "seeded.txt").write_text("appeared\n", encoding="utf-8")
+    _git(tmp_path, "commit", "--allow-empty", "-m", "second")
+
+    drift = fingerprint_drift(plan, tmp_path)
+    assert len(drift) == 3
+    assert drift[0].startswith("git_head:")
+    assert drift[1].startswith("dirty:")
+    assert drift[2].startswith("a:")

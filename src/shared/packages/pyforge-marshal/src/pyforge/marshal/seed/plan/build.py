@@ -46,9 +46,11 @@ Never in this module (see the spec's own Never bullets for the full
 list): no read of `.marshal/seed-state.yml` (`seed/state/` is an empty
 stub -- no story has built it yet); no CLI wiring (`build_plan`/
 `write_plan`/`load_plan`/`default_plan_path` are library functions only);
-no `apply` integration and no fingerprint-based refusal logic (a future
-`apply` story, Epic 10, checks the fingerprint this module only RECORDS);
-no re-matching of `manifest.never_write`/`effective_never_write` beyond
+no fingerprint-based REFUSAL (Story 10.3 added `fingerprint_drift`, which
+only REPORTS how a repo has diverged from a `Plan`'s fingerprint -- turning
+a non-empty report into a raised `PreconditionFailure` is
+`seed/apply/run.py`'s job, and this module still imports nothing from
+`seed/apply/`); no re-matching of `manifest.never_write`/`effective_never_write` beyond
 the `PRESENT_LEGACY` skip `classify()` already computes (`fs.py`'s own
 guard is the defense-in-depth backstop at actual write time, a later
 story).
@@ -103,13 +105,49 @@ def _current_text(state: ArtifactState, repo_root: Path, entry_path: str) -> str
     `repo_root` (see the module docstring)."""
     if state is ArtifactState.ABSENT:
         return ""
+    return _read_text_or_blank(repo_root, entry_path)
+
+
+def _read_text_or_blank(repo_root: Path, entry_path: str) -> str:
+    """The READ half of `_current_text`, with no `ArtifactState` gate in
+    front of it: the target's UTF-8 text, degrading to `''` for an absent,
+    non-regular-file, unreadable, or non-UTF-8 target.
+
+    Factored out of `_current_text` (rather than duplicated inside
+    `fingerprint_drift`) so the one degradation rule this module applies at
+    plan-BUILD time is byte-for-byte the same rule it applies at
+    VERIFICATION time -- two independent spellings of "unreadable means
+    `''`" is exactly the producer/verifier drift `fingerprint_drift` living
+    beside `build_plan` exists to prevent. `_current_text` keeps its own
+    `ABSENT` short-circuit in front of this call; `fingerprint_drift`
+    deliberately does not (see its docstring)."""
+    text, _readable = _read_text_or_blank_verbose(repo_root, entry_path)
+    return text
+
+
+def _read_text_or_blank_verbose(repo_root: Path, entry_path: str) -> tuple[str, bool]:
+    """`_read_text_or_blank`'s answer, plus whether the target was actually
+    READ (`True`) or merely degraded to `''` (`False`).
+
+    Review finding, verified by execution: collapsing "absent", "not a
+    regular file", "unreadable" and "not valid UTF-8" all onto the same
+    `''` is correct for plan BUILD (`build_plan` has nothing better to hash)
+    but reopens, at VERIFICATION time, the exact hole `fingerprint_drift`
+    exists to close. An artifact `ABSENT` when the plan was built is
+    recorded as `hash_content("")`; if a file appears at that path before
+    apply and is binary, unreadable, or empty, it degrades back to `''`,
+    re-hashes identically, and the stale plan is accepted -- apply then
+    destroys a file a human put there. Content alone cannot distinguish
+    those cases, so `fingerprint_drift` needs the second half of the answer
+    and compares READABILITY as well as bytes. `_current_text` discards it,
+    preserving `build_plan`'s behavior byte-for-byte."""
     target = repo_root / entry_path
     if not target.is_file():
-        return ""
+        return "", False
     try:
-        return target.read_text(encoding="utf-8")
+        return target.read_text(encoding="utf-8"), True
     except (OSError, UnicodeDecodeError):
-        return ""
+        return "", False
 
 
 def _chosen_anchor(
@@ -282,6 +320,159 @@ def build_plan(manifest: Manifest, inventory: Inventory) -> Plan:
         artifact_hashes=artifact_hashes,
     )
     return Plan(actions=actions, repo_fingerprint=repo_fingerprint)
+
+
+def fingerprint_drift(plan: Plan, repo_root: Path) -> tuple[str, ...]:
+    """Every way `repo_root` has diverged from the `RepoFingerprint` `plan`
+    was built against -- one human-readable line per divergence, `()` when
+    the plan is still a true description of the repo (AD-57).
+
+    Covers all three `RepoFingerprint` fields, in that order: `git_head`
+    (against a fresh `_git_head`), `dirty` (against a fresh
+    `_repo_is_dirty`), and every `artifact_hashes` pair (against a fresh
+    `hash_content` of that artifact's target). The correspondence between
+    `actions` and `artifact_hashes` is checked in BOTH directions, and a
+    mismatch either way is itself reported as a divergence: `build_plan`
+    emits exactly one hash per action, so an orphan pair -- or an action
+    with no pair -- means the `Plan` no longer holds its own construction
+    invariant. `Plan.from_json_dict` validates that `actions` are unique and
+    sorted but never cross-checks them against `artifact_hashes`, so a
+    hand-edited `plan.json` that DROPS one pair would otherwise leave that
+    artifact silently unverified -- the one hole through which the stale
+    content this function exists to catch could still reach `apply`. A
+    corrupted plan is refused, never partially verified.
+
+    **Why this lives here, in the fingerprint's sole producer, and not in
+    `seed/apply/`.** P-07 ("hash guards are checked in detect, never in
+    apply; apply trusts the plan") is enforced structurally by
+    `tests/meta/test_p07_no_hash_comparison_in_apply.py`, an import ban on
+    `seed/apply/**`. This function asks a different question from the
+    per-artifact hand-edit guard P-07 constrains (`detect.hashes.
+    check_managed_file`): not "was THIS artifact hand-edited, and what
+    becomes of it", but "is this whole `Plan` still true", whose only two
+    outcomes are proceed-with-everything or refuse-everything. Placing it
+    beside `build_plan` -- the one function that WRITES a `RepoFingerprint`
+    -- satisfies the meta test without weakening it, and keeps producer and
+    verifier in one file so they cannot drift apart.
+
+    **Why content alone is not enough, and what is compared instead.** Every
+    recorded hash for an `ABSENT` artifact is `hash_content("")`, because
+    `_current_text` short-circuits that state without reading anything. The
+    read this function performs degrades an absent, non-regular-file,
+    unreadable, or non-UTF-8 target to `''` too -- so a pure content
+    comparison silently equates "still absent" with "a binary, unreadable,
+    or empty file appeared here since the plan was built", and apply would
+    destroy that file. (An earlier revision of this function compared
+    content alone and did exactly that; a review pass reproduced it by
+    executing the real code, writing latin-1 bytes at an absent artifact's
+    path and watching apply overwrite them.) Content is therefore compared
+    only where content can decide, and STATE is compared everywhere else:
+    an `ABSENT` artifact must still not exist (existence, not hash); a
+    present one must still be readable as text (readability, not hash)
+    before its hash means anything. Two accepted, fail-closed divergences
+    from `build_plan`'s own read, both refusing rather than proceeding: an
+    entry whose path escapes `repo_root` (classified `ABSENT` for that
+    reason) may find a real file there and report drift, and a
+    `present-divergent` entry that `build_plan` itself could not read is
+    reported as unreadable rather than matched on its `''` hash. Both are
+    already-pathological inputs, accepted rather than special-cased.
+
+    Never raises for a non-git or empty `repo_root`: `_git_head`/
+    `_repo_is_dirty` already degrade to `None`/`True` there, and comparing
+    those against what `build_plan` recorded the same way is the whole
+    point."""
+    fingerprint = plan.repo_fingerprint
+    process = PosixProcess()
+    drift: list[str] = []
+
+    current_head = _git_head(process, repo_root)
+    if current_head != fingerprint.git_head:
+        drift.append(
+            f"git_head: the plan was built at {fingerprint.git_head!r},"
+            f" the repo is now at {current_head!r}"
+        )
+
+    current_dirty = _repo_is_dirty(process, repo_root)
+    if current_dirty != fingerprint.dirty:
+        drift.append(
+            f"dirty: the plan was built with dirty={fingerprint.dirty},"
+            f" the repo is now dirty={current_dirty}"
+        )
+
+    # Review finding: a dict comprehension over `plan.actions` silently
+    # collapses two actions sharing an `artifact_id` onto the last one,
+    # leaving the first one's target unverified while this function still
+    # reports `()`. `Plan.from_json_dict` rejects duplicate ids, but a
+    # `Plan` built by direct construction (a supported entry path -- the
+    # class carries no `__post_init__`) does not, and the runner's contract
+    # is over an arbitrary `Plan`. A duplicate is itself a corrupted plan.
+    actions_by_id: dict[str, Action] = {}
+    duplicate_ids: set[str] = set()
+    for action in plan.actions:
+        if action.artifact_id in actions_by_id:
+            duplicate_ids.add(action.artifact_id)
+        actions_by_id[action.artifact_id] = action
+    for artifact_id in sorted(duplicate_ids):
+        drift.append(
+            f"{artifact_id}: carried by more than one Action, so the plan cannot say"
+            " which target that id's recorded hash describes"
+        )
+
+    hashed_ids = {artifact_id for artifact_id, _sha in fingerprint.artifact_hashes}
+    for artifact_id in actions_by_id:
+        if artifact_id not in hashed_ids:
+            drift.append(
+                f"{artifact_id}: carried by an Action but absent from the plan's"
+                " fingerprint, so its content could not be verified"
+            )
+    for artifact_id, recorded_sha in fingerprint.artifact_hashes:
+        action = actions_by_id.get(artifact_id)
+        if action is None:
+            drift.append(
+                f"{artifact_id}: hashed in the plan's fingerprint but no Action carries it"
+            )
+            continue
+        target_path = action.target_path
+        current_text, readable = _read_text_or_blank_verbose(repo_root, target_path)
+        if action.current_state is ArtifactState.ABSENT:
+            # The recorded hash is `hash_content("")` and CANNOT distinguish
+            # "still absent" from "a binary/unreadable/empty file appeared
+            # here since" -- all four degrade to `''`. Existence is what
+            # separates them, so it is checked instead of the hash. Review
+            # finding, verified by execution: without this, a hand-written
+            # latin-1 file appearing at an absent artifact's path was
+            # accepted as fresh and then destroyed by apply.
+            target = repo_root / target_path
+            if target.exists() or target.is_symlink():
+                drift.append(
+                    f"{artifact_id}: {target_path!r} was absent when the plan was built"
+                    " and something exists there now"
+                )
+            continue
+        if not readable:
+            # Present when the plan was built, and now absent, not a regular
+            # file, unreadable, or no longer valid UTF-8. A hash comparison
+            # alone would MISS this whenever the recorded hash happens to be
+            # `hash_content("")` -- a genuinely empty artifact -- so
+            # readability is compared rather than inferred. Fail-closed: a
+            # legitimately unreadable `present-divergent` artifact (which
+            # `build_plan` would itself have hashed as `''`) is refused
+            # rather than applied over. Only `hybrid-managed-region` entries
+            # ever reach `PRESENT_DIVERGENT`, and one that is not readable
+            # text is already pathological.
+            drift.append(
+                f"{artifact_id}: {target_path!r} was readable text when the plan was"
+                " built and cannot be read as text now"
+            )
+            continue
+        current_sha = hash_content(current_text)
+        if current_sha != recorded_sha:
+            drift.append(
+                f"{artifact_id}: {target_path!r} hashed {recorded_sha} when the plan was"
+                f" built, hashes {current_sha} now"
+            )
+
+    return tuple(drift)
 
 
 def default_plan_path(repo_root: Path) -> Path:
