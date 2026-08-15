@@ -4347,7 +4347,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-15 14:05 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-15 14:20 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4503,7 +4503,9 @@ window.DASHBOARD_DATA = {
       "status": "dreamt",
       "owner": "doctor",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-bmad-method-version-drift"
+      }
     },
     {
       "slug": "bmad-module-provisioning",
@@ -4617,7 +4619,9 @@ window.DASHBOARD_DATA = {
       "status": "dreamt",
       "owner": "doctor",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-resolution-sweep"
+      }
     },
     {
       "slug": "deferred-work-visibility",
@@ -4733,7 +4737,9 @@ window.DASHBOARD_DATA = {
       "status": "dreamt",
       "owner": "doctor",
       "type": "dream",
-      "chain": {}
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-fleet-hygiene-verification-exemplar-program"
+      }
     },
     {
       "slug": "fleet-status-supervisor-fallback",
@@ -5438,6 +5444,26 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-bmad-drift-new-artifact-shape"
     },
     {
+      "slug": "bmad-method-version-drift",
+      "project": "pyforge-doctor",
+      "title": "Doctor notices when BMAD-METHOD's own installed core falls behind upstream",
+      "caps": 3,
+      "companions": 0,
+      "updated": "",
+      "dream": "bmad-method-version-drift",
+      "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-bmad-method-version-drift"
+    },
+    {
+      "slug": "deferred-work-resolution-sweep",
+      "project": "pyforge-doctor",
+      "title": "Deferred-work resolution sweep",
+      "caps": 8,
+      "companions": 2,
+      "updated": "",
+      "dream": "deferred-work-resolution-sweep",
+      "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-resolution-sweep"
+    },
+    {
       "slug": "deferred-work-visibility",
       "project": "pyforge-doctor",
       "title": "deferred-work-visibility",
@@ -5446,6 +5472,16 @@ window.DASHBOARD_DATA = {
       "updated": "2026-08-15",
       "dream": "deferred-work-visibility",
       "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility"
+    },
+    {
+      "slug": "fleet-hygiene-verification-exemplar-program",
+      "project": "pyforge-doctor",
+      "title": "Fleet hygiene, verification & exemplar-standard catalog",
+      "caps": 7,
+      "companions": 1,
+      "updated": "",
+      "dream": "fleet-hygiene-verification-exemplar-program",
+      "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-fleet-hygiene-verification-exemplar-program"
     },
     {
       "slug": "pyforge-doctor",
@@ -7069,7 +7105,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "2026-07-25",
-          "spec": "2026-08-13T18:21",
+          "spec": "2026-08-15T09:17",
           "research": "2026-08-08",
           "brief": "2026-07-25",
           "prd": "2026-08-02",
@@ -7152,7 +7188,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "spec",
             "than": "prd",
-            "at": "2026-08-13T18:21",
+            "at": "2026-08-15T09:17",
             "other": "2026-08-02"
           },
           {
@@ -9128,7 +9164,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-15",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-15T08:46",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -9178,17 +9214,17 @@ window.DASHBOARD_DATA = {
         },
         "archived": false,
         "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "ownerDream": "bmad-method-version-drift",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -9205,8 +9241,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 4
+        "complete": 1,
+        "of": 3
       },
       {
         "label": "deferred-work-audit-completeness",
@@ -9342,7 +9378,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-15",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-15T08:58",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -9392,17 +9428,17 @@ window.DASHBOARD_DATA = {
         },
         "archived": false,
         "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "ownerDream": "deferred-work-resolution-sweep",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -9419,8 +9455,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 4
+        "complete": 1,
+        "of": 3
       },
       {
         "label": "deferred-work-visibility",
@@ -9555,7 +9591,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-15",
           "deck": "",
-          "spec": "",
+          "spec": "2026-08-15T09:01",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -9605,17 +9641,17 @@ window.DASHBOARD_DATA = {
         },
         "archived": false,
         "dreamStatus": "dreamt",
-        "ownerDream": "",
+        "ownerDream": "fleet-hygiene-verification-exemplar-program",
         "noDream": false,
         "unowned": false,
         "backfilled": false,
         "openQuestions": 0,
         "overtaken": false,
         "na": [
+          "dream",
           "ux"
         ],
         "required": [
-          "dream",
           "deck",
           "spec",
           "research"
@@ -9632,8 +9668,8 @@ window.DASHBOARD_DATA = {
         "stale": false,
         "version": "",
         "progress": "",
-        "complete": 2,
-        "of": 4
+        "complete": 1,
+        "of": 3
       },
       {
         "label": "doctor-dependency-health",
@@ -18292,7 +18328,9 @@ window.DASHBOARD_DATA = {
         "status": "dreamt",
         "owner": "doctor",
         "blockedOn": "",
-        "chain": {}
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-bmad-method-version-drift"
+        }
       },
       {
         "slug": "dashboard-velocity-captures-hand-driven-work",
@@ -18308,7 +18346,9 @@ window.DASHBOARD_DATA = {
         "status": "dreamt",
         "owner": "doctor",
         "blockedOn": "",
-        "chain": {}
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-resolution-sweep"
+        }
       },
       {
         "slug": "enterprise-data-models-and-apis",
@@ -18332,7 +18372,9 @@ window.DASHBOARD_DATA = {
         "status": "dreamt",
         "owner": "doctor",
         "blockedOn": "",
-        "chain": {}
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-fleet-hygiene-verification-exemplar-program"
+        }
       },
       {
         "slug": "miniforge-installer",
@@ -22686,14 +22728,14 @@ window.DASHBOARD_DATA = {
     "running": [],
     "lastShipped": {
       "station": "doctor",
-      "story": "8.4",
-      "epoch": 1786798082,
-      "sha": "6be39246d",
-      "subject": "doctor: land Story 8.4 -- sprint ledger, dashboard, epics outcome, spec promotion, Epic 8 done"
+      "story": "9.1",
+      "epoch": 1786802921,
+      "sha": "f84e8beba",
+      "subject": "doctor: land Story 9.1 -- sprint ledger, dashboard, epics outcome, spec promotion"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-15 14:05 UTC",
-    "generatedEpoch": 1786802740
+    "generatedAt": "2026-08-15 14:20 UTC",
+    "generatedEpoch": 1786803628
   },
   "storySpecs": [
     {
@@ -22705,8 +22747,8 @@ window.DASHBOARD_DATA = {
     {
       "station": "pyforge-doctor",
       "done": 38,
-      "tracked": 32,
-      "gap": 6
+      "tracked": 33,
+      "gap": 5
     },
     {
       "station": "pyforge-herald",
