@@ -125,6 +125,19 @@ chains. The Dream files themselves (`docs/dreams/pyforge-genesis.md`,
 The rest of the old project is archived at `archive/_bmad-output/projects/pyforge-genesis/`,
 never deleted.
 
+*Further amendment (2026-08-08, found stale 2026-08-15 while auditing `docs/` for this repo's
+own housekeeping): the two-kernel split above did not last either.* Commit `a3b5fefae8`
+("charter: absorb pyforge-genesis; `owner: guild` closes at one Dream") went one step further
+than this amendment anticipated: `spec-pyforge-genesis`'s capabilities were absorbed directly
+into `spec-pyforge-charter` as CAP-5..CAP-8, and `docs/dreams/pyforge-genesis.md` itself was
+folded into `docs/dreams/pyforge-charter.md` as "§ Satellite: The Seed" — **neither file exists
+standalone any more.** `docs/governance/spec-pyforge-genesis/` was moved to
+`archive/docs/governance/spec-pyforge-genesis/` (archived, not deleted, same convention as
+everything else here). The constitutive tier is now genuinely **one Dream, one Spec kernel** —
+`docs/dreams/pyforge-charter.md` / `docs/governance/spec-pyforge-charter/` — not two files at
+one shared location as this section's 2026-08-02 text still describes above. Verified directly
+2026-08-15: `docs/governance/` contains only `spec-pyforge-charter/` and `guild-roster.json`.
+
 ### INV-3 — One build tree, sharded
 
 Every project's `planning-artifacts/` uses the 6.10 sharded shape — what `bmad-prd` and
