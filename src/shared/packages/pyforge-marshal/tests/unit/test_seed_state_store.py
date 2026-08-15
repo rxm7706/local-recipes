@@ -1,0 +1,1321 @@
+"""Unit tests for ``pyforge.marshal.seed.state.store`` (Story 10.2) --
+covers every row of the spec's I/O & Edge-Case Matrix (round-trip, never
+adopted, schema violation, malformed input, invalid state written,
+mid-apply failure, guarded path) plus the five acceptance criteria:
+FR-103's do-not-hand-edit header, ``StateInvalid``-and-only-``StateInvalid``
+on the read path with ``SeedError`` still closed at six leaves, AD-58's
+eject reconstruction from ``state.managed`` alone, the module's import
+surface (no upward imports, no second atomic-write implementation), and
+the untouched ``model-ignores.gitignore.j2`` template.
+
+Imports the module itself (``store``) alongside its public names, and the
+``fs`` module rather than its functions, so the mid-apply fault-injection
+test can monkeypatch ``fs.atomic_write_bytes`` -- the exact name
+``fs.write`` resolves in its own module namespace, which is what
+``write_state`` reaches through. It also imports ``pyforge.core``'s
+``atomic_write`` itself: the fault-injection test injects its failure
+INSIDE the real atomic write (through a ``write_fn`` that populates the
+temp file and then raises) rather than replacing the write wholesale, so a
+temp file genuinely exists when the fault fires and "no ``.tmp`` residue"
+is a fact about ``atomic_write``'s cleanup rather than true by
+construction.
+"""
+
+from __future__ import annotations
+
+import ast
+import dataclasses
+import json
+import re
+from importlib import metadata
+from pathlib import Path
+from typing import Any
+
+import pytest
+import yaml
+from jsonschema import Draft202012Validator
+from pyforge.core import atomic_write as core_atomic_write
+from pyforge.marshal.seed import fs
+from pyforge.marshal.seed.errors import InternalError, NeverWriteViolation, SeedError, StateInvalid
+from pyforge.marshal.seed.model.manifest import ArtifactClass
+from pyforge.marshal.seed.model.version import ModelVersion
+from pyforge.marshal.seed.state import store
+from pyforge.marshal.seed.state.store import (
+    STATE_KEYS,
+    LegacyArtifact,
+    ManagedArtifact,
+    RegionSpanRecord,
+    SeedState,
+    copier_data,
+    read_state,
+    seed_model_version,
+    state_path,
+    utc_timestamp,
+    write_state,
+)
+
+_NO_PATTERNS = fs.NeverWrite(("docs/dreams/*.md",))
+
+
+def _sample_state(**overrides: Any) -> SeedState:
+    """A fully populated, schema-valid ``SeedState``: both managed
+    flavours (a whole-file claim and a region claim), a legacy record, and
+    a non-empty value in every one of the eleven fields, so a test that
+    drops or corrupts one field is exercising a real difference."""
+    fields: dict[str, Any] = {
+        "model_version": ModelVersion.parse("1.2.3"),
+        "seed_model_version": "0.1.0",
+        "adopted_at": "2026-08-14T09:15:00Z",
+        "last_update": "2026-08-14T11:42:07Z",
+        "mode": "init",
+        "agents": ("claude-code", "codex-cli"),
+        "managed": (
+            ManagedArtifact(
+                id="agents-md",
+                path="AGENTS.md",
+                artifact_class="hybrid-managed-region",
+                body_sha="0123abcd",
+                inserted_region_span=RegionSpanRecord(name="tiers", start=7, end=20),
+            ),
+            ManagedArtifact(
+                id="dream-template",
+                path="docs/dreams/example.md",
+                artifact_class="copied-seeded",
+                body_sha="deadbeef",
+                inserted_region_span=None,
+            ),
+        ),
+        "skips": ("docs/legacy/*.md",),
+        "legacy": (
+            LegacyArtifact(
+                id="legacy-spec", path="docs/specs/old.md", legacy_of="dream-template"
+            ),
+        ),
+        "migrations_applied": ("1.1.0", "1.2.0"),
+        "opted_out": ("agents-md#tiers",),
+    }
+    fields.update(overrides)
+    return SeedState(**fields)
+
+
+def _write_raw(repo_root: Path, payload: bytes | str) -> Path:
+    """Put arbitrary bytes at the state path, bypassing ``write_state``
+    entirely -- every read-path test needs a file the writer would have
+    refused to produce."""
+    path = state_path(repo_root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_bytes(payload.encode("utf-8") if isinstance(payload, str) else payload)
+    return path
+
+
+def _valid_document() -> dict[str, Any]:
+    return _sample_state().to_json_dict()
+
+
+# --- the packaged schema itself ---------------------------------------------
+
+
+def test_schema_is_itself_a_valid_draft_2020_12_schema():
+    Draft202012Validator.check_schema(store._load_schema())
+
+
+def test_schema_declares_the_house_dialect_id_and_title():
+    schema = store._load_schema()
+    assert schema["$schema"] == "https://json-schema.org/draft/2020-12/schema"
+    assert schema["$id"] == "urn:local-recipes:pyforge-marshal:seed-state.v1"
+    assert schema["title"] == "MarshalSeedState"
+
+
+def test_schema_is_closed_at_every_object_level():
+    schema = store._load_schema()
+    assert schema["additionalProperties"] is False
+    assert schema["$defs"]["managedArtifact"]["additionalProperties"] is False
+    assert schema["$defs"]["legacyArtifact"]["additionalProperties"] is False
+    span = schema["$defs"]["managedArtifact"]["properties"]["inserted_region_span"]
+    assert span["additionalProperties"] is False
+
+
+def test_schema_requires_exactly_the_eleven_top_level_keys():
+    schema = store._load_schema()
+    assert tuple(schema["required"]) == STATE_KEYS
+    assert tuple(schema["properties"]) == STATE_KEYS
+    assert len(STATE_KEYS) == 11
+
+
+def test_schema_class_enum_matches_artifact_class_exactly():
+    """Drift guard for the module's one deliberate duplication: the schema
+    hardcodes the wire vocabulary (a schema is a wire contract, not a
+    mirror of a Python enum), so this test is what stops the two from
+    disagreeing."""
+    schema = store._load_schema()
+    enum_values = schema["$defs"]["managedArtifact"]["properties"]["class"]["enum"]
+    assert set(enum_values) == {member.value for member in ArtifactClass}
+    assert len(enum_values) == len(set(enum_values)) == 6
+
+
+def test_schema_body_sha_pattern_is_hash_contents_shipped_shape():
+    schema = store._load_schema()
+    pattern = schema["$defs"]["managedArtifact"]["properties"]["body_sha"]["pattern"]
+    assert pattern == "^[0-9a-f]{8}(?![\\s\\S])"
+
+
+def test_schema_mode_enum_is_the_two_materializing_verbs():
+    assert store._load_schema()["properties"]["mode"]["enum"] == ["init", "adopt"]
+
+
+def _schema_patterns(node: Any) -> list[str]:
+    """Every ``pattern`` value anywhere in the schema, at any depth."""
+    if isinstance(node, dict):
+        return [
+            value
+            for key, value in node.items()
+            if key == "pattern" and isinstance(value, str)
+        ] + [
+            pattern
+            for key, value in node.items()
+            if key != "pattern"
+            for pattern in _schema_patterns(value)
+        ]
+    if isinstance(node, list):
+        return [pattern for item in node for pattern in _schema_patterns(item)]
+    return []
+
+
+def test_no_anchored_schema_pattern_ends_in_a_bare_dollar():
+    """jsonschema compiles ``pattern`` with Python's ``re``, whose ``$``
+    also matches immediately BEFORE a final newline -- so every ``^...$``
+    pattern in this schema silently admitted a trailing-newline value. The
+    portable terminator is ``(?![\\s\\S])`` (ECMA-262 has no ``\\Z``), and
+    this is the drift guard that keeps a future pattern from reintroducing
+    the bare anchor."""
+    patterns = _schema_patterns(store._load_schema())
+    assert patterns, "expected the schema to carry patterns at all"
+    assert [pattern for pattern in patterns if pattern.endswith("$")] == []
+    anchored = [pattern for pattern in patterns if pattern.startswith("^")]
+    assert len(anchored) >= 7
+    assert all(pattern.endswith("(?![\\s\\S])") for pattern in anchored)
+
+
+def test_schema_couples_the_region_span_to_the_hybrid_class():
+    """The iff, stated in the schema itself rather than only in
+    ``ManagedArtifact.__post_init__`` -- a hand-edited file is rejected at
+    READ time, before any dataclass is constructed."""
+    entry = store._load_schema()["$defs"]["managedArtifact"]
+    assert entry["if"]["properties"]["class"]["const"] == "hybrid-managed-region"
+    assert entry["then"]["properties"]["inserted_region_span"]["type"] == "object"
+    assert entry["else"]["properties"]["inserted_region_span"]["type"] == "null"
+
+
+def test_schema_opt_out_artifact_half_is_as_permissive_as_a_managed_id():
+    """``managed[].id`` is a ``nonBlankString`` (``model/manifest.py``
+    imposes no kebab rule on entry ids), so the opt-out's artifact half
+    must not be stricter -- a legally-named entry with an unrepresentable
+    opt-out is the defect this pairing exists to prevent."""
+    schema = store._load_schema()
+    assert schema["$defs"]["managedArtifact"]["properties"]["id"]["$ref"] == (
+        "#/$defs/nonBlankString"
+    )
+    pattern = schema["properties"]["opted_out"]["items"]["pattern"]
+    for accepted in ("bmad.method#tiers", "AGENTS.md#tiers", "a_b#t", "10.2#region-1"):
+        assert re.search(pattern, accepted), accepted
+    for rejected in ("agents-md", "agents-md#Tiers", "agents md#tiers", "a#b#c", "#tiers"):
+        assert not re.search(pattern, rejected), rejected
+
+
+# --- the packaged schema's own failure modes (a broken installation) --------
+
+
+class _UnreadableResource:
+    """Stands in for ``importlib.resources.files(...)`` -- ``/`` keeps
+    returning itself, and the read raises."""
+
+    def __init__(self, error: Exception) -> None:
+        self._error = error
+
+    def __truediv__(self, other: str) -> _UnreadableResource:
+        return self
+
+    def read_text(self, encoding: str = "utf-8") -> str:
+        raise self._error
+
+
+@pytest.fixture
+def _uncached_schema_text():
+    """``_schema_text`` is process-cached, so a stub only takes effect with
+    the cache cleared on both sides of the test."""
+    store._schema_text.cache_clear()
+    yield
+    store._schema_text.cache_clear()
+
+
+def test_a_missing_packaged_schema_is_an_internal_error(monkeypatch, _uncached_schema_text):
+    """``_load_schema`` runs inside ``read_state``'s ``except
+    ValidationError`` scope, so a raw ``FileNotFoundError`` escaped the read
+    path entirely -- and a broken installation is exit 10, never invalid
+    state (exit 5), which would send an operator to repair a fine file."""
+    monkeypatch.setattr(
+        store.resources, "files", lambda package: _UnreadableResource(FileNotFoundError(package))
+    )
+    with pytest.raises(InternalError) as excinfo:
+        store._load_schema()
+    assert excinfo.value.exit_code == 10
+    assert excinfo.value.remedy.strip()
+    assert "schema.json" in str(excinfo.value)
+
+
+def test_a_corrupt_packaged_schema_is_an_internal_error(monkeypatch, _uncached_schema_text):
+    class _Corrupt(_UnreadableResource):
+        def read_text(self, encoding: str = "utf-8") -> str:
+            return "{ not json"
+
+    monkeypatch.setattr(store.resources, "files", lambda package: _Corrupt(ValueError()))
+    with pytest.raises(InternalError) as excinfo:
+        store._load_schema()
+    assert excinfo.value.exit_code == 10
+    assert excinfo.value.remedy.strip()
+
+
+def test_a_broken_packaged_schema_never_escapes_the_read_path(
+    tmp_path, monkeypatch, _uncached_schema_text
+):
+    _write_raw(tmp_path, yaml.safe_dump(_valid_document(), sort_keys=False))
+    store._validator.cache_clear()
+    monkeypatch.setattr(
+        store.resources, "files", lambda package: _UnreadableResource(FileNotFoundError("gone"))
+    )
+    try:
+        with pytest.raises(InternalError):
+            read_state(tmp_path)
+    finally:
+        store._validator.cache_clear()
+
+
+def test_load_schema_hands_out_a_fresh_object_every_call():
+    """A cached call handed every caller the SAME mutable dict, so one
+    caller mutating it silently poisoned every later validation in the
+    process. Only the TEXT is cached now."""
+    first = store._load_schema()
+    second = store._load_schema()
+    assert first is not second
+    assert first == second
+    first["properties"].pop("mode")
+    assert "mode" in store._load_schema()["properties"]
+
+
+# --- dataclass serialization ------------------------------------------------
+
+
+def test_to_json_dict_emits_the_eleven_keys_in_schema_order():
+    assert tuple(_sample_state().to_json_dict()) == STATE_KEYS
+
+
+def test_state_round_trips_through_its_own_json_form():
+    state = _sample_state()
+    assert SeedState.from_json_dict(json.loads(json.dumps(state.to_json_dict()))) == state
+
+
+def test_managed_artifact_serializes_class_under_the_reserved_word_key():
+    document = _sample_state().to_json_dict()
+    assert document["managed"][0]["class"] == "hybrid-managed-region"
+    assert "artifact_class" not in document["managed"][0]
+
+
+def test_from_json_dict_reports_a_missing_key_as_a_plain_value_error():
+    document = _valid_document()
+    del document["mode"]
+    with pytest.raises(ValueError, match="missing required key 'mode'"):
+        SeedState.from_json_dict(document)
+
+
+def test_from_json_dict_rejects_a_bool_where_a_byte_offset_belongs():
+    """`bool` is a subtype of `int` in Python, so `True` would otherwise
+    load as the byte offset `1`."""
+    with pytest.raises(ValueError, match="expected an int"):
+        RegionSpanRecord.from_json_dict({"name": "tiers", "start": True, "end": 20})
+
+
+# --- frozen means frozen: coercion + the cross-entry invariants -------------
+
+
+def test_a_sequence_field_given_a_list_round_trips_equal(tmp_path):
+    """``frozen=True`` was a half-promise: a ``list`` passed straight
+    through, so ``read_state`` returned a NON-equal object and
+    ``state.agents.append(...)`` mutated the "frozen" instance."""
+    state = _sample_state(agents=["claude-code", "codex-cli"], skips=["docs/legacy/*.md"])
+    assert state.agents == ("claude-code", "codex-cli")
+    assert isinstance(state.agents, tuple) and isinstance(state.skips, tuple)
+    assert state == _sample_state()
+    write_state(state, repo_root=tmp_path, never_write=_NO_PATTERNS)
+    assert read_state(tmp_path) == state
+
+
+def test_model_version_given_a_plain_string_is_rejected_at_construction():
+    """The same half-promise on the one field a JSON Schema can never
+    police: ``to_json_dict`` renders ``model_version`` with ``str(...)``,
+    so a plain ``str`` used to serialize identically, validate, and come
+    back from ``read_state`` as a ``ModelVersion`` -- silently NON-equal."""
+    with pytest.raises(ValueError, match="must be a ModelVersion"):
+        _sample_state(model_version="1.0.0")
+
+
+@pytest.mark.parametrize(
+    ("field_name", "value"),
+    [
+        pytest.param("agents", ("claude-code", 7), id="agents-non-str"),
+        pytest.param("agents", "claude-code", id="agents-bare-str"),
+        pytest.param("skips", [None], id="skips-none"),
+        pytest.param("migrations_applied", (1.2,), id="migrations-non-str"),
+        pytest.param("opted_out", {"agents-md#tiers"}, id="opted-out-set"),
+        pytest.param("managed", ({"id": "x"},), id="managed-raw-dict"),
+        pytest.param("legacy", (object(),), id="legacy-wrong-type"),
+    ],
+)
+def test_a_wrong_typed_sequence_item_is_rejected_at_construction(field_name, value):
+    """A bare ``str`` is rejected too, even though it is iterable:
+    ``tuple("claude")`` would silently become six one-character agents."""
+    with pytest.raises(ValueError, match=f"SeedState.{re.escape(field_name)}"):
+        _sample_state(**{field_name: value})
+
+
+def test_two_managed_entries_may_not_claim_the_same_id():
+    """``model/manifest.py`` enforces id uniqueness for entries; state must
+    too, or the recorded-hash lookup becomes order-dependent."""
+    duplicate = dataclasses.replace(_sample_state().managed[0], body_sha="ffffffff")
+    with pytest.raises(ValueError, match=r"managed\[\].id"):
+        _sample_state(managed=(_sample_state().managed[0], duplicate))
+
+
+def test_two_managed_entries_may_not_claim_the_same_path():
+    first, second = _sample_state().managed
+    with pytest.raises(ValueError, match=r"managed\[\].path"):
+        _sample_state(managed=(first, dataclasses.replace(second, path=first.path)))
+
+
+def test_two_legacy_entries_may_not_share_an_id():
+    entry = _sample_state().legacy[0]
+    with pytest.raises(ValueError, match=r"legacy\[\].id"):
+        _sample_state(legacy=(entry, dataclasses.replace(entry, path="docs/specs/other.md")))
+
+
+def test_migrations_applied_is_unique_by_version_not_by_string():
+    """``uniqueItems`` compares strings, but ``ModelVersion`` excludes build
+    metadata from equality (SemVer 2.0.0 section 10) -- so these two
+    entries name ONE version, and a migration guarded by the list could run
+    twice."""
+    assert ModelVersion.parse("1.2.0") == ModelVersion.parse("1.2.0+build")
+    with pytest.raises(ValueError, match="migrations_applied"):
+        _sample_state(migrations_applied=("1.2.0", "1.2.0+build"))
+
+
+def test_an_inverted_region_span_is_rejected_at_construction():
+    """``fs.replace_span`` validates ``0 <= start <= end`` for exactly this
+    reason: an eject splice built from an inverted record --
+    ``doc[:start] + doc[end:]`` -- DUPLICATES bytes instead of stripping a
+    region."""
+    with pytest.raises(ValueError, match="0 <= start <= end"):
+        RegionSpanRecord(name="tiers", start=100, end=5)
+
+
+def test_a_negative_region_offset_is_rejected_at_construction():
+    with pytest.raises(ValueError, match="0 <= start <= end"):
+        RegionSpanRecord(name="tiers", start=-1, end=5)
+
+
+def test_an_empty_region_body_is_still_a_legal_span():
+    assert RegionSpanRecord(name="tiers", start=7, end=7).end == 7
+
+
+def test_a_hybrid_claim_without_a_span_is_rejected():
+    """AD-58's eject needs the byte offsets; a hybrid claim with no span is
+    one it cannot withdraw at all."""
+    with pytest.raises(ValueError, match="requires an inserted_region_span"):
+        ManagedArtifact(
+            id="agents-md",
+            path="AGENTS.md",
+            artifact_class="hybrid-managed-region",
+            body_sha="0123abcd",
+            inserted_region_span=None,
+        )
+
+
+def test_a_whole_file_claim_carrying_a_span_is_rejected():
+    """The other direction: a span on a ``referenced`` claim invites an
+    eject to splice a file it was supposed to remove outright."""
+    with pytest.raises(ValueError, match="belongs only to class"):
+        ManagedArtifact(
+            id="agents-md",
+            path="AGENTS.md",
+            artifact_class="referenced",
+            body_sha="0123abcd",
+            inserted_region_span=RegionSpanRecord(name="tiers", start=0, end=1),
+        )
+
+
+# --- I/O matrix row 1: round-trip + FR-103's header -------------------------
+
+
+def test_write_then_read_returns_an_equal_state(tmp_path):
+    state = _sample_state()
+    write_state(state, repo_root=tmp_path, never_write=_NO_PATTERNS)
+    assert read_state(tmp_path) == state
+
+
+def test_written_file_opens_with_a_do_not_hand_edit_header(tmp_path):
+    write_state(_sample_state(), repo_root=tmp_path, never_write=_NO_PATTERNS)
+    text = state_path(tmp_path).read_text(encoding="utf-8")
+    first_line = text.splitlines()[0]
+    assert first_line.startswith("#")
+    assert "DO NOT HAND-EDIT" in first_line
+    header = text[: text.index("model_version:")].lower()
+    assert "marshal seed" in header
+    assert "owned" in header
+    assert all(line.startswith("#") or not line.strip() for line in header.splitlines())
+
+
+def test_the_header_is_ignored_on_read(tmp_path):
+    """The header is re-emitted on every write and carries no value -- a
+    round-trip through a file that starts with eleven comment lines is the
+    proof."""
+    state = _sample_state()
+    write_state(state, repo_root=tmp_path, never_write=_NO_PATTERNS)
+    assert state_path(tmp_path).read_text(encoding="utf-8").startswith("#")
+    assert read_state(tmp_path) == state
+
+
+def test_the_header_does_not_overstate_what_happens_to_a_hand_edit(tmp_path):
+    """The header used to promise a hand edit is "either overwritten
+    without warning or reported as invalid state (exit 5)" -- but a
+    schema-VALID edit is neither: it is silently BELIEVED by every read
+    until the next write. Asserted against the behaviour it describes, so
+    the wording cannot drift back."""
+    write_state(_sample_state(), repo_root=tmp_path, never_write=_NO_PATTERNS)
+    text = state_path(tmp_path).read_text(encoding="utf-8")
+    _write_raw(tmp_path, text.replace("mode: init", "mode: adopt"))
+    loaded = read_state(tmp_path)
+    assert loaded is not None
+    assert loaded.mode == "adopt"
+
+    header = text[: text.index("model_version:")]
+    assert "believes" in header.lower()
+    assert "either overwritten without warning" not in header
+
+
+def test_state_path_is_the_git_tracked_marshal_file(tmp_path):
+    assert state_path(tmp_path) == tmp_path / ".marshal" / "seed-state.yml"
+
+
+#: A flow sequence carrying at least one item -- ``[`` NOT immediately
+#: closed. ``default_flow_style=False`` suppresses those, but it does NOT
+#: suppress the EMPTY ``[]`` a ``yaml.safe_dump``ed empty list always emits
+#: (confirmed), which is the normal shape of a fresh ``init``'s `skips` /
+#: `legacy` / `migrations_applied` / `opted_out`. Asserting a bare ``"["
+#: not in text`` therefore only holds for a state with every collection
+#: populated -- true, but vacuous about the shape the tool actually writes
+#: most often (review finding), so the block-style claim is scoped to
+#: NON-empty collections and the empty case is asserted for what it really
+#: is, in its own round-trip test below.
+_NON_EMPTY_FLOW_SEQUENCE = re.compile(r"\[(?!\])")
+
+
+def test_written_yaml_is_block_style_and_key_ordered(tmp_path):
+    write_state(_sample_state(), repo_root=tmp_path, never_write=_NO_PATTERNS)
+    text = state_path(tmp_path).read_text(encoding="utf-8")
+    document = yaml.safe_load(text)
+    assert tuple(document) == STATE_KEYS
+    assert "{" not in text
+    assert _NON_EMPTY_FLOW_SEQUENCE.search(text) is None
+    # This state populates every collection, so there is no `[]` either.
+    assert "[" not in text
+
+
+def test_a_state_with_every_collection_empty_round_trips(tmp_path):
+    """The shape a fresh ``init`` actually writes: five empty collections,
+    which the fully-populated ``_sample_state`` never exercises."""
+    empty = _sample_state(
+        agents=(),
+        managed=(),
+        skips=(),
+        legacy=(),
+        migrations_applied=(),
+        opted_out=(),
+    )
+    write_state(empty, repo_root=tmp_path, never_write=_NO_PATTERNS)
+    loaded = read_state(tmp_path)
+    assert loaded == empty
+    assert loaded is not None
+    assert loaded.managed == () and loaded.legacy == ()
+    text = state_path(tmp_path).read_text(encoding="utf-8")
+    for key in ("agents", "managed", "skips", "legacy", "migrations_applied", "opted_out"):
+        assert f"{key}: []" in text
+    assert "{" not in text
+    assert _NON_EMPTY_FLOW_SEQUENCE.search(text) is None
+
+
+def test_writing_twice_is_byte_stable(tmp_path):
+    state = _sample_state()
+    write_state(state, repo_root=tmp_path, never_write=_NO_PATTERNS)
+    first = state_path(tmp_path).read_bytes()
+    write_state(state, repo_root=tmp_path, never_write=_NO_PATTERNS)
+    assert state_path(tmp_path).read_bytes() == first
+
+
+# --- I/O matrix row 2: never adopted ----------------------------------------
+
+
+def test_read_state_returns_none_for_a_never_adopted_repo(tmp_path):
+    assert read_state(tmp_path) is None
+
+
+def test_read_state_returns_none_when_marshal_exists_but_state_does_not(tmp_path):
+    (tmp_path / ".marshal").mkdir()
+    assert read_state(tmp_path) is None
+
+
+def test_read_state_reports_a_directory_at_the_state_path_as_invalid(tmp_path):
+    state_path(tmp_path).mkdir(parents=True)
+    with pytest.raises(StateInvalid) as excinfo:
+        read_state(tmp_path)
+    assert excinfo.value.exit_code == 5
+
+
+# --- I/O matrix row 3: schema violations ------------------------------------
+
+
+@pytest.mark.parametrize(
+    ("mutate", "expected_fragment"),
+    [
+        pytest.param(lambda doc: doc.pop("mode"), "mode", id="missing-required-key"),
+        pytest.param(
+            lambda doc: doc.update(slug="local-recipes"), "slug", id="unknown-top-level-key"
+        ),
+        pytest.param(
+            lambda doc: doc["managed"][0].update(body_sha="ZZ"), "body_sha", id="bad-body-sha"
+        ),
+        pytest.param(
+            lambda doc: doc.update(mode="update"), "mode", id="mode-outside-the-enum"
+        ),
+        pytest.param(
+            lambda doc: doc.update(adopted_at="2026-08-14 09:15"),
+            "adopted_at",
+            id="non-rfc3339-timestamp",
+        ),
+        pytest.param(
+            lambda doc: doc["managed"][0]["inserted_region_span"].update(start=-1),
+            "start",
+            id="negative-byte-offset",
+        ),
+        pytest.param(
+            lambda doc: doc.update(agents=["Claude Code"]), "agents", id="non-kebab-agent-id"
+        ),
+        pytest.param(
+            lambda doc: doc.update(opted_out=["agents-md"]), "opted_out", id="opt-out-without-region"
+        ),
+        pytest.param(
+            lambda doc: doc.update(migrations_applied=["1.2.0", "1.2.0"]),
+            "migrations_applied",
+            id="duplicate-migration",
+        ),
+        pytest.param(
+            lambda doc: doc["managed"][0].update(extra="x"), "extra", id="unknown-managed-key"
+        ),
+        pytest.param(
+            lambda doc: doc.update(model_version="1.2"), "model_version", id="non-semver-version"
+        ),
+        pytest.param(
+            lambda doc: doc["managed"][0].update(inserted_region_span=None),
+            "inserted_region_span",
+            id="hybrid-claim-without-a-span",
+        ),
+        pytest.param(
+            lambda doc: doc["managed"][1].update(
+                inserted_region_span={"name": "tiers", "start": 0, "end": 1}
+            ),
+            "inserted_region_span",
+            id="whole-file-claim-carrying-a-span",
+        ),
+        pytest.param(
+            lambda doc: doc["managed"][0]["inserted_region_span"].update(name="Tiers"),
+            "name",
+            id="non-marker-safe-region-name",
+        ),
+        pytest.param(
+            lambda doc: doc.update(opted_out=["agents-md#Tiers"]),
+            "opted_out",
+            id="opt-out-with-a-non-marker-safe-region-half",
+        ),
+        pytest.param(
+            lambda doc: doc.update(opted_out=["agents md#tiers"]),
+            "opted_out",
+            id="opt-out-with-whitespace-in-the-artifact-half",
+        ),
+    ],
+)
+def test_schema_violations_raise_state_invalid_naming_the_field(
+    tmp_path, mutate, expected_fragment
+):
+    document = _valid_document()
+    mutate(document)
+    _write_raw(tmp_path, yaml.safe_dump(document, sort_keys=False))
+    with pytest.raises(StateInvalid) as excinfo:
+        read_state(tmp_path)
+    assert excinfo.value.exit_code == 5
+    assert excinfo.value.remedy.strip()
+    assert expected_fragment in str(excinfo.value)
+
+
+@pytest.mark.parametrize(
+    ("mutate", "expected_fragment"),
+    [
+        pytest.param(
+            lambda doc: doc["managed"][0].update(body_sha="0123abcd\n"),
+            "body_sha",
+            id="body-sha",
+        ),
+        pytest.param(
+            lambda doc: doc["managed"][0]["inserted_region_span"].update(name="tiers\n"),
+            "name",
+            id="region-name",
+        ),
+        pytest.param(
+            lambda doc: doc.update(model_version="1.2.3\n"),
+            "model_version",
+            id="model-version",
+        ),
+    ],
+)
+def test_a_trailing_newline_never_satisfies_an_anchored_pattern(
+    tmp_path, mutate, expected_fragment
+):
+    """Python's ``$`` matches immediately before a final newline, so
+    ``"0123abcd\\n"`` passed ``^[0-9a-f]{8}$`` -- falsifying the schema's
+    own stated guarantees (DW-FU-9-3's closure, "always round-trips through
+    a rendered marker", "can never fail ``ModelVersion.parse``"). Written
+    as JSON, which is legal YAML, so the exact string reaches the validator
+    without any block-scalar quoting to reason about."""
+    document = _valid_document()
+    mutate(document)
+    _write_raw(tmp_path, json.dumps(document))
+    with pytest.raises(StateInvalid) as excinfo:
+        read_state(tmp_path)
+    assert excinfo.value.exit_code == 5
+    assert expected_fragment in str(excinfo.value)
+
+
+def test_an_opt_out_naming_a_dotted_artifact_id_round_trips(tmp_path):
+    """``managed[].id`` is any non-blank string, so the opt-out's artifact
+    half must accept one too -- a legally-named entry whose opt-out cannot
+    be spelled is the defect."""
+    state = _sample_state(opted_out=("bmad.method#tiers", "AGENTS.md#tiers"))
+    write_state(state, repo_root=tmp_path, never_write=_NO_PATTERNS)
+    assert read_state(tmp_path) == state
+
+
+# --- I/O matrix row 4: malformed input --------------------------------------
+
+
+_MALFORMED_PAYLOADS = [
+    pytest.param("model_version: [1.2.3\n", id="invalid-yaml"),
+    pytest.param("mode: init\nmode: adopt\n", id="duplicate-mapping-key"),
+    pytest.param(b"model_version: \xff\xfe\n", id="non-utf8-bytes"),
+    pytest.param("- one\n- two\n", id="non-mapping-root"),
+    pytest.param("", id="empty-file"),
+    pytest.param("<<: *missing\n", id="undefined-merge-anchor"),
+    pytest.param("defaults: &d\n  mode: adopt\n<<: *d\n", id="resolvable-merge-key"),
+    pytest.param("<<: &shared\n  mode: init\n  mode: adopt\nother: 1\n", id="merged-duplicate"),
+    pytest.param('!!map "x"\n', id="non-mapping-node-tagged-as-a-map"),
+]
+
+
+@pytest.mark.parametrize("payload", _MALFORMED_PAYLOADS)
+def test_malformed_input_raises_only_state_invalid(tmp_path, payload):
+    _write_raw(tmp_path, payload)
+    with pytest.raises(StateInvalid) as excinfo:
+        read_state(tmp_path)
+    assert excinfo.value.exit_code == 5
+    assert excinfo.value.remedy.strip()
+
+
+def test_state_invalid_is_none_of_the_types_it_replaces():
+    """FR-104's "never a traceback" stated as the type contract it is:
+    catching ``StateInvalid`` cannot accidentally be satisfied by one of
+    the underlying library/stdlib types, so the parametrized reads above
+    genuinely prove nothing leaks."""
+    for leaked in (yaml.YAMLError, UnicodeDecodeError, OSError, ValueError):
+        assert not issubclass(StateInvalid, leaked)
+
+
+@pytest.mark.parametrize("payload", _MALFORMED_PAYLOADS)
+def test_no_underlying_exception_type_escapes_the_read_path(tmp_path, payload):
+    """The same inputs again, asserted from the other side: an
+    ``except`` clause naming any of the four underlying types catches
+    nothing, because the only thing in flight is ``StateInvalid``."""
+    _write_raw(tmp_path, payload)
+    try:
+        read_state(tmp_path)
+    except (yaml.YAMLError, UnicodeDecodeError, OSError, ValueError) as exc:  # pragma: no cover
+        pytest.fail(f"read_state leaked {type(exc).__name__}: {exc}")
+    except StateInvalid:
+        return
+    pytest.fail("read_state accepted a malformed document")
+
+
+def test_duplicate_key_is_rejected_rather_than_resolved_last_wins(tmp_path):
+    """Plain ``SafeLoader`` would load this document clean with
+    ``mode: adopt`` winning -- the file a human reviewed in the diff would
+    not be the file Genesis loaded."""
+    document = _valid_document()
+    text = yaml.safe_dump(document, sort_keys=False) + "mode: adopt\n"
+    _write_raw(tmp_path, text)
+    with pytest.raises(StateInvalid, match="duplicate key"):
+        read_state(tmp_path)
+
+
+def test_a_merge_key_is_refused_outright(tmp_path):
+    """The override idiom is refused, not tolerated: ``write_state``
+    (``yaml.safe_dump``) emits no anchor, alias, or merge key at all, so a
+    ``<<:`` here is always a hand edit -- and tolerating it left the
+    duplicate rule bypassable (see the next test)."""
+    document = _valid_document()
+    text = "defaults: &defaults\n  mode: adopt\n" + yaml.safe_dump(document, sort_keys=False)
+    text = text.replace("mode: init\n", "<<: *defaults\nmode: init\n")
+    _write_raw(tmp_path, text)
+    with pytest.raises(StateInvalid, match="merge key") as excinfo:
+        read_state(tmp_path)
+    assert excinfo.value.exit_code == 5
+
+
+def test_a_duplicate_authored_inside_a_merge_anchor_is_not_resolved_last_wins(tmp_path):
+    """The bypass the outright refusal closes: ``flatten_mapping()``
+    splices the ANCHORED node's pairs into the document without ever
+    calling ``construct_mapping`` on it, so this loaded clean as
+    ``{'mode': 'adopt', 'other': 1}`` -- the exact last-wins outcome
+    ``_StrictLoader`` exists to prevent."""
+    _write_raw(tmp_path, "<<: &shared\n  mode: init\n  mode: adopt\nother: 1\n")
+    with pytest.raises(StateInvalid, match="merge key"):
+        read_state(tmp_path)
+
+
+def test_a_non_mapping_node_tagged_as_a_map_is_state_invalid(tmp_path):
+    """``!!map "x"`` reaches ``construct_mapping`` as a ``ScalarNode``, and
+    iterating its ``str`` value raised a bare ``ValueError`` -- not a
+    ``yaml.YAMLError`` -- straight past ``read_state``'s handler, breaking
+    FR-104's "only ``StateInvalid``" contract."""
+    with pytest.raises(yaml.YAMLError):
+        yaml.load('!!map "x"\n', Loader=store._StrictLoader)
+    _write_raw(tmp_path, '!!map "x"\n')
+    with pytest.raises(StateInvalid) as excinfo:
+        read_state(tmp_path)
+    assert excinfo.value.exit_code == 5
+
+
+# --- I/O matrix row 2 again: absence vs. a dangling link --------------------
+
+
+def test_a_dangling_symlink_at_the_state_path_is_invalid_not_absent(tmp_path):
+    """``read_bytes()`` on a broken symlink raises the same
+    ``FileNotFoundError`` a genuinely absent file does, so the absence
+    branch swallowed it -- an adopted repo whose link target is gone looked
+    never-adopted, after which ``init`` could re-establish over an existing
+    installation."""
+    path = state_path(tmp_path)
+    path.parent.mkdir(parents=True)
+    path.symlink_to(tmp_path / "somewhere-else.yml")
+    assert path.is_symlink() and not path.exists()
+    with pytest.raises(StateInvalid) as excinfo:
+        read_state(tmp_path)
+    assert excinfo.value.exit_code == 5
+    assert excinfo.value.remedy.strip()
+    assert "symlink" in str(excinfo.value)
+
+
+def test_a_live_symlink_at_the_state_path_still_reads(tmp_path):
+    """The complement: only a DANGLING link is invalid -- a link whose
+    target exists is an ordinary read."""
+    target = tmp_path / "elsewhere.yml"
+    write_state(_sample_state(), repo_root=tmp_path, never_write=_NO_PATTERNS)
+    state_path(tmp_path).rename(target)
+    state_path(tmp_path).symlink_to(target)
+    assert read_state(tmp_path) == _sample_state()
+
+
+# --- operator-facing messages stay one line ---------------------------------
+
+
+def test_a_huge_malformed_value_is_truncated_in_the_message(tmp_path):
+    """A malformed state document is frequently a LARGE one, and every
+    message here ends up in a ``StateInvalid`` an operator reads on one
+    terminal line."""
+    _write_raw(tmp_path, "- " + "y" * 10_000 + "\n")
+    with pytest.raises(StateInvalid) as excinfo:
+        read_state(tmp_path)
+    assert len(excinfo.value.message) < len(str(state_path(tmp_path))) + 200
+    assert excinfo.value.message.endswith("...")
+
+
+@pytest.mark.parametrize(
+    "call",
+    [
+        pytest.param(
+            lambda: store._require_str_tuple({"x": "y" * 10_000}, context="SeedState.agents"),
+            id="require-str-tuple",
+        ),
+        pytest.param(
+            lambda: store._require_object_list(["y" * 10_000], context="SeedState.managed"),
+            id="require-object-list",
+        ),
+        pytest.param(
+            lambda: store._require_str(["y" * 10_000], context="SeedState.mode"),
+            id="require-str",
+        ),
+    ],
+)
+def test_a_shape_complaint_truncates_the_value_it_interpolates(call):
+    with pytest.raises(ValueError) as excinfo:
+        call()
+    assert len(str(excinfo.value)) < 300
+    assert str(excinfo.value).endswith("...")
+
+
+# --- I/O matrix row 5: invalid state written --------------------------------
+
+
+def test_write_state_refuses_an_invalid_document_before_any_io(tmp_path):
+    with pytest.raises(StateInvalid) as excinfo:
+        write_state(
+            _sample_state(adopted_at="2026-08-14 09:15"),
+            repo_root=tmp_path,
+            never_write=_NO_PATTERNS,
+        )
+    assert excinfo.value.exit_code == 5
+    assert excinfo.value.remedy.strip()
+    assert "adopted_at" in str(excinfo.value)
+    assert not (tmp_path / ".marshal").exists()
+
+
+def test_a_refused_write_leaves_an_existing_state_file_byte_identical(tmp_path):
+    write_state(_sample_state(), repo_root=tmp_path, never_write=_NO_PATTERNS)
+    original = state_path(tmp_path).read_bytes()
+    with pytest.raises(StateInvalid):
+        write_state(
+            _sample_state(mode="update"), repo_root=tmp_path, never_write=_NO_PATTERNS
+        )
+    assert state_path(tmp_path).read_bytes() == original
+
+
+def test_write_state_makes_exactly_one_atomic_replace(tmp_path, monkeypatch):
+    """P-08's "one atomic replace", counted rather than asserted in prose."""
+    calls: list[Path] = []
+    real = fs.atomic_write_bytes
+
+    def counting(path: Path, data: bytes) -> None:
+        calls.append(path)
+        real(path, data)
+
+    monkeypatch.setattr(fs, "atomic_write_bytes", counting)
+    write_state(_sample_state(), repo_root=tmp_path, never_write=_NO_PATTERNS)
+    assert calls == [state_path(tmp_path)]
+
+
+# --- I/O matrix row 6: mid-apply failure ------------------------------------
+
+
+def test_mid_apply_failure_leaves_state_untouched_and_no_tmp_residue(tmp_path, monkeypatch):
+    """Four artifact writes land, the state write then fails MID-WRITE: the
+    pre-existing state file must be byte-identical and ``.marshal/`` must
+    hold no temp-file residue.
+
+    The fault is injected INSIDE the real ``pyforge.core.atomic_write`` --
+    a ``write_fn`` that populates the temp file and only then raises -- so
+    a temp file genuinely exists in ``.marshal/`` at the moment it fires.
+    An earlier version replaced ``fs.atomic_write_bytes`` wholesale and
+    raised before the real implementation ran, which meant no temp file was
+    ever created and "no ``.tmp`` residue" was true by construction,
+    proving nothing about cleanup (review finding)."""
+    write_state(_sample_state(), repo_root=tmp_path, never_write=_NO_PATTERNS)
+    original = state_path(tmp_path).read_bytes()
+
+    real_atomic_write = core_atomic_write.atomic_write
+    temp_paths: list[Path] = []
+    existed_when_the_fault_fired: list[bool] = []
+
+    def failing_inside_the_real_atomic_write(path: Path, data: bytes) -> None:
+        def write_fn(tmp: Path) -> None:
+            tmp.write_bytes(data)
+            temp_paths.append(tmp)
+            if path == state_path(tmp_path):
+                existed_when_the_fault_fired.append(tmp.exists())
+                raise OSError("no space left on device")
+
+        real_atomic_write(path, write_fn)
+
+    monkeypatch.setattr(fs, "atomic_write_bytes", failing_inside_the_real_atomic_write)
+
+    queued = [tmp_path / f"artifact-{index}.md" for index in range(4)]
+    with pytest.raises(OSError, match="no space left"):
+        for target in queued:
+            fs.write(target, b"body\n", repo_root=tmp_path, never_write=_NO_PATTERNS)
+        write_state(
+            dataclasses.replace(_sample_state(), last_update="2026-08-14T12:00:00Z"),
+            repo_root=tmp_path,
+            never_write=_NO_PATTERNS,
+        )
+
+    assert len(temp_paths) == 5
+    state_temp = temp_paths[-1]
+    # The fault fired with a real, populated temp file in `.marshal/` ...
+    assert existed_when_the_fault_fired == [True]
+    assert state_temp.parent == tmp_path / ".marshal"
+    # ... which `atomic_write` then cleaned up, leaving the original intact.
+    assert not state_temp.exists()
+    assert state_path(tmp_path).read_bytes() == original
+    assert sorted(p.name for p in (tmp_path / ".marshal").iterdir()) == ["seed-state.yml"]
+    assert all(target.read_bytes() == b"body\n" for target in queued)
+
+
+# --- I/O matrix row 7: guarded path -----------------------------------------
+
+
+def test_a_never_write_guarded_state_path_raises_never_write_violation(tmp_path):
+    never_write = fs.NeverWrite((".marshal/seed-state.yml",))
+    with pytest.raises(NeverWriteViolation) as excinfo:
+        write_state(_sample_state(), repo_root=tmp_path, never_write=never_write)
+    assert excinfo.value.exit_code == 4
+    assert not state_path(tmp_path).exists()
+
+
+def test_an_os_error_from_fs_propagates_unwrapped(tmp_path, monkeypatch):
+    """A failed write means the ENVIRONMENT refused, not that state is
+    invalid -- so the ``OSError`` reaches the caller as itself."""
+
+    def boom(path: Path, data: bytes) -> None:
+        raise PermissionError("read-only file system")
+
+    monkeypatch.setattr(fs, "atomic_write_bytes", boom)
+    with pytest.raises(PermissionError):
+        write_state(_sample_state(), repo_root=tmp_path, never_write=_NO_PATTERNS)
+
+
+def test_a_repo_root_that_is_not_a_directory_raises_the_documented_value_error(tmp_path):
+    """``fs._guard`` raises a plain ``ValueError`` for a ``repo_root`` that
+    does not resolve to an existing directory -- outside the ``SeedError``
+    taxonomy and not an ``OSError``, so a caller catching
+    ``(SeedError, OSError)`` gets a traceback. Deliberately not converted
+    (that would fight ``fs.py``'s contract), so ``write_state``'s docstring
+    has to say so."""
+    with pytest.raises(ValueError, match="does not resolve to an existing directory"):
+        write_state(
+            _sample_state(), repo_root=tmp_path / "never-created", never_write=_NO_PATTERNS
+        )
+    assert "ValueError" in write_state.__doc__
+    assert "repo_root" in write_state.__doc__
+
+
+# --- AC: eject reconstruction from state.managed alone (AD-58) --------------
+
+
+def test_managed_entries_alone_reconstruct_the_removal_set():
+    state = _sample_state()
+    removal_set = [
+        (artifact.path, artifact.artifact_class, artifact.body_sha, artifact.inserted_region_span)
+        for artifact in state.managed
+    ]
+    assert removal_set == [
+        ("AGENTS.md", "hybrid-managed-region", "0123abcd", RegionSpanRecord("tiers", 7, 20)),
+        ("docs/dreams/example.md", "copied-seeded", "deadbeef", None),
+    ]
+
+
+def test_a_hybrid_entrys_span_strips_its_region_without_touching_the_rest():
+    """AD-58's actual requirement: the recorded name + body span are
+    enough to withdraw the claim, leaving every byte outside the span
+    identical (the same reconstruction identity ``fs.replace_span`` and
+    ``regions/parse.py`` already document)."""
+    prefix, body, suffix = b"before\n", b"managed body\n", b"after\n"
+    document = prefix + body + suffix
+    artifact = ManagedArtifact(
+        id="agents-md",
+        path="AGENTS.md",
+        artifact_class="hybrid-managed-region",
+        body_sha="0123abcd",
+        inserted_region_span=RegionSpanRecord(
+            name="tiers", start=len(prefix), end=len(prefix) + len(body)
+        ),
+    )
+    span = artifact.inserted_region_span
+    assert span is not None
+    assert document[span.start : span.end] == body
+    assert document[: span.start] + document[span.end :] == prefix + suffix
+    assert span.name == "tiers"
+
+
+def test_a_region_span_survives_the_file_round_trip(tmp_path):
+    write_state(_sample_state(), repo_root=tmp_path, never_write=_NO_PATTERNS)
+    loaded = read_state(tmp_path)
+    assert loaded is not None
+    assert loaded.managed[0].inserted_region_span == RegionSpanRecord("tiers", 7, 20)
+    assert loaded.managed[1].inserted_region_span is None
+
+
+# --- AC: the error taxonomy stays closed ------------------------------------
+
+
+def test_seed_error_still_has_exactly_six_leaves():
+    assert len(SeedError.__subclasses__()) == 6
+
+
+def test_state_invalid_is_exit_code_five():
+    assert StateInvalid.exit_code == 5
+
+
+# --- the two clocks, the timestamp owner, and the Copier projection ---------
+
+
+def test_seed_model_version_reports_the_installed_distribution():
+    version = seed_model_version()
+    assert version == metadata.version("pyforge-marshal")
+    pattern = store._load_schema()["$defs"]["packageVersion"]["pattern"]
+    assert re.fullmatch(pattern, version)
+
+
+def test_seed_model_version_reports_a_missing_distribution_as_internal_error(monkeypatch):
+    def missing(name: str) -> str:
+        raise metadata.PackageNotFoundError(name)
+
+    monkeypatch.setattr(store.metadata, "version", missing)
+    with pytest.raises(InternalError) as excinfo:
+        seed_model_version()
+    assert excinfo.value.exit_code == 10
+    assert excinfo.value.remedy.strip()
+
+
+def test_utc_timestamp_emits_the_schemas_exact_shape():
+    pattern = store._load_schema()["$defs"]["timestamp"]["pattern"]
+    assert re.fullmatch(pattern, utc_timestamp())
+
+
+def test_utc_timestamp_converts_an_aware_non_utc_moment():
+    from datetime import datetime, timedelta, timezone
+
+    moment = datetime(2026, 8, 14, 11, 30, 0, tzinfo=timezone(timedelta(hours=2)))
+    assert utc_timestamp(moment) == "2026-08-14T09:30:00Z"
+
+
+def test_utc_timestamp_rejects_a_naive_datetime():
+    from datetime import datetime
+
+    with pytest.raises(ValueError, match="timezone-aware"):
+        utc_timestamp(datetime(2026, 8, 14, 11, 30, 0))
+
+
+def test_utc_timestamp_output_is_accepted_by_the_schema(tmp_path):
+    stamp = utc_timestamp()
+    state = _sample_state(adopted_at=stamp, last_update=stamp)
+    write_state(state, repo_root=tmp_path, never_write=_NO_PATTERNS)
+    assert read_state(tmp_path) == state
+
+
+def test_copier_data_projects_only_what_state_knows():
+    assert copier_data(_sample_state()) == {
+        "model_version": "1.2.3",
+        "seed_model_version": "0.1.0",
+        "mode": "init",
+        "agents": ["claude-code", "codex-cli"],
+    }
+
+
+def test_copier_data_invents_no_slug_or_answers_map():
+    projection = copier_data(_sample_state())
+    assert "slug" not in projection
+    assert "answers" not in projection
+
+
+# --- AC: import surface + no second atomic write ----------------------------
+
+
+def _store_source() -> str:
+    return Path(store.__file__).read_text(encoding="utf-8")
+
+
+def _resolved_marshal_imports() -> set[str]:
+    """Every ``pyforge.marshal.*`` module ``store.py`` imports, with
+    relative imports resolved against its own package
+    (``pyforge.marshal.seed.state``)."""
+    package_parts = store.__name__.split(".")[:-1]
+    resolved: set[str] = set()
+    for node in ast.walk(ast.parse(_store_source())):
+        if isinstance(node, ast.Import):
+            resolved.update(
+                alias.name for alias in node.names if alias.name.startswith("pyforge.marshal")
+            )
+        elif isinstance(node, ast.ImportFrom):
+            if node.level == 0:
+                if node.module and node.module.startswith("pyforge.marshal"):
+                    resolved.add(node.module)
+                continue
+            base = ".".join(package_parts[: len(package_parts) - (node.level - 1)])
+            prefix = f"{base}.{node.module}" if node.module else base
+            resolved.add(prefix)
+            resolved.update(f"{prefix}.{alias.name}" for alias in node.names)
+    return resolved
+
+
+def test_store_never_imports_upward():
+    forbidden = (
+        "pyforge.marshal.seed.detect",
+        "pyforge.marshal.seed.plan",
+        "pyforge.marshal.seed.apply",
+        "pyforge.marshal.seed.verbs",
+        "pyforge.marshal.seed.engine",
+    )
+    offenders = [
+        name
+        for name in _resolved_marshal_imports()
+        for banned in forbidden
+        if name == banned or name.startswith(f"{banned}.")
+    ]
+    assert not offenders, f"store.py imports upward: {offenders}"
+
+
+def test_store_imports_only_its_declared_marshal_surface():
+    assert _resolved_marshal_imports() <= {
+        "pyforge.marshal.seed",
+        "pyforge.marshal.seed.fs",
+        "pyforge.marshal.seed.errors",
+        "pyforge.marshal.seed.errors.InternalError",
+        "pyforge.marshal.seed.errors.StateInvalid",
+        "pyforge.marshal.seed.model.version",
+        "pyforge.marshal.seed.model.version.ModelVersion",
+    }
+
+
+#: Call names that would put a second atomic write (or half of one) in this
+#: module. Matched as CALLS, never as substrings: the previous grep form
+#: would have redded the build for a docstring that merely EXPLAINED why
+#: the module avoids `mkstemp`, while missing `os.rename`, `Path.rename`,
+#: `shutil.move`, `mkdtemp`, and a bare `open(path, "wb")` entirely
+#: (review finding).
+_FORBIDDEN_WRITE_CALLS = frozenset(
+    {"mkstemp", "mkdtemp", "NamedTemporaryFile", "write_bytes", "write_text", "rename"}
+)
+
+
+def _is_write_mode_call(node: ast.Call, *, mode_index: int) -> bool:
+    """True for ``open(path, "wb")``/``path.open("w")`` -- a write-mode
+    open, positional or ``mode=``. A read (``.open()``/``.open("r")``) is
+    not a write-mechanics signal. ``mode_index`` differs between the two
+    spellings: the builtin takes the path first, the method does not."""
+    mode_arg: ast.expr | None = node.args[mode_index] if len(node.args) > mode_index else None
+    for keyword in node.keywords:
+        if keyword.arg == "mode":
+            mode_arg = keyword.value
+    return (
+        isinstance(mode_arg, ast.Constant)
+        and isinstance(mode_arg.value, str)
+        and mode_arg.value.startswith("w")
+    )
+
+
+def _write_mechanics_calls(tree: ast.AST) -> list[str]:
+    """Every forbidden write-mechanics CALL in ``tree``, by spelling.
+
+    AST-based, so a string literal, comment, or docstring naming any of
+    these is exempt by construction -- the module's own docstring says it
+    implements no temp-file or rename mechanics, and saying so must not
+    trip the check that proves it."""
+    offenders: list[str] = []
+    for node in ast.walk(tree):
+        if not isinstance(node, ast.Call):
+            continue
+        callee = node.func
+        if isinstance(callee, ast.Attribute):
+            owner = callee.value.id if isinstance(callee.value, ast.Name) else None
+            name = callee.attr
+            if name in _FORBIDDEN_WRITE_CALLS:
+                offenders.append(name if owner is None else f"{owner}.{name}")
+            elif name == "replace" and owner in {"os", "shutil"}:
+                offenders.append(f"{owner}.replace")
+            elif name == "move" and owner == "shutil":
+                offenders.append("shutil.move")
+            elif name == "open" and _is_write_mode_call(node, mode_index=0):
+                offenders.append(f"{owner}.open" if owner else ".open")
+        elif isinstance(callee, ast.Name):
+            if callee.id in _FORBIDDEN_WRITE_CALLS or callee.id in {"replace", "move"}:
+                offenders.append(callee.id)
+            elif callee.id == "open" and _is_write_mode_call(node, mode_index=1):
+                offenders.append("open")
+    return offenders
+
+
+def test_store_implements_no_temp_file_or_rename_mechanics():
+    """P-01/P-08 and pyforge-core's CAP-7 guard, asserted locally too: the
+    module's own source carries neither half of an atomic write."""
+    offenders = _write_mechanics_calls(ast.parse(_store_source()))
+    assert not offenders, f"store.py must not implement write mechanics: {offenders}"
+
+
+@pytest.mark.parametrize(
+    ("source", "expected"),
+    [
+        pytest.param("import os\nos.rename(a, b)\n", ["os.rename"], id="os-rename"),
+        pytest.param("p.rename(other)\n", ["p.rename"], id="path-rename"),
+        pytest.param("import shutil\nshutil.move(a, b)\n", ["shutil.move"], id="shutil-move"),
+        pytest.param(
+            "import tempfile\ntempfile.mkdtemp()\n", ["tempfile.mkdtemp"], id="mkdtemp"
+        ),
+        pytest.param('open(path, "wb").write(b"x")\n', ["open"], id="bare-write-open"),
+        pytest.param('path.open("w")\n', ["path.open"], id="method-write-open"),
+        pytest.param("import os\nos.replace(a, b)\n", ["os.replace"], id="os-replace"),
+        pytest.param(
+            "import tempfile\ntempfile.mkstemp()\n", ["tempfile.mkstemp"], id="mkstemp"
+        ),
+        pytest.param("p.write_bytes(b'x')\n", ["p.write_bytes"], id="write-bytes"),
+    ],
+)
+def test_the_write_mechanics_guard_fires_on_each_forbidden_spelling(source, expected):
+    """Non-vacuous proof, one case per name the grep form used to miss."""
+    assert _write_mechanics_calls(ast.parse(source)) == expected
+
+
+def test_the_write_mechanics_guard_exempts_prose():
+    """The other half of the fix: a docstring or comment EXPLAINING why the
+    module avoids these primitives is not an implementation of them, and
+    must not red the build."""
+    prose = (
+        '"""This module never calls mkstemp, os.replace, or shutil.move."""\n'
+        "# ... and it does not use tmp.write_bytes / Path.rename either.\n"
+        'MESSAGE = "refusing to open(path, \\"wb\\")"\n'
+    )
+    assert _write_mechanics_calls(ast.parse(prose)) == []
+    assert _write_mechanics_calls(ast.parse('x = path.read_bytes()\ny = f.read_text()\n')) == []
+
+
+def test_store_never_references_the_copier_answers_file():
+    """FR-105/AD-52: state is the single source of truth for the answers;
+    Genesis never reads, parses, or hand-edits the file Copier writes."""
+    assert ".copier-answers" not in _store_source()
+
+
+# --- AC: the gitignore template stays untouched (FR-107) --------------------
+
+
+def test_state_file_is_not_git_ignored_by_the_packaged_template():
+    template = (
+        Path(store.__file__).resolve().parents[1]
+        / "templates"
+        / "files"
+        / "model-ignores.gitignore.j2"
+    )
+    assert template.is_file()
+    rules = [
+        line.strip()
+        for line in template.read_text(encoding="utf-8").splitlines()
+        if line.strip() and not line.lstrip().startswith("#")
+    ]
+    # The template ships correct and this story does not touch it: the plan
+    # artifact is ignored, state is not (FR-107 -- a clone learns what the
+    # tool owns here from the tracked file). "seed-state" appears in the
+    # template only inside the COMMENT that explains this; a rule naming it
+    # would be the regression.
+    assert ".marshal/plan.json" in rules
+    assert not [rule for rule in rules if "seed-state" in rule]
+    assert not [rule for rule in rules if rule.rstrip("/") == ".marshal"]
