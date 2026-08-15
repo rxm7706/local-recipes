@@ -1,4 +1,4 @@
-"""Hermetic ``cf_atlas.db``-shaped sqlite fixture for the Story 14.1 static-view tests.
+"""Hermetic ``cf_atlas.db``-shaped sqlite fixture for the Story 14.1/14.2/14.3 view tests.
 
 Uses stdlib ``sqlite3`` directly (test-only — the F1 singularity gate
 ``tests/singularity/test_duckdb_sole_engine.py`` scans ``src/pyforge/atlas/**``, never
@@ -6,6 +6,13 @@ Uses stdlib ``sqlite3`` directly (test-only — the F1 singularity gate
 zero-argument default ``query()`` to return a realistic, non-empty row set. Rows are shared
 across all six views on purpose (one small package fixture set, not six bespoke ones) so a
 single build function backs every test in this directory.
+
+``maintainers``/``package_maintainers`` (Story 14.3, CAP-2) mirror every wrapped CLI's
+identical maintainer join (``JOIN package_maintainers pm ON pm.conda_name = p.conda_name
+JOIN maintainers m ON m.id = pm.maintainer_id ... WHERE LOWER(m.handle) = LOWER(?)`` — verified
+against ``staleness_report.py::query``'s source) so the live maintainer-filter tests exercise
+a real join, not a stub. Exactly one handle (``alice``) is assigned to exactly one fixture
+package (``alpha-pkg``), so filtering by it provably narrows the result set.
 """
 
 from __future__ import annotations
@@ -70,6 +77,14 @@ CREATE TABLE package_version_downloads (
     conda_name TEXT,
     version TEXT,
     upload_unix INTEGER
+);
+CREATE TABLE maintainers (
+    id INTEGER PRIMARY KEY,
+    handle TEXT
+);
+CREATE TABLE package_maintainers (
+    conda_name TEXT,
+    maintainer_id INTEGER
 );
 """
 
@@ -180,6 +195,12 @@ _PACKAGE_VERSION_DOWNLOADS = [
     ("delta-pkg", "1.2.0", NOW - 10 * DAY),
 ]
 
+# Story 14.3: exactly one handle, assigned to exactly one fixture package (alpha-pkg), so a
+# live maintainer-filter test can prove a real narrowing join (a filter for "alice" returns
+# only alpha-pkg; a filter for anyone else returns zero rows).
+_MAINTAINERS = [(1, "alice")]
+_PACKAGE_MAINTAINERS = [("alpha-pkg", 1)]
+
 
 def _build(db_path: Path, *, with_rows: bool) -> None:
     conn = sqlite3.connect(db_path)
@@ -209,6 +230,13 @@ def _build(db_path: Path, *, with_rows: bool) -> None:
                 "INSERT INTO package_version_downloads (conda_name, version, upload_unix) "
                 "VALUES (?, ?, ?)",
                 _PACKAGE_VERSION_DOWNLOADS,
+            )
+            conn.executemany(
+                "INSERT INTO maintainers (id, handle) VALUES (?, ?)", _MAINTAINERS
+            )
+            conn.executemany(
+                "INSERT INTO package_maintainers (conda_name, maintainer_id) VALUES (?, ?)",
+                _PACKAGE_MAINTAINERS,
             )
         conn.commit()
     finally:

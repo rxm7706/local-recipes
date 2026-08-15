@@ -1,6 +1,10 @@
 """Story 14.2 (CAP-3) — pluggable widget-type registry.
 
-Covers the I/O matrix's HAPPY_PATH, UNKNOWN_WIDGET, EXTENSIBILITY, and WEBSOCKET_UNSET rows.
+Covers the I/O matrix's HAPPY_PATH, UNKNOWN_WIDGET, and EXTENSIBILITY rows. The former
+WEBSOCKET_UNSET row (``get_widget("grid").websocket_renderer is None``) no longer holds as of
+Story 14.3, which fills that slot — see this file's
+``test_get_widget_grid_websocket_renderer_is_now_set_by_story_14_3`` for the updated pin and
+``tests/views/test_live.py`` for the actual live-session behavior coverage.
 
 HAPPY_PATH is split into two independent checks, deliberately avoiding a byte-identical
 comparison of Bokeh's own HTML output (which would require monkeypatching Bokeh's private,
@@ -107,10 +111,15 @@ def test_get_widget_extensibility_via_monkeypatch_needs_no_registry_edit(monkeyp
     assert all(view.widget == "grid" for view in STATIC_VIEWS)
 
 
-def test_get_widget_grid_websocket_renderer_is_unset():
-    """WEBSOCKET_UNSET: get_widget("grid").websocket_renderer is None — Story 14.3 fills
-    this in."""
-    assert get_widget("grid").websocket_renderer is None
+def test_get_widget_grid_websocket_renderer_is_now_set_by_story_14_3():
+    """Story 14.3 fills the slot this test used to pin as unset (see tests/views/test_live.py
+    for the actual live-session behavior coverage) — the factory shape is
+    ``Callable[[View], Callable[[Document], None]]``: calling it with a View returns a plain
+    callable (the ``ModifyDoc`` a ``FunctionHandler`` wraps), never a Bokeh model itself."""
+    renderer = get_widget("grid").websocket_renderer
+    assert renderer is not None
+    modify_doc = renderer(get_view("staleness-report"))
+    assert callable(modify_doc)
 
 
 def test_views_package_reexports_widget_registry_symbols():

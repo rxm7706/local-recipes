@@ -1589,6 +1589,13 @@ kedro-viz = ">=12.4.0"             # C2 `viz` task + test_viz_loadable smoke —
 # cleanly and still fails at import — which is exactly how this was missed.
 playwright = ">=1.62.1"            # CLI + browser driver
 playwright-python = ">=1.62.0"     # the `import playwright` bindings
+# Story 14.3 (CAP-2, review-pass patch): tests/views/test_live.py hard-imports
+# `starlette.testclient.TestClient`, which requires `httpx` at import time. TEST-ONLY
+# (mirrors the playwright pair above) — already resolvable transitively via a2a-sdk's own
+# httpx run-dep, but AUD-ATLAS-010 doctrine is that an undeclared hard import is a runtime
+# dependency whether or not the manifest says so, and this diff's own commit message invokes
+# that doctrine for tornado/starlette without applying it to this test file's httpx import.
+httpx = ">=0.28.1"
 
 [feature.pyforge-atlas.pypi-dependencies]
 # AUD-ATLAS-010 (2026-07-27): `semantic/models.py` imports boring_semantic_layer at
