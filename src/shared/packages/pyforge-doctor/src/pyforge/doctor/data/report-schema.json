@@ -74,7 +74,8 @@
             "forward-dependency",
             "bmad-drift",
             "bmad-output-hygiene",
-            "due-for-verification"
+            "due-for-verification",
+            "bmad-method-version-drift"
           ]
         },
         "check": { "type": "string" },

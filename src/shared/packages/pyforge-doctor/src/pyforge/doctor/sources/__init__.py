@@ -311,6 +311,16 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # DEFERRED_WORK above. Unlike every prior row, this source has no
     # retiring `scripts/*_check.py` origin -- the first genuinely NEW
     # (non-ported) REGISTRY member.
+    SourceRegistration(
+        source=Source.BMAD_METHOD_VERSION_DRIFT,
+        scope="repo",
+        subject_station="marshal",
+        owning_station="doctor",
+    ),  # Story 10.1 (Epic 10/CAP-1) -- compares the installed BMAD-METHOD
+    # framework version against pixi.toml's own declared floor; mirrors
+    # BMAD_DRIFT/DREAM_CHAIN/SPEC_SURFACE/FORWARD_DEPENDENCY's own "factory
+    # apparatus" precedent -- Marshal owns the repo's tooling-installation
+    # surface even though applying a fix is steward's territory.
 )
 
 
