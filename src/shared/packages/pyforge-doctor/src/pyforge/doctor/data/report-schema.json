@@ -73,6 +73,7 @@
             "deferred-work",
             "forward-dependency",
             "bmad-drift",
+            "bmad-output-hygiene",
             "due-for-verification"
           ]
         },

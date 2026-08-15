@@ -68,8 +68,8 @@ development_status:
   8-3-the-fix-mode-promotes-the-backlog-and-refuses-on-collision: done
   8-4-the-baseline-re-stamps-so-a-second-run-is-a-no-op: done
   9-1-the-five-hygiene-finding-classes-get-testable-definitions: done
-  9-2-the-sweep-runs-against-all-eight-stations: backlog
-  9-3-hygiene-findings-report-and-never-mutate: backlog
+  9-2-the-sweep-runs-against-all-eight-stations: done
+  9-3-hygiene-findings-report-and-never-mutate: done
   9-4-loop-home-staleness-surfaces-in-the-attention-block: done
   epic-1: done
   epic-1-retrospective: optional

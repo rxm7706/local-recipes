@@ -286,6 +286,21 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     # last of Epic 6's Charter §6 sweep; scope stays "repo" per that script's
     # own DETECTOR declaration.
     SourceRegistration(
+        source=Source.BMAD_OUTPUT_HYGIENE,
+        scope="repo",
+        subject_station="fleet",
+        owning_station="doctor",
+    ),  # Story 9.2 (CAP-8) -- sources/hygiene.py. subject_station="fleet",
+    # not a single station: this sweep's real subject is every station's own
+    # planning artifacts at once (doctor included, self-judging alongside the
+    # rest), so naming any one station would misrepresent what it judges.
+    # CHAIN_COMPLETENESS's subject_station="marshal" precedent (it too walks
+    # all 8 projects) does NOT apply here -- what THAT source judges (the
+    # Guildhall board's truthfulness) really is Marshal-owned, but no single
+    # station owns "every station's own hygiene." Each Finding's own
+    # evidence["station"] still carries the real station a given instance was
+    # found in -- no per-finding traceability is lost.
+    SourceRegistration(
         source=Source.DUE_FOR_VERIFICATION,
         scope="repo",
         subject_station="marshal",

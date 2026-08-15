@@ -148,6 +148,9 @@ def test_source_taxonomy_is_exactly_this_closed_set():
     # Story 6.8 (FR-15) added BMAD_DRIFT, porting scripts/bmad_drift_check.py's
     # judgement on the pyforge-marshal project docs' own currency -- the tenth
     # and last of Epic 6's Charter §6 sweep.
+    # Story 9.2 (CAP-8) added BMAD_OUTPUT_HYGIENE, giving Story 9.1's five
+    # pure hygiene predicates their first production caller (sources/hygiene.py),
+    # walking every station's own planning artifacts at once.
     # Story 11.1 (Epic 11/CAP-1) added DUE_FOR_VERIFICATION, the first
     # genuinely NEW (non-ported) member: a per-project batch of tracked
     # deferred-work-ledger entries due for re-verification.
@@ -171,6 +174,7 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         "deferred-work",
         "forward-dependency",
         "bmad-drift",
+        "bmad-output-hygiene",
         "due-for-verification",
     }
 
