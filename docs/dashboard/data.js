@@ -678,12 +678,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "34/41",
+            "35/41",
             "stories complete",
             "var(--done)"
           ],
           [
-            "7",
+            "6",
             "remaining",
             ""
           ]
@@ -723,7 +723,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "8.2"
+        "at": "8.3"
       },
       "epics": [
         {
@@ -944,7 +944,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "8.2",
-              "pending",
+              "done",
               "Minting picks the next free suffix per station convention"
             ],
             [
@@ -4341,7 +4341,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-15 10:05 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-15 11:00 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6758,7 +6758,7 @@ window.DASHBOARD_DATA = {
           "stories": 12,
           "state": "in-progress",
           "note": "line 2 — consolidative wrap",
-          "done": 34,
+          "done": 35,
           "total": 41
         },
         {
@@ -7040,7 +7040,7 @@ window.DASHBOARD_DATA = {
           "context": "2026-08-01",
           "epics": "2026-08-15",
           "sprint": "2026-08-15",
-          "tea": "2026-08-13",
+          "tea": "2026-08-15",
           "gates": "2026-08-10",
           "code": "2026-08-13",
           "verify": "2026-08-13",
@@ -7130,7 +7130,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "34/41",
+        "progress": "35/41",
         "complete": 14,
         "of": 14
       },
@@ -18561,7 +18561,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "paused 8.2",
+        "line": "paused 8.3",
         "load": 3,
         "blocked": 0,
         "dreams": [
@@ -22158,15 +22158,15 @@ window.DASHBOARD_DATA = {
     "source": "sprint-status",
     "running": [],
     "lastShipped": {
-      "station": "steward",
-      "story": "10.3",
-      "epoch": 1786774034,
-      "sha": "53729b524",
-      "subject": "Merge bmad-loop/20260814-202735-e909/10-3-one-image-both-engines into loop/pyforge-steward (bmad-loop)"
+      "station": "doctor",
+      "story": "8.1",
+      "epoch": 1786788381,
+      "sha": "11de1d85e",
+      "subject": "doctor: land Story 8.1 -- sprint ledger, dashboard, epics outcome, spec promotion"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-15 10:05 UTC",
-    "generatedEpoch": 1786788330
+    "generatedAt": "2026-08-15 11:00 UTC",
+    "generatedEpoch": 1786791615
   },
   "storySpecs": [
     {
@@ -22177,9 +22177,9 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-doctor",
-      "done": 34,
+      "done": 35,
       "tracked": 29,
-      "gap": 5
+      "gap": 6
     },
     {
       "station": "pyforge-herald",
@@ -22401,36 +22401,6 @@ window.DASHBOARD_DATA = {
         "state": "ready"
       },
       {
-        "station": "doctor",
-        "project": "pyforge-doctor",
-        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
-        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
-        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
-        "openSpecs": [
-          {
-            "slug": "spec-deferred-work-visibility",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md"
-          }
-        ],
-        "done": 34,
-        "backlog": 7,
-        "blocked": 0,
-        "total": 41,
-        "next": "8-2-minting-picks-the-next-free-suffix-per-station-convention",
-        "blockedKeys": [],
-        "backlogKeys": [
-          "8-2-minting-picks-the-next-free-suffix-per-station-convention",
-          "8-3-the-fix-mode-promotes-the-backlog-and-refuses-on-collision",
-          "8-4-the-baseline-re-stamps-so-a-second-run-is-a-no-op",
-          "9-1-the-five-hygiene-finding-classes-get-testable-definitions",
-          "9-2-the-sweep-runs-against-all-eight-stations",
-          "9-3-hygiene-findings-report-and-never-mutate",
-          "9-4-loop-home-staleness-surfaces-in-the-attention-block"
-        ],
-        "state": "ready"
-      },
-      {
         "station": "atlas",
         "project": "pyforge-atlas",
         "epicsPath": "_bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md",
@@ -22466,6 +22436,35 @@ window.DASHBOARD_DATA = {
           "15-3-kedro-pipeline-surfacing",
           "16-1-instance-deploy-definition",
           "16-2-httpx-opener-and-rehearsal"
+        ],
+        "state": "ready"
+      },
+      {
+        "station": "doctor",
+        "project": "pyforge-doctor",
+        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-deferred-work-visibility",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md"
+          }
+        ],
+        "done": 35,
+        "backlog": 6,
+        "blocked": 0,
+        "total": 41,
+        "next": "8-3-the-fix-mode-promotes-the-backlog-and-refuses-on-collision",
+        "blockedKeys": [],
+        "backlogKeys": [
+          "8-3-the-fix-mode-promotes-the-backlog-and-refuses-on-collision",
+          "8-4-the-baseline-re-stamps-so-a-second-run-is-a-no-op",
+          "9-1-the-five-hygiene-finding-classes-get-testable-definitions",
+          "9-2-the-sweep-runs-against-all-eight-stations",
+          "9-3-hygiene-findings-report-and-never-mutate",
+          "9-4-loop-home-staleness-surfaces-in-the-attention-block"
         ],
         "state": "ready"
       },
@@ -22530,8 +22529,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 353,
-      "backlog": 70,
+      "done": 354,
+      "backlog": 69,
       "blocked": 1,
       "total": 424
     }
@@ -22552,13 +22551,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "doctor",
         "stories": 41,
-        "done": 34,
+        "done": 35,
         "blocked": 0,
         "epics": 9,
         "epicsDone": 7,
         "complete": false,
         "running": false,
-        "projected": 34
+        "projected": 35
       },
       {
         "key": "herald",
@@ -22629,7 +22628,7 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 424,
-      "done": 353,
+      "done": 354,
       "blocked": 1,
       "epics": 85,
       "epicsDone": 63
@@ -22637,7 +22636,7 @@ window.DASHBOARD_DATA = {
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
       "running": [],
-      "projected": 353
+      "projected": 354
     }
   }
 };
