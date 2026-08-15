@@ -29,7 +29,7 @@ development_status:
   10-1-copier-engine-wrapper-the-single-seam: done
   10-2-state-schema-and-the-atomic-store: done
   10-3-the-apply-runner-transactional-guarded: done
-  10-4-preconditions-refusals-and-skips: backlog
+  10-4-preconditions-refusals-and-skips: done
   10-5-marshal-seed-check: backlog
   10-6-marshal-seed-adopt: backlog
   10-7-marshal-seed-init: backlog
