@@ -9,7 +9,7 @@ Artifactory instance is named, selected, or contacted here. NOT a Kedro pipeline
 -- it exposes no ``create_pipeline()``, so it is never touched by
 ``find_pipelines(raise_errors=True)``. Story 15.3 (CAP-4) owns wiring a pipeline that imports
 ``ArtifactoryAqlAdapter`` from this package; Story 15.2 (CAP-2/CAP-3) owns the identity join
-and the internal/private flag.
+and the internal/private flag (``join_identity``/``JoinedDownloadRow``, added below).
 """
 
 from __future__ import annotations
@@ -22,6 +22,7 @@ from .aql_adapter import (
     ArtifactoryConfig,
     DownloadRow,
 )
+from .identity_join import JoinedDownloadRow, join_identity
 
 __all__ = [
     "AqlRequest",
@@ -30,4 +31,6 @@ __all__ = [
     "ArtifactoryAqlError",
     "ArtifactoryConfig",
     "DownloadRow",
+    "JoinedDownloadRow",
+    "join_identity",
 ]
