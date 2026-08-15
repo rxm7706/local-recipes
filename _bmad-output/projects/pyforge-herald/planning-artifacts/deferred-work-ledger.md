@@ -311,3 +311,324 @@ status: open
   severity: medium
   status: open
   promoted: 2026-08-11 (landing pass, herald 13-1)
+
+
+### DW-3: Follow-up review still recommended for 13-3-db-backed-storage-behind-the-existing-seam-with-migrations after the damping cap was spent
+origin: review-budget-followup
+source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-3-db-backed-storage-behind-the-existing-seam-with-migrations.md`
+severity: low
+reason: The follow-up-review damping cap (limits.max_followup_reviews = 2) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260813-094918-551b; this entry preserves the lingering recommendation for a deliberate later review.
+status: open
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (already carried its final id there) during the pre-shutdown deferred-work audit.
+
+### DW-13-3-1: One corrupt legacy JSON file blocks all three Moments' stores, where before Story 13.3 it blocked only its own
+
+- source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-3-db-backed-storage-behind-the-existing-seam-with-migrations.md`
+  summary: One corrupt legacy JSON file blocks all three Moments' stores, where before Story 13.3 it blocked only its own.
+  evidence: Reproduced against the merged branch. `db._import_legacy_v1` imports progress + claims + notices inside the single v1 migration, so any one legacy file failing validation aborts the whole migration and `_ensure_schema` retries from scratch on every later command. With a healthy `.herald/progress.json` and `.herald/notices-index.json` beside a truncated `.herald/claims.json`, `progress.read_all`, `claims.read_all` and `notices.list_notices` ALL raise `claims file ... could not be read`; against the pre-story revision `257094dcc2` the same fixture returns the progress and notices records normally and only claims fails. Not a spec deviation -- the spec mandates one shared database and mandates that an invalid legacy file fail migration rather than be silently dropped -- so re-deriving under the same spec reproduces it; the widened blast radius is an undecided consequence of those two mandates meeting, not a coding error. Needs a design decision (isolate each store's import so a bad file only blocks its own Moment, vs. accept the coupling and say so in the operator docs). Recovery today is real but undocumented: removing or repairing the one named file unblocks the other two, and nothing tells the operator that.
+  status: open
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-3` there) during the pre-shutdown deferred-work audit.
+
+### DW-13-3-2: A read-only `.herald/` directory now fails every herald command, where before Story 13.3 reads still worked
+
+- source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-3-db-backed-storage-behind-the-existing-seam-with-migrations.md`
+  summary: A read-only `.herald/` directory now fails every herald command, where before Story 13.3 reads still worked.
+  evidence: Reproduced on this branch. With a populated store made read-only (`chmod 444` on `.herald/herald.db`, `chmod 555` on `.herald/`), `progress.read_all` raises `HeraldError: ... could not be opened: attempt to write a readonly database`; every read command and all three exporter scripts fail the same way. Pre-Story-13.3 the equivalent read of a read-only `.herald/progress.json` returned its records normally. The cause is WAL itself, not a coding error: verified that even a bare `PRAGMA journal_mode` -- a pure read of the setting -- raises the same error on such a store, because a WAL database opened read-write needs to create/write the `-shm` sidecar. Story 13.3's spec mandates WAL under `## Boundaries & Constraints` -> Always, so re-deriving under the same spec reproduces this exactly; `_set_wal_mode`'s own docstring already records the fast-fail as intentional. Resolving it is a design decision rather than a fix: opening `file:...?mode=ro` when the store is not writable would restore read behavior but needs a rule for when to choose it, and WAL readers still need a writable directory for `-shm`, so the alternative may be to document the requirement instead. Neither the operator guide nor the troubleshooting doc mentions that `.herald/` must be writable even to read.
+  status: open
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-3-2` there) during the pre-shutdown deferred-work audit.
+
+### DW-13-4-1: The webhook's HMAC scheme signs only the body, so one captured signed request stays a valid, reusable forgery token forever
+
+**CLOSED by Story 13.6.** `webhook.verify_signature` now takes a fourth
+argument, `timestamp_header`, folds it into the signed content
+(`hmac.new(secret, timestamp + b"." + body, sha256)`), and rejects a
+timestamp more than `MAX_TIMESTAMP_SKEW_SECONDS` (300s) from the server's
+own clock in either direction -- exactly the first fix candidate below.
+`.github/workflows/herald-live-demo.yml`'s `on-ship`/`on-pr-close` jobs
+are the real producer this fix needed to exist before it could land; they
+also send a per-event `event_id`, the fix's own second candidate.
+Regression coverage: `tests/test_webhook.py`'s "Story 13.6: the
+X-Hub-Timestamp skew window" section, including the literal replayed-
+request-after-5-minutes AC.
+
+**Residual, narrower than "closed" implies (2026-08-13 review pass):** a
+captured, still-fresh (<5 min old) signed request remains fully valid and
+replayable any number of times inside that window -- there is no nonce or
+single-use token, only the timestamp-bounded expiry. Low-impact in
+practice: `on-ship`'s `progress.upsert` is keyed by `(station, date)`, and
+`on-pr-close`'s `event_id`-derived deterministic claim id both make an
+in-window replay idempotent (re-applies the same record, never a
+duplicate) rather than exploitable -- but that is a property of the
+storage layer, not something `verify_signature` itself enforces, so this
+entry is narrowed, not fully closed.
+  status: open
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-4` there) during the pre-shutdown deferred-work audit.
+
+### DW-13-4-2: The webhook's claim idempotency guard reads and creates in two separate transactions, so two concurrent deliveries of one event can both create a claim sharing one id
+
+**STILL UNREACHED as of Story 13.6** -- reasoning updated, not closed. The
+module is mounted now (`webhook_host.py` behind `daphne`,
+`.github/workflows/herald-live-demo.yml`), so "the module is not mounted"
+is no longer why this is unreached, but the replacement reason holds
+identically: every one of the workflow's three demo jobs delivers exactly
+one signed request, serially, per job invocation -- there is no producer
+anywhere in this repo that fires two concurrent deliveries of the same
+logical event at the one live host that exists. `webhook_host.py`'s own
+bounded executor (closing DW-FU-13-4-3, below) caps CONCURRENT DIFFERENT
+requests at 4 workers, which is orthogonal to this gap: two workers could
+race on the SAME event only if something actually sent two deliveries of
+it at once, which nothing here does. Becomes reachable the moment any
+producer retries a delivery in parallel with itself, or a second producer
+is added that can double-send.
+  status: open
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-4-2` there) during the pre-shutdown deferred-work audit.
+
+### DW-13-4-3: A single webhook request can occupy a thread-pool worker for well over a minute, and neither the handler nor the caller bounds it
+
+**CLOSED by Story 13.6.** `webhook_host.py`'s `_wrap` bounds every HTTP
+request in `asyncio.wait_for(..., timeout=REQUEST_TIMEOUT_SECONDS)` (120s
+-- comfortably above this entry's own measured ~93s legitimate worst
+case) and points the running loop's default executor -- what
+`webhook.py`'s own `asyncio.to_thread` dispatch actually submits work to
+-- at a dedicated `concurrent.futures.ThreadPoolExecutor` capped at
+`EXECUTOR_MAX_WORKERS` (4) workers, exactly the fix candidates below. A
+timed-out request gets the same non-2xx (500) the retries-exhausted alert
+path already returns, logged the same structured-JSON way. Regression
+coverage: `tests/test_webhook_host.py`'s timeout/executor tests (a fast,
+deterministic `asyncio.sleep`-based hang, never a real thread sleep).
+
+**Narrower than "closed" implies (2026-08-13 review pass):** the timeout
+bounds how long a *caller* waits, not how long a genuinely-hung handler
+occupies its worker thread -- `Future.cancel()` cannot interrupt a thread
+already running. Tracked as its own entry, `DW-FU-13-6-2`, since it is
+currently inert (this story's demo is one throwaway process per one
+request) but becomes live risk under any future persistent, multi-request
+deployment.
+  status: open
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-4-3` there) during the pre-shutdown deferred-work audit.
+
+### DW-13-4-4: `herald success create --shipped-date` accepts any string, and one malformed value then breaks `herald success list --date-range` for every operator afterwards
+- source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-4-the-webhook-endpoint-ci-calls.md`
+  summary: `herald success create --shipped-date` accepts any string, and one malformed value then breaks `herald success list --date-range` for every operator afterwards.
+  evidence: Reproduced end to end against this worktree, entirely through the CLI, with no webhook
+  involved. `claims.create` validates only `project_name` and each evidence `type` -- it never
+  looks at `shipped_date`, so `cli._run_success_create`'s `shipped_date=args.shipped_date`
+  (`cli.py`, the `--shipped-date` flag) stores whatever was typed. `claims.list_claims` then calls
+  `date.fromisoformat(c.shipped_date)` with no guard when a `--date-range` filter is present, and
+  `cli.dispatch` translates only `HeraldError` -- so the bad value surfaces as a bare traceback,
+  not the "message plus exit code 1" contract the runbooks promise. Measured:
+  `herald success create Marshal --shipped-date 13/08/2026` answered `created draft claim
+  a23f51a4-... ` and exit 0; the next `herald success list --date-range 2026-01-01..2026-12-31`
+  raised `ValueError: Invalid isoformat string: '13/08/2026'` out of `cli.main`. The poisoned row
+  is durable, so every subsequent date-ranged list fails for every operator until someone edits
+  the database by hand. `"yesterday"`, `""` and `"2026-13-45"` behave the same way.
+  This is pre-existing (Story 9.2/13.3 surface, unchanged by Story 13.4) and was surfaced
+  incidentally by 13.4's review: the webhook opened a second, machine-driven route to the same
+  storage, and that route is now closed by a structural 400 in
+  `webhook._problem_on_pr_close_shipped`. The CLI route is not, so the underlying gap survives.
+  Fix candidates, in the order they close the most for the least risk: (1) validate `shipped_date`
+  in `claims.create` (a `date.fromisoformat` round-trip, raising `HeraldError`) so every caller --
+  CLI, webhook, and anything Story 13.6 adds -- inherits it, which also lets the webhook's own
+  duplicated check become a fast-fail rather than the only defense; (2) guard
+  `claims.list_claims`'s parse so an already-poisoned store degrades to a skipped/flagged row
+  instead of a traceback; (3) an `argparse` `type=` converter on `--shipped-date` for the earliest
+  possible error message. Doing (1) alone leaves existing bad rows unreadable, so (1)+(2) together
+  are the real fix.
+  status: open
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-4-4` there) during the pre-shutdown deferred-work audit.
+
+### DW-13-5-1: Evidence revalidation runs unbatched sequential HTTP checks, now reachable unattended via cron instead of only under an operator's eye
+
+- source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-5-the-scheduler-enforces-what-was-displayed.md`
+  summary: Evidence revalidation runs unbatched sequential HTTP checks, now reachable unattended via cron instead of only under an operator's eye.
+  evidence: `claims.revalidate_all` (Story 9.5, unchanged by Story 13.5) validates every claim's
+  evidence links one at a time via `evidence.validate_link` (a real HTTP `HEAD`, default 5s
+  timeout, up to 3 redirects each) entirely before opening its write transaction -- no batching,
+  no concurrency, no cap. Previously this only ran when an operator chose to invoke
+  `herald success validate --all` by hand and could see it running; Story 13.5's `herald
+  scheduler run` reuses the identical call but is now the documented target of an unattended
+  weekly `crontab` entry (`docs/cli-runbooks.md`), so its wall-clock time -- which grows linearly,
+  unbounded, with the size of the claims store -- is no longer bounded by an operator's patience
+  or attention. Today's claims store is small ("a handful of claim/notice links, checked at most
+  weekly" per `evidence.py`'s own module docstring), so this is latent, not active; flagged by
+  review pass 1's Blind Hunter (independently corroborated by the general shape of the concern
+  the Edge Case Hunter also raised about job composition) and preserved here for whoever scales
+  the claims store. Recovery/fix candidates: batch or cap concurrent HTTP checks in
+  `claims.revalidate_all` before the claims store grows meaningfully, and/or document "a run may
+  take a long time and appear hung" as an explicit failure mode alongside the "missed run"
+  failure mode `docs/automation-troubleshooting.md`/`docs/cli-runbooks.md` already describe --
+  neither doc currently mentions a slow-but-running invocation as distinct from a machine-off
+  miss. Story 13.5's own `flock -n` crontab guard (added this pass) prevents two such runs from
+  overlapping, but does not bound any single run's own duration.
+  status: open
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-5` there) during the pre-shutdown deferred-work audit.
+
+### DW-13-6-1: Steward's `deploy perimeter` cannot target an arbitrary ASGI application, only a hardcoded Django placeholder -- so Herald's webhook has no path to a persistent, Steward-perimeter-hosted deployment
+
+- source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-6-a-ship-records-itself-end-to-end.md`
+  summary: Steward's `deploy perimeter` duty (Story 9.5, CAP-6) can only render deployment
+  manifests pointed at a hardcoded Django ASGI placeholder -- there is no flag or mechanism to
+  target an arbitrary ASGI callable such as Herald's own `webhook_host:application` -- so
+  persistent, Steward-perimeter-hosted webhook deployment stays out of reach for any adopter that
+  is not a Django project.
+  evidence: `pyforge/steward/deploy.py`'s `render_daphne_unit` renders a systemd template unit
+  whose `ExecStart` line hardcodes `_ASGI_APPLICATION_PLACEHOLDER = "myproject.asgi:application"`
+  (deploy.py:484) with no corresponding CLI argument on `steward deploy perimeter` (`_run_perimeter`)
+  to override it -- the module's own comment records this as a deliberate judgment call ("this
+  story's spec Code Map names no CLI flag for the ASGI application import path... so rather than
+  invent an unrequested flag, the adopter edits this one placeholder line by hand"). That is a
+  reasonable choice for Story 9.5's own scope (Steward's OWN dashboard, a Django/Channels app --
+  AD-5/AD-8's "the library binds at the ASGI application boundary" is about the ADOPTED app being
+  framework-neutral, not about `deploy perimeter`'s own renderer being target-agnostic), but it
+  means `webhook_host.py` (this story) has no way to hand `deploy perimeter` its own
+  `pyforge.herald.webhook_host:application` target without hand-editing the rendered unit file
+  after the fact -- which also then has to be re-applied after every re-render. Not pursued in this
+  story: making `deploy perimeter` support an arbitrary ASGI target is real, cross-station
+  engineering (a new CLI flag threaded through `render_daphne_unit`/`render_edge_config`, plus
+  deciding whether the nginx edge config's own assumptions about a single Django-shaped app still
+  hold for an arbitrary callable) squarely inside Steward's own Surface, not Herald's -- this
+  story's own boundary is a bounded, CI-contained demonstration
+  (`.github/workflows/herald-live-demo.yml`), explicitly never persistent hosting behind Steward's
+  live perimeter. Fix candidates for whoever picks this up (a Steward-side story): add an
+  `--asgi-application <module:variable>` flag to `steward deploy perimeter` that threads through to
+  `render_daphne_unit`'s `_ASGI_APPLICATION_PLACEHOLDER` substitution, and confirm
+  `render_edge_config`'s nginx assumptions (single upstream shape, `X-Forwarded-For` handling) hold
+  for a non-Django ASGI app before Herald's webhook is ever pointed at it for real.
+  status: open
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-6-1` there) during the pre-shutdown deferred-work audit.
+
+### DW-13-6-2: `webhook_host.py`'s bounded timeout stops the client from waiting, but does not free the OS thread a genuinely-hung handler still occupies
+
+- source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-13-6-a-ship-records-itself-end-to-end.md`
+  summary: `webhook_host.py`'s `asyncio.wait_for` timeout bounds how long a caller waits for a
+  response, but a handler that is truly hung (not merely slow) keeps its `ThreadPoolExecutor`
+  worker occupied forever, since `Future.cancel()` cannot interrupt a thread already running --
+  four such hangs would permanently exhaust the dedicated 4-worker pool for the life of the
+  process.
+  evidence: `_wrap`'s `app()` wraps `inner(scope, receive, tracking_send)` in
+  `asyncio.wait_for(..., timeout=timeout_seconds)`; `inner` is `webhook.create_app`'s own `app()`,
+  which dispatches the matched handler via `asyncio.to_thread` (an event-loop-owned coroutine
+  wrapping a `concurrent.futures.Executor.submit`, per the stdlib implementation). Cancelling the
+  *awaiting* coroutine when `wait_for` times out only detaches the ASGI response from that
+  `Future` -- `Future.cancel()` is a documented no-op once the underlying work has actually started
+  running on its worker thread (Python has no supported mechanism to force-terminate a running
+  thread). This module's own regression test,
+  `test_wrap_bounds_a_hanging_request_with_a_timeout`, hangs via `asyncio.sleep` specifically to
+  stay fast and deterministic, and its own comment concedes the real-thread case is different --
+  nothing in this story exercises a genuinely stuck OS thread. Currently inert, not exploitable:
+  every job in `.github/workflows/herald-live-demo.yml` starts one throwaway daphne process, sends
+  exactly one request, and tears the process down -- there is no multi-request, long-lived process
+  for repeated hangs to accumulate against yet, since persistent hosting is out of this story's
+  Surface (see `DW-FU-13-6-1`, immediately above). This becomes live risk the moment any future
+  work stands up a persistent, multi-request `webhook_host.application` process. Fix candidates
+  for whoever builds that: replace (not reuse) the dedicated executor after a timeout fires, so a
+  stuck thread is abandoned rather than counted against future capacity (cheapest, does not
+  reclaim the leaked thread itself); or move handler dispatch to a supervised subprocess pool that
+  can actually be killed; or accept the residual and alert an operator on repeated timeouts rather
+  than trying to reclaim the slot at all.
+  status: open
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-13-6-2` there) during the pre-shutdown deferred-work audit.
+
+### DW-14-1-1: A gate returning a non-JSON-serializable field value crashes `herald deck qa` with an unhandled `TypeError` instead of a controlled `HeraldError`
+
+- source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-14-1-gate-report-interface.md`
+  summary: A gate returning a non-JSON-serializable field value (e.g. a `Path` in `artifacts`,
+  or a non-`Finding` item in `findings`) crashes `herald deck qa` with an unhandled `TypeError`
+  instead of a controlled `HeraldError`, because `run()` validates a gate's `status`/`error`
+  shape but not its field-level types.
+  evidence: `_run_deck_qa`'s `operation()` (`cli.py`) does
+  `print(json.dumps(deck_qa.to_dict(report)))` with no serialization-validating round trip on
+  the way out. `deck_qa.run()`'s per-gate misbehavior check (added in this story's own review
+  pass) validates `isinstance(result, GateResult)`, `result.status in _GATE_STATUSES`, and the
+  `status`/`error` invariant, but does not deep-validate that every `findings` item is a
+  `Finding` instance or that every `artifacts` item is a `str` -- Python dataclasses do not
+  enforce field type hints at runtime, so a gate that (for example) forgets `str()` around a
+  `pathlib.Path` when building `artifacts` produces a `GateResult` that passes every check
+  `run()` currently makes. `dataclasses.asdict` then serializes the `Path` object as-is, and
+  `json.dumps` raises `TypeError: Object of type PosixPath is not JSON serializable` inside
+  `operation()`. That is a bare `TypeError`, not an `errors.HeraldError`, so `dispatch()`'s
+  `except errors.HeraldError` never catches it -- it propagates as an unhandled exception with a
+  full Python traceback, a materially worse failure mode than every other error path this module
+  defines (a raising or malformed-status gate is isolated to a `status: "error"` report entry;
+  this one takes down the whole CLI invocation). Currently inert: `DEFAULT_GATES` ships empty in
+  this story, so no gate exists yet that could trigger it. This becomes live risk the moment
+  Story 14.2 (headless-render, producing PNG paths for `artifacts`) or Story 14.3 (image-slot
+  scan, producing `findings`) lands a real gate. Fix candidates: extend `run()`'s existing
+  misbehavior check with field-level validation (`all(isinstance(a, str) for a in
+  result.artifacts)`, `all(isinstance(f, Finding) for f in result.findings)`), treating a
+  violation the same way as a bad `status` (an isolated `status: "error"` entry); or wrap the
+  CLI's `json.dumps` call in a `try/except TypeError` that re-raises as `errors.HeraldError` so
+  the failure is reported through the established AD-6 boundary instead of crashing raw.
+  status: open
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-1` there) during the pre-shutdown deferred-work audit.
+
+### DW-14-1-2: `deck_qa.run()` calls each gate synchronously with no timeout, so a hanging gate blocks the whole `herald deck qa` invocation indefinitely
+
+- source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-14-1-gate-report-interface.md`
+  summary: `deck_qa.run()` calls each gate function synchronously with no timeout, so a gate
+  that hangs (e.g. a future headless-Chromium render gate stuck on a page load) blocks the whole
+  `herald deck qa` invocation indefinitely with no recovery.
+  evidence: `run()`'s per-gate loop is a plain `try: result = gate_fn(context) except Exception:
+  ...` -- the `except` clause only ever fires once the call returns or raises; it does nothing
+  for a call that simply never returns, and nothing in this story's gate-execution path wraps a
+  gate call in a bounded executor or watchdog. Currently inert: `DEFAULT_GATES` ships empty in
+  this story, so no gate exists yet that could hang. This becomes live risk specifically for
+  Story 14.2 (`FR/AD: CAP-1`, headless Chromium driving per-slide `#/<n>` routes) -- browser
+  automation is exactly the kind of I/O that can hang (a stuck page load, a crashed browser
+  process producing no error at all). Not this story's own problem to solve -- Story 14.1 ships
+  zero real gates, and its own spec explicitly scopes "no playwright/browser code in this story
+  at all" -- but worth recording so Story 14.2's own spec/dev pass considers a bounded-timeout
+  wrapper around its render gate's Chromium calls rather than discovering the hang live. Fix
+  candidates for Story 14.2: run the render gate's browser interaction under a bounded timeout
+  (e.g. a dedicated `ThreadPoolExecutor` + `.result(timeout=...)`, or playwright's own
+  navigation-timeout options), converting a timeout into that gate's own `status: "error"` entry
+  rather than hanging the whole report.
+  status: open
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-1-2` there) during the pre-shutdown deferred-work audit.
+
+### DW-14-2-1: No CI workflow runs `pyforge-herald`'s pytest suite, so the render gate's Chromium dependency is unprovisioned in CI
+
+- source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-14-2-headless-render-gate.md`
+  summary: No CI workflow runs `pyforge-herald-test` (or any equivalent
+  `pytest src/shared/packages/pyforge-herald/tests`), so nothing in `.github/workflows/`
+  provisions a Chromium binary for the render gate's real-browser tests, unlike the precedent
+  already established for `pyforge-doctor`'s own Playwright-driven layout gate.
+  evidence: grepped every `.github/workflows/*.yml` for `pyforge-herald-test`/`pytest.*herald`
+  and found none; the only workflow referencing the `pyforge-herald` pixi env is
+  `herald-live-demo.yml` (a live webhook demo, not a unit-test runner). `detectors.yml`'s
+  `which google-chrome || which chromium || python -m playwright install --with-deps chromium`
+  step is scoped to the `check_layout` job only. Pre-existing: this gap predates Story 14.2 (no
+  CI job ran this package's test suite before this story either); the story's own render gate
+  just makes the gap consequential for the first time, since it is the first `pyforge-herald`
+  code to depend on a real Chromium binary at all.
+  status: open
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-2` there) during the pre-shutdown deferred-work audit.
+
+### DW-14-3-1: `image_slot_gate` has no duplicate-manifest-id disambiguation, unlike `render_gate`'s own `seen_ids` guard in the same file
+
+- source_spec: `_bmad-output/projects/pyforge-herald/implementation-artifacts/spec-14-3-image-slot-scan.md`
+  summary: `image_slot_gate` resolves each manifest entry's fragment path directly from
+  `_slide_id(entry, index)` with no `seen_ids`-style disambiguation, so two manifest entries
+  that legitimately or malformedly share an id both read the same `fragments/<id>.html` file
+  and, if it matches either placeholder pattern, both append a `Finding` with the identical
+  `slide_id` -- a cosmetically duplicated report entry `render_gate` (same file, a few dozen
+  lines above) already guards against for its own id-keyed writes.
+  evidence: reviewed directly against the shipped code -- `render_gate` maintains a `seen_ids`
+  set (seeded with `_RESERVED_SLIDE_IDS`) and appends `-{index}` to any id already seen before
+  building a path from it; `image_slot_gate` has no equivalent, confirmed by reading its full
+  body in `deck_qa.py`. Low consequence, not a correctness bug: `image_slot_gate` only reads
+  files and appends `Finding`s (never writes/overwrites, unlike `render_gate`'s `rmtree`d PNG
+  output), so the worst outcome is a redundant duplicate `Finding` for the same real defect,
+  not data loss or a wrong verdict. Also structurally near-impossible against the real
+  extractor: `extract-slides.mjs`'s `slugify(label, i)` always prefixes every generated id with
+  its zero-padded slide index, so two entries can only collide if `manifest.json` is hand-edited
+  outside the extractor's own contract (already an out-of-convention input per
+  `presentation-deck.md`'s "do not hand-edit fragments"/generated-artifact discipline). Surfaced
+  incidentally by this story's own adversarial review pass (both the Blind Hunter and Edge Case
+  Hunter reviewers raised it independently); not fixed in this pass because the fix (porting
+  `render_gate`'s `seen_ids` pattern) is a scope/consistency call, not a bug this story's own
+  spec requires closing, and the real-world trigger condition does not occur under the
+  extractor's actual invariants. Fix candidate: mirror `render_gate`'s `seen_ids` set +
+  `-{index}` disambiguation suffix if/when this gate's id-handling is next touched.
+  status: open
+  promoted: 2026-08-15 — promoted from Tier-3 `implementation-artifacts/deferred-work.md` (id `DW-FU-14-3` there) during the pre-shutdown deferred-work audit.
