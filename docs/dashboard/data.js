@@ -21,7 +21,7 @@ window.DASHBOARD_DATA = {
         "median": 29,
         "lo": 4,
         "hi": 227,
-        "phaseAsOf": "2026-08-15 17:53 UTC"
+        "phaseAsOf": "2026-08-15 18:01 UTC"
       },
       "velocity": {
         "derived": true,
@@ -104,12 +104,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "51/55",
+            "49/55",
             "stories complete",
             "var(--done)"
           ],
           [
-            "4",
+            "6",
             "remaining",
             ""
           ]
@@ -549,7 +549,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "14.4",
-              "done",
+              "pending",
               "Air-gap asset rewriting (CAP-4)"
             ]
           ]
@@ -560,7 +560,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "15.1",
-              "done",
+              "pending",
               "Injectable AQL adapter (CAP-1)"
             ],
             [
@@ -607,19 +607,19 @@ window.DASHBOARD_DATA = {
         "E6 · multi-axis"
       ],
       "inflight": {
-        "key": "11.1",
-        "title": "Due-for-verification entries are selected, per project",
+        "key": "9.3",
+        "title": "Hygiene findings report and never mutate",
         "phase": "dev",
         "attempt": "2",
-        "startEpoch": 1786813022,
-        "median": 101,
+        "startEpoch": 1786815165,
+        "median": 99,
         "lo": 31,
         "hi": 427,
-        "phaseAsOf": "2026-08-15 17:53 UTC"
+        "phaseAsOf": "2026-08-15 18:01 UTC"
       },
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 21 of 57 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 22 of 57 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -702,28 +702,32 @@ window.DASHBOARD_DATA = {
             64
           ],
           [
+            "9.3",
+            27
+          ],
+          [
             "11.1",
             45
           ]
         ],
         "foot": [
           [
-            "~99 min",
+            "~90 min",
             "median / story",
             "var(--done)"
           ],
           [
-            "31–427 min",
+            "27–427 min",
             "observed range",
             ""
           ],
           [
-            "39/57",
+            "38/57",
             "stories complete",
             "var(--done)"
           ],
           [
-            "18",
+            "19",
             "remaining",
             ""
           ]
@@ -732,9 +736,9 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 3053,
-        "totalLabel": "~50.9 h active compute",
-        "note": "Derived from 21 measured stories; a story still in flight contributes only its closed sessions.",
+        "total": 3080,
+        "totalLabel": "~51.3 h active compute",
+        "note": "Derived from 22 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.1": 101,
           "1.2": 65,
@@ -756,19 +760,20 @@ window.DASHBOARD_DATA = {
           "7.4": 259,
           "9.1": 31,
           "9.2": 64,
+          "9.3": 27,
           "11.1": 45
         },
         "epicMin": {
           "E1": 715,
           "E6": 1358,
           "E7": 840,
-          "E9": 95,
+          "E9": 122,
           "E11": 45
         }
       },
       "lineState": {
         "state": "in flight",
-        "at": "11.1"
+        "at": "9.3"
       },
       "epics": [
         {
@@ -1015,12 +1020,12 @@ window.DASHBOARD_DATA = {
             ],
             [
               "9.2",
-              "done",
+              "pending",
               "The sweep runs against all eight stations"
             ],
             [
               "9.3",
-              "pending",
+              "active",
               "Hygiene findings report and never mutate"
             ],
             [
@@ -1057,7 +1062,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "11.1",
-              "active",
+              "pending",
               "Due-for-verification entries are selected, per project"
             ],
             [
@@ -1888,12 +1893,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "99/142",
+            "98/142",
             "stories complete",
             "var(--done)"
           ],
           [
-            "43",
+            "44",
             "remaining",
             ""
           ]
@@ -2659,7 +2664,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "16.1",
-              "done",
+              "pending",
               "One resolver, derived sources, loud failures"
             ]
           ]
@@ -2841,10 +2846,10 @@ window.DASHBOARD_DATA = {
         "phase": "dev",
         "attempt": "1",
         "startEpoch": 1786815246,
-        "median": 69,
+        "median": 64,
         "lo": 16,
         "hi": 435,
-        "phaseAsOf": "2026-08-15 17:53 UTC"
+        "phaseAsOf": "2026-08-15 18:01 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2995,12 +3000,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "34/42",
+            "32/42",
             "stories complete",
             "var(--done)"
           ],
           [
-            "8",
+            "10",
             "remaining",
             ""
           ]
@@ -3234,7 +3239,7 @@ window.DASHBOARD_DATA = {
             ],
             [
               "4.2",
-              "done",
+              "pending",
               "Manifest discovery"
             ],
             [
@@ -3255,7 +3260,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "5.1",
-              "done",
+              "pending",
               "CFE-independence test"
             ],
             [
@@ -3465,10 +3470,10 @@ window.DASHBOARD_DATA = {
         "phase": "review",
         "attempt": "1",
         "startEpoch": 1786811224,
-        "median": 103,
+        "median": 84,
         "lo": 27,
         "hi": 468,
-        "phaseAsOf": "2026-08-15 17:53 UTC"
+        "phaseAsOf": "2026-08-15 18:01 UTC"
       },
       "velocity": {
         "derived": true,
@@ -4562,7 +4567,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-15 17:53 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-15 18:02 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -5081,6 +5086,16 @@ window.DASHBOARD_DATA = {
       "type": "dream",
       "chain": {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-loop-home-fleet-refresh"
+      }
+    },
+    {
+      "slug": "marshal-land-cross-project-story-key-collision",
+      "title": "A GitHub PR-merge branch from one project never masquerades as a same-numbered story in another",
+      "status": "dreamt",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {
+        "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-land-cross-project-story-key-collision"
       }
     },
     {
@@ -5894,7 +5909,7 @@ window.DASHBOARD_DATA = {
       "title": "The dashboard derives project paths — slug ≠ directory stops being a bug factory",
       "caps": 4,
       "companions": 0,
-      "updated": "2026-08-10",
+      "updated": "2026-08-15",
       "dream": "dashboard-project-path-derivation",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-project-path-derivation"
     },
@@ -5999,6 +6014,16 @@ window.DASHBOARD_DATA = {
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-loop-home-fleet-refresh"
     },
     {
+      "slug": "marshal-land-cross-project-story-key-collision",
+      "project": "pyforge-marshal",
+      "title": "A GitHub PR-merge branch from one project never masquerades as a same-numbered story in another",
+      "caps": 2,
+      "companions": 0,
+      "updated": "2026-08-15",
+      "dream": "marshal-land-cross-project-story-key-collision",
+      "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-land-cross-project-story-key-collision"
+    },
+    {
       "slug": "marshal-land-merge-subject",
       "project": "pyforge-marshal",
       "title": "marshal land renders a detectable merge subject",
@@ -6084,7 +6109,7 @@ window.DASHBOARD_DATA = {
       "title": "PyForge Testing Charter — fleet-wide test architecture",
       "caps": 5,
       "companions": 2,
-      "updated": "2026-08-12",
+      "updated": "2026-08-15",
       "dream": "pyforge-testing-charter",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-pyforge-testing-charter"
     },
@@ -6124,7 +6149,7 @@ window.DASHBOARD_DATA = {
       "title": "sprint-status auto-promote",
       "caps": 4,
       "companions": 0,
-      "updated": "2026-08-12",
+      "updated": "2026-08-15",
       "dream": "sprint-status-auto-promote",
       "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-sprint-status-auto-promote"
     },
@@ -6879,7 +6904,8 @@ window.DASHBOARD_DATA = {
           "n": 5,
           "of": 5,
           "status": "landed",
-          "planning_project": "pyforge-doctor"
+          "planning_project": "pyforge-doctor",
+          "redirect": null
         },
         {
           "wave": "1b",
@@ -6897,7 +6923,8 @@ window.DASHBOARD_DATA = {
           "n": 5,
           "of": 5,
           "status": "landed",
-          "planning_project": "pyforge-steward"
+          "planning_project": "pyforge-steward",
+          "redirect": null
         },
         {
           "wave": "1c",
@@ -6915,7 +6942,8 @@ window.DASHBOARD_DATA = {
           "n": 5,
           "of": 5,
           "status": "landed",
-          "planning_project": "pyforge-scribe"
+          "planning_project": "pyforge-scribe",
+          "redirect": null
         },
         {
           "wave": "1d",
@@ -6933,7 +6961,8 @@ window.DASHBOARD_DATA = {
           "n": 5,
           "of": 5,
           "status": "landed",
-          "planning_project": "pyforge-herald"
+          "planning_project": "pyforge-herald",
+          "redirect": null
         },
         {
           "wave": "1e",
@@ -6951,7 +6980,8 @@ window.DASHBOARD_DATA = {
           "n": 5,
           "of": 5,
           "status": "landed",
-          "planning_project": "pyforge-marshal"
+          "planning_project": "pyforge-marshal",
+          "redirect": null
         },
         {
           "wave": "1f",
@@ -6969,7 +6999,8 @@ window.DASHBOARD_DATA = {
           "n": 5,
           "of": 5,
           "status": "landed",
-          "planning_project": "pyforge-mason"
+          "planning_project": "pyforge-mason",
+          "redirect": null
         },
         {
           "wave": "2a",
@@ -6987,7 +7018,8 @@ window.DASHBOARD_DATA = {
           "n": 5,
           "of": 5,
           "status": "landed",
-          "planning_project": "pyforge-mason"
+          "planning_project": "pyforge-mason",
+          "redirect": null
         },
         {
           "wave": "2b",
@@ -7005,7 +7037,8 @@ window.DASHBOARD_DATA = {
           "n": 4,
           "of": 4,
           "status": "landed",
-          "planning_project": "pyforge-atlas"
+          "planning_project": "pyforge-atlas",
+          "redirect": null
         },
         {
           "wave": "2c",
@@ -7023,7 +7056,8 @@ window.DASHBOARD_DATA = {
           "n": 4,
           "of": 4,
           "status": "landed",
-          "planning_project": "pyforge-atlas"
+          "planning_project": "pyforge-atlas",
+          "redirect": null
         },
         {
           "wave": "2d",
@@ -7041,7 +7075,8 @@ window.DASHBOARD_DATA = {
           "n": 0,
           "of": 5,
           "status": "queued",
-          "planning_project": "pyforge-genesis"
+          "planning_project": null,
+          "redirect": "docs/governance"
         }
       ]
     },
@@ -7059,7 +7094,9 @@ window.DASHBOARD_DATA = {
           "state": "done",
           "note": "line 1 — smallest full product, spec settled 0 OQs",
           "done": 56,
-          "total": 56
+          "total": 56,
+          "epics_path": "_bmad-output/projects/pyforge-herald/planning-artifacts/epics.md",
+          "redirect": null
         },
         {
           "slug": "pyforge-doctor",
@@ -7067,8 +7104,10 @@ window.DASHBOARD_DATA = {
           "stories": 12,
           "state": "running",
           "note": "line 2 — consolidative wrap",
-          "done": 39,
-          "total": 57
+          "done": 38,
+          "total": 57,
+          "epics_path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
+          "redirect": null
         },
         {
           "slug": "pyforge-scribe",
@@ -7077,7 +7116,9 @@ window.DASHBOARD_DATA = {
           "state": "done",
           "note": "line 3 — team memory + graph",
           "done": 9,
-          "total": 9
+          "total": 9,
+          "epics_path": "_bmad-output/projects/pyforge-scribe/planning-artifacts/epics.md",
+          "redirect": null
         },
         {
           "slug": "pyforge-steward",
@@ -7086,7 +7127,9 @@ window.DASHBOARD_DATA = {
           "state": "running",
           "note": "next free slot",
           "done": 44,
-          "total": 55
+          "total": 55,
+          "epics_path": "_bmad-output/projects/pyforge-steward/planning-artifacts/epics.md",
+          "redirect": null
         },
         {
           "slug": "pyforge-mason",
@@ -7095,7 +7138,9 @@ window.DASHBOARD_DATA = {
           "state": "running",
           "note": "longest persona line; CFE Rule-2 retro at closeout",
           "done": 32,
-          "total": 42
+          "total": 42,
+          "epics_path": "_bmad-output/projects/pyforge-mason/planning-artifacts/epics.md",
+          "redirect": null
         },
         {
           "slug": "presenton-pixi-image",
@@ -7103,9 +7148,10 @@ window.DASHBOARD_DATA = {
           "stories": 30,
           "state": "held",
           "note": "operator Phase-0 gates: MS disconnected-stack check + memory-subsystem scope",
-          "epics_path": "_bmad-output/projects/pyforge-mason/planning-artifacts/epics-presenton-pixi-image.md",
           "done": 0,
-          "total": 30
+          "total": 30,
+          "epics_path": "_bmad-output/projects/pyforge-mason/planning-artifacts/epics-presenton-pixi-image.md",
+          "redirect": null
         },
         {
           "slug": "pyforge-marshal",
@@ -7114,7 +7160,9 @@ window.DASHBOARD_DATA = {
           "state": "in-progress",
           "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md",
           "done": 98,
-          "total": 142
+          "total": 142,
+          "epics_path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/epics.md",
+          "redirect": null
         },
         {
           "slug": "wasm-analytics-stack",
@@ -7122,9 +7170,10 @@ window.DASHBOARD_DATA = {
           "stories": 0,
           "state": "future",
           "note": "PRD+arch only by design; stories decompose when scheduled",
-          "epics_path": null,
           "done": 0,
-          "total": 0
+          "total": 0,
+          "epics_path": null,
+          "redirect": null
         },
         {
           "slug": "unity-data-stack",
@@ -7132,9 +7181,10 @@ window.DASHBOARD_DATA = {
           "stories": 0,
           "state": "future",
           "note": "PRD+arch only by design; stories decompose when scheduled",
-          "epics_path": null,
           "done": 0,
-          "total": 0
+          "total": 0,
+          "epics_path": null,
+          "redirect": null
         }
       ]
     }
@@ -7178,9 +7228,9 @@ window.DASHBOARD_DATA = {
       "retro": null
     },
     "sound": 0,
-    "live": 69,
+    "live": 70,
     "reached": 8,
-    "gaps": 84,
+    "gaps": 85,
     "findings": 24,
     "rows": [
       {
@@ -7309,7 +7359,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "51/55",
+        "progress": "49/55",
         "complete": 14,
         "of": 14
       },
@@ -7439,7 +7489,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "39/57",
+        "progress": "38/57",
         "complete": 14,
         "of": 14
       },
@@ -7691,7 +7741,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "99/142",
+        "progress": "98/142",
         "complete": 13,
         "of": 13
       },
@@ -7825,7 +7875,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "34/42",
+        "progress": "32/42",
         "complete": 13,
         "of": 13
       },
@@ -12166,7 +12216,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "",
-          "spec": "2026-08-10T20:05",
+          "spec": "2026-08-15T17:45",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -13520,6 +13570,112 @@ window.DASHBOARD_DATA = {
         "of": 3
       },
       {
+        "label": "marshal-land-cross-project-story-key-collision",
+        "slug": "marshal-land-cross-project-story-key-collision",
+        "project": "pyforge-marshal",
+        "dream": "marshal-land-cross-project-story-key-collision",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-08-15",
+          "deck": "",
+          "spec": "2026-08-15",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-15",
+          "deck": "",
+          "spec": "2026-08-15T12:21",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "marshal-land-cross-project-story-key-collision",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "dream",
+          "ux"
+        ],
+        "required": [
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-15",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 3
+      },
+      {
         "label": "marshal-land-merge-subject",
         "slug": "marshal-land-merge-subject",
         "project": "pyforge-marshal",
@@ -14305,7 +14461,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-02",
           "deck": "",
-          "spec": "2026-08-12T19:53",
+          "spec": "2026-08-15T17:45",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -14734,7 +14890,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-08",
           "deck": "",
-          "spec": "2026-08-12T19:53",
+          "spec": "2026-08-15T17:45",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -18612,7 +18768,7 @@ window.DASHBOARD_DATA = {
         "name": "spec-surface",
         "task": "spec-surface-check",
         "guards": "every tracked file under a Spec surface",
-        "state": "green",
+        "state": "drift",
         "findings": 0,
         "verdict": "",
         "runbook": ""
@@ -18683,6 +18839,16 @@ window.DASHBOARD_DATA = {
         "owner": "steward",
         "blockedOn": "",
         "chain": {}
+      },
+      {
+        "slug": "marshal-land-cross-project-story-key-collision",
+        "title": "A GitHub PR-merge branch from one project never masquerades as a same-numbered story in another",
+        "status": "dreamt",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {
+          "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-marshal-land-cross-project-story-key-collision"
+        }
       },
       {
         "slug": "marshal-status-harness-run-id-poisoning",
@@ -18762,7 +18928,7 @@ window.DASHBOARD_DATA = {
     "blocked": 0,
     "byOwner": {
       "steward": 3,
-      "marshal": 3,
+      "marshal": 4,
       "atlas": 1,
       "mason": 3,
       "warden": 1,
@@ -18909,9 +19075,9 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "marshal",
-        "total": 38,
+        "total": 39,
         "counts": {
-          "dreamt": 3,
+          "dreamt": 4,
           "pitched": 0,
           "specified": 4,
           "realized": 12,
@@ -18919,7 +19085,7 @@ window.DASHBOARD_DATA = {
           "practice": 4
         },
         "line": "paused 8.5",
-        "load": 3,
+        "load": 4,
         "blocked": 0,
         "dreams": [
           {
@@ -19044,6 +19210,13 @@ window.DASHBOARD_DATA = {
           {
             "slug": "dashboard-velocity-captures-hand-driven-work",
             "title": "Dashboard velocity counts every story's real effort, not just bmad-loop-journaled ones",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "marshal-land-cross-project-story-key-collision",
+            "title": "A GitHub PR-merge branch from one project never masquerades as a same-numbered story in another",
             "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
@@ -19434,7 +19607,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "in flight 11.1",
+        "line": "in flight 9.3",
         "load": 1,
         "blocked": 0,
         "dreams": [
@@ -23059,9 +23232,9 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "Doctor",
-        "story": "11.1",
+        "story": "9.3",
         "phase": "dev",
-        "startEpoch": 1786813022
+        "startEpoch": 1786815165
       },
       {
         "station": "Mason",
@@ -23084,8 +23257,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260815-112703-7bc1/4-2-manifest-discovery into loop/pyforge-mason (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-15 17:53 UTC",
-    "generatedEpoch": 1786816428
+    "generatedAt": "2026-08-15 18:02 UTC",
+    "generatedEpoch": 1786816922
   },
   "storySpecs": [
     {
