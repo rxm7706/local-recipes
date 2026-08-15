@@ -16,6 +16,7 @@ from pyforge.steward.keys import HostScopedCredential
 from pyforge.steward.sync import (
     SyncAPIError,
     SyncConfig,
+    SyncMultipleAssigneesError,
     TransportResponse,
     _parse_baseline,
     _parse_content,
@@ -81,6 +82,7 @@ class FakeTransport:
         github_item_id: str = "ITEM_1",
         github_fields: dict[str, str] | None = None,
         github_content: dict[str, object] | None = None,
+        github_content_unreadable: bool = False,
         jira_issue_key: str = "PROJ-1",
         jira_fields: dict[str, object] | None = None,
         jira_transitions: list[dict[str, object]] | None = None,
@@ -88,10 +90,15 @@ class FakeTransport:
         self.github_item_id = github_item_id
         self.github_fields: dict[str, str] = dict(github_fields or {})
         # Story 8.7: the `content` fragment (assignees/repository/number) --
-        # `None` (the default, every pre-8.7 fixture) reads as "no content",
-        # matching a DraftIssue exactly (both parse to assignee=None,
-        # content_ref=None).
+        # `None` (the default, every pre-8.7 fixture) reads as "no content"
+        # KEY ABSENT, matching a DraftIssue exactly (both parse to
+        # assignee=None, content_ref=None, assignee_unknown=False).
         self.github_content = github_content
+        # RESOLVED 2026-08-15 (escalation, finding 3): distinct from the
+        # above -- an explicit `content: null` (a partial-response
+        # signature, e.g. a permission gap), which reads as UNKNOWN, never
+        # a confident "no assignee".
+        self.github_content_unreadable = github_content_unreadable
         self.jira_issue_key = jira_issue_key
         self.jira_fields: dict[str, object] = dict(jira_fields or {})
         self.jira_transitions = jira_transitions or []
@@ -133,7 +140,9 @@ class FakeTransport:
                 ]
             },
         }
-        if self.github_content is not None:
+        if self.github_content_unreadable:
+            node["content"] = None
+        elif self.github_content is not None:
             node["content"] = self.github_content
         payload = {"data": {"node": node}}
         return TransportResponse(status=200, body=json.dumps(payload).encode())
@@ -1206,12 +1215,14 @@ def test_pre_8_7_pair_assignees_already_agree_is_a_true_no_op_with_zero_writes()
     assert transport.write_calls() == []
 
 
-def test_pre_8_7_pair_assignees_already_disagree_is_silently_adopted_not_resolved():
-    """Design Notes' accepted-limitation row: a pre-existing real-world
-    assignee mismatch (GitHub says 'alice', Jira says 'acc_bob') observed
-    for the first time on an established pair's post-upgrade reconcile is
-    silently adopted as each side's own new baseline -- never compared,
-    never propagated, never flagged. A true, zero-write no-op this round."""
+def test_pre_8_7_pair_assignees_already_disagree_is_resolved_via_ad4():
+    """RESOLVED 2026-08-15 (escalation, finding 1, decision (b)): a
+    pre-existing real-world assignee mismatch (GitHub says 'octocat', Jira
+    says hubot's accountId) observed for the first time on an established
+    pair's post-upgrade reconcile is now a real first-sync AD-4 decision
+    for the assignee field alone -- GitHub wins by default -- exactly one
+    write, never the prior design's silent, un-compared, permanently-inert
+    adoption."""
     transport = FakeTransport(
         github_fields={
             "gh_link": "PROJ-1",
@@ -1220,23 +1231,24 @@ def test_pre_8_7_pair_assignees_already_disagree_is_silently_adopted_not_resolve
         },
         github_content={
             "number": 42,
-            "assignees": {"nodes": [{"login": "alice"}]},
+            "assignees": {"nodes": [{"login": "octocat"}]},
             "repository": {"owner": {"login": "acme"}, "name": "widgets"},
         },
         jira_fields={
             "status": {"name": "In Progress"},
-            "assignee": {"accountId": "acc_bob"},
+            "assignee": {"accountId": "acc_hubot"},
             "jira_link": "ITEM_1",
             "jira_baseline": '{"status": "In Progress"}',  # no "assignee" key -- pre-8.7
         },
     )
 
-    result = reconcile(github_item_id="ITEM_1", config=CONFIG, transport=transport)
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG_USER_MAPPING, transport=transport)
 
     assert result.ok is True
-    assert result.details["decision"] == "no_op"
-    assert result.details["assignee"]["decision"] == "no_op"
-    assert transport.write_calls() == []
+    assert result.details["decision"] == "no_op"  # status itself did not change
+    assert result.details["assignee"]["decision"] == "push_to_jira"  # GitHub wins by default
+    assert result.details["assignee"]["written_value"] == "acc_octocat"
+    assert len(transport.write_calls()) > 0
 
 
 def test_identity_link_missing_on_jira_side_is_self_healed_without_touching_baseline():
@@ -1695,20 +1707,103 @@ def test_dry_run_reports_a_pending_link_repair_and_writes_nothing():
     assert transport.jira_fields["jira_link"] == ""  # and not actually written
 
 
-def test_malformed_content_shapes_read_as_no_assignee_never_a_raw_crash():
+def test_malformed_content_shapes_never_raw_crash_and_unreadable_assignees_are_unknown():
     """`content` is externally sourced. A partial or proxied response whose
-    `repository`/`assignees` came back as a list or a string must read as
-    the same valid "no assignee, no target" state a DraftIssue does -- a
-    raw AttributeError here would escape this module's named-error contract
-    and, under --schedule, abort the whole batch instead of one item."""
+    `repository`/`assignees` came back as a list or a string must read as a
+    type-safe result, never a raw `AttributeError` escaping this module's
+    named-error contract (which would, under `--schedule`, abort the whole
+    batch instead of one item). RESOLVED 2026-08-15 (escalation, finding
+    3): a malformed `assignees` sub-shape specifically is UNKNOWN, not a
+    confident "no assignee" -- distinct from a well-formed, genuinely-empty
+    one."""
     for content in (
         {"number": 42, "assignees": [], "repository": "acme/widgets"},
-        {"number": "42", "assignees": {"nodes": [{"login": "octocat"}]}, "repository": {}},
         {"number": 42, "assignees": {"nodes": ["octocat"]}, "repository": {"owner": []}},
     ):
-        assignee, content_ref = _parse_content({"content": content})
+        assignee, content_ref, unknown = _parse_content({"content": content})
         assert content_ref is None or isinstance(content_ref[2], int)
-        assert assignee is None or isinstance(assignee, str)
+        assert assignee is None
+        assert unknown is True
+
+    # A malformed `number`/`repository` alone (not `assignees`) does not
+    # make a well-formed assignee reading unknown -- content_ref simply
+    # fails independently.
+    assignee, content_ref, unknown = _parse_content(
+        {"content": {"number": "42", "assignees": {"nodes": [{"login": "octocat"}]}, "repository": {}}}
+    )
+    assert content_ref is None
+    assert assignee == "octocat"
+    assert unknown is False
+
+
+def test_unreadable_content_is_unknown_not_a_confident_unassignment():
+    """RESOLVED 2026-08-15 (escalation, finding 3): `content` present but
+    explicit `None` (a partial-response signature, e.g. a permission gap on
+    a Projects-only token) is DISTINCT from `content` absent entirely (a
+    genuine `DraftIssue`, every pre-8.7 fixture) -- the former is UNKNOWN,
+    the latter a confident "no assignee". Reproduces the live data-loss
+    path: a converged pair whose GitHub read comes back unreadable must
+    never clear Jira's real assignee."""
+    assignee, content_ref, unknown = _parse_content({"content": None})
+    assert assignee is None
+    assert content_ref is None
+    assert unknown is True
+
+    assignee, content_ref, unknown = _parse_content({})
+    assert assignee is None
+    assert content_ref is None
+    assert unknown is False
+
+
+def test_reconcile_downgrades_to_no_op_when_github_assignee_is_unknown():
+    """End-to-end (escalation, finding 3): a converged pair whose GitHub
+    assignee read comes back UNREADABLE (explicit `content: null`, e.g. a
+    permission gap) must never clear Jira's real assignee -- the assignee
+    decision downgrades to `no_op`, neither baseline is touched, and the
+    round is re-attempted on the next reconcile rather than "converging"
+    on data loss."""
+    transport = FakeTransport(
+        github_fields={
+            "gh_link": "PROJ-1",
+            "gh_status": "In Progress",
+            "gh_baseline": '{"status": "In Progress", "assignee": "octocat"}',
+        },
+        github_content_unreadable=True,
+        jira_fields={
+            "status": {"name": "In Progress"},
+            "assignee": {"accountId": "acc_octocat"},
+            "jira_link": "ITEM_1",
+            "jira_baseline": '{"status": "In Progress", "assignee": "acc_octocat"}',
+        },
+    )
+
+    result = reconcile(github_item_id="ITEM_1", config=CONFIG_USER_MAPPING, transport=transport)
+
+    assert result.ok is True
+    assert result.details["assignee"]["decision"] == "no_op"
+    assert result.details["assignee"]["written_value"] is None
+    assert transport.write_calls() == []
+    # Jira's real assignee must survive untouched.
+    assert transport.jira_fields["assignee"]["accountId"] == "acc_octocat"
+
+
+def test_github_item_with_a_co_assignee_is_refused_named():
+    """RESOLVED 2026-08-15 (escalation, finding 4, decision (a)): a GitHub
+    item carrying more than one assignee is refused named
+    (`SyncMultipleAssigneesError`) rather than silently tracking only the
+    first, which could leave the item with two assignees or silently
+    revert a human's later Jira reassignment."""
+    with pytest.raises(SyncMultipleAssigneesError) as exc_info:
+        _parse_content(
+            {
+                "content": {
+                    "number": 42,
+                    "assignees": {"nodes": [{"login": "octocat"}, {"login": "hubot"}]},
+                    "repository": {"owner": {"login": "acme"}, "name": "widgets"},
+                }
+            }
+        )
+    assert "octocat" in str(exc_info.value) or "hubot" in str(exc_info.value)
 
 
 # ── Epic 8 Story 8.2: the zero-loop guarantee, proven by N round trips ──────

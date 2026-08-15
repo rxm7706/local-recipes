@@ -294,6 +294,14 @@ class SyncUnmappedUserError(SyncError):
     `SyncUnmappedStatusError` exactly)."""
 
 
+class SyncMultipleAssigneesError(SyncError):
+    """A GitHub item's `content.assignees` carries more than one node --
+    an untracked co-assignee exists (escalation, finding 4). Refused named
+    rather than silently tracking only `assignees[0]`, which can leave the
+    item with two assignees or silently revert a human's later Jira
+    reassignment."""
+
+
 class SyncBaselineTooLargeError(SyncError):
     """A serialized baseline map would not fit the configured field's
     size ceiling (AD-2/AD-10's documented escape hatch to Mode B) --
@@ -521,12 +529,17 @@ class GitHubItemState:
 
     `assignee` (Story 8.7) is the FIRST `content.assignees` login, or `None`
     if the content has no assignee, is a `DraftIssue`, or is absent --
-    tracks only one assignee, never more (Boundaries & Constraints, "Never
-    manage more than one GitHub assignee"). `content_ref` is
-    `(owner, repo, number)` for a real Issue/PR, or `None` for a
+    tracks only one assignee, never more; more than one raises
+    `SyncMultipleAssigneesError` named rather than silently picking the
+    first (Boundaries & Constraints, escalation finding 4). `content_ref`
+    is `(owner, repo, number)` for a real Issue/PR, or `None` for a
     `DraftIssue`/absent content -- a write targeted at a `None` ref has
     nothing to address and must raise `SyncAPIError` naming the item, never
-    guess a target."""
+    guess a target. `assignee_unknown` (escalation, finding 3) is `True`
+    when `content`/`content.assignees` could not be confidently parsed --
+    distinct from a genuinely empty/`DraftIssue` `assignee=None` -- so the
+    caller can downgrade to `no_op` instead of treating an unreadable read
+    as an authoritative unassignment."""
 
     item_id: str
     link: str | None
@@ -534,6 +547,7 @@ class GitHubItemState:
     baseline: dict[str, object]
     assignee: str | None = None
     content_ref: tuple[str, str, int] | None = None
+    assignee_unknown: bool = False
 
 
 def _parse_field_values(node: dict[str, object]) -> dict[str, str]:
@@ -563,16 +577,21 @@ def _parse_field_values(node: dict[str, object]) -> dict[str, str]:
 
 def _parse_content(
     node: dict[str, object],
-) -> tuple[str | None, tuple[str, str, int] | None]:
+) -> tuple[str | None, tuple[str, str, int] | None, bool]:
     """Parse a `ProjectV2Item` node's `content` into `(assignee_login,
-    content_ref)` (Story 8.7).
+    content_ref, assignee_unknown)` (Story 8.7).
 
-    `content` is a `DraftIssue` (no `number`/`repository`/`assignees` --
-    those fields don't exist on that type, so GraphQL simply omits them) or
-    absent entirely for every pre-8.7 test fixture -- both read as
-    `(None, None)`, a valid "no assignee" state, never an error. Only the
-    FIRST `assignees` node is tracked (Boundaries & Constraints, "Never
-    manage more than one GitHub assignee").
+    `content` ABSENT from `node` entirely (no key at all -- every pre-8.7
+    test fixture, and GitHub's actual shape for a `DraftIssue`, which has
+    none of `number`/`repository`/`assignees`) reads as a CONFIDENT "no
+    assignee": `(None, None, False)`.
+
+    `content` present but explicit `None` (escalation, finding 3, resolved
+    2026-08-15) is DISTINCT from "absent" -- a partial-response signature
+    (a permission gap, e.g. a Projects-only token that cannot read a
+    private repo's issue `content`, this story's own documented risk) --
+    and reads as UNKNOWN, never a confident unassignment:
+    `(None, None, True)`.
 
     Every nested shape is type-checked rather than assumed (fix,
     review-confirmed): this parses an externally-sourced response, and a
@@ -584,13 +603,28 @@ def _parse_content(
     more: it is interpolated into the REST assignees URL as a path segment
     (`_github_issue_assignees_url` escapes `owner`/`repo` but cannot
     meaningfully escape an integer), so a string `number` would build a
-    malformed or injected URL. An unusable `content` shape reads as the
-    same valid "no assignee, no target" state a `DraftIssue` does -- never
-    a guess, never a crash.
+    malformed or injected URL -- `content_ref` alone stays `None` for a
+    malformed `number` without affecting `assignee`/`assignee_unknown`
+    (the two are read independently).
+
+    The `assignees` sub-shape specifically determines `assignee_unknown`
+    (escalation, finding 3): a well-formed, confidently-empty
+    `{"nodes": []}` (a real `DraftIssue` or a real Issue/PR with genuinely
+    no assignee) is `(None, False)` -- but `assignees` missing/malformed,
+    or its `nodes` not a list, or a node whose `login` isn't a string, is
+    UNREADABLE, never a guessed `None` -- `(None, True)`. Exactly ONE
+    well-formed node is the normal case. MORE than one raises
+    `SyncMultipleAssigneesError` named (escalation, finding 4) rather than
+    silently tracking only the first -- an untracked co-assignee is a
+    named failure, never a guess.
     """
     content = node.get("content")
+    if content is None:
+        if "content" in node:
+            return None, None, True
+        return None, None, False
     if not isinstance(content, dict):
-        return None, None
+        return None, None, True
     number = content.get("number")
     repository = content.get("repository")
     if not isinstance(repository, dict):
@@ -607,13 +641,25 @@ def _parse_content(
     ):
         content_ref = (owner, repo, number)
     assignees = content.get("assignees")
-    assignee_nodes = assignees.get("nodes") if isinstance(assignees, dict) else None
-    assignee = None
-    if isinstance(assignee_nodes, list) and assignee_nodes:
-        first = assignee_nodes[0]
-        login = first.get("login") if isinstance(first, dict) else None
-        assignee = login if isinstance(login, str) else None
-    return assignee, content_ref
+    if assignees is None:
+        return None, content_ref, False
+    if not isinstance(assignees, dict):
+        return None, content_ref, True
+    assignee_nodes = assignees.get("nodes")
+    if not isinstance(assignee_nodes, list):
+        return None, content_ref, True
+    if not assignee_nodes:
+        return None, content_ref, False
+    if len(assignee_nodes) > 1:
+        raise SyncMultipleAssigneesError(
+            f"GitHub item has {len(assignee_nodes)} assignees, this module tracks exactly one: "
+            f"{assignee_nodes!r}"
+        )
+    first = assignee_nodes[0]
+    login = first.get("login") if isinstance(first, dict) else None
+    if isinstance(login, str):
+        return login, content_ref, False
+    return None, content_ref, True
 
 
 def get_project_item(
@@ -638,7 +684,7 @@ def get_project_item(
         raise SyncAPIError(f"GitHub project item {item_id}: not found")
 
     field_values = _parse_field_values(node)
-    assignee, content_ref = _parse_content(node)
+    assignee, content_ref, assignee_unknown = _parse_content(node)
 
     baseline_raw = field_values.get(config.github_baseline_field_id)
     return GitHubItemState(
@@ -648,6 +694,7 @@ def get_project_item(
         baseline=_parse_baseline(baseline_raw, side="github item", identifier=item_id),
         assignee=assignee,
         content_ref=content_ref,
+        assignee_unknown=assignee_unknown,
     )
 
 
@@ -1150,45 +1197,41 @@ def reconcile(
     gh_changed = gh_base is _MISSING or gh.status != gh_base
     jira_changed = jira_base is _MISSING or jira.status != jira_base
 
-    # Story 8.7 (Design Notes, "Why a missing baseline key doesn't always
-    # mean 'first sync'"): AD-10 rule 1 is a statement about the PAIR ("has
-    # this pair ever converged"), not about each field independently. A side
-    # whose baseline map is WHOLLY EMPTY (`{}`) has genuinely never synced
-    # anything -- assignee is a real first-sync there too, exactly like
-    # status (`_MISSING` stays `_MISSING`, below). A side whose baseline map
-    # is non-empty (an established pair predating this story) but simply
-    # lacks the newer "assignee" key has NOT "never synced" -- it reads as
-    # "not yet observed": adopt that side's own CURRENT assignee value as
-    # its baseline right here, without comparing it to the other side and
-    # without ever propagating it. This is what makes a pre-8.7 pair's first
-    # post-upgrade reconcile silently backfill (whether the two sides
-    # secretly already agree or disagree) rather than spuriously fire on
-    # every single already-linked item at once.
-    # Review-confirmed fix: gated at the PAIR level (either side wholly
-    # empty), not per side independently. Gating on each side's OWN baseline
-    # truthiness independently can produce an asymmetric outcome: if one
-    # side's baseline is genuinely `{}` (reachable via the existing accepted
-    # partial-baseline-write-failure precedent) while the OTHER side's
-    # baseline is non-empty but merely missing the "assignee" key, per-side
-    # gating makes the empty side undergo a genuine (arbitrary) AD-4
-    # decision while the established side silently adopts-and-loses its own
-    # real value -- the established side's correct assignee can get
-    # overwritten by the other side's essentially-arbitrary current value,
-    # and that wrong result then becomes permanently "converged". Only when
-    # BOTH sides' baseline dicts are non-empty (a genuinely established
-    # pair) does "missing key -> not yet observed, adopt current, no
-    # comparison" apply; a wholly-empty baseline on EITHER side means the
-    # PAIR has never converged this field, so it's a real first-sync AD-4
-    # decision for BOTH sides (original, unchanged AD-10 rule 1 semantics).
-    pair_has_established_baseline = bool(gh.baseline) and bool(jira.baseline)
+    # Story 8.7 (Design Notes, "Why a missing baseline key IS a first-sync
+    # decision, per field" -- revised 2026-08-15, escalation findings 1+2).
+    # A missing `"assignee"` baseline key on EITHER side -- whether that
+    # side's whole baseline map is empty (a genuinely new pair) or merely
+    # missing this one key (an established pair predating this story) -- is
+    # read as a real first-sync AD-4 decision for the assignee field alone,
+    # exactly parallel to `status` above (`_MISSING` stays `_MISSING`, never
+    # silently adopted). The prior design instead adopted a missing-key
+    # side's OWN current value as its baseline without ever comparing it to
+    # the other side: on a genuinely mismatched pre-8.7 pair this made
+    # assignee sync permanently inert (nothing ever recorded the pair as
+    # observed, so every tick re-derived the same "not yet observed" state
+    # forever), and it let a LATER field's successful baseline persist
+    # (e.g. status) silently make an EARLIER field's failed write look
+    # "established" on the very next tick, masking the failure as
+    # convergence. Deriving each field's own `_changed` flag strictly from
+    # that field's own persisted baseline key (never from the pair's overall
+    # baseline truthiness) closes both: a missing key always re-enters the
+    # AD-4 decision below, so an already-converged pair produces zero writes
+    # (the convergence check downgrades it) while a genuinely diverged pair
+    # gets a real, one-time write -- and a failed write, having never
+    # persisted its own key, is re-attempted on the next tick instead of
+    # disappearing.
     gh_assignee_base = gh.baseline.get(_ASSIGNEE_FIELD, _MISSING)
-    if gh_assignee_base is _MISSING and pair_has_established_baseline:
-        gh_assignee_base = gh.assignee
     jira_assignee_base = jira.baseline.get(_ASSIGNEE_FIELD, _MISSING)
-    if jira_assignee_base is _MISSING and pair_has_established_baseline:
-        jira_assignee_base = jira.assignee
     gh_assignee_changed = gh_assignee_base is _MISSING or gh.assignee != gh_assignee_base
     jira_assignee_changed = jira_assignee_base is _MISSING or jira.assignee != jira_assignee_base
+    # A missing key alone must not, by itself, trigger a baseline WRITE when
+    # both sides genuinely agree (the AD-4 comparison above still runs and
+    # correctly finds nothing to change) -- only a REAL push, or riding
+    # along for free when status ALSO writes this round, should. Tracked
+    # separately from `*_assignee_changed` (which must stay True to drive
+    # the comparison) so `should_persist_assignee` below can distinguish
+    # "key missing" from "value actually diverged."
+    assignee_key_missing = gh_assignee_base is _MISSING or jira_assignee_base is _MISSING
 
     # Identity-link repair need (Boundaries & Constraints): stateless and
     # independently derivable from the resolved pair alone, no extra read
@@ -1263,7 +1306,17 @@ def reconcile(
     # not shared, per the Code Map), translated through `user_mapping`
     # (push_to_jira) or its computed inverse (push_to_github) rather than
     # status's `status_mapping`.
-    if not gh_assignee_changed and not jira_assignee_changed:
+    #
+    # RESOLVED 2026-08-15 (escalation, finding 3): an UNREADABLE GitHub
+    # `content` (`gh.assignee_unknown`) must never reach the normal decision
+    # below -- `gh.assignee` reads `None` in that case, and treating it as a
+    # confident value would compare against a real baseline (e.g.
+    # "octocat") as a genuine change and push an unassignment to Jira,
+    # silently destroying a real assignee on a permission hiccup. Downgrade
+    # unconditionally to `no_op`, no baseline touch, re-attempted next tick.
+    if gh.assignee_unknown:
+        assignee_decision, assignee_target_value = "no_op", None
+    elif not gh_assignee_changed and not jira_assignee_changed:
         assignee_decision, assignee_target_value = "no_op", None
     elif gh_assignee_changed and not jira_assignee_changed:
         assignee_decision, assignee_target_value = "push_to_jira", gh.assignee
@@ -1545,7 +1598,29 @@ def reconcile(
     # & Constraints), so a link-repair-only round makes exactly the link
     # write(s) above and nothing else.
     should_persist_status = status_persist_ok and (gh_changed or jira_changed)
-    should_persist_assignee = assignee_persist_ok and (gh_assignee_changed or jira_assignee_changed)
+    # A side whose baseline KEY WAS PRESENT but stale against its own
+    # current value (unchanged pre-8.7 behavior, status's own analogous
+    # case) still needs its baseline refreshed even when the two sides'
+    # values happen to converge -- distinct from a MISSING key with no
+    # prior recorded value to be stale against.
+    assignee_baseline_stale = (
+        not gh.assignee_unknown and gh_assignee_base is not _MISSING and gh.assignee != gh_assignee_base
+    ) or (jira_assignee_base is not _MISSING and jira.assignee != jira_assignee_base)
+    # RESOLVED 2026-08-15 (escalation, finding 1): a MISSING key whose
+    # comparison converges to `no_op` (both sides already agree, or
+    # `gh.assignee_unknown`) must NOT by itself trigger a baseline write --
+    # that would reintroduce a write on every single pre-8.7 pair's first
+    # post-upgrade reconcile regardless of whether assignee actually
+    # diverges, exactly the write-storm this story's own Approach rejects.
+    # Persist when assignee's own decision resulted in a real push, OR a
+    # PRESENT key was genuinely stale (even if now converged), OR
+    # (unchanged free-backfill behavior) a missing key rides along for
+    # free because status ALSO writes this round.
+    should_persist_assignee = assignee_persist_ok and (
+        assignee_decision != "no_op"
+        or assignee_baseline_stale
+        or (assignee_key_missing and should_persist_status)
+    )
 
     def _persist_merged_baseline() -> None:
         """Serialize and write both sides' merged baseline maps. Each
