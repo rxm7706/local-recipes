@@ -2206,10 +2206,10 @@
  },
  "pyforge-marshal/spec-dashboard-project-path-derivation": {
   "files": {
-   "docs/dashboard/generate.py": "38cd146413c26e093f52ffe29fa05d4229d909e0",
-   "docs/dashboard/index.html": "5fe4e1832ca1dffe7a0350d52d768ffd1cc35198"
+   "docs/dashboard/generate.py": "452912af1f3f97226287549b8d5c71530aac3ce6",
+   "docs/dashboard/index.html": "d1642f8e66ae0dc3446b7619979f947a0b282b98"
   },
-  "memlog": "3b046447705fc0651b4367babbd7d669f70306a1"
+  "memlog": "826dfa7833d7f1549453ea74816c1ece6fc52e4d"
  },
  "pyforge-marshal/spec-dream-to-code-model-self-verification": {
   "files": {
@@ -2719,9 +2719,9 @@
  "pyforge-marshal/spec-pyforge-testing-charter": {
   "files": {
    "_bmad/scripts/bmad_tea_playwright.py": "bd094688e43a629ffee75daffd59af19f71d6fd5",
-   "docs/dashboard/generate.py": "2db6d7ebbdf767751c03b57666f17973dfdd572d"
+   "docs/dashboard/generate.py": "452912af1f3f97226287549b8d5c71530aac3ce6"
   },
-  "memlog": "d703814ce37db25b367ce4438cd9eff2609c4222"
+  "memlog": "6a497edd590d9fe4a68eaaf4016b6d8f2468afe9"
  },
  "pyforge-marshal/spec-quick-dev-reconciliation": {
   "files": {
@@ -2748,10 +2748,10 @@
  },
  "pyforge-marshal/spec-sprint-status-auto-promote": {
   "files": {
-   "docs/dashboard/generate.py": "2db6d7ebbdf767751c03b57666f17973dfdd572d",
+   "docs/dashboard/generate.py": "452912af1f3f97226287549b8d5c71530aac3ce6",
    "scripts/promote_sprint_status.py": "583e4286df45b29f676f71e1266522d00bce33e0"
   },
-  "memlog": "d286c40bf2cba8ea369f209d90fc3161b29ceed3"
+  "memlog": "c3777945edd4dcf76275214fe20e7656eae715a7"
  },
  "pyforge-marshal/spec-surface-drift-reconciliation": {
   "files": {
