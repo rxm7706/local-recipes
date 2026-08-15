@@ -29,7 +29,8 @@ from http import HTTPStatus
 from typing import TYPE_CHECKING
 
 import pytest
-from django.urls import resolve, reverse
+from django.urls import resolve
+from django.urls import reverse
 from health_check.views import HealthCheckView
 
 if TYPE_CHECKING:
