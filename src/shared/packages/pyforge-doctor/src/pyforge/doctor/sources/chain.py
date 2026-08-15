@@ -2675,11 +2675,11 @@ _DECLARATION_RE_TEMPLATE = r"^\s*(?:async\s+def|def|class)\s+{}\b"
 
 def _call_site_count(target: Path, symbol: str) -> tuple[int, bool] | None:
     """``(call_sites, has_declaration)`` for ``symbol`` across the whole
-    repo -- ``git grep -n -w -I --untracked -- <symbol>`` (whole repo,
-    whole-word, binary-excluded, including not-yet-committed files) via
-    ``run_git``, with ``ok_exit_codes={0, 1}`` since git grep's exit code 1
-    ("no matches") is the expected, common "still-open" outcome here, never
-    an error (Boundaries).
+    repo -- ``git grep -n -w -I --untracked --no-exclude-standard -- <symbol>``
+    (whole repo, whole-word, binary-excluded, including not-yet-committed
+    files) via ``run_git``, with ``ok_exit_codes={0, 1}`` since git grep's
+    exit code 1 ("no matches") is the expected, common "still-open" outcome
+    here, never an error (Boundaries).
 
     Every ``**/deferred-work-ledger.md`` (any project, any depth) is
     EXCLUDED from the search via a git pathspec (review finding, patch: a
@@ -2696,15 +2696,25 @@ def _call_site_count(target: Path, symbol: str) -> tuple[int, bool] | None:
     in a freshly-created, not-yet-``git add``-ed file was invisible to the
     search, so a genuinely-now-used symbol could mechanically report
     ``still-open`` -- the one outcome this story's own vocabulary must never
-    produce as a false confirm.
+    produce as a false confirm. ``--no-exclude-standard`` (follow-up review
+    finding, patch): ``--untracked`` alone still honors ``.gitignore`` --
+    verified empirically that a symbol referenced only from a new, untracked
+    file under a gitignored directory was still invisible without this flag,
+    reopening the exact false-``still-open`` gap ``--untracked`` was added to
+    close.
 
     ``has_declaration`` is ``True`` only when at least one matched line is
     the symbol's own declaration (``_DECLARATION_RE_TEMPLATE``); those lines
-    are excluded from ``call_sites``. The caller uses ``has_declaration`` to
-    require a real, found function/class before asserting any verdict
-    (Boundaries) -- a bare identifier that resolves to no declaration at all
-    (e.g. a variable/constant, or a typo) is not confidently "an unused
-    function" and must not get a mechanical verdict.
+    are excluded from ``call_sites``, except for any FURTHER occurrence of
+    the symbol on that same line (follow-up review finding, patch: a
+    single-line recursive declaration, e.g. ``def _foo(x): return
+    _foo(x - 1)``, is one matched line that is both the declaration AND a
+    genuine self-call -- excluding the whole line undercounted that call;
+    verified empirically). The caller uses ``has_declaration`` to require a
+    real, found function/class before asserting any verdict (Boundaries) --
+    a bare identifier that resolves to no declaration at all (e.g. a
+    variable/constant, or a typo) is not confidently "an unused function"
+    and must not get a mechanical verdict.
 
     Returns ``None`` -- never raises -- on any OTHER git failure, so the
     caller degrades THIS entry's check to "not evaluated" (I/O matrix: "git
@@ -2713,14 +2723,16 @@ def _call_site_count(target: Path, symbol: str) -> tuple[int, bool] | None:
         out = run_git(
             target,
             [
-                "grep", "-n", "-w", "-I", "--untracked", "--", symbol,
-                ":(exclude,glob)**/deferred-work-ledger.md",
+                "grep", "-n", "-w", "-I", "--untracked", "--no-exclude-standard",
+                "--", symbol, ":(exclude,glob)**/deferred-work-ledger.md",
             ],
             ok_exit_codes=frozenset({0, 1}),
         )
     except (CliBridgeError, UnicodeDecodeError):
         return None
     decl_re = re.compile(_DECLARATION_RE_TEMPLATE.format(re.escape(symbol)))
+    escaped = re.escape(symbol)
+    symbol_re = re.compile(rf"\b{escaped}\b")
     count = 0
     has_declaration = False
     for line in out.splitlines():
@@ -2728,6 +2740,7 @@ def _call_site_count(target: Path, symbol: str) -> tuple[int, bool] | None:
         _, _, content = rest.partition(":")
         if decl_re.match(content):
             has_declaration = True
+            count += len(symbol_re.findall(content)) - 1
             continue
         count += 1
     return count, has_declaration
