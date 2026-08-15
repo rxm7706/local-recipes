@@ -882,6 +882,21 @@ next free numeric suffix **for that story** by querying the tracked ledger's exi
 a duplicate mint before being caught and renumbered by hand: `DW-10-5-1` against an existing
 `DW-10-5-1..8`, `DW-10-6-1`, and `DW-13-3-1` (CAP-5). **Deps:** S-8.1.
 
+**Status:** done
+
+**Outcome (2026-08-15).** `mint_id_for_entry` (new, `pyforge/doctor/sources/chain.py`) ports
+the id-minting prose already living in `.claude/skills/bmad-dev-auto/step-04-review.md` into
+real, tested code — pure computation, no file writes. Adversarial review, executed live
+against real fleet data, caught and fixed three HIGH bugs before landing: a silent-swallow of
+unreadable ledger files as "zero tokens"; a batch-minting collision (calling the function
+repeatedly for entries sharing a derived story key without an in-batch accumulator produced 24
+identical duplicate ids against real data — the exact volume Story 8.3's bulk `--fix` mode will
+need, fixed by adding an `already_minted` accumulator parameter); and a brittle unnormalized
+`station` comparison with no validation. The spec's own anecdotal near-miss ids
+(`DW-10-5-1`/`DW-10-6-1`/`DW-13-3-1`) had since moved in the live ledgers (same-day churn); the
+identical edge-case shapes were re-verified against real, currently-live entries instead
+(steward's `DW-FU-9-3-*` series, mason's `DW-1-10-1`).
+
 ### Story 8.3: The fix mode promotes the backlog and refuses on collision
 **Given** the live 72-entry legacy backlog **When** `--fix` runs (mirroring
 `scripts/spec_surface_check.py --write-baseline`'s established pattern) **Then** every entry

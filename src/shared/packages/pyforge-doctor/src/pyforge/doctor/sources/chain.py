@@ -52,7 +52,7 @@ import re
 import stat
 from dataclasses import dataclass
 from enum import StrEnum
-from pathlib import Path
+from pathlib import Path, PurePosixPath
 
 import yaml
 
@@ -67,6 +67,7 @@ __all__ = (
     "Tier3Shape",
     "LegacyEntry",
     "classify_tier3_entries",
+    "mint_id_for_entry",
 )
 
 
@@ -1759,6 +1760,319 @@ def _consume_plain_field_block(
         LegacyEntry(Tier3Shape.IDENTIFIED_PLAIN, entry_id, header_lineno, end_lineno, fields),
     )
     return i
+
+
+# --- Story 8.2: mint_id_for_entry ------------------------------------------
+#
+# Ports `.claude/skills/bmad-dev-auto/step-04-review.md`'s "Minting the id"
+# prose (lines ~81-98) into reusable, testable code -- that procedure has so
+# far only ever been followed BY HAND, one finding at a time, by an LLM
+# agent mid-review-pass, and has already produced three real near-miss
+# duplicate-mint incidents (Intent). Pure computation: reads `tier3_path`/
+# `tracked_path` to collect existing ids, never writes to either -- Story
+# 8.3's future `--fix` mode owns the append.
+#
+# `station` is an explicit caller-supplied parameter, never resolved from
+# `_bmad/scripts/resolve_config.py` or the active-project marker the way
+# step-04-review.md's own step 1 does -- see this story's Design Notes for
+# why: a library function meant to be called in a loop over all 8 projects
+# cannot trust ambient per-worktree state that only ever names ONE active
+# project at a time.
+
+#: Two leading numeric groups plus an optional single trailing letter
+#: (`<digits>-<digits><letter>?`) -- step-04-review.md step 2, verbatim.
+#: `re.match` anchors at position 0 and does not require consuming the rest
+#: of the string, so trailing text after the second group (a title slug, a
+#: glued extra character) is accepted and discarded, matching the prose's
+#: own `spec-2-1-3-way-merge-....md` -> `2-1` (not `2-1-3`) example.
+_STORY_KEY_RE = re.compile(r"^(\d+-\d+[A-Za-z]?)")
+
+#: step-04-review.md step 2's sanitize step: everything outside this set
+#: becomes `-`.
+_SANITIZE_RE = re.compile(r"[^A-Za-z0-9-]+")
+
+#: Generic container stems step-04-review.md step 2 names by name: durable
+#: story specs live at `planning-artifacts/specs/spec-<slug>/SPEC.md`, whose
+#: stem is the constant `SPEC` -- using it directly would collapse every
+#: spec in the fleet onto the same story key. Matched case-insensitively
+#: (Review Triage Log 2026-08-15, item 6) -- `Spec.md`/`Readme.md`/
+#: `INDEX.md` are the same generic container under a different casing, not
+#: a distinct story key.
+_GENERIC_STEMS = frozenset({"spec", "readme", "index"})
+
+#: The whole remainder after a base id must be exactly one plain integer to
+#: count toward that base's suffix -- step-04-review.md step 3's own
+#: `DW-1-10-1` vs base `DW-1-1` example (remainder `0-1`, not a plain
+#: integer, counts for nothing).
+_PLAIN_INT_RE = re.compile(r"^[0-9]+$")
+
+#: A backtick-quoted span -- the fleet's real `source_spec` values wrap the
+#: path in a markdown code span (`` `path.md` ``). Extracting this span
+#: FIRST, via search rather than an ends-with-backtick string check, isolates
+#: just the filename even when trailing prose follows the closing backtick
+#: (Review Triage Log 2026-08-15, item 5c -- confirmed live in pyforge-atlas's
+#: real tracked ledger, 19 lines fleet-wide, e.g. `` `cfe-atlas-datapipeline-
+#: kedro-migration.md` (Story E1, FR-11) ``, where the original `raw[0] ==
+#: "`" and raw[-1] == "`"` check fails because the string does not END in a
+#: backtick).
+_BACKTICK_SPAN_RE = re.compile(r"`([^`]*)`")
+
+
+def _strip_spec_prefix(name: str) -> str:
+    """Strip a leading ``spec-`` if present -- step-04-review.md step 2's
+    own first move, applied identically to a filename stem and to a parent
+    directory name (both are named "stripped the same way" in the prose)."""
+    return name.removeprefix("spec-")
+
+
+def _sanitize_story_key(raw: str) -> str:
+    """step-04-review.md step 2's sanitize step, verbatim: replace every
+    character outside ``[A-Za-z0-9-]`` with ``-``, collapse runs of ``-``,
+    and trim leading/trailing ``-`` -- so the id stays a single parseable
+    token that no consumer's ``rstrip("-")`` can fold onto a different id."""
+    collapsed = re.sub(r"-+", "-", _SANITIZE_RE.sub("-", raw))
+    return collapsed.strip("-")
+
+
+def _derive_story_key(source_spec: str) -> str:
+    """Port of step-04-review.md step 2's ``{story}`` derivation rule,
+    applied to a ``LegacyEntry.fields["source_spec"]`` value rather than to
+    ``{spec_file}`` directly (this story's own scope, Intent) -- the fleet's
+    real ledgers wrap that field in a markdown code span (`` `path.md` ``),
+    which is stripped before the value is parsed as a path.
+
+    Strips a leading ``spec-`` from the filename stem, then matches exactly
+    two leading numeric groups plus an optional single trailing letter
+    (``<digits>-<digits><letter>?``); falls back to the whole stem, or (when
+    the stem is empty or one of ``_GENERIC_STEMS``) the parent directory
+    name, when no such key matches. Sanitized to ``[A-Za-z0-9-]`` either
+    way. Raises ``ValueError`` if every avenue still leaves an empty key --
+    an empty ``{story}`` would mint an id with nothing after its prefix, the
+    same phantom-id failure this function exists to prevent.
+
+    Backtick handling (Review Triage Log 2026-08-15, item 5) is resolved by
+    isolating the backtick-quoted span BEFORE any filename/prefix logic
+    runs, rather than a plain ``raw[0] == "`" and raw[-1] == "`"`` string
+    check: (a) a lone leading or trailing backtick with no matching pair is
+    stripped rather than left to corrupt the stem, (b) a trailing backtick
+    glued immediately after ``.md`` no longer defeats the ``.md``-suffix
+    check (the un-stripped backtick used to make ``filename.lower().
+    endswith(".md")`` false), and (c) trailing prose after a backtick-quoted
+    filename (real live shape, e.g. `` `name.md` (Story E1, FR-11) ``) no
+    longer reaches the derivation at all -- only the quoted span does.
+    """
+    raw = source_spec.strip()
+    if not raw:
+        raise ValueError(
+            f"empty source_spec after stripping markdown/whitespace: {source_spec!r}"
+        )
+    span_match = _BACKTICK_SPAN_RE.search(raw)
+    if span_match:
+        raw = span_match.group(1).strip()
+    elif "`" in raw:
+        # A single stray backtick, leading or trailing, with no matching
+        # pair -- strip it defensively rather than let it corrupt the
+        # filename/prefix logic below.
+        raw = raw.strip("`").strip()
+    if not raw:
+        raise ValueError(
+            f"empty source_spec after stripping markdown/whitespace: {source_spec!r}"
+        )
+
+    path = PurePosixPath(raw.replace("\\", "/"))
+    filename = path.name
+    stem = filename[:-3] if filename.lower().endswith(".md") else filename
+    name_for_match = _strip_spec_prefix(stem)
+
+    match = _STORY_KEY_RE.match(name_for_match)
+    if match:
+        # `_STORY_KEY_RE`'s capture group is `\d+-\d+[A-Za-z]?` -- already
+        # restricted to `[A-Za-z0-9-]` and never starts or ends with `-`, so
+        # `_sanitize_story_key` is a no-op here and can never empty it
+        # (Review Triage Log 2026-08-15, item 8: the prior `if story:` guard
+        # after this call was unreachable).
+        return _sanitize_story_key(match.group(1))
+
+    candidate = name_for_match
+    if not candidate or candidate.lower() in _GENERIC_STEMS:
+        candidate = _strip_spec_prefix(path.parent.name)
+
+    story = _sanitize_story_key(candidate)
+    if not story:
+        # Sanitizing emptied it -- step-04-review.md's own final fallback:
+        # the parent directory name, sanitized the same way.
+        story = _sanitize_story_key(_strip_spec_prefix(path.parent.name))
+    if not story:
+        raise ValueError(
+            f"could not derive a non-empty story key from source_spec: {source_spec!r}"
+        )
+    return story
+
+
+def _collect_dw_tokens(tier3_path: Path, tracked_path: Path) -> set[str]:
+    """Every ``DW-`` token collected from BOTH ``tier3_path`` and
+    ``tracked_path`` -- reuses ``_ids()`` (this module's own harvest, "reuse,
+    don't reimplement" per this story's Boundaries), never a second
+    tokenizer.
+
+    A missing file contributes nothing (``_ids()`` already degrades that
+    way). A file that EXISTS but fails to read -- permissions, an unreadable
+    ancestor directory -- raises, rather than silently degrading to "this
+    file contributes nothing" (Review Triage Log 2026-08-15, item 1): a
+    silent empty contribution here can MASK an already-minted id, producing
+    exactly the duplicate-mint failure this whole function exists to
+    prevent -- the same masking-prevention philosophy ``_probe``/``_is_file``
+    already enforce elsewhere in this module (3 documented prior incidents
+    of exactly this pattern), and mirroring ``_load_deferred_work_baseline``'s
+    own "visible on failure" precedent (there, a named finding; here, since
+    this is a pure computation with no findings list to append to, a raised
+    ``OSError`` the caller cannot silently ignore). Only ``OSError`` is
+    caught and re-raised this way -- a programmer/type error is never
+    mistaken for a read failure and must propagate as itself."""
+    tokens: set[str] = set()
+    for path in (tier3_path, tracked_path):
+        try:
+            tokens |= _ids(path)
+        except OSError as exc:
+            raise OSError(
+                f"{path} exists but could not be read while collecting "
+                "existing DW- ids for minting -- refusing to silently treat "
+                "it as contributing zero ids, which could mask an existing "
+                f"id and produce a duplicate mint: {exc}"
+            ) from exc
+    return tokens
+
+
+def _next_free_suffix(base_id: str, collected: set[str]) -> int | None:
+    """step-04-review.md step 3's whole-remainder-must-be-a-plain-integer
+    counting rule: a collected id counts toward ``base_id``'s suffix only
+    when it IS ``base_id`` (counts as ``1``), or is ``base_id`` followed by
+    ``-`` and a remainder that is one plain integer and nothing else --
+    judged against the WHOLE remainder, never just its last segment, so
+    e.g. ``DW-1-10-1`` never counts toward base ``DW-1-1`` (its remainder
+    would be ``0-1``, not a plain integer). Comparison is numeric, never
+    lexicographic.
+
+    Returns ``None`` when nothing counts at all -- neither the bare base id
+    nor any qualifying suffix was collected -- meaning the base id itself is
+    free to mint bare (the caller's call for non-mason stations). Otherwise
+    returns one past the highest counting suffix."""
+    highest: int | None = 1 if base_id in collected else None
+    prefix = base_id + "-"
+    for token in collected:
+        if not token.startswith(prefix):
+            continue
+        remainder = token[len(prefix):]
+        if _PLAIN_INT_RE.match(remainder):
+            n = int(remainder)
+            if highest is None or n > highest:
+                highest = n
+    return None if highest is None else highest + 1
+
+
+#: The fleet's 8 real stations (one per `_bmad-output/projects/pyforge-*/`
+#: directory) -- no existing canonical enum/list of station slugs was found
+#: anywhere in this package or `models.py` to reuse (checked per Review
+#: Triage Log 2026-08-15, item 3), so this is a minimal, deliberately local
+#: set rather than a hand-rolled shape-only check.
+_KNOWN_STATIONS = frozenset({
+    "atlas", "doctor", "herald", "marshal", "mason", "scribe", "steward", "warden",
+})
+
+
+def _normalize_station(station: str) -> str:
+    """Normalize a caller-supplied ``station`` defensively: strip
+    surrounding whitespace, lowercase, and drop an optional leading
+    ``pyforge-`` package-naming prefix (e.g. ``pyforge-mason`` ->
+    ``mason``) -- so common variants of the same station resolve
+    identically rather than an unnormalized literal comparison silently
+    mismatching and taking the wrong branch (Review Triage Log 2026-08-15,
+    item 3: ``"pyforge-mason"``, ``"Mason"``, or a garbage/empty value all
+    used to silently fall through to the FU-prefixed branch, corrupting
+    mason's id shape with no symptom).
+
+    Raises ``ValueError`` naming the original value when it still does not
+    match the known 8-station set after normalization -- a loud failure
+    instead of a silently-wrong id shape."""
+    normalized = station.strip().lower().removeprefix("pyforge-")
+    if normalized not in _KNOWN_STATIONS:
+        raise ValueError(
+            f"unrecognized station {station!r}; expected one of "
+            f"{sorted(_KNOWN_STATIONS)}"
+        )
+    return normalized
+
+
+def mint_id_for_entry(
+    entry: LegacyEntry,
+    station: str,
+    tier3_path: Path,
+    tracked_path: Path,
+    already_minted: set[str] | None = None,
+) -> str:
+    """Mint the next free ``DW-`` id for ``entry`` per station convention
+    (Story 8.2) -- the reusable, testable form of step-04-review.md's
+    "Minting the id" prose. Pure computation: reads ``tier3_path``/
+    ``tracked_path`` to collect existing ids via ``_collect_dw_tokens``,
+    never writes to either (that's Story 8.3).
+
+    Raises ``ValueError`` if ``entry.id`` is already set -- minting a fresh
+    id for an entry that already carries one would produce a redundant,
+    orphaned id rather than reusing the entry's real identity (Review
+    Triage Log 2026-08-15, item 4).
+
+    Derives ``{story}`` from ``entry.fields["source_spec"]`` via
+    ``_derive_story_key``, raising ``ValueError`` if that field is missing
+    or blank -- there is no key to derive a story from, and minting an id
+    with an empty story segment would be exactly the anonymous-entry
+    failure this whole mechanism exists to eliminate.
+
+    ``station`` is normalized/validated via ``_normalize_station`` before
+    the mason/non-mason branch below (Review Triage Log 2026-08-15, item 3).
+    ``station == "mason"`` (after normalization) always mints a suffixed
+    ``DW-{story}-<n>`` (never bare, mason's own real convention -- see
+    ``DW-1-10-1``'s ``promoted:`` note in its tracked ledger). Every other
+    known station mints bare ``DW-FU-{story}`` unless that bare id or a
+    ``DW-FU-{story}-...`` id was already collected, in which case
+    ``DW-FU-{story}-<n>`` one past the highest counting suffix.
+
+    ``already_minted`` is an optional accumulator of ids minted earlier in
+    the SAME in-progress batch that have not yet been written to either
+    ledger file (Review Triage Log 2026-08-15, item 2 -- the HIGH-severity
+    batch-minting collision: calling this function repeatedly for entries
+    that share a derived story key, with no way to see each other's
+    not-yet-written mints, produced 24x duplication of a single id
+    live-verified against the real fleet ledgers). When supplied, its
+    contents are folded into the collected-id set exactly as if they had
+    already been read from ``tier3_path``/``tracked_path`` -- a caller doing
+    bulk minting passes one shared ``set[str]``, adding each returned id to
+    it after every call, and never collides within one batch."""
+    if entry.id is not None:
+        raise ValueError(
+            f"entry at line {entry.start_line} already carries id "
+            f"{entry.id!r} -- cannot mint a redundant id for an "
+            "already-identified entry"
+        )
+    source_spec = entry.fields.get("source_spec")
+    if source_spec is None or not source_spec.strip():
+        raise ValueError(
+            f"entry at line {entry.start_line} carries no source_spec field -- "
+            "cannot derive a story key to mint an id from"
+        )
+    station_norm = _normalize_station(station)
+    story = _derive_story_key(source_spec)
+    collected = _collect_dw_tokens(tier3_path, tracked_path)
+    if already_minted:
+        collected = collected | already_minted
+
+    if station_norm == "mason":
+        base_id = f"DW-{story}"
+        n = _next_free_suffix(base_id, collected)
+        return f"{base_id}-{1 if n is None else n}"
+
+    base_id = f"DW-FU-{story}"
+    n = _next_free_suffix(base_id, collected)
+    return base_id if n is None else f"{base_id}-{n}"
 
 
 def _load_deferred_work_baseline(
