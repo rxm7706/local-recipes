@@ -50,6 +50,8 @@ import json
 import os
 import re
 import stat
+from dataclasses import dataclass
+from enum import StrEnum
 from pathlib import Path
 
 import yaml
@@ -58,7 +60,14 @@ from ..cli_bridge import CliBridgeError, run_git
 from ..models import DoctorStatus, Finding, Source
 from . import degrade_on_exception
 
-__all__ = ("gather_dream_chain", "gather_deferred_work", "gather_spec_surface")
+__all__ = (
+    "gather_dream_chain",
+    "gather_deferred_work",
+    "gather_spec_surface",
+    "Tier3Shape",
+    "LegacyEntry",
+    "classify_tier3_entries",
+)
 
 
 # === gather_dream_chain =======================================================
@@ -1384,6 +1393,372 @@ def _anonymous(path: Path) -> list[int]:
             else:
                 out.append(n)
     return out
+
+
+# --- Story 8.1: classify_tier3_entries -----------------------------------------
+#
+# Additive to, and independent of, `_anonymous()`/`_entries()`/`_ids()` above --
+# none of the three is touched. `_anonymous()` only answers "is this line
+# anonymous" for the detector's own count; it cannot classify an entry's SHAPE
+# or extract its content, which Story 8.2/8.3 need to mint an id and promote an
+# entry verbatim. `_anonymous()` also mishandles a live class of entry: a
+# `### DW-<n>:` header whose own body uses plain (non-bulleted)
+# `origin:`/`source_spec:`/`severity:`/`status:` keys never satisfies `_ANON_RE`
+# (`^-\s+source_spec:`), so its in-entry/field-taken state never advances past
+# that header -- and then wrongly treats the NEXT, topically unrelated,
+# headerless `- source_spec:` bullet anywhere later in the file as "already
+# claimed" by that header, silently dropping a real orphan from the anonymous
+# count. Verified live across all 8 projects (this story's own Intent): 38 such
+# headers exist, 25 swallow a real, unrelated orphan this way (corrected live
+# measurement, via `classify_tier3_entries` itself -- see `DW-FU-8-1`'s own
+# evidence) -- marshal's 9
+# `### DW-<n>:` headers are a clean, fully-reproducing example (each one
+# swallows the next headerless bullet in the file). `classify_tier3_entries`
+# below does NOT repeat that bug: a header's claim on its own field block ends
+# the moment that block ends (a blank line, a heading, or a sibling bulleted
+# line), and nothing later in the file can be attributed back to it.
+#
+# `_anonymous()`'s own swallow bug is NOT fixed here (Never clause) -- logged
+# instead as a deferred-work entry for a future story.
+
+# `## Deferred from: ...` is the majority spelling live, but `## Deferred:
+# <title> (<date>)` (no "from") also occurs (warden's tracked ledger, line
+# 488) -- both spellings own a scope the same way.
+_LEGACY_HEADER_RE = re.compile(r"^#{1,6}\s+Deferred(?:\s+from)?:")
+_HEADING_RE = re.compile(r"^#{1,6}\s")
+#: Any top-level bulleted line -- shared by every consumer below that needs
+#: to recognize "a sibling bulleted field starts here, stop accumulating the
+#: current one" (previously three separate inline ``re.match(r"^-\s", ...)``
+#: calls).
+_BULLET_START_RE = re.compile(r"^-\s")
+#: Derives its prefix from `_ANON_RE.pattern` rather than hand-duplicating
+#: the same `^-\s+source_spec:` text -- the two must never drift apart, since
+#: `_anonymous()`'s own positional disambiguation (module banner above) and
+#: this module's LEGACY_FLAT/LEGACY_HEADER detection both key off "is this
+#: bullet a `source_spec:` entry-marker", the one field the Boundaries text
+#: names as what makes a bullet a real entry (a bullet with no `source_spec:`
+#: is freeform prose, never an entry).
+_SOURCE_SPEC_BULLET_RE = re.compile(_ANON_RE.pattern + r"\s*(.*)$")
+#: Any bulleted `- <key>: value` line, for `_consume_identified_entry`'s own
+#: shape check (Story 8.1 patch: an `IDENTIFIED_*` header's first bulleted
+#: field need not be `source_spec:` -- marshal's real shape leads with
+#: `origin:` on other headers -- so this must not be hardcoded to one key).
+_BULLETED_FIELD_RE = re.compile(_BULLET_START_RE.pattern + r"([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$")
+_PLAIN_KEY_RE = re.compile(r"^([A-Za-z_][A-Za-z0-9_]*):\s*(.*)$")
+
+#: The closed deferred-work field-key vocabulary a bulleted field block's
+#: OWN indented (no-dash) lines are allowed to start a fresh field with --
+#: `.claude/skills/bmad-loop-sweep/deferred-work-format.md`'s documented set
+#: (`origin`/`location`/`severity`/`reason`/`status`/`resolution`/`decision`/
+#: `seen-again`) plus the fields load-bearing elsewhere in this module
+#: (`source_spec`/`summary`/`evidence`) plus the verification-annotation
+#: fields observed live across the fleet's tracked ledgers (`promoted`/
+#: `found_by`/`raised`/`verified`). A generic ``[A-Za-z_]+:`` match
+#: over-matches: real deferred-work prose regularly uses a colon as
+#: mid-sentence punctuation ("Not pursued in this story: making ...", "the
+#: real extractor: `extract-slides.mjs`...", "Not fixed here: the ...
+#: signature...") -- each byte-identical in shape AND indentation to a
+#: genuine field line (confirmed against the live corpus: every one of these
+#: occurs exactly once fleet-wide as an accident of prose, while every name
+#: below recurs dozens to hundreds of times as an actual field) -- so only a
+#: closed vocabulary disambiguates a continuation line from a fresh field.
+_KNOWN_FIELD_KEYS = (
+    "source_spec", "summary", "evidence", "origin", "location", "severity",
+    "reason", "status", "resolution", "decision", "seen-again", "promoted",
+    "found_by", "raised", "verified",
+)
+_CONT_KEY_RE = re.compile(
+    r"^\s{2,}(" + "|".join(re.escape(k) for k in _KNOWN_FIELD_KEYS) + r"):\s*(.*)$"
+)
+
+
+class Tier3Shape(StrEnum):
+    """The four structural shapes a Tier-3 (or tracked-ledger) deferred-work
+    entry takes across the fleet's 8 projects, verified live this session
+    (Story 8.1): ``IDENTIFIED_BULLETED`` (CAP-1's current ``### DW-<id>:``
+    header + an immediate bulleted ``- source_spec:`` field),
+    ``IDENTIFIED_PLAIN`` (a ``### DW-<n>:`` header with no bulleted field of
+    its own -- dominantly pure freeform prose, ``fields={}`` -- 28 of the
+    fleet's 38 live headers of this shape, 100% of atlas's; the
+    "review-budget-followup" shape with plain, non-bulleted
+    ``source_spec:``/etc. keys is a real but minority case),
+    ``LEGACY_FLAT`` (a headerless ``- source_spec:`` bullet -- no owning
+    ``##``/``###`` ``DW-`` heading anywhere above it), and ``LEGACY_HEADER``
+    (a non-DW ``## Deferred from: ...`` heading immediately owning a
+    bulleted ``- source_spec:`` field).
+
+    The epics.md AC text describes the fourth shape as "a headed entry with
+    more than one `- source_spec:` bullet stacked under it" -- live
+    verification across all 8 projects found the real mechanics narrower and
+    different (this story's own Design Notes): no genuine
+    one-header/multiple-related-bullets shape exists anywhere in the fleet.
+    """
+
+    IDENTIFIED_BULLETED = "identified-bulleted"
+    IDENTIFIED_PLAIN = "identified-plain"
+    LEGACY_FLAT = "legacy-flat"
+    LEGACY_HEADER = "legacy-header"
+
+
+@dataclass(frozen=True)
+class LegacyEntry:
+    """One entry ``classify_tier3_entries`` read out of a Tier-3 (or tracked
+    ledger) file -- additive to, and independent of, ``_anonymous()``/
+    ``_entries()``/``_ids()`` above (this story's Never clause: this type
+    and its reader change no existing finding, mint nothing, write
+    nothing).
+
+    ``id`` is the real ``DW-*`` id for an ``IDENTIFIED_*`` shape, else
+    ``None`` for a ``LEGACY_*`` shape (Boundaries). ``fields`` holds every
+    ``key: value`` pair the entry carries, with wrapped continuation lines
+    already joined into a single string per key -- see
+    ``classify_tier3_entries``'s own docstring.
+    """
+
+    shape: Tier3Shape
+    id: str | None
+    start_line: int
+    end_line: int
+    fields: dict[str, str]
+
+    def __post_init__(self) -> None:
+        object.__setattr__(self, "shape", Tier3Shape(self.shape))
+        # Same defensive-copy rationale as `models.Finding.evidence` -- a
+        # frozen dataclass only blocks attribute reassignment, not mutation
+        # of a referenced mutable dict a caller still holds.
+        object.__setattr__(self, "fields", dict(self.fields))
+
+
+def classify_tier3_entries(path: Path) -> tuple[LegacyEntry, ...]:
+    """Every real deferred-work entry in ``path``, one ``LegacyEntry`` each,
+    classified into the four live ``Tier3Shape``\\ s (Story 8.1). Feeds
+    Story 8.2/8.3's future minting/promotion work; itself a pure read with
+    no side effects -- Doctor's ``sources/`` package is read-only by
+    construction (Design Notes), so a future ``--fix`` script can safely
+    import or duplicate this function without inheriting a write site.
+
+    Reuses ``_ENTRY_RE``'s ``DW-`` heading match and the same
+    ``- source_spec:`` bulleted-field convention ``_ANON_RE`` matches
+    (``_SOURCE_SPEC_BULLET_RE`` derives its prefix from ``_ANON_RE.pattern``
+    directly, so the two cannot drift apart), but tracks full entry spans
+    and field text rather than re-deriving ``_anonymous()``'s own positional
+    counting logic -- and, unlike ``_anonymous()``, does NOT mistake the
+    next unrelated headerless bullet for an ``IDENTIFIED_PLAIN`` header's
+    own field: a header's claim on its own field block ends the moment that
+    block ends (a blank line, a heading, or a sibling bulleted line), never
+    later in the file. An ``IDENTIFIED_*`` header's own field search scans
+    FORWARD past blank lines and non-field content (e.g. an interposed
+    ``<!-- ... -->`` comment) up to the next heading, rather than giving up
+    after one line -- otherwise the header's real content, past the
+    interposed lines, misreads as a separate, unrelated orphan (the
+    marshal ``DW-1-2-1``/``DW-1-10-7`` bug; see ``_consume_identified_entry``).
+
+    A bullet with no ``source_spec:`` field of its own -- freeform prose,
+    e.g. warden's plain markdown bullets under a ``## Deferred from:``
+    heading -- is not an entry and is skipped entirely: never returned, and
+    never allowed to end an in-progress ``LEGACY_HEADER`` scope (a heading
+    may own several such bulleted entries in a row, interleaved with
+    freeform prose bullets that are simply skipped).
+
+    ``summary:``/``evidence:`` (and every other) field value joins wrapped
+    continuation lines -- a line is a continuation iff it is non-blank, not
+    a heading, not a sibling ``- <key>:`` bullet, and does not itself open
+    one of ``_KNOWN_FIELD_KEYS``'s known field names (see that constant's
+    own docstring for why a generic ``word:`` match over-matches real
+    prose).
+
+    ``errors="replace"`` tolerates non-UTF-8 bytes, same as every other
+    reader in this module; a missing file, or one that vanishes between the
+    existence check and the read (TOCTOU), degrades to ``()``, never
+    raises.
+    """
+    if not _is_file(path):
+        return ()
+    try:
+        lines = path.read_text(encoding="utf-8", errors="replace").splitlines()
+    except OSError:
+        # Mirrors `_memlog_text`'s own is_file-then-guarded-read pattern
+        # above: `_is_file` can be stale by the time we get here, and a file
+        # deleted in between must degrade to "no entries", never raise.
+        return ()
+    n = len(lines)
+    entries: list[LegacyEntry] = []
+    # "legacy" while inside a `## Deferred from: ...` heading's span (several
+    # separate bulleted entries may live under ONE such heading, each its own
+    # LEGACY_HEADER -- see warden's real file); None otherwise -- no owning
+    # heading in effect, the LEGACY_FLAT default. A DW- header's own claim
+    # never sets `scope`; it is consumed entirely, at most once, by
+    # `_consume_identified_entry`, and anything after that claim ends reverts
+    # to None -- exactly the fix for `_anonymous()`'s swallow bug (module
+    # banner above).
+    scope: str | None = None
+    i = 0
+    while i < n:
+        line = lines[i]
+        lineno = i + 1
+
+        dw_match = _ENTRY_RE.match(line)
+        if dw_match:
+            i = _consume_identified_entry(lines, i + 1, dw_match.group(1), lineno, entries)
+            scope = None
+            continue
+
+        if _LEGACY_HEADER_RE.match(line):
+            scope = "legacy"
+            i += 1
+            continue
+
+        if _HEADING_RE.match(line):
+            scope = None
+            i += 1
+            continue
+
+        bullet_match = _SOURCE_SPEC_BULLET_RE.match(line)
+        if bullet_match:
+            shape = Tier3Shape.LEGACY_HEADER if scope == "legacy" else Tier3Shape.LEGACY_FLAT
+            i = _consume_bulleted_field_block(
+                lines, i, "source_spec", bullet_match.group(1), None, shape, lineno, entries,
+            )
+            continue
+
+        i += 1
+
+    return tuple(entries)
+
+
+def _consume_identified_entry(
+    lines: list[str],
+    i: int,
+    entry_id: str,
+    header_lineno: int,
+    entries: list[LegacyEntry],
+) -> int:
+    """Resolve and consume ONE ``### DW-<id>:`` header's own field block --
+    ``IDENTIFIED_BULLETED`` if the first field-shaped line found is a
+    bulleted ``- <key>: value`` (any key -- marshal's real shape leads with
+    ``origin:``, not ``source_spec:``), ``IDENTIFIED_PLAIN`` if it is a
+    plain ``key: value`` line, else an empty ``IDENTIFIED_PLAIN`` entry when
+    no recognizable field is found before the next heading or EOF.
+
+    The search window scans FORWARD past blank lines and non-field content
+    (e.g. an interposed ``<!-- id assigned ... -->`` HTML comment -- a real
+    live convention from the 2026-07-30 verification campaign) up to the
+    next heading, rather than giving up after the first non-blank line: a
+    header that gives up too early misreads its OWN real content, sitting
+    past the interposed lines, as a separate, unrelated ``LEGACY_FLAT``
+    orphan (the marshal ``DW-1-2-1``/``DW-1-10-7`` bug, Story 8.1 review
+    patch). Returns the index of the first line NOT consumed, so the
+    caller's own scan resumes there -- once this returns, the header's
+    claim is over for good."""
+    n = len(lines)
+    j = i
+    while j < n:
+        line = lines[j]
+        if not line.strip():
+            j += 1
+            continue
+        if _HEADING_RE.match(line):
+            break
+        bullet_match = _BULLETED_FIELD_RE.match(line)
+        if bullet_match:
+            return _consume_bulleted_field_block(
+                lines, j, bullet_match.group(1), bullet_match.group(2),
+                entry_id, Tier3Shape.IDENTIFIED_BULLETED, header_lineno, entries,
+            )
+        if _PLAIN_KEY_RE.match(line):
+            return _consume_plain_field_block(lines, j, entry_id, header_lineno, entries)
+        j += 1
+    entries.append(
+        LegacyEntry(Tier3Shape.IDENTIFIED_PLAIN, entry_id, header_lineno, header_lineno, {}),
+    )
+    return j
+
+
+def _consume_bulleted_field_block(
+    lines: list[str],
+    i: int,
+    first_key: str,
+    first_value: str,
+    entry_id: str | None,
+    shape: Tier3Shape,
+    start_lineno: int,
+    entries: list[LegacyEntry],
+) -> int:
+    """Consume one bulleted entry's own field block -- its own first
+    ``- <key>: value`` line (any key, not hardcoded to ``source_spec:`` --
+    an ``IDENTIFIED_*`` header's own first bulleted field need not lead with
+    it) plus every subsequent line that opens one of ``_KNOWN_FIELD_KEYS``'s
+    known field names (a fresh key) or wraps the CURRENT key's value --
+    stopping at the first blank line, heading, or sibling bulleted line.
+
+    A line is a continuation of the current key iff it is non-blank, not a
+    heading, not a sibling bulleted line, and does not itself open a KNOWN
+    field key -- deliberately NOT any indented ``word:``-shaped line: a
+    generic match over-matches real prose that uses a colon as mid-sentence
+    punctuation (e.g. "Not pursued in this story: ..."), which silently
+    truncated ``summary``/``evidence`` and misattributed the remainder to a
+    spurious key (Story 8.1 review patch; see ``_KNOWN_FIELD_KEYS``'s own
+    docstring for the live examples). Returns the index of the first line
+    NOT consumed."""
+    n = len(lines)
+    fields: dict[str, str] = {first_key: first_value.strip()}
+    current_key = first_key
+    end_lineno = i + 1
+    i += 1
+    while i < n:
+        line = lines[i]
+        if not line.strip() or _HEADING_RE.match(line) or _BULLET_START_RE.match(line):
+            break
+        cont_match = _CONT_KEY_RE.match(line)
+        if cont_match:
+            current_key = cont_match.group(1)
+            fields[current_key] = cont_match.group(2).strip()
+        else:
+            fields[current_key] = f"{fields[current_key]} {line.strip()}".strip()
+        end_lineno = i + 1
+        i += 1
+    entries.append(LegacyEntry(shape, entry_id, start_lineno, end_lineno, fields))
+    return i
+
+
+def _consume_plain_field_block(
+    lines: list[str],
+    i: int,
+    entry_id: str,
+    header_lineno: int,
+    entries: list[LegacyEntry],
+) -> int:
+    """Consume an ``IDENTIFIED_PLAIN`` header's own plain (non-bulleted)
+    ``key: value`` lines -- stopping at the first blank line, heading, or
+    bulleted line (the marshal ``DW-1`` case: its plain field block ends at
+    the blank line right after ``status: open``, so the unrelated headerless
+    bullet that follows it is never absorbed into it). Returns the index of
+    the first line NOT consumed."""
+    n = len(lines)
+    fields: dict[str, str] = {}
+    current_key: str | None = None
+    end_lineno = header_lineno
+    while i < n:
+        line = lines[i]
+        if not line.strip() or _HEADING_RE.match(line) or _BULLET_START_RE.match(line):
+            break
+        m = _PLAIN_KEY_RE.match(line)
+        if m:
+            current_key = m.group(1)
+            fields[current_key] = m.group(2).strip()
+        else:
+            # `current_key` is always set here (never `None`): the caller
+            # only enters this function after confirming the FIRST line
+            # already matches `_PLAIN_KEY_RE` (`_consume_identified_entry`),
+            # so the loop's very first iteration always takes the `if m:`
+            # branch above before any continuation line is possible.
+            fields[current_key] = f"{fields[current_key]} {line.strip()}".strip()
+        end_lineno = i + 1
+        i += 1
+    entries.append(
+        LegacyEntry(Tier3Shape.IDENTIFIED_PLAIN, entry_id, header_lineno, end_lineno, fields),
+    )
+    return i
 
 
 def _load_deferred_work_baseline(

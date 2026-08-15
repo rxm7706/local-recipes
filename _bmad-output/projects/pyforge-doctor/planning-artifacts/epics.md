@@ -856,6 +856,23 @@ attempts on 2026-08-15: a false-orphan duplication of already-headed content, an
 overcount that read a header's second bullet as a new orphan (231 spurious mints against a
 true count of 30 for marshal alone) (CAP-4). **Deps:** —
 
+**Status:** done
+
+**Outcome (2026-08-15).** `classify_tier3_entries` (new, additive, `pyforge/doctor/sources/
+chain.py`) distinguishes the four live shapes; `_anonymous()`/`_entries()`/`_ids()` and
+`gather_deferred_work`'s findings are untouched (verified byte-identical detector output).
+Live verification found the real shape-4 mechanics narrower than this AC's paraphrase — the
+header itself carries zero bulleted fields, and the bug is `_anonymous()`'s state machine
+attributing the next unrelated headerless bullet to it, not "one header owning multiple
+related bullets" — grounded in real excerpts, not the paraphrase (see the story spec's Design
+Notes). Adversarial review caught and fixed two live-data-confirmed HIGH bugs before landing:
+a continuation-line joiner misreading prose colons as field boundaries (corrupted 5 real
+entries across 4 projects), and a false-orphan misclassification when non-field content (an
+HTML comment) sits between a header and its field block (confirmed in marshal's committed
+ledger). The `_anonymous()` swallow-bug itself is logged as `DW-FU-8-1` (25/38 headers
+fleet-wide, corrected from this story's own 21/29 estimate), not fixed — out of scope per the
+Spec's "do not rewrite `_anonymous()`" constraint.
+
 ### Story 8.2: Minting picks the next free suffix per station convention
 **Given** an orphan entry Story 8.1 classified **When** an id is minted for it **Then** the
 id follows the owning station's own convention that CAP-1 already standardized
