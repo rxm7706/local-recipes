@@ -36,6 +36,7 @@ scripts/deferred_work_promote.py      # mutation-only promoter (Story 8.3) — n
 scripts/loop_stall_check.py           # detector — stays Marshal's: an operational watchdog over live runs, not a conformance verdict on an artifact
 scripts/fleet_picture.py              # progress REPORT, not a detector — never gates, always exits 0; read-only over the tracked sprint ledgers + `marshal status`. Allowlisted for the same reason unpushed_work_check.py is: operator tooling, not a governed surface.
 scripts/unpushed_work_check.py        # detector — stays Marshal's: same operational class as loop_stall_check
+scripts/mason_cfe_surface_check.py    # detector (Story 5.2, FR-45/AD-15) — repo-level conformance verdict (Mason never modifies the conda-forge-expert surface), same class as unpushed_work_check.py/loop_stall_check.py: no owning spec's `surface:` claims a repo-root scripts/ file, so it is allowlisted rather than governed
 scripts/detectors.py                  # the detector REGISTRY itself — governs the others, governed by none; §6 re-home decides its home
 scripts/spec_surface_allowlist.txt    # this file — the allowlist cannot govern itself
 scripts/dashboard_watch.py            # local dev watcher (rebuilds the board on save), not a gate
