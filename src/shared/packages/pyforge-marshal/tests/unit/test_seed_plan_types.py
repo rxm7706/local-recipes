@@ -7,6 +7,11 @@ tuple-vs-JSON-array conversion in ``to_json_dict``, and ``from_json_dict``
 raising ``ValueError`` for every malformed-input shape (a missing key, a
 wrong-shaped value, an unrecognized enum value) -- plus the frozen/hashable
 dataclass conventions this package's other model types already establish.
+
+Story 10.4 extends this file additively with ``SkippedArtifact`` (round
+trip, per-field validation) and ``Plan.skipped`` (its ``()`` default, its
+round trip, and the three untrusted-boundary rules ``from_json_dict``
+enforces on it: sorted, unique, and disjoint from ``actions``).
 """
 
 from __future__ import annotations
@@ -17,7 +22,7 @@ import json
 import pytest
 from pyforge.marshal.seed.detect.inventory import ArtifactState
 from pyforge.marshal.seed.model.manifest import ArtifactClass
-from pyforge.marshal.seed.plan.types import Action, Plan, RepoFingerprint
+from pyforge.marshal.seed.plan.types import Action, Plan, RepoFingerprint, SkippedArtifact
 
 
 def _action(**overrides) -> Action:
@@ -50,8 +55,22 @@ def _plan(**overrides) -> Plan:
     return Plan(**fields)
 
 
+def _skipped(**overrides) -> SkippedArtifact:
+    fields = {
+        "artifact_id": "gitignore",
+        "target_path": ".gitignore",
+        "pattern": "*.gitignore",
+    }
+    fields.update(overrides)
+    return SkippedArtifact(**fields)
+
+
 def _valid_action_dict() -> dict:
     return _action().to_json_dict()
+
+
+def _valid_skipped_dict() -> dict:
+    return _skipped().to_json_dict()
 
 
 def _valid_fingerprint_dict() -> dict:
@@ -286,7 +305,7 @@ def test_plan_from_json_dict_round_trips_directly_without_a_json_string_detour()
     assert Plan.from_json_dict(plan.to_json_dict()) == plan
 
 
-@pytest.mark.parametrize("missing_key", ["actions", "repo_fingerprint"])
+@pytest.mark.parametrize("missing_key", ["actions", "repo_fingerprint", "skipped"])
 def test_plan_from_json_dict_raises_value_error_naming_a_missing_key(missing_key):
     data = _valid_plan_dict()
     del data[missing_key]
@@ -360,3 +379,165 @@ def test_plan_is_frozen_and_hashable():
     with pytest.raises(dataclasses.FrozenInstanceError):
         plan.actions = ()  # type: ignore[misc]
     assert isinstance(hash(plan), int)
+
+
+# --- SkippedArtifact (Story 10.4) -------------------------------------------
+
+
+def test_skipped_artifact_to_json_dict_is_three_plain_strings():
+    assert _skipped().to_json_dict() == {
+        "artifact_id": "gitignore",
+        "target_path": ".gitignore",
+        "pattern": "*.gitignore",
+    }
+
+
+def test_skipped_artifact_round_trips_through_json_dumps_and_loads():
+    entry = _skipped()
+    assert SkippedArtifact.from_json_dict(json.loads(json.dumps(entry.to_json_dict()))) == entry
+
+
+@pytest.mark.parametrize("missing_key", ["artifact_id", "target_path", "pattern"])
+def test_skipped_artifact_from_json_dict_raises_value_error_naming_a_missing_key(missing_key):
+    data = _valid_skipped_dict()
+    del data[missing_key]
+    with pytest.raises(ValueError, match=missing_key):
+        SkippedArtifact.from_json_dict(data)
+
+
+@pytest.mark.parametrize("field_name", ["artifact_id", "target_path", "pattern"])
+def test_skipped_artifact_from_json_dict_raises_value_error_for_a_non_string_field(field_name):
+    data = _valid_skipped_dict()
+    data[field_name] = 123
+    with pytest.raises(ValueError, match=field_name):
+        SkippedArtifact.from_json_dict(data)
+
+
+@pytest.mark.parametrize("field_name", ["artifact_id", "target_path", "pattern"])
+@pytest.mark.parametrize("blank", ["", "   ", "\t"])
+def test_skipped_artifact_from_json_dict_raises_value_error_for_a_blank_field(
+    field_name, blank
+):
+    """All three fields are identifiers a human READS out of ``plan.json``
+    -- the artifact id, the path it names, and the ``--skip`` glob
+    responsible -- so a blank one renders as an empty line in the artifact
+    under review, saying nothing while looking like a record (review
+    finding). Both siblings already refuse the same shape at their own
+    boundaries: ``NeverWrite.__post_init__`` and ``skips.record_skip``."""
+    data = _valid_skipped_dict()
+    data[field_name] = blank
+    with pytest.raises(ValueError, match=field_name):
+        SkippedArtifact.from_json_dict(data)
+
+
+def test_skipped_artifact_from_json_dict_raises_value_error_when_data_is_not_a_mapping():
+    with pytest.raises(ValueError):
+        SkippedArtifact.from_json_dict("not-a-dict")  # type: ignore[arg-type]
+
+
+def test_skipped_artifact_is_frozen_and_hashable():
+    entry = _skipped()
+    with pytest.raises(dataclasses.FrozenInstanceError):
+        entry.pattern = "changed"  # type: ignore[misc]
+    assert isinstance(hash(entry), int)
+
+
+# --- Plan.skipped (Story 10.4) ----------------------------------------------
+
+
+def test_plan_skipped_defaults_to_an_empty_tuple():
+    """Last field, with a default, so every pre-10.4 construction site
+    (`build_plan`'s own included) keeps working unchanged."""
+    plan = Plan(actions=(), repo_fingerprint=_fingerprint())
+    assert plan.skipped == ()
+    assert plan.to_json_dict()["skipped"] == []
+
+
+def test_plan_with_skipped_entries_round_trips_through_json_dumps_and_loads():
+    plan = Plan(
+        actions=(_action(artifact_id="a"),),
+        repo_fingerprint=_fingerprint(),
+        skipped=(_skipped(artifact_id="y"), _skipped(artifact_id="z")),
+    )
+    restored = Plan.from_json_dict(json.loads(json.dumps(plan.to_json_dict())))
+
+    assert restored == plan
+    assert isinstance(restored.skipped, tuple)
+    assert all(isinstance(entry, SkippedArtifact) for entry in restored.skipped)
+
+
+def test_plan_from_json_dict_raises_value_error_when_skipped_is_not_a_list():
+    data = _valid_plan_dict()
+    data["skipped"] = {"gitignore": "*.gitignore"}
+    with pytest.raises(ValueError, match="skipped"):
+        Plan.from_json_dict(data)
+
+
+def test_plan_from_json_dict_raises_value_error_when_one_skipped_entry_is_malformed():
+    data = _valid_plan_dict()
+    malformed = _valid_skipped_dict()
+    del malformed["pattern"]
+    data["skipped"] = [malformed]
+    with pytest.raises(ValueError, match="pattern"):
+        Plan.from_json_dict(data)
+
+
+def test_plan_from_json_dict_raises_value_error_for_duplicate_skipped_artifact_ids():
+    data = _valid_plan_dict()
+    data["skipped"] = [
+        _skipped(artifact_id="dup").to_json_dict(),
+        _skipped(artifact_id="dup").to_json_dict(),
+    ]
+    with pytest.raises(ValueError, match="unique"):
+        Plan.from_json_dict(data)
+
+
+def test_plan_from_json_dict_raises_value_error_for_out_of_order_skipped_artifact_ids():
+    """Mirrors the existing `actions` ordering rule -- `apply_skips` only
+    ever emits `skipped` sorted by `artifact_id`."""
+    data = _valid_plan_dict()
+    data["skipped"] = [
+        _skipped(artifact_id="zeta").to_json_dict(),
+        _skipped(artifact_id="alpha").to_json_dict(),
+    ]
+    with pytest.raises(ValueError, match="ordered"):
+        Plan.from_json_dict(data)
+
+
+def test_plan_from_json_dict_reports_a_malformed_fingerprint_before_a_bad_skipped_list():
+    """``from_json_dict`` claims to require its keys in ``to_json_dict``'s
+    emission order so a document broken in several places reports the FIRST
+    problem a reader would look for. That was true only for MISSING keys:
+    ``repo_fingerprint``'s VALUE was parsed at the end, after all of
+    ``skipped``'s validation, so this document reported the ``skipped``
+    ordering error and never mentioned the broken fingerprint at all
+    (review finding)."""
+    data = _valid_plan_dict()
+    data["actions"] = []
+    data["repo_fingerprint"] = "not-a-dict"
+    data["skipped"] = [
+        _skipped(artifact_id="zeta").to_json_dict(),
+        _skipped(artifact_id="alpha").to_json_dict(),
+    ]
+
+    with pytest.raises(ValueError, match="RepoFingerprint"):
+        Plan.from_json_dict(data)
+
+
+def test_plan_from_json_dict_still_reports_a_missing_fingerprint_key_first():
+    """The ordering guarantee ``plan.build.load_plan``'s own missing-key
+    test depends on -- a document carrying only ``actions`` must name
+    ``repo_fingerprint``, not ``skipped``."""
+    with pytest.raises(ValueError, match="repo_fingerprint"):
+        Plan.from_json_dict({"actions": []})
+
+
+def test_plan_from_json_dict_raises_value_error_when_an_id_is_both_actioned_and_skipped():
+    """A hand-edited `plan.json` listing one id on both sides says "write
+    it" and "leave it alone" at once -- genuinely ambiguous, so it must not
+    load at all rather than resolve silently in either direction."""
+    data = _valid_plan_dict()
+    data["actions"] = [_action(artifact_id="shared").to_json_dict()]
+    data["skipped"] = [_skipped(artifact_id="shared").to_json_dict()]
+    with pytest.raises(ValueError, match="shared"):
+        Plan.from_json_dict(data)
