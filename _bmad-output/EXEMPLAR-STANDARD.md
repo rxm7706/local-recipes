@@ -125,6 +125,19 @@ chains. The Dream files themselves (`docs/dreams/pyforge-genesis.md`,
 The rest of the old project is archived at `archive/_bmad-output/projects/pyforge-genesis/`,
 never deleted.
 
+*Further amendment (2026-08-08, found stale 2026-08-15 while auditing `docs/` for this repo's
+own housekeeping): the two-kernel split above did not last either.* Commit `a3b5fefae8`
+("charter: absorb pyforge-genesis; `owner: guild` closes at one Dream") went one step further
+than this amendment anticipated: `spec-pyforge-genesis`'s capabilities were absorbed directly
+into `spec-pyforge-charter` as CAP-5..CAP-8, and `docs/dreams/pyforge-genesis.md` itself was
+folded into `docs/dreams/pyforge-charter.md` as "§ Satellite: The Seed" — **neither file exists
+standalone any more.** `docs/governance/spec-pyforge-genesis/` was moved to
+`archive/docs/governance/spec-pyforge-genesis/` (archived, not deleted, same convention as
+everything else here). The constitutive tier is now genuinely **one Dream, one Spec kernel** —
+`docs/dreams/pyforge-charter.md` / `docs/governance/spec-pyforge-charter/` — not two files at
+one shared location as this section's 2026-08-02 text still describes above. Verified directly
+2026-08-15: `docs/governance/` contains only `spec-pyforge-charter/` and `guild-roster.json`.
+
 ### INV-3 — One build tree, sharded
 
 Every project's `planning-artifacts/` uses the 6.10 sharded shape — what `bmad-prd` and
@@ -459,18 +472,84 @@ Marshal is the largest debt — 11 findings, a flat tree, four Specs to author (
 installer to absorb. It also owns the console and the loop that every other station depends
 on, so its conformance is load-bearing rather than cosmetic.
 
+**The table above is dated 2026-07-28/08-08 and is now stale — kept verbatim above per this
+document's own Provenance rule 4 (corrections stay on the record), superseded by the refresh
+below.** Found stale while writing `docs/dreams/fleet-hygiene-verification-exemplar-program.md`
+(2026-08-15): its "DW ledger" column reads ❌ for every project but atlas, when in fact all 8
+now carry a real, tracked `deferred-work-ledger.md` — the two-pass promotion this session ran
+against exactly the blind spots that Dream documents (a pre-convention Tier-3 format, and a
+`#`-header-swallows-body content-diff miss).
+
+### Conformance status — 2026-08-15 refresh
+
+`scripts/dream_chain_check.py`, the detector this document names as authoritative, was
+retired 2026-08-10 (`c698d4b1ad`, "doctor: retire 8 scripts/ shims fully superseded by Doctor
+sources") — its INV-0..1 half now lives at `python -m pyforge.doctor.sources dream-chain`.
+That subcommand only covers Spec-linkage (INV-0/INV-1), not the 7-column table below — the
+2026-07-28 table's other columns were themselves hand-derived via spot checks, not a single
+tool, and this refresh follows the same method, stated per column so a future pass can judge
+what to trust vs. re-verify:
+
+| Project | 6.10 shape | Spec kernels | Story specs | Companions (spot count) | Delivery records (spot grep) | DW ledger | README | epics.md |
+|---|---|---|---|---|---|---|---|---|
+| pyforge-atlas | ✅ sharded | 8 | 47 | 9 | 32/47 | ✅ 122 | ✅ | ✅ |
+| pyforge-doctor | ✅ sharded | 4 | 28 | 0 | 5/28 | ✅ 20 | ✅ | ✅ |
+| pyforge-herald | ✅ sharded | 4 | 48 | 6 | 0/48 | ✅ 45 | ✅ | ✅ |
+| pyforge-marshal | ✅ sharded | 36 | 56 | 14 | 0/56 | ✅ 109 | ✅ | ✅ |
+| pyforge-mason | ✅ sharded | 8 | 10 | 1 | 0/10 | ✅ 48 | ✅ | ✅ |
+| pyforge-scribe | ✅ sharded | 4 | 9 | 0 | 2/9 | ✅ 7 | ✅ | ✅ |
+| pyforge-steward | ✅ sharded | 9 | 20 | 1 | 0/20 | ✅ 74 | ✅ | ✅ |
+| pyforge-warden | ✅ sharded | 2 | 31 | 3 | 0/31 | ✅ 43 | ✅ | ✅ |
+
+Method and honest caveats:
+- **6.10 shape / spec kernels / story specs / companions / README / epics.md**: mechanical
+  `find`/`ls` counts against each project's `planning-artifacts/` tree, run 2026-08-15. The
+  flat-vs-sharded gap that made warden and marshal ❌ in the 2026-07-28 table is fully closed
+  — every project now has `specs/`, `prds/`, and `architecture/` in the sharded shape.
+- **Delivery records**: `grep -l "^## Delivery Record\|^## Dev Agent Record"` across each
+  project's story specs — a **spot check, not exhaustive**. Only atlas (32/47) and doctor
+  (5/28) and scribe (2/9) show non-zero hits; every other project shows 0, which is
+  suspicious enough to be a false negative from heading-convention drift (some projects may
+  use a differently-worded section heading) rather than a true "zero stations record
+  delivery" finding — **do not treat the 0s as confirmed debt without re-checking headings
+  directly**, the same caution this document's own INV-0 section demonstrates about trusting
+  a first-cut detector's confident wrong number.
+- **DW ledger**: verified directly, not a spot check — every count above is the same number
+  this session's own `deferred-work-check` detector and duplicate/collision scan confirmed
+  clean (see `docs/dreams/deferred-work-audit-completeness.md` and
+  `docs/dreams/deferred-work-resolution-sweep.md`).
+- **Not re-measured this pass**: INV-2 station-ownership migration progress (dissolution of
+  `deckcraft`/`presenton-pixi-image`/`unity-data-stack`/`wasm-analytics-stack`/
+  `local-recipes`), INV-4/INV-5 enforcement status, and the Dream-count growth itself — the
+  fleet now carries **96 Dreams** (up from 31 at 2026-07-28), of which **16 have no Spec**
+  (`python -m pyforge.doctor.sources dream-chain`, 2026-08-15: 5 owned by steward, 3 each by
+  doctor/mason, 2 by herald, 1 each by marshal/atlas/warden) — a real INV-1 backlog nearly
+  50% larger in absolute count than the 11 the 2026-07-28 table reported, though smaller as a
+  fraction of a much bigger Dream corpus. Worth a dedicated pass, not folded into this one.
+
+**Reading this refresh:** the sharpest gap the old table named — flat trees on warden/marshal
+— is closed. The sharpest gap this refresh finds instead is delivery-record convention drift
+(real or a heading-detection artifact, undetermined) and the growing INV-1 backlog keeping
+pace with — arguably outpacing — the fleet's own Dream production rate. Both are better next
+targets than re-chasing the DW-ledger or 6.10-shape columns, which this pass shows are now
+solid.
+
 ## Verifying conformance
 
-**`scripts/dream_chain_check.py` is the detector.** It enforces INV-0…INV-3 across every
-Dream and project, rolls findings up **by owner** (the accountability unit), and exits
-non-zero so it gates CI. Its findings **are** the migration backlog — derived, never
-hand-listed in this document, because a hand-listed backlog is stale the moment it is
-written.
+**`scripts/dream_chain_check.py` was retired 2026-08-10** (`c698d4b1ad`, superseded by Doctor
+sources per the same pattern `bmad_drift_check.py` followed for its own verdict — CLAUDE.md
+§ "Keeping BMAD artifacts in sync"). Its INV-0/INV-1 half (Spec linkage) now lives at
+`python -m pyforge.doctor.sources dream-chain`; INV-2/INV-3 (station ownership, build-tree
+shape) are **not yet ported** — the 2026-08-15 refresh table above measured those columns by
+hand-run `find`/`grep`, the same un-mechanized method the original 2026-07-28 table used
+before this detector existed. Its findings **are** the migration backlog for INV-0/1 —
+derived, never hand-listed — but the rest of the table is still exactly the kind of
+hand-derived snapshot this document warns goes stale the moment it's written, until INV-2/3
+land in `pyforge.doctor.sources` too.
 
 ```bash
-pixi run -e local-recipes python scripts/dream_chain_check.py            # report + scoreboard
-pixi run -e local-recipes python scripts/dream_chain_check.py --json     # machine-readable
-pixi run -e local-recipes python scripts/dream_chain_check.py --inv INV-2
+pixi run -e local-recipes python -m pyforge.doctor.sources dream-chain            # INV-0/1 report
+pixi run -e local-recipes python -m pyforge.doctor.sources dream-chain --json     # machine-readable
 ```
 
 `scripts/bmad_drift_check.py` remains the `local-recipes`-scoped detector and owns the

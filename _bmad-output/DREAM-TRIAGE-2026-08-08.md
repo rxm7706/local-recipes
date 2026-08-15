@@ -7,6 +7,28 @@ epics, or archive as not-going-to-implement. **The call is the operator's**, not
 recommendation this doc makes for you — it summarizes each Spec's own readiness signal.
 
 Detector state after all 10 Specs landed: `OK: all three invariants hold` (0 findings, was 16).
+That was a point-in-time reading, not a standing claim — the fleet's Dream corpus has grown
+from 31 to 96 since, and `python -m pyforge.doctor.sources dream-chain` (the retired
+`dream_chain_check.py`'s successor, see `EXEMPLAR-STANDARD.md`) reports 16 without-spec again
+today (2026-08-15), all newer Dreams than the 10 this triage covered.
+
+**Status refresh, 2026-08-15 — 7 of 10 acted on, 3 genuinely still open.** Checked each
+Dream's current `status:`/`owner:` frontmatter directly:
+- **Built (3):** `unified-container`, `kedro-org-tooling-adoption`, and
+  `bmad-module-provisioning` all now carry `status: realized`.
+- **Consolidated, not built separately (4):** `loop-home-fleet-refresh`,
+  `dashboard-project-path-derivation`, `dream-to-code-model-self-verification`, and
+  `sprint-status-auto-promote` all carry `status: archived` with the identical banner
+  "Consolidated into [[pyforge-marshal]] on 2026-08-08" — folded into the parent Marshal
+  Dream the same day this triage was written, not abandoned. A different mechanism than
+  this doc's own "new epic/story" language anticipated, but the same outcome its "Ready"
+  readiness signal called for.
+- **Still exactly where this triage left them (3):** `herald-moments-2-4-live-backend`,
+  `jira-github-projects-sync`, and `conda-forge-expert-rebuild` all still carry
+  `status: specified` — none archived, none folded in. The operator decisions this doc
+  flagged as blocking (Jira system choice; conda-forge-expert-rebuild's ownership and
+  code-scale feasibility; herald-moments-2-4's concurrency-lock prerequisite) are still
+  open a week later. These 3 are the live remainder of this doc's own purpose.
 
 ## How to read the columns
 

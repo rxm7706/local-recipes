@@ -1,5 +1,15 @@
 # Policy Composition Chain (as of 2026-08-01)
 
+**Refreshed 2026-08-15** — Story 1.10's wiring shipped (§ *Story 1.10 Wiring* below is now a
+historical plan, not a to-do: `core/policy.compose()` already takes `repo_defaults`, wired
+from `adapters/harness_bmadloop.py`, not `cli/config.py` as originally planned — verified
+`cli/config.py` has zero references to `policy-defaults.toml`). Also corrected: this doc's
+"9 stations"/"9 policy keys" counts are stale — `pyforge-genesis` was dissolved 2026-08-02
+(see `EXEMPLAR-STANDARD.md` § INV-2), leaving **8** stations/loop homes, and Marshal's policy
+vocabulary has grown to **23** keys (per `core/policy.compose()`'s own docstring), not 9. The
+composition *model* (4-layer precedence, file locations, design principles) is unchanged and
+still accurate.
+
 ## Overview
 
 Marshal's policy composition follows a 4-layer precedence chain (last wins):
@@ -21,7 +31,9 @@ EffectivePolicy (composed, immutable)
 ### Layer 1: DEFAULT_POLICY (code)
 **Location**: `src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/policy.py`
 
-Marshal's built-in defaults for all 9 policy keys. These are conservative-safe values chosen where the spec doesn't mandate a specific literal. Example: `gate_mode` defaults to `"per-story-spec-approval"` (strictest oversight) rather than `"none"` (unattended).
+Marshal's built-in defaults for all 23 policy keys (grown from 9 at authoring time — see
+`core/policy.compose()`'s own docstring for the current closed vocabulary). These are
+conservative-safe values chosen where the spec doesn't mandate a specific literal. Example: `gate_mode` defaults to `"per-story-spec-approval"` (strictest oversight) rather than `"none"` (unattended).
 
 **When to use**: For out-of-the-box, zero-config behavior. New stations automatically inherit these unless overridden.
 
@@ -30,16 +42,16 @@ Marshal's built-in defaults for all 9 policy keys. These are conservative-safe v
 
 Repo-wide policy decisions that apply uniformly to all loop homes unless explicitly overridden. Example: `max_followup_reviews = 2` is a repo-wide decision (not station-scoped) with full reasoning documented.
 
-**When to use**: For decisions that are repo-scale (affect all 9 stations equally) and that benefit from being explicit and documented in tracked TOML.
+**When to use**: For decisions that are repo-scale (affect all 8 stations equally) and that benefit from being explicit and documented in tracked TOML.
 
-**Why this layer exists**: The original `max_followup_reviews=2` lived only in code (DEFAULT_POLICY) with reasoning. The incident it prevented (DW-AD23-3, deferred-work-check) made it clear this decision should be explicit and tracked, not buried in code. But putting it in every station's marshal-policy.toml (9 copies) would violate the design principle "no project layer needs to restate it". So a new Layer 2 was created.
+**Why this layer exists**: The original `max_followup_reviews=2` lived only in code (DEFAULT_POLICY) with reasoning. The incident it prevented (DW-AD23-3, deferred-work-check) made it clear this decision should be explicit and tracked, not buried in code. But putting it in every station's marshal-policy.toml (9 copies at authoring time) would violate the design principle "no project layer needs to restate it". So a new Layer 2 was created.
 
-**Wiring (Story 1.10)**: The `cli/config.py` file will read `policy-defaults.toml` and pass it to `core/policy.compose()` as the `repo_defaults` parameter. This wires the repo-wide layer into the composition fold.
+**Wiring (Story 1.10) — shipped.** `core/policy.compose()` takes `repo_defaults: Mapping[str, object] | None = None` (its own docstring: "The `repo_defaults` parameter was added in Story 1.10"), inserted between code defaults and the project layer. The actual read of `policy-defaults.toml` happens in `adapters/harness_bmadloop.py`, not `cli/config.py` as originally planned below (§ *Story 1.10 Wiring*, kept as a historical plan) — `cli/config.py` never gained that responsibility.
 
 ### Layer 3: marshal-policy.toml (per-station)
 **Location**: `_bmad-output/projects/pyforge-{slug}/planning-artifacts/marshal-policy.toml`
 
-Per-station policy overrides. Each of the 9 projects (atlas, doctor, genesis, herald, marshal, mason, scribe, steward, warden) has one. Typically contains:
+Per-station policy overrides. Each of the **8** projects (atlas, doctor, herald, marshal, mason, scribe, steward, warden — `genesis` dissolved 2026-08-02, see `EXEMPLAR-STANDARD.md` § INV-2) has one. Typically contains:
 - `gate_mode` — almost always `"none"` (unattended) by operator direction (2026-07-26)
 - `verify_commands` — station-specific test suite(s)
 
@@ -52,7 +64,7 @@ One-off overrides via `marshal config --set <key> <value>`. Example: `marshal co
 
 ## Key Design Principles
 
-1. **Single source per scope**: Repo-wide decisions live once (Layer 2); per-station decisions live once (Layer 3). No duplication across 9 files.
+1. **Single source per scope**: Repo-wide decisions live once (Layer 2); per-station decisions live once (Layer 3). No duplication across 8 files.
 
 2. **Explicit, not buried**: Values that matter are documented in tracked TOML, not hidden in code defaults or upstream `bmad_loop` baselines.
 
@@ -74,9 +86,9 @@ Currently only: `gate_mode = "none"` and station-specific `verify_commands`.
 
 No station currently overrides repo-wide settings like `max_followup_reviews` — they all inherit from Layer 2.
 
-## Story 1.10 Wiring (To Be Implemented)
+## Story 1.10 Wiring (SHIPPED — kept below as the original plan, see the refresh note at top)
 
-Story 1.10 (policy rendering) must:
+Story 1.10 (policy rendering) planned to:
 
 1. Update `cli/config.py` to read `_bmad-output/policy-defaults.toml` at CLI initialization time and pass it to `compose()` as the `repo_defaults` parameter.
 

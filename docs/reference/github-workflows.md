@@ -1,12 +1,25 @@
 # GitHub workflows — inventory, provenance and operating guide
 
-**Audited 2026-07-26.** This repo is a fork of `conda-forge/staged-recipes` that was
+**Originally audited 2026-07-26; refreshed 2026-08-15** (found stale during a repo-wide
+docs/ audit — 4 workflows this doc still listed as "deleted 2026-07-26" and 4 real
+ones it never mentioned). This repo is a fork of `conda-forge/staged-recipes` that was
 renamed to `local-recipes`. That single fact explains most of the surprises below:
 inherited workflows hardcode the *upstream* repo name, are gated to the *upstream*
 org, or duplicate checks upstream has since folded into its unified linter.
 
 Regenerate this table by reading `.github/workflows/` — do not trust it blind after
 a big change. Provenance comes from `git log --diff-filter=A -- <file>`.
+
+## Added since the 2026-07-26 audit
+
+Four workflows landed after the original audit and this table never caught up:
+
+| workflow | trigger | what it does |
+|---|---|---|
+| **`detectors.yml`** | `pull_request`, `push` to main, dispatch | Runs the `detectors-ci` scope=repo subset of the doctor-sources detector suite. Added 2026-07-31 specifically because it *hadn't* existed: this repo had 9 detectors, 7 pixi tasks, 3 dashboard rows, and zero automatic invocation — every green was hand-run by whoever remembered, and PR #170 merged green while breaking `spec_surface_check` because nothing else ran it. |
+| **`herald-live-demo.yml`** | `push` to main, `pull_request` (closed), weekly cron (Mon 07:00 UTC), dispatch | Story 13.6: bounded, CI-contained proof that Herald's webhook + scheduler run as real processes, not just unit-tested in isolation — each job uses a throwaway job-local `.herald/herald.db`, never persisted or reused. Not a persistent deployment. |
+| **`kedro-viz-publish.yml`** | `push` to main (path-filtered to `pyforge-atlas`'s pipelines), dispatch | Epic 12/FR-62: builds and publishes the real pyforge-atlas Kedro DAG's static kedro-viz export via `steward deploy dashboard`, reusing Steward's own reconciled-push logic rather than a bespoke commit step or the dormant third-party `publish-kedro-viz` Action. |
+| **`platform-ci.yml`** | `pull_request`/`push`, path-filtered to `src/platform/**` + the shared packages/pixi files it builds from | Story 10.1: CI for the separately-built Django platform host (`src/platform/`) — ruff/mypy/pytest + a two-engine container build matrix, cost-isolated from the conda-forge factory's own detector/linter CI via the path filter. |
 
 ---
 
@@ -21,6 +34,10 @@ a big change. Provenance comes from `git log --diff-filter=A -- <file>`.
 ---
 
 ## Active workflows
+
+*(This section predates the 2026-08-15 refresh and does not yet list the 4 workflows
+in "Added since the 2026-07-26 audit" above — treat that section as the current
+addendum rather than re-deriving these tables to merge them in.)*
 
 ### Runs automatically
 

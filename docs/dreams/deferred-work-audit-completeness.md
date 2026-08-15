@@ -121,6 +121,20 @@ module) with:
    also be the input to `--fix` (promote everything *not* covered by the
    baseline, then re-stamp the baseline to the new total).
 
+## Relationship to the sibling Dream
+
+This Dream is "get every real finding into durable, tracked storage,
+correctly and without duplication." It says nothing about whether a
+tracked entry is still *true* once it's there — that's a distinct,
+harder, code-comprehension problem with its own precedent (a fleet-wide
+by-hand verification campaign, PR #147, 2026-07-30) and its own proposed
+capability: see `docs/dreams/deferred-work-resolution-sweep.md`. The two
+share one root-cause bug worth fixing together (a heading-less entry
+breaks both this Dream's promotion detection AND that campaign's
+`normalize_deferred_ledgers.py` status tracking — the same blind spot,
+independently rediscovered six weeks apart) but are different enough in
+kind to size as separate stories.
+
 ## Known remaining scope (not yet promoted, tracked by the detector today)
 
 `pixi run -e local-recipes deferred-work-check`'s `tier3-entry-unidentified`

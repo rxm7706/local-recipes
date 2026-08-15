@@ -1,5 +1,29 @@
 # Charter-alignment migration plan
 
+**Status: SUPERSEDED (2026-08-15) — kept as historical record, not executed as
+written.** This plan's own target premise (9 projects: the 8 Smiths +
+`pyforge-genesis` kept and sharded) did not happen. `pyforge-genesis` was
+**dissolved entirely** on 2026-08-02 — not migrated — because it was constitutive
+(`owner: guild`, no Smith may own the Charter that constitutes the Smiths); its two
+Spec kernels moved to `docs/governance/spec-pyforge-charter/` and
+`docs/governance/spec-pyforge-genesis/` instead, and the rest archived to
+`archive/_bmad-output/projects/pyforge-genesis/`. See `EXEMPLAR-STANDARD.md` § INV-2
+for the actual resolution. This plan's other named steps (sharding marshal/warden,
+evacuating `local-recipes`) are done — verified 2026-08-15, both projects are
+sharded and `_bmad-output/projects/local-recipes/` no longer exists — but as a side
+effect of general fleet progress, not execution of this specific document.
+
+The command below is **broken**: `scripts/dream_chain_check.py` was retired
+2026-08-10 (`c698d4b1ad`, superseded by Doctor sources). Its INV-0/1 successor is
+`python -m pyforge.doctor.sources dream-chain`. The rest of this document (target
+table, backlog by owner) is left below verbatim as a historical record of the
+2026-07-28 plan, per this repo's provenance convention (corrections stay on the
+record) — do not treat its counts or its genesis-as-9th-project premise as current.
+
+---
+
+**Original document follows, as planned 2026-07-28:**
+
 **Status: planned, not executed.** Derived 2026-07-28 from
 `scripts/dream_chain_check.py` against the Charter § 5 amendment
 ("owning is becoming — at the planning tier"). The standard is
