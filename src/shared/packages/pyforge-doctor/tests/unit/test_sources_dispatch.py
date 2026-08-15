@@ -2,10 +2,17 @@
 target-less ``python -m pyforge.doctor.sources <name> [--json]
 [--groundtruth]`` dispatcher every re-pointed pixi task invokes.
 
-Covers the spec's I/O & Edge-Case Matrix: dispatch-by-name (all ten,
-parametrized -- "one test per dispatch entry"), the unknown-source usage
-error, the ``--groundtruth`` scoping error, JSON output shape, and
+Covers the spec's I/O & Edge-Case Matrix: dispatch-by-name (all registered
+entries, parametrized -- "one test per dispatch entry"), the unknown-source
+usage error, the ``--groundtruth`` scoping error, JSON output shape, and
 ``verdict.exit_code_for`` exit-code mapping.
+
+Story 11.1 (Epic 11/CAP-1) added ``due-for-verification`` -- the first
+genuinely NEW (non-ported) ``DISPATCH`` member, alongside the ten Story 6.9
+originally dispatched (the retiring ``scripts/*_check.py`` origins). The
+member COUNT is deliberately not in a test's name, per ``test_models.py``'s
+own documented lesson: a number there goes stale the next time a story
+appends an entry.
 """
 
 from __future__ import annotations
@@ -31,10 +38,11 @@ _EXPECTED_DISPATCH = {
     "deferred-work": chain.gather_deferred_work,
     "forward-dependency": deps.gather_forward_dependency,
     "bmad-drift": factory.gather,
+    "due-for-verification": chain.gather_due_for_verification,
 }
 
 
-def test_dispatch_covers_exactly_the_ten_retiring_sources():
+def test_dispatch_covers_exactly_the_registered_sources():
     assert set(dispatch.DISPATCH) == set(_EXPECTED_DISPATCH)
 
 

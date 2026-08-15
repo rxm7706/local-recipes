@@ -1,5 +1,8 @@
-"""Story 6.9: one thin, target-less CLI dispatcher for the ten ported Doctor
+"""Story 6.9: one thin, target-less CLI dispatcher for Doctor's ported
 sources -- ``python -m pyforge.doctor.sources <name> [--json] [--groundtruth]``.
+Eleven total today: the ten Story 6.9 originally dispatched, plus Story
+11.1's ``due-for-verification`` -- the first genuinely NEW (non-ported)
+member (see its own DISPATCH row below).
 
 WHY THIS EXISTS. Stories 6.4-6.8 ported ten ``scripts/*_check.py`` (plus
 ``docs/dashboard/check_layout.py``) verdicts into library ``gather(target)``
@@ -7,7 +10,7 @@ filters, but none of them ever gained a CLI entrypoint, and none is wired
 into ``__main__.py``'s ``check``/``monitor``/``diagnose`` verb dispatch
 (deliberately -- see ``sources/__init__.py``'s own docstring; that axis
 system serves Doctor's OWN self-check, a closed category set unrelated to
-these ten Marshal-artifact verdicts). Story 6.9 retires the eleven pixi
+these Marshal-artifact verdicts). Story 6.9 retires the eleven pixi
 tasks that used to invoke the origin scripts directly; this module is what
 those tasks invoke instead, one source at a time.
 
@@ -62,6 +65,11 @@ DISPATCH: dict[str, Callable[[Path], tuple[Finding, ...]]] = {
     Source.DEFERRED_WORK.value: chain.gather_deferred_work,
     Source.FORWARD_DEPENDENCY.value: deps.gather_forward_dependency,
     Source.BMAD_DRIFT.value: factory.gather,
+    # Story 11.1 (Epic 11/CAP-1) -- the first genuinely NEW (non-ported)
+    # DISPATCH member: no retiring `scripts/*_check.py` origin, same
+    # `Callable[[Path], tuple[Finding, ...]]` shape as every ported entry
+    # above (Design Notes).
+    Source.DUE_FOR_VERIFICATION.value: chain.gather_due_for_verification,
 }
 
 # `--groundtruth` is bmad-drift-only -- it prints `factory.ground_truth`'s six
