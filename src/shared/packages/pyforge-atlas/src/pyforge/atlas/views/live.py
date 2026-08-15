@@ -10,6 +10,11 @@ story's scope).
 This module never imports or references an ASGI host (Starlette, FastAPI, or otherwise) —
 ``asgi.py`` is the ONLY module that knows one exists (the story's Boundaries & Constraints),
 so this module stays reusable behind any future mounting layer.
+
+The ``bokeh.server.server.Server`` this module builds already resolves BokehJS/CSS assets
+same-origin (``/static/js/...``) by Bokeh's own server-context default, not the library-wide
+CDN default — see ``resources.py`` (Story 14.4, CAP-4) for the read-only introspection of
+that render profile.
 """
 
 from __future__ import annotations

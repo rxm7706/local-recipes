@@ -117,6 +117,17 @@ class Source(StrEnum):
     # Charter §6 sweep). Judges a Marshal-produced artifact; see
     # sources/factory.py for the independence rationale.
     BMAD_DRIFT = "bmad-drift"
+    # Story 11.1 (Epic 11/CAP-1): the closed taxonomy EXTENDED once more --
+    # Doctor's per-project batch of tracked deferred-work-ledger entries due
+    # for re-verification: an entry with no `verified:` line at all, or one
+    # whose `verified:` date is older than a staleness threshold
+    # (sources/chain.py's DUE_FOR_VERIFICATION_STALENESS_DAYS). Unlike every
+    # member above, this one never gates (always WARN, never FAIL) -- it
+    # informs which of the ~400+ fleet-wide entries have never been
+    # re-checked, or were re-checked too long ago. Judges a Marshal-produced
+    # artifact (the tracked ledger); see sources/chain.py for the
+    # independence rationale.
+    DUE_FOR_VERIFICATION = "due-for-verification"
 
 
 class Partition(StrEnum):

@@ -285,6 +285,17 @@ REGISTRY: tuple[SourceRegistration, ...] = (
     ),  # Story 6.8 -- ported from scripts/bmad_drift_check.py, the tenth and
     # last of Epic 6's Charter §6 sweep; scope stays "repo" per that script's
     # own DETECTOR declaration.
+    SourceRegistration(
+        source=Source.DUE_FOR_VERIFICATION,
+        scope="repo",
+        subject_station="marshal",
+        owning_station="doctor",
+    ),  # Story 11.1 (Epic 11/CAP-1) -- batches tracked deferred-work-ledger
+    # entries due for re-verification, per project; judges a Marshal-produced
+    # artifact (the tracked ledger), same subject_station rationale as
+    # DEFERRED_WORK above. Unlike every prior row, this source has no
+    # retiring `scripts/*_check.py` origin -- the first genuinely NEW
+    # (non-ported) REGISTRY member.
 )
 
 

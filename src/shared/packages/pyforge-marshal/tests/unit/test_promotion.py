@@ -39,16 +39,32 @@ _REAL_SUBJECT_NON_STORY_2 = (
 _REAL_SUBJECT_NOT_A_MERGE_1 = "fastmcp-v4"
 _REAL_SUBJECT_NOT_A_MERGE_2 = 'pixi update requires-pixi = ">=0.75.0"'
 
+# Live cross-project collision fixtures (2026-08-15): PR #274 is a real
+# MARSHAL story merge whose branch numerically collides with mason's own
+# story 4.2 -- the exact subject `marshal land pyforge-mason` misread as
+# "already landed". PR #441 is a routine dependency-bump branch with no
+# story association at all, previously mis-parsed as a bogus key by the
+# same unscoped classifier.
+_REAL_SUBJECT_MARSHAL_4_2 = (
+    "Merge pull request #274 from rxm7706/marshal/4-2-teardown-reachability-spec-recovery"
+)
+_REAL_SUBJECT_PIXI_BUMP = "Merge pull request #441 from rxm7706/2026-08-11-Pixi-v0.76.2"
+_MASON_PROJECT_SLUG = "pyforge-mason"
+
 
 # --- extract_story_key_from_github_merge_subject -----------------------------
 
 
 def test_extracts_key_from_real_github_merge_subject_2_3():
-    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_2_3) == StoryKey(2, 3)
+    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_2_3, _PROJECT_SLUG) == StoryKey(
+        2, 3
+    )
 
 
 def test_extracts_key_from_real_github_merge_subject_3_8():
-    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_3_8) == StoryKey(3, 8)
+    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_3_8, _PROJECT_SLUG) == StoryKey(
+        3, 8
+    )
 
 
 def test_ambiguous_real_subject_with_non_leading_digits_is_rejected():
@@ -57,20 +73,63 @@ def test_ambiguous_real_subject_with_non_leading_digits_is_rejected():
     only at position 0, so this correctly returns None rather than
     extracting 3.7. This is the tricky case the spec's amendment calls
     out by name."""
-    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_AMBIGUOUS) is None
+    assert (
+        extract_story_key_from_github_merge_subject(_REAL_SUBJECT_AMBIGUOUS, _PROJECT_SLUG) is None
+    )
 
 
 def test_real_non_story_merge_subject_returns_none():
-    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_NON_STORY_1) is None
+    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_NON_STORY_1, _PROJECT_SLUG) is None
 
 
 def test_non_github_shaped_merge_subject_returns_none():
-    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_NON_STORY_2) is None
+    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_NON_STORY_2, _PROJECT_SLUG) is None
 
 
 def test_non_merge_subject_returns_none():
-    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_NOT_A_MERGE_1) is None
-    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_NOT_A_MERGE_2) is None
+    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_NOT_A_MERGE_1, _PROJECT_SLUG) is None
+    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_NOT_A_MERGE_2, _PROJECT_SLUG) is None
+
+
+def test_github_pattern_rejects_a_different_projects_story_key_collision():
+    """The live bug (2026-08-15): PR #274 is a real MARSHAL story merge.
+    Querying it under mason's own project_slug must return None, not
+    StoryKey(4, 2) -- the exact false positive that made `marshal land
+    pyforge-mason` report story 4.2 as already landed."""
+    assert (
+        extract_story_key_from_github_merge_subject(_REAL_SUBJECT_MARSHAL_4_2, _MASON_PROJECT_SLUG)
+        is None
+    )
+
+
+def test_github_pattern_still_recognizes_the_owning_projects_own_key():
+    """The same subject, queried under its OWN project_slug, still
+    resolves correctly -- the fix narrows false positives, it does not
+    break real matches."""
+    assert extract_story_key_from_github_merge_subject(
+        _REAL_SUBJECT_MARSHAL_4_2, _PROJECT_SLUG
+    ) == StoryKey(4, 2)
+
+
+def test_github_pattern_rejects_an_empty_station_rather_than_matching_any_branch():
+    """Edge Case Hunter finding (2026-08-15): an empty station (project_slug
+    `""` or exactly `"pyforge-"`) must never degrade to `branch.startswith("/")`
+    -- a subject with an empty leading branch segment (double slash) would
+    otherwise pass, reopening a narrow version of the collision this
+    scoping exists to close."""
+    evil_subject = "Merge pull request #1 from a//4-2-evil"
+    assert extract_story_key_from_github_merge_subject(evil_subject, "") is None
+    assert extract_story_key_from_github_merge_subject(evil_subject, "pyforge-") is None
+
+
+def test_github_pattern_rejects_an_unrelated_branch_for_any_project():
+    """A routine dependency-bump branch with no story association at all
+    (PR #441) must never resolve to a key for ANY project."""
+    assert extract_story_key_from_github_merge_subject(_REAL_SUBJECT_PIXI_BUMP, _PROJECT_SLUG) is None
+    assert (
+        extract_story_key_from_github_merge_subject(_REAL_SUBJECT_PIXI_BUMP, _MASON_PROJECT_SLUG)
+        is None
+    )
 
 
 # --- extract_story_key_from_bmadloop_merge_subject ---------------------------
@@ -152,6 +211,26 @@ def test_merged_story_keys_skips_a_non_story_merge_subject():
 
 def test_merged_story_keys_empty_subjects_returns_empty_set():
     assert merged_story_keys((), _TEMPLATE, _PROJECT_SLUG) == frozenset()
+
+
+def test_merged_story_keys_does_not_leak_another_projects_story_into_mason():
+    """The live bug, exercised through the public `merged_story_keys` entry
+    point every caller (`marshal land`, `marshal deploy batch-pr`) actually
+    uses: a marshal PR-merge subject must never contribute a mason key,
+    even mixed alongside mason's OWN real merges."""
+    subjects = (_REAL_SUBJECT_MARSHAL_4_2, _REAL_SUBJECT_PIXI_BUMP)
+    assert merged_story_keys(subjects, _TEMPLATE, _MASON_PROJECT_SLUG) == frozenset()
+    assert merged_story_keys(subjects, _TEMPLATE, _PROJECT_SLUG) == frozenset({StoryKey(4, 2)})
+
+
+def test_merged_story_keys_land_slug_branch_shape_stays_a_noop():
+    """The OTHER real branch shape (`land/<slug>-<epic>-<seq>`) was already
+    harmless before this fix -- its extracted segment's leading token is
+    the slug name, not a digit, so `normalize()` already rejects it. This
+    fix must not change that outcome for any project."""
+    subject = "Merge pull request #516 from rxm7706/land/mason-4-4"
+    assert merged_story_keys((subject,), _TEMPLATE, _MASON_PROJECT_SLUG) == frozenset()
+    assert merged_story_keys((subject,), _TEMPLATE, _PROJECT_SLUG) == frozenset()
 
 
 def test_merged_story_keys_deduplicates_repeated_subjects():
