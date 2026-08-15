@@ -23,6 +23,7 @@ from pyforge.herald import (
     claims,
     db,
     deck_pipeline,
+    deck_qa,
     errors,
     evidence,
     locking,
@@ -149,6 +150,7 @@ _BRIDGE_CORE_MODULES = (
     scheduler,
     webhook,
     webhook_host,
+    deck_qa,
 )
 """The modules on the deterministic side of the boundary today. ``cli.py``
 is the CLI layer (AD-2) and ``transport/`` is the adapter side (AD-3) --
@@ -195,7 +197,11 @@ wraps ``webhook.create_app``'s own ASGI3 callable in a bounded timeout plus
 a dedicated executor (stdlib ``asyncio``/``concurrent.futures`` only) --
 never imports ``daphne`` itself (that stays confined to the
 ``webhook-host`` optional extra and whatever process invokes it from the
-command line), no transport call, no inference SDK, no argv parsing."""
+command line), no transport call, no inference SDK, no argv parsing.
+``deck_qa.py`` (Story 14.1) joins for the same reason again: the deck
+visual-QA gate report schema and its ``run()`` entrypoint are pure local
+computation over a caller-supplied gate mapping -- no transport call, no
+inference SDK, no argv parsing (that's ``cli.py``'s ``_run_deck_qa``)."""
 
 _FORBIDDEN_ADAPTER_MODULES = {
     module.name
