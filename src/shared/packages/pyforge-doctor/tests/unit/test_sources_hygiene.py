@@ -100,12 +100,11 @@ def _seed_station_scaffold(repo: Path, slug: str) -> Path:
 # --- Row: fixture reproduction, all 5 classes -------------------------------
 
 
-def test_gather_emits_exactly_five_findings_for_a_synthetic_all_classes_fixture(
-    tmp_path: Path,
-) -> None:
-    repo = tmp_path / "repo"
+def _seed_all_classes_fixture(repo: Path, slug: str) -> Path:
+    """A committed fixture tree reproducing all 5 hygiene classes at once --
+    shared by the all-classes reproduction test and the never-mutates test,
+    which both need the identical starting tree."""
     _init_repo(repo)
-    slug = "pyforge-acme"
     project_dir = repo / "_bmad-output" / "projects" / slug
 
     # dead-test-scaffolding: a tests/ tree with scaffold but zero test_*.py.
@@ -146,6 +145,14 @@ def test_gather_emits_exactly_five_findings_for_a_synthetic_all_classes_fixture(
     )
 
     _commit_all(repo, "seed the all-classes fixture")
+    return project_dir
+
+
+def test_gather_emits_exactly_five_findings_for_a_synthetic_all_classes_fixture(
+    tmp_path: Path,
+) -> None:
+    repo = tmp_path / "repo"
+    _seed_all_classes_fixture(repo, "pyforge-acme")
 
     findings = hygiene.gather(repo)
 
@@ -154,6 +161,44 @@ def test_gather_emits_exactly_five_findings_for_a_synthetic_all_classes_fixture(
     assert kinds == {kind.value for kind in HygieneFindingKind}
     assert all(f.source is Source.BMAD_OUTPUT_HYGIENE for f in findings)
     assert all(f.evidence["station"] == "acme" for f in findings)
+    assert all(
+        isinstance(f.evidence.get("path"), str) and f.evidence["path"]
+        for f in findings
+    )
+    by_check = {f.check: f for f in findings}
+    assert (
+        by_check[HygieneFindingKind.DEAD_TEST_SCAFFOLDING.value].evidence["path"]
+        == "tests"
+    )
+
+
+# --- Row: gather() invocation never mutates the tree it scans --------------
+
+
+def _snapshot_tree(root: Path) -> dict[str, bytes]:
+    """Every file's repo-relative path and raw bytes under ``root``,
+    excluding ``.git`` -- ``gather()`` never reads/writes git's own internal
+    bookkeeping directly (its one subprocess call, ``git grep``, is
+    read-only), so ``.git``'s own incidental churn is not evidence about
+    THIS module's own filesystem behavior."""
+    return {
+        str(path.relative_to(root)): path.read_bytes()
+        for path in sorted(root.rglob("*"))
+        if path.is_file() and ".git" not in path.relative_to(root).parts
+    }
+
+
+def test_gather_never_mutates_the_fixture_tree_it_scans(tmp_path: Path) -> None:
+    repo = tmp_path / "repo"
+    _seed_all_classes_fixture(repo, "pyforge-acme")
+
+    before = _snapshot_tree(repo)
+    findings = hygiene.gather(repo)
+    after = _snapshot_tree(repo)
+
+    assert len(findings) == 5
+    assert set(after) == set(before)
+    assert after == before
 
 
 # --- Regression: a frontmatter value containing a literal "---" substring --
@@ -306,6 +351,24 @@ def test_dead_test_scaffolding_is_not_even_considered_without_a_marker(
     hygiene._check_dead_test_scaffolding(project_dir, "acme", findings)
 
     assert findings == []
+
+
+# --- Row: dead-test-scaffolding, marker-file-only ---------------------------
+
+
+def test_dead_test_scaffolding_path_names_the_marker_file_when_no_tests_dir_exists(
+    tmp_path: Path,
+) -> None:
+    project_dir = _seed_station_scaffold(tmp_path, "pyforge-acme")
+    _write(project_dir / "pytest.ini", "[pytest]\n")
+    assert not (project_dir / "tests").exists()
+
+    findings: list = []
+    hygiene._check_dead_test_scaffolding(project_dir, "acme", findings)
+
+    assert len(findings) == 1
+    assert findings[0].check == HygieneFindingKind.DEAD_TEST_SCAFFOLDING.value
+    assert findings[0].evidence["path"] == "pytest.ini"
 
 
 # --- Row: hollow-sprint-status, no non-ledger file --------------------------

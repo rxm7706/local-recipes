@@ -161,10 +161,14 @@ def _check_dead_test_scaffolding(
     project_dir: Path, station: str, findings: list[Finding]
 ) -> None:
     tests_dir = project_dir / "tests"
-    has_marker = tests_dir.is_dir() or any(
-        (project_dir / name).is_file() for name in _TEST_MARKER_FILES
-    )
-    if not has_marker:
+    # Computed once and reused for both the has-a-candidate check and the
+    # marker-only evidence path below -- avoids re-scanning the filesystem a
+    # second time and the `next()`-on-a-possibly-empty-iterator risk that
+    # re-deriving it later would carry.
+    matched_markers = [
+        name for name in _TEST_MARKER_FILES if (project_dir / name).is_file()
+    ]
+    if not tests_dir.is_dir() and not matched_markers:
         return
     if tests_dir.is_dir():
         relpaths = [
@@ -172,8 +176,12 @@ def _check_dead_test_scaffolding(
             for path in sorted(tests_dir.rglob("*"))
             if path.is_file()
         ]
+        evidence_path = "tests"
+        reason = "tests/ scaffolding holds no real test_*.py file"
     else:
         relpaths = []
+        evidence_path = matched_markers[0]
+        reason = f"{evidence_path} exists with no real tests/ tree behind it"
     if not is_dead_test_scaffolding(relpaths):
         return
     findings.append(
@@ -181,11 +189,12 @@ def _check_dead_test_scaffolding(
             source=Source.BMAD_OUTPUT_HYGIENE,
             check=HygieneFindingKind.DEAD_TEST_SCAFFOLDING.value,
             status=DoctorStatus.WARN,
-            message=(
-                f"{station}: tests/ scaffolding holds no real test_*.py "
-                f"file"
-            ),
-            evidence={"station": station, "file_count": len(relpaths)},
+            message=f"{station}: {reason}",
+            evidence={
+                "station": station,
+                "file_count": len(relpaths),
+                "path": evidence_path,
+            },
         )
     )
 
