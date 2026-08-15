@@ -8,9 +8,10 @@ surface:
   - _bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md
 sources:
   - ../../../../../../docs/dreams/wagtail-corporate-brain.md
+# 2 of 3 open_questions resolved 2026-08-15 by S-16.1 (deployment substrate; DW-H1 dependency for
+# the LOCAL-REHEARSAL scope only) -- see the prose Open Questions section below and
+# ../../../../../implementation-artifacts/spec-16-1-instance-deploy-definition.md's Design Notes.
 open_questions:
-  - deployment substrate — conda-forge Wagtail + django-lasuite (DW-H3's own text) vs a container
-  - is DW-H1's PostgreSQL/MinIO required, or does a SQLite-backed minimal instance satisfy the contract?
   - home of the live verification — attended checklist only, or also a network-marked pytest outside the default gate?
 ---
 
@@ -109,9 +110,17 @@ later runs and passes, DW-H3 closes citing this SPEC; until then the SPEC holds 
 
 ## Open Questions
 
-- **Deployment substrate:** DW-H3's own text names conda-forge Wagtail + django-lasuite; whether
-  the minimal instance is that stack or a container is Steward's mechanism call at bring-up.
-- **DW-H1 dependency:** does the minimal instance need DW-H1's PostgreSQL/MinIO, or does a
-  SQLite-backed Wagtail satisfy the four-route contract for a first bring-up?
+- **Deployment substrate — RESOLVED (S-16.1).** conda-forge django-lasuite 0.0.26 is confirmed
+  live on the real conda-forge channel; Wagtail 7.4.1 has a working recipe in this repo but its
+  upstream feedstock status is unconfirmed by repo evidence, so treat it as needing this repo's
+  own build-and-mirror step unless/until verified otherwise. No container substrate. See
+  `../../../../../implementation-artifacts/spec-16-1-instance-deploy-definition.md`'s Design Notes
+  for the full resolution and evidence.
+- **DW-H1 dependency — RESOLVED for the LOCAL-REHEARSAL scope only (S-16.1).** SQLite satisfies
+  Story 16.2's local-rehearsal instance. This does **not** resolve DW-H1's PostgreSQL/MinIO
+  requirement for the separate ATTENDED PRODUCTION bring-up DW-H3 already assumes
+  ("+ PostgreSQL/MinIO from DW-H1") — that remains exactly as open as before, still owned by
+  DW-H1. See `../../../../../implementation-artifacts/spec-16-1-instance-deploy-definition.md`'s
+  Design Notes for the full resolution and evidence.
 - **Verification home:** attended checklist only, or also a network-marked pytest kept out of the
-  default offline gate.
+  default offline gate. Story 16.2 is scoped to resolve this.
