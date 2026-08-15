@@ -588,7 +588,17 @@ window.DASHBOARD_DATA = {
         "E3–E5",
         "E6 · multi-axis"
       ],
-      "inflight": null,
+      "inflight": {
+        "key": "9.1",
+        "title": "The five hygiene finding classes get testable definitions",
+        "phase": "dev",
+        "attempt": "1",
+        "startEpoch": 1786799848,
+        "median": 112,
+        "lo": 34,
+        "hi": 427,
+        "phaseAsOf": "2026-08-15 13:36 UTC"
+      },
       "velocity": {
         "derived": true,
         "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 18 of 41 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
@@ -722,7 +732,7 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "paused",
+        "state": "in flight",
         "at": "9.1"
       },
       "epics": [
@@ -965,7 +975,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "9.1",
-              "pending",
+              "active",
               "The five hygiene finding classes get testable definitions"
             ],
             [
@@ -4341,7 +4351,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-15 12:47 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-15 13:36 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4484,6 +4494,22 @@ window.DASHBOARD_DATA = {
       "chain": {}
     },
     {
+      "slug": "bmad-method-core-upgrade",
+      "title": "BMAD-METHOD's own core stays current, not stuck at whatever version got installed",
+      "status": "dreamt",
+      "owner": "steward",
+      "type": "dream",
+      "chain": {}
+    },
+    {
+      "slug": "bmad-method-version-drift",
+      "title": "Doctor notices when BMAD-METHOD's own installed core falls behind upstream",
+      "status": "dreamt",
+      "owner": "doctor",
+      "type": "dream",
+      "chain": {}
+    },
+    {
       "slug": "bmad-module-provisioning",
       "title": "BMAD Method modules are provisioned, not hand-installed",
       "status": "realized",
@@ -4543,6 +4569,14 @@ window.DASHBOARD_DATA = {
       "chain": {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-dashboard-project-path-derivation"
       }
+    },
+    {
+      "slug": "dashboard-velocity-captures-hand-driven-work",
+      "title": "Dashboard velocity counts every story's real effort, not just bmad-loop-journaled ones",
+      "status": "dreamt",
+      "owner": "marshal",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "db-gpt-django-plugin",
@@ -5201,6 +5235,14 @@ window.DASHBOARD_DATA = {
       "chain": {
         "spec": "_bmad-output/projects/pyforge-steward/planning-artifacts/specs/spec-scratch-worktree-lifecycle"
       }
+    },
+    {
+      "slug": "scribe-mines-raw-session-transcripts",
+      "title": "Scribe reaches past curated memory into the raw session transcripts underneath it",
+      "status": "dreamt",
+      "owner": "scribe",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "secure-live-dashboards",
@@ -6869,9 +6911,9 @@ window.DASHBOARD_DATA = {
       "retro": null
     },
     "sound": 0,
-    "live": 64,
+    "live": 68,
     "reached": 8,
-    "gaps": 78,
+    "gaps": 87,
     "findings": 24,
     "rows": [
       {
@@ -9062,6 +9104,114 @@ window.DASHBOARD_DATA = {
         "progress": "",
         "complete": 2,
         "of": 3
+      },
+      {
+        "label": "bmad-method-version-drift",
+        "slug": "bmad-method-version-drift",
+        "project": "pyforge-doctor",
+        "dream": "bmad-method-version-drift",
+        "owner": "doctor",
+        "stages": {
+          "dream": "",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": true,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "dream",
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-15",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 1,
+        "of": 4
       },
       {
         "label": "deferred-work-audit-completeness",
@@ -11831,6 +11981,113 @@ window.DASHBOARD_DATA = {
         "progress": "",
         "complete": 2,
         "of": 3
+      },
+      {
+        "label": "dashboard-velocity-captures-hand-driven-work",
+        "slug": "dashboard-velocity-captures-hand-driven-work",
+        "project": "pyforge-marshal",
+        "dream": "dashboard-velocity-captures-hand-driven-work",
+        "owner": "marshal",
+        "stages": {
+          "dream": "2026-08-15",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-16",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-15",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-15",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
       },
       {
         "label": "dream-to-code-model-self-verification",
@@ -15571,6 +15828,113 @@ window.DASHBOARD_DATA = {
         "of": 3
       },
       {
+        "label": "scribe-mines-raw-session-transcripts",
+        "slug": "scribe-mines-raw-session-transcripts",
+        "project": "pyforge-scribe",
+        "dream": "scribe-mines-raw-session-transcripts",
+        "owner": "scribe",
+        "stages": {
+          "dream": "2026-08-15",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-15",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-15",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
+      },
+      {
         "label": "sentinel",
         "slug": "sentinel",
         "project": "pyforge-scribe",
@@ -15808,6 +16172,113 @@ window.DASHBOARD_DATA = {
         },
         "updatedAt": {
           "dream": "2026-08-14",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-15",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
+      },
+      {
+        "label": "bmad-method-core-upgrade",
+        "slug": "bmad-method-core-upgrade",
+        "project": "pyforge-steward",
+        "dream": "bmad-method-core-upgrade",
+        "owner": "steward",
+        "stages": {
+          "dream": "2026-08-15",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-15",
           "deck": "",
           "spec": "",
           "research": "2026-08-08",
@@ -17813,6 +18284,30 @@ window.DASHBOARD_DATA = {
         "chain": {}
       },
       {
+        "slug": "bmad-method-core-upgrade",
+        "title": "BMAD-METHOD's own core stays current, not stuck at whatever version got installed",
+        "status": "dreamt",
+        "owner": "steward",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
+        "slug": "bmad-method-version-drift",
+        "title": "Doctor notices when BMAD-METHOD's own installed core falls behind upstream",
+        "status": "dreamt",
+        "owner": "doctor",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
+        "slug": "dashboard-velocity-captures-hand-driven-work",
+        "title": "Dashboard velocity counts every story's real effort, not just bmad-loop-journaled ones",
+        "status": "dreamt",
+        "owner": "marshal",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
         "slug": "deferred-work-resolution-sweep",
         "title": "deferred-work-resolution-sweep",
         "status": "dreamt",
@@ -17893,6 +18388,14 @@ window.DASHBOARD_DATA = {
         "chain": {}
       },
       {
+        "slug": "scribe-mines-raw-session-transcripts",
+        "title": "Scribe reaches past curated memory into the raw session transcripts underneath it",
+        "status": "dreamt",
+        "owner": "scribe",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
         "slug": "deferred-work-audit-completeness",
         "title": "deferred-work-audit-completeness",
         "status": "specified",
@@ -17903,13 +18406,14 @@ window.DASHBOARD_DATA = {
     ],
     "blocked": 0,
     "byOwner": {
-      "steward": 2,
-      "marshal": 1,
-      "doctor": 3,
+      "steward": 3,
+      "marshal": 2,
+      "doctor": 4,
       "atlas": 1,
       "mason": 3,
       "warden": 1,
-      "herald": 2
+      "herald": 2,
+      "scribe": 1
     },
     "practices": [
       {
@@ -18050,9 +18554,9 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "marshal",
-        "total": 36,
+        "total": 37,
         "counts": {
-          "dreamt": 1,
+          "dreamt": 2,
           "pitched": 0,
           "specified": 4,
           "realized": 12,
@@ -18060,7 +18564,7 @@ window.DASHBOARD_DATA = {
           "practice": 4
         },
         "line": "paused 8.5",
-        "load": 1,
+        "load": 2,
         "blocked": 0,
         "dreams": [
           {
@@ -18178,6 +18682,13 @@ window.DASHBOARD_DATA = {
           {
             "slug": "bmad-loop-liveness-footgun",
             "title": "Nobody has to hand-parse engine.pid to answer \"is this run alive?\"",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "dashboard-velocity-captures-hand-driven-work",
+            "title": "Dashboard velocity counts every story's real effort, not just bmad-loop-journaled ones",
             "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
@@ -18552,23 +19063,30 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "doctor",
-        "total": 7,
+        "total": 8,
         "counts": {
-          "dreamt": 2,
+          "dreamt": 3,
           "pitched": 0,
           "specified": 2,
           "realized": 2,
           "archived": 1,
           "practice": 0
         },
-        "line": "paused 9.1",
-        "load": 3,
+        "line": "in flight 9.1",
+        "load": 4,
         "blocked": 0,
         "dreams": [
           {
             "slug": "pyforge-doctor-dependency-health",
             "title": "\"Dream — PyForge Doctor: Dependency Health Diagnostics\"",
             "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "bmad-method-version-drift",
+            "title": "Doctor notices when BMAD-METHOD's own installed core falls behind upstream",
+            "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
           },
@@ -18618,9 +19136,9 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "scribe",
-        "total": 4,
+        "total": 5,
         "counts": {
-          "dreamt": 0,
+          "dreamt": 1,
           "pitched": 0,
           "specified": 0,
           "realized": 1,
@@ -18628,7 +19146,7 @@ window.DASHBOARD_DATA = {
           "practice": 0
         },
         "line": "complete",
-        "load": 0,
+        "load": 1,
         "blocked": 0,
         "dreams": [
           {
@@ -18653,6 +19171,13 @@ window.DASHBOARD_DATA = {
             "blockedOn": ""
           },
           {
+            "slug": "scribe-mines-raw-session-transcripts",
+            "title": "Scribe reaches past curated memory into the raw session transcripts underneath it",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
             "slug": "pyforge-scribe",
             "title": "Scribe — the inward voice",
             "status": "realized",
@@ -18663,9 +19188,9 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "steward",
-        "total": 14,
+        "total": 15,
         "counts": {
-          "dreamt": 4,
+          "dreamt": 5,
           "pitched": 0,
           "specified": 4,
           "realized": 3,
@@ -18673,7 +19198,7 @@ window.DASHBOARD_DATA = {
           "practice": 2
         },
         "line": "paused 10.4",
-        "load": 2,
+        "load": 3,
         "blocked": 0,
         "dreams": [
           {
@@ -18686,6 +19211,13 @@ window.DASHBOARD_DATA = {
           {
             "slug": "asgi-multiplexer-monolith",
             "title": "Django, Langflow, and DB-GPT co-locate in one ASGI process without starving each other",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "bmad-method-core-upgrade",
+            "title": "BMAD-METHOD's own core stays current, not stuck at whatever version got installed",
             "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
@@ -22156,17 +22688,24 @@ window.DASHBOARD_DATA = {
   },
   "status": {
     "source": "sprint-status",
-    "running": [],
+    "running": [
+      {
+        "station": "Doctor",
+        "story": "9.1",
+        "phase": "dev",
+        "startEpoch": 1786799848
+      }
+    ],
     "lastShipped": {
       "station": "doctor",
-      "story": "8.3",
-      "epoch": 1786794850,
-      "sha": "f71a381c3",
-      "subject": "doctor: land Story 8.3 -- sprint ledger, dashboard, epics outcome, spec promotion"
+      "story": "8.4",
+      "epoch": 1786798082,
+      "sha": "6be39246d",
+      "subject": "doctor: land Story 8.4 -- sprint ledger, dashboard, epics outcome, spec promotion, Epic 8 done"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-15 12:47 UTC",
-    "generatedEpoch": 1786798056
+    "generatedAt": "2026-08-15 13:36 UTC",
+    "generatedEpoch": 1786800990
   },
   "storySpecs": [
     {
@@ -22178,8 +22717,8 @@ window.DASHBOARD_DATA = {
     {
       "station": "pyforge-doctor",
       "done": 37,
-      "tracked": 31,
-      "gap": 6
+      "tracked": 32,
+      "gap": 5
     },
     {
       "station": "pyforge-herald",
@@ -22448,7 +22987,7 @@ window.DASHBOARD_DATA = {
         "openSpecs": [
           {
             "slug": "spec-deferred-work-visibility",
-            "status": "ready",
+            "status": "in-progress",
             "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md"
           }
         ],

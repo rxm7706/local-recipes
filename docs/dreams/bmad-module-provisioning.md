@@ -73,9 +73,17 @@ investigation above — Marshal was ruled out on its own documented boundaries, 
 
 ## Constraints
 
-- **Never absorb `bmad-method`'s own governance core.** This Dream provisions modules; it does
-  not reimplement `bmad-method install` or take ownership of `_bmad/bmm/**`/`_bmad/core/**`,
-  which stay installer-owned per Marshal's own architecture.
+- **Never absorb `bmad-method`'s own governance core AS A FIRST-INSTALL.** This Dream
+  provisions modules from scratch (the Skill Forge/BMB-class case); it does not reimplement
+  `bmad-method install` for a repo that has never run it, and does not take blanket ownership
+  of `_bmad/bmm/**`/`_bmad/core/**`, which stay installer-owned per Marshal's own architecture.
+  **Amended 2026-08-15** (see Realization log): this line originally read as a blanket ban on
+  any `bmad-method`-core work by Steward at all, which turned out to be broader than the
+  reasoning behind it actually supported. Reconciling an ALREADY-installed bmad-method core
+  against a new upstream release — diff, merge, re-apply `_bmad/custom/**` overrides — is a
+  distinct capability, carved out to [[bmad-method-core-upgrade]] (owner: steward), never this
+  Dream. This Dream's own scope stays exactly what it always was: first-install provisioning
+  of adjacent modules (Skill Forge, BMB, future TEA/CIS).
 - **Non-interactive by construction.** Every module's own installer tends to assume a TTY
   (Skill Forge's does); the provisioning wrapper must drive it headlessly and reproducibly,
   not rely on a hand-kept driver script the way the 2026-07-17 commit did.
@@ -95,7 +103,9 @@ investigation above — Marshal was ruled out on its own documented boundaries, 
 provisioned reproducibly) · [[pyforge-steward]] (the estate; Epic 3's provisioning duty is
 this Dream's direct precedent) · [[one-front-door]] (the survey that first drew the
 own/route/triage line this Dream's ownership reasoning relies on) · [[genesis-installer]]
-(the boundary this Dream is deliberately outside of).
+(the boundary this Dream is deliberately outside of) · [[bmad-method-core-upgrade]] (the
+distinct, ALSO-Steward-owned capability this Dream's Constraints were narrowed 2026-08-15 to
+carve out — first-install here, already-installed reconciliation there).
 
 ## Realization log
 
@@ -116,3 +126,22 @@ own/route/triage line this Dream's ownership reasoning relies on) · [[genesis-i
   the way it already wraps pixi and the bmad-loop worktree, rather than through a one-off npm
   Installer invocation nobody could reproduce. Evidence: steward's `sprint-status-ledger.yaml`
   Epic 6.
+
+- **2026-08-15 (amendment)** — Constraints narrowed. A new Dream, [[bmad-method-core-upgrade]]
+  (captured the same day investigating whether any station owns *upgrading* an already-installed
+  bmad-method core — not just first-installing adjacent modules — after the user noticed
+  BMAD-METHOD v6.11.0 had released), initially came up genuinely unowned, blocked by this
+  Dream's own "never absorb bmad-method's own governance core" line read literally. Deep-dive
+  (an independent research pass over this Dream's full text, Steward's own charter, and
+  genesis-installer's actual FR coverage) confirmed that line was written to prevent
+  duplicating Marshal's/genesis-installer's turf for FIRST-INSTALL, never evaluated against the
+  distinct case of reconciling an already-installed core against a new upstream release — this
+  Dream drives each module's own installer once, from nothing; reconciling means diffing
+  installed state against upstream AND against this repo's own `_bmad/custom/**` overrides,
+  which this Dream's existing scope never touches. Concrete live proof the gap is real, found
+  during the same investigation: `pixi.toml` already declares `bmad-method = ">=6.11.0"` but
+  `_bmad/_config/manifest.yaml` (the actually-installed core) still reports `version: 6.10.0`
+  — the dependency floor was bumped without the installed content ever being reconciled.
+  Narrowed the Constraint to say so explicitly and handed the upgrade-apply capability to
+  [[bmad-method-core-upgrade]] (owner: steward) as its own Dream, keeping this Dream's own
+  realized scope (Epic 6, first-install provisioning) unchanged.
