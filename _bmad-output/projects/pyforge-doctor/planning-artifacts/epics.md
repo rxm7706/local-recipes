@@ -8,8 +8,8 @@ inputDocuments:
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/prds/prd-pyforge-doctor-2026-07-25/prd.md
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/architecture/architecture-pyforge-doctor-2026-07-25/ARCHITECTURE-SPINE.md
   - _bmad-output/projects/pyforge-doctor/planning-artifacts/briefs/brief-pyforge-doctor-2026-07-25/brief.md
-updated: '2026-08-10'
-currency_review: "Reviewed 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md. Prior review 2026-08-02."
+updated: '2026-08-15'
+currency_review: "Reviewed 2026-08-15 — Epics 8 and 9 appended, decomposing spec-deferred-work-visibility's CAP-4..10 (added to that Spec the same day; operator answered its Q5 with decompose-directly). Epic 8 cleared to dispatch; Epic 9 queued behind its own Story 9.1 definition gate. Prior review 2026-08-10 (Phase 2 audit) — false Status lines corrected to done, rollup keys fixed via Tier-3+sync; see planning-artifacts/implementation-readiness-report-2026-08-10.md."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
 epics_role: canonical
@@ -822,3 +822,114 @@ deleting an id heading from a Tier-3 entry reds the detector, demonstrated by mu
 **Given** anonymous entries on either side of the tracked/Tier-3 pair **When** reported
 **Then** both carry the same severity, asserted by a test that plants one on each side
 (CAP-2 closing AC). **Deps:** S-7.3.
+
+## Epic 8: The legacy deferred-work backlog comes home
+
+> **CONFIRMED by the operator, 2026-08-15 (in-session)** — decomposes CAP-4..7 of
+> `spec-deferred-work-visibility`, added to that Spec the same day. Operator answered the
+> Spec's Q5 (re-validate vs. decompose directly) with **decompose directly**: CAP-1..3 are
+> shipped and untouched, `ready` is already the status that means "decompose me", and
+> flipping the whole Spec back to `draft` would assert the shipped half is unbuilt. Stories
+> dispatch in order 8.1 → 8.2 → 8.3 → 8.4 on the next `marshal factory spin pyforge-doctor`.
+
+**Value delivered.** Epic 7 stopped the bleeding — the emitter mints ids at defer time, the
+detector sees anonymous entries, the pre-existing backlog is grandfathered. It did not clear
+the backlog, and its own Story 7.2 said so ("Triage is explicitly a separate, later effort").
+That backlog is still gitignored Tier-3, still one worktree teardown from gone. A 2026-08-15
+by-hand fleet audit promoted 144 `tier3-only-deferral` findings plus ~72 more previously
+invisible ones across 6 of 8 projects, shipped two real bugs doing it, and still left **72
+entries** (`tier3-entry-unidentified`: marshal 30, steward 38, mason 2, herald 2). This epic
+replaces that by-hand process with a tool that cannot ship those two bugs. Bounded and
+shrinking, not an ongoing leak — everything still anonymous predates PR #396.
+
+### Story 8.1: The parser reads every legacy Tier-3 shape
+**Given** a Tier-3 `deferred-work.md` carrying entries from before the CAP-1 emitter fix
+**When** the deferred-work source parses it **Then** every entry is classified correctly
+across all four shapes proven to exist live — a headerless flat `- source_spec:`/`summary:`/
+`evidence:` bullet under a `bmad-dev-auto` step-04 marker comment (atlas, 58 findings dating
+to July); the older `## Deferred from: code review of <spec> (<date>)` section-header
+convention predating any `DW-` id (warden); CAP-1's current headed shape; and a headed entry
+with **more than one** `- source_spec:` bullet stacked under it (marshal/steward) — with zero
+false-orphan and zero false-owned misclassifications, pinned by a fixture built from real
+excerpts of each. These are the exact two shapes that broke two different hand-rolled
+attempts on 2026-08-15: a false-orphan duplication of already-headed content, and a 10x
+overcount that read a header's second bullet as a new orphan (231 spurious mints against a
+true count of 30 for marshal alone) (CAP-4). **Deps:** —
+
+### Story 8.2: Minting picks the next free suffix per station convention
+**Given** an orphan entry Story 8.1 classified **When** an id is minted for it **Then** the
+id follows the owning station's own convention that CAP-1 already standardized
+(`DW-FU-<story>` for doctor/atlas/marshal/warden, `DW-<story>-<n>` for mason) and takes the
+next free numeric suffix **for that story** by querying the tracked ledger's existing maximum
+— never restarting at 1. Pinned against three real 2026-08-15 near-misses that each attempted
+a duplicate mint before being caught and renumbered by hand: `DW-10-5-1` against an existing
+`DW-10-5-1..8`, `DW-10-6-1`, and `DW-13-3-1` (CAP-5). **Deps:** S-8.1.
+
+### Story 8.3: The fix mode promotes the backlog and refuses on collision
+**Given** the live 72-entry legacy backlog **When** `--fix` runs (mirroring
+`scripts/spec_surface_check.py --write-baseline`'s established pattern) **Then** every entry
+Story 8.1 classifies as a genuine orphan is minted via Story 8.2 and appended to the tracked
+ledger with a `status: open` line and a `promoted: <date>` provenance note, `tier3-entry-
+unidentified` clears for marshal/steward/mason/herald with **zero content duplication**, and
+a manufactured collision fixture (duplicate id **or** duplicate summary-text) aborts the write
+with **no partial output** — mutation-tested, because a partial write is how the by-hand pass
+corrupted content twice (CAP-6). **Deps:** S-8.2.
+
+### Story 8.4: The baseline re-stamps so a second run is a no-op
+**Given** a completed `--fix` run **When** the grandfather baseline
+(`scripts/.deferred-work-baseline.json`, CAP-3's own mechanism) is re-stamped **Then**
+newly-promoted entries are never re-flagged, and running `--fix` immediately again is a
+no-op: 0 new writes, 0 findings delta — the same lockstep discipline
+`spec_surface_check.py --write-baseline` already keeps for its own baseline (CAP-7).
+**Deps:** S-8.3.
+
+## Epic 9: The hygiene sweep generalizes, and staleness surfaces itself
+
+> **QUEUED, NOT CLEARED TO DISPATCH, 2026-08-15 (operator, in-session).** Decomposes
+> CAP-8..10. Unlike Epic 8, these capabilities are **less grounded**: CAP-8/9 generalize a
+> one-off `bmad-output-hygiene` sweep run by hand for `pyforge-warden` only (2026-08-14/15)
+> whose finding classes were never formally defined. Testable as stated, under-specified for
+> implementation. **Story 9.1 is the definition gate — it must land and be read before 9.2/9.3
+> dispatch unattended.** Story 9.4 (CAP-10) is independent, concrete, and may run at any time.
+
+**Value delivered.** The same class of finding gets looked for on every station instead of
+whichever one a human happened to audit that night, and the fleet stops needing a human to
+notice that a loop-home branch went stale. Both gaps are real and both were found by accident:
+warden's hygiene sweep was never generalized to the other seven, and on 2026-08-15 all four
+active stations' `loop/pyforge-<slug>` branches were found 55–60 commits behind `origin/main`
+— which is how three separate stations independently rediscovered the *same* already-fixed
+spec-surface bug before their branches caught up.
+
+### Story 9.1: The five hygiene finding classes get testable definitions
+**Given** the `bmad-output-hygiene` sweep exists only as a warden-shaped precedent in commit
+history (`bfa9fd68`, `1567a478`, `5c5e3727`, `22da995c`, `f7654a4c`) **When** this story lands
+**Then** each of its five classes — dead test scaffolding, hollow `sprint-status.yaml`, orphan
+files, README placeholders, stale Dream statuses — carries a written, mechanically-checkable
+definition stating what makes an artifact an instance and what explicitly does not, derived
+from what that sweep actually fixed rather than invented. This is a **definition gate**: the
+sweep's own success criterion (CAP-8) is stated against warden's classes as a fixture, so
+those classes must be pinned before any sweep can be written against them. **Deps:** —
+
+### Story 9.2: The sweep runs against all eight stations
+**Given** the definitions from Story 9.1 **When** the hygiene sweep runs across
+atlas/doctor/herald/marshal/mason/scribe/steward/warden **Then** it reproduces warden's own
+five finding classes as a fixture, reports **zero false positives against warden itself**
+(already swept clean, so any finding there is a false positive by construction), and surfaces
+**at least one true positive** on a station never audited this way (CAP-8).
+**Deps:** S-9.1.
+
+### Story 9.3: Hygiene findings report and never mutate
+**Given** any hygiene finding from Story 9.2 **When** it is emitted **Then** it names the path
+and the evidence for why the artifact is judged dead/orphaned/hollow/stale, and the sweep's own
+invocation **mutates no file** — asserted by a test that runs the sweep against a fixture tree
+and diffs it byte-for-byte afterward. The archive/delete action stays a separate, reviewable
+commit, matching this repo's archive-don't-delete convention and the same separation Story 8.3
+keeps between detection and `--fix` (CAP-9). **Deps:** S-9.2.
+
+### Story 9.4: Loop-home staleness surfaces in the ATTENTION block
+**Given** a `loop/pyforge-<slug>` branch N or more commits behind `origin/main` **When**
+`fleet-picture` runs **Then** its ATTENTION block names that branch and its commit distance,
+without a separate manual check — proven against a synthetically-staled branch. `fleet_picture.py`
+is already the ambient home for cross-cutting fleet signals and grew a baseline-drift line the
+same 2026-08-15 session; this is one more line in the same block, and it stays a **report**,
+never a gate (CAP-10). **Deps:** —

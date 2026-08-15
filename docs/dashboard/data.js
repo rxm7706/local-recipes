@@ -591,7 +591,7 @@ window.DASHBOARD_DATA = {
       "inflight": null,
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 18 of 33 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 18 of 41 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "1.1",
@@ -678,12 +678,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "33/33",
+            "33/41",
             "stories complete",
             "var(--done)"
           ],
           [
-            "0",
+            "8",
             "remaining",
             ""
           ]
@@ -722,8 +722,8 @@ window.DASHBOARD_DATA = {
         }
       },
       "lineState": {
-        "state": "complete",
-        "at": ""
+        "state": "paused",
+        "at": "8.1"
       },
       "epics": [
         {
@@ -930,6 +930,58 @@ window.DASHBOARD_DATA = {
               "7.4",
               "done",
               "One severity, both sides"
+            ]
+          ]
+        },
+        {
+          "badge": "E8",
+          "title": "The legacy deferred-work backlog comes home",
+          "stories": [
+            [
+              "8.1",
+              "pending",
+              "The parser reads every legacy Tier-3 shape"
+            ],
+            [
+              "8.2",
+              "pending",
+              "Minting picks the next free suffix per station convention"
+            ],
+            [
+              "8.3",
+              "pending",
+              "The fix mode promotes the backlog and refuses on collision"
+            ],
+            [
+              "8.4",
+              "pending",
+              "The baseline re-stamps so a second run is a no-op"
+            ]
+          ]
+        },
+        {
+          "badge": "E9",
+          "title": "The hygiene sweep generalizes, and staleness surfaces itself",
+          "stories": [
+            [
+              "9.1",
+              "pending",
+              "The five hygiene finding classes get testable definitions"
+            ],
+            [
+              "9.2",
+              "pending",
+              "The sweep runs against all eight stations"
+            ],
+            [
+              "9.3",
+              "pending",
+              "Hygiene findings report and never mutate"
+            ],
+            [
+              "9.4",
+              "pending",
+              "Loop-home staleness surfaces in the ATTENTION block"
             ]
           ]
         }
@@ -4289,7 +4341,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-15 06:14 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-15 08:03 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -4522,6 +4574,22 @@ window.DASHBOARD_DATA = {
       }
     },
     {
+      "slug": "deferred-work-audit-completeness",
+      "title": "deferred-work-audit-completeness",
+      "status": "specified",
+      "owner": "doctor",
+      "type": "dream",
+      "chain": {}
+    },
+    {
+      "slug": "deferred-work-resolution-sweep",
+      "title": "deferred-work-resolution-sweep",
+      "status": "dreamt",
+      "owner": "doctor",
+      "type": "dream",
+      "chain": {}
+    },
+    {
       "slug": "deferred-work-visibility",
       "title": "A deferral that nobody can see is a deferral that never happened",
       "status": "specified",
@@ -4628,6 +4696,14 @@ window.DASHBOARD_DATA = {
         "spec": "_bmad-output/projects/pyforge-marshal/planning-artifacts/specs/spec-fleet-chain-completeness"
       },
       "archived_reason": "absorbed"
+    },
+    {
+      "slug": "fleet-hygiene-verification-exemplar-program",
+      "title": "fleet-hygiene-verification-exemplar-program",
+      "status": "dreamt",
+      "owner": "doctor",
+      "type": "dream",
+      "chain": {}
     },
     {
       "slug": "fleet-status-supervisor-fallback",
@@ -5309,7 +5385,7 @@ window.DASHBOARD_DATA = {
       "title": "A live server for the WikiSyncer that has been waiting to push to it — the narrow DW-H3 contract",
       "caps": 3,
       "companions": 0,
-      "updated": "2026-08-14",
+      "updated": "2026-08-15",
       "dream": "wagtail-corporate-brain",
       "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/specs/spec-wagtail-corporate-brain"
     },
@@ -5327,9 +5403,9 @@ window.DASHBOARD_DATA = {
       "slug": "deferred-work-visibility",
       "project": "pyforge-doctor",
       "title": "deferred-work-visibility",
-      "caps": 3,
+      "caps": 10,
       "companions": 0,
-      "updated": "2026-08-10",
+      "updated": "2026-08-15",
       "dream": "deferred-work-visibility",
       "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility"
     },
@@ -6680,10 +6756,10 @@ window.DASHBOARD_DATA = {
           "slug": "pyforge-doctor",
           "pkey": "doctor",
           "stories": 12,
-          "state": "done",
+          "state": "in-progress",
           "note": "line 2 — consolidative wrap",
           "done": 33,
-          "total": 33
+          "total": 41
         },
         {
           "slug": "pyforge-scribe",
@@ -6793,9 +6869,9 @@ window.DASHBOARD_DATA = {
       "retro": null
     },
     "sound": 0,
-    "live": 61,
+    "live": 64,
     "reached": 8,
-    "gaps": 72,
+    "gaps": 78,
     "findings": 24,
     "rows": [
       {
@@ -6920,8 +6996,8 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-14",
-        "age": 1,
+        "updated": "2026-08-15",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "49/55",
@@ -6962,7 +7038,7 @@ window.DASHBOARD_DATA = {
           "ux": "",
           "arch": "2026-08-02",
           "context": "2026-08-01",
-          "epics": "2026-08-10",
+          "epics": "2026-08-15",
           "sprint": "2026-08-13",
           "tea": "2026-08-13",
           "gates": "2026-08-10",
@@ -7050,11 +7126,11 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-13",
-        "age": 2,
+        "updated": "2026-08-15",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "33/33",
+        "progress": "33/41",
         "complete": 14,
         "of": 14
       },
@@ -7180,8 +7256,8 @@ window.DASHBOARD_DATA = {
           }
         ],
         "furthest": "retro",
-        "updated": "2026-08-14",
-        "age": 1,
+        "updated": "2026-08-15",
+        "age": 0,
         "stale": false,
         "version": "0.1.0",
         "progress": "56/56",
@@ -7932,8 +8008,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-14",
-        "age": 1,
+        "updated": "2026-08-15",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8038,8 +8114,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-14",
-        "age": 1,
+        "updated": "2026-08-15",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8145,8 +8221,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-14",
-        "age": 1,
+        "updated": "2026-08-15",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8251,8 +8327,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-14",
-        "age": 1,
+        "updated": "2026-08-15",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8357,8 +8433,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-14",
-        "age": 1,
+        "updated": "2026-08-15",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8463,8 +8539,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-14",
-        "age": 1,
+        "updated": "2026-08-15",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8562,8 +8638,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-14",
-        "age": 1,
+        "updated": "2026-08-15",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8668,8 +8744,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-14",
-        "age": 1,
+        "updated": "2026-08-15",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8703,7 +8779,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-14",
           "deck": "",
-          "spec": "2026-08-14",
+          "spec": "2026-08-15",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -8774,8 +8850,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-14",
-        "age": 1,
+        "updated": "2026-08-15",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8873,8 +8949,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-14",
-        "age": 1,
+        "updated": "2026-08-15",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -8979,13 +9055,227 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-14",
-        "age": 1,
+        "updated": "2026-08-15",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
         "of": 3
+      },
+      {
+        "label": "deferred-work-audit-completeness",
+        "slug": "deferred-work-audit-completeness",
+        "project": "pyforge-doctor",
+        "dream": "deferred-work-audit-completeness",
+        "owner": "doctor",
+        "stages": {
+          "dream": "2026-08-15",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-15",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "specified",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-15",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
+      },
+      {
+        "label": "deferred-work-resolution-sweep",
+        "slug": "deferred-work-resolution-sweep",
+        "project": "pyforge-doctor",
+        "dream": "deferred-work-resolution-sweep",
+        "owner": "doctor",
+        "stages": {
+          "dream": "2026-08-15",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-15",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-15",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
       },
       {
         "label": "deferred-work-visibility",
@@ -9014,7 +9304,7 @@ window.DASHBOARD_DATA = {
         "updatedAt": {
           "dream": "2026-08-10",
           "deck": "",
-          "spec": "2026-08-10T19:15",
+          "spec": "2026-08-15T02:47",
           "research": "2026-08-08",
           "brief": "",
           "prd": "",
@@ -9068,7 +9358,7 @@ window.DASHBOARD_DATA = {
         "noDream": false,
         "unowned": false,
         "backfilled": false,
-        "openQuestions": 0,
+        "openQuestions": 1,
         "overtaken": false,
         "na": [
           "dream",
@@ -9085,13 +9375,120 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-13",
-        "age": 2,
+        "updated": "2026-08-15",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
         "complete": 2,
         "of": 3
+      },
+      {
+        "label": "fleet-hygiene-verification-exemplar-program",
+        "slug": "fleet-hygiene-verification-exemplar-program",
+        "project": "pyforge-doctor",
+        "dream": "fleet-hygiene-verification-exemplar-program",
+        "owner": "doctor",
+        "stages": {
+          "dream": "2026-08-15",
+          "deck": "",
+          "spec": "",
+          "research": "2026-07-25",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "updatedAt": {
+          "dream": "2026-08-15",
+          "deck": "",
+          "spec": "",
+          "research": "2026-08-08",
+          "brief": "",
+          "prd": "",
+          "ux": "",
+          "arch": "",
+          "context": "",
+          "epics": "",
+          "sprint": "",
+          "tea": "",
+          "gates": "",
+          "code": "",
+          "verify": "",
+          "retro": ""
+        },
+        "sub": {
+          "research": {
+            "have": {
+              "domain": true,
+              "market": true,
+              "technical": true
+            },
+            "n": 3,
+            "of": 3,
+            "missing": [],
+            "inherited": true
+          },
+          "deck": {
+            "have": {
+              "prototype": false,
+              "exec": false,
+              "infographic": false,
+              "marp": false,
+              "standalone": false,
+              "pptx": false
+            },
+            "n": 0,
+            "of": 6,
+            "missing": [
+              "exec",
+              "infographic",
+              "marp",
+              "pptx",
+              "prototype",
+              "standalone"
+            ]
+          }
+        },
+        "archived": false,
+        "dreamStatus": "dreamt",
+        "ownerDream": "",
+        "noDream": false,
+        "unowned": false,
+        "backfilled": false,
+        "openQuestions": 0,
+        "overtaken": false,
+        "na": [
+          "ux"
+        ],
+        "required": [
+          "dream",
+          "deck",
+          "spec",
+          "research"
+        ],
+        "gaps": [
+          "deck",
+          "spec"
+        ],
+        "partial": [],
+        "staleBy": [],
+        "furthest": "research",
+        "updated": "2026-08-15",
+        "age": 0,
+        "stale": false,
+        "version": "",
+        "progress": "",
+        "complete": 2,
+        "of": 4
       },
       {
         "label": "doctor-dependency-health",
@@ -9191,8 +9588,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-13",
-        "age": 2,
+        "updated": "2026-08-15",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -9409,8 +9806,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-14",
-        "age": 1,
+        "updated": "2026-08-15",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -9515,8 +9912,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-14",
-        "age": 1,
+        "updated": "2026-08-15",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -9621,8 +10018,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-14",
-        "age": 1,
+        "updated": "2026-08-15",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -9728,8 +10125,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-14",
-        "age": 1,
+        "updated": "2026-08-15",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -9835,8 +10232,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-14",
-        "age": 1,
+        "updated": "2026-08-15",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -9942,8 +10339,8 @@ window.DASHBOARD_DATA = {
         "partial": [],
         "staleBy": [],
         "furthest": "research",
-        "updated": "2026-08-14",
-        "age": 1,
+        "updated": "2026-08-15",
+        "age": 0,
         "stale": false,
         "version": "",
         "progress": "",
@@ -17274,7 +17671,7 @@ window.DASHBOARD_DATA = {
           "tests",
           "retro"
         ],
-        "gate": "4 complete (doctor, herald, scribe, warden); 4 building (atlas, marshal, mason, steward)",
+        "gate": "3 complete (herald, scribe, warden); 5 building (atlas, doctor, marshal, mason, steward)",
         "stations": [
           {
             "name": "Herald",
@@ -17416,6 +17813,14 @@ window.DASHBOARD_DATA = {
         "chain": {}
       },
       {
+        "slug": "deferred-work-resolution-sweep",
+        "title": "deferred-work-resolution-sweep",
+        "status": "dreamt",
+        "owner": "doctor",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
         "slug": "enterprise-data-models-and-apis",
         "title": "A normalized data model and REST API pattern, waiting for a PyForge-native subject",
         "status": "dreamt",
@@ -17428,6 +17833,14 @@ window.DASHBOARD_DATA = {
         "title": "Django, Langflow, and DB-GPT scale as isolated containers behind one gateway",
         "status": "dreamt",
         "owner": "steward",
+        "blockedOn": "",
+        "chain": {}
+      },
+      {
+        "slug": "fleet-hygiene-verification-exemplar-program",
+        "title": "fleet-hygiene-verification-exemplar-program",
+        "status": "dreamt",
+        "owner": "doctor",
         "blockedOn": "",
         "chain": {}
       },
@@ -17478,12 +17891,21 @@ window.DASHBOARD_DATA = {
         "owner": "mason",
         "blockedOn": "",
         "chain": {}
+      },
+      {
+        "slug": "deferred-work-audit-completeness",
+        "title": "deferred-work-audit-completeness",
+        "status": "specified",
+        "owner": "doctor",
+        "blockedOn": "",
+        "chain": {}
       }
     ],
     "blocked": 0,
     "byOwner": {
       "steward": 2,
       "marshal": 1,
+      "doctor": 3,
       "atlas": 1,
       "mason": 3,
       "warden": 1,
@@ -18130,23 +18552,37 @@ window.DASHBOARD_DATA = {
       },
       {
         "station": "doctor",
-        "total": 4,
+        "total": 7,
         "counts": {
-          "dreamt": 0,
+          "dreamt": 2,
           "pitched": 0,
-          "specified": 1,
+          "specified": 2,
           "realized": 2,
           "archived": 1,
           "practice": 0
         },
-        "line": "complete",
-        "load": 0,
+        "line": "paused 8.1",
+        "load": 3,
         "blocked": 0,
         "dreams": [
           {
             "slug": "pyforge-doctor-dependency-health",
             "title": "\"Dream — PyForge Doctor: Dependency Health Diagnostics\"",
             "status": "archived",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "deferred-work-resolution-sweep",
+            "title": "deferred-work-resolution-sweep",
+            "status": "dreamt",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "fleet-hygiene-verification-exemplar-program",
+            "title": "fleet-hygiene-verification-exemplar-program",
+            "status": "dreamt",
             "type": "dream",
             "blockedOn": ""
           },
@@ -18161,6 +18597,13 @@ window.DASHBOARD_DATA = {
             "slug": "pyforge-doctor",
             "title": "Doctor — one bedside manner for the whole fleet",
             "status": "realized",
+            "type": "dream",
+            "blockedOn": ""
+          },
+          {
+            "slug": "deferred-work-audit-completeness",
+            "title": "deferred-work-audit-completeness",
+            "status": "specified",
             "type": "dream",
             "blockedOn": ""
           },
@@ -18343,21 +18786,21 @@ window.DASHBOARD_DATA = {
     ]
   },
   "openwork": {
-    "open": 236,
-    "done": 22,
+    "open": 445,
+    "done": 23,
     "triaged": 143,
     "bySeverity": {
       "critical": 0,
       "high": 1,
       "medium": 13,
-      "low": 32,
-      "unspecified": 190
+      "low": 43,
+      "unspecified": 388
     },
     "projects": [
       {
         "project": "pyforge-atlas",
         "path": "_bmad-output/projects/pyforge-atlas/planning-artifacts/deferred-work-ledger.md",
-        "open": 54,
+        "open": 118,
         "done": 4,
         "triaged": 53,
         "entries": [
@@ -18766,14 +19209,462 @@ window.DASHBOARD_DATA = {
             "status": "open",
             "severity": "low",
             "triaged": false
+          },
+          {
+            "id": "DW-14-2-1",
+            "title": "get_widget() and get_view() both raise a bare, unwrapped KeyError with a confusing repr-quoted message on lookup failure",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-14-3-1",
+            "title": "tests/dashboard/test_dashboard_e2e.py's Playwright navigation races the Dash dev server's startup, reliably failing with",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-14-3-2",
+            "title": "Bokeh 3.9.2's `patch_curdoc()` context manager has no exception safety — a callback that raises corrupts `curdoc()` for ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-A1-6",
+            "title": "The registered `[verify]` command `pixi run --frozen -e pyforge-atlas kedro-test` cannot run until the workstation re-lo",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-A1-7",
+            "title": "`.bmad-loop/policy.toml [scm] worktree_seed` still lists only pyforge-warden's implementation-artifacts path — an atlas",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-A1-8",
+            "title": "`[verify].commands` is a flat list — every loop story in either package now materializes BOTH the pyforge-warden and pyf",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-A1-9",
+            "title": "kedro-test import provenance is mixed in the lean env — smokes import the INSTALLED conda build of pyforge-atlas while `",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-A2-1",
+            "title": "Dynamic per-host JFrog credential attachment does NOT exist — credential references are static per-entry catalog config,",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-A3-1",
+            "title": "No epoch-seconds-vs-milliseconds magnitude guard on the `fetched_at` stamp/read in `IncrementalParquetDataset`. If a fut",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-A3-2",
+            "title": "`IncrementalParquetDataset` reaches into the composed dataset's PRIVATE internals — `self._inner._describe()` and `self",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-A3-3",
+            "title": "One-tick TTL boundary parity is UNVERIFIED against the legacy gate. Legacy `atlas_phase` treated a row as stale when `ag",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-4-1",
+            "title": "A future pandera `Column(str)` contract registered in `DEFAULT_CONTRACTS` (`validation.py`) will spuriously halt on a le",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-4-2",
+            "title": "`pyforge.atlas/__init__.py`'s `future.infer_string` pin is process-wide mutable pandas state, not scoped to this package",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-4-3",
+            "title": "`ci_red`'s business logic is duplicated as raw SQL outside the declared-once `semantic/metrics.py` definition — `wasm/in",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-5-1",
+            "title": "The dashboard's per-page AD-17 provenance is resolved once at `build_dashboard()` time while each page's grid data is a",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-5-2",
+            "title": "`provenance.py`'s `resolve_for_catalog_dataset` reaches into kedro's underscore-prefixed `_describe()` (`\"filepath\"`, `\"",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-5-3",
+            "title": "`resolve_for_catalog_dataset`'s `ParquetDataset` branch uses `dataset._describe()[\"filepath\"]` unconditionally, which fo",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-5-4",
+            "title": "The dashboard's `_provenance_line` never renders `ProvenanceInfo.build_stamp_newest`, so a future dashboard page wired t",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-5-5",
+            "title": "`resolve_for_catalog_dataset`'s kind dispatch covers 61 of the catalog's 86 entries; 8 of the remaining 25 (7 `json.JSON",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-5-6",
+            "title": "Three catalog entries (`AnacondaDownloadsDataset`, `GitHubRequestDataset`, `PyPIJsonRequestDataset`) perform a real live",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-5-7",
+            "title": "The dashboard and the MCP read surface resolve the SAME logical dataset's backing file through two independent path mech",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-5-8",
+            "title": "Reusing `IncrementalParquetDataset._to_epoch_seconds` on the READ path makes its `logger.warning` (\"normalizing N ms-mag",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-6-1",
+            "title": "`AtlasObservabilityHooks.__deepcopy__` (and any hook copying this pattern) hand-copies a fixed list of attributes via `c",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-6-2",
+            "title": "Run admission is writer-writer exclusion only, and the concurrency it deliberately PERMITS is reader-writer unsafe: `pan",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-6-3",
+            "title": "`observability.py` states, in three places, that \"C1's `KedroProjectTranslator` deep-copies the settings hooks at `to_da",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-12-1-1",
+            "title": "Unconfirmed whether `src/shared/packages/pyforge-atlas/.claude/skills/catalog-config/` — the first nested, directory-sco",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-12-1-2",
+            "title": "The two upstream-issue texts drafted in `kedro-skills-audit-report.md` (layer-tag nesting; the numbered 8-layer director",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-12-1-3",
+            "title": "The live `sprint-status.yaml`'s `story_meta.depends_on` lists still reference the retired `d1-`/`d2-` key spelling for E",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-12-2-1",
+            "title": "`kedro-viz-publish.yml`'s trigger path filter (`src/shared/packages/pyforge-atlas/src/pyforge/atlas/pipelines/**` only,",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-12-2-2",
+            "title": "`kedro-viz-publish.yml` pushes directly to `main` with the default `GITHUB_TOKEN` and no PR; if branch protection is eve",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-12-2-3",
+            "title": "A narrow non-fast-forward race exists in `kedro-viz-publish.yml`: if two pipeline-touching pushes to `main` land in quic",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-12-2-4",
+            "title": "No end-to-end GitHub Actions execution of `kedro-viz-publish.yml` was exercised before this story's PR — only the underl",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-12-2-5",
+            "title": "`normalize_viz_build.py`'s `_iter_text_files` silently skips any file under `build/` that isn't valid UTF-8 (via a bare",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-12-2-6",
+            "title": "`normalize_viz_build.py`'s anchor-strip uses a literal `str.replace()` substring match with no path-boundary check — a f",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-12-2-7",
+            "title": "The live `sprint-status.yaml`'s `story_meta.depends_on` lists still reference the retired `d1-`/`d2-` key spelling for E",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-1-1",
+            "title": "The GitHub Search API fallback query (`sort=stars&order=desc`, no date/activity filter) doesn't represent \"trending\" at",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-1-2",
+            "title": "`TrendingSnapshotDataset.STORE_FILENAME` is a single fixed filename, so each refresh fully overwrites the prior snapshot",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-1-3",
+            "title": "`parse_trending_html`'s `article.find(\"h2\")`/`article.find(\"p\")` grab the FIRST matching tag anywhere in a repo card's s",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-1-4",
+            "title": "Row dicts mix Python `int` and `None` for `stars_total`/`stars_today`/`forks_total`; `pd.DataFrame(rows)` upcasts any su",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-1-5",
+            "title": "`parse_trending_html`'s `repo_full_name` is built by stripping slashes off the scraped `href`, assuming it is always a r",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-1-6",
+            "title": "`pipelines/upstream_discovery/nodes.py::_coerce_cadence` (post-patch) and the precedent it mirrors, `pipelines/vulnerabi",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-1-7",
+            "title": "`_STARS_DELTA_RE` searches the WHOLE card's concatenated text (`article.get_text(\" \", strip=True)`), not a scoped stars-",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-1-8",
+            "title": "`_parse_count`'s `_DIGITS_RE = re.compile(r\"[\\d,]+\")` only captures digit/comma runs — an abbreviated count like \"1.2k s",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-1-9",
+            "title": "`TrendingSnapshotDataset._write`'s malformed-frame guard checks only that `_REQUIRED_COLUMNS` are PRESENT, not that they",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-2-1",
+            "title": "`_resolve_pypi_name` is fully implemented and tested but unused in `classify_trending_candidates`'s hot path, which inli",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-2-2",
+            "title": "`trending_candidates_classified` re-materializes only in the WEEKLY `bootstrap_data` job while its own source `trending_",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-2-3",
+            "title": "The license gate emits the affirmative reason `not-osi-license` for two states that are actually \"signal unavailable\" —",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-2-4",
+            "title": "The repo-name -> PyPI-name heuristic has an undocumented FALSE-POSITIVE direction: an unrelated repo whose name collides",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-2-5",
+            "title": "`pypi_intelligence_enriched` is a bounded top-N enrichment slice, which structurally excludes freshly-trending packages",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-2-6",
+            "title": "A repo trending in more than one window appears up to 3x in `trending_candidates` (once per `daily`/`weekly`/`monthly` p",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-3-1",
+            "title": "`query_trending_candidates`'s `with _session.bootstrapped_session(...) as s: catalog = _session.loaded_catalog(s)` is NO",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-3-2",
+            "title": "CAP-3's literal success signal in `spec-upstream-discovery/SPEC.md` is \"JSON output validates against a documented schem",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-3-3",
+            "title": "`build_stamp_newest` is `null` in every real `query_trending_candidates` response, because `provenance.py` populates it",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-3-4",
+            "title": "The default `--not-on-cf` filter excludes only the exact reason `already-on-conda-forge`, but CAP-2 also emits `unclassi",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-3-5",
+            "title": "Every MCP tool that bootstraps a Kedro session (`read_dataset`, `list_datasets`, and now `query_trending_candidates`) in",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-3-6",
+            "title": "`mcp/tools.py::read_dataset` — the seam `query_trending_candidates` was modelled on — returns `result.to_dict(orient=\"re",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-4-1",
+            "title": "`classify_trending_candidates` can only ever reach a tier via a resolved PyPI name, so a genuinely PyPI-less candidate (",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-4-2",
+            "title": "The exact-normalized-repo-segment PyPI-name resolution heuristic (`_resolve_pypi_name`, Story 13.2, already an accepted",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-5-1",
+            "title": "The two CLI entrypoints now living in `trending_candidates/` enforce incompatible exit-code contracts for the same failu",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-5-2",
+            "title": "`scripts/spec_surface_check.py`'s `--write-baseline` has no structural safeguard against stamping a stale or incomplete",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-5-3",
+            "title": "`scripts/spec_surface_check.py --write-baseline` does an unlocked read-modify-write of `scripts/.spec-surface-baseline.j",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-5-9",
+            "title": "Follow-up review still recommended for 10-5-stamp-advisory-data-with-its-build-provenance after the damping cap was spen",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-6-4",
+            "title": "Follow-up review still recommended for 10-6-make-run-admission-real-or-stop-claiming-it after the damping cap was spent",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-3-7",
+            "title": "Follow-up review still recommended for 13-3-trending-candidates-operator-surface after the damping cap was spent",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
           }
         ]
       },
       {
         "project": "pyforge-marshal",
         "path": "_bmad-output/projects/pyforge-marshal/planning-artifacts/deferred-work-ledger.md",
-        "open": 52,
-        "done": 9,
+        "open": 99,
+        "done": 10,
         "triaged": 25,
         "entries": [
           {
@@ -19202,6 +20093,1214 @@ window.DASHBOARD_DATA = {
             "status": "open",
             "severity": "low",
             "triaged": false
+          },
+          {
+            "id": "DW-10-2-1",
+            "title": "`pyforge-deps-test` fails on `pyforge-mason`'s five conda-only run-dependencies, reddening a verify command every story ",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-10-3-1",
+            "title": "Writing `plan.json` to its canonical path flips the fingerprint's dirty flag, so the first apply of every freshly built ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-10",
+            "title": "A failed rollback wraps an interrupt in a catchable `InternalError`, so a CLI's `except SeedError` swallows the operator",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-2",
+            "title": "Rollback restores a file's bytes but not its mode, so a failed apply leaves every executable managed artifact non-execut",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-3",
+            "title": "A directory target snapshots as `None` and is never removed, so a rolled-back apply leaves the whole tree it created",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-4",
+            "title": "A symlinked target is snapshotted through the link but restored over it, leaving neither the link nor its referent as th",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-5",
+            "title": "An interrupt raised during rollback discards the list of paths rollback already knew it could not restore",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-6",
+            "title": "The never-write guard is applied to rollback restores, so a target `commit` wrote into a never-write path can never be p",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-7",
+            "title": "A plan's fingerprint records no repo identity, so a plan built against one non-git directory applies cleanly to a differ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-8",
+            "title": "`fingerprint_drift` performs an unguarded arbitrary-path read; containment lives only in its caller, and Story 10.4 owns",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-9",
+            "title": "`build_plan` emits Actions whose `target_path` escapes `repo_root`, so one bad manifest entry makes `run_apply` refuse t",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-4-1",
+            "title": "A symlinked ancestor directory defeats the never-write guard, because the pattern is matched against the resolved destin",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-4-2",
+            "title": "The new never-imported packaging ratchet cannot see `python-build`, the one exempted name its own docstring says the gat",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-4-3",
+            "title": "`ManagedRecord`'s region-bearing shape has no source in the state model Story 10.2 actually landed, so rung 6 cannot be ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-4-4",
+            "title": "`managed_after_skips` cannot protect the artifact class rung 6 actually guards, because a hand-edited managed file never",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-4-5",
+            "title": "An action whose target is an existing DIRECTORY clears all six precondition rungs and fails later as an untyped `IsADire",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-14-1-1",
+            "title": "`pyforge-core/.gitignore`'s `/dist/` and `/dist-conda/` lines carry inline comments gitignore cannot parse, so both patt",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-14-2-1",
+            "title": "story deferred at the dev verify-gate — substantive work committed locally but never merged, blocked on cross-spec spec-",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-14-3-1",
+            "title": "Doctor and Steward still carry un-reparented exception roots outside Story 14.3's CAP-5 scope",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-14-4-1",
+            "title": "Herald, Mason, and Scribe carry real, un-migrated subprocess implementations outside Story 14.4's CAP-6 scope",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-14-4-2",
+            "title": "AD-4's import-linter contract has a verification blind spot for pyforge-core's own internal os/subprocess imports",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-2-8-1",
+            "title": "epics.md's Story 2.8 entry omits the **Surface:** line every sibling Epic-2 story carries",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-3-12-1",
+            "title": "A resumed run's retry-escalation ceilings are read from whatever policy.toml is on disk now, not the policy that governe",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-3-12-2",
+            "title": "A newly-struggling story is never named in the escalation journal once a resumed run's model is already floor-raised",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-3-12-3",
+            "title": "A model-tiering policy.toml write can land on disk before its own launch/resume intent is journaled, in both run_spin an",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-3-12-4",
+            "title": "A TOML serialization failure ahead of the atomic policy.toml write is never wrapped in HarnessPolicyWriteError, in both ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-3-13-1",
+            "title": "Policy-vocabulary key-count literals in cli/config.py's comments and two test names were already stale before this story",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-10-1",
+            "title": "A malformed `merge_subject_template` (missing or duplicate `{key}` placeholder) crashes `marshal land`'s full-merge path",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-10-2",
+            "title": "A multi-key `marshal land` wave under `landing_merge_strategy: squash` or `rebase` renders its subject from the wave's p",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-10-3",
+            "title": "`gh pr merge --subject`'s `commitHeadline` has no merge commit to title under `landing_merge_strategy: rebase`, so a reb",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-8-1",
+            "title": "`is_run_live`, which gates `marshal land`'s branch retirement off the same `FleetHomeFacts` this story extends, never co",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-8-2",
+            "title": "`ProcessPort.is_alive`'s bare pid-existence probe has no identity/start-time corroboration and admits a degenerate `pid:",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-8-3",
+            "title": "`tests/packaging/test_dependency_completeness.py`'s `BASELINE_UNDECLARED_IMPORTS` ratchet is a shared, repo-wide file wi",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-9-1",
+            "title": "Two distinct raw sprint-status-ledger.yaml keys that both normalize to the identical StoryKey silently collapse in recon",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-9-2",
+            "title": "`cli/deploy.py::run_promote` reports a story key in `data[\"promoted\"]` even when the `commit_paths` that would make the ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-9-3",
+            "title": "`promote_sprint_status.py::repair_feed` matches the tracked ledger's raw key spelling against the Tier-3 feed's raw key ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-9-4",
+            "title": "A failed ledger `commit_paths` after a successful `git add` leaves the git INDEX staged with pre-rollback content, even ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-5-9-5",
+            "title": "A literal duplicate raw key appearing twice as separate lines in the tracked ledger's own text has only its FIRST occurr",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-8-1-1",
+            "title": "the region-name forward-reference entry S-7.4's own ledger opened for S-8.1 is now closed in fact but still reads `statu",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-1-1",
+            "title": "`spec_surface_check.py --write-baseline --spec` stamps every file the named spec governs, not just the paths a reconcili",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-3-1",
+            "title": "`check_managed_file`/`check_managed_region` never distinguish a shape-invalid `recorded_sha` from a genuine hand-edit",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-4-1",
+            "title": "Epic 9.4's AC prose names a glob (`docs/specs/*.md`) for the canonical legacy worked example that this module's presence",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-5-1",
+            "title": "Manifest coverage check can never actually fire against any manifest built through normal construction",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-5-2",
+            "title": "A second, independent review pass re-confirms manifest coverage is structurally redundant with `ManifestEntry.__post_ini",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-5-3",
+            "title": "Manifest coverage only sees version-filtered entries, so a staged or retired entry's corrupted class/rationale produces ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-6-1",
+            "title": "`build_plan`'s git fingerprint can misreport an ancestor repository's HEAD/dirty state for a nested target",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-6-2",
+            "title": "Writing `plan.json` before the target's `.gitignore` region is materialized can make the plan file itself flip a subsequ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-4-14-1",
+            "title": "Follow-up review still recommended for 4-14-the-failed-story-safety-net-is-reported after the damping cap was spent",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          }
+        ]
+      },
+      {
+        "project": "pyforge-steward",
+        "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
+        "open": 73,
+        "done": 1,
+        "triaged": 0,
+        "entries": [
+          {
+            "id": "DW-1-2-1",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-2-credentials-never-attach-outside-their-declared-host-and-th",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-2",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-2-credentials-never-attach-outside-their-declared-host-and-th",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-3",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-2-credentials-never-attach-outside-their-declared-host-and-th",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-4",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-2-credentials-never-attach-outside-their-declared-host-and-th",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-2-5",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-2-credentials-never-attach-outside-their-declared-host-and-th",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-1",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-2",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-3",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-4",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-5",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-6",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-7",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-8",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-9",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-10",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-11",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-12",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-13",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-14",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-15",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-16",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-7-1-1",
+            "title": "source_spec: `_bmad-output/projects/pyforge-steward/implementation-artifacts/spec-7-1-one-build-whole-guild.md`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-7-1-2",
+            "title": "source_spec: `_bmad-output/projects/pyforge-steward/implementation-artifacts/spec-7-1-one-build-whole-guild.md`",
+            "status": "done",
+            "severity": "unspecified",
+            "triaged": true
+          },
+          {
+            "id": "DW-9-1-1",
+            "title": "source_spec: `_bmad-output/projects/pyforge-steward/implementation-artifacts/spec-9-1-identity-at-the-boundary-declared-",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10",
+            "title": "Follow-up review still recommended for 10-3-one-image-both-engines after the damping cap was spent",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-9",
+            "title": "Follow-up review still recommended for 9-3-the-audit-trail-records-what-was-seen after the damping cap was spent",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-1-1",
+            "title": "spec-python-agent-platform's `environment.yaml` surface declaration has no counterpart in sibling specs that also declar",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-2-1",
+            "title": "`python-agent-platform`'s `platforms = [\"linux-64\", \"osx-arm64-min\"]` excludes win-64 with no stated rationale",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-2-2",
+            "title": "`channel-priority = \"flexible\"` on `[feature.python-agent-platform]` widens cross-channel resolution eligibility to ever",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-2-3",
+            "title": "two other specs that also declare `pixi.toml` in their `surface:` (`pyforge-marshal/spec-pyforge-core`, `pyforge-steward",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-2-4",
+            "title": "`gather_spec_surface`'s file-drift hash reads raw on-disk bytes, not git's blob content, so a `text eol=...`-normalized ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-1",
+            "title": "`src/platform/Containerfile`'s pip layer swaps the app's Postgres driver from psycopg 3 to conda's psycopg2, with no ORM",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-10",
+            "title": "Platform CI's two path filters are duplicated by hand with nothing enforcing they stay equal, so a one-sided edit silent",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-2",
+            "title": "`src/platform/Containerfile`'s 8 manually-added transitive pip packages have no automated drift guard against future `re",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-3",
+            "title": "`production.py`'s hardcoded `SESSION_COOKIE_SECURE`/`CSRF_COOKIE_SECURE` silently break login and every CSRF-protected f",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-4",
+            "title": "Nothing tests the platform image's actual runtime stack — every automated test runs a different set of package versions ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-5",
+            "title": "The platform image ships its own source tree writable by the runtime user, and whether it does depends on the umask of t",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-6",
+            "title": "User-uploaded media under `src/platform/` is not gitignored, because the pattern meant to cover it names a directory tha",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-7",
+            "title": "Platform CI's path filter now bills the repo's highest-traffic source trees for a two-engine container matrix plus an un",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-8",
+            "title": "The repo-root Containerfile pins a pixi below the floor its own manifest declares, so that image's builder stage cannot ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-10-3-9",
+            "title": "Two marshal specs carry stale pixi.toml baselines that the spec-surface gate cannot report, because a moved memlog downg",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-8-4-1",
+            "title": "`sync reconcile --schedule`'s per-candidate failure detail is computed but never reaches the operator through the CLI",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-8-4-2",
+            "title": "`_LIST_PROJECT_ITEMS_QUERY`'s `fieldValues(first: 50)` cap now runs board-wide, automatically, on every scheduled tick",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-8-5-1",
+            "title": "the loop-home worktree's local `epics.md` and tracked `sprint-status-ledger.yaml` are 60 commits stale, still carrying p",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-8-5-2",
+            "title": "a GitHub Projects V2 board item deliberately never meant to link to Jira fails loudly on every scheduled tick forever, w",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-8-6-1",
+            "title": "`load_config`'s `document.get(...) or {}` idiom silently coerces a falsy-but-malformed `status_mapping`/`field_overrides",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-8-6-2",
+            "title": "no operator-facing documentation page covers `status_mapping`/`user_mapping`/`field_overrides` outside the example YAML'",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-8-6-3",
+            "title": "`sprint-change-proposal-2026-08-13.md`'s root-cause rationale for the Jira↔GitHub write direction is backwards",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-8-6-4",
+            "title": "`status_mapping`'s `or {}` idiom independently reconfirmed to swallow an explicit falsy top-level value (`false`/`0`/`\"\"",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-2-1",
+            "title": "`dashboard_role` is a hardcoded scope-key string duplicated independently in the writer (`middleware.py`) and the reader",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-2-2",
+            "title": "`build_navigation_view`'s duplicate-path guard only rejects byte-identical strings, so `/reports` and `/reports/` (or di",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-2-3",
+            "title": "A whitespace-padded role reaching `filter_by_role` and `build_navigation` from the same request is refused loudly by one",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-3-1",
+            "title": "AD-14's PostgreSQL contention proof is not delivered for the new audit store — every test runs against in-memory SQLite ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-3-10",
+            "title": "every AUDIT_READ row records the same constant \"of what\", so CAP-4's read-side provenance is unrecoverable from the trai",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-3-2",
+            "title": "`query_audit_entries` does not filter its results by the reader's role — AD-7's \"the trail is itself role-isolated data\"",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-3-3",
+            "title": "`purge_expired_entries` destroys audit rows without recording that anyone destroyed them, while `query_audit_entries` re",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-3-4",
+            "title": "`query_audit_entries` materializes the whole matching set with no limit, and each read appends a row the next read retur",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-3-5",
+            "title": "an actor made only of zero-width characters passes the non-blank check, so CAP-4's \"who saw\" can still be recorded as an",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-3-6",
+            "title": "a future-dated `occurred_at` is never older than any cutoff, so a caller can write audit rows that no retention policy c",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-3-7",
+            "title": "`query_audit_entries`' `transaction.atomic()` is a savepoint inside a caller's transaction, so an outer rollback discard",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-3-8",
+            "title": "nothing makes the audit trail append-only, so a single ORM call rewrites or erases CAP-4 evidence leaving no record that",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-3-9",
+            "title": "the identity perimeter admits an actor longer than the audit column's cap, so such a user can neither use the dashboard ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-4-1",
+            "title": "The refusal-webhook POST blocks synchronously for up to 5s with no rate limit, on a path a caller can trigger repeatedly",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-4-2",
+            "title": "`maybe_encrypt_export` never removes the plaintext source after encrypting",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-4-3",
+            "title": "The export-refusal webhook payload is unsigned, so a receiver cannot verify it actually came from this service",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-4-4",
+            "title": "`ExportPolicy.webhook_url` has no protection against loopback/link-local/internal targets",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-4-5",
+            "title": "`authorize_export` being \"the ONLY place the decision is made\" is a documented convention, not something enforced at the",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-5-1",
+            "title": "The `perimeter` verb exposes no `--base-port`/`--bind-host` flags, leaving `_worker_ports`'s range check and `bind_host`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-5-2",
+            "title": "The rendered systemd unit name and nginx upstream name are hardcoded, so two perimeter deployments to the same host woul",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-6-1",
+            "title": "the dashboard test files' hand-duplicated `settings.configure()` guard, now in a fourth file, aborts the whole run when ",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-7-1",
+            "title": "dashboard_diff() cannot see a file staged (git add) but left uncommitted after a failed git commit",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-7-2",
+            "title": "publishing a static board requires a full dashboard-gen rebuild and a valid Steward sprint ledger, because deploy dashbo",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-7-1-3",
+            "title": "Follow-up review still recommended for 7-1-one-build-whole-guild after the damping cap was spent",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-9-1-2",
+            "title": "Follow-up review still recommended for 9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant after the",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          }
+        ]
+      },
+      {
+        "project": "pyforge-mason",
+        "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md",
+        "open": 48,
+        "done": 0,
+        "triaged": 0,
+        "entries": [
+          {
+            "id": "DW-1-3-1",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-error-taxonomy-and-exit-code-contract.md`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-3-2",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-error-taxonomy-and-exit-code-contract.md`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-1",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-4-dual-output-format-with-stream-discipline.md`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-4-2",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-4-dual-output-format-with-stream-discipline.md`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-10-1",
+            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-10-configuration-surface-logging-and-child-output-streaming.m",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-2",
+            "title": "Follow-up review still recommended for 2-2-the-seam-guard after the damping cap was spent",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-2-3-1",
+            "title": "source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-2-3-credential-isolation.md`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-4-4-5",
+            "title": "source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-4-4-6",
+            "title": "source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-4-4-7",
+            "title": "source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-4-4-8",
+            "title": "source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-4-4-9",
+            "title": "source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-4-4-10",
+            "title": "source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-4-4-11",
+            "title": "source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`",
+            "status": "open",
+            "severity": "medium",
+            "triaged": false
+          },
+          {
+            "id": "DW-4-4-12",
+            "title": "source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-4-4-13",
+            "title": "source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-2-10-1",
+            "title": "`recipe update`'s default (non-`--dry-run`) apply has no VCS safety net and shows a thinner plan than `--dry-run`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-2-10-2",
+            "title": "CFE's `recipe_updater.py` hardcodes the bare command `\"python\"` for its internal `recipe_editor.py` subprocess call, unl",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-2-5-1",
+            "title": "`mason recipe validate`'s `EXIT_FAILED` conflates \"the recipe failed validation\" with \"an anticipated Mason-side error o",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-2-5-2",
+            "title": "The hand-maintained verb-registration ordinal comments in `cli.py` (e.g. \"the second verb registered\", \"the third verb r",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-2-5-3",
+            "title": "No test structurally proves every OTHER `recipe` verb's `cli.py` branch stays `EXIT_OK` regardless of its wrapped tool's",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-2-5-4",
+            "title": "`cfe.validate_recipe([\"--json\", recipe_path], ...)` has no `--` separator, so a `recipe_path` beginning with `-` could b",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-2-6-1",
+            "title": "`doctor.py`'s per-noun `unavailable_verbs` granularity is now inaccurate for `recipe build`",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-2-7-1",
+            "title": "A malformed `MASON_CFE_TIMEOUT` environment value is silently ignored with no warning",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-2-7-2",
+            "title": "`mason package`/`mason environment` still print the literal `{}` token for an invalid verb",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-2-8-1",
+            "title": "`render_text`'s one-line-per-key format double-prints `scan`'s findings, now the largest payload it renders",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-2-8-2",
+            "title": "`_OPTIMIZE_RELEVANT_FLOOR`/`_SCAN_RELEVANT_FLOOR` are hand-declared, never derived from or cross-checked against the rea",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-2-9-1",
+            "title": "The unparseable-body PENDING fallback in `_ship_target_result_from_cfe_result` carries no reference or message",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-3-1-1",
+            "title": "`CfeImportFloorError` lacks a `__reduce__` override, so `deepcopy`/`pickle` corrupt its `.args`/`repr()` on round-trip -",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-3-4-1",
+            "title": "`ship_pypi` unconditionally builds the `.conda` package too, coupling a PyPI-only ship to conda-side build/version-misma",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-3-5-1",
+            "title": "`engines.pixi.upload()`'s argv has no `--` separator, so a `channel_name` (or `conda_path`) starting with `-`/`--` is mi",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-3-5-2",
+            "title": "`engines.pixi.upload()` sets no `stdin=subprocess.DEVNULL`, unlike `twine.py`'s documented interactivity defense -- an u",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-3-6-1",
+            "title": "`ship_conda_forge`'s `try/except (OSError, ValueError)` around `Path.expanduser().resolve()` does not catch `RuntimeErro",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-3-6-2",
+            "title": "`resolve_cfe_root` returns flag/environment roots un-expanded and `cfe.py` never expands them, so a `~`-prefixed CFE roo",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-3-6-3",
+            "title": "`resolve_cfe_root`'s unguarded `start_directory.resolve()` sits outside every caller's `try`, so a deleted process cwd m",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-3-7-1",
+            "title": "A concurrent ship of the same PyPI/channel name+version between `version_exists`/`pixi.search` returning `False` and the",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-3-7-2",
+            "title": "`pypi_index.version_exists` always queries the public `pypi.org` index, even when the caller's own environment points `t",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-3-7-3",
+            "title": "`ship_pypi`'s idempotence check derives package identity from the wheel filename only, never cross-validated against the",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-3-8-1",
+            "title": "the `pyforge-mason-test-slow` pixi task's own description text is stale, understating the slow suite it actually runs",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-3-9-1",
+            "title": "the FR-24/FR-50 TestPyPI rehearsal gate validates an artifact that is not provably the same bytes later uploaded to `pyp",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-4-1-1",
+            "title": "The `__reduce__`-plus-explanatory-comment boilerplate for deepcopy/pickle round-trip safety is now hand-duplicated acros",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-4-3-1",
+            "title": "`mason environment lock --help` still advertises `--cfe-root`/`--cfe-python`/`--cfe-timeout`, three flags that are silen",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-4-4-1",
+            "title": "`mason environment check` should default to the lockfile's own `metadata.platforms` when `--platform` is omitted, becaus",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-4-4-2",
+            "title": "every `engines.condalock.check()` test mocks `subprocess.run` against a fixture that real conda-lock would reject, so th",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-4-4-3",
+            "title": "`mason environment check --format json` reports `status: \"ok\"` with an empty `errors` array even when the conda-lock sub",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-4-4-4",
+            "title": "Story 4.4's spec (`spec-4-4-mason-environment-check.md`) has not been promoted from gitignored `implementation-artifacts",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
+          },
+          {
+            "id": "DW-1-10-2",
+            "title": "Follow-up review still recommended for 1-10-configuration-surface-logging-and-child-output-streaming after the damping c",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-2-3-2",
+            "title": "Follow-up review still recommended for 2-3-credential-isolation after the damping cap was spent",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
           }
         ]
       },
@@ -19518,7 +21617,7 @@ window.DASHBOARD_DATA = {
       {
         "project": "pyforge-herald",
         "path": "_bmad-output/projects/pyforge-herald/planning-artifacts/deferred-work-ledger.md",
-        "open": 26,
+        "open": 40,
         "done": 5,
         "triaged": 21,
         "entries": [
@@ -19738,180 +21837,101 @@ window.DASHBOARD_DATA = {
             "status": "open",
             "severity": "low",
             "triaged": false
-          }
-        ]
-      },
-      {
-        "project": "pyforge-steward",
-        "path": "_bmad-output/projects/pyforge-steward/planning-artifacts/deferred-work-ledger.md",
-        "open": 23,
-        "done": 1,
-        "triaged": 0,
-        "entries": [
+          },
           {
-            "id": "DW-1-2-1",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-2-credentials-never-attach-outside-their-declared-host-and-th",
+            "id": "DW-3",
+            "title": "Follow-up review still recommended for 13-3-db-backed-storage-behind-the-existing-seam-with-migrations after the damping",
+            "status": "open",
+            "severity": "low",
+            "triaged": false
+          },
+          {
+            "id": "DW-13-3-1",
+            "title": "One corrupt legacy JSON file blocks all three Moments' stores, where before Story 13.3 it blocked only its own",
             "status": "open",
             "severity": "unspecified",
             "triaged": false
           },
           {
-            "id": "DW-1-2-2",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-2-credentials-never-attach-outside-their-declared-host-and-th",
+            "id": "DW-13-3-2",
+            "title": "A read-only `.herald/` directory now fails every herald command, where before Story 13.3 reads still worked",
             "status": "open",
             "severity": "unspecified",
             "triaged": false
           },
           {
-            "id": "DW-1-2-3",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-2-credentials-never-attach-outside-their-declared-host-and-th",
+            "id": "DW-13-4-1",
+            "title": "The webhook's HMAC scheme signs only the body, so one captured signed request stays a valid, reusable forgery token fore",
             "status": "open",
             "severity": "unspecified",
             "triaged": false
           },
           {
-            "id": "DW-1-2-4",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-2-credentials-never-attach-outside-their-declared-host-and-th",
+            "id": "DW-13-4-2",
+            "title": "The webhook's claim idempotency guard reads and creates in two separate transactions, so two concurrent deliveries of on",
             "status": "open",
             "severity": "unspecified",
             "triaged": false
           },
           {
-            "id": "DW-1-2-5",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-2-credentials-never-attach-outside-their-declared-host-and-th",
+            "id": "DW-13-4-3",
+            "title": "A single webhook request can occupy a thread-pool worker for well over a minute, and neither the handler nor the caller ",
             "status": "open",
             "severity": "unspecified",
             "triaged": false
           },
           {
-            "id": "DW-1-3-1",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "id": "DW-13-4-4",
+            "title": "`herald success create --shipped-date` accepts any string, and one malformed value then breaks `herald success list --da",
             "status": "open",
             "severity": "unspecified",
             "triaged": false
           },
           {
-            "id": "DW-1-3-2",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "id": "DW-13-5-1",
+            "title": "Evidence revalidation runs unbatched sequential HTTP checks, now reachable unattended via cron instead of only under an ",
             "status": "open",
             "severity": "unspecified",
             "triaged": false
           },
           {
-            "id": "DW-1-3-3",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "id": "DW-13-6-1",
+            "title": "Steward's `deploy perimeter` cannot target an arbitrary ASGI application, only a hardcoded Django placeholder -- so Hera",
             "status": "open",
             "severity": "unspecified",
             "triaged": false
           },
           {
-            "id": "DW-1-3-4",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "id": "DW-13-6-2",
+            "title": "`webhook_host.py`'s bounded timeout stops the client from waiting, but does not free the OS thread a genuinely-hung hand",
             "status": "open",
             "severity": "unspecified",
             "triaged": false
           },
           {
-            "id": "DW-1-3-5",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "id": "DW-14-1-1",
+            "title": "A gate returning a non-JSON-serializable field value crashes `herald deck qa` with an unhandled `TypeError` instead of a",
             "status": "open",
             "severity": "unspecified",
             "triaged": false
           },
           {
-            "id": "DW-1-3-6",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "id": "DW-14-1-2",
+            "title": "`deck_qa.run()` calls each gate synchronously with no timeout, so a hanging gate blocks the whole `herald deck qa` invoc",
             "status": "open",
             "severity": "unspecified",
             "triaged": false
           },
           {
-            "id": "DW-1-3-7",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
+            "id": "DW-14-2-1",
+            "title": "No CI workflow runs `pyforge-herald`'s pytest suite, so the render gate's Chromium dependency is unprovisioned in CI",
             "status": "open",
             "severity": "unspecified",
             "triaged": false
           },
           {
-            "id": "DW-1-3-8",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-3-9",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-3-10",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-3-11",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-3-12",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-3-13",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-3-14",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-3-15",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-3-16",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-secrets-steward-stores-live-encrypted-in-git-never-as-plain",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-7-1-1",
-            "title": "source_spec: `_bmad-output/projects/pyforge-steward/implementation-artifacts/spec-7-1-one-build-whole-guild.md`",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-7-1-2",
-            "title": "source_spec: `_bmad-output/projects/pyforge-steward/implementation-artifacts/spec-7-1-one-build-whole-guild.md`",
-            "status": "done",
-            "severity": "unspecified",
-            "triaged": true
-          },
-          {
-            "id": "DW-9-1-1",
-            "title": "source_spec: `_bmad-output/projects/pyforge-steward/implementation-artifacts/spec-9-1-identity-at-the-boundary-declared-",
+            "id": "DW-14-3-1",
+            "title": "`image_slot_gate` has no duplicate-manifest-id disambiguation, unlike `render_gate`'s own `seen_ids` guard in the same f",
             "status": "open",
             "severity": "unspecified",
             "triaged": false
@@ -19921,7 +21941,7 @@ window.DASHBOARD_DATA = {
       {
         "project": "pyforge-doctor",
         "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md",
-        "open": 17,
+        "open": 19,
         "done": 1,
         "triaged": 3,
         "entries": [
@@ -20050,126 +22070,19 @@ window.DASHBOARD_DATA = {
             "status": "open",
             "severity": "medium",
             "triaged": false
-          }
-        ]
-      },
-      {
-        "project": "pyforge-mason",
-        "path": "_bmad-output/projects/pyforge-mason/planning-artifacts/deferred-work-ledger.md",
-        "open": 16,
-        "done": 0,
-        "triaged": 0,
-        "entries": [
+          },
           {
-            "id": "DW-1-3-1",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-error-taxonomy-and-exit-code-contract.md`",
+            "id": "DW-6-11-1",
+            "title": "No test in test_sources_factory.py asserts classify()'s literal return string for any rule, including the new spike-repo",
             "status": "open",
             "severity": "unspecified",
             "triaged": false
           },
           {
-            "id": "DW-1-3-2",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-3-error-taxonomy-and-exit-code-contract.md`",
+            "id": "DW-7-3-1",
+            "title": "The committed anonymous-Tier-3 baseline has no automated freshness check, only this landing's one-off manual verificatio",
             "status": "open",
             "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-1",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-4-dual-output-format-with-stream-discipline.md`",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-4-2",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-4-dual-output-format-with-stream-discipline.md`",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-1-10-1",
-            "title": "source_spec: `_bmad-output/implementation-artifacts/spec-1-10-configuration-surface-logging-and-child-output-streaming.m",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-2",
-            "title": "Follow-up review still recommended for 2-2-the-seam-guard after the damping cap was spent",
-            "status": "open",
-            "severity": "low",
-            "triaged": false
-          },
-          {
-            "id": "DW-2-3-1",
-            "title": "source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-2-3-credential-isolation.md`",
-            "status": "open",
-            "severity": "unspecified",
-            "triaged": false
-          },
-          {
-            "id": "DW-4-4-5",
-            "title": "source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`",
-            "status": "open",
-            "severity": "medium",
-            "triaged": false
-          },
-          {
-            "id": "DW-4-4-6",
-            "title": "source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`",
-            "status": "open",
-            "severity": "low",
-            "triaged": false
-          },
-          {
-            "id": "DW-4-4-7",
-            "title": "source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`",
-            "status": "open",
-            "severity": "low",
-            "triaged": false
-          },
-          {
-            "id": "DW-4-4-8",
-            "title": "source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`",
-            "status": "open",
-            "severity": "low",
-            "triaged": false
-          },
-          {
-            "id": "DW-4-4-9",
-            "title": "source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`",
-            "status": "open",
-            "severity": "low",
-            "triaged": false
-          },
-          {
-            "id": "DW-4-4-10",
-            "title": "source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`",
-            "status": "open",
-            "severity": "low",
-            "triaged": false
-          },
-          {
-            "id": "DW-4-4-11",
-            "title": "source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`",
-            "status": "open",
-            "severity": "medium",
-            "triaged": false
-          },
-          {
-            "id": "DW-4-4-12",
-            "title": "source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`",
-            "status": "open",
-            "severity": "low",
-            "triaged": false
-          },
-          {
-            "id": "DW-4-4-13",
-            "title": "source_spec: `_bmad-output/projects/pyforge-mason/implementation-artifacts/spec-4-4-mason-environment-check.md`",
-            "status": "open",
-            "severity": "low",
             "triaged": false
           }
         ]
@@ -20238,15 +22151,15 @@ window.DASHBOARD_DATA = {
     "source": "sprint-status",
     "running": [],
     "lastShipped": {
-      "station": "marshal",
-      "story": "10.4",
-      "epoch": 1786773305,
-      "sha": "66d6fe1df",
-      "subject": "Merge bmad-loop/20260814-202331-bc8d/10-4-preconditions-refusals-and-skips into loop/pyforge-marshal (bmad-loop)"
+      "station": "steward",
+      "story": "10.3",
+      "epoch": 1786774034,
+      "sha": "53729b524",
+      "subject": "Merge bmad-loop/20260814-202735-e909/10-3-one-image-both-engines into loop/pyforge-steward (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-15 06:14 UTC",
-    "generatedEpoch": 1786774490
+    "generatedAt": "2026-08-15 08:03 UTC",
+    "generatedEpoch": 1786781035
   },
   "storySpecs": [
     {
@@ -20481,6 +22394,37 @@ window.DASHBOARD_DATA = {
         "state": "ready"
       },
       {
+        "station": "doctor",
+        "project": "pyforge-doctor",
+        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
+        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
+        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
+        "openSpecs": [
+          {
+            "slug": "spec-deferred-work-visibility",
+            "status": "ready",
+            "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md"
+          }
+        ],
+        "done": 33,
+        "backlog": 8,
+        "blocked": 0,
+        "total": 41,
+        "next": "8-1-the-parser-reads-every-legacy-tier-3-shape",
+        "blockedKeys": [],
+        "backlogKeys": [
+          "8-1-the-parser-reads-every-legacy-tier-3-shape",
+          "8-2-minting-picks-the-next-free-suffix-per-station-convention",
+          "8-3-the-fix-mode-promotes-the-backlog-and-refuses-on-collision",
+          "8-4-the-baseline-re-stamps-so-a-second-run-is-a-no-op",
+          "9-1-the-five-hygiene-finding-classes-get-testable-definitions",
+          "9-2-the-sweep-runs-against-all-eight-stations",
+          "9-3-hygiene-findings-report-and-never-mutate",
+          "9-4-loop-home-staleness-surfaces-in-the-attention-block"
+        ],
+        "state": "ready"
+      },
+      {
         "station": "atlas",
         "project": "pyforge-atlas",
         "epicsPath": "_bmad-output/projects/pyforge-atlas/planning-artifacts/epics.md",
@@ -20518,28 +22462,6 @@ window.DASHBOARD_DATA = {
           "16-2-httpx-opener-and-rehearsal"
         ],
         "state": "ready"
-      },
-      {
-        "station": "doctor",
-        "project": "pyforge-doctor",
-        "epicsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/epics.md",
-        "ledgerPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/sprint-status-ledger.yaml",
-        "specsPath": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs",
-        "openSpecs": [
-          {
-            "slug": "spec-deferred-work-visibility",
-            "status": "ready",
-            "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md"
-          }
-        ],
-        "done": 33,
-        "backlog": 0,
-        "blocked": 0,
-        "total": 33,
-        "next": "",
-        "blockedKeys": [],
-        "backlogKeys": [],
-        "state": "complete"
       },
       {
         "station": "herald",
@@ -20603,9 +22525,9 @@ window.DASHBOARD_DATA = {
     ],
     "totals": {
       "done": 352,
-      "backlog": 63,
+      "backlog": 71,
       "blocked": 1,
-      "total": 416
+      "total": 424
     }
   },
   "fleetProgress": {
@@ -20623,12 +22545,12 @@ window.DASHBOARD_DATA = {
       },
       {
         "key": "doctor",
-        "stories": 33,
+        "stories": 41,
         "done": 33,
         "blocked": 0,
-        "epics": 7,
+        "epics": 9,
         "epicsDone": 7,
-        "complete": true,
+        "complete": false,
         "running": false,
         "projected": 33
       },
@@ -20700,10 +22622,10 @@ window.DASHBOARD_DATA = {
       }
     ],
     "total": {
-      "stories": 416,
+      "stories": 424,
       "done": 352,
       "blocked": 1,
-      "epics": 83,
+      "epics": 85,
       "epicsDone": 63
     },
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",

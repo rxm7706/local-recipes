@@ -58,6 +58,20 @@ same "is what it actually checks the same as what it claims to check"
 scrutiny `deferred-work` just got, on its own schedule, not just when a
 user happens to challenge one.
 
+**A second one is already confirmed, in a different detector.**
+`chain-completeness`'s INV-A decides "this open Spec is decomposed" with a
+bare substring test — does the Spec's slug appear anywhere in the
+project's PRD/epics prose (`board.py:463-477`). It parses no `CAP-` ids on
+either side. So a Spec can grow from 3 capabilities to 10 and still report
+`ok -- every open Spec is decomposed` while seven of them have no story
+anywhere in the fleet. Found by execution on 2026-08-15 against
+`spec-deferred-work-visibility`, and logged as `DW-CHAIN-COMPLETENESS-1`
+in pyforge-doctor's tracked deferred-work ledger. It is structurally the
+*same* defect class as the one the extended Spec exists to fix — which is
+the point of this category: these are not one-off bugs, they are a
+recurring shape, and finding the second one within hours of the first is
+the evidence.
+
 ## Category 2 — Has its own Dream already (don't re-derive, just link)
 
 - **Deferred-work promotion** (Tier-3 → tracked ledger, id-collision-safe,
