@@ -17,8 +17,18 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+import pytest
+
 from pyforge.doctor.models import DoctorStatus, Source
 from pyforge.doctor.sources import chain
+
+# Guarded, mirroring test_check_speed_budget.py's own idiom: an IndexError
+# from a shallower-than-7-levels layout (e.g. an extracted sdist) degrades to
+# a skip rather than a collection error for the whole file.
+try:
+    _REPO_ROOT: Path | None = Path(__file__).resolve().parents[6]
+except IndexError:
+    _REPO_ROOT = None
 
 # --- fixture helpers ---------------------------------------------------------
 
@@ -648,3 +658,535 @@ def test_ledger_and_tier3_anonymous_entries_carry_the_same_severity(
         f"anonymous entries on the two sides diverged in severity: "
         f"ledger={ledger.status!r} tier3={tier3.status!r}"
     )
+
+
+# --- Story 8.1: classify_tier3_entries -----------------------------------------
+#
+# Fixtures below are VERBATIM excerpts from real Tier-3/tracked-ledger files
+# (cited file + line range in each test's own docstring, per this repo's own
+# convention) -- not paraphrased or invented markdown, per the story spec's
+# own requirement.
+
+
+def test_legacy_flat_shape_from_atlas_real_excerpt(tmp_path: Path) -> None:
+    """``_bmad-output/projects/pyforge-atlas/implementation-artifacts/
+    deferred-work.md`` lines 1-16 (verbatim) -- three headerless
+    ``- source_spec:`` bullets (only an H1 document title sits above them,
+    not a ``## Deferred from:`` scoping heading) all classify
+    ``LEGACY_FLAT`` with ``id=None``."""
+    path = tmp_path / "deferred-work.md"
+    path.write_text("""# Deferred Work Ledger — pyforge-atlas
+
+<!-- Appended by bmad-dev-auto review passes (step-04 defer category). One entry
+     per finding; do not modify existing entries. Triage via bmad-loop-sweep or
+     at wave boundaries. -->
+
+- source_spec: `a1-scaffold-the-kedro-pixi-project-via-nebi.md`
+  summary: The registered `[verify]` command `pixi run --frozen -e pyforge-atlas kedro-test` cannot run until the workstation re-lock lands pixi.lock entries for the pyforge-atlas env — until then EVERY bmad-loop story (including pyforge-warden ones) fails at the verify step.
+  evidence: `pixi.lock` has zero `pyforge-atlas` occurrences; `--frozen` cannot materialize an env absent from the lock; container re-lock is blocked by the stubbed `build_artifacts` channel (bmad-ui/bmad-dashboard co-solve — see Story A1 Dev Agent Record). Workstation re-lock is the recorded precondition; do not weaken the gate (NFR-12).
+
+- source_spec: `a1-scaffold-the-kedro-pixi-project-via-nebi.md`
+  summary: `.bmad-loop/policy.toml [scm] worktree_seed` still lists only pyforge-warden's implementation-artifacts path — an atlas loop story's worktree (first: A3) would reproduce the documented missing-artifacts-dir crash until the seed adds `_bmad-output/projects/pyforge-atlas/implementation-artifacts`.
+  evidence: policy.toml `worktree_seed = ["_bmad-output/projects/pyforge-warden/implementation-artifacts", "_bmad/custom/.active-project"]` with the adjacent comment citing crash run 20260712-164312; A3 is the designated first loop story (sprint story_meta). A1's scope note: "the worktree bootstrap is A3's to validate, not A1's" (AD-18).
+
+- source_spec: `a1-scaffold-the-kedro-pixi-project-via-nebi.md`
+  summary: `[verify].commands` is a flat list — every loop story in either package now materializes BOTH the pyforge-warden and pyforge-atlas envs and runs both suites; a red test in one package blocks the other package's loop, and A3's worktree env-materialization cost measurement will include warden's env. Consider per-project/conditional gating when A3 measures.
+""", encoding="utf-8")
+
+    entries = chain.classify_tier3_entries(path)
+
+    assert len(entries) == 3
+    assert all(e.shape is chain.Tier3Shape.LEGACY_FLAT for e in entries)
+    assert all(e.id is None for e in entries)
+    assert all(
+        e.fields["source_spec"] == "`a1-scaffold-the-kedro-pixi-project-via-nebi.md`"
+        for e in entries
+    )
+
+
+def test_legacy_flat_and_legacy_header_freeform_skip_from_warden_real_excerpt(
+    tmp_path: Path,
+) -> None:
+    """``_bmad-output/projects/pyforge-warden/implementation-artifacts/
+    deferred-work.md`` lines 1-20 (verbatim) -- two headerless
+    ``- source_spec:`` bullets (``LEGACY_FLAT``) followed by TWO
+    ``## Deferred from: ...`` headings whose own bullets are all freeform
+    prose with no ``source_spec:`` field -- both headings own zero entries,
+    proving the freeform-skip case: a bullet with no ``source_spec:`` field
+    is never returned, and never misread as an owned entry."""
+    path = tmp_path / "deferred-work.md"
+    path.write_text("""# Deferred Work
+
+- source_spec: `_bmad-output/projects/python-deptry-osv-scanner/implementation-artifacts/spec-1-1-frozen-contract-verdict-lattice-projection-safety.md`
+  summary: The loop's exact `[verify]` command (`pixi run -e python-deptry-osv-scanner python-deptry-osv-scanner-test`, unfrozen) fails environmentally in every bmad-loop worktree — pixi-build-python 0.8.3 panics (`tools.rs:461` byte-index underflow) when the build `workDirectory` exceeds ~250 chars (run-worktree roots are ~162 chars), and behind it any successful unfrozen re-solve in a worktree rewrites `pixi.lock` with worktree-absolute paths for the gitignored `file://…/build_artifacts` channel (toxic to commit via the loop's `git add -A` squash-merge); switch `.bmad-loop/policy.toml` `[verify]` to `pixi run --frozen -e python-deptry-osv-scanner python-deptry-osv-scanner-test` (or export `PIXI_FROZEN=true` in the engine env / shorten the runs-dir path / pin pixi-build-python past the underflow), and note the related risk that a stale pixi build cache can resolve the package to non-worktree sources, so the verify gate should always run `--frozen` from the worktree root.
+  evidence: Reproduced at baseline (before this story's changes) and re-confirmed after — the unfrozen solve dies with "the build backend (pixi-build-python) exited prematurely" during the `python-deptry-osv-scanner` env solve, while `pixi run --frozen -e python-deptry-osv-scanner python-deptry-osv-scanner-test` passes the identical suite (111 passed at implementation, all green at review patch close); a controlled experiment showed the same package solves at a 149-char root and panics at 162 (path-length-driven), and the `detached-environments = true` + `build_artifacts` symlink workaround made the exact unfrozen command pass 111/111 before both tracked files were reverted to keep the story diff clean.
+
+- source_spec: `docs/specs/bmad-loop-adoption.md`
+  summary: "`scm.isolation = \"worktree\"` + `cleanup.trim_artifacts = true` silently lose any dev/review-session update to a gitignored `implementation-artifacts/` file (`sprint-status.yaml`, `deferred-work.md`, a newly-authored `spec-{story-key}.md`) once the run's worktree is torn down after a successful merge. `scm.worktree_seed` copies these files INTO a fresh worktree at start, but nothing copies the worktree's updated copies back OUT before cleanup deletes it — only git-tracked source changes survive the squash-merge, because `implementation-artifacts/` is gitignored by design (CLAUDE.md Tier 3). Net effect: the code ships correctly, but the BMAD paper trail (the sprint-status flip to `done`, the story's own `spec-*.md`, any `deferred-work.md` append the session made) silently vanishes unless a human happens to have a copy in hand and manually reconstructs it. Not story-scoped — will recur for every future bmad-loop-driven story until fixed at the orchestrator level. Fix candidates: (a) sync the worktree's `implementation-artifacts/` back to the main checkout before merge/cleanup (the `worktree_seed` copy, in reverse); (b) don't trim/delete a run's worktree until its gitignored-artifact delta is reconciled; (c) have the merge step in `bmad-loop resume` explicitly copy `implementation-artifacts/` back regardless of git-tracked status."
+  evidence: Run `20260716-043830-a9bb` (story `1-5-osv-scanner-as-the-second-engine`, 2026-07-16) — after `bmad-loop resume` completed the merge (`ce2ed97bc4`) and the worktree was torn down, the main checkout's `sprint-status.yaml` still read `1-5-osv-scanner-as-the-second-engine: backlog`, and the worktree's updated `deferred-work.md` (8682 bytes, one new section appended by the review session) plus the newly-authored `spec-1-5-osv-scanner-as-the-second-engine.md` (25308 bytes) were both gone — `.bmad-loop/archive/` had no copy for this run, and `trim_artifacts=true` had already removed `worktrees/`. All three were manually reconstructed from conversation context (the spec had been read in full during the pre-merge spec-approval review) rather than recovered from disk.
+
+## Deferred from: code review of spec-1-1-frozen-contract-verdict-lattice-projection-safety (2026-07-13)
+
+- `status_driver.finding_id` has no referential integrity against `findings[]` (models.py:281) — a `policy-violation` report whose driver names a finding absent from `findings[]` validates at both the model and schema layers; blanket enforcement is not safely expressible in 1.1 because the error-driver grammar is owned by Story 1.7 and waiver-suppression semantics by Epic 3. Revisit when 1.7 lands the error-driver grammar.
+- PEP-440-equal version spellings (`2.31` vs `2.31.0`) split component identity, double-count inventory, and fork finding IDs across runs whose extractor source flips (inventory.py:94) — `packaging` is already a declared dep that could canonicalize, but changing frozen identity semantics needs spec grounding; owned by the extractor/producer stories (1.3+/2.x).
+
+## Deferred from: code review of spec-1-2-interfaces-null-engine-regression-harness-socket-deny (2026-07-13, Opus cycle 3)
+
+- Poetry/PDM `pyproject.toml` whose dependencies live outside `[project].dependencies` (`[tool.poetry.dependencies]`, `[tool.pdm]`, optional-dependencies, dependency-groups) currently scans as `not-applicable`/exit-0 — a residual false-green for exit-code-only CI consumers (the only signal is a stderr line an exit-code check never sees). The single-manifest `[project].dependencies`-only extractor is by-design for 1.2; **section-aware discovery + the D2 fail-closed split is owned by Story 1.9.** When 1.9 lands, a dependency-bearing Poetry manifest must resolve to `indeterminate`/exit-1 (or a parsed inventory), never `not-applicable`. A CHARACTERIZATION test (`test_poetry_only_deps_scan_as_not_applicable_KNOWN_GAP` in tests/unit/test_discovery_extract_cli.py) pins the current behavior so 1.9 must consciously flip it. (Also raised — and already recorded — in the dev-session review's defer; re-confirmed by the Opus cycle-3 Blind Hunter.)
+
+## Deferred from: code review of spec-1-3-deptry-as-the-first-engine (2026-07-14, independent Opus cycle)
+""", encoding="utf-8")
+
+    entries = chain.classify_tier3_entries(path)
+
+    assert len(entries) == 2
+    assert all(e.shape is chain.Tier3Shape.LEGACY_FLAT for e in entries)
+    assert all(e.id is None for e in entries)
+    assert entries[0].fields["source_spec"] == (
+        "`_bmad-output/projects/python-deptry-osv-scanner/implementation-artifacts/"
+        "spec-1-1-frozen-contract-verdict-lattice-projection-safety.md`"
+    )
+    assert entries[1].fields["source_spec"] == "`docs/specs/bmad-loop-adoption.md`"
+
+
+def test_legacy_header_shape_from_warden_real_excerpt(tmp_path: Path) -> None:
+    """``_bmad-output/projects/pyforge-warden/implementation-artifacts/
+    deferred-work.md`` lines 26-32 (verbatim) -- a non-DW
+    ``## Deferred from: code review of spec-1-4-...`` heading immediately
+    owning a bulleted ``- source_spec:`` field classifies ``LEGACY_HEADER``
+    with ``id=None``; the SECOND, freeform bullet under the very same
+    heading (no ``source_spec:`` field of its own) is correctly skipped,
+    not merged into the first entry and not returned as a second one."""
+    path = tmp_path / "deferred-work.md"
+    path.write_text("""## Deferred from: code review of spec-1-4-osv-db-offline-provisioning-spike (2026-07-14, Blind Hunter + Edge Case Hunter, Opus)
+
+- source_spec: `_bmad-output/projects/python-deptry-osv-scanner/implementation-artifacts/spec-1-4-osv-db-offline-provisioning-spike.md`
+  summary: The 1.4 fixture proves offline OSV matching only for the literal pin `pdos-vuln-fixture==1.0.0`; PEP-503 name-normalization (e.g. `pdos_vuln_fixture` / `PDOS.Vuln.Fixture`) and PEP-440 version-equivalence (`1.0` vs `1.0.0`) matching against the offline DB are unexercised — Story 1.5's osv-input synthesis + Story 2.1's conda↔pypi identity map must ensure a differently-spelled-but-equivalent package still matches, or a real CVE could be silently missed.
+  evidence: osv-scanner matches by normalized package name + version; the spike deliberately used a synthetic exact-name/exact-version fixture for hermeticity, so the normalization paths never ran. Raised by the Edge Case Hunter (EC11) and reflected in the decision record's Residual risks § (version-exact matching only).
+- **RESOLVED (Story 5.2, 2026-07-24):** The 1.4 proof test establishes offline behavior by passing `--offline` and pointing at the fixture DB, but does NOT observe the osv-scanner subprocess's network (the in-process socket-deny harness cannot patch a child process) — a future osv that egressed under `--offline` (telemetry, transitive resolution) would pass silently; NFR-S2's central "never fetch silently" claim was trusted, not measured, for the subprocess.
+  evidence: `conftest.py`'s socket-deny harness is in-process only (its own docstring notes engine subprocesses are outside it); nothing asserted zero connections occurred. Closed via the lighter "egress counter" alternative this item itself named: `tests/conformance/test_corpus_egress_counter.py` wraps the WHOLE `warden scan` process tree (CLI + every forked engine subprocess) in `strace -f -e trace=network` over the full 5.2 corpus, asserting 0 `connect`/`sendto` syscalls (Linux-only, skip-if-`strace`-unavailable — never a hard requirement elsewhere); live-verified green. Originally: source_spec `_bmad-output/projects/python-deptry-osv-scanner/implementation-artifacts/spec-1-4-osv-db-offline-provisioning-spike.md`, raised by the Blind Hunter (finding 7).
+""", encoding="utf-8")
+
+    entries = chain.classify_tier3_entries(path)
+
+    assert len(entries) == 1
+    entry = entries[0]
+    assert entry.shape is chain.Tier3Shape.LEGACY_HEADER
+    assert entry.id is None
+    assert entry.fields["source_spec"] == (
+        "`_bmad-output/projects/python-deptry-osv-scanner/implementation-artifacts/"
+        "spec-1-4-osv-db-offline-provisioning-spike.md`"
+    )
+    assert "PEP-503 name-normalization" in entry.fields["summary"]
+
+
+def test_identified_bulleted_shape_from_doctor_tracked_ledger_real_excerpt(
+    tmp_path: Path,
+) -> None:
+    """``_bmad-output/projects/pyforge-doctor/planning-artifacts/
+    deferred-work-ledger.md`` lines 120-127 (verbatim) -- CAP-1's current
+    shape, a ``### DW-FU-7-1: ...`` header with an immediate bulleted
+    ``- source_spec:`` field, classifies ``IDENTIFIED_BULLETED`` and
+    carries its real id."""
+    path = tmp_path / "deferred-work-ledger.md"
+    path.write_text("""### DW-FU-7-1: The Review Triage Log's `addressed_findings` never itemizes `defer` entries by the id they were just minted
+- source_spec: `_bmad-output/implementation-artifacts/spec-7-1-the-emitter-mints-identity-at-defer-time.md`
+  summary: The Review Triage Log's `addressed_findings` never itemizes `defer` entries by the id they were just minted, unlike `patch`/`bad_spec`, so a review pass and the DW id(s) it produced aren't linked anywhere in the spec file itself.
+  evidence: Found by review pass 1 (Blind Hunter, independent adversarial pass on this story's own diff). Confirmed by inspection of `step-04-review.md`'s Classify section (step 4): the triage-log template records only `intent_gap`/`bad_spec`/`patch`/`defer`/`reject` counts plus a free-text `addressed_findings` list, and only the `patch`/`bad_spec` triage branches (step 5) actually instruct listing specifics under `addressed_findings` — the `defer` branch never did, before or after this story's edit. Pre-existing (not introduced by this story's change to the `defer` bullet itself), but now more valuable to close since `defer` entries carry real, citable ids going forward. Deferred rather than patched in this pass: fixing it means extending the Classify section's shared triage-log format and step 5's `defer` branch — a change to a different part of the file than this story's own scoped edit — and deserves its own focused pass.
+  severity: medium
+  status: open
+  promoted: 2026-08-11 (landing pass for doctor 7-1)
+
+""", encoding="utf-8")
+
+    entries = chain.classify_tier3_entries(path)
+
+    assert len(entries) == 1
+    entry = entries[0]
+    assert entry.shape is chain.Tier3Shape.IDENTIFIED_BULLETED
+    assert entry.id == "DW-FU-7-1"
+    assert entry.fields["severity"] == "medium"
+    assert entry.fields["status"] == "open"
+    assert entry.fields["promoted"] == "2026-08-11 (landing pass for doctor 7-1)"
+
+
+def test_identified_plain_shape_and_marshal_swallow_regression_real_excerpt(
+    tmp_path: Path,
+) -> None:
+    """``_bmad-output/projects/pyforge-marshal/implementation-artifacts/
+    deferred-work.md`` lines 47-58 (verbatim) -- the exact fleet-wide bug
+    case this story exists to not repeat. ``### DW-1: ...`` (line 47) uses
+    plain, non-bulleted ``origin:``/``source_spec:``/``severity:``/
+    ``reason:``/``status:`` keys -- ``_anonymous()`` never satisfies
+    ``_ANON_RE`` against any of them, so its in-entry/field-taken state
+    never advances past this header. The very next, topically UNRELATED
+    headerless ``- source_spec:`` bullet (line 54, about a completely
+    different spec) is what ``_anonymous()`` then wrongly treats as
+    DW-1's own field (swallowed -- dropped from the anonymous count).
+
+    ``classify_tier3_entries`` must not repeat that: DW-1 classifies
+    ``IDENTIFIED_PLAIN`` with its real id, and the line-54 bullet classifies
+    ``LEGACY_FLAT`` with ``id=None``, proving it is read as its own, unowned
+    entry rather than absorbed into DW-1."""
+    path = tmp_path / "deferred-work.md"
+    path.write_text("""### DW-1: Follow-up review still recommended for 1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them after the damping cap was spent
+origin: review-budget-followup
+source_spec: `spec-1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them.md`
+severity: low
+reason: The follow-up-review damping cap (limits.max_followup_reviews = 1) was spent with the story finalized (status: done, verify green) while the review pass still recommended an independent follow-up. The work was committed by bmad-loop run 20260725-234618-4c9d; this entry preserves the lingering recommendation for a deliberate later review.
+status: open
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-1-2-story-identity-merge-subject-rendering-and-feed-completeness.md`
+  summary: `architecture-pyforge-marshal-2026-07-25/architecture.md`'s AD-23 rule text still literally says the canonical story key is "purely numeric on both parts," directly contradicting AD-38 (added the same day), which requires an optional ordered suffix to be preserved on read.
+  evidence: Confirmed live by reading the architecture file during Story 1.2's implementation: AD-23's rule sentence is unamended even though the 2026-07-25 adversarial review (`architecture-pyforge-marshal-2026-07-25/reviews/review-ad25-39-adversarial-2026-07-25.md`, finding F-12) already flagged this exact contradiction as HIGH and noted the harness's own `bmad-loop run --story` documents accepting a split suffix (`2-6a`). Story 1.2's `core/identity.py` implements the epics.md-and-AD-38-correct behavior (suffix preserved, lowercased) per its own Design Notes, but the architecture document itself was left self-contradictory for the next reader who trusts AD-23's rule text without also reading identity.py's docstring. Pre-existing in already-final planning artifacts, outside this story's declared surface (`core/identity.py`, `core/findings.py`, `core/verdict.py`, their tests).
+
+- source_spec: `_bmad-output/projects/pyforge-marshal/implementation-artifacts/spec-1-3-layered-policy-composition-with-provenance-and-validation.md`
+""", encoding="utf-8")
+
+    entries = chain.classify_tier3_entries(path)
+
+    assert len(entries) == 3
+    header, swallow_victim, truncated_tail = entries
+
+    # DW-1 itself: IDENTIFIED_PLAIN, its own five plain keys, real id.
+    assert header.shape is chain.Tier3Shape.IDENTIFIED_PLAIN
+    assert header.id == "DW-1"
+    assert header.fields["origin"] == "review-budget-followup"
+    assert header.fields["status"] == "open"
+
+    # The regression proof: the very next, unrelated bullet is NOT swallowed
+    # into DW-1 -- it is its own LEGACY_FLAT entry with id=None.
+    assert swallow_victim.shape is chain.Tier3Shape.LEGACY_FLAT
+    assert swallow_victim.id is None
+    assert "spec-1-2-story-identity-merge" in swallow_victim.fields["source_spec"]
+
+    # Cross-check against the live (buggy) `_anonymous()` on this same
+    # fixture: it must NOT count the swallow victim's line as anonymous --
+    # reproducing the bug this story's Never clause leaves untouched, so the
+    # regression proof above is meaningful (not a no-op comparison).
+    anon_lines = chain._anonymous(path)
+    assert swallow_victim.start_line not in anon_lines, (
+        "fixture stopped reproducing _anonymous()'s swallow bug -- "
+        "the classify_tier3_entries assertions above no longer prove anything"
+    )
+
+    assert truncated_tail.shape is chain.Tier3Shape.LEGACY_FLAT
+    assert truncated_tail.id is None
+
+
+def test_live_marshal_file_all_nine_identified_plain_headers_do_not_swallow(
+) -> None:
+    """Story 8.1's own AC: "the bullet at line 54 (and the analogous bullet
+    after each of DW-2/3/4/5/6/7/8/9) classifies as LEGACY_FLAT with
+    id=None, never as owned by the preceding IDENTIFIED_PLAIN header."
+    Verified here against the REAL, live
+    ``_bmad-output/projects/pyforge-marshal/implementation-artifacts/
+    deferred-work.md`` (not a copied fixture) -- keyed by id rather than by
+    line number so it stays correct as the file grows (append-only
+    discipline, this module's own Design Notes). Skips when that gitignored
+    Tier-3 file is not present in this checkout (it does not survive a
+    clone or a bmad-loop worktree teardown)."""
+    if _REPO_ROOT is None:
+        pytest.skip("not running inside a monorepo checkout (parents[6] out of range)")
+    marshal_path = (
+        _REPO_ROOT / "_bmad-output" / "projects" / "pyforge-marshal"
+        / "implementation-artifacts" / "deferred-work.md"
+    )
+    if not marshal_path.is_file():
+        pytest.skip(
+            "pyforge-marshal's Tier-3 deferred-work.md is not present in this "
+            "checkout (gitignored -- does not survive a clone/worktree teardown)"
+        )
+
+    entries = sorted(chain.classify_tier3_entries(marshal_path), key=lambda e: e.start_line)
+    plain_ids = {f"DW-{n}" for n in range(1, 10)}
+    found = {
+        e.id for e in entries
+        if e.shape is chain.Tier3Shape.IDENTIFIED_PLAIN and e.id in plain_ids
+    }
+    assert found == plain_ids, (
+        f"expected all of DW-1..DW-9 present as identified-plain headers, got {sorted(found)}"
+    )
+
+    for idx, entry in enumerate(entries):
+        if entry.shape is not chain.Tier3Shape.IDENTIFIED_PLAIN or entry.id not in plain_ids:
+            continue
+        if idx + 1 >= len(entries):
+            pytest.fail(
+                f"{entry.id} is the LAST entry in the file -- no following entry to "
+                "check it did not swallow (the ledger's own append-only shape changed "
+                "under this test; re-derive the expectation rather than IndexError)"
+            )
+        following = entries[idx + 1]
+        assert following.shape in (chain.Tier3Shape.LEGACY_FLAT, chain.Tier3Shape.LEGACY_HEADER), (
+            f"{entry.id}'s following entry was not a legacy shape: {following}"
+        )
+        assert following.id is None, (
+            f"{entry.id} swallowed the following entry (id={following.id!r}): {following}"
+        )
+
+
+def test_wrapped_summary_and_evidence_continuation_lines_join_from_herald_real_excerpt(
+    tmp_path: Path,
+) -> None:
+    """``_bmad-output/projects/pyforge-herald/implementation-artifacts/
+    deferred-work.md`` lines 125-151 (verbatim) -- a LEGACY_FLAT entry whose
+    ``summary:``/``evidence:`` fields each wrap several physical lines with
+    no per-line key. ``fields["summary"]``/``fields["evidence"]`` must hold
+    the FULL joined text, not just each field's first physical line."""
+    path = tmp_path / "deferred-work.md"
+    path.write_text("""- source_spec: `_bmad-output/implementation-artifacts/spec-13-2-the-serverless-intermediate-decision-recorded.md`
+  summary: `herald snapshot` -- a single command consolidating the three currently-separate,
+  mostly-unwired dashboard exporters (`scripts/export_web_snapshot.py`,
+  `scripts/export_notices_snapshot.py`, `web/scripts/sync-progress.mjs`) into one, stamping
+  `generated_at` on each -- should be built as near-term follow-up, not skipped: it would close
+  the shipped v1's real "three hand-cranked snapshot hops" staleness risk (technical research
+  risk #1 of 6). Worth prioritizing over routine low-priority ledger sweeps -- the fix candidate
+  below is small and fully scoped, not exploratory.
+  evidence: `export_web_snapshot.py`'s own docstring (lines 3-8) already designs itself as the
+  shared exporter and explicitly anticipates "a future Epic 8/10 snapshot adds a sibling
+  export_*_snapshot function here rather than a duplicate script"; `export_notices_snapshot.py`'s
+  docstring likewise says "a later story can fold all three into one generic... script once the
+  shape each Moment needs is settled" -- deferred there deliberately (Simplicity First,
+  YAGNI-until-second-confirmed-use), not because of architectural uncertainty. That uncertainty
+  is now resolved: all three exporters exist, ship working output, and their shapes are
+  individually stable (confirmed 2026-08-11) -- the deferred precondition ("once the shape... is
+  settled") is met. This work is independent of Epic 13's DB/webhook/cron scope (LB-1/2/3): it
+  would close a real risk in the CURRENTLY-SHIPPED v1 dashboard regardless of whether or when the
+  live backend lands, so it is not gated on any Epic 13 story and does not need insertion into
+  Epic 13's own numbering -- it is overdue Epics 9/10 follow-up (whose own Stories 9.4/10.5
+  shipped with a docstring explicitly deferring exactly this consolidation "to a later story"),
+  not a claim that Epic 9 or 10 is reopened. Currently only `web/scripts/sync-progress.mjs` is
+  wired into npm `predev`/`prebuild` (`web/package.json:8-11`); no snapshot JSON anywhere carries
+  a `generated_at` field. Fix candidate: add `export_progress_snapshot`/`export_notices_snapshot`
+  functions to `export_web_snapshot.py` alongside the existing `export_success_snapshot`, stamp
+  `generated_at` in each, expose all three via one `herald snapshot` CLI subcommand (`cli.py`),
+  and decide whether it supersedes or complements `sync-progress.mjs`'s npm-hook wiring.
+""", encoding="utf-8")
+
+    entries = chain.classify_tier3_entries(path)
+
+    assert len(entries) == 1
+    entry = entries[0]
+    assert entry.shape is chain.Tier3Shape.LEGACY_FLAT
+    # `summary:` spans lines 126-132 of the real file (7 physical lines) --
+    # only the first is `  summary: ...`, the rest are unmarked wrapped text.
+    summary = entry.fields["summary"]
+    assert "a single command consolidating the three currently-separate," in summary
+    assert "mostly-unwired dashboard exporters" in summary
+    assert "not exploratory." in summary
+    # `evidence:` spans lines 133-151 (19 physical lines) similarly.
+    evidence = entry.fields["evidence"]
+    assert "own docstring (lines 3-8) already designs itself as the shared" in evidence
+    assert "sync-progress.mjs`'s npm-hook wiring." in evidence
+
+
+def test_continuation_join_does_not_split_on_a_bare_indented_word_colon_real_excerpts() -> None:
+    """Story 8.1 review pass (2026-08-15), HIGH finding 1: the pre-fix
+    ``_CONT_KEY_RE`` treated ANY indented ``word:``-shaped line as a new
+    field start, not just a real known field key -- silently truncating
+    ``summary``/``evidence`` and misattributing the remainder to a spurious
+    key. Reproduced live in 5 real tracked-ledger entries across 3 projects
+    -- read directly from the real files (not hand-transcribed, per the
+    review's own instruction) so this stays byte-accurate as those ledgers
+    grow:
+
+    - atlas ``DW-AD23-2``: ``summary`` wraps through "Not fixed\\n    here:
+      the `run_result` signature is E2-owned..." -- the pre-fix code split
+      there, leaving ``summary`` truncated and a spurious ``here`` key
+      holding the rest through ``resolution:``'s own real key line.
+    - herald ``DW-13-6-1``: ``evidence`` wraps through "Not pursued in this
+      story: making `deploy perimeter`..." -- same corruption, spurious
+      ``story`` key.
+    - herald ``DW-14-3-1``: ``evidence`` wraps through "against the real
+      extractor: `extract-slides.mjs`'s `slugify..." -- same corruption,
+      spurious ``extractor`` key.
+
+    All three must now read back with the false split-text INSIDE the real
+    field (not truncated, not a spurious key), and doctor's own
+    ``DW-CHAIN-COMPLETENESS-1`` / atlas's ``DW-AD23-3`` (both cited by the
+    review as confirmation cases, though neither happens to contain a false
+    split) must still read back their real fields intact -- proving the fix
+    is not a regression for the common (single-physical-line) case either.
+    """
+    if _REPO_ROOT is None:
+        pytest.skip("not running inside a monorepo checkout (parents[6] out of range)")
+
+    def _entry(project: str, id_needle: str) -> chain.LegacyEntry:
+        path = (
+            _REPO_ROOT / "_bmad-output" / "projects" / project
+            / "planning-artifacts" / "deferred-work-ledger.md"
+        )
+        if not path.is_file():
+            pytest.skip(f"{project}'s tracked deferred-work-ledger.md is not present")
+        for e in chain.classify_tier3_entries(path):
+            if e.id and id_needle in e.id:
+                return e
+        pytest.fail(f"{id_needle} not found in {path}")
+        raise AssertionError("unreachable")  # for the type checker
+
+    ad23_2 = _entry("pyforge-atlas", "AD23-2")
+    assert ad23_2.shape is chain.Tier3Shape.IDENTIFIED_BULLETED
+    assert "here" not in ad23_2.fields
+    assert (
+        "here: the `run_result` signature is E2-owned and touches 10 positional "
+        "call sites"
+    ) in ad23_2.fields["summary"]
+    assert ad23_2.fields["summary"].endswith(
+        "kedro fires `on_pipeline_error` in-process there."
+    )
+    assert ad23_2.fields["resolution"].endswith(
+        "replacing two undeclared process-lifetime couplings with one explicit lifetime."
+    )
+
+    herald_13_6_1 = _entry("pyforge-herald", "13-6-1")
+    assert herald_13_6_1.shape is chain.Tier3Shape.IDENTIFIED_BULLETED
+    assert "story" not in herald_13_6_1.fields
+    assert (
+        "story: making `deploy perimeter` support an arbitrary ASGI target"
+    ) in herald_13_6_1.fields["evidence"]
+    assert herald_13_6_1.fields["evidence"].endswith(
+        "before Herald's webhook is ever pointed at it for real."
+    )
+
+    herald_14_3_1 = _entry("pyforge-herald", "14-3-1")
+    assert herald_14_3_1.shape is chain.Tier3Shape.IDENTIFIED_BULLETED
+    assert "extractor" not in herald_14_3_1.fields
+    assert (
+        "extractor: `extract-slides.mjs`'s `slugify(label, i)`"
+    ) in herald_14_3_1.fields["evidence"]
+
+    chain_completeness = _entry("pyforge-doctor", "CHAIN-COMPLETENESS-1")
+    assert chain_completeness.shape is chain.Tier3Shape.IDENTIFIED_BULLETED
+    assert chain_completeness.fields["evidence"].endswith(
+        "the detector's blind spot easy to keep not noticing."
+    )
+    assert "raised" in chain_completeness.fields
+
+    ad23_3 = _entry("pyforge-atlas", "AD23-3")
+    assert ad23_3.shape is chain.Tier3Shape.IDENTIFIED_BULLETED
+    assert ad23_3.fields["summary"].endswith(
+        "this one is the sole CORRECTNESS exposure among them."
+    )
+
+
+def test_identified_header_field_search_skips_interposed_html_comment_real_marshal_excerpts() -> None:
+    """Story 8.1 review pass (2026-08-15), HIGH finding 2: the pre-fix
+    ``_consume_identified_entry`` gave up after the first non-blank line
+    beneath a ``### DW-<id>:`` header, so a header separated from its own
+    ``- source_spec:`` bullet by an interposed ``<!-- id assigned ... -->``
+    HTML comment (a real, live convention from the 2026-07-30 verification
+    campaign) read as an EMPTY header plus a spurious, unrelated
+    ``LEGACY_FLAT`` orphan for its own real content. Reproduced live in
+    marshal's tracked ledger at ``## DW-1-2-1`` and ``## DW-1-10-7`` -- read
+    directly from the real file (not hand-transcribed)."""
+    if _REPO_ROOT is None:
+        pytest.skip("not running inside a monorepo checkout (parents[6] out of range)")
+    path = (
+        _REPO_ROOT / "_bmad-output" / "projects" / "pyforge-marshal"
+        / "planning-artifacts" / "deferred-work-ledger.md"
+    )
+    if not path.is_file():
+        pytest.skip("pyforge-marshal's tracked deferred-work-ledger.md is not present")
+
+    entries = sorted(chain.classify_tier3_entries(path), key=lambda e: e.start_line)
+    by_id = {e.id: e for e in entries if e.id}
+
+    for entry_id, summary_needle in (
+        ("DW-1-2-1", "AD-23 rule text still literally says the canonical story key"),
+        ("DW-1-10-7", "No project-policy source anywhere in the repo currently supplies"),
+    ):
+        assert entry_id in by_id, f"{entry_id} missing entirely from {path}"
+        entry = by_id[entry_id]
+        assert entry.shape is chain.Tier3Shape.IDENTIFIED_BULLETED, (
+            f"{entry_id} misclassified as {entry.shape} -- the interposed HTML "
+            "comment defeated the header's own field search"
+        )
+        assert summary_needle in entry.fields.get("summary", ""), (
+            f"{entry_id}'s real content was not captured: {entry.fields}"
+        )
+        assert "evidence" in entry.fields
+
+        duplicate_orphans = [
+            other for other in entries
+            if other.shape is chain.Tier3Shape.LEGACY_FLAT
+            and other.fields.get("source_spec") == entry.fields.get("source_spec")
+        ]
+        assert not duplicate_orphans, (
+            f"{entry_id}'s own real content also leaked out as a spurious "
+            f"orphan entry: {duplicate_orphans}"
+        )
+
+
+def test_all_four_shapes_plus_one_freeform_bullet_combined_fixture(tmp_path: Path) -> None:
+    """Acceptance Criteria row 2: a fixture combining all four shapes plus
+    one freeform-prose bullet -- each shape returns its correct
+    ``Tier3Shape`` and id-or-None, and the freeform bullet is absent from
+    the result."""
+    path = tmp_path / "deferred-work.md"
+    path.write_text(
+        "# Deferred Work\n"
+        "\n"
+        "- source_spec: `flat-one.md`\n"
+        "  summary: a headerless entry\n"
+        "\n"
+        "## Deferred from: code review of spec-x (2026-01-01)\n"
+        "\n"
+        "- freeform bullet with no source_spec field at all, skip me\n"
+        "\n"
+        "- source_spec: `legacy-header-one.md`\n"
+        "  summary: owned by the Deferred-from heading above\n"
+        "\n"
+        "### DW-FU-8-x: a CAP-1-shaped entry\n"
+        "- source_spec: `bulleted-one.md`\n"
+        "  summary: identified and bulleted\n"
+        "\n"
+        "### DW-9: a review-budget-followup-shaped entry\n"
+        "origin: review-budget-followup\n"
+        "source_spec: `plain-one.md`\n"
+        "status: open\n",
+        encoding="utf-8",
+    )
+
+    entries = {e.id or e.fields.get("source_spec"): e for e in chain.classify_tier3_entries(path)}
+
+    assert len(entries) == 4
+    flat = entries["`flat-one.md`"]
+    assert flat.shape is chain.Tier3Shape.LEGACY_FLAT
+    assert flat.id is None
+
+    header = entries["`legacy-header-one.md`"]
+    assert header.shape is chain.Tier3Shape.LEGACY_HEADER
+    assert header.id is None
+
+    bulleted = entries["DW-FU-8-x"]
+    assert bulleted.shape is chain.Tier3Shape.IDENTIFIED_BULLETED
+    assert bulleted.fields["source_spec"] == "`bulleted-one.md`"
+
+    plain = entries["DW-9"]
+    assert plain.shape is chain.Tier3Shape.IDENTIFIED_PLAIN
+    assert plain.fields["source_spec"] == "`plain-one.md`"
+    assert plain.fields["origin"] == "review-budget-followup"
+
+    assert not any(
+        "freeform bullet" in v for e in entries.values() for v in e.fields.values()
+    )
+
+
+# --- classify_tier3_entries: I/O & Edge-Case Matrix rows not already covered ------
+
+
+def test_classify_tier3_entries_missing_file_returns_empty_tuple(tmp_path: Path) -> None:
+    entries = chain.classify_tier3_entries(tmp_path / "does-not-exist.md")
+
+    assert entries == ()
+
+
+def test_classify_tier3_entries_never_raises_on_non_utf8_bytes(tmp_path: Path) -> None:
+    path = tmp_path / "deferred-work.md"
+    path.write_bytes(b"### DW-1: caf\xe9 header\norigin: review-budget-followup\n")
+
+    entries = chain.classify_tier3_entries(path)
+
+    assert len(entries) == 1
+    assert entries[0].id == "DW-1"
