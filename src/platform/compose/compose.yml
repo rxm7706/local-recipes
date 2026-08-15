@@ -1,0 +1,127 @@
+# Story 10.3 ("One image, both engines"): local dev/test stack for
+# src/platform/ -- platform + postgres:17 + redis:7 ONLY (spec-python-agent-
+# platform's own Boundaries & Constraints: "infrastructure is exactly
+# PostgreSQL + Redis + Kubernetes"; this story's own Constraints repeat it
+# for the compose file specifically -- no Langflow/DB-GPT services, Epic 11
+# mounts those inside this same image as pluggable Django apps, never
+# sidecars).
+#
+# Compose Specification syntax (no top-level `version:` key -- dropped by
+# the Compose Specification itself and ignored-with-a-warning by `docker
+# compose` v2), so this file is portable to both `docker compose` and
+# `podman-compose` by construction, not by testing against both (this
+# sandbox has no `podman-compose` binary -- see this story's spec Design
+# Notes for the honest statement of what was and wasn't locally verified).
+#
+# Every `environment:` value below is a LOCAL DEV/TEST PLACEHOLDER, never a
+# real credential -- CAP-6's "env/secret-mount credentials" clause is about
+# real deployments (K8s secrets at run time, `--mount=type=secret` at build
+# time); a throwaway compose-local Django `SECRET_KEY` for a database that
+# only ever exists inside this compose network is not the credential that
+# constraint protects.
+#
+# `build.context: ../../..` + `build.dockerfile: src/platform/Containerfile`
+# -- deliberately the REPO ROOT as build context, matching the Containerfile
+# itself (see that file's own top-of-file comment for why: the builder
+# stage's `pixi install --frozen -e python-agent-platform` needs the
+# workspace-root `pixi.toml`/`pixi.lock`, which do not exist inside
+# `src/platform/`).
+
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: platform
+      POSTGRES_PASSWORD: platform
+      POSTGRES_DB: platform
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U platform"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  platform:
+    build:
+      context: ../../..
+      dockerfile: src/platform/Containerfile
+    # The image's own ENTRYPOINT/CMD never runs `manage.py migrate` -- on
+    # Kubernetes/OCP that step belongs to a separate Job/initContainer, not
+    # every pod's own startup (concurrent replicas would race the same
+    # migration). This LOCAL compose stack has no such job, so without an
+    # explicit migrate step here a fresh `docker compose up` boots against a
+    # completely unmigrated database (confirmed live in review: `\dt` shows
+    # zero relations, and any page touching the ORM -- e.g. `/admin/login/`
+    # -- 500s with `relation "django_site" does not exist`; `/ht/`'s
+    # Database check still reports OK because it is a bare connectivity
+    # probe, not a query against an app table). `exec`'d so gunicorn still
+    # replaces this shell as PID 1 for signal handling.
+    command: >
+      bash -c "python manage.py migrate --noinput &&
+               exec gunicorn config.asgi:application --bind 0.0.0.0:8000 --worker-class uvicorn_worker.UvicornWorker"
+    # `migrate` runs against a postgres that `depends_on` only guarantees is
+    # ANSWERING pg_isready -- which the official image also does during its
+    # initdb bootstrap, from a temporary server that then restarts. That
+    # narrow race makes migrate exit nonzero and, with no restart policy,
+    # leaves the service permanently dead after a `docker compose up` that
+    # reported success. `on-failure` retries it.
+    #
+    # Read the retry bound correctly: the short form below is UNBOUNDED (the
+    # bounded form is `on-failure:N`), so a genuinely broken image restarts
+    # forever rather than "failing after a few attempts". What still makes
+    # `docker compose up --wait` TERMINATE with a nonzero status is the
+    # `healthcheck:` right below, not the restart policy -- verified live
+    # during exactly such a boot loop in this story, where `--wait` reported
+    # `container compose-platform-1 is unhealthy` and exited nonzero. The
+    # bound is left off deliberately: the race this absorbs is postgres
+    # finishing its initdb restart, whose duration is not something a fixed
+    # retry count can be chosen against, and the healthcheck already supplies
+    # the terminal verdict a count would otherwise be needed for.
+    restart: on-failure
+    ports:
+      - "8000:8000"
+    # postgres and redis both declare a healthcheck; without one here the
+    # platform service can only ever report "running", never "healthy" --
+    # so `docker compose up --wait` returns as soon as the process exists
+    # (before migrate finishes, before gunicorn binds), and this story's own
+    # acceptance wording ("brings up platform+postgres+redis all healthy")
+    # has nothing to read. Uses the env's own python rather than curl: the
+    # UBI9-minimal runtime stage ships no curl, and `/app/entrypoint.sh` is
+    # what puts the conda env on PATH.
+    healthcheck:
+      test:
+        - "CMD"
+        - "/app/entrypoint.sh"
+        - "python"
+        - "-c"
+        - "import urllib.request,sys; sys.exit(0 if urllib.request.urlopen('http://127.0.0.1:8000/ht/', timeout=5).status == 200 else 1)"
+      interval: 10s
+      timeout: 10s
+      retries: 12
+      # Covers the migrate step + gunicorn/uvicorn boot before the first
+      # failure is counted against `retries`.
+      start_period: 60s
+    environment:
+      # DJANGO_SETTINGS_MODULE is already baked into the image (Containerfile
+      # `ENV`) -- not repeated here.
+      DJANGO_SECRET_KEY: local-compose-placeholder-not-a-real-secret
+      DJANGO_ADMIN_URL: admin/
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,platform
+      # No TLS terminator in this local stack -- SecurityMiddleware would
+      # otherwise 301-redirect every request (including the /ht/ health
+      # probe) to https, which this stack never serves.
+      DJANGO_SECURE_SSL_REDIRECT: "False"
+      DATABASE_URL: postgres://platform:platform@postgres:5432/platform
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
