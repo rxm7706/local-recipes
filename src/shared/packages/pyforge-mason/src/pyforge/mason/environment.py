@@ -11,10 +11,10 @@ CFE dependency (Story 4.1).
 
 Story 4.3 adds `lock()`, the `mason environment lock` use-case: a thin
 wrapper around `engines.condalock.lock()`, mirroring `package.py::build()`'s
-own engine-wrapping shape. Manifest auto-discovery (Story 4.2) is not yet
-built, so `lock()` requires its caller to supply manifest paths explicitly
--- `cli.py`'s own `manifest_path` positional (`nargs="+"`) enforces "at
-least one" before this function is ever reached.
+own engine-wrapping shape. Manifest auto-discovery (Story 4.2) was not yet
+built at that point, so `lock()` required its caller to supply manifest
+paths explicitly -- `cli.py`'s own `manifest_path` positional (`nargs="+"`)
+enforced "at least one" before this function was ever reached.
 
 Story 4.4 adds `check()`, the `mason environment check` use-case (FR-25,
 FR-27, FR-29): CI's own companion to `lock()` above -- a thin wrapper around
@@ -25,14 +25,69 @@ counterpart validates `lockfile_path`'s existence itself
 this function does no additional pre-validation of its own, matching
 `lock()`'s established "no Mason-side pre-validation" default for every
 other path argument.
+
+Story 4.2 adds `discover_manifests()`: manifest auto-discovery is now built.
+`cli.py`'s `manifest_path` positional is `nargs="*"` on both verbs -- when
+the caller gives none, `cli.py` calls `discover_manifests(Path.cwd())`
+itself and feeds the result into `lock()`/`check()` unchanged; neither
+function's own signature changed for this. `discover_manifests` is a pure
+function over an explicit `directory` (never `Path.cwd()` internally, no
+recursion, no upward walk -- unlike `resolve.py`'s CFE-root walk) that
+locates the four manifest kinds in that one directory alone.
 """
 
 from __future__ import annotations
 
 from collections.abc import Sequence
+from pathlib import Path
 
 from .engines import condalock
+from .errors import EnvironmentManifestsNotFoundError
 from .models import CheckResult, LockResult
+
+_MANIFEST_FILENAMES: tuple[str, ...] = (
+    "pyproject.toml", "environment.yml", "requirements*.txt", "pixi.toml",
+)
+"""The four literal patterns `discover_manifests` searches for, in the
+fixed order it checks them -- also the exact `filenames` named by
+`EnvironmentManifestsNotFoundError` when none match."""
+
+
+def discover_manifests(directory: Path) -> tuple[str, ...]:
+    """Locate the four supported manifest kinds in `directory` alone (Story
+    4.2, FR-25) -- never recursive, never walking upward, unlike
+    `resolve.py::resolve_cfe_root`'s CFE-root walk.
+
+    Checks, in this fixed order: `pyproject.toml`, `environment.yml`, then
+    every `directory.glob("requirements*.txt")` match sorted lexically, then
+    `pixi.toml`. Existence is `.is_file()` on the literal names; the glob is
+    the only wildcard this function ever applies (spec Intent: the one
+    pattern named by the AC, not a general glob). Each match is returned as
+    `str(directory / name)`.
+
+    Pure: no I/O beyond reading `directory` itself, and takes an explicit
+    `Path` rather than reading `Path.cwd()` internally -- mirrors
+    `resolve.py::resolve_cfe_root`'s `start_directory` parameter precedent;
+    `cli.py` supplies `Path.cwd()` at its own call site.
+
+    Raises `EnvironmentManifestsNotFoundError` naming `directory` and all
+    four literal patterns searched when nothing matches -- the only case
+    this function ever raises for.
+    """
+    found: list[str] = []
+
+    if (directory / "pyproject.toml").is_file():
+        found.append(str(directory / "pyproject.toml"))
+    if (directory / "environment.yml").is_file():
+        found.append(str(directory / "environment.yml"))
+    found.extend(str(path) for path in sorted(directory.glob("requirements*.txt")))
+    if (directory / "pixi.toml").is_file():
+        found.append(str(directory / "pixi.toml"))
+
+    if not found:
+        raise EnvironmentManifestsNotFoundError(str(directory), _MANIFEST_FILENAMES)
+
+    return tuple(found)
 
 
 def lock(

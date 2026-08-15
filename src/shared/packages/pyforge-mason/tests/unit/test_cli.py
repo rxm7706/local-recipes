@@ -150,7 +150,8 @@ from pyforge.mason.cfe import ImportFloorResult
 from pyforge.mason.errors import (
     CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError, EngineAbsentError,
     EnvironmentCheckTimeoutError, EnvironmentLockfileMalformedError,
-    EnvironmentLockfileMissingError, EnvironmentLockTimeoutError, InvalidShipTargetError,
+    EnvironmentLockfileMissingError, EnvironmentLockTimeoutError,
+    EnvironmentManifestsNotFoundError, InvalidShipTargetError,
     MasonError, PackageVersionMismatchError, RecipeGenerationError,
 )
 from pyforge.mason.exit_codes import (
@@ -3226,14 +3227,68 @@ def test_environment_lock_passes_platform_flag_through_unparsed(capsys):
     assert mock_lock.call_args.kwargs["platforms"] == "linux-64,osx-arm64"
 
 
-def test_environment_lock_missing_manifest_path_is_a_usage_error(capsys):
-    with patch("pyforge.mason.cli.environment.lock") as mock_lock:
+# --- Story 4.2: `environment lock` manifest-discovery dispatch --------------
+
+def test_environment_lock_missing_manifest_path_triggers_discovery(capsys):
+    """Omitting `manifest_path` (`nargs="*"`) is no longer a usage error --
+    it triggers discovery against `Path.cwd()`, and the discovered tuple
+    (not an empty one) is what `environment.lock()` receives."""
+    with patch(
+        "pyforge.mason.cli.environment.discover_manifests",
+        return_value=("environment.yml", "pixi.toml"),
+    ) as mock_discover, patch(
+        "pyforge.mason.cli.environment.lock", return_value=_FIXED_LOCK_RESULT,
+    ) as mock_lock:
         rc = main(["environment", "lock", "-o", "lock.yml"])
 
-    assert rc == EXIT_USAGE
-    err = capsys.readouterr().err
-    assert "MANIFEST_PATH" in err
+    assert rc == EXIT_OK
+    mock_discover.assert_called_once_with(Path.cwd())
+
+    out = capsys.readouterr()
+    assert "discovered manifests: environment.yml, pixi.toml" in out.err
+    assert "environment lock: ok" in out.out
+
+    mock_lock.assert_called_once()
+    args, _kwargs = mock_lock.call_args
+    assert args[0] == ("environment.yml", "pixi.toml")
+
+
+def test_environment_lock_missing_manifest_path_discovery_raises(capsys):
+    """When discovery itself finds nothing, `EnvironmentManifestsNotFoundError`
+    propagates to `main()`'s `except MasonError` handler -- `EXIT_FAILED`, the
+    message on stderr, no stderr discovery line (it is printed only AFTER a
+    successful discovery call), and no traceback."""
+    with patch(
+        "pyforge.mason.cli.environment.discover_manifests",
+        side_effect=EnvironmentManifestsNotFoundError(
+            "/proj", ("pyproject.toml", "environment.yml", "requirements*.txt", "pixi.toml"),
+        ),
+    ) as mock_discover, patch("pyforge.mason.cli.environment.lock") as mock_lock:
+        rc = main(["environment", "lock", "-o", "lock.yml"])
+
+    assert rc == EXIT_FAILED
+    mock_discover.assert_called_once_with(Path.cwd())
     mock_lock.assert_not_called()
+
+    err = capsys.readouterr().err
+    assert "no dependency manifests found" in err
+    assert "discovered manifests:" not in err
+
+
+def test_environment_lock_explicit_manifest_path_bypasses_discovery(capsys):
+    """An explicit `manifest_path` never triggers discovery and never prints
+    the discovery line -- unchanged from pre-4.2 behavior."""
+    with patch("pyforge.mason.cli.environment.discover_manifests") as mock_discover, patch(
+        "pyforge.mason.cli.environment.lock", return_value=_FIXED_LOCK_RESULT,
+    ) as mock_lock:
+        rc = main(["environment", "lock", "environment.yml", "-o", "lock.yml"])
+
+    assert rc == EXIT_OK
+    mock_discover.assert_not_called()
+    assert "discovered manifests:" not in capsys.readouterr().err
+    mock_lock.assert_called_once()
+    args, _kwargs = mock_lock.call_args
+    assert args[0] == ["environment.yml"]
 
 
 def test_environment_lock_renders_populated_platforms(capsys):
@@ -3444,14 +3499,67 @@ def test_environment_check_renders_populated_platforms(capsys):
     assert doc["data"]["platforms"] == ["linux-64", "osx-arm64"]
 
 
-def test_environment_check_missing_manifest_path_is_a_usage_error(capsys):
-    with patch("pyforge.mason.cli.environment.check") as mock_check:
+# --- Story 4.2: `environment check` manifest-discovery dispatch -------------
+
+def test_environment_check_missing_manifest_path_triggers_discovery(capsys):
+    """Omitting `manifest_path` (`nargs="*"`) is no longer a usage error --
+    it triggers discovery against `Path.cwd()`, and the discovered tuple
+    (not an empty one) is what `environment.check()` receives."""
+    with patch(
+        "pyforge.mason.cli.environment.discover_manifests",
+        return_value=("environment.yml", "pixi.toml"),
+    ) as mock_discover, patch(
+        "pyforge.mason.cli.environment.check", return_value=_FIXED_CHECK_RESULT_CURRENT,
+    ) as mock_check:
         rc = main(["environment", "check", "-l", "lock.yml"])
 
-    assert rc == EXIT_USAGE
-    err = capsys.readouterr().err
-    assert "MANIFEST_PATH" in err
+    assert rc == EXIT_OK
+    mock_discover.assert_called_once_with(Path.cwd())
+
+    out = capsys.readouterr()
+    assert "discovered manifests: environment.yml, pixi.toml" in out.err
+    assert "environment check: ok" in out.out
+
+    mock_check.assert_called_once()
+    args, _kwargs = mock_check.call_args
+    assert args[1] == ("environment.yml", "pixi.toml")
+
+
+def test_environment_check_missing_manifest_path_discovery_raises(capsys):
+    """When discovery itself finds nothing, `EnvironmentManifestsNotFoundError`
+    propagates to `main()`'s `except MasonError` handler -- `EXIT_FAILED`, the
+    message on stderr, no stderr discovery line, and no traceback."""
+    with patch(
+        "pyforge.mason.cli.environment.discover_manifests",
+        side_effect=EnvironmentManifestsNotFoundError(
+            "/proj", ("pyproject.toml", "environment.yml", "requirements*.txt", "pixi.toml"),
+        ),
+    ) as mock_discover, patch("pyforge.mason.cli.environment.check") as mock_check:
+        rc = main(["environment", "check", "-l", "lock.yml"])
+
+    assert rc == EXIT_FAILED
+    mock_discover.assert_called_once_with(Path.cwd())
     mock_check.assert_not_called()
+
+    err = capsys.readouterr().err
+    assert "no dependency manifests found" in err
+    assert "discovered manifests:" not in err
+
+
+def test_environment_check_explicit_manifest_path_bypasses_discovery(capsys):
+    """An explicit `manifest_path` never triggers discovery and never prints
+    the discovery line -- unchanged from pre-4.2 behavior."""
+    with patch("pyforge.mason.cli.environment.discover_manifests") as mock_discover, patch(
+        "pyforge.mason.cli.environment.check", return_value=_FIXED_CHECK_RESULT_CURRENT,
+    ) as mock_check:
+        rc = main(["environment", "check", "environment.yml", "-l", "lock.yml"])
+
+    assert rc == EXIT_OK
+    mock_discover.assert_not_called()
+    assert "discovered manifests:" not in capsys.readouterr().err
+    mock_check.assert_called_once()
+    args, _kwargs = mock_check.call_args
+    assert args[1] == ["environment.yml"]
 
 
 def test_environment_check_missing_lockfile_flag_is_a_usage_error(capsys):

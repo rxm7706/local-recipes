@@ -792,24 +792,25 @@ def build_parser() -> argparse.ArgumentParser:
     # FR-27, FR-29). Mirrors `package build`'s own registration shape
     # (parents=[global_flags], for the same "a global flag given after the
     # verb and its positionals" reason documented on that registration
-    # above). `manifest_path` is `nargs="+"` -- Story 4.2 (manifest
-    # auto-discovery) is not yet built, so at least one explicit manifest
-    # path is required for now; a later story relaxes this to `nargs="*"`
-    # plus a discovery fallback (spec Intent). `--output`/`-o` mirrors
-    # `recipe new --output`'s exact required-flag shape (Story 2.4).
-    # `--platform` is optional and takes a single comma-separated string,
-    # mirroring `--to`'s established "repeatable via comma-separation"
-    # idiom -- no `action="append"` precedent exists anywhere in this file
-    # (spec Always boundary); `environment.lock()` does the splitting, not
-    # this registration.
+    # above). `--output`/`-o` mirrors `recipe new --output`'s exact
+    # required-flag shape (Story 2.4). `--platform` is optional and takes a
+    # single comma-separated string, mirroring `--to`'s established
+    # "repeatable via comma-separation" idiom -- no `action="append"`
+    # precedent exists anywhere in this file (spec Always boundary);
+    # `environment.lock()` does the splitting, not this registration.
+    #
+    # Story 4.2: `manifest_path` is `nargs="*"` -- when the caller gives
+    # none, `main()`'s own dispatch branch below calls `environment.
+    # discover_manifests(Path.cwd())` and uses the result, so omitting
+    # `manifest_path` is no longer a usage error.
     environment_lock_parser = _noun_verbs["environment"].add_parser(
         "lock", help=_ENVIRONMENT_LOCK_HELP, description=_ENVIRONMENT_LOCK_HELP,
         parents=[global_flags],
     )
     environment_lock_parser.add_argument(
-        "manifest_path", metavar="MANIFEST_PATH", nargs="+",
-        help="one or more dependency manifest paths (pyproject.toml, environment.yml, "
-        "requirements*.txt, pixi.toml)",
+        "manifest_path", metavar="MANIFEST_PATH", nargs="*",
+        help="dependency manifest paths (pyproject.toml, environment.yml, "
+        "requirements*.txt, pixi.toml); omit to auto-discover them in the current directory",
     )
     environment_lock_parser.add_argument(
         "--output", "-o", required=True, metavar="PATH", help="path to write the lockfile to",
@@ -825,23 +826,26 @@ def build_parser() -> argparse.ArgumentParser:
     # FR-27, FR-29), CI's own companion to `lock` above: reports whether an
     # EXISTING lockfile has gone stale relative to its manifests, rather than
     # producing one. Mirrors `lock`'s own registration shape
-    # (parents=[global_flags], `manifest_path` positional `nargs="+"` --
-    # identical rationale, spec Always boundary) with one deliberate
-    # difference: `--lockfile`/`-l` names the EXISTING lockfile to verify
-    # (required, deliberately not `--output`/`-o` -- nothing is written to
-    # it, and that name would misleadingly imply a write, spec Always
-    # boundary); there is no `--output` flag on this verb at all. `--platform`
-    # mirrors `lock`'s own identical single comma-separated-flag idiom
-    # exactly -- `environment.check()` does the splitting, not this
-    # registration, same as `lock`'s own.
+    # (parents=[global_flags], `manifest_path` positional -- identical
+    # rationale, spec Always boundary) with one deliberate difference:
+    # `--lockfile`/`-l` names the EXISTING lockfile to verify (required,
+    # deliberately not `--output`/`-o` -- nothing is written to it, and that
+    # name would misleadingly imply a write, spec Always boundary); there is
+    # no `--output` flag on this verb at all. `--platform` mirrors `lock`'s
+    # own identical single comma-separated-flag idiom exactly --
+    # `environment.check()` does the splitting, not this registration, same
+    # as `lock`'s own.
+    #
+    # Story 4.2: `manifest_path` is `nargs="*"`, same discovery fallback as
+    # `lock` above -- see that registration's comment for the rationale.
     environment_check_parser = _noun_verbs["environment"].add_parser(
         "check", help=_ENVIRONMENT_CHECK_HELP, description=_ENVIRONMENT_CHECK_HELP,
         parents=[global_flags],
     )
     environment_check_parser.add_argument(
-        "manifest_path", metavar="MANIFEST_PATH", nargs="+",
-        help="one or more dependency manifest paths (pyproject.toml, environment.yml, "
-        "requirements*.txt, pixi.toml)",
+        "manifest_path", metavar="MANIFEST_PATH", nargs="*",
+        help="dependency manifest paths (pyproject.toml, environment.yml, "
+        "requirements*.txt, pixi.toml); omit to auto-discover them in the current directory",
     )
     environment_check_parser.add_argument(
         "--lockfile", "-l", required=True, metavar="PATH",
@@ -1374,7 +1378,20 @@ def main(argv: Sequence[str] | None = None) -> int:
             # all (spec Always boundary) -- no cfe-root/cfe-python/
             # cfe-timeout flags are read here.
             fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
-            result = environment.lock(ns.manifest_path, ns.output, platforms=ns.platform)
+            # Story 4.2: an empty `manifest_path` (nargs="*") triggers
+            # discovery against Path.cwd() -- an explicit manifest_path
+            # always skips this entirely (spec Intent: "explicit paths
+            # override discovery entirely"). The discovered list is printed
+            # to stderr as a plain print(), not logging (the default
+            # WARNING level would silently hide it from a non-`--verbose`
+            # run) -- and never gated behind --verbose/--quiet (spec Never
+            # boundary). `EnvironmentManifestsNotFoundError` propagates to
+            # main()'s existing `except MasonError` handler below.
+            manifest_paths = ns.manifest_path
+            if not manifest_paths:
+                manifest_paths = environment.discover_manifests(Path.cwd())
+                print(f"discovered manifests: {', '.join(manifest_paths)}", file=sys.stderr)
+            result = environment.lock(manifest_paths, ns.output, platforms=ns.platform)
             # A non-zero delegated engine returncode is DATA on `result`,
             # never raised (AD-4) -- this branch always reports "ok"/
             # EXIT_OK for a Mason-successful invocation, mirroring `package
@@ -1417,7 +1434,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             # raise, propagating to main()'s existing `except MasonError`
             # handler below.
             fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
-            result = environment.check(ns.lockfile, ns.manifest_path, platforms=ns.platform)
+            # Story 4.2: identical discovery fallback to `environment lock`
+            # above -- see that branch's comment for the full rationale.
+            manifest_paths = ns.manifest_path
+            if not manifest_paths:
+                manifest_paths = environment.discover_manifests(Path.cwd())
+                print(f"discovered manifests: {', '.join(manifest_paths)}", file=sys.stderr)
+            result = environment.check(ns.lockfile, manifest_paths, platforms=ns.platform)
             render.write(
                 fmt, sys.stdout, "environment check", "ok", dataclasses.asdict(result), [],
             )

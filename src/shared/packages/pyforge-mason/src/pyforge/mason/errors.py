@@ -963,3 +963,53 @@ class EnvironmentCheckTimeoutError(MasonError):
         # "environment:check-timeout", <built message>)` -- the wrong value
         # for this class's own `(timeout,)` constructor.
         return (self.__class__, (self.timeout,))
+
+
+class EnvironmentManifestsNotFoundError(MasonError):
+    """`environment.py::discover_manifests` found none of the four supported
+    manifest kinds in `directory` (Story 4.2, FR-25, NFR-14).
+
+    Raised only when every check in `discover_manifests`'s fixed-order scan
+    -- `pyproject.toml`, `environment.yml`, `requirements*.txt`, `pixi.toml`
+    -- comes up empty. `directory` is `str(directory)` (the searched
+    directory, `Path.cwd()` at `cli.py`'s own call site); `filenames` is
+    exactly the four literal patterns searched, in that order, so the
+    message tells a caller both where discovery looked and what it was
+    looking for. Construction raises `ValueError` for an empty `directory`
+    or `filenames`, matching `PackageProjectPathError`/
+    `ShipCredentialMissingError`'s validation rigor: a not-found error
+    naming no directory, or naming nothing it searched for, is incoherent.
+    `filenames` is stored as a `tuple`, matching every other `Sequence`-typed
+    field in this module.
+    """
+
+    def __init__(self, directory: str, filenames: Sequence[str]) -> None:
+        if not isinstance(directory, str) or not directory.strip():
+            raise ValueError(
+                "EnvironmentManifestsNotFoundError requires a non-empty "
+                "`directory`: a not-found error naming no directory is "
+                "incoherent"
+            )
+        filenames = tuple(filenames)
+        if not filenames:
+            raise ValueError(
+                "EnvironmentManifestsNotFoundError requires a non-empty "
+                "`filenames`: a not-found error naming nothing it searched "
+                "for is incoherent"
+            )
+        self.directory = directory
+        self.filenames = filenames
+        message = (
+            f"no dependency manifests found in {directory!r}; looked for "
+            f"{', '.join(filenames)}"
+        )
+        super().__init__("environment:manifests-not-found", message)
+
+    def __reduce__(self):
+        # Mirrors `EnvironmentLockfileMalformedError.__reduce__` above:
+        # `Exception.__reduce__` reconstructs via `cls(*self.args)`, and
+        # `MasonError.__init__` sets `self.args = (
+        # "environment:manifests-not-found", <built message>)` -- the wrong
+        # two values for this class's own `(directory, filenames)`
+        # constructor.
+        return (self.__class__, (self.directory, self.filenames))
