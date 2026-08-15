@@ -2450,7 +2450,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py": "d76418a3058d768325a0d843b932486af1db05c5",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py": "5911e3c598151b91220c40b4599f0b27e8da580d"
   },
-  "memlog": "ada21d8e34724d53c7275b7114f14b7aac450548"
+  "memlog": "62f96e44df358ff3e8a35f8ff19bb9bbf05d6435"
  },
  "pyforge-marshal/spec-genesis-installer": {
   "files": {},
@@ -2473,7 +2473,7 @@
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py": "23e5d409459b7b8e530024eeac3fc13d95d26162",
    "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py": "5911e3c598151b91220c40b4599f0b27e8da580d"
   },
-  "memlog": "6a7e9864c1e4dee61f9c41b960282f938417b2a5"
+  "memlog": "eecf90159b5e73a4be6658618fdb3fd8fb240ea8"
  },
  "pyforge-marshal/spec-loop-home-fleet-refresh": {
   "files": {},
@@ -2481,7 +2481,7 @@
  },
  "pyforge-marshal/spec-marshal-land-cross-project-story-key-collision": {
   "files": {},
-  "memlog": "0c21f2dbf6dc907d67782cdc4375d8095e488532"
+  "memlog": "49f92fb6120190c5890ba711fa02c91c52f3e93c"
  },
  "pyforge-marshal/spec-marshal-land-merge-subject": {
   "files": {},
@@ -3873,7 +3873,7 @@
  "pyforge-steward/spec-python-agent-platform": {
   "files": {
    "environment.yaml": "a7394e9ac491d921acc22e4ebfe742d0fa400aba",
-   "pixi.toml": "ed050b01df8ac4aef993cb2b14d405ddc6e46543",
+   "pixi.toml": "12017b028ccb1ddca3cfd78e8e4034320060499b",
    "src/platform/.editorconfig": "c241cc74e556577f3fafca63942d74d0c8764396",
    "src/platform/.gitattributes": "6c04362d1bfb9effdd6645bf5d171a298af084be",
    "src/platform/.gitignore": "7085a5f6068c1cf766528e1eb1a569c4baf5c358",
@@ -3985,7 +3985,7 @@
    "src/platform/utility/requirements-trusty.apt": "e10d1cbf221b4f02656dd749e24500125974de20",
    "src/platform/utility/requirements-xenial.apt": "755c0266e7b97cbf9e90ee9936e2d2f6943c67c5"
   },
-  "memlog": "40f92723b09cad179534cee81a364cb02f673b83"
+  "memlog": "81e708aea2d71e98816ebbc9d8ec725270caa95e"
  },
  "pyforge-steward/spec-scratch-worktree-lifecycle": {
   "files": {
