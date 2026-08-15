@@ -89,7 +89,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from . import __version__, doctor, package, recipe, render
+from . import __version__, doctor, environment, package, recipe, render
 from .errors import CfeUnresolvedError, MasonError
 from .exit_codes import (
     EXIT_CFE_UNAVAILABLE, EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
@@ -139,6 +139,10 @@ _PACKAGE_SHIP_HELP = (
     "ship a project's built artifacts to pypi, pypi-test (TestPyPI rehearsal), conda-forge, "
     "and/or a named channel (comma-separated; dry run by default, --yes to confirm; a "
     "pypi-test target requested alongside pypi always runs first and gates it)"
+)
+_ENVIRONMENT_LOCK_HELP = (
+    "resolve one or more dependency manifests into a single lockfile via conda-lock "
+    "(--platform comma-separated; omit for conda-lock's own default; CFE-independent)"
 )
 
 # AD-13: every global setting has a flag and an environment-variable form,
@@ -777,6 +781,42 @@ def build_parser() -> argparse.ArgumentParser:
     # `package` has two real verbs registered (`build`, `ship`).
     _noun_verbs["package"].metavar = "{" + ",".join(_noun_verbs["package"].choices) + "}"
 
+    # Story 4.3: mason environment lock <manifest_path>... --output/-o PATH
+    # [--platform PLATFORMS] -- the `environment` noun's first verb (FR-25,
+    # FR-27, FR-29). Mirrors `package build`'s own registration shape
+    # (parents=[global_flags], for the same "a global flag given after the
+    # verb and its positionals" reason documented on that registration
+    # above). `manifest_path` is `nargs="+"` -- Story 4.2 (manifest
+    # auto-discovery) is not yet built, so at least one explicit manifest
+    # path is required for now; a later story relaxes this to `nargs="*"`
+    # plus a discovery fallback (spec Intent). `--output`/`-o` mirrors
+    # `recipe new --output`'s exact required-flag shape (Story 2.4).
+    # `--platform` is optional and takes a single comma-separated string,
+    # mirroring `--to`'s established "repeatable via comma-separation"
+    # idiom -- no `action="append"` precedent exists anywhere in this file
+    # (spec Always boundary); `environment.lock()` does the splitting, not
+    # this registration.
+    environment_lock_parser = _noun_verbs["environment"].add_parser(
+        "lock", help=_ENVIRONMENT_LOCK_HELP, description=_ENVIRONMENT_LOCK_HELP,
+        parents=[global_flags],
+    )
+    environment_lock_parser.add_argument(
+        "manifest_path", metavar="MANIFEST_PATH", nargs="+",
+        help="one or more dependency manifest paths (pyproject.toml, environment.yml, "
+        "requirements*.txt, pixi.toml)",
+    )
+    environment_lock_parser.add_argument(
+        "--output", "-o", required=True, metavar="PATH", help="path to write the lockfile to",
+    )
+    environment_lock_parser.add_argument(
+        "--platform", metavar="PLATFORMS", default=None,
+        help="comma-separated platforms to lock for (e.g. linux-64,osx-arm64); omit to let "
+        "conda-lock apply its own default",
+    )
+    _noun_verbs["environment"].metavar = (
+        "{" + ",".join(_noun_verbs["environment"].choices) + "}"
+    )
+
     return parser
 
 
@@ -1283,16 +1323,36 @@ def main(argv: Sequence[str] | None = None) -> int:
             # forms are byte-identical past this point (spec I/O matrix).
             return _dispatch_package_ship(ns, raw_targets=ns.to)
 
+        if ns.noun == "environment" and ns.verb == "lock":
+            # FR-25/FR-27/FR-29: drives Story 4.1's engine protocol through
+            # environment.py's own single adapter (engines.condalock). Like
+            # `package build`, `environment.lock()` never touches CFE at
+            # all (spec Always boundary) -- no cfe-root/cfe-python/
+            # cfe-timeout flags are read here.
+            fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
+            result = environment.lock(ns.manifest_path, ns.output, platforms=ns.platform)
+            # A non-zero delegated engine returncode is DATA on `result`,
+            # never raised (AD-4) -- this branch always reports "ok"/
+            # EXIT_OK for a Mason-successful invocation, mirroring `package
+            # build`'s identical "the gap is data" precedent above.
+            # `EngineAbsentError`/`EnvironmentLockTimeoutError` are the
+            # exceptions `environment.lock()` can still raise, propagating
+            # to main()'s existing `except MasonError` handler below.
+            render.write(
+                fmt, sys.stdout, "environment lock", "ok", dataclasses.asdict(result), [],
+            )
+            return EXIT_OK
+
         # Unreachable now for every verb-noun pair except `recipe new`/
         # `recipe validate`/`recipe build`/`recipe diagnose`/`recipe
         # optimize`/`recipe scan`/`recipe submit`/`recipe update`/`package
-        # build`/`package ship` above, each handled by its own branch:
-        # `environment` still registers no verbs at all, `package`
-        # registers no verb beyond `build`/`ship`, and `recipe` registers
-        # no verb beyond those eight, so argparse itself rejects any other
-        # token here as an invalid choice before `ns.verb` could ever hold
-        # it. Kept only so a later story that populates another verb has
-        # somewhere to land its dispatch.
+        # build`/`package ship`/`environment lock` above, each handled by
+        # its own branch: `environment` registers no verb beyond `lock`,
+        # `package` registers no verb beyond `build`/`ship`, and `recipe`
+        # registers no verb beyond those eight, so argparse itself rejects
+        # any other token here as an invalid choice before `ns.verb` could
+        # ever hold it. Kept only so a later story that populates another
+        # verb has somewhere to land its dispatch.
         return EXIT_OK  # pragma: no cover
     except KeyboardInterrupt:
         return EXIT_INTERRUPTED
