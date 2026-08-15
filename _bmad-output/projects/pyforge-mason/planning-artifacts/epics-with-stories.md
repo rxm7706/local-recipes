@@ -1057,7 +1057,10 @@ So that **a drifted lock fails the build instead of shipping**.
 
 **Given** a manifest changed since the lock was produced
 **When** the check runs
-**Then** it exits non-zero and names which manifests drifted
+**Then** it exits non-zero and reports `stale: true` (FR-28 requires no per-manifest
+attribution — conda-lock's own hash data is keyed by platform, never by source file, and the
+contract's Never clause forbids Mason from re-implementing conda-lock's content-hash algorithm
+to synthesize one; resolved 2026-08-15, story 4.4 escalation)
 
 **Given** `--format json`
 **When** the check runs
