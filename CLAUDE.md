@@ -187,15 +187,14 @@ otherwise, run a spec via `bmad-quick-dev` with the spec path + parameters named
 | `docs/specs/db-gpt-conda-forge.md` | DB-GPT on conda-forge. **TERMINAL — delivered via external PR #33883 (consume-not-submit, G58); do NOT re-run BMAD on it.** Only § Current State + § Readiness are authoritative; the stories are historical. |
 | `docs/specs/flyte-conda-forge.md` | Flyte 2 SDK (PyPI `flyte` ≠ v1 `flytekit`) — 6-recipe closure built GREEN locally; submission blocked on the buf.validate namespace collision (G88). python_min 3.11 (G40/G41). |
 | `docs/specs/feedstock-refresh.md` | Two-track bulk refresh of ALL 769 feedstocks rxm7706 can modify (regenerate, v0→v1, platform-expand). Track A (sole, 537): Waves B–F shipped, reopened for Wave H total-coverage (179 remaining). Track B (co, 232): ready; adds co-maintainer etiquette + a no-local-recipe bucket. Delegates per-feedstock work to `feedstock-platform-expansion.md`. |
-| `docs/specs/bmad-loop-adoption.md` | BMAD 6.6.0→6.10.0 upgrade (gains `bmad-dev-auto`) + bmad-loop v0.8.1 adoption (deterministic dev-loop orchestrator; pixi-provisioned: conda-forge `bmad-method` + tmux, git-pinned bmad-loop) so pyforge-warden implementation runs loop-driven with graduated gates. W1–W3 done (validate 9/9, sprint feed 20/20); W4 = BMad Method UI dashboards (consume-not-submit mirrors of staged-recipes#33513 → local `bmad-ui` pixi env). Remaining: hooks approval + the 1.1 pilot; Rule-2 CFE retro at closeout (W4 touches recipes/). |
+| `docs/specs/bmad-loop-adoption.md` | BMAD 6.6.0→6.10.0 upgrade (gains `bmad-dev-auto`) + bmad-loop v0.8.1 adoption (deterministic dev-loop orchestrator; pixi-provisioned: conda-forge `bmad-method` + tmux, git-pinned bmad-loop) so pyforge-warden implementation runs loop-driven with graduated gates. **Adoption itself is done in practice** — bmad-loop has run non-stop across all 8 stations for weeks (this file's own checklist shows W1-W4 all `[x]`); the doc's `in-progress` status is defensible only because one closeout checkbox remains open (`Rule-2 CFE-skill retro at closeout`), not because adoption is incomplete. Refresh the doc's checkbox state directly rather than trusting this summary line, which had drifted from it. |
 
-**Ready (backlog, unimplemented):**
-
-| Spec | What it is |
-|---|---|
-| `docs/specs/claude-team-memory.md` | `.claude/memory/` team-shared memory layer + `team-memory` skill (10 waved stories). |
-| `docs/specs/copilot-bridge-vscode-extension.md` | Sideload-only VS Code extension wrapping the copilot-api bridge pattern. Headless/HTTP-bridge layer; now includes BMAD-runner + multiproject stories (13–15) to back the unattended `bmad-loop`/`bmad-dev-auto` workflow. |
-| `docs/specs/bmad-copilot-adapter-upstream.md` | **(draft)** Contribution brief to upstream the `@bmad` Copilot-Chat adapter (`bmad-code-org/bmad-method-ui#2`, unmerged) into the official `bmad-dashboard` extension — the in-IDE conversational companion to the headless copilot-bridge. Needs a contribution-path decision. |
+**Ready (backlog, unimplemented): none.** The three specs formerly here
+(`claude-team-memory.md`, `copilot-bridge-vscode-extension.md`,
+`bmad-copilot-adapter-upstream.md`) turned out to already be `status: superseded`
+in their own frontmatter, dated 2026-07-25 — this index just hadn't caught up
+(found 2026-08-15, same pattern as trendshift/warden below). See "Shipped" for
+their corrected entries.
 
 **Timeless workflows (`workflow` — parameterized, re-runnable; per-case state appends to their Worked Examples):**
 
@@ -217,6 +216,9 @@ otherwise, run a spec via `bmad-quick-dev` with the spec path + parameters named
 | `docs/specs/cyclonedx-universe-inventory.md` | CycloneDX inventory of the FULL PyPI + conda-forge universes — SHIPPED 2026-07-06 (Waves A–E + S-retro, CFE v8.73.0): `export-purls`/`mapping-gap` (+v29 view), `universe-sbom` (856,766-component BOM), `inventory-match` (S5a intake incl. pixi.lock; transitive resolver; decision-4 live channeldata; vulns policy gate), `add-handoff`, `library-futures`/`recommend-2027` (2027–2030 tiers, py314 + LTS/endoflife signals). All local live gates PASS — dated Dev Notes in the spec. Do not re-run BMAD on it. |
 | `docs/specs/cfe-shipped-releases.md` | Consolidated archive of the 10 shipped intakes (2026-07-02): v7.9.0 pypi-universe-split, v8.0.0 + v8.9.0 CFE bundles, v8.1.0 PyPI intelligence, v8.6.0 AppThreat, v8.14.0 PR-artifact downloader, v8.15.0 Phase P incremental, Phase F Waves 1–3 (v7.6.0→v8.19.0), v8.20.0 Phase K scheduler, + the closed graphifyy osx-arm64 fanout effort. Release notes: skill CHANGELOG. Do not re-run BMAD on any part. |
 | `docs/specs/conda-forge-tracker.md` | Sibling repo `~/UserLocal/Projects/Github/rxm7706/conda-forge-tracker/` — markdown-first personal feedstock tracker (13 stories) |
+| `docs/specs/claude-team-memory.md` | `.claude/memory/` team-shared memory layer + `team-memory` skill. **Superseded 2026-07-25** by its own frontmatter — folded into the `pyforge-scribe` planning chain (all 10 stories), now the complete BMAD project (9/9 stories). Found still mis-filed as "Ready/unimplemented" 2026-08-15. |
+| `docs/specs/copilot-bridge-vscode-extension.md` | Sideload-only VS Code extension wrapping the copilot-api bridge pattern. **Superseded 2026-07-25** by its own frontmatter — stories 13-15 absorbed into `pyforge-marshal` v1; the copilot-api HTTP-bridge premise (stories 1-12) is obsolete now that bmad-loop 0.9.0 ships a sanctioned `copilot` profile + `copilot --acp`. Found still mis-filed as "Ready/unimplemented" 2026-08-15. |
+| `docs/specs/bmad-copilot-adapter-upstream.md` | Contribution brief to upstream the `@bmad` Copilot-Chat adapter. **Superseded 2026-07-25** by its own frontmatter — a deferred item, re-owned to Herald for the chat-adapter comms face. Found still mis-filed as "Ready/unimplemented" 2026-08-15. |
 
 Skill-internal documentation (loaded on-demand when the skill activates):
 - **`.claude/skills/conda-forge-expert/SKILL.md`** — Recipe authoring agent operating principles, 10-step lifecycle loop (step 8b: prepare submission branch on fork, step 9: open PR), build-failure protocol.
