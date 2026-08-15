@@ -678,12 +678,12 @@ window.DASHBOARD_DATA = {
             ""
           ],
           [
-            "33/41",
+            "34/41",
             "stories complete",
             "var(--done)"
           ],
           [
-            "8",
+            "7",
             "remaining",
             ""
           ]
@@ -723,7 +723,7 @@ window.DASHBOARD_DATA = {
       },
       "lineState": {
         "state": "paused",
-        "at": "8.1"
+        "at": "8.2"
       },
       "epics": [
         {
@@ -939,7 +939,7 @@ window.DASHBOARD_DATA = {
           "stories": [
             [
               "8.1",
-              "pending",
+              "done",
               "The parser reads every legacy Tier-3 shape"
             ],
             [
@@ -4341,7 +4341,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-15 08:03 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-15 10:05 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6758,7 +6758,7 @@ window.DASHBOARD_DATA = {
           "stories": 12,
           "state": "in-progress",
           "note": "line 2 — consolidative wrap",
-          "done": 33,
+          "done": 34,
           "total": 41
         },
         {
@@ -7039,7 +7039,7 @@ window.DASHBOARD_DATA = {
           "arch": "2026-08-02",
           "context": "2026-08-01",
           "epics": "2026-08-15",
-          "sprint": "2026-08-13",
+          "sprint": "2026-08-15",
           "tea": "2026-08-13",
           "gates": "2026-08-10",
           "code": "2026-08-13",
@@ -7130,7 +7130,7 @@ window.DASHBOARD_DATA = {
         "age": 0,
         "stale": false,
         "version": "0.1.0",
-        "progress": "33/41",
+        "progress": "34/41",
         "complete": 14,
         "of": 14
       },
@@ -18561,7 +18561,7 @@ window.DASHBOARD_DATA = {
           "archived": 1,
           "practice": 0
         },
-        "line": "paused 8.1",
+        "line": "paused 8.2",
         "load": 3,
         "blocked": 0,
         "dreams": [
@@ -18786,7 +18786,7 @@ window.DASHBOARD_DATA = {
     ]
   },
   "openwork": {
-    "open": 445,
+    "open": 446,
     "done": 23,
     "triaged": 143,
     "bySeverity": {
@@ -18794,7 +18794,7 @@ window.DASHBOARD_DATA = {
       "high": 1,
       "medium": 13,
       "low": 43,
-      "unspecified": 388
+      "unspecified": 389
     },
     "projects": [
       {
@@ -21941,7 +21941,7 @@ window.DASHBOARD_DATA = {
       {
         "project": "pyforge-doctor",
         "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/deferred-work-ledger.md",
-        "open": 19,
+        "open": 20,
         "done": 1,
         "triaged": 3,
         "entries": [
@@ -22084,6 +22084,13 @@ window.DASHBOARD_DATA = {
             "status": "open",
             "severity": "unspecified",
             "triaged": false
+          },
+          {
+            "id": "DW-CHAIN-COMPLETENESS-1",
+            "title": "INV-A's spec-not-decomposed test is a bare substring match, so a Spec can grow capabilities with no stories and still re",
+            "status": "open",
+            "severity": "unspecified",
+            "triaged": false
           }
         ]
       },
@@ -22158,8 +22165,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260814-202735-e909/10-3-one-image-both-engines into loop/pyforge-steward (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-15 08:03 UTC",
-    "generatedEpoch": 1786781035
+    "generatedAt": "2026-08-15 10:05 UTC",
+    "generatedEpoch": 1786788330
   },
   "storySpecs": [
     {
@@ -22170,8 +22177,8 @@ window.DASHBOARD_DATA = {
     },
     {
       "station": "pyforge-doctor",
-      "done": 33,
-      "tracked": 28,
+      "done": 34,
+      "tracked": 29,
       "gap": 5
     },
     {
@@ -22406,14 +22413,13 @@ window.DASHBOARD_DATA = {
             "path": "_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/spec-deferred-work-visibility/SPEC.md"
           }
         ],
-        "done": 33,
-        "backlog": 8,
+        "done": 34,
+        "backlog": 7,
         "blocked": 0,
         "total": 41,
-        "next": "8-1-the-parser-reads-every-legacy-tier-3-shape",
+        "next": "8-2-minting-picks-the-next-free-suffix-per-station-convention",
         "blockedKeys": [],
         "backlogKeys": [
-          "8-1-the-parser-reads-every-legacy-tier-3-shape",
           "8-2-minting-picks-the-next-free-suffix-per-station-convention",
           "8-3-the-fix-mode-promotes-the-backlog-and-refuses-on-collision",
           "8-4-the-baseline-re-stamps-so-a-second-run-is-a-no-op",
@@ -22524,8 +22530,8 @@ window.DASHBOARD_DATA = {
       }
     ],
     "totals": {
-      "done": 352,
-      "backlog": 71,
+      "done": 353,
+      "backlog": 70,
       "blocked": 1,
       "total": 424
     }
@@ -22546,13 +22552,13 @@ window.DASHBOARD_DATA = {
       {
         "key": "doctor",
         "stories": 41,
-        "done": 33,
+        "done": 34,
         "blocked": 0,
         "epics": 9,
         "epicsDone": 7,
         "complete": false,
         "running": false,
-        "projected": 33
+        "projected": 34
       },
       {
         "key": "herald",
@@ -22623,7 +22629,7 @@ window.DASHBOARD_DATA = {
     ],
     "total": {
       "stories": 424,
-      "done": 352,
+      "done": 353,
       "blocked": 1,
       "epics": 85,
       "epicsDone": 63
@@ -22631,7 +22637,7 @@ window.DASHBOARD_DATA = {
     "note": "counts from the tracked sprint ledgers; blocked stories are counted separately because they will not run. Live run state and projections are local-only (`pixi run -e local-recipes fleet-picture`). Live fields present: this is a LOCAL render. A Pages render omits them because CI cannot read tmux or ~/.bmad-loops.",
     "live": {
       "running": [],
-      "projected": 352
+      "projected": 353
     }
   }
 };
