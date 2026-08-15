@@ -1,4 +1,7 @@
 ---
+status: shipped   # added 2026-08-15 (fleet-wide decomposition audit): frontmatter carried no
+                   # status field at all despite this Spec's full CAP-1..4 scope (Epics 1-4,
+                   # 18 stories) all reading `done` in sprint-status-ledger.yaml.
 surface:
   - src/shared/packages/pyforge-steward/**  # the CLI this Spec builds (not yet created)
   # Governed here 2026-07-28: the library catalog describes what is IN the pixi envs, and

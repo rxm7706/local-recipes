@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: steward
-# stories: 80
+# stories: 81
 development_status:
   1-1-steward-exists-as-an-installable-cli: done
   1-2-credentials-never-attach-outside-their-declared-host-and-the-jfrog-leak-can-never-recur-silently: done
@@ -61,6 +61,7 @@ development_status:
   8-4-the-schedule-trigger-enumerates-real-candidates: done
   8-5-fail-loud-fail-alone: done
   8-6-explicit-status-vocabulary-translation: done
+  8-7-assignee-and-identity-link-propagation: backlog
   9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant: done
   9-2-an-unauthorized-page-is-absent-not-hidden: done
   9-3-the-audit-trail-records-what-was-seen: done
