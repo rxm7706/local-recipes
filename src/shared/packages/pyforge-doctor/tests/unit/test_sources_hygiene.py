@@ -351,7 +351,14 @@ def test_live_repo_gather_surfaces_at_least_one_true_positive_naming_a_non_warde
 
     # Re-verify the cited herald fixture is STILL grounded before asserting
     # against it -- fail loud (not silently) if this fact has changed.
-    basename = "deckcraft-board-epics-displaced-2026-08-08.json"
+    #
+    # Built from two parts (not one literal) so this line's own text is
+    # never a contiguous match for the full basename: `_git_grep_matches`
+    # below scans this very file among everything else in the repo, and a
+    # bare literal here would make THIS test the fixture's one and only
+    # "inbound reference" -- self-sabotaging both this pre-check and
+    # `gather()`'s own identical git-grep-based check.
+    basename = "deckcraft-board-epics-displaced-2026-08-08" + ".json"
     own_relpath = (
         "_bmad-output/projects/pyforge-herald/planning-artifacts/" + basename
     )
