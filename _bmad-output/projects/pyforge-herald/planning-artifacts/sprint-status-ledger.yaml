@@ -40,9 +40,9 @@ development_status:
   13-4-the-webhook-endpoint-ci-calls: done
   13-5-the-scheduler-enforces-what-was-displayed: done
   13-6-a-ship-records-itself-end-to-end: done
-  14-1-gate-report-interface: backlog
-  14-2-headless-render-gate: backlog
-  14-3-image-slot-scan: backlog
+  14-1-gate-report-interface: done
+  14-2-headless-render-gate: done
+  14-3-image-slot-scan: done
   2-1-herald-deck-pull-slug-prototype-pull-with-etag-short-circuit: done
   2-2-commit-opt-in: done
   2-3-marp-source-pull: done
