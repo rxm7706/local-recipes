@@ -16,16 +16,16 @@ window.DASHBOARD_DATA = {
         "key": "14.3",
         "title": "Bokeh WebSocket interactivity (CAP-2)",
         "phase": "dev",
-        "attempt": "1",
+        "attempt": "2",
         "startEpoch": 1786763748,
         "median": 29,
         "lo": 4,
         "hi": 227,
-        "phaseAsOf": "2026-08-15 03:52 UTC"
+        "phaseAsOf": "2026-08-15 04:30 UTC"
       },
       "velocity": {
         "derived": true,
-        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 13 of 55 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
+        "sub": "Active agent-compute per story (dev + review; excludes gate-pause wait) — derived from this line's bmad-loop journals. 14 of 55 stories measured; the rest predate loop instrumentation and carry wall-clock only (a different metric — see the timing strip), so they are deliberately absent rather than plotted on this axis. A story still in flight contributes only its CLOSED sessions, so its bar is a floor, not a total.",
         "bars": [
           [
             "10.4",
@@ -78,11 +78,15 @@ window.DASHBOARD_DATA = {
           [
             "14.2",
             54
+          ],
+          [
+            "14.3",
+            70
           ]
         ],
         "foot": [
           [
-            "~80 min",
+            "~78 min",
             "median / story",
             "var(--done)"
           ],
@@ -1459,10 +1463,10 @@ window.DASHBOARD_DATA = {
         "phase": "dev",
         "attempt": "1",
         "startEpoch": 1786765729,
-        "median": 86,
+        "median": 81,
         "lo": 27,
         "hi": 486,
-        "phaseAsOf": "2026-08-15 03:52 UTC"
+        "phaseAsOf": "2026-08-15 04:30 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2612,13 +2616,13 @@ window.DASHBOARD_DATA = {
       "inflight": {
         "key": "4.4",
         "title": "`mason environment check`",
-        "phase": "dev",
+        "phase": "review",
         "attempt": "2",
         "startEpoch": 1786760636,
-        "median": 64,
+        "median": 69,
         "lo": 4,
         "hi": 435,
-        "phaseAsOf": "2026-08-15 03:52 UTC"
+        "phaseAsOf": "2026-08-15 04:30 UTC"
       },
       "velocity": {
         "derived": true,
@@ -2750,7 +2754,7 @@ window.DASHBOARD_DATA = {
           ],
           [
             "4.4",
-            76
+            107
           ]
         ],
         "foot": [
@@ -2779,8 +2783,8 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 3638,
-        "totalLabel": "~60.6 h active compute",
+        "total": 3669,
+        "totalLabel": "~61.1 h active compute",
         "note": "Derived from 32 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "1.2": 91,
@@ -2814,13 +2818,13 @@ window.DASHBOARD_DATA = {
           "4.1": 44,
           "4.2": 4,
           "4.3": 56,
-          "4.4": 76
+          "4.4": 107
         },
         "epicMin": {
           "E1": 872,
           "E2": 1726,
           "E3": 860,
-          "E4": 180
+          "E4": 211
         }
       },
       "lineState": {
@@ -3231,12 +3235,12 @@ window.DASHBOARD_DATA = {
         "key": "10.3",
         "title": "One image, both engines",
         "phase": "review",
-        "attempt": "1",
+        "attempt": "2",
         "startEpoch": 1786757255,
-        "median": 82,
-        "lo": 1,
+        "median": 103,
+        "lo": 27,
         "hi": 468,
-        "phaseAsOf": "2026-08-15 03:52 UTC"
+        "phaseAsOf": "2026-08-15 04:30 UTC"
       },
       "velocity": {
         "derived": true,
@@ -3304,7 +3308,7 @@ window.DASHBOARD_DATA = {
           ],
           [
             "10.3",
-            130
+            175
           ]
         ],
         "foot": [
@@ -3333,8 +3337,8 @@ window.DASHBOARD_DATA = {
       "timing": {
         "derived": true,
         "metric": "active agent-compute per story (dev + review; excludes gate-pause wait) — from bmad-loop run journals",
-        "total": 2434,
-        "totalLabel": "~40.6 h active compute",
+        "total": 2479,
+        "totalLabel": "~41.3 h active compute",
         "note": "Derived from 16 measured stories; a story still in flight contributes only its closed sessions.",
         "perStory": {
           "8.1": 182,
@@ -3352,12 +3356,12 @@ window.DASHBOARD_DATA = {
           "9.7": 204,
           "10.1": 122,
           "10.2": 84,
-          "10.3": 130
+          "10.3": 175
         },
         "epicMin": {
           "E8": 456,
           "E9": 1642,
-          "E10": 336
+          "E10": 381
         }
       },
       "lineState": {
@@ -4320,7 +4324,7 @@ window.DASHBOARD_DATA = {
       "practice": false
     }
   },
-  "snapshot": "<span>2026-08-15 03:52 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
+  "snapshot": "<span>2026-08-15 04:30 UTC</span> · source: sprint-status feeds + merged-PR ground truth (#58–#104) + bmad-loop run journals · timing: Warden = active compute (journals), Atlas = wall-clock (PR timestamps)",
   "defaultProject": "warden",
   "dreams": [
     {
@@ -6865,10 +6869,10 @@ window.DASHBOARD_DATA = {
           "context": "2026-08-04",
           "epics": "2026-08-14",
           "sprint": "2026-08-14",
-          "tea": "2026-08-10",
+          "tea": "2026-08-14",
           "gates": "2026-08-10",
-          "code": "2026-08-12",
-          "verify": "2026-08-12",
+          "code": "2026-08-14",
+          "verify": "2026-08-14",
           "retro": "2026-08-02"
         },
         "sub": {
@@ -6946,7 +6950,7 @@ window.DASHBOARD_DATA = {
             "kind": "feeds",
             "stage": "code",
             "than": "retro",
-            "at": "2026-08-12",
+            "at": "2026-08-14",
             "other": "2026-08-02"
           }
         ],
@@ -20220,7 +20224,7 @@ window.DASHBOARD_DATA = {
       {
         "station": "Mason",
         "story": "4.4",
-        "phase": "dev",
+        "phase": "review",
         "startEpoch": 1786760636
       },
       {
@@ -20238,8 +20242,8 @@ window.DASHBOARD_DATA = {
       "subject": "Merge bmad-loop/20260814-202334-1831/4-3-mason-environment-lock into loop/pyforge-mason (bmad-loop)"
     },
     "runningAvailable": true,
-    "generatedAt": "2026-08-15 03:52 UTC",
-    "generatedEpoch": 1786765929
+    "generatedAt": "2026-08-15 04:30 UTC",
+    "generatedEpoch": 1786768233
   },
   "storySpecs": [
     {
