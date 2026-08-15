@@ -1,19 +1,22 @@
 """Deck visual-QA gate report interface (Story 14.1) + the headless-render
-gate (Story 14.2).
+gate (Story 14.2) + the image-slot scan gate (Story 14.3).
 
 Herald's deck pipeline needs a shared, extensible way for visual-QA gates
--- the headless-render gate below, an image-slot scan (Story 14.3), and
-three parked ``.pptx``-contingent gates -- to report findings against one
-deck slug. This module defines that report's JSON-round-trippable schema,
-the ``run()`` entrypoint that executes a caller-supplied gate mapping
-without deciding what any individual gate checks, and (as of Story 14.2)
-the first real gate: ``render_gate``, registered under ``DEFAULT_GATES["render"]``.
+-- the headless-render gate and the image-slot scan gate below, and three
+parked ``.pptx``-contingent gates -- to report findings against one deck
+slug. This module defines that report's JSON-round-trippable schema, the
+``run()`` entrypoint that executes a caller-supplied gate mapping without
+deciding what any individual gate checks, and (as of Story 14.2) the first
+real gate: ``render_gate``, registered under ``DEFAULT_GATES["render"]``,
+joined in Story 14.3 by ``image_slot_gate`` under
+``DEFAULT_GATES["image-slot"]``.
 
 ``DEFAULT_GATES`` shipped empty in Story 14.1 on purpose: each later story
 adds one entry here (a ``GateFn`` registered under a gate id) with zero
 change to this module's public shape, to ``run()``'s signature, or to
 ``cli.py`` -- the whole point of the interface existing ahead of any real
-gate, now proven by ``render_gate``'s own addition.
+gate, now proven by both ``render_gate``'s and ``image_slot_gate``'s own
+additions.
 
 **A gate failure is isolated, never fatal to the report.** A gate raising
 an exception is a realistic first failure mode (a missing browser binary,
@@ -39,6 +42,7 @@ import functools
 import http.server
 import json
 import math
+import re
 import shutil
 import socketserver
 import threading
@@ -382,6 +386,106 @@ DEFAULT_GATES["render"] = render_gate
 """Registers the render gate under id ``"render"`` -- the only production
 change this story makes to ``DEFAULT_GATES``'s contents; its shape, and
 ``run()``'s own signature, are untouched (module docstring)."""
+
+
+# === image_slot_gate (Story 14.3) ============================================
+#
+# Scans each manifest-listed slide's generated fragment
+# (`presentations/<slug>/src/slides/fragments/<id>.html`) for an unfilled
+# image-slot placeholder -- the CAP-2 half of "renders but doesn't prove it
+# looks right" (this story's spec: Intent). Pure file scanning: no browser,
+# no build, and (unlike `render_gate`) no `artifacts` of its own.
+#
+# Both patterns are case-insensitive: this gate exists partly to catch a tag
+# extraction itself missed (this story's spec: Boundaries & Constraints, "raw
+# unconverted tag"), and the extractor's own tag match is *also*
+# case-sensitive, so a case-variant `<Image-Slot>` would otherwise slip past
+# both stages. `_IMAGE_SLOT_TAG_RE` uses a lookahead, not `\b`, after
+# "image-slot": `-` is a non-word character, so a bare `\b` there would also
+# match an unrelated hyphenated custom element like `<image-slot-carousel>`
+# (word/non-word transition right after "slot" regardless of what follows).
+
+_IMAGE_SLOT_TAG_RE = re.compile(r"<image-slot(?=[\s/>])", re.IGNORECASE)
+_IMAGE_SLOT_DIV_RE = re.compile(r'class="image-slot"', re.IGNORECASE)
+
+
+def image_slot_gate(context: GateContext) -> GateResult:
+    """Flag every manifest-listed slide whose generated fragment still
+    contains an unfilled image-slot placeholder, in either its raw
+    prototype spelling (``<image-slot ...>``) or its extractor-converted
+    spelling (``class="image-slot"`` div). See this story's spec (Intent,
+    Boundaries & Constraints, Design Notes) for the full rationale.
+
+    Report-only: never mutates deck sources, never triggers extraction or a
+    build. Produces no ``artifacts`` -- this gate needs no build and no
+    browser, so there is nothing to leave on disk as evidence (Boundaries &
+    Constraints).
+
+    Raises on a genuinely unusable environment -- ``manifest.json``
+    absent/malformed, or ``fragments/`` itself absent -- which ``run()``'s
+    own per-gate isolation (Story 14.1) turns into
+    ``GateResult(status="error", ...)`` for the ``"image-slot"`` gate id
+    alone; every other gate is unaffected. A single slide's own fragment
+    being missing or unreadable is isolated instead: it becomes one
+    ``Finding`` and every other slide is still scanned, mirroring
+    ``render_gate``'s own per-slide isolation -- the gate's own ``status``
+    stays ``"ok"`` even when every slide is flagged this way."""
+    if not _single_path_segment(context.slug):
+        raise RuntimeError(f"invalid slug {context.slug!r}")
+
+    deck_dir = context.repo_root / "presentations" / context.slug
+    manifest_path = deck_dir / "src" / "slides" / "manifest.json"
+    fragments_dir = deck_dir / "src" / "slides" / "fragments"
+
+    if not manifest_path.is_file():
+        raise RuntimeError(f"{manifest_path} does not exist")
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    except Exception as exc:  # noqa: BLE001 -- surfaced as a clear image-slot-gate error
+        raise RuntimeError(f"cannot parse {manifest_path}: {exc}") from exc
+    if not isinstance(manifest, list):
+        raise RuntimeError(f"{manifest_path} must contain a JSON array")
+    if not fragments_dir.is_dir():
+        raise RuntimeError(
+            f"{fragments_dir} does not exist -- run the extractor first "
+            "(npm run extract)"
+        )
+
+    findings: list[Finding] = []
+    for index, entry in enumerate(manifest):
+        slide_id = _slide_id(entry, index)
+        fragment_path = fragments_dir / f"{slide_id}.html"
+        try:
+            html = fragment_path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError) as exc:
+            # UnicodeDecodeError (a ValueError, not an OSError) is caught
+            # alongside a missing/unreadable file: this per-slide isolation
+            # must hold for a fragment that exists but is not valid UTF-8
+            # too, or one bad file would error the whole gate instead of
+            # isolating that slide (this story's spec: Boundaries &
+            # Constraints).
+            findings.append(
+                Finding(
+                    slide_id=slide_id,
+                    message=f"cannot read {fragment_path}: {exc}",
+                )
+            )
+            continue
+        if _IMAGE_SLOT_TAG_RE.search(html) or _IMAGE_SLOT_DIV_RE.search(html):
+            findings.append(
+                Finding(
+                    slide_id=slide_id,
+                    message=f"unfilled image-slot placeholder in {fragment_path}",
+                )
+            )
+
+    return GateResult(status="ok", findings=findings)
+
+
+DEFAULT_GATES["image-slot"] = image_slot_gate
+"""Registers the image-slot gate under id ``"image-slot"`` -- the only
+production change this story makes to ``DEFAULT_GATES``'s contents; its
+shape, and ``run()``'s own signature, are untouched (module docstring)."""
 
 
 def run(

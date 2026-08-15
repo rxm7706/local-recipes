@@ -1,6 +1,7 @@
 """``deck_qa`` -- the gate report schema and ``run()`` entrypoint (Story
-14.1), plus the headless-render gate (Story 14.2). Covers every row of the
-14.1 and 14.2 specs' I/O & Edge-Case Matrices.
+14.1), plus the headless-render gate (Story 14.2) and the image-slot scan
+gate (Story 14.3). Covers every row of the 14.1, 14.2, and 14.3 specs'
+I/O & Edge-Case Matrices.
 """
 
 from __future__ import annotations
@@ -755,3 +756,294 @@ def test_serve_dist_dir_binds_an_ephemeral_loopback_port(tmp_path: Path):
     finally:
         deck_qa._suppress_close(httpd.shutdown)
         deck_qa._suppress_close(httpd.server_close)
+
+
+# === image_slot_gate (Story 14.3) ============================================
+
+
+def _write_synthetic_fragments_deck(
+    repo_root: Path,
+    slug: str,
+    manifest: list[dict],
+    fragments: dict[str, str],
+    *,
+    with_manifest: bool = True,
+    with_fragments_dir: bool = True,
+) -> None:
+    """A minimal ``presentations/<slug>/src/slides/{manifest.json,
+    fragments/}`` tree -- pure file scanning, no ``dist/``/Playwright
+    involved (per this story's spec: Code Map). ``fragments`` maps a slide
+    id to the HTML content written to ``fragments/<id>.html``; a manifest id
+    absent from ``fragments`` gets no file at all -- exercises the
+    missing-fragment row of the I/O matrix."""
+    slides_dir = repo_root / "presentations" / slug / "src" / "slides"
+    if with_manifest:
+        slides_dir.mkdir(parents=True, exist_ok=True)
+        (slides_dir / "manifest.json").write_text(
+            json.dumps(manifest), encoding="utf-8"
+        )
+    if with_fragments_dir:
+        fragments_dir = slides_dir / "fragments"
+        fragments_dir.mkdir(parents=True, exist_ok=True)
+        for slide_id, html in fragments.items():
+            (fragments_dir / f"{slide_id}.html").write_text(html, encoding="utf-8")
+
+
+def test_image_slot_gate_happy_path_one_unfilled_slide(tmp_path: Path):
+    manifest = [{"id": "cover"}, {"id": "screenshots"}, {"id": "close"}]
+    fragments = {
+        "cover": "<section>clean</section>",
+        "screenshots": '<section><div class="image-slot"></div></section>',
+        "close": "<section>clean</section>",
+    }
+    _write_synthetic_fragments_deck(tmp_path, "demo-deck", manifest, fragments)
+    context = deck_qa.GateContext(slug="demo-deck", repo_root=tmp_path)
+
+    result = deck_qa.image_slot_gate(context)
+
+    assert result.status == "ok"
+    assert result.artifacts == []
+    assert len(result.findings) == 1
+    assert result.findings[0].slide_id == "screenshots"
+
+
+def test_image_slot_gate_every_slot_filled_no_findings(tmp_path: Path):
+    manifest = [{"id": "cover"}, {"id": "close"}]
+    fragments = {
+        "cover": "<section>clean</section>",
+        "close": "<section>clean</section>",
+    }
+    _write_synthetic_fragments_deck(tmp_path, "demo-deck", manifest, fragments)
+    context = deck_qa.GateContext(slug="demo-deck", repo_root=tmp_path)
+
+    result = deck_qa.image_slot_gate(context)
+
+    assert result.status == "ok"
+    assert result.findings == []
+
+
+def test_image_slot_gate_flags_the_raw_unconverted_tag(tmp_path: Path):
+    manifest = [{"id": "screenshots"}]
+    fragments = {
+        "screenshots": (
+            '<section><image-slot placeholder="Drop image">'
+            "</image-slot></section>"
+        ),
+    }
+    _write_synthetic_fragments_deck(tmp_path, "demo-deck", manifest, fragments)
+    context = deck_qa.GateContext(slug="demo-deck", repo_root=tmp_path)
+
+    result = deck_qa.image_slot_gate(context)
+
+    assert result.status == "ok"
+    assert len(result.findings) == 1
+    assert result.findings[0].slide_id == "screenshots"
+
+
+def test_image_slot_gate_flags_once_when_both_spellings_present(tmp_path: Path):
+    """Boundaries & Constraints: either spelling flags the slide -- a
+    fragment carrying both must still produce exactly one ``Finding``, not
+    one per pattern."""
+    manifest = [{"id": "screenshots"}]
+    fragments = {
+        "screenshots": (
+            '<image-slot placeholder="Drop image"></image-slot>'
+            '<div class="image-slot"></div>'
+        ),
+    }
+    _write_synthetic_fragments_deck(tmp_path, "demo-deck", manifest, fragments)
+    context = deck_qa.GateContext(slug="demo-deck", repo_root=tmp_path)
+
+    result = deck_qa.image_slot_gate(context)
+
+    assert result.status == "ok"
+    assert len(result.findings) == 1
+    assert result.findings[0].slide_id == "screenshots"
+
+
+def test_image_slot_gate_missing_fragment_file_isolated(tmp_path: Path):
+    manifest = [{"id": "cover"}, {"id": "missing-frag"}, {"id": "close"}]
+    fragments = {
+        "cover": "<section>clean</section>",
+        "close": "<section>clean</section>",
+    }
+    _write_synthetic_fragments_deck(tmp_path, "demo-deck", manifest, fragments)
+    context = deck_qa.GateContext(slug="demo-deck", repo_root=tmp_path)
+
+    result = deck_qa.image_slot_gate(context)
+
+    assert result.status == "ok"
+    assert len(result.findings) == 1
+    assert result.findings[0].slide_id == "missing-frag"
+
+
+def test_image_slot_gate_missing_manifest_raises_and_run_isolates_it(
+    tmp_path: Path,
+):
+    _write_synthetic_fragments_deck(
+        tmp_path, "no-manifest-deck", [], {}, with_manifest=False
+    )
+    context = deck_qa.GateContext(slug="no-manifest-deck", repo_root=tmp_path)
+
+    with pytest.raises(Exception, match=r"manifest\.json does not exist"):
+        deck_qa.image_slot_gate(context)
+
+    report = deck_qa.run(
+        "no-manifest-deck",
+        tmp_path,
+        gates={"image-slot": deck_qa.image_slot_gate},
+    )
+    assert report.gates["image-slot"].status == "error"
+    assert report.gates["image-slot"].error is not None
+    # zero effect on any other gate id (Story 14.1's own isolation contract).
+    report2 = deck_qa.run(
+        "no-manifest-deck",
+        tmp_path,
+        gates={"image-slot": deck_qa.image_slot_gate, "fine": _ok},
+    )
+    assert report2.gates["fine"].status == "ok"
+
+
+def test_image_slot_gate_missing_fragments_dir_raises(tmp_path: Path):
+    _write_synthetic_fragments_deck(
+        tmp_path,
+        "no-fragments-deck",
+        [{"id": "cover"}],
+        {},
+        with_fragments_dir=False,
+    )
+    context = deck_qa.GateContext(slug="no-fragments-deck", repo_root=tmp_path)
+
+    with pytest.raises(Exception, match="does not exist"):
+        deck_qa.image_slot_gate(context)
+
+
+def test_image_slot_gate_malformed_manifest_json_raises(tmp_path: Path):
+    _write_synthetic_fragments_deck(
+        tmp_path, "bad-json-deck", [{"id": "cover"}], {"cover": "<section></section>"}
+    )
+    manifest_path = (
+        tmp_path
+        / "presentations"
+        / "bad-json-deck"
+        / "src"
+        / "slides"
+        / "manifest.json"
+    )
+    manifest_path.write_text("{not valid json", encoding="utf-8")
+    context = deck_qa.GateContext(slug="bad-json-deck", repo_root=tmp_path)
+
+    with pytest.raises(Exception, match="cannot parse"):
+        deck_qa.image_slot_gate(context)
+
+
+def test_image_slot_gate_manifest_not_a_list_raises(tmp_path: Path):
+    _write_synthetic_fragments_deck(
+        tmp_path,
+        "bad-shape-deck",
+        [{"id": "cover"}],
+        {"cover": "<section></section>"},
+    )
+    manifest_path = (
+        tmp_path
+        / "presentations"
+        / "bad-shape-deck"
+        / "src"
+        / "slides"
+        / "manifest.json"
+    )
+    manifest_path.write_text(json.dumps({"not": "a list"}), encoding="utf-8")
+    context = deck_qa.GateContext(slug="bad-shape-deck", repo_root=tmp_path)
+
+    with pytest.raises(Exception, match="must contain a JSON array"):
+        deck_qa.image_slot_gate(context)
+
+
+def test_image_slot_gate_rejects_a_traversal_slug(tmp_path: Path):
+    context = deck_qa.GateContext(slug="../escape", repo_root=tmp_path)
+
+    with pytest.raises(Exception, match="invalid slug"):
+        deck_qa.image_slot_gate(context)
+
+
+def test_image_slot_gate_round_trips_through_json(tmp_path: Path):
+    manifest = [{"id": "screenshots"}]
+    fragments = {"screenshots": '<section><div class="image-slot"></div></section>'}
+    _write_synthetic_fragments_deck(tmp_path, "demo-deck", manifest, fragments)
+    context = deck_qa.GateContext(slug="demo-deck", repo_root=tmp_path)
+
+    result = deck_qa.image_slot_gate(context)
+    report = deck_qa.DeckQaReport(slug="x", gates={"image-slot": result})
+
+    round_tripped = deck_qa.parse_report(
+        json.loads(json.dumps(deck_qa.to_dict(report)))
+    )
+    assert round_tripped == report
+
+
+def test_image_slot_gate_isolates_a_non_utf8_fragment(tmp_path: Path):
+    """Review pass: ``UnicodeDecodeError`` is a ``ValueError``, not an
+    ``OSError`` -- a fragment that exists but isn't valid UTF-8 must still
+    be isolated to a ``Finding`` for that slide, not blow up the gate."""
+    manifest = [{"id": "cover"}, {"id": "bad-encoding"}, {"id": "close"}]
+    fragments = {
+        "cover": "<section>clean</section>",
+        "close": "<section>clean</section>",
+    }
+    _write_synthetic_fragments_deck(tmp_path, "demo-deck", manifest, fragments)
+    bad_path = (
+        tmp_path
+        / "presentations"
+        / "demo-deck"
+        / "src"
+        / "slides"
+        / "fragments"
+        / "bad-encoding.html"
+    )
+    bad_path.write_bytes(b"\xff\xfe not valid utf-8")
+    context = deck_qa.GateContext(slug="demo-deck", repo_root=tmp_path)
+
+    result = deck_qa.image_slot_gate(context)
+
+    assert result.status == "ok"
+    assert len(result.findings) == 1
+    assert result.findings[0].slide_id == "bad-encoding"
+
+
+def test_image_slot_gate_matches_case_insensitively(tmp_path: Path):
+    """Review pass: the extractor's own tag match is case-sensitive too, so
+    a mixed-case ``<Image-Slot>`` would slip past extraction unconverted --
+    this gate must still catch it rather than silently missing it."""
+    manifest = [{"id": "screenshots"}]
+    fragments = {
+        "screenshots": '<section><IMAGE-SLOT placeholder="x"></IMAGE-SLOT></section>',
+    }
+    _write_synthetic_fragments_deck(tmp_path, "demo-deck", manifest, fragments)
+    context = deck_qa.GateContext(slug="demo-deck", repo_root=tmp_path)
+
+    result = deck_qa.image_slot_gate(context)
+
+    assert result.status == "ok"
+    assert len(result.findings) == 1
+    assert result.findings[0].slide_id == "screenshots"
+
+
+def test_image_slot_gate_does_not_over_match_a_hyphenated_custom_element(
+    tmp_path: Path,
+):
+    """Review pass: ``\\b`` right after "image-slot" is satisfied by the
+    word/non-word transition into a following ``-`` regardless of what comes
+    next, so a naive ``<image-slot\\b`` pattern would also match an unrelated
+    tag like ``<image-slot-carousel>``. The lookahead-based pattern must
+    reject it."""
+    manifest = [{"id": "screenshots"}]
+    fragments = {
+        "screenshots": '<section><image-slot-carousel></image-slot-carousel></section>',
+    }
+    _write_synthetic_fragments_deck(tmp_path, "demo-deck", manifest, fragments)
+    context = deck_qa.GateContext(slug="demo-deck", repo_root=tmp_path)
+
+    result = deck_qa.image_slot_gate(context)
+
+    assert result.status == "ok"
+    assert result.findings == []
