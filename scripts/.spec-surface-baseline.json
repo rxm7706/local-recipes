@@ -392,7 +392,7 @@
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/__main__.py": "bb074411c45b9cd16a17d2b5647e89dc2a973a4f",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/atlas.py": "01c48ba0dddc77654d8dbf7eb5867ce6adb62793",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/board.py": "eab7771d3f3d27a79eed3459dce8f3fd49792268",
-   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py": "db66e411a0757c930a6c018e196112cf08645eec",
+   "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/chain.py": "05814e7cdf6d5a687b5619c6aa75eb6d4819e60a",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/deps.py": "cb4cda3c8a0e81294875fe1f9d70806df9160a3b",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/factory.py": "54552ae735da7a453267985a656bafc672c52771",
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/ledger.py": "5ac7033128986f91d8ddc0576c5962e1f45e43d8",
@@ -436,7 +436,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_board_dashboard_drift.py": "e1f43efeecceb520ea195500a3781fa2515dfacf",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_deferred_work.py": "247ea70015c437ad631905ebf553f8b82c35e651",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_dream_chain.py": "5e1257e5327aa0055154e6179914cb1b5388f002",
-   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_due_for_verification.py": "b421c5a787806c19ac6b5ef7c4eb1d830c5c3b71",
+   "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_due_for_verification.py": "8fc69ba93974d914a99a5f4ad8fbc7ea372f0aa2",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_chain_spec_surface.py": "c2641950ef4d5efacef83627446e55f5d0a67c4b",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_deps_forward_dependency.py": "a9ae03b6574a0209d4886e24756ac1d0b481a645",
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_dispatch.py": "59e3ff6061c3dc27e44418619ad26532543cfe63",
@@ -447,7 +447,7 @@
    "src/shared/packages/pyforge-doctor/tests/unit/test_sources_warden.py": "5122025ff7966e19724a19605701c9e10044cb22",
    "src/shared/packages/pyforge-doctor/tests/unit/test_verdict.py": "42a9a652519085a90d43a489ec4ec65e95193363"
   },
-  "memlog": "c37daf89abd9e54dff49ee859c3dc8d660e779b4"
+  "memlog": "9c261c73c57177c56256d9b41996aa40a5040f73"
  },
  "pyforge-doctor/spec-pyforge-doctor-dependency-health": {
   "files": {},
@@ -2207,10 +2207,10 @@
  },
  "pyforge-marshal/spec-dashboard-project-path-derivation": {
   "files": {
-   "docs/dashboard/generate.py": "67a1d4c5d901f0f462ab1fe3fe310ade5493cfa6",
-   "docs/dashboard/index.html": "d1642f8e66ae0dc3446b7619979f947a0b282b98"
+   "docs/dashboard/generate.py": "38cd146413c26e093f52ffe29fa05d4229d909e0",
+   "docs/dashboard/index.html": "5fe4e1832ca1dffe7a0350d52d768ffd1cc35198"
   },
-  "memlog": "3382f5c3b7d54c8f9bb8b954901756386ed6b5d4"
+  "memlog": "3b046447705fc0651b4367babbd7d669f70306a1"
  },
  "pyforge-marshal/spec-dream-to-code-model-self-verification": {
   "files": {
@@ -2448,10 +2448,10 @@
  },
  "pyforge-marshal/spec-fleet-status-supervisor-fallback": {
   "files": {
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py": "d76418a3058d768325a0d843b932486af1db05c5",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py": "5911e3c598151b91220c40b4599f0b27e8da580d"
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/cli/status.py": "6d9daf177a7ea6563091ac6822bf0abe6d1c7a83",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py": "86d6d93a7c7c615c67ed56160626714b783c6688"
   },
-  "memlog": "87f6a93d0184c3b6311ff7f2bcde50b55975aab3"
+  "memlog": "eda4d3b70a2b3c307f02797f48cc76a556820a3b"
  },
  "pyforge-marshal/spec-genesis-installer": {
   "files": {},
@@ -2471,18 +2471,14 @@
  "pyforge-marshal/spec-landing-evidence-grammar": {
   "files": {
    "src/shared/packages/pyforge-doctor/src/pyforge/doctor/sources/marshal.py": "ff2b2b81f6adf6ab6e49690c200af7bb1f1f98d3",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py": "23e5d409459b7b8e530024eeac3fc13d95d26162",
-   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py": "5911e3c598151b91220c40b4599f0b27e8da580d"
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/promotion.py": "68aef73f13c3e7ad0d81e43da3e27d263c171da4",
+   "src/shared/packages/pyforge-marshal/src/pyforge/marshal/core/status.py": "86d6d93a7c7c615c67ed56160626714b783c6688"
   },
-  "memlog": "ba27f910c6e25fb5eb538fa95e3e8dd3a39d4c03"
+  "memlog": "e871e0cefec150c2157217d1bbfdbe1a9c4c4c61"
  },
  "pyforge-marshal/spec-loop-home-fleet-refresh": {
   "files": {},
   "memlog": ""
- },
- "pyforge-marshal/spec-marshal-land-cross-project-story-key-collision": {
-  "files": {},
-  "memlog": "20990e99c6a4c6d27458889cdd57313a9f1bcba8"
  },
  "pyforge-marshal/spec-marshal-land-merge-subject": {
   "files": {},
@@ -2724,9 +2720,9 @@
  "pyforge-marshal/spec-pyforge-testing-charter": {
   "files": {
    "_bmad/scripts/bmad_tea_playwright.py": "bd094688e43a629ffee75daffd59af19f71d6fd5",
-   "docs/dashboard/generate.py": "67a1d4c5d901f0f462ab1fe3fe310ade5493cfa6"
+   "docs/dashboard/generate.py": "2db6d7ebbdf767751c03b57666f17973dfdd572d"
   },
-  "memlog": "a0dc1645086a530ad2539d55373852491c3c714c"
+  "memlog": "d703814ce37db25b367ce4438cd9eff2609c4222"
  },
  "pyforge-marshal/spec-quick-dev-reconciliation": {
   "files": {
@@ -2753,10 +2749,10 @@
  },
  "pyforge-marshal/spec-sprint-status-auto-promote": {
   "files": {
-   "docs/dashboard/generate.py": "67a1d4c5d901f0f462ab1fe3fe310ade5493cfa6",
+   "docs/dashboard/generate.py": "2db6d7ebbdf767751c03b57666f17973dfdd572d",
    "scripts/promote_sprint_status.py": "583e4286df45b29f676f71e1266522d00bce33e0"
   },
-  "memlog": "394d73f75902d427ee628b948f9eb96e55da486f"
+  "memlog": "d286c40bf2cba8ea369f209d90fc3161b29ceed3"
  },
  "pyforge-marshal/spec-surface-drift-reconciliation": {
   "files": {
@@ -3874,7 +3870,7 @@
  "pyforge-steward/spec-python-agent-platform": {
   "files": {
    "environment.yaml": "a7394e9ac491d921acc22e4ebfe742d0fa400aba",
-   "pixi.toml": "1e22b88e4db285e6e0310f113c3c36d677234c6b",
+   "pixi.toml": "ee73a54b42f789ded0d43d6a935d7c2af0752738",
    "src/platform/.editorconfig": "c241cc74e556577f3fafca63942d74d0c8764396",
    "src/platform/.gitattributes": "6c04362d1bfb9effdd6645bf5d171a298af084be",
    "src/platform/.gitignore": "7085a5f6068c1cf766528e1eb1a569c4baf5c358",
@@ -3986,7 +3982,7 @@
    "src/platform/utility/requirements-trusty.apt": "e10d1cbf221b4f02656dd749e24500125974de20",
    "src/platform/utility/requirements-xenial.apt": "755c0266e7b97cbf9e90ee9936e2d2f6943c67c5"
   },
-  "memlog": "6033b62725f846ed9d436223c6d746ceaff4c9ef"
+  "memlog": "ee97997c2dfe7ad51aa116dc90aaef6f525ad5e0"
  },
  "pyforge-steward/spec-scratch-worktree-lifecycle": {
   "files": {
