@@ -70,6 +70,7 @@ PREFIX_TO_PIPELINE = {
     "derived": "derived_artifacts",
     "trending": "upstream_discovery",
     "org_audit": "upstream_discovery",
+    "artifactory": "artifactory_downloads",
 }
 
 # Final implemented counts (drafting target was ~77: 35 sources + ~42
@@ -85,8 +86,9 @@ EXPECTED_PIPELINE_COUNTS = {
     "seed_gaps": 8,
     "derived_artifacts": 2,
     "upstream_discovery": 4,  # Story 13.1: trending_candidates (CAP-1); Story 13.2: + trending_candidates_classified (CAP-2, FR-65); Story 13.4: + org_audit_candidates + org_audit_candidates_classified (CAP-4, FR-67)
+    "artifactory_downloads": 2,  # Story 15.3 (CAP-4, Epic 15): artifactory_downloads_raw + artifactory_downloads_joined
 }
-EXPECTED_TOTAL = 90  # Story 13.4: 88 + org_audit_candidates + org_audit_candidates_classified
+EXPECTED_TOTAL = 92  # Story 15.3: 90 + artifactory_downloads_raw + artifactory_downloads_joined
 
 # The A3 IncrementalParquetDataset flip list (TTL-gated persisted outputs).
 FLIP_LIST = {

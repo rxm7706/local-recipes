@@ -791,9 +791,11 @@ seed_gaps_license_map_report:
 # via params:freshness.stale_after_days — a consumer gate, not a fetch TTL)
 # =============================================================================
 
-# The 6 purl/mapping artifacts as ONE partitioned dataset (recorded choice —
-# alternative was six entries; one partition per artifact keeps the producer
-# single and the layout uniform).
+# The 6 legacy purl/mapping artifacts (+ Story 15.3's artifactory_downloads.tsv,
+# a 7th, unrelated partition — see the artifactory_downloads pipeline section
+# below) as ONE partitioned dataset (recorded choice — alternative was six
+# entries; one partition per artifact keeps the producer single and the
+# layout uniform).
 derived_purl_exports:
   type: partitions.PartitionedDataset
   path: data/derived/derived_purl_exports
@@ -873,5 +875,28 @@ org_audit_candidates:
 org_audit_candidates_classified:
   type: pandas.ParquetDataset
   filepath: data/derived/org_audit_candidates_classified/org_audit_candidates_classified.parquet
+  metadata:
+    layer: derived
+
+# =============================================================================
+# artifactory_downloads — Artifactory download intelligence (Story 15.3, CAP-4;
+# Epic 15). Wires Story 15.1's ArtifactoryAqlAdapter (fetch) and Story 15.2's
+# join_identity (identity join) into a pipeline; the export node contributes
+# ONE new partition (artifactory_downloads.tsv) to the derived_purl_exports
+# PartitionedDataset declared above -- no YAML edit there. No TTL on either
+# entry below (mirrors the trending_candidates_classified precedent) -- no
+# live fetch cadence exists yet to gate on; params:artifactory.virtual_repos
+# defaults to [] so the pipeline is functionally inert by default.
+# =============================================================================
+
+artifactory_downloads_raw:
+  type: pandas.ParquetDataset
+  filepath: data/raw/artifactory_downloads_raw/artifactory_downloads_raw.parquet
+  metadata:
+    layer: raw
+
+artifactory_downloads_joined:
+  type: pandas.ParquetDataset
+  filepath: data/derived/artifactory_downloads_joined/artifactory_downloads_joined.parquet
   metadata:
     layer: derived

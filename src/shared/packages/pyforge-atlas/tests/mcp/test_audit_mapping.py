@@ -51,6 +51,15 @@ THE_23 = {
 
 VALID_VERDICT_PREFIXES = ("read_dataset:", "pipeline-trigger", "deferred-to-BSL(D1)")
 
+# Story 15.3 (CAP-4, Epic 15): artifactory_downloads IS a registered kedro pipeline
+# (find_pipelines() must discover it so `kedro run` / kedro-dagster can invoke it) but is
+# DELIBERATELY excluded from the MCP pipeline-trigger surface -- the story's own Boundaries
+# & Constraints state "never wire an MCP trigger tool for this pipeline (out of CAP-4's
+# stated scope)". Without this exemption, the registry-mirror invariant below would force
+# every registered pipeline to gain a `run_<name>_pipeline` MCP tool, which is exactly what
+# this story's scope forbids.
+NO_MCP_TRIGGER_PIPELINES = {"artifactory_downloads"}
+
 
 def _declared_catalog_names() -> set[str]:
     return set(yaml.safe_load(CATALOG_YML.read_text(encoding="utf-8")))
@@ -116,7 +125,9 @@ def test_pipeline_trigger_tools_match_the_registered_pipelines():
 def test_pipeline_names_mirror_the_real_registry():
     """Pins the static PIPELINE_NAMES mirror (list_pipelines' source)
     against the real find_pipelines() discovery surface: the pipelines/
-    subpackages that expose create_pipeline()."""
+    subpackages that expose create_pipeline() -- EXCEPT NO_MCP_TRIGGER_PIPELINES,
+    which are registered kedro pipelines deliberately excluded from the MCP
+    trigger surface by their own story's scope (see the constant's docstring)."""
     for name in tools.PIPELINE_NAMES:
         mod = importlib.import_module(f"pyforge.atlas.pipelines.{name}.pipeline")
         assert callable(mod.create_pipeline), name
@@ -127,4 +138,6 @@ def test_pipeline_names_mirror_the_real_registry():
     discovered = {
         p.parent.name for p in pipelines_dir.glob("*/pipeline.py")
     }
-    assert discovered == set(tools.PIPELINE_NAMES)
+    assert discovered - NO_MCP_TRIGGER_PIPELINES == set(tools.PIPELINE_NAMES)
+    # the exemption itself must name a REAL discovered pipeline -- never a stale entry.
+    assert NO_MCP_TRIGGER_PIPELINES <= discovered
