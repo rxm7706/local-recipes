@@ -11,8 +11,8 @@ inputDocuments:
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/market-agent-orchestration-research-2026-07-25.md"
   - "_bmad-output/projects/pyforge-marshal/planning-artifacts/research/domain-agent-portability-and-governance-research-2026-07-25.md"
 project_name: pyforge-marshal
-epicCount: 20  # 2026-08-14: Epic 20 added (FR-188..FR-191 — the four undecomposed loss-mode/recognizability Specs)
-storyCount: 119  # 2026-08-08: epics-genesis-installer.md (E7-E12, 36 stories) merged in; verified against sprint-status-ledger.yaml. Was 50 (E1-E6), itself corrected 2026-08-01 from an original 40.
+epicCount: 21  # 2026-08-15: Epic 21 added (FR-192 — fleet-chain-completeness, found undecomposed in the fleet-wide decomposition audit; only Story 21.1 cleared, 21.2-21.5 blocked on Q1-Q4). Story 19.4 also added (FR-193, testing-charter CAP-5), no new epic.
+storyCount: 125  # 2026-08-15: 119 + 5 (Epic 21, Stories 21.1-21.5) + 1 (Story 19.4) = 125. Not yet re-verified against sprint-status-ledger.yaml -- these are docs-only decomposition, not yet promoted to Tier-3/tracked ledger.
 status: complete
 mode: headless
 # The single canonical story source for this station: every `### Story` heading here maps
@@ -3133,6 +3133,15 @@ as a shared kit (seeded, not rewritten) and at least one other station imports f
 **Given** a PR dropping a touched package below its station's threshold **Then** CI fails
 naming the uncovered module (unit >80% / integration >70%), not just printing a percentage.
 
+### Story 19.4: Test architecture stays current as stories land
+**Type:** feature • **Effort:** S • **Deps:** S-19.1 • **FR/AD:** FR-193 (spec-pyforge-testing-charter, CAP-5; found undecomposed, 2026-08-15 fleet-wide decomposition audit)
+**Surface:** `scripts/bmad_tea_playwright.py` (or successor)'s own re-run path; each station's `test-architecture.md`
+**Given** an epic completes **Then** re-running S-19.1's generator against the station's own
+epics regenerates its story-coverage table without hand-editing — a story that shipped
+without its `test-architecture.md` row updated is a detectable drift, not a silent gap, so
+Herald's and Marshal's existing real test-architecture documents do not freeze at whatever
+snapshot they were generated at.
+
 ## Epic 20: The loop cannot lose work, and a landing is always recognizable
 
 **Goal:** FR-188..FR-191: the 2026-08-14 audit's four undecomposed marshal Specs become checked
@@ -3236,6 +3245,85 @@ consume the same grammar: the UNCONFIRMED pile shrinks from 26 to genuinely-unla
 (the honest "UNCONFIRMED, not proof it never landed" wording retained), and `retire` proposes
 real retirements again where recovered branches are demonstrably merged.
 
+## Epic 21: The planning chain regenerates itself, and audits whether it's coherent
+
+**Goal:** FR-192: decomposes `spec-fleet-chain-completeness`'s CAP-1..5 (found undecomposed,
+2026-08-15 fleet-wide decomposition audit). The factory's 8-layer planning chain
+(Dream→Spec→Research→Brief→PRD→Architecture→Epics→Code) falls out of sync by hand today — the
+2026-08-02 dream-consolidation pass across all 8 stations did every satellite retirement and
+Spec/PRD/epics update by hand, with nothing verifying the chain stayed coherent afterward.
+CAP-1's own invocation shape (Q1) and error/resume semantics (Q2) are genuinely undecided in
+the Spec's own Open Questions — this epic is **not cleared to dispatch in full**: only Story
+21.1 (CAP-3, audit mode) is independent of those open questions, since it reads and reports,
+never orchestrates — though 21.1 itself depends on Epic 17's Story 17.3 landing first (see
+21.1's own note: it extends 17.3's layer-presence check rather than duplicating it).
+
+### Story 21.1: Chain-completeness audit mode extends layer-presence into full CAP-3 coverage
+**Type:** feature • **Effort:** S • **Deps:** S-17.3 • **FR/AD:** FR-192 (spec-fleet-chain-completeness, CAP-3)
+**Surface:** extends S-17.3's own read-only mode; the fleet dashboard's own per-station chain-status surface
+**Note:** this is NOT a fresh implementation — Story 17.3 ("Chain-completeness audit mode
+reports layers") already delivers most of CAP-3's shape (a read-only, per-project mode
+reporting which of the 8 chain layers exist). This story is the DELTA 17.3 does not cover:
+coherence/staleness/orphan-freedom (not just layer *presence*), a pass/fail verdict per
+contract checkpoint (not just an exists/missing list), and surfacing that verdict on the
+fleet dashboard. Depends on S-17.3 landing first so this extends one real implementation
+rather than duplicating it.
+**Given** any of the 8 PyForge stations, once S-17.3 exists **Then** the audit additionally
+answers whether the chain is coherent and free of orphaned/stale artifacts (not just which
+layers are present), computed by checking real artifact presence and cross-references each
+run (never a cached or hardcoded per-station table, `EXEMPLAR-STANDARD.md`'s own provenance
+rule) — matching what a manual read plus `dream_chain_check` would find — and the verdict
+surfaces on the fleet dashboard, not only in the operator's terminal. Generates or changes
+nothing.
+
+### Story 21.2: Orchestrated chain regeneration
+**Type:** feature • **Effort:** L • **Deps:** none • **FR/AD:** FR-192 (spec-fleet-chain-completeness, CAP-1)
+**Blocked:** the Spec's own Q1 (invocation shape — a new `bmad-*` skill, a Workflow tool
+script, or a subagent chain, undecided) and Q2 (error/resume semantics on a mid-chain
+failure — halt, retry, or resume-from-phase, undecided) are both genuine open questions
+needing an operator decision before this can be scoped further. Q4 (Phases 2/3 have no
+confirmed 1:1 skill mapping — `bmad-product-brief`/`bmad-prfaq` exist but no dedicated
+`bmad-research` skill) is a narrower design detail within this same blocker. Tracked openly,
+matching Epic 10/11's own precedent for a Spec-level open question rather than a silently
+invented default.
+**Surface:** design TBD pending Q1
+**Given** a consolidated Dream **When** unblocked and built **Then** `bmad-spec` →
+`bmad-prd` → `bmad-architecture` → `bmad-create-epics-and-stories` run in sequence, each
+phase's output feeding the next, without a human hand-carrying files between skill
+invocations — wrapping each skill's own memlog-derivation invariant, never reimplementing or
+hand-overwriting a downstream artifact directly.
+
+### Story 21.3: Code-status preservation
+**Type:** feature • **Effort:** M • **Deps:** S-21.2 (blocked transitively) • **FR/AD:** FR-192 (spec-fleet-chain-completeness, CAP-2)
+**Given** an already-partially-implemented project **Then** re-running the regeneration
+workflow leaves every story's done/in-progress/backlog status exactly as it was before the
+run — regenerating the planning chain never clobbers recorded Code implementation status.
+
+### Story 21.4: Orphan detection with review-gated cleanup
+**Type:** feature • **Effort:** M • **Deps:** S-21.2 (blocked transitively) • **FR/AD:** FR-192 (spec-fleet-chain-completeness, CAP-4)
+**Blocked:** additionally needs the Spec's own Q3 (Phase 8's git integration shape — `git add`
+without commit, an unstaged working-tree diff, or something else — unspecified) resolved.
+**Given** a consolidation run **Then** artifacts the regenerated chain no longer references
+(old spec folders, epics from replaced specs, dream-deleted references) surface as a named
+list of orphan candidates with a reviewable diff — nothing is deleted, committed, or pushed
+without the operator's explicit action.
+
+### Story 21.5: Configurable per-project invocation
+**Type:** feature • **Effort:** S • **Deps:** S-21.2 (blocked transitively) • **FR/AD:** FR-192 (spec-fleet-chain-completeness, CAP-5)
+**Given** the same workflow definition **Then** it runs unmodified against any of the 8
+stations by varying only its parameters (`project_slug`, `dream_path`,
+`preserve_code_status` default true, `auto_commit` default false, `delete_orphans`
+default true-with-review-pause) — never hardcoded per station. If a future implementation
+regenerates more than one station's chain in one run, each station's phases are addressed by
+literal `_bmad-output/projects/<slug>/planning-artifacts/...` paths with
+`BMAD_ACTIVE_PROJECT=<slug>` per invocation, never concurrent `scripts/bmad-switch` calls
+(CLAUDE.md's own parallel-agent physical-path rule).
+
+**Epic 21 clears to dispatch on Story 21.1 once S-17.3 lands** (not yet — 21.1 depends on it)
+— Stories 21.2/21.3/21.4/21.5 stay blocked pending the operator decisions on Q1/Q2/Q3/Q4
+above, the same treatment Epic 10's Story 10.2 and Epic 11's Story 11.8 already established
+this session.
+
 ## Story DAG (critical path and key dependencies)
 
 ```mermaid
@@ -3306,11 +3394,21 @@ graph LR
 
 ---
 
-## Final structured JSON
+## Final structured JSON (historical — Epics 1-6 only, see note)
+
+> **Stale, corrected 2026-08-15 (fleet-wide decomposition audit).** This block was written
+> once, at the end of the original Epic 1-6 planning pass, and never updated as Epics 7-21
+> were added over many later sessions — it read `"epics": 6, "stories": 40"` while the real,
+> current file holds 21 epics and (per the frontmatter `storyCount` above, kept live) far
+> more stories. Rather than hand-maintain a second, competing summary that will just drift
+> again the next time an epic is added, this block is corrected once and marked historical:
+> it accurately describes Epics 1-6's own critical path and coverage, not the whole file.
+> The frontmatter's `epicCount`/`storyCount` fields (top of this document) are the
+> up-to-date, actively-maintained totals — treat those as current, this block as archival.
 
 ```json
 {
-  "status": "complete",
+  "status": "historical — Epics 1-6 only, see note above",
   "project": "pyforge-marshal",
   "epics": 6,
   "stories": 40,

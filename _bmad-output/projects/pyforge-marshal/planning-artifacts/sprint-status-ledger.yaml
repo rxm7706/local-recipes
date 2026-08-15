@@ -12,7 +12,7 @@
 # reads both, so there is no second parser to drift.
 #
 # project: marshal
-# stories: 176
+# stories: 184
 development_status:
   1-1-package-spine-verdict-lattice-findings-registry-and-the-meta-tests-that-enforce-them: done
   1-10-render-the-harness-policy-from-the-canonical-effectivepolicy: done
@@ -68,6 +68,7 @@ development_status:
   19-1-one-generator-produces-every-stations-test-architecture: backlog
   19-2-the-shared-test-support-kit: backlog
   19-3-coverage-gates-that-name-the-module: backlog
+  19-4-test-architecture-stays-current-as-stories-land: backlog
   2-1-standalone-verify-command-runner-project-scoped: done
   2-2-verdict-aggregation-that-never-false-greens: done
   2-3-frozen-surface-scope-check-narrowing-only: done
@@ -86,6 +87,11 @@ development_status:
   20-7-both-guards-hard-fail-on-drift: backlog
   20-8-the-landing-evidence-grammar: backlog
   20-9-doctor-consumes-the-grammar: backlog
+  21-1-chain-completeness-audit-mode-extends-layer-presence-into-full-cap-3-coverage: backlog
+  21-2-orchestrated-chain-regeneration: backlog
+  21-3-code-status-preservation: backlog
+  21-4-orphan-detection-with-review-gated-cleanup: backlog
+  21-5-configurable-per-project-invocation: backlog
   3-1-run-identity-and-the-journal-writer: done
   3-10-unpushed-work-is-measured-by-tip-never-by-name: done
   3-11-a-storys-declared-difficulty-actually-picks-its-model: done
@@ -176,6 +182,8 @@ development_status:
   epic-2-retrospective: done
   epic-20: backlog
   epic-20-retrospective: optional
+  epic-21: backlog
+  epic-21-retrospective: optional
   epic-3: done
   epic-3-retrospective: done
   epic-4: done

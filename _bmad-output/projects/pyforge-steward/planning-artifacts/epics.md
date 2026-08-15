@@ -4,8 +4,8 @@ inputDocuments:
   - _bmad-output/projects/pyforge-steward/planning-artifacts/prds/prd-pyforge-steward-2026-07-25/prd.md
   - _bmad-output/projects/pyforge-steward/planning-artifacts/architecture/architecture-pyforge-steward-2026-07-25/ARCHITECTURE-SPINE.md
 mode: headless-express
-updated: '2026-08-10'
-currency_review: "Reviewed 2026-08-10 (Phase 1 backlog-truth audit) — 10 false Status lines corrected, Epic-8 audit note + 8.1 delivery note added; see planning-artifacts/implementation-readiness-report-20260810.md. Prior review 2026-08-02."
+updated: '2026-08-15'
+currency_review: "Reviewed 2026-08-15 (fleet-wide decomposition audit) — Story 8.7 added (FR-140, spec-jira-github-projects-sync's CAP-1 residual, previously undecomposed per Story 8.1's own AF-5 audit note); spec-pyforge-steward and spec-bmad-module-provisioning frontmatter status fields corrected (blank/stale-draft -> shipped, both fully decomposed and done). Prior review 2026-08-10 (Phase 1 backlog-truth audit) — 10 false Status lines corrected, Epic-8 audit note + 8.1 delivery note added; see planning-artifacts/implementation-readiness-report-20260810.md. Prior review 2026-08-02."
 # The single canonical story source for this station: every `### Story` heading
 # here maps 1:1 to a sprint-status-ledger.yaml story key. Exactly one per station (AD-72).
 epics_role: canonical
@@ -688,7 +688,8 @@ story (audit AF-5); the live-pair demonstration is an open coverage-debt row.*
 **FR/AD:** FR-28 • **Effort:** M • **Deps:** S-8.1
 **Given** one human change **Then** N round-trips produce exactly ONE propagation, not N —
 demonstrated by test, never asserted.
-**Status:** backlog
+**Status:** done — *corrected 2026-08-15 (fleet-wide decomposition audit): sprint-status-ledger.yaml
+already carried this as `done`; this inline line was simply never updated.*
 
 ### Story 8.3: Idempotent update processing
 
@@ -706,7 +707,10 @@ demonstrated by test, never asserted.
 **FR/AD:** FR-29 • **Effort:** S • **Deps:** S-8.1
 **Given** an identical payload delivered twice **Then** both systems are byte-identical to
 a single delivery.
-**Status:** backlog
+**Status:** done — *corrected 2026-08-15 (fleet-wide decomposition audit): sprint-status-ledger.yaml
+already carried this as `done`; this inline line was simply never updated. The "nothing in the
+suite proves AD-9 rule 2" residual noted above is a real, separate test-coverage gap, not a
+decomposition gap.*
 
 ### Story 8.4: The schedule trigger enumerates real candidates
 **FR/AD:** FR-27 (AD-2/AD-5) • **Effort:** M • **Deps:** S-8.1
@@ -714,18 +718,33 @@ a single delivery.
 differs from its recorded per-field baseline is selected as a candidate and reconciled through
 the existing single-pair `reconcile()` engine, in one run, with no `--github-item`/
 `--jira-issue` pair required per invocation.
-**Status:** backlog
+**Status:** done — *corrected 2026-08-15 (fleet-wide decomposition audit): sprint-status-ledger.yaml
+already carried this as `done`; this inline line was simply never updated.*
 
 ### Story 8.5: Fail loud, fail alone
 **FR/AD:** FR-30 • **Effort:** XS • **Deps:** S-8.1, S-8.4
 **Given** a batch containing one unlinked item **Then** every other item completes and the
 unlinked one emits a named, greppable error.
-**Status:** backlog
+**Status:** done — *corrected 2026-08-15 (fleet-wide decomposition audit): sprint-status-ledger.yaml
+already carried this as `done`; this inline line was simply never updated.*
 
 ### Story 8.6: Explicit status-vocabulary translation
 **FR/AD:** FR-31 • **Effort:** S • **Deps:** S-8.1
 **Given** any status crossing the boundary **Then** it passes through a reviewable mapping;
 an unmapped value is a hard logged failure, never a pass-through inventing a state.
+**Status:** done — *corrected 2026-08-15 (fleet-wide decomposition audit): sprint-status-ledger.yaml
+already carried this as `done`; this inline line was simply never updated.*
+
+### Story 8.7: Assignee and identity-link propagation
+**FR/AD:** FR-140 (spec-jira-github-projects-sync, CAP-1 residual; found undecomposed,
+2026-08-15 fleet-wide decomposition audit) • **Effort:** M • **Deps:** S-8.1
+**Given** a status/assignee/link change on either board **Then** the assignee and identity
+link propagate to the other side too, no human action on the receiving side — the two-thirds
+of CAP-1 Story 8.1's own frozen intent-contract deliberately narrowed away (status-field-only,
+fake-transport-tested) and its own audit note (AF-5) named as undelivered with no owning
+story until this one. Uses the same reconcile/baseline machinery Story 8.1 already
+established (AD-5's value-comparison guard, AD-10's baseline contract) — never a second
+propagation path.
 **Status:** backlog
 
 ## Epic 9: Secure live dashboards

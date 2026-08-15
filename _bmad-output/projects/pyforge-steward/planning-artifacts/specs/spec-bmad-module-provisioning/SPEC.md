@@ -1,6 +1,8 @@
 ---
 spec: bmad-module-provisioning
-status: draft
+status: shipped   # corrected 2026-08-15 (fleet-wide decomposition audit): was stale at
+                   # 'draft' despite Epic 6 (Stories 6.1-6.3, all CAP-1..3) reading `done` in
+                   # epics.md -- matches the owner-dream's own already-correct `status: realized`.
 owner-dream: docs/dreams/bmad-module-provisioning.md
 surface:
   - src/shared/packages/pyforge-steward/src/pyforge/steward/provision.py

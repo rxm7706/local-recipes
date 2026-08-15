@@ -1,7 +1,10 @@
 ---
 id: SPEC-dream-to-code-model-self-verification
 spec: dream-to-code-model-self-verification
-status: draft
+status: ready   # corrected 2026-08-15 (fleet-wide decomposition audit): was stale at 'draft'
+                 # despite being fully decomposed into epics.md Epic 17 (Story 17.1 = CAP-1..3,
+                 # Story 17.2 = CAP-4) since that epic was authored -- frontmatter was simply
+                 # never updated. Not 'shipped': Epic 17's stories are still backlog, unbuilt.
 owner-dream: docs/dreams/dream-to-code-model-self-verification.md
 surface:
   # scripts/dream_chain_check.py and scripts/bmad_drift_check.py retired 2026-08-09
