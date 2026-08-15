@@ -58,7 +58,7 @@ development_status:
   14-4-the-subprocess-seam-is-reconciled-and-sole-ownership-is-gated: done
   15-1-one-command-refreshes-the-fleets-homes: backlog
   15-2-landing-promotes-the-ledger-and-staleness-is-its-own-check: backlog
-  16-1-one-resolver-derived-sources-loud-failures: backlog
+  16-1-one-resolver-derived-sources-loud-failures: done
   17-1-the-detectors-remaining-blind-spots-are-fixture-pinned-with-an-incident-log: backlog
   17-2-the-dreams-hygiene-mode-exists: backlog
   17-3-chain-completeness-audit-mode-reports-layers: backlog
