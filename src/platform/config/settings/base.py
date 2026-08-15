@@ -90,9 +90,16 @@ THIRD_PARTY_APPS = [
     # deliberately omitted: it checks the default file storage backend, a
     # dependency outside this platform's declared "exactly PostgreSQL +
     # Redis" infrastructure boundary.
+    #
+    # Story 10.3: `django-health-check` is sourced from the
+    # `python-agent-platform` conda env at >=4.5.0 (pixi.toml), a from-
+    # scratch rewrite of the 3.x line this app was originally written
+    # against -- 4.x has no `health_check.db`/`health_check.cache` sub-apps
+    # (checks are plain classes wired directly at the URL, see
+    # `config/urls.py`'s `/ht/` route) and no `apps.py`, so "health_check"
+    # is kept in INSTALLED_APPS only so its `templates/health_check/` dir is
+    # discoverable via APP_DIRS.
     "health_check",
-    "health_check.db",
-    "health_check.cache",
 ]
 
 LOCAL_APPS = [

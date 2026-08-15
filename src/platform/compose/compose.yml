@@ -1,0 +1,73 @@
+# Story 10.3 ("One image, both engines"): local dev/test stack for
+# src/platform/ -- platform + postgres:17 + redis:7 ONLY (spec-python-agent-
+# platform's own Boundaries & Constraints: "infrastructure is exactly
+# PostgreSQL + Redis + Kubernetes"; this story's own Constraints repeat it
+# for the compose file specifically -- no Langflow/DB-GPT services, Epic 11
+# mounts those inside this same image as pluggable Django apps, never
+# sidecars).
+#
+# Compose Specification syntax (no top-level `version:` key -- dropped by
+# the Compose Specification itself and ignored-with-a-warning by `docker
+# compose` v2), so this file is portable to both `docker compose` and
+# `podman-compose` by construction, not by testing against both (this
+# sandbox has no `podman-compose` binary -- see this story's spec Design
+# Notes for the honest statement of what was and wasn't locally verified).
+#
+# Every `environment:` value below is a LOCAL DEV/TEST PLACEHOLDER, never a
+# real credential -- CAP-6's "env/secret-mount credentials" clause is about
+# real deployments (K8s secrets at run time, `--mount=type=secret` at build
+# time); a throwaway compose-local Django `SECRET_KEY` for a database that
+# only ever exists inside this compose network is not the credential that
+# constraint protects.
+#
+# `build.context: ../../..` + `build.dockerfile: src/platform/Containerfile`
+# -- deliberately the REPO ROOT as build context, matching the Containerfile
+# itself (see that file's own top-of-file comment for why: the builder
+# stage's `pixi install --frozen -e python-agent-platform` needs the
+# workspace-root `pixi.toml`/`pixi.lock`, which do not exist inside
+# `src/platform/`).
+
+services:
+  postgres:
+    image: postgres:17
+    environment:
+      POSTGRES_USER: platform
+      POSTGRES_PASSWORD: platform
+      POSTGRES_DB: platform
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U platform"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  platform:
+    build:
+      context: ../../..
+      dockerfile: src/platform/Containerfile
+    ports:
+      - "8000:8000"
+    environment:
+      # DJANGO_SETTINGS_MODULE is already baked into the image (Containerfile
+      # `ENV`) -- not repeated here.
+      DJANGO_SECRET_KEY: local-compose-placeholder-not-a-real-secret
+      DJANGO_ADMIN_URL: admin/
+      DJANGO_ALLOWED_HOSTS: localhost,127.0.0.1,platform
+      # No TLS terminator in this local stack -- SecurityMiddleware would
+      # otherwise 301-redirect every request (including the /ht/ health
+      # probe) to https, which this stack never serves.
+      DJANGO_SECURE_SSL_REDIRECT: "False"
+      DATABASE_URL: postgres://platform:platform@postgres:5432/platform
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy

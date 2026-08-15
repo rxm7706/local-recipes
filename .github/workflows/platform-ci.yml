@@ -98,3 +98,136 @@ jobs:
 
       - name: Full test suite (platformapp app tests, the ASGI seam, and the import boundary)
         run: python -m pytest -v
+
+  # Story 10.3 ("One image, both engines"): builds + smoke-tests
+  # `src/platform/Containerfile` under BOTH engines from the same file --
+  # spec-python-agent-platform's own Constraints name this explicitly ("CI
+  # exercises both engines, not one"). `fail-fast: false` so a podman-only
+  # break doesn't hide a docker-only break (or vice versa) in the same run.
+  #
+  # Build context is the REPO ROOT, not `src/platform` -- the builder
+  # stage's `pixi install --frozen -e python-agent-platform` needs the
+  # workspace-root `pixi.toml`/`pixi.lock`; see the Containerfile's own
+  # top-of-file comment for the full reasoning (this mirrors it exactly).
+  #
+  # This job's `/ht/` + `manage.py check` steps depend on `django-health-
+  # check`'s registration matching `pixi.toml`'s conda-sourced `>=4.5.0`
+  # pin (Story 10.2) rather than Story 10.1's original pip-pinned 3.24.0
+  # API -- `config/settings/base.py`'s `INSTALLED_APPS` and
+  # `config/urls.py`'s `/ht/` route were updated in this same story to the
+  # 4.x registration API (plain `HealthCheckView(checks=[...])`, no more
+  # `health_check.db`/`health_check.cache` sub-apps or `health_check.urls`)
+  # after live verification found `django.setup()` failing with
+  # `ModuleNotFoundError: No module named 'health_check.db'` under the old
+  # wiring -- see spec-10-3-one-image-both-engines.md's Design Notes for
+  # the full investigation and evidence. Both steps are expected green.
+  container:
+    strategy:
+      fail-fast: false
+      matrix:
+        engine: [docker, podman]
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Verify src/platform exists on this ref
+        run: test -d src/platform || { echo "::error::src/platform does not exist on this ref"; exit 1; }
+
+      # ubuntu-latest GitHub-hosted runners ship podman preinstalled, and
+      # the runner's own user is already non-root, so this naturally
+      # exercises ROOTLESS podman -- the spec's own reference posture (it
+      # "predicts passing the first deployment target", OCP's
+      # `restricted-v2`). The `command -v` guard makes this correct either
+      # way if that ever stops being true upstream.
+      - name: Ensure podman is available (rootless)
+        if: matrix.engine == 'podman'
+        run: |
+          if ! command -v podman >/dev/null 2>&1; then
+            sudo apt-get update
+            sudo apt-get install -y podman
+          fi
+          podman --version
+          id -u
+
+      - name: Build image (${{ matrix.engine }})
+        run: ${{ matrix.engine }} build -f src/platform/Containerfile -t platform-ci-${{ matrix.engine }} .
+
+      - name: Start postgres + redis (${{ matrix.engine }})
+        run: |
+          ${{ matrix.engine }} network create platform-ci-net-${{ matrix.engine }}
+          ${{ matrix.engine }} run -d --name platform-ci-postgres-${{ matrix.engine }} \
+            --network platform-ci-net-${{ matrix.engine }} \
+            -e POSTGRES_USER=platform -e POSTGRES_PASSWORD=platform -e POSTGRES_DB=platform \
+            postgres:17
+          ${{ matrix.engine }} run -d --name platform-ci-redis-${{ matrix.engine }} \
+            --network platform-ci-net-${{ matrix.engine }} \
+            redis:7
+          for i in $(seq 1 30); do
+            ${{ matrix.engine }} exec platform-ci-postgres-${{ matrix.engine }} pg_isready -U platform >/dev/null 2>&1 && break
+            if [ "$i" = "30" ]; then
+              echo "::error::postgres (${{ matrix.engine }}) never became ready"
+              ${{ matrix.engine }} logs platform-ci-postgres-${{ matrix.engine }}
+              exit 1
+            fi
+            sleep 2
+          done
+          for i in $(seq 1 30); do
+            ${{ matrix.engine }} exec platform-ci-redis-${{ matrix.engine }} redis-cli ping >/dev/null 2>&1 && break
+            if [ "$i" = "30" ]; then
+              echo "::error::redis (${{ matrix.engine }}) never became ready"
+              ${{ matrix.engine }} logs platform-ci-redis-${{ matrix.engine }}
+              exit 1
+            fi
+            sleep 2
+          done
+
+      # `--user 12345:0` proves the image runs under an arbitrary uid that
+      # was never baked into the Containerfile anywhere (the spec's own
+      # I/O & Edge-Case Matrix row for this).
+      - name: Run platform container (${{ matrix.engine }})
+        run: |
+          ${{ matrix.engine }} run -d --name platform-ci-app-${{ matrix.engine }} \
+            --network platform-ci-net-${{ matrix.engine }} \
+            --user 12345:0 \
+            -p 8000:8000 \
+            -e DJANGO_SECRET_KEY=ci-placeholder-not-a-real-secret \
+            -e DJANGO_ADMIN_URL=admin/ \
+            -e DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1 \
+            -e DJANGO_SECURE_SSL_REDIRECT=False \
+            -e DATABASE_URL=postgres://platform:platform@platform-ci-postgres-${{ matrix.engine }}:5432/platform \
+            -e REDIS_URL=redis://platform-ci-redis-${{ matrix.engine }}:6379/0 \
+            platform-ci-${{ matrix.engine }}
+
+      - name: Poll /ht/ for 200
+        run: |
+          for i in $(seq 1 30); do
+            code="$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8000/ht/ || true)"
+            if [ "$code" = "200" ]; then echo "healthy (200)"; exit 0; fi
+            sleep 2
+          done
+          echo "::error::/ht/ never returned 200 (${{ matrix.engine }})"
+          ${{ matrix.engine }} logs platform-ci-app-${{ matrix.engine }}
+          exit 1
+
+      - name: manage.py check inside the running container
+        run: ${{ matrix.engine }} exec platform-ci-app-${{ matrix.engine }} /app/entrypoint.sh python manage.py check
+
+      - name: Confirm non-root UID
+        run: |
+          uid="$(${{ matrix.engine }} exec platform-ci-app-${{ matrix.engine }} id -u)"
+          echo "container uid: $uid"
+          if [ "$uid" = "0" ]; then
+            echo "::error::container is running as root (uid 0)"
+            exit 1
+          fi
+
+      - name: Teardown
+        if: always()
+        run: |
+          ${{ matrix.engine }} rm -f \
+            platform-ci-app-${{ matrix.engine }} \
+            platform-ci-postgres-${{ matrix.engine }} \
+            platform-ci-redis-${{ matrix.engine }} || true
+          ${{ matrix.engine }} network rm platform-ci-net-${{ matrix.engine }} || true

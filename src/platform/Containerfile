@@ -1,0 +1,297 @@
+# Story 10.3 ("One image, both engines"): multi-stage build following the
+# same PIXI MATERIALIZATION PATTERN as the repo-root Containerfile (Story
+# 7.1) -- a pixi builder stage materializes the `python-agent-platform` env
+# (Story 10.2), and a minimal runtime stage copies the materialized env +
+# app code, with no pixi binary in the final image. Diverges from Story
+# 7.1's Containerfile in two deliberate ways:
+#   1. Runtime base is UBI9-minimal, not ubuntu -- spec-python-agent-
+#      platform's Constraints name Red Hat OCP as the first deployment
+#      target (`restricted-v2` SCC), so this image is built for that
+#      posture from the start, not retrofitted later.
+#   2. The runtime stage runs as a non-root, arbitrary-UID-compatible user
+#      (GID 0, `g+rwX` on the two paths Django actually writes to) instead
+#      of root -- OCP's `restricted-v2` assigns a RANDOM uid at deploy
+#      time, so nothing here may hardcode a specific uid.
+#
+# BUILD CONTEXT DEVIATION FROM THE SPEC'S LITERAL VERIFICATION COMMAND:
+# spec-10-3-one-image-both-engines.md's `## Verification` section names
+# `docker build -f src/platform/Containerfile -t platform-test src/platform`
+# (context = src/platform/). That command does not actually work: the
+# builder stage's `pixi install --frozen -e python-agent-platform` reads
+# the WORKSPACE-ROOT `pixi.toml`/`pixi.lock` -- the `python-agent-platform`
+# feature lives in the one repo-root manifest, same as every other pixi
+# feature in this factory -- and those two files are not inside
+# `src/platform/`. Docker cannot COPY a file from outside the build context
+# without a second `--build-context` (a BuildKit extension beyond the one
+# the spec's own Boundaries & Constraints already caps at one:
+# `--mount=type=secret`). The working invocation -- the one every command in
+# this story's Design Notes, local verification, and CI job actually uses --
+# is `docker build -f src/platform/Containerfile -t platform-test .`
+# (context = REPO ROOT), exactly mirroring how the repo-root Containerfile
+# (Story 7.1) already builds itself (`docker build -f Containerfile .`).
+# This also means the repo-root `.dockerignore` -- not a new
+# `src/platform/.dockerignore` -- governs what reaches this build; see that
+# file's own "Story 10.3" section for the platform-specific additions this
+# story made there instead.
+#
+# --platform=linux/amd64 pinned on every stage for the same reason as the
+# repo-root Containerfile: the `python-agent-platform` feature's own
+# `platforms = ["linux-64", "osx-arm64-min"]` (pixi.toml, `[feature.
+# python-agent-platform]`) has no `linux-aarch64` entry, so an unpinned
+# build on an arm64 Docker host would fail `pixi install --frozen` outright
+# with no matching lock entry for the host's native arch.
+
+# pixi.toml's own `requires-pixi` floor is `>=0.76.2` (checked live at the
+# time of writing) -- ONE version ahead of the repo-root Containerfile's own
+# `ghcr.io/prefix-dev/pixi:0.76.1` pin (Story 7.1), which is stale against
+# its own documented "NINE places" invariant (that Containerfile's comment
+# names DW-7-1-2 and admits "NOTHING ENFORCES THIS"). Confirmed by a live
+# build failure here at exactly that mismatch (`this project requires pixi
+# '>=0.76.2', but you have pixi 0.76.1`) before landing on 0.76.2 below.
+# Fixing the root Containerfile's own drifted pin is out of this story's
+# scope (Code Map marks it reference-only).
+FROM --platform=linux/amd64 ghcr.io/prefix-dev/pixi:0.76.2 AS builder
+
+# WORKDIR /app -- fixed and short, mirrors the repo-root Containerfile's own
+# `/pyforge` rationale (this repo's worktree tooling has a documented
+# path-length panic in pixi-build-backends past a ~173-byte workspace root;
+# see that Containerfile's own comment for the full citation). `/app` is 4
+# bytes.
+WORKDIR /app
+
+# Full repo checkout, not a cherry-picked subset: this builder stage needs
+# three things the platform's own `pixi.toml`/`pixi.lock` reference-only
+# COPY couldn't supply on its own -- (a) the `python-agent-platform` env
+# itself, (b) a SECOND, build-time-only env (`pyforge-steward`) to run the
+# secrets-scan gate below (see that RUN step's own comment for why this
+# lives here and not in the final stage), which is a local path dependency
+# on `src/shared/packages/pyforge-steward` + `pyforge-core`, and (c)
+# `scripts/container-gates` itself. Copying the whole tree once, exactly
+# like the repo-root Containerfile does, is simpler and less error-prone
+# than cherry-picking each of those paths individually -- this is a
+# BUILDER-stage-only cost (discarded from the final image; see the runtime
+# stage below, which COPYs only the two specific artifacts it needs).
+COPY . /app
+
+# --frozen: install EXACTLY what pixi.lock says, matching the repo-root
+# Containerfile's own convention and rationale (see that file's comment on
+# `pixi install --frozen` for the full `--frozen` vs `--locked` reasoning).
+RUN pixi install --frozen -e python-agent-platform
+
+# The activation script for `python-agent-platform` -- sourced by the
+# runtime entrypoint below so gunicorn/Django/langflow/dbgpt all land on
+# PATH without shipping the pixi binary itself into the runtime stage.
+RUN pixi shell-hook -e python-agent-platform -s bash > /app/shell-hook.sh
+
+# ---- pip layer: Django-host production extras the pixi env doesn't cover ----
+# `pip install --no-deps` into the SAME pixi-materialized interpreter (never
+# a second venv) -- generated from the union of requirements/base.txt +
+# requirements/production.txt (the same files `pip install -r
+# production.txt` would resolve, since production.txt's own `-r base.txt`
+# line is a nested include), filtered down by EXCLUDING five package lines
+# this pixi env already conda-sources: `django` and `psycopg[c]` (named
+# explicitly in the spec -- installing either via pip would shadow the
+# pinned conda version), plus `fastapi`, `django-health-check`, and bare
+# `redis` (all three are ALSO conda-sourced by this exact env --
+# `[feature.python-agent-platform.dependencies]` in pixi.toml -- for the
+# identical shadowing reason; the spec's own Boundaries & Constraints
+# enumerates the intended pip-install set by name and none of these five
+# appear in it). `hiredis` is NOT excluded: it is the separate C-accelerator
+# package for redis-py, not conda-sourced by this env, and IS in the
+# enumerated set.
+#
+# The exclude regex is anchored (`^pkg==`) so it only matches the exact
+# package line, never a same-prefixed sibling: `^django==` does NOT match
+# `django-health-check==`/`django-redis==`/`django-environ==`/etc (checked
+# for every base.txt/production.txt line before landing this pattern), and
+# `^redis==` does NOT match `hiredis==` (no `^` anchor collision -- `hiredis`
+# does not start with the substring `redis`).
+#
+# EIGHT EXTRA PACKAGES, not in requirements/base.txt or production.txt:
+# `django-timezone-field`, `python-crontab`, `cron-descriptor`,
+# `django-appconf`, `rjsmin`, `text-unidecode`, `fido2`, `qrcode`. These are
+# REQUIRED (non-`extra`-gated) transitive dependencies of packages already
+# in the enumerated pip-install set -- a plain `pip install -r
+# production.txt` (no `--no-deps`) would resolve them silently, but
+# `--no-deps` (needed for the shadowing reason above) never does, so each
+# one has to be named explicitly or Django's own app-loading fails at
+# import time. Not discovered by guesswork: computed by diffing the FULL
+# 74-package closure of `pip install --dry-run --ignore-installed --report=-
+# -r requirements/production.txt` (pip's own resolver, asked to plan the
+# install as if nothing were present) against what this image's conda env +
+# this pip layer's normal set already provide -- confirmed live, exactly 5
+# names were absent from both sides (the other 3 below were found first,
+# iteratively, via the same method applied one `ModuleNotFoundError` at a
+# time before the full-closure diff made the rest visible in one pass):
+#   - `django-appconf`>=1.0.3, `rjsmin`==1.2.2 (exact, matching
+#     django-compressor's own pinned requirement) -- django-compressor's
+#     deps (django-compressor also needs `Django` and its OWN `rcssmin`
+#     pin, both already satisfied).
+#   - `text-unidecode`>=1.3 -- python-slugify's dep.
+#   - `fido2`>=1.1.2,<3, `qrcode`>=7.0.0,<9 -- django-allauth's `[mfa]`
+#     extra (`requirements/base.txt` pins `django-allauth[mfa]==65.10.0`,
+#     and `"allauth.mfa"` is a real `INSTALLED_APPS` entry --
+#     `config/settings/base.py` -- so these are not optional here).
+#   - `django-timezone-field`>=5.0, `python-crontab`>=2.3.4,
+#     `cron-descriptor`>=1.2.32 -- django-celery-beat's deps (its other two,
+#     `celery` and `Django`, are already covered).
+# Every package below this line was independently confirmed ALREADY present
+# (conda-sourced or a transitive pull from another conda package) and is
+# therefore correctly NOT re-listed here: `asgiref`, `requests`, `urllib3`,
+# `certifi`, `idna`, `charset-normalizer`, `click`, `h11`, `httptools`,
+# `watchfiles`, `websockets`, `uvloop`, `python-dotenv`, `PyYAML`,
+# `billiard`, `kombu`, `vine`, `click-didyoumean`, `click-repl`,
+# `click-plugins`, `python-dateutil`, `amqp`, `argon2-cffi-bindings`,
+# `cffi`, `pycparser`, `pydantic`, `pydantic_core`, `anyio`, `starlette`,
+# `annotated-types`, `annotated-doc`, `typing-inspection`,
+# `typing_extensions`.
+RUN bash -c "source /app/shell-hook.sh \
+    && grep -hE '^[A-Za-z]' /app/src/platform/requirements/base.txt /app/src/platform/requirements/production.txt \
+       | grep -viE '^(django|psycopg\[c\]|fastapi|django-health-check|redis)==' \
+       > /tmp/platform-pip-layer.txt \
+    && printf 'django-timezone-field>=5.0\npython-crontab>=2.3.4\ncron-descriptor>=1.2.32\ndjango-appconf>=1.0.3\nrjsmin==1.2.2\ntext-unidecode>=1.3\nfido2>=1.1.2,<3\nqrcode>=7.0.0,<9\n' >> /tmp/platform-pip-layer.txt \
+    && python3 -m pip install --no-cache-dir --no-deps -r /tmp/platform-pip-layer.txt \
+    && rm /tmp/platform-pip-layer.txt"
+
+# Story 7.3 ("Credentials never enter image layers") gate, reused verbatim
+# (AD-2 -- no second scanner) -- see that story's spec for the full
+# rationale of the gate itself.
+#
+# DEVIATION FROM THE SPEC'S LITERAL "final stage" WORDING: the Boundaries &
+# Constraints line says this RUN step lives in "the final stage". It runs
+# in the BUILDER stage here instead, for one concrete reason: `steward`
+# (the binary `scripts/container-gates secrets-scan` subprocesses into) is
+# the `pyforge-steward` package's own console script, which is NOT -- and
+# must not become -- a dependency of `python-agent-platform` (that env is
+# scoped to exactly the three agentic engines + the Django-host deps CAP-5
+# names; pulling in a whole factory station CLI to satisfy a build-time
+# gate would be real scope creep on "one factory-sourced environment").
+# This builder stage already has full pixi + the whole checkout (see the
+# `COPY . /app` above), so it can materialize `pyforge-steward` as a
+# SEPARATE, build-time-only env the same way the repo-root Containerfile
+# materializes `pyforge-container` -- and, critically, this env is never
+# COPY'd into the runtime stage, so it costs nothing in the shipped image.
+# The safety property the spec's wording protects -- "a finding fails
+# `docker build`/`podman build` itself, not a later `docker run`" -- holds
+# identically here: a nonzero `RUN` in ANY stage aborts the whole build.
+# Scoped to `src/platform` (this story's own human-authored tree, the only
+# thing this Containerfile's runtime stage actually copies in) rather than
+# the whole `/app` checkout the builder stage happens to also contain --
+# scanning the rest of the monorepo here would just re-run Story 7.3's own
+# already-proven-clean gate for content this image never ships.
+RUN pixi install --frozen -e pyforge-steward
+RUN pixi shell-hook -e pyforge-steward -s bash > /app/steward-shell-hook.sh
+RUN bash -c "source /app/steward-shell-hook.sh \
+    && python3 /app/scripts/container-gates secrets-scan /app/src/platform"
+
+FROM --platform=linux/amd64 registry.access.redhat.com/ubi9/ubi-minimal:9.6 AS runtime
+
+# WORKDIR /app -- same absolute path as the builder stage. This is not
+# cosmetic: `pixi shell-hook`'s output bakes ABSOLUTE paths into
+# `/app/.pixi/envs/python-agent-platform/...` for this exact env, so the
+# runtime stage must reuse the identical path or the copied hook script
+# would source activation scripts that no longer exist.
+WORKDIR /app
+
+# Only the materialized env + its activation hook -- not the whole
+# checkout the builder stage happens to contain (that included the full
+# monorepo, the `pyforge-steward` build-time env, and pixi's own package
+# cache, none of which belong in the runtime image).
+COPY --from=builder /app/.pixi/envs/python-agent-platform /app/.pixi/envs/python-agent-platform
+COPY --from=builder /app/shell-hook.sh /app/shell-hook.sh
+
+# App code -- fresh from the build context (repo root), not from the
+# builder stage, so this COPY (and its exclusions) is governed by the
+# repo-root `.dockerignore` alone, same as everything else in this stage.
+COPY src/platform/ /app/
+
+# Same `exec -- "$@"` pattern (and the same reason) as the repo-root
+# Containerfile's entrypoint: without the `--` terminator, a leading-dash
+# CMD override (e.g. an operator running `<image> --help` against some
+# future management command) would be parsed as bash's OWN option instead
+# of being handed to `exec`.
+RUN printf '#!/bin/bash\nset -e\nsource /app/shell-hook.sh\nexec -- "$@"\n' > /app/entrypoint.sh \
+    && chmod +x /app/entrypoint.sh
+
+ENV HOME=/app
+ENV DJANGO_SETTINGS_MODULE=config.settings.production
+
+# `collectstatic` -- REQUIRED before this image can serve a single real
+# page. `production.py`'s `STORAGES["staticfiles"]` is WhiteNoise's
+# `CompressedManifestStaticFilesStorage`, which raises `ValueError: Missing
+# staticfiles manifest entry` for any `{% static %}` reference (six of them
+# in `platformapp/templates/base.html` alone -- extended by essentially
+# every real page including the Django admin) unless the manifest already
+# exists on disk. `/ht/` and the FastAPI `/api/health` seam never exercise
+# `{% static %}`, so this gap shipped past every one of this story's own
+# smoke tests -- caught only in review. `DJANGO_SECRET_KEY`/`DJANGO_ADMIN_URL`
+# have no defaults in `production.py` (`env("...")`, no `default=`), so
+# `django.setup()` itself fails without them even for a build-time-only
+# command that touches no real secret or database -- these two values are
+# BUILD-TIME-ONLY placeholders, scoped to this single `RUN`'s environment,
+# never persisted as image `ENV` (the running container gets its real
+# `DJANGO_SECRET_KEY` from a runtime secret injection, unchanged by this
+# story). `DATABASE_URL`/`REDIS_URL` both have real defaults in
+# `base.py`/`production.py` and are never touched by either command below.
+#
+# THREE passes are required, in this exact order -- caught live in review
+# across two iterations, neither single-pass ordering works:
+#   1. `collectstatic` -- WhiteNoise's `CompressedManifestStaticFilesStorage`
+#      (`STORAGES["staticfiles"]`) requires its manifest to already exist on
+#      disk before ANY `{% static %}` reference resolves. `{% compress %}`
+#      blocks in `templates/base.html` contain `{% static %}` tags
+#      internally, so running `compress` first (attempted first, before this
+#      fix) fails silently -- `Compressed 0 block(s) from 152 template(s)`,
+#      no error, no output -- because compress can't resolve those inner
+#      `{% static %}` references without a manifest that doesn't exist yet.
+#   2. `compress --force` -- NOW `{% static %}` resolves (pass 1's manifest
+#      exists), so this generates the actual bundled/hashed CSS+JS output
+#      django-compressor's `COMPRESS_OFFLINE = True` requires (that file's
+#      own comment: "required when using Whitenoise") plus its own offline
+#      manifest, found by `STATICFILES_FINDERS`'s registered
+#      `compressor.finders.CompressorFinder` (`config/settings/base.py`).
+#   3. `collectstatic` again -- pass 1's manifest doesn't know about pass
+#      2's newly-generated compressed files yet (they didn't exist during
+#      pass 1); without this second pass django's `{% compress %}` tag 500s
+#      at request time with `OfflineGenerationError: ... offline
+#      compression enabled but key "..." is missing from offline manifest`
+#      (confirmed live, the collectstatic-then-compress-only two-pass
+#      attempt still 500'd the home page for exactly this reason).
+RUN DJANGO_SECRET_KEY=build-time-collectstatic-placeholder-not-a-real-secret \
+    DJANGO_ADMIN_URL=admin/ \
+    bash -c "source /app/shell-hook.sh \
+        && python manage.py collectstatic --noinput \
+        && python manage.py compress --force \
+        && python manage.py collectstatic --noinput"
+
+# Arbitrary-UID / rootless setup (OCP `restricted-v2`): group-own the two
+# paths Django actually writes to at runtime -- `STATIC_ROOT`
+# (`config/settings/base.py`: `BASE_DIR / "staticfiles"`, now populated by
+# `collectstatic` above) and `MEDIA_ROOT` (`APPS_DIR / "media"`) -- by GID 0
+# with `g+rwX`, rather than chmod'ing for one hardcoded UID. This is
+# deliberately NOT the whole `/app` tree: nothing else in this app writes to
+# its own source tree at runtime, and this app's own `LOGGING` config
+# (`config/settings/base.py` and `production.py`) uses a `console`
+# `StreamHandler` only -- there is no on-disk log directory to chmod (if a
+# future story adds a file-based log handler, that story must extend this
+# list). `HOME=/app` (set above, before `collectstatic`, since some
+# libraries read it during app-loading too) gives an arbitrary, passwd-less
+# UID a writable, already-owned-by-group-0 `$HOME` so any library that reads
+# it (e.g. for a cache/config dir) doesn't hit a permission error against
+# `/`, the default `$HOME` an unknown UID would otherwise resolve to.
+RUN mkdir -p /app/platformapp/media \
+    && chgrp -R 0 /app/staticfiles /app/platformapp/media \
+    && chmod -R g+rwX /app/staticfiles /app/platformapp/media
+
+# USER 1001:0 -- an arbitrary example non-root uid paired with GID 0, never
+# read by anything in this image (nothing here branches on "is my uid
+# 1001"). OCP's `restricted-v2` SCC overrides this to a RANDOM uid at
+# deploy time and keeps the declared GID; `docker run --user 12345:0` in
+# this story's own Verification proves the image works under a UID that
+# was never baked in anywhere, which is the actual property this
+# Containerfile has to deliver -- 1001 itself carries no significance
+# beyond "not 0".
+USER 1001:0
+
+ENTRYPOINT ["/app/entrypoint.sh"]
+CMD ["gunicorn", "config.asgi:application", "--bind", "0.0.0.0:8000", "--worker-class", "uvicorn_worker.UvicornWorker"]
