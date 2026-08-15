@@ -45,7 +45,7 @@ development_status:
   3-9-the-ship-verb-and-testpypi-rehearsal: done
   4-1-lock-engine-adapter-and-provenance: done
   4-2-manifest-discovery: backlog
-  4-3-mason-environment-lock: backlog
+  4-3-mason-environment-lock: done
   4-4-mason-environment-check: backlog
   5-1-cfe-independence-test: backlog
   5-2-governance-test: backlog
