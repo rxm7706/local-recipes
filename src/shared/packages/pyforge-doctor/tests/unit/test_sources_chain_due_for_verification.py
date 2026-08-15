@@ -1108,3 +1108,68 @@ def test_message_omits_mechanical_text_when_no_mechanical_verdict(
 
     assert len(findings) == 1
     assert "mechanical_verdict" not in findings[0].message
+
+
+# === Follow-up review pass: two more real correctness gaps ====================
+#
+# Both empirically confirmed against a real `git init` fixture before being
+# patched. Both push in the one direction the story's own vocabulary must
+# never produce: a false `still-open`.
+
+
+def test_gitignored_untracked_reference_is_still_detected(tmp_path: Path) -> None:
+    """`--untracked` alone still honors `.gitignore` -- a symbol referenced
+    only from a new, untracked file under a gitignored directory was
+    invisible to the search without `--no-exclude-standard`, reopening the
+    false-`still-open` gap `--untracked` was added to close."""
+    target = tmp_path / "target"
+    _init_repo(target)
+    _commit_file(
+        target, "src/foo.py", "def _foo(x):\n    return x\n",
+        "2026-01-01T00:00:00+00:00",
+    )
+    _commit_file(target, ".gitignore", "ignored_dir/\n", "2026-01-01T00:00:00+00:00")
+    _commit_file(
+        target, _tracked_rel("proj"),
+        "## DW-1\nverified: 2026-07-01 — checked once\n"
+        "Claim: `_foo` is unused and should be removed.\n",
+        "2026-07-01T00:00:00+00:00",
+    )
+    # A brand-new caller under a gitignored directory -- never `git add`-ed.
+    (target / "ignored_dir").mkdir()
+    (target / "ignored_dir" / "caller.py").write_text(
+        "y = _foo(5)\n", encoding="utf-8",
+    )
+
+    findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
+
+    assert len(findings) == 1
+    item = findings[0]
+    assert item["mechanical_verdict"] == "escalate"
+    assert item["mechanical_call_sites"] == 1
+
+
+def test_recursive_one_liner_self_call_is_counted(tmp_path: Path) -> None:
+    """A single-line recursive declaration (e.g. ``def _foo(x): return
+    _foo(x - 1) if x else 0``) is ONE matched line that is both the
+    declaration AND a genuine self-call -- excluding the whole line as
+    "the declaration" previously undercounted that real usage as zero."""
+    target = tmp_path / "target"
+    _init_repo(target)
+    _commit_file(
+        target, "src/foo.py",
+        "def _foo(x): return _foo(x - 1) if x else 0\n",
+        "2026-01-01T00:00:00+00:00",
+    )
+    _write_tracked(
+        target, "proj",
+        "## DW-1\nverified: 2026-07-01 — checked once\n"
+        "Claim: `_foo` is unused and should be removed.\n",
+    )
+
+    findings = chain._due_for_verification_findings(target, today=date(2026, 8, 15))
+
+    assert len(findings) == 1
+    item = findings[0]
+    assert item["mechanical_verdict"] == "escalate"
+    assert item["mechanical_call_sites"] == 1
