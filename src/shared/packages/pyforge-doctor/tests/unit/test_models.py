@@ -154,6 +154,11 @@ def test_source_taxonomy_is_exactly_this_closed_set():
     # Story 11.1 (Epic 11/CAP-1) added DUE_FOR_VERIFICATION, the first
     # genuinely NEW (non-ported) member: a per-project batch of tracked
     # deferred-work-ledger entries due for re-verification.
+    # Story 10.1 (Epic 10/CAP-1) added BMAD_METHOD_VERSION_DRIFT: whether the
+    # installed BMAD-METHOD framework version meets pixi.toml's own declared
+    # floor -- distinct from the existing BMAD_DRIFT (a different artifact:
+    # the installed framework tool, not pyforge-marshal's project-doc
+    # currency).
     assert {member.value for member in Source} == {
         "warden-doctor",
         "staleness-report",
@@ -176,6 +181,7 @@ def test_source_taxonomy_is_exactly_this_closed_set():
         "bmad-drift",
         "bmad-output-hygiene",
         "due-for-verification",
+        "bmad-method-version-drift",
     }
 
 
