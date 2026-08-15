@@ -32,13 +32,19 @@ class View:
 
     ``script`` is the CLI script's module stem (no ``.py``), resolved against
     :func:`pyforge.atlas.views.cli_bridge.default_scripts_dir` by
-    :func:`pyforge.atlas.views.cli_bridge.load_cli_module`. ``columns`` is the ordered,
-    declared table-column list — stable even when a query returns 0 rows.
+    :func:`pyforge.atlas.views.cli_bridge.load_cli_module`. ``widget`` is the widget-type
+    NAME looked up in :data:`pyforge.atlas.views.widgets.WIDGETS` at render time (Story
+    14.2, CAP-3) — declared here as a plain string, never validated at construction time, so
+    this module never has to depend on ``widgets.py`` (which itself depends on this module
+    for the :class:`View` type — that would be a cycle).
+    ``columns`` is the ordered, declared table-column list — stable even when a query
+    returns 0 rows.
     """
 
     name: str
     title: str
     script: str
+    widget: str
     columns: tuple[str, ...]
     query_kwargs: dict[str, Any] = field(default_factory=dict)
 
@@ -57,6 +63,7 @@ STATIC_VIEWS: tuple[View, ...] = (
         name="staleness-report",
         title="Staleness Report",
         script="staleness_report",
+        widget="grid",
         columns=(
             "conda_name",
             "feedstock_name",
@@ -92,6 +99,7 @@ STATIC_VIEWS: tuple[View, ...] = (
         name="feedstock-health",
         title="Feedstock Health",
         script="feedstock_health",
+        widget="grid",
         columns=(
             "conda_name",
             "feedstock_name",
@@ -121,6 +129,7 @@ STATIC_VIEWS: tuple[View, ...] = (
         name="behind-upstream",
         title="Behind Upstream",
         script="behind_upstream",
+        widget="grid",
         columns=(
             "conda_name",
             "pypi_name",
@@ -144,6 +153,7 @@ STATIC_VIEWS: tuple[View, ...] = (
         name="cve-watcher",
         title="CVE Watcher",
         script="cve_watcher",
+        widget="grid",
         columns=(
             "conda_name",
             "now_v",
@@ -165,6 +175,7 @@ STATIC_VIEWS: tuple[View, ...] = (
         name="release-cadence",
         title="Release Cadence",
         script="release_cadence",
+        widget="grid",
         columns=(
             "conda_name",
             "total_versions",
@@ -186,6 +197,7 @@ STATIC_VIEWS: tuple[View, ...] = (
         name="adoption-stage",
         title="Adoption Stage",
         script="adoption_stage",
+        widget="grid",
         columns=(
             "conda_name",
             "latest_conda_version",

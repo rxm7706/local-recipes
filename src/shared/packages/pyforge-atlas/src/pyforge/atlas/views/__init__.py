@@ -13,9 +13,13 @@ from __future__ import annotations
 from .cli_bridge import CfAtlasDbUnavailableError
 from .registry import STATIC_VIEWS
 from .render import render_view
+from .widgets import WIDGETS, Widget, get_widget
 
 __all__ = [
     "STATIC_VIEWS",
     "CfAtlasDbUnavailableError",
     "render_view",
+    "Widget",
+    "WIDGETS",
+    "get_widget",
 ]

@@ -1,9 +1,12 @@
-"""Static, self-contained Bokeh HTML fragments for the view catalog — Story 14.1 (CAP-1).
+"""Static, self-contained Bokeh HTML fragments for the view catalog — Story 14.1 (CAP-1),
+now dispatched through the pluggable widget-type registry — Story 14.2 (CAP-3).
 
 Renders ``list[dict]`` rows (fetched via :mod:`pyforge.atlas.views.cli_bridge`, straight
-from a CLI script's own ``query()``) as a ``bokeh.models.DataTable`` bound to a
-``ColumnDataSource``, and turns it into a ``script`` + ``div`` HTML fragment via
-``bokeh.embed.components()``. This is a purely static rendering primitive: ``components()``
+from a CLI script's own ``query()``) into a ``script`` + ``div`` HTML fragment by dispatching
+to the :class:`~pyforge.atlas.views.registry.View`'s declared ``widget`` type
+(:func:`~pyforge.atlas.views.widgets.get_widget`) — this module never constructs a Bokeh
+model type directly; that logic lives only inside a widget's ``static_renderer``. Every
+widget seeded so far is a purely static rendering primitive: ``bokeh.embed.components()``
 produces a self-contained fragment with no server/session/WebSocket code (never
 ``bokeh.embed.server_document``/``autoload_server``/any live-session API) — the Boundaries &
 Constraints this story is scoped to.
@@ -18,21 +21,15 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
-from bokeh.embed import components
-from bokeh.models import ColumnDataSource, DataTable, TableColumn
-
 from . import cli_bridge
 from .registry import View, get_view
+from .widgets import get_widget
 
 
 def render_rows(view: View, rows: list[dict[str, Any]]) -> tuple[str, str]:
     """Render already-fetched ``rows`` for ``view`` into a ``(script, div)`` HTML fragment
-    pair, using ``view.columns`` as the declared, stable column order."""
-    data = {column: [row.get(column) for row in rows] for column in view.columns}
-    source = ColumnDataSource(data=data)
-    table_columns = [TableColumn(field=column, title=column) for column in view.columns]
-    data_table = DataTable(source=source, columns=table_columns, index_position=None)
-    return components(data_table)
+    pair by dispatching to ``view``'s declared widget type."""
+    return get_widget(view.widget).static_renderer(view, rows)
 
 
 def render_view(name: str, *, scripts_dir: Path | None = None) -> tuple[str, str]:
