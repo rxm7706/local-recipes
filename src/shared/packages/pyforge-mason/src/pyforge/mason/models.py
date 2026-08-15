@@ -96,6 +96,15 @@ actually requested) that engine-layer shape does not itself carry -- mirrors
 outcomes above, the same "engine-layer shape stays in `engines/*.py`,
 the layer-boundary-crossing shape lands here" split that shape's own
 paragraph documents.
+
+Story 4.4 adds `CheckResult` -- the tenth shape in this file, and
+`environment.py::check()`'s own return type (FR-25, FR-27, FR-29):
+`engines.condalock.check()`'s `CondaLockCheckResult` wrapped with the same
+kind of orchestration-level context `LockResult` above already establishes
+the pattern for, plus `lockfile_path` (the EXISTING lockfile `check()` was
+told to verify, never a write target like `LockResult.output_path`) and
+`stale`, the verdict itself -- the one field neither `LockResult` nor any
+other shape in this file carries.
 """
 
 from __future__ import annotations
@@ -398,6 +407,39 @@ class LockResult:
     manifest_paths: tuple[str, ...]
     output_path: str
     platforms: tuple[str, ...]
+    engine_name: str
+    engine_version: str | None
+    returncode: int
+    stdout: str
+
+
+@dataclass(frozen=True)
+class CheckResult:
+    """The outcome of one `environment check` invocation (Story 4.4, FR-25,
+    FR-27, FR-29): `engines.condalock.check()`'s own `CondaLockCheckResult`
+    wrapped with the orchestration-level context that engine-layer shape
+    does not itself carry.
+
+    `lockfile_path` is the EXISTING lockfile the caller asked to verify --
+    never written to under any outcome (spec Never boundary), unlike
+    `LockResult.output_path`'s write-target semantics above; `--lockfile` is
+    deliberately not named `--output` for the same reason (spec Always
+    boundary). `manifest_paths`/`platforms` mirror `LockResult`'s own
+    identical fields and rationale -- the caller's own resolved inputs,
+    carried straight through unchanged. `stale` is the verdict itself
+    (Intent): `True` when the lockfile's parsed `metadata.content_hash`
+    differs before vs. after conda-lock's own `--check-input-hash` re-run
+    against a temporary copy, `False` when it does not -- DATA on this
+    dataclass, never raised (AD-4); `check()` itself never raises for a
+    stale verdict. `engine_name`/`engine_version`/`returncode`/`stdout`
+    mirror `LockResult`'s own identical fields and rationale -- `returncode`
+    is the delegated `conda-lock` subprocess's raw exit code, `stdout` its
+    captured stdout in full."""
+
+    lockfile_path: str
+    manifest_paths: tuple[str, ...]
+    platforms: tuple[str, ...]
+    stale: bool
     engine_name: str
     engine_version: str | None
     returncode: int

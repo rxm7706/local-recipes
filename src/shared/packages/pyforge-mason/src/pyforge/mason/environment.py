@@ -14,8 +14,17 @@ wrapper around `engines.condalock.lock()`, mirroring `package.py::build()`'s
 own engine-wrapping shape. Manifest auto-discovery (Story 4.2) is not yet
 built, so `lock()` requires its caller to supply manifest paths explicitly
 -- `cli.py`'s own `manifest_path` positional (`nargs="+"`) enforces "at
-least one" before this function is ever reached. Lock staleness checking
-(`mason environment check`, Story 4.4) has no presence here yet.
+least one" before this function is ever reached.
+
+Story 4.4 adds `check()`, the `mason environment check` use-case (FR-25,
+FR-27, FR-29): CI's own companion to `lock()` above -- a thin wrapper around
+`engines.condalock.check()`, mirroring `lock()`'s own platform-parsing/
+wrapping shape verbatim. Unlike `lock()`, `check()`'s own engine-layer
+counterpart validates `lockfile_path`'s existence itself
+(`EnvironmentLockfileMissingError`, raised before any subprocess spawns) --
+this function does no additional pre-validation of its own, matching
+`lock()`'s established "no Mason-side pre-validation" default for every
+other path argument.
 """
 
 from __future__ import annotations
@@ -23,7 +32,7 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 from .engines import condalock
-from .models import LockResult
+from .models import CheckResult, LockResult
 
 
 def lock(
@@ -67,6 +76,55 @@ def lock(
         manifest_paths=tuple(manifest_paths),
         output_path=output_path,
         platforms=parsed_platforms,
+        engine_name=result.engine_name,
+        engine_version=result.engine_version,
+        returncode=result.returncode,
+        stdout=result.stdout,
+    )
+
+
+def check(
+    lockfile_path: str, manifest_paths: Sequence[str], *, platforms: str | None = None
+) -> CheckResult:
+    """Report whether `lockfile_path` is stale relative to `manifest_paths`
+    via `engines.condalock.check()` (FR-25, FR-27, FR-29).
+
+    `platforms` parsing is IDENTICAL to `lock()`'s own, above (verbatim-
+    mirrored, spec Always boundary): the caller's own raw `--platform`
+    value, a comma-separated string or `None` when the flag was omitted,
+    split and stripped into a tuple here, in the use-case layer -- see
+    `lock()`'s own docstring for the full rationale, not repeated here.
+    Empty tokens are silently dropped the same way; `platforms=None` or
+    `""` both resolve to `()`, letting `conda-lock`'s own default apply,
+    never invented by Mason.
+
+    No pre-validation of `manifest_paths` existence (spec Always boundary,
+    mirrors `lock()`'s identical precedent) -- a bad manifest path surfaces
+    as `conda-lock`'s own non-zero returncode, never raised here.
+    `lockfile_path`'s existence IS validated, but by `engines.condalock.
+    check()` itself, not here (spec Always boundary: `Environment
+    LockfileMissingError` is raised at the engine layer, before any
+    subprocess spawns) -- this function does not duplicate that check.
+
+    Raises `EngineAbsentError`/`EnvironmentLockfileMissingError`/
+    `EnvironmentCheckTimeoutError` (all already defined, Story 4.1/4.4),
+    propagated unchanged from `engines.condalock.check()`. Never raises for
+    a stale verdict (AD-4) -- `stale` is DATA on the returned `CheckResult`.
+    """
+    if platforms:
+        parsed_platforms = tuple(
+            stripped for token in platforms.split(",") if (stripped := token.strip())
+        )
+    else:
+        parsed_platforms = ()
+
+    result = condalock.check(lockfile_path, manifest_paths, platforms=parsed_platforms)
+
+    return CheckResult(
+        lockfile_path=lockfile_path,
+        manifest_paths=tuple(manifest_paths),
+        platforms=parsed_platforms,
+        stale=result.stale,
         engine_name=result.engine_name,
         engine_version=result.engine_version,
         returncode=result.returncode,

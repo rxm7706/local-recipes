@@ -65,19 +65,49 @@ build`'s identical translation to its own timeout error.
 This module assembles argv and reports the child's outcome only -- no
 dependency-resolution logic of its own (spec AC3): `conda-lock`'s own
 vendored solver is what resolves the dependency graph.
+
+Story 4.4 adds `check()`, `mason environment check`'s own engine operation
+(FR-25, FR-27, FR-29): re-runs `conda-lock lock --check-input-hash` against a
+**temporary copy** of the given lockfile, never the real `lockfile_path`
+(Design Notes: `conda_lock.py::run_lock` calls `write_conda_lock_file` on its
+`--lockfile` target unconditionally once `new_lock_content` resolves --
+including the "nothing changed" branch -- so pointing `--lockfile` at the
+caller's real file would rewrite it on every check, current or stale).
+Staleness is decided by `yaml.safe_load`-parsing the copy's `metadata.
+content_hash` before vs. after invoking conda-lock and comparing the two
+parsed dicts for equality -- never conda-lock's own returncode (Design Notes:
+`--check-input-hash`'s documented exit-code-4 behavior is dead in installed
+`conda-lock` 4.0.2) and never raw file bytes (a harmless re-serialization
+that only changes formatting still parses to an identical dict). Raises
+`EnvironmentLockfileMissingError` (not `EngineAbsentError`) before any
+subprocess spawns when `lockfile_path` does not exist on disk -- a
+Mason-side precondition this operation alone needs, since `lock()` above has
+no analogous "existing file" input to validate first. Raises
+`EnvironmentCheckTimeoutError` (not `EnvironmentLockTimeoutError`) on a
+timeout -- a dedicated class per distinct operation, mirroring
+`ShipUploadTimeoutError`/`ShipChannelUploadTimeoutError`'s precedent
+(errors.py). The temporary copy is removed in a `finally` block, current,
+stale, or timed-out alike, mirroring `lock()`'s own `--mdy` cleanup
+precedent (`OSError` on removal swallowed).
 """
 
 from __future__ import annotations
 
 import json
 import os
+import shutil
 import subprocess
 import tempfile
 from collections.abc import Sequence
 from dataclasses import dataclass
 
+import yaml
+
 from . import probe_engine, require_engine
-from ..errors import EnvironmentLockTimeoutError
+from ..errors import (
+    EnvironmentCheckTimeoutError, EnvironmentLockfileMalformedError,
+    EnvironmentLockfileMissingError, EnvironmentLockTimeoutError,
+)
 
 name = "conda-lock"
 """`EngineAdapter.name` -- an `engines/__init__.py::_KNOWN_ENGINES` key."""
@@ -195,3 +225,160 @@ def lock(
         engine_version=engine_version,
         stdout=completed.stdout,
     )
+
+
+@dataclass(frozen=True)
+class CondaLockCheckResult:
+    """One `check()` call's outcome (Story 4.4, FR-25, FR-27, FR-29).
+    `stale` is the ONE piece of data this operation exists to produce:
+    `True` when the lockfile's own `metadata.content_hash` differs before
+    vs. after re-running `conda-lock lock --check-input-hash` against a
+    temporary copy of it (module docstring: why a copy, never the real
+    path), `False` when it does not -- never conda-lock's own returncode
+    (module docstring: dead in installed 4.0.2). `returncode`/`engine_name`/
+    `engine_version`/`stdout` mirror `CondaLockResult`'s own identical
+    fields and rationale -- `returncode` is the delegated `conda-lock`
+    subprocess's raw exit code, DATA here too (AD-4), never used to derive
+    `stale`."""
+
+    stale: bool
+    returncode: int
+    engine_name: str
+    engine_version: str | None
+    stdout: str
+
+
+def check(
+    lockfile_path: str,
+    manifest_paths: Sequence[str],
+    *,
+    platforms: Sequence[str] = (),
+    timeout: float | None = None,
+) -> CondaLockCheckResult:
+    """Report whether `lockfile_path` is stale relative to `manifest_paths`
+    via `conda-lock lock --check-input-hash`, run against a **temporary
+    copy** of `lockfile_path` -- never the caller's own file (module
+    docstring for the full rationale).
+
+    Raises `EngineAbsentError` (via `require_engine`) before any subprocess
+    spawns or temp copy is made if the `conda-lock` engine is not on `PATH`
+    -- checked FIRST, mirroring `lock()`'s own engine-presence-gate-first
+    precedent. Raises `EnvironmentLockfileMissingError` if `lockfile_path`
+    does not exist on disk -- checked second, still before any subprocess
+    spawns or temp copy is made (spec Always boundary).
+
+    The copy is made via `tempfile.mkstemp` + `shutil.copyfile` (module
+    docstring; `copyfile`, not `copy` -- review pass, 2026-08-15: `shutil.
+    copy` also calls `copymode`, overwriting `mkstemp`'s secure `0600` temp
+    file with the source lockfile's own, typically wider, permission bits;
+    `copyfile` copies content only, leaving `mkstemp`'s mode untouched).
+    Its `metadata.content_hash` is parsed with `yaml.safe_load` (never
+    `yaml.load`) both before and after invoking conda-lock, via the private
+    `_read_content_hash` helper below, which translates any malformed-
+    content failure (not valid YAML, empty, missing the expected keys, not
+    valid UTF-8) into `EnvironmentLockfileMalformedError` rather than a raw
+    exception (review pass, 2026-08-15) -- `stale` is `True` exactly when
+    those two parsed values differ (module docstring: why parsed dicts, not
+    raw bytes or conda-lock's own returncode). The caller's own
+    `lockfile_path` is never opened for writing at any point -- only read
+    once, by `shutil.copyfile`'s source side; a failure there (including the
+    narrow TOCTOU race between the earlier `os.path.isfile` check and this
+    copy -- review pass, 2026-08-15) is translated to
+    `EnvironmentLockfileMissingError` rather than a raw `OSError`.
+
+    A non-zero `completed.returncode` is surfaced as DATA on the returned
+    result (AD-4, mirrors `lock()`'s own precedent) -- but review pass,
+    2026-08-15 found that leaving it at that let a genuine `conda-lock`
+    failure (a bad manifest, a solver crash, a network error during a real
+    re-solve the hash mismatch triggered) masquerade as `stale=False`
+    whenever the temp copy happened not to be rewritten before the failure:
+    `cli.py`'s own dispatch now also treats a non-zero `returncode` as
+    `EXIT_FAILED`, so this function itself still never raises for a failed
+    child (AD-4 intact), but a caller relying on the process exit code alone
+    can no longer mistake "the check itself failed" for "current."
+
+    Argv is `["conda-lock", "lock", "--check-input-hash"]` followed by one
+    repeated `-f <path>` per `manifest_paths` entry, one repeated
+    `-p <platform>` per `platforms` entry, and finally `["--lockfile",
+    <temp copy path>]` -- mirrors `lock()`'s own `-f`/`-p` repetition and
+    omitted-`platforms`/`manifest_paths` behavior exactly. `subprocess.run`
+    kwargs are byte-identical to `lock()`'s own (`stdout=PIPE, stderr=None,
+    text=True, encoding="utf-8", errors="replace", check=False`, a mandatory
+    `timeout=`).
+
+    `timeout` defaults to `_CONDA_LOCK_TIMEOUT_SECONDS` when `None` --
+    reused from `lock()` above (identical underlying `conda-lock lock`
+    invocation) -- but a timeout raises `EnvironmentCheckTimeoutError`, NOT
+    `EnvironmentLockTimeoutError` (module docstring). The temp copy is
+    removed in a `finally` block, current, stale, or timed-out alike;
+    removal swallows `OSError`.
+    """
+    engine_version = require_engine("conda-lock")
+
+    if not os.path.isfile(lockfile_path):
+        raise EnvironmentLockfileMissingError(lockfile_path)
+
+    resolved_timeout = timeout if timeout is not None else _CONDA_LOCK_TIMEOUT_SECONDS
+
+    fd, temp_lockfile_path = tempfile.mkstemp(suffix=".yml", prefix="mason-condalock-check-")
+    os.close(fd)
+    try:
+        try:
+            shutil.copyfile(lockfile_path, temp_lockfile_path)
+        except OSError as exc:
+            raise EnvironmentLockfileMissingError(lockfile_path) from exc
+
+        before = _read_content_hash(temp_lockfile_path, lockfile_path)
+
+        argv = [_BINARY_NAME, "lock", "--check-input-hash"]
+        for manifest_path in manifest_paths:
+            argv.extend(("-f", manifest_path))
+        for platform in platforms:
+            argv.extend(("-p", platform))
+        argv.extend(("--lockfile", temp_lockfile_path))
+
+        completed = subprocess.run(
+            argv,
+            stdout=subprocess.PIPE,
+            stderr=None,
+            text=True,
+            encoding="utf-8",
+            errors="replace",
+            timeout=resolved_timeout,
+            check=False,
+        )
+
+        after = _read_content_hash(temp_lockfile_path, lockfile_path)
+    except subprocess.TimeoutExpired:
+        raise EnvironmentCheckTimeoutError(timeout=resolved_timeout) from None
+    finally:
+        try:
+            os.unlink(temp_lockfile_path)
+        except OSError:
+            pass
+
+    return CondaLockCheckResult(
+        stale=before != after,
+        returncode=completed.returncode,
+        engine_name=name,
+        engine_version=engine_version,
+        stdout=completed.stdout,
+    )
+
+
+def _read_content_hash(temp_path: str, lockfile_path: str) -> object:
+    """Read `metadata.content_hash` out of the temp lockfile copy at
+    `temp_path`, translating any malformed-content failure into
+    `EnvironmentLockfileMalformedError` naming the caller's own
+    `lockfile_path` (review pass, 2026-08-15) -- a lockfile that is not
+    valid YAML, is empty (`yaml.safe_load` returns `None`), is not valid
+    UTF-8, or lacks the expected `metadata`/`content_hash` keys is not an
+    anticipated `conda-lock`-produced shape, but must still surface as a
+    typed `MasonError` (NFR-14), never a raw `KeyError`/`TypeError`/
+    `yaml.YAMLError`/`UnicodeDecodeError`/`OSError` escaping to `main()`'s
+    generic exception handler."""
+    try:
+        with open(temp_path, encoding="utf-8") as handle:
+            return yaml.safe_load(handle)["metadata"]["content_hash"]
+    except (OSError, UnicodeDecodeError, yaml.YAMLError, KeyError, TypeError) as exc:
+        raise EnvironmentLockfileMalformedError(lockfile_path, str(exc)) from exc
