@@ -1190,3 +1190,614 @@ def test_classify_tier3_entries_never_raises_on_non_utf8_bytes(tmp_path: Path) -
 
     assert len(entries) == 1
     assert entries[0].id == "DW-1"
+
+
+# --- Story 8.2: mint_id_for_entry --------------------------------------------
+#
+# Covers every row of the story spec's I/O & Edge-Case Matrix. Where the
+# fleet's real tracked ledgers exercise the same edge-case SHAPE the spec's
+# own anecdote names, the real ids are used (embedded as verbatim excerpts,
+# mirroring this file's own real-excerpt discipline above) rather than
+# fabricated ones -- see each test's docstring for exactly which real file
+# and ids it reproduces. Two of the spec's own anecdotal ids
+# (`DW-10-5-1..8`, `DW-13-3-1`) had already moved by the time this story was
+# implemented (2026-08-15 same-day ledger churn); the real ids used here
+# exercise the identical shape instead -- see docstrings.
+
+
+def _entry_with_source_spec(source_spec: str, start_line: int = 1) -> chain.LegacyEntry:
+    return chain.LegacyEntry(
+        chain.Tier3Shape.LEGACY_FLAT, None, start_line, start_line,
+        {"source_spec": source_spec},
+    )
+
+
+# _derive_story_key ------------------------------------------------------------
+
+
+def test_derive_story_key_two_digit_groups() -> None:
+    assert chain._derive_story_key("`spec-6-1-something.md`") == "6-1"
+
+
+def test_derive_story_key_multi_digit_groups_both_multi_digit_real_excerpt() -> None:
+    """step-04-review.md's own worked example: both numeric groups can be
+    multi-digit (`6-10`, not `6-1`). Real `source_spec` value, from
+    `_bmad-output/projects/pyforge-marshal/planning-artifacts/
+    deferred-work-ledger.md`."""
+    real = (
+        "`_bmad-output/projects/pyforge-marshal/implementation-artifacts/"
+        "spec-1-10-render-the-harness-policy-from-the-canonical-effectivepolicy.md`"
+    )
+    assert chain._derive_story_key(real) == "1-10"
+
+
+def test_derive_story_key_stops_at_second_numeric_group() -> None:
+    """step-04-review.md's own worked example: `spec-2-1-3-way-merge-....md`
+    -> `2-1`, never `2-1-3` -- matching stops at the second numeric group."""
+    assert chain._derive_story_key("`spec-2-1-3-way-merge-of-something.md`") == "2-1"
+
+
+def test_derive_story_key_keeps_a_letter_suffix() -> None:
+    """I/O matrix row 6. No letter-suffixed spec file exists live in the
+    fleet today -- step-04-review.md's own step 2 admits this is "a latent
+    shape, not a live one" -- so this is necessarily synthetic. A letter
+    suffix must be kept, and must mint under a base distinct from the
+    unsuffixed story."""
+    assert chain._derive_story_key("`spec-6-1a-something.md`") == "6-1a"
+    assert chain._derive_story_key("`spec-6-1a-something.md`") != chain._derive_story_key(
+        "`spec-6-1-something.md`"
+    )
+
+
+def test_derive_story_key_falls_back_to_parent_dir_for_generic_stem_real_excerpt() -> None:
+    """Real excerpt: `_bmad-output/projects/pyforge-doctor/planning-artifacts/
+    deferred-work-ledger.md`'s `DW-CHAIN-COMPLETENESS-1` entry cites a
+    durable story spec at `planning-artifacts/specs/
+    spec-deferred-work-visibility/SPEC.md` -- stem `SPEC` is one of the
+    generic container names step-04-review.md step 2 names by name, so the
+    PARENT directory name (`spec-` stripped) is used instead, exactly its
+    own worked fallback-slug example ("a fallback slug
+    (`deferred-work-visibility`, whose trailing segment is not an
+    integer)")."""
+    real = (
+        "`_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/"
+        "spec-deferred-work-visibility/SPEC.md`"
+    )
+    assert chain._derive_story_key(real) == "deferred-work-visibility"
+
+
+def test_derive_story_key_bare_filename_with_no_directory_uses_whole_stem_real_excerpt() -> None:
+    """Real excerpt: `_bmad-output/projects/pyforge-atlas/
+    implementation-artifacts/deferred-work.md`'s real `source_spec` value
+    (also used by this file's own
+    ``test_legacy_flat_shape_from_atlas_real_excerpt`` above) has no
+    `spec-<digits>-<digits>` key and no directory to fall back to -- the
+    whole sanitized stem is used verbatim."""
+    assert chain._derive_story_key(
+        "`a1-scaffold-the-kedro-pixi-project-via-nebi.md`"
+    ) == "a1-scaffold-the-kedro-pixi-project-via-nebi"
+
+
+def test_derive_story_key_raises_on_empty_or_blank_source_spec() -> None:
+    with pytest.raises(ValueError):
+        chain._derive_story_key("")
+    with pytest.raises(ValueError):
+        chain._derive_story_key("   ")
+    with pytest.raises(ValueError):
+        chain._derive_story_key("``")
+
+
+# _collect_dw_tokens -------------------------------------------------------------
+
+
+def test_collect_dw_tokens_missing_files_contribute_nothing(tmp_path: Path) -> None:
+    assert chain._collect_dw_tokens(
+        tmp_path / "tier3-missing.md", tmp_path / "tracked-missing.md",
+    ) == set()
+
+
+def test_collect_dw_tokens_unions_both_files_and_harvests_prose_not_just_headings(
+    tmp_path: Path,
+) -> None:
+    """Boundaries: collect every `DW-` token anywhere in the text, from
+    BOTH files -- not just headings, and not just one file."""
+    tier3 = tmp_path / "deferred-work.md"
+    tier3.write_text("### DW-FU-6-1\nsee also DW-FU-6-2 in prose, no heading of its own\n",
+                      encoding="utf-8")
+    tracked = tmp_path / "deferred-work-ledger.md"
+    tracked.write_text("### DW-FU-5-1\n", encoding="utf-8")
+
+    assert chain._collect_dw_tokens(tier3, tracked) == {"DW-FU-6-1", "DW-FU-6-2", "DW-FU-5-1"}
+
+
+def test_collect_dw_tokens_unreadable_file_degrades_visibly_not_silently(
+    tmp_path: Path,
+) -> None:
+    """Review Triage Log 2026-08-15, item 1 (HIGH): an unreadable file used
+    to degrade SILENTLY to "contributes nothing" (`except Exception:
+    continue`), which can mask an already-minted id and produce a duplicate
+    mint -- exactly the failure this whole module exists to prevent
+    (`_probe`/`_is_file`'s own masking-prevention philosophy). Narrowed to
+    `except OSError`, and the degrade is now VISIBLE: it raises, mirroring
+    `_load_deferred_work_baseline`'s own "visible on failure" precedent,
+    rather than the removed docstring's now-incorrect "residual risk
+    accepted" framing."""
+    d = tmp_path / "locked"
+    d.mkdir()
+    tier3 = d / "deferred-work.md"
+    tier3.write_text("### DW-FU-6-1\n", encoding="utf-8")
+    d.chmod(0o000)
+    try:
+        with pytest.raises(OSError):
+            chain._collect_dw_tokens(tier3, tmp_path / "does-not-exist.md")
+    finally:
+        d.chmod(0o755)
+
+
+def test_mint_id_for_entry_unreadable_ledger_propagates_not_silently_empty(
+    tmp_path: Path,
+) -> None:
+    """The same visible-degrade fix, exercised end-to-end through
+    `mint_id_for_entry` itself -- the caller must not silently proceed as
+    if an unreadable ledger were simply empty."""
+    d = tmp_path / "locked"
+    d.mkdir()
+    tier3 = d / "deferred-work.md"
+    tier3.write_text("### DW-FU-6-1\n", encoding="utf-8")
+    d.chmod(0o000)
+    try:
+        with pytest.raises(OSError):
+            chain.mint_id_for_entry(
+                _entry_with_source_spec("`spec-6-1-something.md`"),
+                "doctor", tier3, tmp_path / "does-not-exist.md",
+            )
+    finally:
+        d.chmod(0o755)
+
+
+# _next_free_suffix ---------------------------------------------------------------
+
+
+def test_next_free_suffix_returns_none_when_nothing_collected() -> None:
+    assert chain._next_free_suffix("DW-FU-7-1", set()) is None
+
+
+def test_next_free_suffix_bare_base_id_counts_as_one() -> None:
+    assert chain._next_free_suffix("DW-FU-6-1", {"DW-FU-6-1"}) == 2
+
+
+def test_next_free_suffix_numeric_not_lexicographic_comparison() -> None:
+    """`9 < 10` numerically but `"9" > "10"` lexicographically -- the
+    highest counting suffix must be picked numerically."""
+    collected = {"DW-FU-1-1-2", "DW-FU-1-1-9", "DW-FU-1-1-10"}
+    assert chain._next_free_suffix("DW-FU-1-1", collected) == 11
+
+
+def test_next_free_suffix_ignores_non_integer_remainder() -> None:
+    """A `-draft` suffix and a longer dotted/multi-segment tail both reserve
+    nothing."""
+    collected = {"DW-FU-1-1-draft", "DW-FU-1-1-2-3"}
+    assert chain._next_free_suffix("DW-FU-1-1", collected) is None
+
+
+def test_next_free_suffix_whole_remainder_must_be_integer_not_last_segment() -> None:
+    """step-04-review.md's own worked example: mason's real `DW-1-10-1`
+    must not count toward base `DW-1-1`'s suffix, even though its LAST
+    segment (`1`) looks like a valid suffix number -- the WHOLE remainder
+    (`0-1`) is judged, and it is not a plain integer."""
+    assert chain._next_free_suffix("DW-1-1", {"DW-1-10-1"}) is None
+
+
+# mint_id_for_entry ----------------------------------------------------------------
+
+
+def test_mint_id_for_entry_non_mason_no_collision(tmp_path: Path) -> None:
+    """I/O matrix row 1: station=doctor, nothing collected for `DW-FU-7-1*`
+    -> bare `DW-FU-7-1`."""
+    entry = _entry_with_source_spec("`spec-7-1-something-brand-new.md`")
+    result = chain.mint_id_for_entry(
+        entry, "doctor", tmp_path / "no-tier3.md", tmp_path / "no-tracked.md",
+    )
+    assert result == "DW-FU-7-1"
+
+
+def test_mint_id_for_entry_non_mason_bare_already_taken_real_excerpt(tmp_path: Path) -> None:
+    """I/O matrix row 2, against a real excerpt: `_bmad-output/projects/
+    pyforge-steward/planning-artifacts/deferred-work-ledger.md` line 222 (a
+    `promoted:` note, not a heading -- proving the "harvest prose, not just
+    headings" rule) cites `DW-FU-10-1` as that entry's own Tier-3 origin id,
+    with no numeric-suffixed sibling anywhere else in that file. Minting for
+    the same story (`10-1`) must suffix past it: `DW-FU-10-1-2`."""
+    tracked = tmp_path / "deferred-work-ledger.md"
+    tracked.write_text(
+        "  promoted: 2026-08-15 — promoted from Tier-3 "
+        "`implementation-artifacts/deferred-work.md` (id `DW-FU-10-1` there) "
+        "during the pre-shutdown deferred-work audit.\n",
+        encoding="utf-8",
+    )
+    entry = _entry_with_source_spec("`spec-10-1-something.md`")
+    result = chain.mint_id_for_entry(entry, "doctor", tmp_path / "no-tier3.md", tracked)
+    assert result == "DW-FU-10-1-2"
+
+
+def test_mint_id_for_entry_non_mason_suffix_continuation_real_excerpt(tmp_path: Path) -> None:
+    """I/O matrix row 3, against a real excerpt. The spec's own anecdote
+    names `DW-FU-10-5-1..8` (marshal); the live ledgers no longer carry
+    that exact family (same-day churn), but `_bmad-output/projects/
+    pyforge-steward/planning-artifacts/deferred-work-ledger.md` carries the
+    IDENTICAL shape for story `9-3`: ten `DW-9-3-*` headed entries, each
+    with a verbatim `promoted:` note (embedded below) citing its own
+    Tier-3 origin id -- `DW-FU-9-3` (bare) plus `DW-FU-9-3-2` through
+    `DW-FU-9-3-10`. Minting for the same story (`9-3`) must continue past
+    the highest, `-10`, to `-11` -- numerically, never by re-using the bare
+    id or restarting at `-1`."""
+    tracked = tmp_path / "deferred-work-ledger.md"
+    tracked.write_text(
+        "  promoted: 2026-08-15 — promoted from Tier-3 "
+        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3` there) "
+        "during the pre-shutdown deferred-work audit.\n"
+        "  promoted: 2026-08-15 — promoted from Tier-3 "
+        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-2` there) "
+        "during the pre-shutdown deferred-work audit.\n"
+        "  promoted: 2026-08-15 — promoted from Tier-3 "
+        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-3` there) "
+        "during the pre-shutdown deferred-work audit.\n"
+        "  promoted: 2026-08-15 — promoted from Tier-3 "
+        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-4` there) "
+        "during the pre-shutdown deferred-work audit.\n"
+        "  promoted: 2026-08-15 — promoted from Tier-3 "
+        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-5` there) "
+        "during the pre-shutdown deferred-work audit.\n"
+        "  promoted: 2026-08-15 — promoted from Tier-3 "
+        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-6` there) "
+        "during the pre-shutdown deferred-work audit.\n"
+        "  promoted: 2026-08-15 — promoted from Tier-3 "
+        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-7` there) "
+        "during the pre-shutdown deferred-work audit.\n"
+        "  promoted: 2026-08-15 — promoted from Tier-3 "
+        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-8` there) "
+        "during the pre-shutdown deferred-work audit.\n"
+        "  promoted: 2026-08-15 — promoted from Tier-3 "
+        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-9` there) "
+        "during the pre-shutdown deferred-work audit.\n"
+        "  promoted: 2026-08-15 — promoted from Tier-3 "
+        "`implementation-artifacts/deferred-work.md` (id `DW-FU-9-3-10` there) "
+        "during the pre-shutdown deferred-work audit.\n",
+        encoding="utf-8",
+    )
+    entry = _entry_with_source_spec("`spec-9-3-something.md`")
+    result = chain.mint_id_for_entry(entry, "doctor", tmp_path / "no-tier3.md", tracked)
+    assert result == "DW-FU-9-3-11"
+
+
+def test_mint_id_for_entry_mason_no_suffix_collected(tmp_path: Path) -> None:
+    """I/O matrix row 4: mason always suffixes, even on a story with
+    nothing collected for it yet -- never bare."""
+    entry = _entry_with_source_spec("`spec-2-1-something-brand-new.md`")
+    result = chain.mint_id_for_entry(
+        entry, "mason", tmp_path / "no-tier3.md", tmp_path / "no-tracked.md",
+    )
+    assert result == "DW-2-1-1"
+
+
+def test_mint_id_for_entry_mason_dw_1_10_1_does_not_count_toward_1_1_real_excerpt(
+    tmp_path: Path,
+) -> None:
+    """I/O matrix row 5 and this story's Acceptance Criteria row 2, against
+    a VERBATIM excerpt of `_bmad-output/projects/pyforge-mason/
+    planning-artifacts/deferred-work-ledger.md` lines 57-64 -- mason's real
+    `DW-1-10-1` entry. Minting for a NEW orphan whose derived story is
+    `1-1` must not be skipped past it: the mint is `DW-1-1-1`, mason's
+    normal first-suffix mint for a story with nothing collected, never
+    `DW-1-1-2`."""
+    tracked = tmp_path / "deferred-work-ledger.md"
+    tracked.write_text(
+        "### DW-1-10-1\n"
+        "\n"
+        "- source_spec: `_bmad-output/implementation-artifacts/"
+        "spec-1-10-configuration-surface-logging-and-child-output-streaming.md`\n"
+        "  summary: follow-up review still recommended for 1-10 after the "
+        "damping cap was spent — an independent pass is owed on the "
+        "configuration surface, logging, and child-output streaming.\n"
+        "  evidence: the follow-up-review damping cap "
+        "(`limits.max_followup_reviews = 2`) was spent with the story "
+        "finalized (status `done`, verify green) while the review pass "
+        "still recommended an independent follow-up. Committed by bmad-loop "
+        "run `20260809-231234-a3cb`. 1-10 also ran to both ceilings — dev "
+        "attempt 2/2 and review cycle 3/3 — and cleared on its LAST cycle "
+        "rather than escalating, which is exactly the profile where an "
+        "independent pass is worth spending.\n"
+        "  promoted: 2026-08-10 — promoted from Tier-3 "
+        "`implementation-artifacts/deferred-work.md` (id `DW-1` there) under "
+        "THIS ledger's own `DW-<story>-<n>` convention (`DW-1-3-1`, "
+        "`DW-1-4-1`, `DW-1-4-2`), which differs from doctor's and atlas's "
+        "`DW-FU-<story>`; the station's own precedent wins. A generic `DW-1` "
+        "would collide with the next damped story, and Tier-3 is gitignored "
+        "so the entry would not survive a clone. Marshal Story 4.13 — "
+        "landed earlier today in PR #381 — exists to make this promotion an "
+        "obligation of the story rather than archaeology someone performs "
+        "later.\n"
+        "  status: open\n",
+        encoding="utf-8",
+    )
+    entry = _entry_with_source_spec("`spec-1-1-something-brand-new.md`")
+    result = chain.mint_id_for_entry(entry, "mason", tmp_path / "no-tier3.md", tracked)
+    assert result == "DW-1-1-1"
+
+
+def test_mint_id_for_entry_letter_suffixed_story_key_distinct_from_unsuffixed(
+    tmp_path: Path,
+) -> None:
+    """I/O matrix row 6 -- necessarily synthetic (no letter-suffixed spec
+    file exists live in the fleet today, step-04-review.md's own
+    admission)."""
+    no_tier3 = tmp_path / "no-tier3.md"
+    no_tracked = tmp_path / "no-tracked.md"
+    result_a = chain.mint_id_for_entry(
+        _entry_with_source_spec("`spec-6-1a-something.md`"), "doctor", no_tier3, no_tracked,
+    )
+    result_plain = chain.mint_id_for_entry(
+        _entry_with_source_spec("`spec-6-1-something.md`"), "doctor", no_tier3, no_tracked,
+    )
+    assert result_a == "DW-FU-6-1a"
+    assert result_plain == "DW-FU-6-1"
+
+
+def test_mint_id_for_entry_raises_on_missing_source_spec_field(tmp_path: Path) -> None:
+    """I/O matrix row 7 and this story's Acceptance Criteria row 3: no
+    `source_spec` field at all -> raise, never mint a phantom
+    `DW-`-prefixed-nothing id."""
+    entry = chain.LegacyEntry(chain.Tier3Shape.LEGACY_FLAT, None, 12, 12, {})
+    with pytest.raises(ValueError, match="line 12"):
+        chain.mint_id_for_entry(
+            entry, "doctor", tmp_path / "no-tier3.md", tmp_path / "no-tracked.md",
+        )
+
+
+def test_mint_id_for_entry_raises_on_blank_source_spec_field(tmp_path: Path) -> None:
+    entry = _entry_with_source_spec("   ")
+    with pytest.raises(ValueError):
+        chain.mint_id_for_entry(
+            entry, "doctor", tmp_path / "no-tier3.md", tmp_path / "no-tracked.md",
+        )
+
+
+def test_mint_id_for_entry_never_writes_to_either_path(tmp_path: Path) -> None:
+    """Boundaries: 'Never write to tier3_path/tracked_path' -- pure
+    computation, no side effects."""
+    tier3 = tmp_path / "deferred-work.md"
+    tracked = tmp_path / "deferred-work-ledger.md"
+    tier3.write_text("### DW-FU-3-1\n", encoding="utf-8")
+    tracked.write_text("### DW-FU-3-1\n", encoding="utf-8")
+    tier3_before = tier3.read_bytes()
+    tracked_before = tracked.read_bytes()
+
+    chain.mint_id_for_entry(
+        _entry_with_source_spec("`spec-3-1-something.md`"), "doctor", tier3, tracked,
+    )
+
+    assert tier3.read_bytes() == tier3_before
+    assert tracked.read_bytes() == tracked_before
+
+
+def test_mint_id_for_entry_station_is_never_derived_from_ambient_state(tmp_path: Path) -> None:
+    """Design Notes: `station` is an explicit caller-supplied parameter,
+    never resolved from ambient active-project state -- an arbitrary KNOWN
+    non-mason station string still takes the FU-prefixed branch (updated
+    2026-08-15: the original used a garbage `"unknown"` value, but Review
+    Triage Log item 3 now requires an unrecognized station to raise rather
+    than silently fall through -- see
+    `test_mint_id_for_entry_unrecognized_station_raises` for that case;
+    `"atlas"` here is a real, known, non-mason station)."""
+    result = chain.mint_id_for_entry(
+        _entry_with_source_spec("`spec-11-1-something.md`"),
+        "atlas", tmp_path / "no-tier3.md", tmp_path / "no-tracked.md",
+    )
+    assert result == "DW-FU-11-1"
+
+
+# Review Triage Log 2026-08-15, item 3 (HIGH): station-string robustness ----------
+
+
+def test_mint_id_for_entry_mason_station_variants_normalize_to_mason_branch(
+    tmp_path: Path,
+) -> None:
+    """`"pyforge-mason"`, `"Mason"`, and `" mason "` must all resolve to
+    mason's own always-suffixed convention -- normalizing common variants
+    defensively is zero-cost and the safer choice given `station` is
+    caller-supplied."""
+    no_tier3, no_tracked = tmp_path / "no-tier3.md", tmp_path / "no-tracked.md"
+    for station in ("pyforge-mason", "Mason", " mason "):
+        result = chain.mint_id_for_entry(
+            _entry_with_source_spec("`spec-2-1-something-brand-new.md`"),
+            station, no_tier3, no_tracked,
+        )
+        assert result == "DW-2-1-1", station
+
+
+def test_mint_id_for_entry_unrecognized_station_raises(tmp_path: Path) -> None:
+    """An unrecognized or empty/blank station must raise, never silently
+    fall through to the generic FU-prefixed branch -- the exact defect
+    Blind Hunter + Edge Case Hunter found live (a garbage value silently
+    corrupting mason's id shape with no symptom)."""
+    entry = _entry_with_source_spec("`spec-1-1-something.md`")
+    for bad_station in ("", "   ", "not-a-station", "pyforge-unknown"):
+        with pytest.raises(ValueError):
+            chain.mint_id_for_entry(
+                entry, bad_station, tmp_path / "no-tier3.md", tmp_path / "no-tracked.md",
+            )
+
+
+def test_mint_id_for_entry_mason_bare_legacy_id_already_collected_real_excerpt(
+    tmp_path: Path,
+) -> None:
+    """Review Triage Log 2026-08-15, item 9: no end-to-end test previously
+    exercised mason's BARE (non-suffixed) legacy id already-collected case
+    through `mint_id_for_entry` itself -- only unit-tested directly against
+    `_next_free_suffix`. A bare `DW-<story>` legacy id counts as suffix `1`,
+    so mason's next mint for the same story continues from `2`."""
+    tracked = tmp_path / "deferred-work-ledger.md"
+    tracked.write_text("### DW-1-1\n\n- status: open\n", encoding="utf-8")
+    entry = _entry_with_source_spec("`spec-1-1-something-else.md`")
+    result = chain.mint_id_for_entry(entry, "mason", tmp_path / "no-tier3.md", tracked)
+    assert result == "DW-1-1-2"
+
+
+# Review Triage Log 2026-08-15, item 4 (medium): guard against re-minting ---------
+
+
+def test_mint_id_for_entry_raises_if_entry_already_has_an_id(tmp_path: Path) -> None:
+    """A plausible Story 8.3 caller mistake: minting a fresh id for an entry
+    that already carries one (an `IDENTIFIED_*` shape) must raise rather
+    than produce a redundant, orphaned id."""
+    entry = chain.LegacyEntry(
+        chain.Tier3Shape.IDENTIFIED_PLAIN, "DW-FU-5-1", 10, 10,
+        {"source_spec": "`spec-5-1-something.md`"},
+    )
+    with pytest.raises(ValueError, match="DW-FU-5-1"):
+        chain.mint_id_for_entry(
+            entry, "doctor", tmp_path / "no-tier3.md", tmp_path / "no-tracked.md",
+        )
+
+
+# Review Triage Log 2026-08-15, item 5 (medium): backtick/`.md`-stripping boundaries -
+
+
+def test_derive_story_key_single_leading_backtick_no_matching_pair() -> None:
+    """Item 5a: a lone LEADING backtick with no matching trailing one must
+    still be handled sensibly, not garbled into the fallback whole-stem
+    path with the backtick still attached."""
+    assert chain._derive_story_key("`spec-6-1-something.md") == "6-1"
+
+
+def test_derive_story_key_single_trailing_backtick_immediately_after_md() -> None:
+    """Item 5a/5b: a lone TRAILING backtick glued immediately after `.md`
+    (no matching leading backtick) must not defeat the `.md`-suffix check --
+    the un-stripped backtick used to make `filename.lower().endswith(".md")`
+    false, leaving the whole `"...md`"` string as the stem."""
+    assert chain._derive_story_key("spec-6-1-something.md`") == "6-1"
+
+
+def test_derive_story_key_trailing_parenthetical_prose_after_backtick_span_real_excerpt() -> None:
+    """Item 5c, VERBATIM real excerpt: `_bmad-output/projects/pyforge-atlas/
+    planning-artifacts/deferred-work-ledger.md` line 398's `source_spec`
+    value -- a backtick-quoted filename followed by trailing parenthetical
+    prose OUTSIDE the backticks (19 lines fleet-wide carry this exact
+    shape). Only the backtick-quoted span must be isolated; the trailing
+    prose must never reach the derivation."""
+    real = "`cfe-atlas-datapipeline-kedro-migration.md` (Story E1, FR-11)"
+    assert chain._derive_story_key(real) == "cfe-atlas-datapipeline-kedro-migration"
+
+
+# Review Triage Log 2026-08-15, item 6 (low): case-insensitive generic stems ------
+
+
+def test_derive_story_key_generic_stems_are_case_insensitive() -> None:
+    """`Spec.md`/`Readme.md`/`INDEX.md` are the same generic container as
+    `SPEC.md`/`README.md`/`index.md` under a different casing -- all must
+    fall back to the parent directory name, not be treated as a distinct
+    (wrong) story key."""
+    assert chain._derive_story_key(
+        "`_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/"
+        "spec-deferred-work-visibility/Spec.md`"
+    ) == "deferred-work-visibility"
+    assert chain._derive_story_key(
+        "`_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/"
+        "spec-deferred-work-visibility/Readme.md`"
+    ) == "deferred-work-visibility"
+    assert chain._derive_story_key(
+        "`_bmad-output/projects/pyforge-doctor/planning-artifacts/specs/"
+        "spec-deferred-work-visibility/INDEX.md`"
+    ) == "deferred-work-visibility"
+
+
+# Review Triage Log 2026-08-15, item 2 (HIGH): batch-minting accumulator ----------
+#
+# Fixture below is a VERBATIM excerpt (the `- source_spec:` bullet line,
+# repeated -- summary/evidence prose omitted as immaterial to minting, same
+# discipline as this file's other real-excerpt tests trimming unrelated
+# prose) of `_bmad-output/projects/pyforge-doctor/implementation-artifacts/
+# deferred-work.md`'s real 24 `LEGACY_FLAT` orphan entries, all sharing
+# `source_spec` `spec-6-4-the-ledger-verdicts-come-home.md` (story key
+# `6-4`) -- this IS the SAME live scenario Blind Hunter used, live-verified
+# again in this review pass (24 real entries, all 8 real fleet ledgers hold
+# 76 total). The tracked-ledger heading line is the identical real
+# `### DW-FU-6-4: ...` heading from `_bmad-output/projects/pyforge-doctor/
+# planning-artifacts/deferred-work-ledger.md`.
+
+_REAL_6_4_ORPHAN_BULLET = (
+    "- source_spec: `_bmad-output/implementation-artifacts/"
+    "spec-6-4-the-ledger-verdicts-come-home.md`\n"
+)
+_REAL_6_4_TRACKED_HEADING = (
+    "### DW-FU-6-4: Follow-up review still recommended for "
+    "6-4-the-ledger-verdicts-come-home after the damping cap was spent\n"
+)
+
+
+def test_mint_id_for_entry_batch_minting_without_accumulator_collides_real_data(
+    tmp_path: Path,
+) -> None:
+    """Regression proof for the ORIGINAL bug, against real data: minting
+    repeatedly for entries that share a derived story key, with no
+    accumulator threaded through, collides every time -- confirming the
+    defect the companion test below then fixes. Every one of the 24 real
+    orphans mints the identical `DW-FU-6-4-2` without an accumulator."""
+    tier3 = tmp_path / "deferred-work.md"
+    tier3.write_text("# Deferred Work\n\n" + _REAL_6_4_ORPHAN_BULLET * 24, encoding="utf-8")
+    tracked = tmp_path / "deferred-work-ledger.md"
+    tracked.write_text(_REAL_6_4_TRACKED_HEADING, encoding="utf-8")
+
+    entries = chain.classify_tier3_entries(tier3)
+    orphans = [e for e in entries if e.id is None]
+    assert len(orphans) == 24
+
+    results = [chain.mint_id_for_entry(e, "doctor", tier3, tracked) for e in orphans]
+    assert results == ["DW-FU-6-4-2"] * 24
+
+
+def test_mint_id_for_entry_batch_minting_with_accumulator_no_collisions_real_data(
+    tmp_path: Path,
+) -> None:
+    """The fix, against the identical real data above: threading a shared
+    `already_minted` accumulator through each call in the batch -- adding
+    every returned id to it immediately, matching the source prose's own
+    "mint one at a time, write before minting next" discipline -- produces
+    24 UNIQUE ids with zero duplicates, where the unfixed code minted
+    `DW-FU-6-4-2` 24 times over."""
+    tier3 = tmp_path / "deferred-work.md"
+    tier3.write_text("# Deferred Work\n\n" + _REAL_6_4_ORPHAN_BULLET * 24, encoding="utf-8")
+    tracked = tmp_path / "deferred-work-ledger.md"
+    tracked.write_text(_REAL_6_4_TRACKED_HEADING, encoding="utf-8")
+
+    entries = chain.classify_tier3_entries(tier3)
+    orphans = [e for e in entries if e.id is None]
+    assert len(orphans) == 24
+
+    already_minted: set[str] = set()
+    results = []
+    for e in orphans:
+        minted = chain.mint_id_for_entry(e, "doctor", tier3, tracked, already_minted)
+        already_minted.add(minted)
+        results.append(minted)
+
+    assert len(results) == 24
+    assert len(set(results)) == 24, "batch minting must not collide within one batch"
+    assert results == [f"DW-FU-6-4-{n}" for n in range(2, 26)]
+
+
+def test_mint_id_for_entry_accumulator_folds_in_like_a_collected_ledger_id(
+    tmp_path: Path,
+) -> None:
+    """`already_minted` must be treated exactly as if its contents had
+    already been read from the ledger files -- a synthetic, minimal proof
+    alongside the real-data regression tests above."""
+    entry = _entry_with_source_spec("`spec-4-1-something.md`")
+    no_tier3, no_tracked = tmp_path / "no-tier3.md", tmp_path / "no-tracked.md"
+
+    first = chain.mint_id_for_entry(entry, "doctor", no_tier3, no_tracked)
+    assert first == "DW-FU-4-1"
+
+    already_minted = {first}
+    second = chain.mint_id_for_entry(entry, "doctor", no_tier3, no_tracked, already_minted)
+    assert second == "DW-FU-4-1-2"
