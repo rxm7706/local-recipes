@@ -36,34 +36,14 @@ import re
 import subprocess
 import sys
 import time
+from dataclasses import dataclass
 from pathlib import Path
 
 import tomllib
 
-# dashboard project-key -> its sprint-status.yaml (repo-root-relative)
-# TODO: Replace hardcoded PROJECT_SOURCES with dynamic discovery from _bmad-output/projects/*/
-# This hardcoding causes stale entries when projects are consolidated (e.g., deckcraft → herald).
-# Discovery should scan _bmad-output/projects/ and auto-derive the active project set. Tracked
-# by the (draft, not yet folded in) spec-dashboard-project-path-derivation Dream Spec.
-#
-# The "regen" line was RETIRED 2026-08-08 (operator decision). It rendered the
-# regenerable-factory practice as a board program, but its project dir
-# (`_bmad-output/projects/local-recipes/`) was retired 2026-07-28 and never replaced, so
-# `scan_projects` could not refresh it: its W0-W5 chips were frozen hand-authored state that
-# could never move. The plan it displayed lives where it is maintained -- that Spec's own
-# `waves.md` -- and its open work is decomposed into pyforge-marshal's Epic 13.
-PROJECT_SOURCES = {
-    "warden": "_bmad-output/projects/pyforge-warden/implementation-artifacts/sprint-status.yaml",
-    "atlas": "_bmad-output/projects/pyforge-atlas/implementation-artifacts/sprint-status.yaml",
-    "herald": "_bmad-output/projects/pyforge-herald/implementation-artifacts/sprint-status.yaml",
-    "doctor": "_bmad-output/projects/pyforge-doctor/implementation-artifacts/sprint-status.yaml",
-    "scribe": "_bmad-output/projects/pyforge-scribe/implementation-artifacts/sprint-status.yaml",
-    "marshal": "_bmad-output/projects/pyforge-marshal/implementation-artifacts/sprint-status.yaml",
-    "mason": "_bmad-output/projects/pyforge-mason/implementation-artifacts/sprint-status.yaml",
-    "steward": "_bmad-output/projects/pyforge-steward/implementation-artifacts/sprint-status.yaml",
-    # No "genesis" entry: pyforge-genesis dissolved 2026-08-02 -- constitutive, no stories,
-    # no implementation-artifacts/ of its own.
-}
+# PROJECT_SOURCES (dashboard project-key -> its sprint-status.yaml) is DERIVED
+# below, once resolve_project() exists -- see "one resolver, one override
+# table" after REPO_ROOT is defined.
 
 # git-history DONE detection (used by --source git). Verified against main's subjects.
 MAIN_BRANCH = "main"
@@ -128,6 +108,202 @@ _ENTRY = re.compile(r"^\s{2}(?P<key>[^:#\s][^:]*?):\s*(?P<val>[a-z][a-z-]*)\s*(#
 _SNAP_TS = re.compile(r"\d{4}-\d{2}-\d{2} \d{2}:\d{2} UTC")
 
 
+# ---- project resolution: one resolver, one override table -------------------
+#
+# A roster/campaign slug ("marshal", "presenton-pixi-image", "pyforge-genesis")
+# maps to its real `_bmad-output/projects/<dir>` tree -- or explicitly to NO
+# tree -- through exactly ONE function, resolve_project(), backed by exactly
+# ONE hand-authored table, _PROJECT_OVERRIDES. Everything that used to build
+# that path itself (the old PROJECT_SOURCES literal, five independent
+# `_KEY_SLUG_OVERRIDE.get(key, f"pyforge-{key}")` call sites,
+# CAMPAIGN_PROJECT_OVERRIDE, IMPL_CAMPAIGN's per-entry `epics_path`,
+# IMPL_CAMPAIGN_LEDGER) now derives from this instead. Five independent
+# hand-authored mechanisms, each with its own patch for the slug != directory
+# cases, is how two real bugs shipped (see spec-16-1-one-resolver-derived-
+# sources-loud-failures and spec-dashboard-project-path-derivation).
+@dataclass(frozen=True)
+class ProjectResolution:
+    project_dir: str | None         # e.g. "pyforge-marshal"; None = no tree (dissolved)
+    epics_path: str | None          # repo-relative; None = no epics.md for this slug
+    sprint_status_path: str | None  # Tier-3 gitignored; existence checked lazily by callers
+    ledger_path: str | None         # tracked planning-artifacts/sprint-status-ledger.yaml
+    redirect: str | None            # explicit link target, set only when project_dir is None
+
+
+class UnresolvableProjectError(Exception):
+    """Raised by resolve_project() for a slug with no override and no matching
+    `_bmad-output/projects/<dir>` -- a loud failure (FR-143) instead of a
+    silently wrong path."""
+
+    def __init__(self, slug: str, guessed_dir: str) -> None:
+        self.slug = slug
+        super().__init__(
+            f"cannot resolve project slug {slug!r}: no entry in _PROJECT_OVERRIDES "
+            f"and no _bmad-output/projects/{guessed_dir}/ directory"
+        )
+
+
+# Dissolved/absorbed divergences ONLY -- every other slug derives its
+# `_bmad-output/projects/<dir>` from the slug itself (see resolve_project()
+# below). A future dissolution or absorption is a one-line addition here and
+# nowhere else.
+_PROJECT_OVERRIDES: dict[str, dict[str, object]] = {
+    # Dissolved 2026-08-02: constitutive, ships no product, no project tree of
+    # its own. Its two load-bearing specs live under docs/governance/, not a
+    # planning-artifacts tree -- `have` stays all-False for it wherever this
+    # table drives a chain-completeness check; only its LINK redirects.
+    "pyforge-genesis": {"project_dir": None, "redirect": "docs/governance"},
+    # Absorbed into pyforge-mason -- never had its own `_bmad-output/projects/`
+    # tree. Its epics live inside mason's tree under a non-default filename,
+    # and it has no sprint-status.yaml of its own (mason's own board entry
+    # already covers mason's live feed) -- both overridden explicitly rather
+    # than left to default-guess mason's paths as if they were this slug's.
+    "presenton-pixi-image": {
+        "project_dir": "pyforge-mason",
+        "epics_path": "_bmad-output/projects/pyforge-mason/planning-artifacts/epics-presenton-pixi-image.md",
+        # Not cleanly split from mason's own shared ledger (2026-08-08 note in
+        # the old IMPL_CAMPAIGN_LEDGER) -- left on the IMPL_CAMPAIGN static
+        # fallback rather than guessing a partition.
+        "ledger_path": None,
+        "sprint_status_path": None,
+    },
+    # Absorbed into pyforge-atlas. PRD+architecture only by design -- no
+    # epics.md of their own yet, so both fold to explicit None rather than a
+    # guessed (and wrong) `pyforge-atlas/planning-artifacts/epics.md`; no
+    # sprint-status.yaml of their own either (atlas's own board entry already
+    # covers atlas's live feed).
+    "wasm-analytics-stack": {"project_dir": "pyforge-atlas", "epics_path": None,
+                              "ledger_path": None, "sprint_status_path": None},
+    "unity-data-stack": {"project_dir": "pyforge-atlas", "epics_path": None,
+                          "ledger_path": None, "sprint_status_path": None},
+}
+_PROJECT_RESOLUTION_FIELDS = frozenset(
+    {"project_dir", "epics_path", "sprint_status_path", "ledger_path", "redirect"})
+
+
+def _validate_project_overrides(overrides: dict[str, dict[str, object]]) -> None:
+    """Fail loud on a malformed `_PROJECT_OVERRIDES` entry -- a typo'd or
+    missing key here would otherwise silently fall through to a wrong
+    default (an omitted `project_dir` reads as `None`/dissolved; an unknown
+    key is just ignored) instead of erroring on the authoring mistake."""
+    for slug, override in overrides.items():
+        if "project_dir" not in override:
+            raise ValueError(f"_PROJECT_OVERRIDES[{slug!r}] omits required key 'project_dir'")
+        unknown = set(override) - _PROJECT_RESOLUTION_FIELDS
+        if unknown:
+            raise ValueError(f"_PROJECT_OVERRIDES[{slug!r}] has unknown key(s): {sorted(unknown)}")
+        if override["project_dir"] is None and not override.get("redirect"):
+            raise ValueError(
+                f"_PROJECT_OVERRIDES[{slug!r}] has project_dir=None but no redirect -- "
+                "a dissolved slug with no tree must say where its link goes")
+
+
+_validate_project_overrides(_PROJECT_OVERRIDES)
+
+
+def resolve_project(slug: str) -> ProjectResolution:
+    """The one place a roster/campaign slug becomes real filesystem state.
+
+    Two paths:
+    * `slug` is in `_PROJECT_OVERRIDES` -- the table is trusted as-authored,
+      never re-verified against the filesystem. (This is what let the retired
+      `regen` line keep rendering its frozen last-known state for the 11 days
+      between its own project dir being retired and the line itself being
+      pulled: an override is a human-declared fact, not a live probe.)
+    * otherwise -- `project_dir` defaults to the slug itself if it already
+      carries the `pyforge-` prefix, else `f"pyforge-{slug}"`, and THAT
+      default must exist as a real `_bmad-output/projects/<dir>` or the slug
+      is unresolvable (FR-143): no override to trust, and the naive guess
+      does not correspond to anything real.
+
+    The three derived paths (`epics_path`, `sprint_status_path`, `ledger_path`)
+    default to the standard per-project layout under `project_dir`, or `None`
+    when `project_dir` itself is `None`; any of the three can be overridden
+    per-slug (explicit `None` included) via the same table entry.
+    """
+    override = _PROJECT_OVERRIDES.get(slug)
+    if override is not None:
+        project_dir = override.get("project_dir")
+    else:
+        project_dir = slug if slug.startswith("pyforge-") else f"pyforge-{slug}"
+        if not (REPO_ROOT / "_bmad-output" / "projects" / project_dir).is_dir():
+            raise UnresolvableProjectError(slug, project_dir)
+        override = {}
+
+    def _field(name: str, filename: str, base: str) -> str | None:
+        if name in override:
+            return override[name]  # type: ignore[return-value]
+        if project_dir is None:
+            return None
+        return f"_bmad-output/projects/{project_dir}/{base}/{filename}"
+
+    return ProjectResolution(
+        project_dir=project_dir,
+        epics_path=_field("epics_path", "epics.md", "planning-artifacts"),
+        sprint_status_path=_field(
+            "sprint_status_path", "sprint-status.yaml", "implementation-artifacts"),
+        ledger_path=_field(
+            "ledger_path", "sprint-status-ledger.yaml", "planning-artifacts"),
+        redirect=override.get("redirect"),
+    )
+
+
+def _discovered_epics_files() -> list[Path]:
+    """Every BMAD project with a tracked `epics.md` -- the CI-safe discovery
+    basis (never depends on the gitignored Tier-3 `sprint-status.yaml`
+    existing). Shared by `scan_projects()` (the board lines) and
+    `PROJECT_SOURCES` (their sprint-status source) so the two key sets can
+    never disagree."""
+    return sorted((REPO_ROOT / "_bmad-output" / "projects").glob(
+        "*/planning-artifacts/epics.md"))
+
+
+def _discovered_board_keys() -> list[str]:
+    """Bare dashboard keys (`marshal`, not `pyforge-marshal`) for every
+    discovered project -- the input set `PROJECT_SOURCES` derives over.
+
+    Two discovered directories stripping to the same bare key (e.g. a future
+    non-`pyforge-`-prefixed sibling of an existing station) would otherwise
+    silently clobber one another in the `PROJECT_SOURCES` dict comprehension
+    below -- the exact silent-misrouting failure mode CAP-4 exists to turn
+    loud, so this is checked here rather than left to a `dict` to swallow.
+    """
+    keys: list[str] = []
+    seen: dict[str, str] = {}
+    for ep in _discovered_epics_files():
+        dir_name = ep.relative_to(REPO_ROOT / "_bmad-output" / "projects").parts[0]
+        key = dir_name.removeprefix("pyforge-")
+        if key in seen and seen[key] != dir_name:
+            raise ValueError(
+                f"project directories {seen[key]!r} and {dir_name!r} both derive "
+                f"board key {key!r} -- add a _PROJECT_OVERRIDES entry to disambiguate")
+        seen[key] = dir_name
+        keys.append(key)
+    return keys
+
+
+# dashboard project-key -> its sprint-status.yaml (repo-root-relative) --
+# DERIVED from resolve_project() over the discovered project set, not
+# hand-declared: a new project with the standard layout appears here with
+# zero edits the moment its epics.md lands (closes the TODO that used to sit
+# here).
+#
+# resolve_project()'s default branch re-derives `pyforge-<key>` from the bare
+# key _discovered_board_keys() strips -- round-tripping to the same directory
+# this glob just found relies on every discovered directory actually being
+# `pyforge-`-prefixed. That is a Charter-level constitutive naming rule for
+# every Smith/station (see project-context.md's Identity & Vocabulary
+# section), not merely an assumption local to this file, so a directory that
+# violated it would already be invalid elsewhere in the repo. If that rule
+# is ever relaxed, resolve_project() would raise UnresolvableProjectError
+# here at import time (before main()'s own try/except runs) -- still a loud,
+# non-zero-exit failure naming the slug per FR-143, just via an uncaught
+# traceback instead of the polished `[resolve] FAIL` message.
+PROJECT_SOURCES: dict[str, str] = {
+    key: resolve_project(key).sprint_status_path for key in _discovered_board_keys()
+}
+
+
 # ---- source: sprint-status (local) ------------------------------------------
 
 def parse_sprint_status(path: Path) -> dict[str, str]:
@@ -179,6 +355,12 @@ def sprint_to_dashboard_status(sprint_status: str, current: str) -> str:
 _EDITORIAL = ("label", "accentVar", "branch", "contract", "seglabels",
               "inflight", "velocity", "timing", "lineState", "sub", "roadmap")
 
+# Both of these are now VESTIGIAL: generate.py's own logic reads
+# `_PROJECT_OVERRIDES`/`resolve_project()` instead (see "one resolver, one
+# override table" above). They stay present, unused internally, ONLY because
+# `pyforge-doctor`'s `src/pyforge/doctor/sources/board.py` reads them by name
+# via a dynamic `exec_module` of this file (out of this story's surface).
+#
 # Dashboard key -> BMAD project slug, where they differ. Empty since the `regen`
 # line was retired (2026-08-08) -- every remaining key matches its project slug.
 _KEY_SLUG_OVERRIDE: dict[str, str] = {}
@@ -206,11 +388,14 @@ def scan_projects(existing: dict) -> dict:
     rather than a silent omission.
     """
     out: dict = {}
-    for ep in sorted((REPO_ROOT / "_bmad-output" / "projects").glob(
-            "*/planning-artifacts/epics.md")):
+    for ep in _discovered_epics_files():
         slug = ep.relative_to(REPO_ROOT / "_bmad-output" / "projects").parts[0]
-        key = next((k for k, s in _KEY_SLUG_OVERRIDE.items() if s == slug),
-                   slug.removeprefix("pyforge-"))
+        # No discovered project directory has a key override in
+        # _PROJECT_OVERRIDES -- that table holds only DISSOLVED/ABSORBED
+        # satellite slugs, which by definition never have their own epics.md
+        # to be discovered here. The reverse (directory -> board key) is
+        # therefore always the plain strip, not a resolve_project() lookup.
+        key = slug.removeprefix("pyforge-")
         prev = existing.get(key, {})
         if key in _DERIVE_EXCLUDE:
             if prev:
@@ -285,11 +470,16 @@ def check_project_coverage(projects: dict) -> None:
     The silent-omission guard. Without it, "this project is missing from In
     Build" is invisible — which is how four lines went unrendered.
     """
-    slugs = {p.relative_to(REPO_ROOT / "_bmad-output" / "projects").parts[0]
-             for p in (REPO_ROOT / "_bmad-output" / "projects").glob(
-                 "*/planning-artifacts/epics.md")}
-    covered = {_KEY_SLUG_OVERRIDE.get(k, f"pyforge-{k}" if f"pyforge-{k}" in slugs else k)
-               for k in projects}
+    slugs = {ep.relative_to(REPO_ROOT / "_bmad-output" / "projects").parts[0]
+             for ep in _discovered_epics_files()}
+    covered: set[str] = set()
+    for k in projects:
+        try:
+            resolved = resolve_project(k).project_dir
+        except UnresolvableProjectError:
+            continue  # a board line with no real project dir covers nothing
+        if resolved:
+            covered.add(resolved)
     missing = sorted(slugs - covered)
     if missing:
         print(f"[projects] WARN {len(missing)} project(s) have epics.md but NO "
@@ -591,9 +781,10 @@ def apply_tracked_ledger(projects: dict) -> None:
     a deploy. `dashboard-drift-check` is what catches a stale twin.
     """
     for pkey in sorted(projects):
-        slug = _KEY_SLUG_OVERRIDE.get(pkey, f"pyforge-{pkey}")
-        ledger = (REPO_ROOT / "_bmad-output" / "projects" / slug
-                  / "planning-artifacts" / "sprint-status-ledger.yaml")
+        resolution = resolve_project(pkey)
+        if resolution.ledger_path is None:
+            continue
+        ledger = REPO_ROOT / resolution.ledger_path
         if not ledger.is_file():
             continue
         statuses = parse_sprint_status(ledger)
@@ -638,9 +829,10 @@ def build_fleet_progress(projects: dict) -> dict:
     """
     rows, total = [], collections.Counter()
     for pkey in sorted(projects):
-        slug = _KEY_SLUG_OVERRIDE.get(pkey, f"pyforge-{pkey}")
-        ledger = (REPO_ROOT / "_bmad-output" / "projects" / slug
-                  / "planning-artifacts" / "sprint-status-ledger.yaml")
+        resolution = resolve_project(pkey)
+        if resolution.ledger_path is None:
+            continue
+        ledger = REPO_ROOT / resolution.ledger_path
         if not ledger.is_file():
             continue
         statuses = parse_sprint_status(ledger)
@@ -1031,23 +1223,19 @@ CAMPAIGN_ROSTER = [
 
 CAMPAIGN_STAGES = ("research", "brief", "prd", "architecture", "epics")
 
-# Same bug class as IMPL_CAMPAIGN_LEDGER: `pa` below assumed a roster slug always
-# names its own live `_bmad-output/projects/<slug>/` dir. 3 of these 10 slugs are
-# dissolved-and-absorbed (PROJECTS.md) -- their chain moved to the owning Smith's
-# tree, so the naive path both mis-detects `have` (false "not landed") and any link
-# built from it 404s. pyforge-genesis is deliberately absent from this map: it
-# wasn't absorbed into a Smith, its standard PRD/brief/architecture/epics chain was
-# retired outright (constitutive, ships no product) -- `have: all False` for it is
-# honest, not a bug; only its link gets a special-cased redirect (JS side).
+# CAMPAIGN_PROJECT_OVERRIDE folded into _PROJECT_OVERRIDES (one resolver, one
+# table). 3 of these 10 roster slugs are dissolved-and-absorbed (PROJECTS.md)
+# -- their chain moved to the owning Smith's tree, so a naive `<slug>/planning-
+# artifacts` path both mis-detects `have` (false "not landed") and any link
+# built from it 404s. pyforge-genesis resolves to `project_dir: None` (its
+# own data shape, not force-fit into the absorbed-satellite one): its
+# standard PRD/brief/architecture/epics chain was retired outright
+# (constitutive, ships no product) -- `have: all False` for it is honest, not
+# a bug; only its link redirects (data-driven now, not a JS special case).
 # It stays in CAMPAIGN_ROSTER above because that roster is the HISTORICAL record of
 # the 2026-07-25 campaign, in which it really was wave 2d; rewriting history to hide
 # a since-retired name would be the drift this board exists to catch. As of
 # 2026-08-08 the name is retired everywhere else -- absorbed into pyforge-charter.
-CAMPAIGN_PROJECT_OVERRIDE = {
-    "presenton-pixi-image": "pyforge-mason",
-    "wasm-analytics-stack": "pyforge-atlas",
-    "unity-data-stack": "pyforge-atlas",
-}
 
 
 def scan_campaign() -> dict:
@@ -1059,23 +1247,30 @@ def scan_campaign() -> dict:
     """
     rows: list[dict] = []
     for e in CAMPAIGN_ROSTER:
-        real_project = CAMPAIGN_PROJECT_OVERRIDE.get(e["slug"], e["slug"])
-        pa = REPO_ROOT / "_bmad-output" / "projects" / real_project / "planning-artifacts"
-        have = {
-            "research": bool(list((pa / "research").glob("*.md"))) if (pa / "research").is_dir() else False,
-            "brief": bool(list(pa.glob("product-brief*")) or list(pa.glob("*/product-brief*"))
-                          or list(pa.glob("briefs/**/brief*.md"))),
-            "prd": (pa / "prd.md").is_file() or bool(list(pa.glob("prds/*/prd.md"))),
-            "architecture": ((pa / "architecture.md").is_file()
-                             or bool(list(pa.glob("architecture/*/*.md")))),
-            "epics": (pa / "epics.md").is_file(),
-        }
+        resolution = resolve_project(e["slug"])
+        real_project = resolution.project_dir
+        if real_project is None:
+            # The dissolved case: no tree to glob against. `have` stays
+            # honestly all-False rather than force-fitting the absorbed-
+            # satellite shape onto a project that was retired outright.
+            have = {s: False for s in CAMPAIGN_STAGES}
+        else:
+            pa = REPO_ROOT / "_bmad-output" / "projects" / real_project / "planning-artifacts"
+            have = {
+                "research": bool(list((pa / "research").glob("*.md"))) if (pa / "research").is_dir() else False,
+                "brief": bool(list(pa.glob("product-brief*")) or list(pa.glob("*/product-brief*"))
+                              or list(pa.glob("briefs/**/brief*.md"))),
+                "prd": (pa / "prd.md").is_file() or bool(list(pa.glob("prds/*/prd.md"))),
+                "architecture": ((pa / "architecture.md").is_file()
+                                 or bool(list(pa.glob("architecture/*/*.md")))),
+                "epics": (pa / "epics.md").is_file(),
+            }
         target = [s for s in CAMPAIGN_STAGES
                   if not (s == "epics" and e["depth"] == "prd+arch")]
         n = sum(have[s] for s in target)
         status = "landed" if n == len(target) else ("partial" if n else e["state"])
         rows.append({**e, "have": have, "n": n, "of": len(target), "status": status,
-                     "planning_project": real_project})
+                     "planning_project": real_project, "redirect": resolution.redirect})
     landed = sum(1 for r in rows if r["status"] == "landed")
     running = sum(1 for r in rows if r["status"] == "running")
     print(f"[campaign] {len(rows)} chains · {running} running · {landed} landed")
@@ -1106,20 +1301,23 @@ IMPL_CAMPAIGN = [
     {"slug": "pyforge-mason",        "pkey": None, "stories": 38, "state": "queued",
      "note": "longest persona line; CFE Rule-2 retro at closeout"},
     {"slug": "presenton-pixi-image", "pkey": None, "stories": 30, "state": "held",
-     "note": "operator Phase-0 gates: MS disconnected-stack check + memory-subsystem scope",
-     "epics_path": "_bmad-output/projects/pyforge-mason/planning-artifacts/epics-presenton-pixi-image.md"},
+     "note": "operator Phase-0 gates: MS disconnected-stack check + memory-subsystem scope"},
     {"slug": "pyforge-marshal",      "pkey": None, "stories": 86, "state": "held",
      "note": "epics 1-12 — the seed installer's epics 7-12 merged in 2026-08-08; one canonical epics.md"},
     {"slug": "wasm-analytics-stack", "pkey": None, "stories": 0,  "state": "future",
-     "note": "PRD+arch only by design; stories decompose when scheduled",
-     "epics_path": None},
+     "note": "PRD+arch only by design; stories decompose when scheduled"},
     {"slug": "unity-data-stack",     "pkey": None, "stories": 0,  "state": "future",
-     "note": "PRD+arch only by design; stories decompose when scheduled",
-     "epics_path": None},
+     "note": "PRD+arch only by design; stories decompose when scheduled"},
 ]
 
-# Live ledger source for the non-`pkey` rows above: (ledger path, epic_min, epic_max),
-# either bound `None` meaning unbounded.
+# IMPL_CAMPAIGN_LEDGER folded into _PROJECT_OVERRIDES's `ledger_path` field
+# (one resolver, one table). The non-`pkey` rows above now derive their live
+# ledger through `resolve_project(e["slug"]).ledger_path`, which defaults to
+# the standard `<project_dir>/planning-artifacts/sprint-status-ledger.yaml`
+# for marshal/mason/steward -- exactly what this dict used to hand-declare --
+# and is explicit `None` (via the override table) for presenton-pixi-image
+# (not cleanly split from mason's own shared ledger) and wasm/unity (no
+# ledger exists yet), so those three keep their IMPL_CAMPAIGN static fallback.
 #
 # 2026-08-08: the `genesis-installer` row is GONE, not relabelled. It existed because
 # marshal's ledger was fed by two epics documents -- `epics.md` (Epics 1-6) and
@@ -1127,20 +1325,14 @@ IMPL_CAMPAIGN = [
 # rows by epic number, and PR #233 could only label that split rather than remove it.
 # The two documents are now one canonical `epics.md` covering Epics 1-12 (86 stories,
 # verified against this same ledger), so marshal reads UNBOUNDED and renders as the one
-# station it always was. presenton-pixi-image's stories are a separate `historical`
-# epics file not cleanly split out of mason's shared ledger, and it is independently
-# confirmed still Phase-0-blocked (0 done) -- left on its static fallback rather than
-# guessing a partition.
-IMPL_CAMPAIGN_LEDGER: dict[str, tuple[str, int | None, int | None]] = {
-    "pyforge-marshal": ("_bmad-output/projects/pyforge-marshal/planning-artifacts/sprint-status-ledger.yaml", None, None),
-    "pyforge-mason": ("_bmad-output/projects/pyforge-mason/planning-artifacts/sprint-status-ledger.yaml", None, None),
-    "pyforge-steward": ("_bmad-output/projects/pyforge-steward/planning-artifacts/sprint-status-ledger.yaml", None, None),
-}
+# station it always was -- which is also why the resolver's default `ledger_path`
+# (unbounded, no epic_min/epic_max) is sufficient and the old epic-range parameters
+# were dropped from `_ledger_done_total` below.
 _LEDGER_STORY_KEY = re.compile(r"^(\d+)-\d+-")
 
 
-def _ledger_done_total(rel_path: str, epic_min: int | None, epic_max: int | None) -> tuple[int, int] | None:
-    """`(done, total)` for a ledger's story-shaped keys, optionally epic-filtered.
+def _ledger_done_total(rel_path: str) -> tuple[int, int] | None:
+    """`(done, total)` for a ledger's story-shaped keys.
 
     Non-story keys (`epic-N`, `epic-N-retrospective`) are excluded -- they aren't
     stories and would double-count. `None` if the ledger doesn't exist yet.
@@ -1151,13 +1343,7 @@ def _ledger_done_total(rel_path: str, epic_min: int | None, epic_max: int | None
     statuses = parse_sprint_status(p)
     done = total = 0
     for key, status in statuses.items():
-        m = _LEDGER_STORY_KEY.match(key)
-        if not m:
-            continue
-        epic = int(m.group(1))
-        if epic_min is not None and epic < epic_min:
-            continue
-        if epic_max is not None and epic > epic_max:
+        if not _LEDGER_STORY_KEY.match(key):
             continue
         total += 1
         if status == "done":
@@ -1180,13 +1366,14 @@ def scan_impl_campaign(projects: dict, running_stations: set[str] | None = None)
     """
     rows: list[dict] = []
     for e in IMPL_CAMPAIGN:
+        resolution = resolve_project(e["slug"])
         done, total = 0, e["stories"]
         if e["pkey"] and e["pkey"] in projects:
             stories = [s for ep in projects[e["pkey"]]["epics"] for s in ep["stories"]]
             total = len(stories)
             done = sum(1 for s in stories if s[1] == "done")
-        elif e["slug"] in IMPL_CAMPAIGN_LEDGER:
-            ledger_live = _ledger_done_total(*IMPL_CAMPAIGN_LEDGER[e["slug"]])
+        elif resolution.ledger_path:
+            ledger_live = _ledger_done_total(resolution.ledger_path)
             if ledger_live is not None:
                 done, total = ledger_live
         is_running = running_stations is not None and e["slug"].removeprefix("pyforge-") in running_stations
@@ -1198,7 +1385,8 @@ def scan_impl_campaign(projects: dict, running_stations: set[str] | None = None)
             state = "in-progress"
         else:
             state = e["state"]
-        rows.append({**e, "done": done, "total": total, "state": state})
+        rows.append({**e, "done": done, "total": total, "state": state,
+                     "epics_path": resolution.epics_path, "redirect": resolution.redirect})
     running = sum(1 for r in rows if r["state"] == "running")
     dn = sum(1 for r in rows if r["state"] == "done")
     print(f"[build-campaign] {len(rows)} lines · {running} running · {dn} done")
@@ -2048,10 +2236,12 @@ def scan_readiness() -> dict:
     three wrong findings on 2026-08-08, one of them published and retracted).
     """
     rows, totals = [], collections.Counter()
-    for key, rel in sorted(PROJECT_SOURCES.items()):
-        slug = _KEY_SLUG_OVERRIDE.get(key, f"pyforge-{key}")
-        ledger = (REPO_ROOT / "_bmad-output" / "projects" / slug
-                  / "planning-artifacts" / "sprint-status-ledger.yaml")
+    for key in sorted(PROJECT_SOURCES):
+        resolution = resolve_project(key)
+        slug = resolution.project_dir
+        if slug is None or resolution.ledger_path is None:
+            continue
+        ledger = REPO_ROOT / resolution.ledger_path
         if not ledger.is_file():
             continue
         statuses = {k: v for k, v in parse_sprint_status(ledger).items()
@@ -2062,7 +2252,6 @@ def scan_readiness() -> dict:
         totals.update(counts)
         nxt = sorted(k for k, v in statuses.items() if v == "backlog")
         blocked = sorted(k for k, v in statuses.items() if v == "blocked")
-        proj = f"pyforge-{key}" if slug.startswith("pyforge-") else slug
         pa = f"_bmad-output/projects/{slug}/planning-artifacts"
         specs_dir = REPO_ROOT / pa / "specs"
         open_specs = []
@@ -2890,6 +3079,23 @@ def build_status(data: dict, source: str) -> dict:
             "runningAvailable": source == "sprint-status"}
 
 
+def _resolve_roster_slugs() -> tuple[int, int]:
+    """Resolve every PROJECT_SOURCES/CAMPAIGN_ROSTER/IMPL_CAMPAIGN slug once,
+    up front. Fails loud (FR-143) via resolve_project()'s own
+    UnresolvableProjectError before any other work happens, rather than
+    partway through a long run; returns `(total, via_override)` for the
+    match-summary `main()` prints.
+    """
+    slugs = sorted(set(PROJECT_SOURCES) | {e["slug"] for e in CAMPAIGN_ROSTER}
+                    | {e["slug"] for e in IMPL_CAMPAIGN})
+    via_override = 0
+    for slug in slugs:
+        resolve_project(slug)
+        if slug in _PROJECT_OVERRIDES:
+            via_override += 1
+    return len(slugs), via_override
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument(
@@ -2897,6 +3103,18 @@ def main() -> int:
         help="sprint-status (default, local, richest) | git (hands-off, CI, done-only)",
     )
     args = ap.parse_args()
+
+    try:
+        return _generate(args)
+    except UnresolvableProjectError as exc:
+        print(f"\n[resolve] FAIL — {exc}")
+        return 1
+
+
+def _generate(args: argparse.Namespace) -> int:
+    n_resolved, via_override = _resolve_roster_slugs()
+    print(f"[resolve] {n_resolved} slug(s) resolved ({via_override} via override, "
+          f"{n_resolved - via_override} default)")
 
     data = load_data()
     data["projects"] = scan_projects(data["projects"])
