@@ -1,6 +1,6 @@
 ---
 spec: deferred-work-visibility
-status: ready
+status: in-progress   # CAP-1..7 shipped (Epic 7 + Epic 8, 2026-08-15); CAP-8..10 (Epic 9) queued, not dispatched
 owner-dream: docs/dreams/deferred-work-visibility.md
 covers-dreams:
   - docs/dreams/deferred-work-audit-completeness.md   # folded in 2026-08-15 as CAP-4..9 (see § Why below); satisfies INV-1 for this Dream
