@@ -61,7 +61,7 @@ development_status:
   8-4-the-schedule-trigger-enumerates-real-candidates: done
   8-5-fail-loud-fail-alone: done
   8-6-explicit-status-vocabulary-translation: done
-  8-7-assignee-and-identity-link-propagation: backlog
+  8-7-assignee-and-identity-link-propagation: done
   9-1-identity-at-the-boundary-declared-isolation-and-the-cache-invariant: done
   9-2-an-unauthorized-page-is-absent-not-hidden: done
   9-3-the-audit-trail-records-what-was-seen: done
