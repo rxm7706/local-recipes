@@ -1,0 +1,1023 @@
+"""``.marshal/seed-state.yml`` -- the tool-owned state document and its
+atomic store (Story 10.2, architecture FR-102/FR-103/FR-104/FR-105/FR-107,
+P-01/P-08/AR-6/AD-58).
+
+Genesis had no state before this module. ``detect/hashes.py``'s
+``check_managed_file(..., recorded_sha)`` took a value nobody could supply,
+``detect/inventory.py`` and ``plan/build.py`` both documented "no read of
+``.marshal/seed-state.yml``", and ``StateInvalid`` (exit 5) had no raise
+site anywhere under ``seed/``. Without a tool-owned, schema-validated state
+file, the repo and Genesis's belief about it can silently disagree -- the
+exact failure class AR-6/P-08 are written against, and one this repo has
+already lived through once with the ``bmad-switch`` marker.
+
+**Eleven keys, no twelfth.** ``model_version``, ``seed_model_version``,
+``adopted_at``, ``last_update``, ``mode``, ``agents``, ``managed``,
+``skips``, ``legacy``, ``migrations_applied``, ``opted_out`` (FR-102's ten
+plus ``opted_out``, which the epics AC adds). ``schema.json`` ``require``s
+all eleven and closes the document with ``additionalProperties: false``, so
+a field invented in code but not in the schema fails its own write. A
+genuinely new field needs a PRD/architecture amendment first -- notably
+there is no ``slug`` and no free-form ``answers`` map here (see
+``copier_data`` below).
+
+**Every READ validates; every read failure is a finding, not a crash.**
+``read_state`` validates the parsed document against the packaged
+``schema.json`` with ``jsonschema.Draft202012Validator`` BEFORE any field is
+consumed, and converts every failure mode it can meet -- an unreadable
+file, non-UTF-8 bytes, invalid YAML, a duplicate mapping key, a merge key,
+a non-mapping root, a schema violation, a shape violation caught by
+``from_json_dict`` -- into ``StateInvalid`` (exit 5) carrying a remedy. No
+``jsonschema``, ``yaml``, ``OSError``, or ``UnicodeDecodeError`` type
+escapes this module's read path (FR-104's "never a traceback"). Turning
+that ``StateInvalid`` into a ``FindingType.STATE_INVALID`` finding is
+``detect``'s job, not this module's. The ONE other ``SeedError`` the read
+path can raise is ``InternalError`` (exit 10), and only for a broken
+INSTALLATION -- a missing or corrupt packaged ``schema.json``, which is a
+fact about the running artifact, never about this repository's state file.
+
+**The WRITE path converts only its own schema failure.** ``write_state``
+validates the serialized document first and raises ``StateInvalid`` before
+any I/O if it does not conform -- but an ``OSError`` or a
+``NeverWriteViolation`` raised by ``fs.write`` propagates unchanged: a
+failed write means the ENVIRONMENT refused, not that state is invalid, and
+mislabelling the two would send an operator to repair a file that is fine.
+
+**An absent state file is not invalid.** ``read_state`` returns ``None``,
+because ``marshal seed check`` must run against a never-adopted repo and
+report the absence rather than raise on it. A dangling SYMLINK at the state
+path is the one thing that looks like absence and is not: the link says the
+repo was established, so a missing target is ``StateInvalid``, never
+``None``.
+
+**One atomic replace, through the one write boundary.** ``write_state``
+serializes, then makes exactly ONE ``fs.write`` call (P-01: ``seed/fs.py``
+is the only path to a target repo's filesystem; P-08: one atomic replace).
+This module implements no temp-file or rename mechanics of its own --
+``fs.write`` already delegates to ``pyforge.core.atomic_write``, and
+``pyforge-core``'s CAP-7 sole-ownership meta test fails the build for any
+module outside ``pyforge-core`` that grows a second implementation.
+
+**Import surface.** stdlib, ``yaml``, ``jsonschema``, ``seed.errors``,
+``seed.fs``, ``seed.model.version`` -- nothing else. Never ``seed.detect``,
+``seed.plan``, ``seed.apply``, ``seed.verbs``, or ``seed.engine`` (the
+architecture's no-upward-imports rule). That is also why
+``ManagedArtifact.artifact_class`` is a plain wire ``str`` rather than
+``model.manifest.ArtifactClass``: the schema's ``class`` enum is the
+contract, and ``tests/unit/test_seed_state_store.py`` asserts the enum and
+the schema agree so the deliberate duplication cannot drift.
+
+**Genesis never reads the Copier answers file.** FR-105/AD-52: state is the
+single source of truth for the answers, re-supplied to Copier via ``data=``
+on every render -- ``copier_data(state)`` is that projection. This module
+contains no reference to the answers file's path at all, and
+``tests/unit/test_seed_state_store.py`` asserts its source text does not.
+
+**Why ``_StrictLoader`` is re-declared here.** ``model/manifest.py`` owns
+the same duplicate-key-rejecting loader but exposes it only as a private
+symbol, and importing a neighbour's private name is worse than a
+twenty-line duplication. The alternative -- plain ``SafeLoader`` -- would
+let a hand-edited duplicate key load silently last-wins in the one file
+whose entire premise is that it is not hand-edited. The two loaders are no
+longer identical: this one refuses a YAML merge key outright, which the
+manifest's (whose file a human legitimately authors) tolerates once -- see
+``_StrictLoader``'s own docstring for why the state file cannot afford
+that tolerance.
+"""
+
+from __future__ import annotations
+
+import json
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from functools import lru_cache
+from importlib import metadata, resources
+from pathlib import Path
+from typing import Any
+
+import yaml
+from jsonschema import Draft202012Validator
+from jsonschema.exceptions import ValidationError
+
+from .. import fs
+from ..errors import InternalError, StateInvalid
+from ..model.version import ModelVersion
+
+# FR-103's do-not-hand-edit header, re-emitted on every write and ignored
+# on read (YAML comments carry no value). First LINE is a comment, and the
+# block says in plain words who owns the file and what to do instead --
+# the AC is about what a human sees when they open it, not about a machine
+# marker, so this is prose rather than a parseable directive.
+_HEADER = (
+    "# DO NOT HAND-EDIT -- this file is owned by `marshal seed`.\n"
+    "#\n"
+    "# It records what the tool established in this repository, and the tool\n"
+    "# rewrites it in full on every run, so any edit you make here is lost at\n"
+    "# the next write. Until that write, the tool BELIEVES what it reads: an\n"
+    "# edit that still fits the schema is acted on as if the tool had made it\n"
+    "# -- silently, with no warning that the file and the repository now\n"
+    "# disagree. Only an edit that breaks the schema is reported (exit 5).\n"
+    "#\n"
+    "# To change what is recorded, run the `marshal seed` verb that owns it\n"
+    "# (init / adopt / update). To stop managing an artifact or a region,\n"
+    "# use the tool's own opt-out, never a manual deletion below.\n"
+    "#\n"
+    "# This file IS meant to be committed: it is how a clone learns what the\n"
+    "# tool already owns here.\n"
+)
+
+# The eleven top-level keys, in the order `to_json_dict` emits them and
+# `schema.json` requires them. Named once so the two orderings cannot drift.
+STATE_KEYS: tuple[str, ...] = (
+    "model_version",
+    "seed_model_version",
+    "adopted_at",
+    "last_update",
+    "mode",
+    "agents",
+    "managed",
+    "skips",
+    "legacy",
+    "migrations_applied",
+    "opted_out",
+)
+
+_TIMESTAMP_FORMAT = "%Y-%m-%dT%H:%M:%SZ"
+
+_SCHEMA_FILENAME = "schema.json"
+
+# The one `class` value that carries an `inserted_region_span`. A WIRE
+# string, not `model.manifest.ArtifactClass.HYBRID_MANAGED_REGION` -- this
+# module may not import `model.manifest` (module docstring's import
+# surface), and `schema.json`'s own enum is the contract either way.
+_REGION_ARTIFACT_CLASS = "hybrid-managed-region"
+
+
+class _StrictLoader(yaml.SafeLoader):
+    """``SafeLoader`` that rejects a repeated mapping key -- and a merge key
+    of any kind -- rather than silently keeping the last one, the same
+    technique ``model/manifest.py`` applies to the manifest, re-declared
+    here (see the module docstring) rather than imported from a
+    neighbour's private namespace.
+
+    A state file with two ``mode:`` keys, or a ``managed`` entry with two
+    ``body_sha:`` keys, would otherwise load clean with the SECOND value
+    winning -- so the file a human reviewed in the diff is not the file
+    Genesis loaded. ``ConstructorError`` is a ``YAMLError``, so
+    ``read_state``'s existing handler already reports it as
+    ``StateInvalid``.
+
+    **A merge key is refused outright, not tolerated as an override
+    idiom.** An earlier draft allowed a single ``<<:`` on the grounds that
+    the merge idiom exists precisely to let an explicit key override an
+    inherited one -- but that left the duplicate rule bypassable in one
+    line: ``SafeConstructor.flatten_mapping()`` splices the ANCHORED node's
+    pairs straight into ``node.value`` without ever calling this method on
+    that node, so ``<<: &shared`` with two ``mode:`` keys beneath it loaded
+    clean, last-wins, which is the exact outcome this class exists to
+    prevent (confirmed by direct execution). Scanning the anchored node too
+    would be a second, subtler rule to keep true; refusing merges is the
+    honest one, because this file is tool-written and ``write_state``
+    (``yaml.safe_dump``) emits no anchor, alias, or merge key at all --
+    ``schema.json``'s own description already says so. A ``<<:`` here is
+    therefore always a hand edit, never something Genesis produced.
+
+    The non-mapping guard is the same class of escape: ``!!map "x"`` reaches
+    this method with a ``ScalarNode``, and iterating ``node.value`` (a
+    ``str``) raised a bare ``ValueError`` straight past ``read_state``'s
+    ``YAMLError`` handler, breaking FR-104's "only ``StateInvalid``"
+    contract. Reported as a ``ConstructorError`` so it funnels to
+    ``StateInvalid`` like every other malformed document."""
+
+    def construct_mapping(self, node: Any, deep: bool = False) -> dict:
+        if not isinstance(node, yaml.MappingNode):
+            raise yaml.constructor.ConstructorError(
+                "while constructing a mapping",
+                node.start_mark,
+                f"expected a mapping node, but found {node.id}",
+                node.start_mark,
+            )
+        # Snapshot the authored keys BEFORE delegating: `SafeConstructor`
+        # runs `flatten_mapping()`, which splices a merge key's inherited
+        # pairs into `node.value` in place, so a post-delegation scan sees
+        # the merged result rather than the document.
+        authored_key_nodes = []
+        for key_node, _ in node.value:
+            if key_node.tag == "tag:yaml.org,2002:merge":
+                raise yaml.constructor.ConstructorError(
+                    "while constructing a mapping",
+                    node.start_mark,
+                    "found a YAML merge key '<<' -- this file is tool-written and"
+                    " never contains anchors or merges",
+                    key_node.start_mark,
+                )
+            authored_key_nodes.append(key_node)
+        mapping = super().construct_mapping(node, deep=deep)
+        seen: set[Any] = set()
+        for key_node in authored_key_nodes:
+            key = self.construct_object(key_node, deep=deep)
+            if key in seen:
+                raise yaml.constructor.ConstructorError(
+                    "while constructing a mapping",
+                    node.start_mark,
+                    f"found duplicate key {key!r}",
+                    key_node.start_mark,
+                )
+            seen.add(key)
+        return mapping
+
+
+#: Longest ``repr`` this module ever interpolates into an operator-facing
+#: message. A malformed state document is frequently a LARGE one (a whole
+#: file pasted into the wrong key, a 5,000-entry list), and every message
+#: below ends up in a `StateInvalid` an operator reads on one terminal
+#: line -- so the value is abbreviated rather than echoed whole (review
+#: finding). Wide enough that a realistic offending value still shows in
+#: full; short enough that nothing here can emit a multi-kilobyte line.
+_MAX_INTERPOLATED_REPR = 120
+
+
+def _abbreviate(value: Any) -> str:
+    """``repr(value)``, truncated to ``_MAX_INTERPOLATED_REPR`` characters
+    with a trailing ellipsis when it would otherwise run longer.
+
+    The truncation marker is deliberately visible: an operator must be able
+    to tell "this is the value, in full" from "this is the front of it",
+    because the second reading is the one that sends them to the file
+    itself."""
+    rendered = repr(value)
+    if len(rendered) <= _MAX_INTERPOLATED_REPR:
+        return rendered
+    return f"{rendered[: _MAX_INTERPOLATED_REPR - 3]}..."
+
+
+def _require_key(data: dict[str, Any], key: str, *, context: str) -> Any:
+    """Look up ``key`` in ``data``, raising ``ValueError`` naming both the
+    missing key and which type's ``from_json_dict`` was reading it --
+    mirrors ``plan/types.py``'s identical helper, for the identical
+    reason (a bare ``KeyError`` does not say which document key is
+    missing without re-reading the traceback)."""
+    if key not in data:
+        raise ValueError(f"{context}: missing required key {key!r}")
+    return data[key]
+
+
+def _require_str(value: Any, *, context: str) -> str:
+    if not isinstance(value, str):
+        raise ValueError(f"{context}: expected a str, got {_abbreviate(value)}")
+    return value
+
+
+def _require_int(value: Any, *, context: str) -> int:
+    # `isinstance(value, bool)` is excluded explicitly -- `bool` is a
+    # subtype of `int` in Python, so `True` would otherwise load as the
+    # byte offset `1`. Same stance as `plan/types.py::_require_bool`'s
+    # mirror-image check.
+    if isinstance(value, bool) or not isinstance(value, int):
+        raise ValueError(f"{context}: expected an int, got {_abbreviate(value)}")
+    return value
+
+
+def _require_str_tuple(value: Any, *, context: str) -> tuple[str, ...]:
+    if not isinstance(value, list):
+        raise ValueError(f"{context}: expected a list, got {_abbreviate(value)}")
+    return tuple(_require_str(item, context=f"{context}[]") for item in value)
+
+
+def _require_object_list(value: Any, *, context: str) -> list[dict[str, Any]]:
+    if not isinstance(value, list) or not all(isinstance(item, dict) for item in value):
+        raise ValueError(
+            f"{context}: expected a list of JSON objects, got {_abbreviate(value)}"
+        )
+    return value
+
+
+def _reject_duplicates(values: tuple[str, ...], *, context: str) -> None:
+    """Raise ``ValueError`` naming every repeated member of ``values``.
+
+    State's own version of ``model/manifest.py``'s entry-id uniqueness
+    rule, which state has to repeat rather than import (the no-upward /
+    no-``model.manifest`` import surface): a second ``managed`` entry
+    claiming the same ``id`` -- or the same ``path`` -- makes the
+    recorded-hash lookup ORDER-dependent, so ``check_managed_file`` would
+    compare against whichever of the two duplicate rows happened to be
+    found first."""
+    duplicates = sorted({value for value in values if values.count(value) > 1})
+    if duplicates:
+        raise ValueError(f"{context}: must be unique, got duplicates: {duplicates}")
+
+
+@dataclass(frozen=True)
+class RegionSpanRecord:
+    """A managed region's identity and body extent, as recorded in state:
+    the region ``name`` plus the UTF-8 BYTE offsets of its body, markers
+    excluded -- mirroring ``regions/parse.py``'s ``RegionSpan.name`` +
+    ``RegionSpan.body_span``.
+
+    Deliberately NOT a serialization of the whole ``RegionSpan``: AD-58
+    needs only enough to withdraw the tool's claim (strip the region
+    without touching surrounding content), and a recorded
+    ``begin_span``/``end_span``/declared ``sha`` would be three more
+    values to keep true across every subsequent hand-edit of the
+    surrounding file."""
+
+    name: str
+    start: int
+    end: int
+
+    def __post_init__(self) -> None:
+        """Reject a negative or INVERTED span at construction, the same
+        ``0 <= start <= end`` rule ``fs.replace_span`` already applies to
+        its own arguments and for the same reason (review finding).
+
+        Ordinary Python slice semantics accept ``end < start`` silently,
+        and an eject splice built from such a record --
+        ``doc[:start] + doc[end:]`` -- then DUPLICATES the bytes between
+        them instead of stripping a region: the exact opposite of AD-58's
+        "withdraw the claim without touching surrounding content". A plain
+        ``ValueError`` rather than a ``SeedError`` leaf, matching this
+        module's other caller-contract checks; ``read_state`` is the layer
+        that turns it into ``StateInvalid``."""
+        if not (0 <= self.start <= self.end):
+            raise ValueError(
+                "RegionSpanRecord: requires 0 <= start <= end, got"
+                f" start={self.start!r}, end={self.end!r}"
+            )
+
+    def to_json_dict(self) -> dict[str, Any]:
+        return {"name": self.name, "start": self.start, "end": self.end}
+
+    @classmethod
+    def from_json_dict(cls, data: dict[str, Any]) -> RegionSpanRecord:
+        if not isinstance(data, dict):
+            raise ValueError(f"RegionSpanRecord: expected a JSON object, got {_abbreviate(data)}")
+        return cls(
+            name=_require_str(
+                _require_key(data, "name", context="RegionSpanRecord"),
+                context="RegionSpanRecord.name",
+            ),
+            start=_require_int(
+                _require_key(data, "start", context="RegionSpanRecord"),
+                context="RegionSpanRecord.start",
+            ),
+            end=_require_int(
+                _require_key(data, "end", context="RegionSpanRecord"),
+                context="RegionSpanRecord.end",
+            ),
+        )
+
+
+@dataclass(frozen=True)
+class ManagedArtifact:
+    """One artifact the tool currently claims (AD-58): its manifest
+    ``id``, its repo-relative ``path``, its class, the ``body_sha`` last
+    recorded for it, and -- for a ``hybrid-managed-region`` claim -- the
+    region span inserted into an otherwise human-owned file.
+
+    ``artifact_class`` (not ``class`` -- a reserved word) serializes to
+    the YAML key literally spelled ``class``, matching
+    ``model/manifest.py::ManifestEntry``'s own convention. It carries the
+    WIRE string, never ``ArtifactClass``: this module may not import
+    ``model.manifest`` (module docstring's import surface), and the
+    schema's own ``class`` enum is the contract either way.
+
+    ``body_sha`` carries ``detect/hashes.py::hash_content``'s shipped
+    shape (8 lowercase hex, no prefix), enforced by the schema's own
+    ``pattern`` rather than re-checked here -- which is what makes a
+    malformed recorded hash a ``StateInvalid`` at READ time, so it can
+    never reach ``check_managed_file``/``check_managed_region`` at all.
+
+    ``inserted_region_span`` is present for a ``hybrid-managed-region``
+    claim and ``None`` for every other class -- an IFF, enforced in
+    ``__post_init__`` and mirrored by ``schema.json``'s own
+    ``if``/``then``/``else`` on ``class``."""
+
+    id: str
+    path: str
+    artifact_class: str
+    body_sha: str
+    inserted_region_span: RegionSpanRecord | None
+
+    def __post_init__(self) -> None:
+        """Couple ``class`` to ``inserted_region_span``: present if and
+        only if the class is ``hybrid-managed-region`` (review finding).
+
+        Both halves were previously uncoupled -- a hybrid entry with a null
+        span and a ``referenced`` entry with a populated one both validated
+        and round-tripped, contradicting this class's own docstring and the
+        schema's. Each is a real failure: a hybrid claim with no span is one
+        an eject cannot withdraw at all (AD-58 needs the byte offsets), and
+        a whole-file claim carrying a span invites an eject to splice a file
+        it was supposed to remove outright. The schema states the same rule
+        so a hand-edited file is rejected at READ time, before this
+        constructor is ever reached; this check is what keeps a
+        code-constructed value honest too."""
+        has_span = self.inserted_region_span is not None
+        if self.artifact_class == _REGION_ARTIFACT_CLASS and not has_span:
+            raise ValueError(
+                f"ManagedArtifact {self.id!r}: class {_REGION_ARTIFACT_CLASS!r} requires an"
+                " inserted_region_span (an eject cannot withdraw the claim without it)"
+            )
+        if has_span and self.artifact_class != _REGION_ARTIFACT_CLASS:
+            raise ValueError(
+                f"ManagedArtifact {self.id!r}: inserted_region_span belongs only to class"
+                f" {_REGION_ARTIFACT_CLASS!r}, got {self.artifact_class!r}"
+            )
+
+    def to_json_dict(self) -> dict[str, Any]:
+        return {
+            "id": self.id,
+            "path": self.path,
+            "class": self.artifact_class,
+            "body_sha": self.body_sha,
+            "inserted_region_span": (
+                None
+                if self.inserted_region_span is None
+                else self.inserted_region_span.to_json_dict()
+            ),
+        }
+
+    @classmethod
+    def from_json_dict(cls, data: dict[str, Any]) -> ManagedArtifact:
+        if not isinstance(data, dict):
+            raise ValueError(f"ManagedArtifact: expected a JSON object, got {_abbreviate(data)}")
+        raw_span = _require_key(data, "inserted_region_span", context="ManagedArtifact")
+        return cls(
+            id=_require_str(
+                _require_key(data, "id", context="ManagedArtifact"),
+                context="ManagedArtifact.id",
+            ),
+            path=_require_str(
+                _require_key(data, "path", context="ManagedArtifact"),
+                context="ManagedArtifact.path",
+            ),
+            artifact_class=_require_str(
+                _require_key(data, "class", context="ManagedArtifact"),
+                context="ManagedArtifact.class",
+            ),
+            body_sha=_require_str(
+                _require_key(data, "body_sha", context="ManagedArtifact"),
+                context="ManagedArtifact.body_sha",
+            ),
+            inserted_region_span=(
+                None if raw_span is None else RegionSpanRecord.from_json_dict(raw_span)
+            ),
+        )
+
+
+@dataclass(frozen=True)
+class LegacyArtifact:
+    """One entry classified ``present-legacy``, the persisted form of
+    ``detect/inventory.py``'s in-memory ``LegacyRecord``. Its
+    ``entry_id`` is spelled ``id`` on the wire, matching
+    ``managed[]``'s own key; ``path`` and ``legacy_of`` are unchanged.
+
+    The field names are MIRRORED here, never imported: ``state`` must not
+    import ``detect`` (the architecture's no-upward-imports rule)."""
+
+    id: str
+    path: str
+    legacy_of: str
+
+    def to_json_dict(self) -> dict[str, Any]:
+        return {"id": self.id, "path": self.path, "legacy_of": self.legacy_of}
+
+    @classmethod
+    def from_json_dict(cls, data: dict[str, Any]) -> LegacyArtifact:
+        if not isinstance(data, dict):
+            raise ValueError(f"LegacyArtifact: expected a JSON object, got {_abbreviate(data)}")
+        return cls(
+            id=_require_str(
+                _require_key(data, "id", context="LegacyArtifact"),
+                context="LegacyArtifact.id",
+            ),
+            path=_require_str(
+                _require_key(data, "path", context="LegacyArtifact"),
+                context="LegacyArtifact.path",
+            ),
+            legacy_of=_require_str(
+                _require_key(data, "legacy_of", context="LegacyArtifact"),
+                context="LegacyArtifact.legacy_of",
+            ),
+        )
+
+
+@dataclass(frozen=True)
+class SeedState:
+    """The whole state document, in memory -- the eleven fields FR-102 and
+    the epics AC name, and nothing else.
+
+    Every collection is a ``tuple``, never a ``list``: this is a frozen
+    value object callers compare and pass around, and a mutable member
+    would make ``frozen=True`` a half-promise (the same reasoning
+    ``fs.NeverWrite`` and ``plan.types.Plan`` already apply).
+
+    ``model_version`` is a typed ``ModelVersion`` (A-05's operating-model
+    clock, whose ordering matters for migrations); ``seed_model_version``
+    stays a plain ``str`` -- it is an installed distribution's PEP 440
+    version, a provenance record this module never orders or compares.
+
+    ``__post_init__`` does exactly the work ``schema.json`` CANNOT do, and
+    no more: it coerces each sequence field to a ``tuple`` and enforces the
+    cross-entry rules no JSON Schema keyword can express. Everything a
+    schema keyword already covers (patterns, enums, required keys) stays
+    there and is deliberately NOT re-checked here -- a hand-written second
+    copy of those rules could only drift.
+
+    * **Coercion** (mirroring ``fs.NeverWrite.__post_init__``'s technique,
+      ``object.__setattr__`` on a frozen dataclass). A type hint is not
+      runtime enforcement: ``SeedState(agents=["claude"], ...)`` previously
+      wrote fine, came back from ``read_state`` as a NON-equal object, and
+      let ``state.agents.append(...)`` mutate the "frozen" instance --
+      making ``frozen=True`` a half-promise, the exact defect Story 7.4
+      already closed on ``NeverWrite`` and ``Manifest`` (review finding).
+    * **Uniqueness across entries.** Duplicate ``managed[].id`` /
+      ``managed[].path`` and duplicate ``legacy[].id`` are rejected, the
+      same invariant ``model/manifest.py`` enforces for manifest entries:
+      two rows claiming one artifact make the recorded-hash lookup
+      order-dependent. ``uniqueItems`` cannot express "unique BY A FIELD".
+    * **Version-wise ``migrations_applied`` uniqueness.**
+      ``uniqueItems`` compares strings, but ``ModelVersion`` excludes build
+      metadata from equality (SemVer 2.0.0 section 10), so ``["1.2.0",
+      "1.2.0+build"]`` passed as two entries while naming ONE version --
+      and a migration guarded by that list could run twice, the single
+      thing it exists to prevent."""
+
+    model_version: ModelVersion
+    seed_model_version: str
+    adopted_at: str
+    last_update: str
+    mode: str
+    agents: tuple[str, ...]
+    managed: tuple[ManagedArtifact, ...]
+    skips: tuple[str, ...]
+    legacy: tuple[LegacyArtifact, ...]
+    migrations_applied: tuple[str, ...]
+    opted_out: tuple[str, ...]
+
+    def __post_init__(self) -> None:
+        for name, item_type in (
+            ("agents", str),
+            ("managed", ManagedArtifact),
+            ("skips", str),
+            ("legacy", LegacyArtifact),
+            ("migrations_applied", str),
+            ("opted_out", str),
+        ):
+            self._coerce_sequence(name, item_type)
+
+        # The one field whose declared type no JSON Schema can police:
+        # `to_json_dict` renders `model_version` through `str(...)`, so a
+        # plain `str` passed here serializes identically, validates, is
+        # written -- and comes back from `read_state` as a `ModelVersion`,
+        # a silently NON-equal round-trip. It is the same half-promise the
+        # sequence coercion above closes, on the one field that is not a
+        # `str` the schema already checks (review finding).
+        if not isinstance(self.model_version, ModelVersion):
+            raise ValueError(
+                "SeedState.model_version: must be a ModelVersion, not"
+                f" {type(self.model_version).__name__} -- parse it with"
+                " ModelVersion.parse() so the value round-trips equal"
+            )
+
+        _reject_duplicates(
+            tuple(artifact.id for artifact in self.managed), context="SeedState.managed[].id"
+        )
+        _reject_duplicates(
+            tuple(artifact.path for artifact in self.managed),
+            context="SeedState.managed[].path",
+        )
+        _reject_duplicates(
+            tuple(artifact.id for artifact in self.legacy), context="SeedState.legacy[].id"
+        )
+
+        # `ModelVersion.parse` raises `InvalidVersionError`, itself a
+        # `ValueError` -- the same class every other check here raises.
+        applied: list[tuple[ModelVersion, str]] = []
+        for entry in self.migrations_applied:
+            version = ModelVersion.parse(entry)
+            for seen_version, seen_entry in applied:
+                if seen_version == version:
+                    raise ValueError(
+                        "SeedState.migrations_applied: must name each model version"
+                        f" once, but {entry!r} and {seen_entry!r} are the same version"
+                        " (build metadata does not make two versions distinct --"
+                        " SemVer 2.0.0 section 10)"
+                    )
+            applied.append((version, entry))
+
+    def _coerce_sequence(self, name: str, item_type: type) -> None:
+        """Freeze one sequence field to a ``tuple`` of ``item_type``.
+
+        A ``list`` and a ``tuple`` are both accepted (callers legitimately
+        build lists); a ``str`` is NOT, even though it is iterable, because
+        ``tuple("claude")`` would silently become six one-character
+        "agents"."""
+        value = getattr(self, name)
+        if not isinstance(value, (list, tuple)) or not all(
+            isinstance(item, item_type) for item in value
+        ):
+            raise ValueError(
+                f"SeedState.{name}: expected a sequence of {item_type.__name__}, got"
+                f" {_abbreviate(value)}"
+            )
+        object.__setattr__(self, name, tuple(value))
+
+    def to_json_dict(self) -> dict[str, Any]:
+        """Fixed key order -- ``STATE_KEYS``, which is also the order
+        ``schema.json`` requires them in, so a human diffing two state
+        files never sees a reordering that means nothing."""
+        return {
+            "model_version": str(self.model_version),
+            "seed_model_version": self.seed_model_version,
+            "adopted_at": self.adopted_at,
+            "last_update": self.last_update,
+            "mode": self.mode,
+            "agents": list(self.agents),
+            "managed": [artifact.to_json_dict() for artifact in self.managed],
+            "skips": list(self.skips),
+            "legacy": [artifact.to_json_dict() for artifact in self.legacy],
+            "migrations_applied": list(self.migrations_applied),
+            "opted_out": list(self.opted_out),
+        }
+
+    @classmethod
+    def from_json_dict(cls, data: dict[str, Any]) -> SeedState:
+        """The inverse of ``to_json_dict``. Raises a plain ``ValueError``
+        naming the offending field for anything that does not fit --
+        never a ``SeedError`` leaf: this is a caller-contract violation on
+        load, the same class ``plan/types.py``'s own ``from_json_dict``
+        reports. ``read_state`` is the layer that translates it into
+        ``StateInvalid``, so a direct caller of this method still sees the
+        precise shape complaint."""
+        if not isinstance(data, dict):
+            raise ValueError(f"SeedState: expected a JSON object, got {_abbreviate(data)}")
+        raw_managed = _require_object_list(
+            _require_key(data, "managed", context="SeedState"), context="SeedState.managed"
+        )
+        raw_legacy = _require_object_list(
+            _require_key(data, "legacy", context="SeedState"), context="SeedState.legacy"
+        )
+        raw_model_version = _require_str(
+            _require_key(data, "model_version", context="SeedState"),
+            context="SeedState.model_version",
+        )
+        return cls(
+            # `ModelVersion.parse` raises `InvalidVersionError`, itself a
+            # `ValueError` -- the same class every other failure here
+            # raises, so no separate translation is needed.
+            model_version=ModelVersion.parse(raw_model_version),
+            seed_model_version=_require_str(
+                _require_key(data, "seed_model_version", context="SeedState"),
+                context="SeedState.seed_model_version",
+            ),
+            adopted_at=_require_str(
+                _require_key(data, "adopted_at", context="SeedState"),
+                context="SeedState.adopted_at",
+            ),
+            last_update=_require_str(
+                _require_key(data, "last_update", context="SeedState"),
+                context="SeedState.last_update",
+            ),
+            mode=_require_str(
+                _require_key(data, "mode", context="SeedState"), context="SeedState.mode"
+            ),
+            agents=_require_str_tuple(
+                _require_key(data, "agents", context="SeedState"), context="SeedState.agents"
+            ),
+            managed=tuple(ManagedArtifact.from_json_dict(item) for item in raw_managed),
+            skips=_require_str_tuple(
+                _require_key(data, "skips", context="SeedState"), context="SeedState.skips"
+            ),
+            legacy=tuple(LegacyArtifact.from_json_dict(item) for item in raw_legacy),
+            migrations_applied=_require_str_tuple(
+                _require_key(data, "migrations_applied", context="SeedState"),
+                context="SeedState.migrations_applied",
+            ),
+            opted_out=_require_str_tuple(
+                _require_key(data, "opted_out", context="SeedState"),
+                context="SeedState.opted_out",
+            ),
+        )
+
+
+def state_path(repo_root: Path) -> Path:
+    """``<repo_root>/.marshal/seed-state.yml`` -- mirrors
+    ``plan/build.py::default_plan_path``'s shape.
+
+    Unlike ``.marshal/plan.json``, this path is deliberately NOT covered
+    by the packaged ``.gitignore`` region: FR-107 keeps state git-tracked,
+    because it is how a fresh clone learns what the tool already owns."""
+    return repo_root / ".marshal" / "seed-state.yml"
+
+
+@lru_cache(maxsize=1)
+def _schema_text() -> str:
+    """The packaged ``state/schema.json``'s raw text, read once per
+    process.
+
+    Resolved through ``importlib.resources`` rather than ``__file__``
+    arithmetic (the idiom ``engine/copier.py`` already uses for the
+    packaged templates), so it keeps working from a zipped or relocated
+    install.
+
+    A missing or unreadable resource is an ``InternalError`` (exit 10), not
+    a ``StateInvalid`` (review finding): ``_load_schema`` is called from
+    inside ``read_state``'s ``except ValidationError`` scope, so the raw
+    ``FileNotFoundError`` previously escaped the read path entirely and
+    broke FR-104's "only ``StateInvalid``" contract -- and it would have
+    been the WRONG finding anyway. A packaging failure is a broken
+    installation; sending an operator to repair a state file that is
+    perfectly fine is exactly the mislabelling this module's write path
+    already refuses to do. ``lru_cache`` does not memoize exceptions, so a
+    transient read failure is retried rather than pinned for the process."""
+    try:
+        schema_ref = resources.files("pyforge.marshal.seed.state") / _SCHEMA_FILENAME
+        return schema_ref.read_text(encoding="utf-8")
+    except (OSError, ModuleNotFoundError) as exc:
+        raise InternalError(
+            f"the packaged seed-state {_SCHEMA_FILENAME} could not be read: {exc}",
+            remedy=(
+                "reinstall pyforge-marshal -- the schema ships inside the distribution"
+                " and its absence is a broken installation, not a problem with this"
+                " repository's state file"
+            ),
+        ) from exc
+
+
+def _load_schema() -> dict[str, Any]:
+    """A FRESH parse of the packaged schema on every call.
+
+    Deliberately not ``lru_cache``d itself: a cached call handed every
+    caller the SAME mutable dict, so one caller mutating it (a test
+    tweaking a pattern, a future helper popping a key) silently poisoned
+    every later validation in the process (review finding). Only the TEXT
+    is cached -- ``json.loads`` per call is microseconds and buys back a
+    value nobody can corrupt for anyone else."""
+    try:
+        return json.loads(_schema_text())
+    except json.JSONDecodeError as exc:
+        raise InternalError(
+            f"the packaged seed-state {_SCHEMA_FILENAME} is not valid JSON: {exc}",
+            remedy=(
+                "reinstall pyforge-marshal -- a corrupt packaged schema is a broken"
+                " installation, not a problem with this repository's state file"
+            ),
+        ) from exc
+
+
+@lru_cache(maxsize=1)
+def _validator() -> Draft202012Validator:
+    """The one validator both ``read_state`` and ``write_state`` use.
+
+    ``Draft202012Validator`` explicitly, never ``jsonschema.validate``:
+    the latter re-infers the dialect from ``$schema`` on every call and
+    re-compiles the schema each time, and a schema that lost its
+    ``$schema`` line would silently validate under a different draft's
+    semantics."""
+    return Draft202012Validator(_load_schema())
+
+
+def _validation_detail(error: ValidationError) -> str:
+    """A ``ValidationError`` rendered as ``<field path>: <reason>``.
+
+    ``json_path`` (e.g. ``$.managed[0].body_sha``) rather than the raw
+    deque, because the AC requires the raised ``StateInvalid`` to NAME the
+    offending field path -- and for a document-level failure (an unknown
+    top-level key) ``json_path`` is just ``$``, which still reads
+    correctly."""
+    return f"{error.json_path}: {error.message}"
+
+
+def read_state(repo_root: Path) -> SeedState | None:
+    """Read, validate, and decode ``<repo_root>/.marshal/seed-state.yml``.
+
+    Returns ``None`` when the file does not exist -- a never-adopted repo
+    is not an invalid one, and ``marshal seed check`` must be able to run
+    against it. A DANGLING SYMLINK at the state path is not absence: the
+    link is itself the record that this repo was established, so a missing
+    target is ``StateInvalid``.
+
+    Raises ``StateInvalid`` (exit 5, always with a remedy) for every other
+    failure: an unreadable file, non-UTF-8 bytes, malformed YAML, a
+    duplicate mapping key, a merge key, a non-mapping root, a schema
+    violation, or a shape violation ``SeedState.from_json_dict`` catches.
+    No ``OSError``, ``UnicodeDecodeError``, ``yaml.YAMLError``, or
+    ``jsonschema`` exception type ever escapes this function (FR-104)."""
+    path = state_path(repo_root)
+    try:
+        raw_bytes = path.read_bytes()
+    except FileNotFoundError as exc:
+        # Checked by ATTEMPTING the read rather than by a prior
+        # `path.exists()` probe: the probe form has a race window in which
+        # the file can vanish between check and read, reporting a
+        # never-adopted repo as invalid state. A directory at this path is
+        # an `IsADirectoryError` -- an `OSError`, handled below -- not a
+        # missing file, and is correctly reported as invalid.
+        if path.is_symlink():
+            # A DANGLING symlink raises the same FileNotFoundError as a
+            # genuinely absent file, so the absence branch used to swallow
+            # it and report an adopted repo as never-adopted -- after which
+            # `init` could re-establish over an existing installation
+            # (review finding). `is_symlink()` lstats, so it is True for a
+            # broken link and False for real absence: the link EXISTS and
+            # says this repo was adopted, only its target is gone.
+            raise StateInvalid(
+                f"{path} is a symlink whose target does not exist",
+                remedy=(
+                    "restore the link's target, or replace the link with the tracked"
+                    " .marshal/seed-state.yml from version control -- do not re-run"
+                    " `marshal seed init`, this repo has already been established"
+                ),
+            ) from exc
+        return None
+    except OSError as exc:
+        raise StateInvalid(
+            f"could not read {path}: {exc}",
+            remedy=(
+                "check the file's permissions and that .marshal/seed-state.yml is a"
+                " regular file, then re-run"
+            ),
+        ) from exc
+
+    try:
+        text = raw_bytes.decode("utf-8")
+    except UnicodeDecodeError as exc:
+        raise StateInvalid(
+            f"{path} is not valid UTF-8: {exc}",
+            remedy=(
+                "restore the file from version control (it is git-tracked) or re-run"
+                " `marshal seed adopt` to regenerate it"
+            ),
+        ) from exc
+
+    try:
+        # `_StrictLoader` is a `SafeLoader` subclass -- no arbitrary-object
+        # construction, just `SafeLoader` plus duplicate-key rejection.
+        document = yaml.load(text, Loader=_StrictLoader)
+    except yaml.YAMLError as exc:
+        raise StateInvalid(
+            f"invalid YAML in {path}: {exc}",
+            remedy=(
+                "restore the file from version control (it is git-tracked) or re-run"
+                " `marshal seed adopt` to regenerate it"
+            ),
+        ) from exc
+    except RecursionError as exc:
+        # PyYAML's composer recurses per nesting level, so a deeply nested
+        # document blows the stack instead of reporting a `YAMLError` --
+        # the same escape class `model/manifest.py::load_manifest` already
+        # closes for the manifest.
+        raise StateInvalid(
+            f"{path} is nested too deeply to parse",
+            remedy="restore the file from version control (it is git-tracked)",
+        ) from exc
+
+    if not isinstance(document, dict):
+        raise StateInvalid(
+            f"{path}: top-level document must be a mapping, got {_abbreviate(document)}",
+            remedy=(
+                "restore the file from version control (it is git-tracked) or re-run"
+                " `marshal seed adopt` to regenerate it"
+            ),
+        )
+
+    try:
+        _validator().validate(document)
+    except ValidationError as exc:
+        raise StateInvalid(
+            f"{path} does not match the seed-state schema -- {_validation_detail(exc)}",
+            remedy=(
+                "do not hand-edit this file; restore it from version control or re-run"
+                " `marshal seed adopt` to regenerate it"
+            ),
+        ) from exc
+
+    try:
+        return SeedState.from_json_dict(document)
+    except ValueError as exc:
+        # Defense in depth: the schema above already rejects every shape
+        # `from_json_dict` checks, so reaching here means the schema and
+        # the dataclasses have drifted apart -- still a state problem from
+        # the caller's point of view, never a traceback.
+        raise StateInvalid(
+            f"{path} could not be decoded: {exc}",
+            remedy=(
+                "restore the file from version control (it is git-tracked) or re-run"
+                " `marshal seed adopt` to regenerate it"
+            ),
+        ) from exc
+
+
+def write_state(state: SeedState, *, repo_root: Path, never_write: fs.NeverWrite) -> None:
+    """Serialize ``state`` and write it to
+    ``<repo_root>/.marshal/seed-state.yml`` in exactly one atomic replace.
+
+    Validates the serialized document against the same packaged schema
+    ``read_state`` uses, BEFORE any I/O: an invalid ``SeedState`` raises
+    ``StateInvalid`` with nothing written and any existing file left
+    byte-identical.
+
+    The write itself is a single ``fs.write`` call -- the never-write
+    guard (P-01), which delegates the atomic replace to
+    ``pyforge.core.atomic_write`` (P-08). A ``NeverWriteViolation`` (exit
+    4) or an ``OSError`` from that call propagates UNCHANGED: the
+    environment refused the write, which is not the same fact as state
+    being invalid.
+
+    One further escape, documented rather than converted: a ``repo_root``
+    that does not resolve to an existing DIRECTORY raises a plain
+    ``ValueError`` from ``fs._guard`` -- outside the ``SeedError``
+    taxonomy and not an ``OSError``, so a caller catching
+    ``(SeedError, OSError)`` gets a traceback (review finding). Wrapping it
+    here would fight ``fs.py``'s own contract, which raises exactly that
+    ``ValueError`` on purpose: a wrong ``repo_root`` silently disables
+    every repo-relative never-write pattern, so it must fail loudly as the
+    caller bug it is, not be re-labelled as invalid state."""
+    document = state.to_json_dict()
+    try:
+        _validator().validate(document)
+    except ValidationError as exc:
+        raise StateInvalid(
+            f"refusing to write invalid seed state -- {_validation_detail(exc)}",
+            remedy=(
+                "correct the SeedState field the message names before calling"
+                " write_state (nothing was written)"
+            ),
+        ) from exc
+
+    body = yaml.safe_dump(
+        document,
+        sort_keys=False,
+        allow_unicode=True,
+        default_flow_style=False,
+    )
+    fs.write(
+        state_path(repo_root),
+        (_HEADER + body).encode("utf-8"),
+        repo_root=repo_root,
+        never_write=never_write,
+    )
+
+
+def seed_model_version() -> str:
+    """This package's own installed version -- A-05's second clock, and
+    the value ``SeedState.seed_model_version`` records.
+
+    Read from installed distribution metadata rather than a hardcoded
+    constant, so it cannot drift from the artifact actually running.
+    Raises ``InternalError`` (exit 10) if the distribution is not
+    installed at all: that is a broken environment, not invalid state and
+    not a user error."""
+    try:
+        return metadata.version("pyforge-marshal")
+    except metadata.PackageNotFoundError as exc:
+        raise InternalError(
+            "the pyforge-marshal distribution is not installed, so its version"
+            " cannot be recorded in seed state",
+            remedy=(
+                "install pyforge-marshal into the running environment (e.g."
+                " `pixi run -e pyforge-marshal ...`) rather than importing it from a"
+                " source tree on sys.path"
+            ),
+        ) from exc
+
+
+def utc_timestamp(moment: datetime | None = None) -> str:
+    """The ONE producer of ``adopted_at``/``last_update``'s wire shape:
+    second-precision UTC RFC-3339, ``T``/``Z`` only -- exactly what
+    ``schema.json``'s ``timestamp`` pattern accepts.
+
+    ``moment`` defaults to now. An explicitly supplied NAIVE datetime
+    raises ``ValueError``: ``astimezone`` would silently interpret it as
+    LOCAL time, so a caller in a non-UTC zone would record an instant
+    that never happened -- the class of silent error this module exists to
+    prevent, and a caller-contract violation rather than a state failure
+    (so a plain ``ValueError``, matching ``fs.replace_span``'s own
+    upfront argument checks)."""
+    if moment is None:
+        return datetime.now(UTC).strftime(_TIMESTAMP_FORMAT)
+    if moment.tzinfo is None or moment.tzinfo.utcoffset(moment) is None:
+        raise ValueError(
+            f"utc_timestamp requires a timezone-aware datetime, got naive {moment!r}"
+        )
+    return moment.astimezone(UTC).strftime(_TIMESTAMP_FORMAT)
+
+
+def copier_data(state: SeedState) -> dict[str, Any]:
+    """The answers projection re-supplied to Copier via
+    ``MaterializeRequest.data`` on every render (FR-105/AD-52).
+
+    State is the single source of truth for these answers -- Genesis never
+    reads them back out of the answers file Copier itself writes. The
+    projection carries only what state actually KNOWS: the two clocks, the
+    establishing mode, and the agent list. Per-invocation inputs a
+    template also needs (notably ``slug``) are supplied by the verbs on
+    top of this dict; state deliberately has no ``slug`` field, and
+    inventing one would breach the eleven-key contract."""
+    return {
+        "model_version": str(state.model_version),
+        "seed_model_version": state.seed_model_version,
+        "mode": state.mode,
+        "agents": list(state.agents),
+    }

@@ -64,6 +64,7 @@ from . import (
     bridge,
     claims,
     deck_pipeline,
+    deck_qa,
     errors,
     notices,
     progress,
@@ -321,6 +322,17 @@ def _build_parser() -> _HeraldArgumentParser:
     )
     push.add_argument("slug", help="deck slug, e.g. pyforge-warden")
     push.add_argument(
+        "--repo-root",
+        type=Path,
+        default=None,
+        help="repo root containing presentations/<slug>/ (default: cwd)",
+    )
+    qa = deck_subparsers.add_parser(
+        "qa",
+        help="run visual-QA gates against a deck and print the report, JSON (Story 14.1)",
+    )
+    qa.add_argument("slug", help="deck slug, e.g. pyforge-warden")
+    qa.add_argument(
         "--repo-root",
         type=Path,
         default=None,
@@ -705,6 +717,8 @@ def _route(args: argparse.Namespace) -> int:
         return _run_deck_watch(args)
     if args.command == "deck" and args.deck_command == "push":
         return _run_deck_push(args)
+    if args.command == "deck" and args.deck_command == "qa":
+        return _run_deck_qa(args)
     if args.command == "progress":
         return _run_progress(args)
     if args.command == "success":
@@ -913,6 +927,24 @@ def _run_deck_push(args: argparse.Namespace) -> int:
                 f"pushed {args.slug}: {len(result.pushed)} file(s) pushed, "
                 f"{len(result.skipped)} unchanged"
             )
+
+    return dispatch(operation)
+
+
+def _run_deck_qa(args: argparse.Namespace) -> int:
+    """``herald deck qa <slug> [--repo-root]`` (Story 14.1): runs
+    ``deck_qa.DEFAULT_GATES`` (empty in this story) against ``slug`` and
+    prints the report as one JSON object, through ``dispatch`` (AD-6).
+
+    Unlike every other ``deck`` subcommand, this one never constructs an
+    ``McpTransport`` or calls ``bridge.run`` -- ``deck_qa.run`` is a fully
+    local, offline computation over deck sources already on disk, with
+    nothing to reach Claude Design for."""
+    repo_root = args.repo_root if args.repo_root is not None else Path.cwd()
+
+    def operation() -> None:
+        report = deck_qa.run(slug=args.slug, repo_root=repo_root)
+        print(json.dumps(deck_qa.to_dict(report)))
 
     return dispatch(operation)
 
