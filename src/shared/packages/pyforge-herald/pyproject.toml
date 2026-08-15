@@ -18,7 +18,26 @@ authors = [{ name = "rxm7706" }]
 # directly, so it is this package's own dependency, not an undeclared ride
 # on mcp's -- a future mcp release dropping/renaming it should not silently
 # break evidence.py.
-dependencies = ["mcp>=1.28.1", "httpx2>=2.5.0", "pyforge-core"]
+# Story 14.2: deck_qa.py's render_gate imports `playwright.sync_api` and
+# `PIL` directly, so both are real runtime dependencies of this package, not
+# just of the pixi env it happens to build in. `pixi.toml`'s
+# `[feature.pyforge-herald.dependencies]` splits playwright into two
+# conda-forge packages (`playwright` the CLI/driver, `playwright-python` the
+# `import playwright` bindings) -- PyPI ships both halves as one
+# distribution, still named `playwright`, so that is the name declared here.
+# Floor matches `pixi.toml`'s own `playwright` floor exactly (review pass,
+# second round: a lower floor here let a `pip install` of the built wheel
+# resolve an older playwright than the conda env's own solve -- playwright's
+# Python package and its bundled browser build are version-coupled, so a
+# mismatch is a real "browser doesn't match driver" failure mode, not just
+# a cosmetic drift).
+dependencies = [
+    "mcp>=1.28.1",
+    "httpx2>=2.5.0",
+    "pyforge-core",
+    "playwright>=1.62.1",
+    "pillow>=12.3.0",
+]
 
 [project.optional-dependencies]
 # Story 13.6: the ASGI host `webhook_host.py` mounts behind -- opt-in, not a

@@ -4,7 +4,7 @@ status: ready
 owner-dream: docs/dreams/bmad-loop-baseline-drift.md
 surface:
   - pixi.toml
-  - scripts/
+  - scripts/bmad_loop_baseline_drift_check.py
   - docs/dreams/bmad-loop-baseline-drift.md
 sources:
   - ../../../../../../docs/dreams/bmad-loop-baseline-drift.md

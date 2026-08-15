@@ -166,6 +166,20 @@ def main() -> int:
     except Exception:
         watch.append("could not query open PRs")
 
+    try:
+        drift = subprocess.run(
+            [sys.executable, str(REPO / "scripts" / "bmad_loop_baseline_drift_check.py")],
+            cwd=REPO, capture_output=True, text=True, timeout=60)
+        if drift.returncode == 1:
+            n = sum(1 for line in drift.stdout.splitlines() if line.startswith("  ✗"))
+            needs.append(f"{n} unrecovered baseline-drift defer(s) -- real reviewed "
+                         f"work stranded by bmad-loop's stuck-orchestrator bug: run "
+                         f"`pixi run -e local-recipes baseline-drift-check` for "
+                         f"story/run/preserve-ref details, then recover per "
+                         f"docs/dreams/bmad-loop-baseline-drift.md")
+    except Exception:
+        watch.append("could not run baseline-drift-check")
+
     print("\nATTENTION:")
     if needs:
         for item in needs:

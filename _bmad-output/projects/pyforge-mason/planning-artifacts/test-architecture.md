@@ -170,7 +170,7 @@ None of Epic 4 is implemented — no `environment.py` or lock-engine adapter exi
 | **4.1** | Lock engine adapter and provenance | Unit | `engines/condalock.py` implements the Story 3.1 engine protocol; engine name + version appear in rendered output and (where the format allows) in the lockfile's own provenance; Mason itself contains no dependency-resolution logic |
 | **4.2** | Manifest discovery | Unit | Discovery locates `pyproject.toml`, `environment.yml`, `requirements*.txt`, `pixi.toml`; discovered list is displayed before solving begins; explicit user-supplied manifest paths override discovery entirely; no manifests found → typed error naming the directory and filenames searched |
 | **4.3** | `mason environment lock` | Integration | Solving delegated to the engine, lockfile written; `--output <path>` honored; `--platform` (one or more) scopes the lock to exactly those platforms; no `--platform` falls back to the engine's default, reported in output; succeeds with zero CFE installation present |
-| **4.4** | `mason environment check` | Integration | Current lockfile → exit 0; a manifest changed since lock was produced → non-zero exit naming which manifests drifted; `--format json` conforms to the FR-31 envelope; a missing lockfile produces a typed error distinguishing "missing" from "stale" |
+| **4.4** | `mason environment check` | Integration | Current lockfile → exit 0; a manifest changed since lock was produced → non-zero exit reporting `stale: true` (no per-manifest attribution — FR-28 requires none, and conda-lock's own hash data cannot supply one; resolved 2026-08-15, story 4.4 escalation); `--format json` conforms to the FR-31 envelope; a missing lockfile produces a typed error distinguishing "missing" from "stale" |
 
 ---
 

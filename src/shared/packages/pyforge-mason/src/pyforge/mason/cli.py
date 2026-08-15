@@ -89,7 +89,7 @@ import sys
 from collections.abc import Sequence
 from pathlib import Path
 
-from . import __version__, doctor, package, recipe, render
+from . import __version__, doctor, environment, package, recipe, render
 from .errors import CfeUnresolvedError, MasonError
 from .exit_codes import (
     EXIT_CFE_UNAVAILABLE, EXIT_FAILED, EXIT_INTERRUPTED, EXIT_OK, EXIT_USAGE,
@@ -139,6 +139,16 @@ _PACKAGE_SHIP_HELP = (
     "ship a project's built artifacts to pypi, pypi-test (TestPyPI rehearsal), conda-forge, "
     "and/or a named channel (comma-separated; dry run by default, --yes to confirm; a "
     "pypi-test target requested alongside pypi always runs first and gates it)"
+)
+_ENVIRONMENT_LOCK_HELP = (
+    "resolve one or more dependency manifests into a single lockfile via conda-lock "
+    "(--platform comma-separated; omit for conda-lock's own default; CFE-independent)"
+)
+_ENVIRONMENT_CHECK_HELP = (
+    "check whether an existing lockfile is stale relative to one or more manifests via "
+    "conda-lock (--platform comma-separated; pass the same platforms the lockfile was "
+    "locked with; exit code is non-zero when the lockfile is stale OR the check itself "
+    "failed; CFE-independent)"
 )
 
 # AD-13: every global setting has a flag and an environment-variable form,
@@ -777,6 +787,80 @@ def build_parser() -> argparse.ArgumentParser:
     # `package` has two real verbs registered (`build`, `ship`).
     _noun_verbs["package"].metavar = "{" + ",".join(_noun_verbs["package"].choices) + "}"
 
+    # Story 4.3: mason environment lock <manifest_path>... --output/-o PATH
+    # [--platform PLATFORMS] -- the `environment` noun's first verb (FR-25,
+    # FR-27, FR-29). Mirrors `package build`'s own registration shape
+    # (parents=[global_flags], for the same "a global flag given after the
+    # verb and its positionals" reason documented on that registration
+    # above). `manifest_path` is `nargs="+"` -- Story 4.2 (manifest
+    # auto-discovery) is not yet built, so at least one explicit manifest
+    # path is required for now; a later story relaxes this to `nargs="*"`
+    # plus a discovery fallback (spec Intent). `--output`/`-o` mirrors
+    # `recipe new --output`'s exact required-flag shape (Story 2.4).
+    # `--platform` is optional and takes a single comma-separated string,
+    # mirroring `--to`'s established "repeatable via comma-separation"
+    # idiom -- no `action="append"` precedent exists anywhere in this file
+    # (spec Always boundary); `environment.lock()` does the splitting, not
+    # this registration.
+    environment_lock_parser = _noun_verbs["environment"].add_parser(
+        "lock", help=_ENVIRONMENT_LOCK_HELP, description=_ENVIRONMENT_LOCK_HELP,
+        parents=[global_flags],
+    )
+    environment_lock_parser.add_argument(
+        "manifest_path", metavar="MANIFEST_PATH", nargs="+",
+        help="one or more dependency manifest paths (pyproject.toml, environment.yml, "
+        "requirements*.txt, pixi.toml)",
+    )
+    environment_lock_parser.add_argument(
+        "--output", "-o", required=True, metavar="PATH", help="path to write the lockfile to",
+    )
+    environment_lock_parser.add_argument(
+        "--platform", metavar="PLATFORMS", default=None,
+        help="comma-separated platforms to lock for (e.g. linux-64,osx-arm64); omit to let "
+        "conda-lock apply its own default",
+    )
+
+    # Story 4.4: mason environment check <manifest_path>... --lockfile/-l PATH
+    # [--platform PLATFORMS] -- the `environment` noun's second verb (FR-25,
+    # FR-27, FR-29), CI's own companion to `lock` above: reports whether an
+    # EXISTING lockfile has gone stale relative to its manifests, rather than
+    # producing one. Mirrors `lock`'s own registration shape
+    # (parents=[global_flags], `manifest_path` positional `nargs="+"` --
+    # identical rationale, spec Always boundary) with one deliberate
+    # difference: `--lockfile`/`-l` names the EXISTING lockfile to verify
+    # (required, deliberately not `--output`/`-o` -- nothing is written to
+    # it, and that name would misleadingly imply a write, spec Always
+    # boundary); there is no `--output` flag on this verb at all. `--platform`
+    # mirrors `lock`'s own identical single comma-separated-flag idiom
+    # exactly -- `environment.check()` does the splitting, not this
+    # registration, same as `lock`'s own.
+    environment_check_parser = _noun_verbs["environment"].add_parser(
+        "check", help=_ENVIRONMENT_CHECK_HELP, description=_ENVIRONMENT_CHECK_HELP,
+        parents=[global_flags],
+    )
+    environment_check_parser.add_argument(
+        "manifest_path", metavar="MANIFEST_PATH", nargs="+",
+        help="one or more dependency manifest paths (pyproject.toml, environment.yml, "
+        "requirements*.txt, pixi.toml)",
+    )
+    environment_check_parser.add_argument(
+        "--lockfile", "-l", required=True, metavar="PATH",
+        help="path to the EXISTING lockfile to verify (not written to)",
+    )
+    environment_check_parser.add_argument(
+        "--platform", metavar="PLATFORMS", default=None,
+        help="comma-separated platforms to check (e.g. linux-64,osx-arm64); pass the same "
+        "platforms the lockfile was locked with -- omitting this delegates to conda-lock's "
+        "own default (linux-64,osx-arm64,osx-64,win-64 when the manifests name none), which "
+        "reports a narrower lockfile as stale",
+    )
+
+    # Same `.choices`-derived metavar fixup as `recipe`/`package` above, now
+    # that `environment` has two real verbs registered (`lock`, `check`).
+    _noun_verbs["environment"].metavar = (
+        "{" + ",".join(_noun_verbs["environment"].choices) + "}"
+    )
+
     return parser
 
 
@@ -1283,16 +1367,73 @@ def main(argv: Sequence[str] | None = None) -> int:
             # forms are byte-identical past this point (spec I/O matrix).
             return _dispatch_package_ship(ns, raw_targets=ns.to)
 
+        if ns.noun == "environment" and ns.verb == "lock":
+            # FR-25/FR-27/FR-29: drives Story 4.1's engine protocol through
+            # environment.py's own single adapter (engines.condalock). Like
+            # `package build`, `environment.lock()` never touches CFE at
+            # all (spec Always boundary) -- no cfe-root/cfe-python/
+            # cfe-timeout flags are read here.
+            fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
+            result = environment.lock(ns.manifest_path, ns.output, platforms=ns.platform)
+            # A non-zero delegated engine returncode is DATA on `result`,
+            # never raised (AD-4) -- this branch always reports "ok"/
+            # EXIT_OK for a Mason-successful invocation, mirroring `package
+            # build`'s identical "the gap is data" precedent above.
+            # `EngineAbsentError`/`EnvironmentLockTimeoutError` are the
+            # exceptions `environment.lock()` can still raise, propagating
+            # to main()'s existing `except MasonError` handler below.
+            render.write(
+                fmt, sys.stdout, "environment lock", "ok", dataclasses.asdict(result), [],
+            )
+            return EXIT_OK
+
+        if ns.noun == "environment" and ns.verb == "check":
+            # FR-25/FR-27/FR-29: CI's own companion to `environment lock`
+            # above -- drives `engines.condalock.check()` through
+            # `environment.py`'s own use-case wrapper. Like `environment
+            # lock`, `environment.check()` never touches CFE at all (spec
+            # Always boundary) -- no cfe-root/cfe-python/cfe-timeout flags
+            # are read here.
+            #
+            # Unlike `environment lock`, this branch projects the delegated
+            # staleness verdict onto the process exit code (spec Intent,
+            # mirrors `recipe validate`'s own "wrapped tool's pass/fail
+            # outcome becomes the process exit code" precedent -- the ONE
+            # other verb in this codebase that does this): `EXIT_OK` when
+            # `result.stale` is `False` AND `result.returncode == 0`, else
+            # `EXIT_FAILED`. The `returncode` half (review pass, 2026-08-15)
+            # guards against a genuine `conda-lock` failure (bad manifest,
+            # solver crash, network error during the real re-solve a hash
+            # mismatch triggers) leaving the temp copy unrewritten, which
+            # would otherwise make `before == after` trivially hold and
+            # silently report `stale=False` for a check that never actually
+            # ran to completion -- a CI gate must not green-light on its own
+            # internal failure. The JSON envelope's own `status` field stays
+            # "ok" regardless (spec I/O matrix), and `environment.check()`
+            # itself never raises for either a stale verdict or a non-zero
+            # `returncode` (AD-4) -- `EnvironmentLockfileMissingError`/
+            # `EnvironmentLockfileMalformedError`/`EngineAbsentError`/
+            # `EnvironmentCheckTimeoutError` are the exceptions it can still
+            # raise, propagating to main()'s existing `except MasonError`
+            # handler below.
+            fmt = _resolve_str(getattr(ns, "format", None), _ENV_FORMAT, "text")
+            result = environment.check(ns.lockfile, ns.manifest_path, platforms=ns.platform)
+            render.write(
+                fmt, sys.stdout, "environment check", "ok", dataclasses.asdict(result), [],
+            )
+            return EXIT_OK if not result.stale and result.returncode == 0 else EXIT_FAILED
+
         # Unreachable now for every verb-noun pair except `recipe new`/
         # `recipe validate`/`recipe build`/`recipe diagnose`/`recipe
         # optimize`/`recipe scan`/`recipe submit`/`recipe update`/`package
-        # build`/`package ship` above, each handled by its own branch:
-        # `environment` still registers no verbs at all, `package`
-        # registers no verb beyond `build`/`ship`, and `recipe` registers
-        # no verb beyond those eight, so argparse itself rejects any other
-        # token here as an invalid choice before `ns.verb` could ever hold
-        # it. Kept only so a later story that populates another verb has
-        # somewhere to land its dispatch.
+        # build`/`package ship`/`environment lock`/`environment check`
+        # above, each handled by its own branch: `environment` registers no
+        # verb beyond `lock`/`check`, `package` registers no verb beyond
+        # `build`/`ship`, and `recipe` registers no verb beyond those eight,
+        # so argparse itself rejects any other token here as an invalid
+        # choice before `ns.verb` could ever hold it. Kept only so a later
+        # story that populates another verb has somewhere to land its
+        # dispatch.
         return EXIT_OK  # pragma: no cover
     except KeyboardInterrupt:
         return EXIT_INTERRUPTED
