@@ -3849,7 +3849,7 @@
  "pyforge-steward/spec-python-agent-platform": {
   "files": {
    "environment.yaml": "a7394e9ac491d921acc22e4ebfe742d0fa400aba",
-   "pixi.toml": "f853aa0ac38bcbca3c0763126786c3e7dfd74394",
+   "pixi.toml": "4b1ade39186257b3c0dee8922a079a5b56c02c31",
    "src/platform/.editorconfig": "c241cc74e556577f3fafca63942d74d0c8764396",
    "src/platform/.gitattributes": "6c04362d1bfb9effdd6645bf5d171a298af084be",
    "src/platform/.gitignore": "7085a5f6068c1cf766528e1eb1a569c4baf5c358",
