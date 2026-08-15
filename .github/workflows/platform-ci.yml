@@ -231,3 +231,4 @@ jobs:
             platform-ci-postgres-${{ matrix.engine }} \
             platform-ci-redis-${{ matrix.engine }} || true
           ${{ matrix.engine }} network rm platform-ci-net-${{ matrix.engine }} || true
+          ${{ matrix.engine }} rmi platform-ci-${{ matrix.engine }} || true

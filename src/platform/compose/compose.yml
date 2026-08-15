@@ -52,6 +52,20 @@ services:
     build:
       context: ../../..
       dockerfile: src/platform/Containerfile
+    # The image's own ENTRYPOINT/CMD never runs `manage.py migrate` -- on
+    # Kubernetes/OCP that step belongs to a separate Job/initContainer, not
+    # every pod's own startup (concurrent replicas would race the same
+    # migration). This LOCAL compose stack has no such job, so without an
+    # explicit migrate step here a fresh `docker compose up` boots against a
+    # completely unmigrated database (confirmed live in review: `\dt` shows
+    # zero relations, and any page touching the ORM -- e.g. `/admin/login/`
+    # -- 500s with `relation "django_site" does not exist`; `/ht/`'s
+    # Database check still reports OK because it is a bare connectivity
+    # probe, not a query against an app table). `exec`'d so gunicorn still
+    # replaces this shell as PID 1 for signal handling.
+    command: >
+      bash -c "python manage.py migrate --noinput &&
+               exec gunicorn config.asgi:application --bind 0.0.0.0:8000 --worker-class uvicorn_worker.UvicornWorker"
     ports:
       - "8000:8000"
     environment:
