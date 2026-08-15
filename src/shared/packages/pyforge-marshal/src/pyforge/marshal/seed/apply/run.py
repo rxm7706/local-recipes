@@ -57,12 +57,16 @@ review and each filed as deferred work rather than silently implied away:
 (1) the restored file's MODE is whatever `atomic_write_bytes` produces
 (`0o666 & ~umask`), so an executable target -- the packaged manifest ships
 `scripts/bmad-switch` as `copied-managed` -- comes back non-executable;
-`fs.write` exposes no `mode=` passthrough to fix this from here. (2) A
-target that is a DIRECTORY snapshots as `None` and is never removed, since
-`fs` ships no directory-removal primitive and P-01 forbids reaching around
-it -- so a directory-shaped artifact (the manifest's
-`presentations/{{ slug }}/`) and anything under it survives, as do empty
-parent directories `atomic_write_bytes` created for a nested target. (3) A
+`fs.write` exposes no `mode=` passthrough to fix this from here. (2)
+Anything at the target that is not a REGULAR FILE snapshots as `None` and is
+never removed, since `fs` ships no removal primitive for it and P-01 forbids
+reaching around it. Directories are the case that matters in practice -- a
+directory-shaped artifact (the manifest's `presentations/{{ slug }}/`) and
+everything under it survives, as do empty parent directories
+`atomic_write_bytes` created for a nested target -- but the predicate is
+`is_file()`, so the same is true of a dangling symlink, a symlink to a
+directory, and a FIFO a `commit` leaves at a previously-absent target
+(review finding: the earlier wording named only directories). (3) A
 SYMLINK target snapshots its referent's bytes (`is_file()` follows links)
 while `os.replace` replaces the link itself (`fs.py`'s own documented
 behavior), so rollback leaves a regular file where the link was and the
@@ -131,6 +135,21 @@ from ..plan.types import Action, Plan
 #: does not.
 CommitAction = Callable[[Action], None]
 
+#: Shared by every containment refusal below. Deliberately does NOT say "this
+#: plan did not come from `build_plan`" -- review finding, verified by
+#: execution: it can have. `detect/inventory.py::_resolve_within_repo` returns
+#: `None` for a manifest entry whose `path` is absolute, traverses upward, or
+#: is an in-repo symlink pointing out, and `_classify_entry` treats `None` as
+#: `ABSENT` -- so `build_plan` emits a perfectly ordinary `Action` carrying the
+#: raw escaping path. Telling an operator to re-plan would send them around a
+#: loop that reproduces the identical plan; the manifest entry is what has to
+#: change.
+_ESCAPING_TARGET_REMEDY = (
+    "correct the offending entry's `path` in the model manifest so it is a"
+    " normalized repo-relative path inside the target repo, then re-plan; if"
+    " the plan was hand-edited, discard it and rebuild from a fresh detect pass"
+)
+
 
 @dataclass(frozen=True)
 class ApplyResult:
@@ -189,10 +208,43 @@ def _restore(
     with maximum partial state and zero diagnostics. Reporting it anyway
     would mean either downgrading the interrupt to a catchable `SeedError`
     (worse) or writing to stderr from a library module that deliberately
-    does no I/O; the choice is deferred rather than made badly here."""
+    does no I/O; the choice is deferred rather than made badly here.
+
+    That reasoning covers an interrupt arriving DURING rollback, and only
+    that. A later review pass was right that it does not hold for the
+    ORIGINAL exception: when `commit` raised `KeyboardInterrupt`/`SystemExit`
+    and any restore then fails, `run_apply` wraps it in `InternalError` --
+    a catchable `SeedError` -- so a CLI doing `except SeedError` exits 10 on
+    an operator interrupt rather than dying. That is the I/O matrix's
+    "rollback itself fails" row applied literally (it mandates `InternalError`
+    naming every unrestored path, and carves out no exception for an
+    interrupt), and reconciling it against the "interrupt propagates
+    unchanged" row is a contract-level question, not a local fix. Filed as
+    deferred work; stated here so the wrapping is not read as an oversight."""
     unrestorable: list[str] = []
+    resolved_root = repo_root.resolve()
     for target, snapshot in reversed(snapshots):
         try:
+            # Containment is re-checked HERE, not just once before the run.
+            # Review finding, verified by execution (a real host file outside
+            # the repo was destroyed): `run_apply`'s pre-loop check runs before
+            # any `commit`, so it can only see the tree as it was THEN. An
+            # action whose parent directory did not yet exist passes that check,
+            # and a `commit` that materializes the parent as a SYMLINK to a host
+            # directory makes this same path resolve outside the repo by the
+            # time rollback reaches it. `fs`'s never-write guard cannot catch it
+            # -- an out-of-repo path falls back to an absolute POSIX string no
+            # repo-relative pattern matches, which is the whole reason the
+            # containment check exists. Refusing to touch it and reporting it as
+            # unrestorable is fail-safe: the run already ends in `InternalError`
+            # naming the residue, which is strictly better than a silent
+            # deletion outside the repo.
+            if resolved_root not in target.resolve().parents:
+                unrestorable.append(
+                    f"{target}: no longer resolves inside {resolved_root}"
+                    " (a commit redirected its parent); left untouched"
+                )
+                continue
             if snapshot is None:
                 if target.is_file():
                     fs.remove(target, repo_root=repo_root, never_write=never_write)
@@ -262,19 +314,51 @@ def run_apply(
     something this function can enforce (its `NeverWriteViolation`, exit 4,
     simply propagates like any other `commit` failure, unwinding the run).
     """
+    resolved_root = repo_root.resolve()
     for action in plan.actions:
-        target = repo_root / action.target_path
-        resolved = target.resolve()
-        resolved_root = repo_root.resolve()
-        if resolved != resolved_root and resolved_root not in resolved.parents:
+        # Checked on the LITERAL `target_path`, before any resolution, and
+        # re-derived nowhere else. Review finding, verified by execution: the
+        # earlier check resolved the path but the snapshot/restore loops below
+        # re-derive the RAW `repo_root / action.target_path`, so the guard did
+        # not bind the path it was guarding. With `sub` absent, `'sub/../b.txt'`
+        # resolved inside the repo and passed; the raw path then stat'd as
+        # absent (no `sub`), snapshotted `None`, and once `commit`'s
+        # `mkdir(parents=True)` materialized `sub` the same raw path resolved
+        # onto the REAL `b.txt`, which rollback then deleted. Refusing
+        # non-normalized targets outright closes that gap at the source: no
+        # legitimate `build_plan` artifact path is absolute or traverses upward.
+        if Path(action.target_path).is_absolute() or ".." in Path(action.target_path).parts:
             raise PreconditionFailure(
                 f"escaping-target: action {action.artifact_id!r} names target_path"
-                f" {action.target_path!r}, which resolves to {resolved} -- outside"
-                f" {resolved_root}",
-                remedy=(
-                    "rebuild the plan from a fresh detect pass; a plan whose action"
-                    " targets escape the repo did not come from build_plan"
-                ),
+                f" {action.target_path!r}, which is absolute or traverses upward"
+                " -- a target must be a normalized repo-relative path",
+                remedy=_ESCAPING_TARGET_REMEDY,
+            )
+        target = repo_root / action.target_path
+        try:
+            resolved = target.resolve()
+        except (OSError, ValueError) as failure:
+            # `Plan.from_json_dict` type-checks `target_path` as `str` and
+            # nothing more, so an embedded NUL reaches `resolve()` and raises a
+            # raw `ValueError` -- escaping the closed six-leaf taxonomy exactly
+            # as the untranslated `ProcessError` below did before it was
+            # wrapped. Review finding, verified by execution.
+            raise PreconditionFailure(
+                f"unusable-target: action {action.artifact_id!r} names target_path"
+                f" {action.target_path!r}, which cannot be resolved to a path"
+                f" -- {failure!r}",
+                remedy=_ESCAPING_TARGET_REMEDY,
+            ) from failure
+        # `resolved == resolved_root` is refused too, not excepted: a target
+        # that IS the repo root ('.', '', 'sub/..') is not a legitimate
+        # artifact, and the earlier `resolved != resolved_root` short-circuit
+        # let it through as a successful apply (review finding).
+        if resolved_root not in resolved.parents:
+            raise PreconditionFailure(
+                f"escaping-target: action {action.artifact_id!r} names target_path"
+                f" {action.target_path!r}, which resolves to {resolved} -- not a path"
+                f" strictly inside {resolved_root}",
+                remedy=_ESCAPING_TARGET_REMEDY,
             )
 
     try:

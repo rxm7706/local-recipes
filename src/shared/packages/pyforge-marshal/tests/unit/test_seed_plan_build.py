@@ -743,3 +743,56 @@ def test_fingerprint_drift_reports_every_divergence_not_just_the_first(tmp_path)
     assert drift[0].startswith("git_head:")
     assert drift[1].startswith("dirty:")
     assert drift[2].startswith("a:")
+
+
+def test_fingerprint_drift_agrees_with_classify_about_a_dangling_symlink(tmp_path):
+    """Review finding, verified by execution: the verifier was STRICTER than the
+    producer, and a dangling symlink is the state where they disagreed.
+
+    ``detect/inventory.py::_classify_entry`` asks ``target.exists()``, which
+    follows the broken link and reports False -- so ``build_plan`` records
+    ``ABSENT``. ``fingerprint_drift`` had been given an extra
+    ``or target.is_symlink()``, which reports True, so it refused the plan the
+    INSTANT ``build_plan`` produced it. Re-planning yielded the identical plan,
+    leaving apply permanently unreachable with a remedy string ("re-run the
+    plan") that could not work.
+
+    Producer and verifier agreeing is the stated reason this function lives in
+    ``plan/build.py`` at all, so the predicate must be ``exists()`` and nothing
+    more. (What rollback does to a symlinked target is a separate, filed bound.)
+    """
+    _init_git_repo(tmp_path)
+    (tmp_path / "CLAUDE.md").symlink_to(tmp_path / "nowhere.txt")
+    manifest = _manifest(_whole_file("claude-md", "CLAUDE.md", ArtifactClass.COPIED_SEEDED))
+    inventory = classify(manifest, tmp_path)
+    plan = build_plan(manifest, inventory)
+
+    assert plan.actions[0].current_state == ArtifactState.ABSENT
+    assert fingerprint_drift(plan, tmp_path) == (), (
+        "a plan build_plan just produced must never be refused as stale"
+    )
+
+
+def test_fingerprint_drift_reports_an_id_hashed_twice_in_the_fingerprint(tmp_path):
+    """The mirror of the duplicate-ACTION-id check. Review finding, verified by
+    execution: only the actions side was guarded, so a fingerprint carrying the
+    same id twice reported ``()`` -- against this function's own "a corrupted
+    plan is refused, never partially verified". ``Plan.from_json_dict``
+    validates uniqueness for ``actions`` only, and direct construction validates
+    neither."""
+    _init_git_repo(tmp_path)
+    plan = _sample_plan(tmp_path)
+    assert plan.repo_fingerprint.artifact_hashes, "fixture must hash at least one artifact"
+    first = plan.repo_fingerprint.artifact_hashes[0]
+    tampered = dataclasses.replace(
+        plan,
+        repo_fingerprint=dataclasses.replace(
+            plan.repo_fingerprint,
+            artifact_hashes=(first, *plan.repo_fingerprint.artifact_hashes),
+        ),
+    )
+
+    drift = fingerprint_drift(tampered, tmp_path)
+    assert any(
+        d.startswith(f"{first[0]}:") and "hashed more than once" in d for d in drift
+    ), drift

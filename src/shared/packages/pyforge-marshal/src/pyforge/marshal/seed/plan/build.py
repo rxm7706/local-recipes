@@ -418,6 +418,24 @@ def fingerprint_drift(plan: Plan, repo_root: Path) -> tuple[str, ...]:
             " which target that id's recorded hash describes"
         )
 
+    # The mirror of the duplicate-ACTION-id check above. Review finding: only
+    # one side was guarded, so `artifact_hashes=(("a", h), ("a", h))` reported
+    # `()` while the equivalent duplicate on the actions side was refused --
+    # against this function's own "a corrupted plan is refused, never partially
+    # verified". `Plan.from_json_dict` validates uniqueness for `actions` only,
+    # and direct construction validates neither, so both sides need it here.
+    seen_hashed: set[str] = set()
+    duplicate_hashed: set[str] = set()
+    for artifact_id, _sha in fingerprint.artifact_hashes:
+        if artifact_id in seen_hashed:
+            duplicate_hashed.add(artifact_id)
+        seen_hashed.add(artifact_id)
+    for artifact_id in sorted(duplicate_hashed):
+        drift.append(
+            f"{artifact_id}: hashed more than once in the plan's fingerprint, so the"
+            " plan cannot say which recorded hash that id's target must match"
+        )
+
     hashed_ids = {artifact_id for artifact_id, _sha in fingerprint.artifact_hashes}
     for artifact_id in actions_by_id:
         if artifact_id not in hashed_ids:
@@ -443,7 +461,20 @@ def fingerprint_drift(plan: Plan, repo_root: Path) -> tuple[str, ...]:
             # latin-1 file appearing at an absent artifact's path was
             # accepted as fresh and then destroyed by apply.
             target = repo_root / target_path
-            if target.exists() or target.is_symlink():
+            # `.exists()` ALONE, matching `detect/inventory.py::_classify_entry`
+            # ("if target is None or not target.exists(): return ABSENT") byte
+            # for byte. Review finding, verified by execution: an added
+            # `or target.is_symlink()` made the verifier stricter than the
+            # producer, and a DANGLING symlink sitting at an absent artifact's
+            # path is the state where they disagree -- `.exists()` follows the
+            # broken link and reports False, so `build_plan` records ABSENT,
+            # while `is_symlink()` reports True, so `fingerprint_drift` refused
+            # the plan the instant it was produced. Re-planning yielded the
+            # identical plan, so apply was unreachable until a human deleted the
+            # link, and no remedy string could say so. Producer and verifier
+            # agreeing is exactly why this function lives beside `build_plan`;
+            # a symlinked target's own rollback bound is filed separately.
+            if target.exists():
                 drift.append(
                     f"{artifact_id}: {target_path!r} was absent when the plan was built"
                     " and something exists there now"

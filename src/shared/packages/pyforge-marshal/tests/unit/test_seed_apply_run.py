@@ -96,7 +96,18 @@ def _fresh_plan(repo_root: Path, *actions: Action, **fingerprint_overrides) -> P
     ``fingerprint_drift`` now correctly refuses such a plan as stale. Fixing
     it here rather than at every call site is what makes this helper's
     "exactly what ``build_plan`` would record" claim true of the ACTIONS as
-    well as the fingerprint."""
+    well as the fingerprint.
+
+    One bound on that claim, stated rather than implied (second review pass):
+    the correction is faithful for the two fields ``fingerprint_drift``
+    actually reads (``artifact_id``/``target_path``, plus ``current_state``),
+    but the resulting Action is not one ``build_plan`` could emit in full --
+    ``_action`` defaults ``artifact_class`` to ``COPIED_MANAGED``, and only a
+    ``hybrid-managed-region`` entry ever reaches ``PRESENT_DIVERGENT``. That
+    combination is harmless HERE because ``run_apply`` never branches on
+    ``artifact_class`` (it is the whole point of the ``commit`` callback), so
+    no test below depends on it -- but a future assertion that does read
+    ``artifact_class`` must not treat these fixtures as producer-faithful."""
     actions = tuple(
         dataclasses.replace(
             action,
@@ -633,15 +644,20 @@ def test_an_action_whose_target_escapes_repo_root_is_refused_before_any_write(
     guard cannot save it, because for a path outside ``repo_root`` the guard
     falls back to the absolute POSIX string, which no repo-relative pattern
     can ever match. ``detect/inventory.py`` guards exactly this with
-    ``_resolve_within_repo``; apply had no equivalent."""
+    ``_resolve_within_repo``; apply had no equivalent.
+
+    Built through ``_fresh_plan`` rather than a hand-rolled ``Plan``: the
+    earlier fixture paired one action with ``artifact_hashes=()``, which
+    ``fingerprint_drift`` independently refuses ("carried by an Action but
+    absent from the plan's fingerprint"), so the test passed only because
+    containment happens to run first and would have kept passing if the
+    containment check were deleted outright (second review pass). A fingerprint
+    that is otherwise FRESH is what makes this an isolation of containment."""
     repo = tmp_path / "repo"
     repo.mkdir()
     outside = tmp_path / "outside.txt"
     outside.write_text("do not touch\n", encoding="utf-8")
-    plan = Plan(
-        actions=(_action("escaper", escaping),),
-        repo_fingerprint=RepoFingerprint(git_head=None, dirty=True, artifact_hashes=()),
-    )
+    plan = _fresh_plan(repo, _action("escaper", escaping))
 
     with pytest.raises(PreconditionFailure) as excinfo:
         run_apply(plan, repo_root=repo, never_write=_OPEN, commit=_never_called)
@@ -762,3 +778,131 @@ def test_the_apply_package_front_door_re_exports_the_runner():
     assert apply.__all__ == ["ApplyResult", "CommitAction", "run_apply"]
     assert apply.run_apply is run_apply
     assert apply.ApplyResult is ApplyResult
+
+
+# --- second review pass: containment that binds, taxonomy, agreement --------
+
+
+def test_a_traversal_that_normalizes_back_inside_is_refused_and_destroys_nothing(tmp_path):
+    """Review finding, verified by execution before the fix: the containment
+    check resolved the path, but the snapshot and rollback loops re-derived the
+    RAW ``repo_root / action.target_path``, so the guard did not bind the path
+    it was guarding.
+
+    ``'sub/../b.txt'`` resolves to ``<repo>/b.txt``, which IS inside the repo,
+    so the old check passed it. The raw path then stat'd as absent (no ``sub``
+    directory), snapshotting ``None``; ``commit``'s ``mkdir(parents=True)``
+    created ``sub``; and from then on the same raw path resolved onto the real
+    ``b.txt``, which rollback deleted as "a file that was not there before".
+    A pre-existing, unrelated, in-repo file, destroyed by a rolled-back run --
+    NFR-R1's exact prohibition.
+
+    Refusing non-normalized targets outright is what closes it: no legitimate
+    ``build_plan`` artifact path is absolute or traverses upward."""
+    (tmp_path / "b.txt").write_text("precious\n", encoding="utf-8")
+    before = _tree(tmp_path)
+    plan = _fresh_plan(tmp_path, _action("sneaky", "sub/../b.txt"))
+
+    with pytest.raises(PreconditionFailure) as excinfo:
+        run_apply(plan, repo_root=tmp_path, never_write=_OPEN, commit=_never_called)
+
+    assert "escaping-target" in str(excinfo.value)
+    assert excinfo.value.exit_code == 3
+    assert excinfo.value.remedy
+    assert _tree(tmp_path) == before
+    assert (tmp_path / "b.txt").read_text(encoding="utf-8") == "precious\n"
+
+
+def test_rollback_refuses_a_target_a_commit_redirected_outside_the_repo(tmp_path):
+    """Review finding, verified by execution before the fix: a real host file
+    outside ``repo_root`` was deleted by rollback.
+
+    ``run_apply``'s containment check runs once, before any ``commit``, so it
+    can only see the tree as it was THEN. Action 0 targets ``sub/x.txt`` while
+    ``sub`` does not exist -- contained, and snapshotted ``None``. Its
+    ``commit`` then materializes ``sub`` as a SYMLINK to a directory outside the
+    repo and writes through it. Action 1 fails. Rollback sees ``is_file()`` True
+    at the raw path and, before the fix, called ``fs.remove`` -- unlinking the
+    host's file. ``fs``'s never-write guard cannot intervene, because a path
+    outside ``repo_root`` falls back to an absolute POSIX string that no
+    repo-relative pattern matches.
+
+    The fix re-checks containment at restore time and reports the path as
+    unrestorable instead of touching it: the run still ends loudly in
+    ``InternalError``, but nothing outside the repo is written or removed."""
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    (outside / "x.txt").write_text("host file\n", encoding="utf-8")
+
+    def commit(action: Action) -> None:
+        if action.artifact_id == "a":
+            (repo / "sub").symlink_to(outside, target_is_directory=True)
+            (repo / "sub" / "x.txt").write_text("clobbered\n", encoding="utf-8")
+            return
+        raise RuntimeError("commit exploded")
+
+    plan = _fresh_plan(repo, _action("a", "sub/x.txt"), _action("b", "b.txt"))
+
+    with pytest.raises(InternalError) as excinfo:
+        run_apply(plan, repo_root=repo, never_write=_OPEN, commit=commit)
+
+    assert excinfo.value.exit_code == 10
+    assert excinfo.value.remedy
+    assert "no longer resolves inside" in str(excinfo.value)
+    assert (outside / "x.txt").exists(), "rollback deleted a file outside repo_root"
+
+
+@pytest.mark.parametrize("target_path", [".", "", "sub/.."], ids=["dot", "empty", "up"])
+def test_a_target_that_is_the_repo_root_itself_is_refused(tmp_path, target_path):
+    """Review finding: the old guard read ``resolved != resolved_root and
+    resolved_root not in resolved.parents``, so a target resolving to the repo
+    root itself short-circuited to ACCEPTED and the run returned success with
+    ``commit`` handed the root directory. The repo root is not an artifact."""
+    plan = _fresh_plan(tmp_path, _action("rooty", target_path))
+
+    with pytest.raises(PreconditionFailure) as excinfo:
+        run_apply(plan, repo_root=tmp_path, never_write=_OPEN, commit=_never_called)
+
+    assert "escaping-target" in str(excinfo.value)
+    assert excinfo.value.exit_code == 3
+
+
+def test_a_target_path_that_cannot_be_resolved_becomes_a_precondition_failure(tmp_path):
+    """Review finding, verified by execution: ``Plan.from_json_dict`` type-checks
+    ``target_path`` as ``str`` and nothing more, so an embedded NUL reached
+    ``Path.resolve()`` and raised a raw ``ValueError`` -- escaping the closed
+    six-leaf ``SeedError`` taxonomy exactly as the untranslated ``ProcessError``
+    did, on the very line added to guard untrusted plans."""
+    plan = _fresh_plan(tmp_path, _action("nul", "a\x00b.txt"))
+
+    with pytest.raises(PreconditionFailure) as excinfo:
+        run_apply(plan, repo_root=tmp_path, never_write=_OPEN, commit=_never_called)
+
+    assert "unusable-target" in str(excinfo.value)
+    assert excinfo.value.exit_code == 3
+    assert excinfo.value.remedy
+    assert isinstance(excinfo.value.__cause__, (OSError, ValueError))
+
+
+def test_a_process_error_from_the_real_freshness_check_becomes_a_precondition_failure(
+    tmp_path,
+):
+    """The sibling test above monkeypatches ``run.fingerprint_drift``, so it
+    would keep passing if the real call stopped raising ``ProcessError``
+    (review finding). This one drives the REAL function: a ``repo_root`` that
+    does not exist makes ``PosixProcess.run`` fail to spawn ``git``."""
+    plan = _fresh_plan(tmp_path, _action("a", "a.txt"))
+
+    with pytest.raises(PreconditionFailure) as excinfo:
+        run_apply(
+            plan,
+            repo_root=tmp_path / "does-not-exist",
+            never_write=_OPEN,
+            commit=_never_called,
+        )
+
+    assert excinfo.value.exit_code == 3
+    assert excinfo.value.remedy
+    assert isinstance(excinfo.value.__cause__, ProcessError)
