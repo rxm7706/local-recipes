@@ -848,14 +848,19 @@ class FleetHomeFacts:
     # `CONFIDENCE_CONFIRMED` here is NOT unqualified proof, and this field
     # must not be read as such (review finding, 2026-08-10, pass 4 -- the
     # same overclaim-correction this docstring's paragraph above already
-    # applied to `()`): the POSITIVE direction has a verified contamination
-    # of its own, recorded as an open deferral against `core/promotion.py`.
-    # `extract_story_key_from_github_merge_subject` takes no `project_slug`,
-    # so one station's `<epic>.<seq>` matches on another station's PR-merge
-    # subject -- measured 2026-08-10, `pyforge-mason`/`-doctor`/`-scribe`
-    # each resolve ~30 keys, most belonging to other stations. A false
-    # `done: true` therefore silences this net for exactly the story it
-    # exists to protect. Both directions of this signal are best-effort;
+    # applied to `()`). The POSITIVE direction previously carried a verified
+    # cross-project contamination of its own (`extract_story_key_from_
+    # github_merge_subject` took no `project_slug`, so one station's
+    # `<epic>.<seq>` could match on another station's PR-merge subject --
+    # measured 2026-08-10, `pyforge-mason`/`-doctor`/`-scribe` each resolved
+    # ~30 keys, most belonging to other stations) -- CLOSED 2026-08-15
+    # (`extract_story_key_from_github_merge_subject` now requires and scopes
+    # on `project_slug`, the same live-collision reproduction that closed
+    # it, see that function's own docstring). `CONFIDENCE_CONFIRMED` is
+    # still not unqualified proof for OTHER reasons (the squash-merge and
+    # `land/<slug>-<epic>-<seq>` blind spots this docstring's paragraph
+    # above documents remain real), but cross-project misattribution is no
+    # longer one of them. Both directions of this signal are best-effort;
     # only their failure modes differ (noise vs. silence).
     failed_patches: tuple[dict[str, object], ...] = ()
 

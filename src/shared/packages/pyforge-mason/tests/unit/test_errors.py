@@ -46,7 +46,13 @@ Story 4.1 extends this file again with `EnvironmentLockTimeoutError`
 coverage, mirroring `ShipUploadTimeoutError`'s own suite exactly in shape
 (identifier, stored `timeout`, message content, `MasonError` subclass-ness,
 `str()` format, deepcopy/pickle round-trip) -- only `condalock.lock()` ever
-raises it, so no second constructor argument is needed."""
+raises it, so no second constructor argument is needed.
+
+Story 4.2 extends this file again with `EnvironmentManifestsNotFoundError`
+coverage, mirroring `ShipCredentialMissingError`'s own suite shape
+(identifier, stored `directory`/`filenames`, message content naming both,
+`MasonError` subclass-ness, `str()` format, rejects-empty-`directory`,
+rejects-empty-`filenames`, deepcopy/pickle round-trip via `__reduce__`)."""
 
 from __future__ import annotations
 
@@ -58,7 +64,8 @@ import pytest
 from pyforge.mason.errors import (
     CfeImportFloorError, CfeTimeoutError, CfeUnresolvedError,
     EngineAbsentError, EnvironmentCheckTimeoutError, EnvironmentLockfileMalformedError,
-    EnvironmentLockfileMissingError, EnvironmentLockTimeoutError, InvalidShipTargetError,
+    EnvironmentLockfileMissingError, EnvironmentLockTimeoutError,
+    EnvironmentManifestsNotFoundError, InvalidShipTargetError,
     MasonError, PackageBuildTimeoutError, PackageProjectPathError, PackageVersionMismatchError,
     ShipChannelCredentialMissingError, ShipChannelUploadTimeoutError,
     ShipCondaForgeRecipeLocationError, ShipCondaForgeRecipeMissingError,
@@ -1327,5 +1334,92 @@ def test_environment_check_timeout_error_survives_pickle_round_trip():
     clone = pickle.loads(pickle.dumps(original))
     assert isinstance(clone, EnvironmentCheckTimeoutError)
     assert clone.timeout == original.timeout
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+# --- Story 4.2: EnvironmentManifestsNotFoundError -----------------------------
+
+_FOUR_PATTERNS = ("pyproject.toml", "environment.yml", "requirements*.txt", "pixi.toml")
+
+
+def test_environment_manifests_not_found_error_identifier():
+    exc = EnvironmentManifestsNotFoundError("/proj", _FOUR_PATTERNS)
+    assert exc.identifier == "environment:manifests-not-found"
+
+
+def test_environment_manifests_not_found_error_stores_attributes():
+    exc = EnvironmentManifestsNotFoundError("/proj", _FOUR_PATTERNS)
+    assert exc.directory == "/proj"
+    assert exc.filenames == _FOUR_PATTERNS
+
+
+def test_environment_manifests_not_found_error_message_names_directory_and_filenames():
+    exc = EnvironmentManifestsNotFoundError("/proj", _FOUR_PATTERNS)
+    message = str(exc)
+    assert "/proj" in message
+    for pattern in _FOUR_PATTERNS:
+        assert pattern in message
+
+
+def test_environment_manifests_not_found_error_is_a_mason_error():
+    assert issubclass(EnvironmentManifestsNotFoundError, MasonError)
+    with pytest.raises(MasonError):
+        raise EnvironmentManifestsNotFoundError("/proj", _FOUR_PATTERNS)
+
+
+def test_environment_manifests_not_found_error_str_format_is_identifier_colon_space_message():
+    exc = EnvironmentManifestsNotFoundError("/proj", _FOUR_PATTERNS)
+    assert str(exc) == f"{exc.identifier}: {exc.message}"
+
+
+def test_environment_manifests_not_found_error_coerces_filenames_to_a_tuple():
+    exc = EnvironmentManifestsNotFoundError("/proj", list(_FOUR_PATTERNS))
+    assert exc.filenames == _FOUR_PATTERNS
+    assert isinstance(exc.filenames, tuple)
+
+
+def test_environment_manifests_not_found_error_rejects_empty_directory():
+    with pytest.raises(ValueError):
+        EnvironmentManifestsNotFoundError("", _FOUR_PATTERNS)
+
+
+def test_environment_manifests_not_found_error_rejects_whitespace_only_directory():
+    with pytest.raises(ValueError):
+        EnvironmentManifestsNotFoundError("   ", _FOUR_PATTERNS)
+
+
+def test_environment_manifests_not_found_error_rejects_empty_filenames():
+    with pytest.raises(ValueError):
+        EnvironmentManifestsNotFoundError("/proj", ())
+
+
+def test_environment_manifests_not_found_error_rejects_a_blank_filenames_entry():
+    """Every `filenames` entry must itself be a non-empty string (review
+    pass, 2026-08-15, matching `ShipCredentialMissingError`'s identical
+    per-entry check) -- a not-found error naming a blank pattern is exactly
+    as incoherent as naming none at all."""
+    with pytest.raises(ValueError):
+        EnvironmentManifestsNotFoundError("/proj", ("pyproject.toml", ""))
+    with pytest.raises(ValueError):
+        EnvironmentManifestsNotFoundError("/proj", ("pyproject.toml", "   "))
+
+
+def test_environment_manifests_not_found_error_survives_deepcopy():
+    original = EnvironmentManifestsNotFoundError("/proj", _FOUR_PATTERNS)
+    clone = copy.deepcopy(original)
+    assert isinstance(clone, EnvironmentManifestsNotFoundError)
+    assert clone.directory == original.directory
+    assert clone.filenames == original.filenames
+    assert clone.identifier == original.identifier
+    assert clone.message == original.message
+
+
+def test_environment_manifests_not_found_error_survives_pickle_round_trip():
+    original = EnvironmentManifestsNotFoundError("/proj", _FOUR_PATTERNS)
+    clone = pickle.loads(pickle.dumps(original))
+    assert isinstance(clone, EnvironmentManifestsNotFoundError)
+    assert clone.directory == original.directory
+    assert clone.filenames == original.filenames
     assert clone.identifier == original.identifier
     assert clone.message == original.message
