@@ -822,3 +822,8 @@ _bmad-output/projects/*/_root-fallback-fork-*/
 # repo only ships the tracked template). Mirrors the `.env`/`.env.example`
 # convention above: the example stays tracked, the real file is ignored.
 .steward/sync-config.yaml
+
+# CDO packaging inventory: local consumption workbook + secret gist id.
+# Tracked template is conf/conda-forge-packaging-inventory-operations.local.env.example.
+docs/Analysis_Dataset-*.xlsx
+conf/conda-forge-packaging-inventory-operations.local.env

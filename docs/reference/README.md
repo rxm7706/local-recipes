@@ -4,6 +4,8 @@ Living reference documentation (Diátaxis: reference/how-to). Descriptions of
 what exists — never aspirations (those are `docs/dreams/`) and never contracts
 (BMAD planning-artifacts; legacy: `docs/specs/`).
 
+- `conda-forge-packaging-inventory-operations_prompt.md` — standalone re-run prompt the inventory runner must obey.
+- `conda-forge-packaging-inventory-operations_replay.md` — replay / sync contract for that runner + prompt + curated config.
 - `developer-guide.md` — local testing + recipe development guidelines.
 - `mcp-server-architecture.md` — the FastMCP server + PyPI name mapping.
 - `enterprise-deployment.md` — air-gapped environments + JFrog Artifactory.

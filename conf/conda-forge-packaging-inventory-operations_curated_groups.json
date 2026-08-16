@@ -1,0 +1,163 @@
+{
+  "groups": [
+    {
+      "name": "Apache",
+      "packages": [
+        "apache-airflow",
+        "apache-beam",
+        "apache-flink",
+        "apache-libcloud",
+        "apache-superset",
+        "apache-skywalking",
+        "apache-tvm",
+        "avro",
+        "cassandra-driver",
+        "kafka-python"
+      ]
+    },
+    {
+      "name": "Django Software Foundation",
+      "packages": [
+        "django",
+        "django-auditlog",
+        "django-axes",
+        "django-constance",
+        "django-hosts",
+        "django-pipeline",
+        "django-redis",
+        "django-silk",
+        "django-simple-history",
+        "django-waffle"
+      ]
+    },
+    {
+      "name": "Linux AI & Data",
+      "packages": [
+        "amundsen-databuilder",
+        "bentoml",
+        "deepspeed",
+        "deltalake",
+        "feast",
+        "flytekit",
+        "horovod",
+        "ludwig",
+        "onnx",
+        "onnxruntime"
+      ]
+    },
+    {
+      "name": "NumFOCUS",
+      "packages": [
+        "astropy",
+        "bokeh",
+        "cupy",
+        "cython",
+        "dask",
+        "jupyterlab",
+        "matplotlib",
+        "numba",
+        "numpy",
+        "pandas"
+      ]
+    },
+    {
+      "name": "Jazzband",
+      "packages": [
+        "django-auditlog",
+        "django-model-utils",
+        "django-simple-history",
+        "django-waffle",
+        "djangorestframework-simplejwt",
+        "pip-tools"
+      ]
+    },
+    {
+      "name": "FINOS",
+      "packages": [
+        "finos-cdm",
+        "legend-delta",
+        "perspective-python",
+        "pylegend",
+        "tracdap-runtime"
+      ]
+    },
+    {
+      "name": "PSF",
+      "packages": [
+        "build",
+        "cibuildwheel",
+        "flit",
+        "hatch",
+        "mypy",
+        "packaging",
+        "pip",
+        "pipx",
+        "python",
+        "setuptools"
+      ]
+    },
+    {
+      "name": "PyPA",
+      "packages": [
+        "build",
+        "flit-core",
+        "installer",
+        "packaging",
+        "pip",
+        "setuptools",
+        "twine",
+        "virtualenv",
+        "wheel"
+      ]
+    },
+    {
+      "name": "Trendshift",
+      "packages": [
+        "airllm",
+        "code-review-graph",
+        "markitdown",
+        "open-interpreter",
+        "openai-agents",
+        "sqlit-tui",
+        "vibe-trading-ai"
+      ]
+    },
+    {
+      "name": "Google AOSS",
+      "packages": [
+        "elasticmock",
+        "google-adk",
+        "google-cloud-aiplatform"
+      ]
+    },
+    {
+      "name": "Microsoft",
+      "packages": [
+        "azure-ai-ml",
+        "azure-identity-broker",
+        "azure-synapse-spark",
+        "microsoft-agents-m365copilot",
+        "microsoft-agents-m365copilot-core",
+        "microsoft-kiota-bundle",
+        "msal"
+      ]
+    },
+    {
+      "name": "Kedro",
+      "packages": [
+        "kedro",
+        "kedro-aim",
+        "kedro-datasets",
+        "kedro-docker",
+        "kedro-great-expectations",
+        "kedro-pandera"
+      ]
+    },
+    {
+      "name": "BMAD",
+      "packages": [
+        "bmad-method"
+      ]
+    }
+  ]
+}
