@@ -23,10 +23,13 @@ replay — not a second toolchain.
 - A from-scratch run in a clean workspace regenerates the full inventory from the
   workbook, live indexes, and curated feeds.
 - Every package has one PEP 503 identity, source provenance, and a timestamped
-  verify decision. Ranking stays inspectable (`P1`–`P10` plus five status buckets).
+  verify decision. Ranking stays inspectable: proposed `P1`–`P9` plus `P0`, a
+  1–100 use `Score`, and a work label (not A/B/C).
 - `CDO-ENT-JFROG` ∪ `CDO-ENT-CONDA` is the OpenTeams universe: one issue titled
   `[Conda-Forge Packaging] {name}` per library, plus a dated handoff tab Mason
-  can consume (`A` / `B` / `C` / `TRACKED`).
+  can consume (`Fix vulnerability` / `Create recipe` /
+  `File issue (on conda-forge)` / `File issue (maintained feedstock)` /
+  `Already tracked`).
 - Google AOSS Free names that are on PyPI, not on conda-forge, and not in CDO
   consumption are an extra Mason queue. They do not expand the OpenTeams universe.
 - Identity rows (PURLs, issue URL, feedstock, metadata, staged-recipes PR, local
@@ -64,7 +67,7 @@ Live collection endpoints are primary; workbook tabs are the offline fallback.
 |---|---|
 | `verified-all-packages` | Full inventory (deliverable A; 14 columns) |
 | `inventory-2026-08-12` | OpenTeams universe handoff (14 + 8 columns) |
-| `identity-2026-08-12` | Per-name identity + packaging-location URLs |
+| `identity-2026-08-12` | Per-name identity, packaging-location URLs, proposed `P` / `Score` / `Work` |
 
 Refresh those tabs from a run. Do not keep repo-root CSVs as the stored copy.
 
@@ -107,15 +110,19 @@ tens instead of tens of thousands) is a fetch bug.
 | Path | Role |
 |---|---|
 | `scripts/conda-forge-packaging-inventory-operations_metrics.py` | Inventory runner |
+| `scripts/conda-forge-packaging-inventory-operations_priority.py` | Proposed `P`, `Score`, `Work` on identity; sync inventory `Priority_Bucket` + `OpenTeams_Batch` |
 | `docs/reference/conda-forge-packaging-inventory-operations_prompt.md` | Prompt the runner must obey |
 | `conf/conda-forge-packaging-inventory-operations_curated_groups.json` | Curated-group sample fallback |
 | `docs/reference/conda-forge-packaging-inventory-operations_replay.md` | Replay / sync contract |
-| `scripts/conda-forge-packaging-inventory-operations_openteams_identity.py` | Identity tab + gist publish |
+| `scripts/conda-forge-packaging-inventory-operations_openteams_identity.py` | Identity tab + gist publish (`--gist-only` after a priority pass) |
 | `conf/conda-forge-packaging-inventory-operations.local.env.example` | Template for the gitignored gist id |
 
 A rule, source, column, or metric change updates runner + prompt + replay in the
-same commit. Identity-column changes update `conda-forge-packaging-inventory-operations_openteams_identity.py`. Do not
-overwrite `docs/reference/conda-forge-packaging-inventory-operations_prompt.md` unless that is the task.
+same commit. Identity-column changes update
+`conda-forge-packaging-inventory-operations_openteams_identity.py`. Priority /
+work-label changes update `conda-forge-packaging-inventory-operations_priority.py`.
+Do not overwrite `docs/reference/conda-forge-packaging-inventory-operations_prompt.md`
+unless that is the task.
 
 **From scratch:** empty outputs; ingest the workbook + live endpoints + curated
 JSON; write new tabs / optional CSV / Markdown / stdout. Do not read a prior
@@ -131,8 +138,11 @@ consolidated inventory CSV or Markdown as seed or oracle.
 - Strip issue numbers, brackets, version constraints, extras, whitespace.
 - Dedup is PEP 503 only (lowercase; `_` and `.` → `-`). It must not drop a
   JFROG or CONDA library.
-- `CDO-ENT-JFROG` keeps consumption evidence on the record for priority/handoff;
-  those fields do not become columns of deliverable A.
+- `CDO-ENT-JFROG` keeps consumption evidence on the record for priority/handoff
+  (`risk_level`, `vuln_status`, `platform_env_count`, `internal_app_count`,
+  `internal_component_count`, `internal_lob_count`, `artifactory_downloads`,
+  `artifactory_version_count`). Those fields do not become columns of
+  deliverable A. Ignore JFROG `packaging_tier` — recalculate `P` here.
 - From about (or `CDO-ENT-CONDA`): convert `conda-forge/<pkg>-feedstock` to
   `<pkg>`; `Repository_Source` = `Conda Enterprise Core`; `Role` = Maintainer
   or Co-Maintainer.
@@ -141,7 +151,7 @@ consolidated inventory CSV or Markdown as seed or oracle.
   `PyPI_Verified=No` **and** no derived VCS URL **and** the name is not on
   JFROG or CONDA. `10kOpen` names already enter via JFROG.
 
-## Verification, priority, and PURLs
+## Verification and PURLs
 
 Offline-safe: skip + last-good + documented fallback when unreachable.
 
@@ -161,13 +171,61 @@ Offline-safe: skip + last-good + documented fallback when unreachable.
 |---|---|
 | `Already Packaged` | PyPI Yes AND conda-forge Yes |
 | `High Priority Candidate` | PyPI Yes AND conda-forge No AND P1–P8 |
-| `Low Priority Candidate` | PyPI Yes AND conda-forge No AND P9–P10 |
+| `Low Priority Candidate` | PyPI Yes AND conda-forge No AND P9 or P0 |
 | `Conda-Forge Only` | PyPI No AND conda-forge Yes |
 | `Not on PyPI` | PyPI No AND conda-forge No |
 
-Keep an explicit `P1`–`P10` from the input. Default unassigned curated packages
-to `P4`, unrated general inputs to `P9`. On the OpenTeams snapshot: `P4` if on
-`CDO-ENT-CONDA`, else `P9`, unless the input already has a bucket.
+OpenTeams-universe `Priority_Bucket` is the proposed `P` from the priority pass
+(below). Do not keep the old default (`P4` if on `CDO-ENT-CONDA`, else `P9`).
+There is no `P10`: the floor is `P0`.
+
+## Priority, work, and score
+
+Assigned by `scripts/conda-forge-packaging-inventory-operations_priority.py` onto
+`identity-2026-08-12` and synced onto `inventory-2026-08-12`. Board packaging
+issues with existing **P2** or **P3** are not overwritten. Current-version
+vulnerabilities become **P1** (`Fix vulnerability`) even if they also need an
+issue. JFROG `packaging_tier` is ignored.
+
+**Work** (`OpenTeams_Batch` / identity `Work`) is what Mason does, not A/B/C:
+
+| Work | Was | Meaning |
+|---|---|---|
+| `Fix vulnerability` | (new) | Current-version HIGH / `affected_latest`. Wins over recipe/issue/tracked. |
+| `Create recipe` | A | JFROG consumed, not on conda-forge (`JFROG_NEW`). |
+| `File issue (on conda-forge)` | B | JFROG consumed, already on conda-forge, no issue yet (`JFROG_ON_CF`). |
+| `File issue (maintained feedstock)` | C | On `CDO-ENT-CONDA` only, no issue yet (`CONDA_ONLY`). |
+| `Already tracked` | TRACKED | `[Conda-Forge Packaging] {name}` issue already exists. |
+
+`OpenTeams_Cohort` stays `JFROG_NEW` / `JFROG_ON_CF` / `CONDA_ONLY`. Components
+and LOBs never appear without apps, so they do not get their own `P` lane.
+
+**Proposed `P`** (highest first):
+
+| P | Rule |
+|---|---|
+| **P1** | Current-version vulnerability (`risk_level=HIGH` or `vuln_status=affected_latest`). Existing OpenTeams board P1 also stays here. |
+| **P2** | Existing OpenTeams board P2. Not overwritten. |
+| **P3** | Existing OpenTeams board P3. Not overwritten. |
+| **P4** | `platform_env_count` > 0. |
+| **P5** | `internal_app_count` > 0, no platform. |
+| **P6** | 100+ Artifactory downloads **or** 100+ Artifactory versions, and not already P1–P5. |
+| **P7** | 10+ downloads **or** 10+ versions, below the P6 floor. |
+| **P8** | Leftover `Create recipe` (below the P7 floor). |
+| **P9** | Leftover `File issue (on conda-forge)`. |
+| **P0** | Leftover `File issue (maintained feedstock)` and leftover `Already tracked`. |
+
+Each row carries `Priority_Bucket_Description` with that rule in prose.
+
+**Score** (1–100, percentile of the use formula; work type does not inflate it):
+
+```text
+100×platforms + 10×apps + 3×components + 2×LOBs
++ log10(1+downloads) + log10(1+Artifactory versions)
+```
+
+Within a `P`, sort `Fix vulnerability` then `Create recipe` then already-tracked
+then issue work, then by Score descending.
 
 When the matching verify flag is No, emit `N/A`:
 
@@ -204,27 +262,69 @@ these 14 columns, in order:
 
 15. `OpenTeams_Title` — `[Conda-Forge Packaging] {name}`
 16. `OpenTeams_Cohort` — `JFROG_NEW` / `JFROG_ON_CF` / `CONDA_ONLY`
-17. `OpenTeams_Batch` — `A` / `B` / `C` / `TRACKED`
+17. `OpenTeams_Batch` — work label (`Fix vulnerability` / `Create recipe` /
+    `File issue (on conda-forge)` / `File issue (maintained feedstock)` /
+    `Already tracked`; was A / B / C / TRACKED)
 18. `OpenTeams_Labels`
 19. `OpenTeams_Milestone` — `OSS Enhancements (Conda Forge, Pixi, ect)`
 20. `OpenTeams_Coverage` — `Have_Issue` / `Missing_Issue`
 21. `OpenTeams_Issue_URL`
 22. `Source_Repository_URL`
 
+`Priority_Bucket` (column 7) is the proposed `P` from the priority pass.
+`Priority_Bucket_Description` is appended after the handoff columns so Mason
+can read the rule without opening identity.
+
 One row per unique name in parseable JFROG ∪ CONDA. Labels always include
 `Conda Forge Packaging` and `No WF org info`; add `WF List 2` if in JFROG;
 add `Packaging: New package` if not on conda-forge.
 
-**Identity** — tab `identity-2026-08-12`, generated by
-`scripts/conda-forge-packaging-inventory-operations_openteams_identity.py`. One row per universe name plus board-only
-`[Conda-Forge Packaging]` extras. Prefer PURL Associator when the conda name
-exists; otherwise mint from `PyPI_PURL` + `Source_Repository_URL`. Columns:
-`Core_Python_Package_Name`, `OpenTeams_Title`, `identity_source`,
-`associator_key`, `associator_status`, `primary_purl`, `primary_type`,
-`alternative_purls`, `cpes`, `conda_purl`, `source_repository_url`,
-`OpenTeams_Issue_URL`, `Conda-Forge_FeedStock_URL`,
-`Conda-Forge_Metadata_URL`, `Staged_Recipes_PR_URL`, `Local_Recipes_URL`,
-`Verification_Timestamp_UTC`.
+**Identity** — tab `identity-2026-08-12`. Identity URLs come from
+`scripts/conda-forge-packaging-inventory-operations_openteams_identity.py`
+(one row per universe name plus board-only `[Conda-Forge Packaging]` extras).
+Prefer PURL Associator when the conda name exists; otherwise mint from
+`PyPI_PURL` + `Source_Repository_URL`. Then the priority pass writes ranking
+columns **first**:
+
+1. `P`
+2. `Rank`
+3. `Score`
+4. `Package`
+5. `Work`
+6. `Platforms`
+7. `Apps`
+8. `Downloads`
+9. `Versions`
+10. `Vuln`
+11. `Core_Python_Package_Name` (primary key)
+12. `OpenTeams_Title`
+13. `identity_source`
+14. `associator_key`
+15. `associator_status`
+16. `primary_purl`
+17. `primary_type`
+18. `alternative_purls`
+19. `cpes`
+20. `conda_purl`
+21. `source_repository_url`
+22. `OpenTeams_Issue_URL`
+23. `Conda-Forge_FeedStock_URL`
+24. `Conda-Forge_Metadata_URL`
+25. `Staged_Recipes_PR_URL`
+26. `Local_Recipes_URL`
+27. `Verification_Timestamp_UTC`
+28. `Priority_Bucket_Description`
+29. `Priority_Source`
+30. `Priority_Reason`
+31. `JFROG_risk_level`
+32. `JFROG_latest_vuln_count`
+33. `internal_component_count`
+34. `internal_lob_count`
+
+A full identity regen wipes ranking columns. After identity regen, re-run the
+priority pass, then publish the gist with **`--gist-only`** (reads the current
+tab; does not regenerate). Do not run a full identity regen solely to refresh
+the gist.
 
 Feedstock + metadata from [conda-forge.org/packages](https://conda-forge.org/packages/);
 staged-recipes PR from
@@ -233,12 +333,14 @@ local recipe from
 [rxm7706/local-recipes/recipes](https://github.com/rxm7706/local-recipes/tree/main/recipes).
 Blank means missing.
 
-After every inventory rerun, regenerate this tab and **edit in place** the
-pinned secret gist file `mgmt-wf-python-modernization-identity.md`. The gist
-id comes from `OPENTEAMS_IDENTITY_GIST_ID`,
+After every inventory rerun: regenerate identity, run the priority pass, then
+**edit in place** the pinned secret gist file
+`mgmt-wf-python-modernization-identity.md` with `--gist-only`. The gist id
+comes from `OPENTEAMS_IDENTITY_GIST_ID`,
 `conf/conda-forge-packaging-inventory-operations.local.env` (gitignored; copy
 the tracked `.example`), or `--gist-id`. Do not create a new gist. Do not
 commit the id. `--skip-gist` is offline tests, or when no id is configured.
+The gist carries the same 34 identity columns (ranking first).
 
 **B. Markdown** `cdao_consolidated_inventory_verified_all_packages.md` — totals,
 status breakdown, per-tab and per-source inclusion matrices (100% where
@@ -265,7 +367,7 @@ Count parsed from OpenTeams-style portion:
 **E. Quality gates**
 
 1. Deliverable A has exactly those 14 columns in order. The handoff tab keeps
-   them first, then the 8 OpenTeams columns.
+   them first, then the 8 OpenTeams columns, then `Priority_Bucket_Description`.
 2. `Core_Python_Package_Name` is unique.
 3. Markdown includes every required section.
 4. Inclusion matrices match totals. JFROG, CONDA, `GAOSS-Free`, and
@@ -276,6 +378,9 @@ Count parsed from OpenTeams-style portion:
    not a pass/fail of the inventory rebuild.
 7. Handoff `Source_Repository_URL` is filled from channeldata **and** PyPI JSON.
    Skipping PyPI JSON for names not on conda-forge fails the gate.
+8. Identity ranking columns `P`, `Rank`, `Score`, `Work` are filled. `P` uses
+   `P1`–`P9` or `P0` (never `P10`). `OpenTeams_Batch` is a work label, not
+   A/B/C/TRACKED.
 
 ## Constraints
 
@@ -287,12 +392,17 @@ Count parsed from OpenTeams-style portion:
 - Do not rename or reorder deliverable A's 14 columns. The handoff tab may only
   append after them.
 - Dropping 10k junk must not remove a JFROG or CONDA name.
+- Do not overwrite OpenTeams board P2/P3 on packaging issues.
+- Do not use JFROG `packaging_tier` as proposed `P`.
+- Do not commit `OPENTEAMS_IDENTITY_GIST_ID` or create a new identity gist.
 
 ## Non-goals
 
 - Not replacing conda-forge-expert recipe authoring, build, or submit.
 - Not a real-time web service; batch refresh is enough.
-- Not one opaque rank score.
+- Not an opaque rank: `Score` is the documented use formula; `P` is the
+  documented hierarchy; `Work` is the documented Mason action.
+- Not pushing proposed `P` onto the OpenTeams board until asked.
 - Not bootstrapping from a prior consolidated inventory.
 - Not a second runner beside the v3 quartet.
 

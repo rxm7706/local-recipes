@@ -139,7 +139,9 @@ Output files:
 - Full inventory (exact 14 columns below) — workbook tab `verified-all-packages`; optional CSV `cdao_consolidated_inventory_verified_all_packages.csv`
 - Dated OpenTeams universe (`CDO-ENT-JFROG` ∪ `CDO-ENT-CONDA` only) — workbook tab `inventory-2026-08-12` in `docs/Analysis_Dataset-2026-08-12.xlsx`. Same 14 columns first, then appended handoff columns:
   `OpenTeams_Title`, `OpenTeams_Cohort` (`JFROG_NEW` / `JFROG_ON_CF` / `CONDA_ONLY`),
-  `OpenTeams_Batch` (`A` / `B` / `C` / `TRACKED`), `OpenTeams_Labels`,
+  `OpenTeams_Batch` (`Fix vulnerability` / `Create recipe` /
+  `File issue (on conda-forge)` / `File issue (maintained feedstock)` /
+  `Already tracked`; was A / B / C / TRACKED), `OpenTeams_Labels`,
   `OpenTeams_Milestone`, `OpenTeams_Coverage` (`Have_Issue` / `Missing_Issue`),
   `OpenTeams_Issue_URL`, `Source_Repository_URL`.
   `Conda-Forge_FeedStock_URL` is the feedstock GitHub link (`N/A` if not on conda-forge).

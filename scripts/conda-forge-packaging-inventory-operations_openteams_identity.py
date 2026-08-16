@@ -75,6 +75,16 @@ GIST_FILENAME = "mgmt-wf-python-modernization-identity.md"
 GIST_ID_ENV = "OPENTEAMS_IDENTITY_GIST_ID"
 LOCAL_ENV_PATH = REPO_ROOT / "conf/conda-forge-packaging-inventory-operations.local.env"
 GIST_SCHEMA = [
+    ("P", "enum", "yes", "Proposed priority `P1`–`P9` or `P0`."),
+    ("Rank", "int", "yes", "1-based rank across the snapshot (P1 first)."),
+    ("Score", "int", "yes", "Use-score percentile 1–100."),
+    ("Package", "string", "yes", "Display name (same identity as Core_Python_Package_Name)."),
+    ("Work", "enum", "yes", "`Fix vulnerability` | `Create recipe` | `File issue (on conda-forge)` | `File issue (maintained feedstock)` | `Already tracked`."),
+    ("Platforms", "int", "no", "JFROG `platform_env_count`."),
+    ("Apps", "int", "no", "JFROG `internal_app_count`."),
+    ("Downloads", "int", "no", "JFROG `artifactory_downloads`."),
+    ("Versions", "int", "no", "JFROG `artifactory_version_count`."),
+    ("Vuln", "enum", "no", "JFROG `vuln_status` (`affected_latest`, `clean`, …)."),
     ("Core_Python_Package_Name", "string", "yes", "Primary key. Conda/PyPI package identity as stored (unique)."),
     ("OpenTeams_Title", "string", "yes", "Issue title `[Conda-Forge Packaging] {name}`."),
     ("identity_source", "enum", "yes", "`purl-associator` | `inventory` | `none` | `openteams-board`."),
@@ -92,7 +102,15 @@ GIST_SCHEMA = [
     ("Staged_Recipes_PR_URL", "url", "no", "Best conda-forge/staged-recipes PR (open file path, else title; prefer open then merged)."),
     ("Local_Recipes_URL", "url[]", "no", "`; `-joined github.com/rxm7706/local-recipes/tree/main/recipes/{dir}."),
     ("Verification_Timestamp_UTC", "datetime", "yes", "ISO 8601 UTC generation time for this snapshot."),
+    ("Priority_Bucket_Description", "string", "yes", "Human description of `P`."),
+    ("Priority_Source", "string", "no", "Assignment source (`current-version-vuln`, `platform`, `work-create-recipe`, …)."),
+    ("Priority_Reason", "string", "no", "Short reason for this `P`."),
+    ("JFROG_risk_level", "enum", "no", "`HIGH` | `MEDIUM` | `LOW` | `NO_DATA`."),
+    ("JFROG_latest_vuln_count", "int", "no", "Basilisk latest-version known vulnerability count."),
+    ("internal_component_count", "int", "no", "JFROG internal component count."),
+    ("internal_lob_count", "int", "no", "JFROG internal LOB count."),
 ]
+GIST_COLUMNS = [name for name, _typ, _req, _meaning in GIST_SCHEMA]
 FEEDSTOCK_OUTPUTS_URL = (
     "https://raw.githubusercontent.com/conda-forge/feedstock-outputs/"
     "single-file/feedstock-outputs.json"
@@ -635,9 +653,9 @@ def from_board_only(name: str, url: str, packages: dict, timestamp: str) -> dict
     }
 
 
-def read_inventory_tab(xlsx: Path) -> list[dict[str, str]]:
+def read_xlsx_tab(xlsx: Path, tab: str) -> list[dict[str, str]]:
     wb = load_workbook(xlsx, read_only=True, data_only=True)
-    ws = wb[TAB_IN]
+    ws = wb[tab]
     rows_iter = ws.iter_rows(values_only=True)
     header = [str(h) if h is not None else "" for h in next(rows_iter)]
     rows = []
@@ -645,6 +663,10 @@ def read_inventory_tab(xlsx: Path) -> list[dict[str, str]]:
         rows.append({h: ("" if v is None else str(v).strip()) for h, v in zip(header, raw)})
     wb.close()
     return rows
+
+
+def read_inventory_tab(xlsx: Path) -> list[dict[str, str]]:
+    return read_xlsx_tab(xlsx, TAB_IN)
 
 
 def write_csv(path: Path, records: list[dict[str, str]]) -> None:
@@ -698,7 +720,8 @@ def write_gist_markdown(
         records, key=lambda r: (r.get("Core_Python_Package_Name") or "").lower()
     )
     src_counts = Counter(r.get("identity_source", "") for r in rows)
-    fills = {h: sum(1 for r in rows if r.get(h)) for h in COLUMNS}
+    cols = list(GIST_COLUMNS)
+    fills = {h: sum(1 for r in rows if r.get(h)) for h in cols}
     ts = rows[0].get("Verification_Timestamp_UTC", "") if rows else ""
     sha = file_sha256(xlsx) if xlsx.is_file() else ""
     lines: list[str] = [
@@ -708,12 +731,12 @@ def write_gist_markdown(
         "format: gfm-table",
         "primary_key: Core_Python_Package_Name",
         f"rows: {len(rows)}",
-        f"columns: {len(COLUMNS)}",
+        f"columns: {len(cols)}",
         f"generated: {ts}",
         "source_workbook: docs/Analysis_Dataset-2026-08-12.xlsx",
         "source_tab: identity-2026-08-12",
         f"workbook_sha256: {sha}",
-        "generator: scripts/conda-forge-packaging-inventory-operations_openteams_identity.py",
+        "generator: scripts/conda-forge-packaging-inventory-operations_openteams_identity.py --gist-only",
         "blank_means: missing",
         'multi_value_separator: "; "',
         f"gist_id: {gist_id}",
@@ -728,7 +751,7 @@ def write_gist_markdown(
     for key, count in sorted(src_counts.items()):
         lines.append(f"  {key}: {count}")
     lines.append("filled:")
-    for col in COLUMNS:
+    for col in cols:
         lines.append(f"  {col}: {fills[col]}")
     lines.extend(
         [
@@ -742,6 +765,7 @@ def write_gist_markdown(
             "(OSS Enhancements).",
             "",
             f"- Rows: **{len(rows):,}**",
+            f"- Columns: **{len(cols)}** (ranking `P`/`Rank`/`Score`/`Work` plus identity URLs)",
             "- Primary key: `Core_Python_Package_Name` (unique)",
             f"- Generated: `{ts}`",
             "- Source: `docs/Analysis_Dataset-2026-08-12.xlsx` tab `identity-2026-08-12`",
@@ -769,12 +793,12 @@ def write_gist_markdown(
             "",
             "## Identity rows",
             "",
-            "| " + " | ".join(md_cell(h) for h in COLUMNS) + " |",
-            "| " + " | ".join("---" for _ in COLUMNS) + " |",
+            "| " + " | ".join(md_cell(h) for h in cols) + " |",
+            "| " + " | ".join("---" for _ in cols) + " |",
         ]
     )
     for rec in rows:
-        lines.append("| " + " | ".join(md_cell(rec.get(c, "")) for c in COLUMNS) + " |")
+        lines.append("| " + " | ".join(md_cell(rec.get(c, "")) for c in cols) + " |")
     lines.append("")
     path.write_text("\n".join(lines), encoding="utf-8")
 
@@ -783,6 +807,37 @@ def publish_identity_gist(gh: str, gist_id: str, filename: str, md_path: Path) -
     subprocess.check_call(
         [gh, "gist", "edit", gist_id, "--filename", filename, str(md_path)]
     )
+
+
+def publish_gist_from_tab(xlsx: Path, gist_id_cli: str | None) -> int:
+    """Edit the pinned gist from the current identity tab. Does not rewrite the tab."""
+    gist_id = resolve_gist_id(gist_id_cli)
+    if not gist_id:
+        print(
+            "Skipped gist publish (set "
+            f"{GIST_ID_ENV}, {LOCAL_ENV_PATH}, or --gist-id)",
+            flush=True,
+        )
+        return 1
+    gh = gh_bin()
+    if not gh:
+        print("gh not found; cannot publish identity gist", file=sys.stderr)
+        return 1
+    records = read_xlsx_tab(xlsx, TAB_OUT)
+    if not records:
+        print(f"No rows on {xlsx} tab {TAB_OUT}", file=sys.stderr)
+        return 1
+    missing = [c for c in ("P", "Rank", "Score", "Work") if c not in records[0]]
+    if missing:
+        print(f"Identity tab is missing ranking columns {missing}", file=sys.stderr)
+        return 1
+    CACHE_DIR.mkdir(parents=True, exist_ok=True)
+    md_path = CACHE_DIR / GIST_FILENAME
+    write_gist_markdown(md_path, records, xlsx, gist_id)
+    print(f"Publishing {len(records):,} rows ({len(GIST_COLUMNS)} cols) ...", flush=True)
+    publish_identity_gist(gh, gist_id, GIST_FILENAME, md_path)
+    print("Updated pinned identity gist in place")
+    return 0
 
 
 def main() -> int:
@@ -850,6 +905,14 @@ def main() -> int:
         help="Do not edit the pinned identity gist (offline tests only).",
     )
     p.add_argument(
+        "--gist-only",
+        action="store_true",
+        help=(
+            "Publish the current identity-2026-08-12 tab to the gist without "
+            "regenerating identity rows (keeps priority/score columns)."
+        ),
+    )
+    p.add_argument(
         "--gist-id",
         default=None,
         help=(
@@ -858,6 +921,9 @@ def main() -> int:
         ),
     )
     args = p.parse_args()
+    if args.gist_only:
+        return publish_gist_from_tab(args.xlsx, args.gist_id)
+
     cache = args.cache_dir
     cache.mkdir(parents=True, exist_ok=True)
     feedstock_path = args.feedstock_outputs or cache / "feedstock-outputs.json"
