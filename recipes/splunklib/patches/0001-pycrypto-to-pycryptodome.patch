@@ -1,0 +1,11 @@
+--- a/setup.py
++++ b/setup.py
+@@ -89,7 +89,7 @@
+     # your project is installed. For an analysis of "install_requires" vs pip's
+     # requirements files see:
+     # https://packaging.python.org/en/latest/requirements.html
+-    install_requires=['pycrypto', 'requests'],
++    install_requires=['pycryptodome', 'requests'],
+ 
+     entry_points={
+         'console_scripts': ['splunk=splunk:_main'],

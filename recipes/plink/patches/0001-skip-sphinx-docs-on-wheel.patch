@@ -1,0 +1,13 @@
+--- a/setup.py
++++ b/setup.py
+@@ -61,10 +61,6 @@
+ 
+ class PlinkBuildWheel(bdist_wheel):
+     def run(self):
+-        python = sys.executable
+-        check_call([python, 'setup.py', 'build'])
+-        check_call([python, 'setup.py', 'build_docs'])
+-        check_call([python, 'setup.py', 'build'])
+         bdist_wheel.run(self)
+ 
+ class PLinkPipInstall(Command):

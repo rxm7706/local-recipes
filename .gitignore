@@ -667,6 +667,10 @@ FodyWeavers.xsd
 # Local History for Visual Studio Code
 .history/
 
+# Cursor local working output (campaigns, logs, queues). Tracked files under
+# .cursor/ (e.g. .cursor/rules/) stay tracked until git rm --cached.
+.cursor/
+
 # Windows Installer files from build outputs
 *.cab
 *.msi

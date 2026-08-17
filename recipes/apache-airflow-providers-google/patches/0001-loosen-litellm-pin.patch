@@ -1,0 +1,11 @@
+--- a/pyproject.toml
++++ b/pyproject.toml
+@@ -94,8 +94,6 @@
+     "jsonschema>=4.19.1",
+     "ruamel.yaml>=0.19.0",
+     "pyyaml>=6.0.3",
+-    "litellm<1.86.0,>=1.83.7;python_version<'3.14'",
+-    "litellm>=1.93.0;python_version>='3.14'",
+     # End of evolution extra workaround
+     "ray[default]>=2.42.0;python_version<'3.13'",
+     "ray[default]>=2.49.0;python_version>='3.13' and python_version <'3.14'",
