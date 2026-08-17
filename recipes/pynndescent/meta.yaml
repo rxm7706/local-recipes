@@ -1,0 +1,56 @@
+{% set name = "pynndescent" %}
+{% set version = "0.6.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 7ffde0fb5b400741e055a9f7d377e3702e02250616834231f6c209e39aac24f5
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - setuptools
+    - numpy >=1.13
+    - numba >=0.46
+    - llvmlite >=0.30
+    - scikit-learn >=0.19
+    - scipy >=1.0
+
+test:
+  requires:
+    - python {{ python_min }}
+    - setuptools
+  commands:
+    - python -c "from importlib.metadata import version; assert version('pynndescent') == '{{ version }}'"
+  imports:
+    - pynndescent
+
+about:
+  home: http://github.com/lmcinnes/pynndescent
+  license: BSD-2-Clause
+  license_family: BSD
+  license_file: {{ environ["RECIPE_DIR"] }}/LICENSE
+  summary: Simple fast approximate nearest neighbor search
+
+  description: |
+    A Python nearest neighbor descent for approximate nearest neighbors. 
+    This is a relatively straightforward python implementation of 
+    Nearest Neighbor Descent for k-neighbor-graph construction and 
+    approximate nearest neighbor search.
+  dev_url: https://github.com/lmcinnes/pynndescent
+
+extra:
+  recipe-maintainers:
+    - lmcinnes

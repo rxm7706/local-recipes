@@ -1,0 +1,40 @@
+{% set name = "immutabledict" %}
+{% set version = "4.3.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: f844a669106cfdc73f47b1a9da003782fb17dc955a54c80972e0d93d1c63c514
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - poetry-core
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - immutabledict
+
+about:
+  home: https://github.com/corenting/immutabledict
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A fork of frozendict, an immutable wrapper around dictionaries.
+
+extra:
+  recipe-maintainers:
+    - althonos

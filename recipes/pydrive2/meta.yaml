@@ -1,0 +1,58 @@
+{% set name = "PyDrive2" %}
+{% set version = "1.21.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name|lower }}-{{ version }}.tar.gz
+  sha256: 649b84d60c637bc7146485039535aa8f1254ad156423739f07e5d32507447c13
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools_scm >=6.3.1
+  run:
+    - python >={{ python_min }}
+    - google-api-python-client >=1.12.5
+    - six >=1.13.0
+    - oauth2client >=4.0.0
+    - pyyaml >=3.0
+    # https://github.com/iterative/PyDrive2/issues/361
+    - pyOpenSSL >=19.1.0, <=24.2.1
+    - fsspec >=2021.7.0
+    - tqdm >=4.0.0  # for fsspec
+    - funcy <2  # for fsspec
+    - appdirs >=1.4.3  # for fsspec
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - pydrive2
+    - pydrive2.auth
+    - pydrive2.drive
+    - pydrive2.files
+    - pydrive2.settings
+    - pydrive2.fs
+
+about:
+  home: https://github.com/iterative/PyDrive2
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: >
+    Google Drive API Python wrapper library. Actively maintained fork of PyDrive.
+  doc_url: https://gsuitedevs.github.io/PyDrive/docs/build/html/index.html
+  dev_url: https://github.com/iterative/PyDrive2
+
+extra:
+  recipe-maintainers:
+    - shcheklein

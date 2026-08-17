@@ -1,0 +1,47 @@
+{% set name = "python-ghostscript" %}
+{% set version = "0.8" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://gitlab.com/pdftools/python-ghostscript/-/archive/v{{ version }}/{{ name }}-v{{ version }}.tar.bz2
+  sha256: 4132929c7fd26a05ce2e874d3e22987770973d3c5c60c189c92f31da19ebda65
+  patches:
+    # hardcode dllpath on windows
+    - windll_path.patch
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - ghostscript
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - ghostscript
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - ghostscript
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://gitlab.com/pdftools/python-ghostscript
+  summary: Interface to the Ghostscript C-API, both high- and low-level, based on ctypes
+  license: GPL-3.0-or-later
+  license_file: COPYING
+
+extra:
+  recipe-maintainers:
+    - akrherz

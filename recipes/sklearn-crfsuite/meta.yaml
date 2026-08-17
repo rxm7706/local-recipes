@@ -1,0 +1,57 @@
+{% set name = "sklearn-crfsuite" %}
+{% set version = "0.5.0" %}
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  url: "https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz"
+  sha256: 136cb941ff5f7ce62a2c378988d1123ac1037241e73999ae404509a2135078e9
+
+build:
+  noarch: python
+  number: 0
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - python-crfsuite >=0.9.7
+    - scikit-learn >=0.24.0
+    - tabulate >=0.4.2
+    - tqdm >=2.0
+
+test:
+  requires:
+    - python {{ python_min }}
+    - pip
+  commands:
+    - pip check
+  imports:
+    - sklearn_crfsuite
+
+about:
+  home: "https://github.com/TeamHG-Memex/sklearn-crfsuite"
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt # No packaged license file, issue here: https://github.com/TeamHG-Memex/sklearn-crfsuite/issues/48
+  summary: "CRFsuite (python-crfsuite) wrapper which provides interface simlar to scikit-learn"
+  doc_url: https://sklearn-crfsuite.readthedocs.io/en/latest/
+  dev_url: https://github.com/TeamHG-Memex/sklearn-crfsuite
+  description: |
+    sklearn-crfsuite is thin a CRFsuite (python-crfsuite) wrapper which provides scikit-learn-compatible
+    sklearn_crfsuite.CRF estimator: you can use e.g. scikit-learn model selection utilities (cross-validation,
+    hyperparameter optimization) with it, or save/load CRF models using joblib.
+
+extra:
+  recipe-maintainers:
+    - althonos
+    - mxr-conda
+    - ndmaxar
+    - oblute
+    - rluria14

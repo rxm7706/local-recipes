@@ -1,0 +1,43 @@
+{% set version = "1.0.1" %}
+
+package:
+  name: sphinxcontrib-jsmath
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sphinxcontrib-jsmath/sphinxcontrib-jsmath-{{ version }}.tar.gz
+  sha256: a9925e4a4587247ed2191a22df5f6970656cb8ca2bd6284309578f2153e0c4b8
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    # This is a circular dependency b/c sphinx depends on this package now :-/
+    - sphinx >=2
+    - python {{ python_min }}
+  imports:
+    - sphinxcontrib
+    - sphinxcontrib.jsmath
+
+about:
+  home: http://sphinx-doc.org/
+  license: BSD-2-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: A sphinx extension which renders display math in HTML via JavaScript
+
+extra:
+  recipe-maintainers:
+    - conda-forge/sphinx
+    - ocefpaf

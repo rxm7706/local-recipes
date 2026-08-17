@@ -1,0 +1,81 @@
+{% set name = "pyscaffold" %}
+{% set version = "4.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 4085b8de9200b9f319df6f8ea7997288f159a8e4b284b062d9b2a4d6a9c1234c
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  entry_points:
+    - putup = pyscaffold.cli:run
+
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - wheel
+    - setuptools-scm >=5
+  run:
+    - python >={{ python_min }}
+    - platformdirs >=2
+    - configupdater >=3.0,<4
+    - setuptools >=46.1.0
+    - setuptools-scm >=5
+    - tomlkit >=0.7.0,<2
+    - packaging >=20.7
+    - importlib-metadata
+    - colorama >=0.4.4
+
+test:
+  imports:
+    - pyscaffold
+    - pyscaffold.templates
+  commands:
+    - putup --help
+    - pytest -m "not slow and not system" --cov-config setup.cfg -k "not test_issue506 and not test_iterate_entry_points"
+    # - pip check # pytest-shutil has a path.py bug and we cannot run this here.
+  source_files:
+    - tests
+    - setup.cfg
+  requires:
+    - git
+    - pip
+    - setuptools
+    - tomlkit
+    - certifi
+    - tox
+    - python-build
+    - pre-commit
+    - sphinx
+    - flake8
+    - virtualenv
+    - pytest
+    - pytest-cov
+    - pytest-fixture-config
+    - pytest-randomly
+    - pytest-xdist
+    - twine
+    - python {{ python_min }}
+
+about:
+  home: https://pyscaffold.org/
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Template tool for putting up the scaffold of a Python project
+  dev_url: https://github.com/pyscaffold/pyscaffold/
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - maresb
+    - FlorianWilhelm
+    - abravalheri

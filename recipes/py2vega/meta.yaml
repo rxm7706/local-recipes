@@ -1,0 +1,41 @@
+{% set name = "py2vega" %}
+{% set version = "0.7.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 56e7f7c338db8014658e728fa4c698d316b6ca2513d5ce9cc91007617e6aba90
+
+build:
+  number: 0
+  script: "{{ PYTHON }} -m pip install . -vv"
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }}
+    - gast  >=0.7,<0.8
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - py2vega
+
+about:
+  home: http://github.com/QuantStack/py2vega
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: 'A Python to Vega-expression transpiler.'
+  dev_url: https://github.com/QuantStack/py2vega
+
+extra:
+  recipe-maintainers:
+    - martinRenou

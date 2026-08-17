@@ -1,0 +1,46 @@
+{% set name = "async_generator" %}
+{% set version = "1.10" %}
+
+package:
+  name: '{{ name|lower }}'
+  version: '{{ version }}'
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  'sha256': '6ebb3d106c12920aaae42ccb6f787ef5eefdcdd166ea3d628fa8476abe712144'
+
+build:
+  number: 2
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - async_generator
+    - async_generator._tests
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/python-trio/async_generator
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.MIT
+  summary: Async generators and context managers for Python 3.5+
+  description: "Python 3.6 added async generators, Python 3.7 adds some more tools to make them usable, like contextlib.asynccontextmanager. This library gives you all that back to Python 3.5."
+  dev_url: https://github.com/python-trio/async_generator
+
+extra:
+  recipe-maintainers:
+    - nicoddemus

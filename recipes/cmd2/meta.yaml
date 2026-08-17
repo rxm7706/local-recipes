@@ -1,0 +1,54 @@
+{% set name = "cmd2" %}
+{% set version = "4.2.0" %}
+{% set bundle = "tar.gz" %}
+{% set hash = "0546543c1ba3c6090ecec33f1373c59627e417b14419629a48176115946fd329" %}
+{% set python_min = "3.11" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.{{ bundle }}
+  sha256: {{ hash }}
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  noarch: python
+
+requirements:
+
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools_scm
+    - setuptools
+    - python-build
+
+  run:
+    - python >={{ python_min }}
+    - prompt-toolkit >=3.0.52
+    - pyperclip >=1.8.2
+    - rich >=15.0.0
+    - rich-argparse >=1.7.2
+
+test:
+  imports:
+    - cmd2
+  requires:
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/python-cmd2/cmd2
+  license_file: LICENSE
+  license: MIT
+  license_family: MIT
+  summary: Extra features for standard library's cmd module
+  dev_url: https://github.com/python-cmd2/cmd2
+  doc_url: https://cmd2.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - anguslees
+    - tschoonj

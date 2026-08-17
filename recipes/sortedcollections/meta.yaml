@@ -1,0 +1,51 @@
+{% set name = "sortedcollections" %}
+{% set version = "2.1.0" %}
+{% set sha256 = "d8e9609d6c580a16a1224a3dc8965789e03ebc4c3e5ffd05ada54a2fed5dcacd" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - sortedcontainers
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - sortedcollections
+
+
+about:
+  home: http://www.grantjenks.com/docs/sortedcollections/
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: Python Sorted Collections
+
+  description: Extends the sortedcontainers library with recipes for other collections.
+  doc_url: http://www.grantjenks.com/docs/sortedcollections/
+  dev_url: https://github.com/grantjenks/sortedcollections
+  doc_source_url: https://github.com/grantjenks/sortedcollections/blob/master/docs/index.rst
+
+extra:
+  recipe-maintainers:
+    - grantjenks
+    - mrocklin
+    - nehaljwani

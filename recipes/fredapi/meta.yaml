@@ -1,0 +1,41 @@
+{% set name = "fredapi" %}
+{% set version = "0.5.2" %}
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 405ca048abed4207d93dbc9b7ee8c46d6b473483650323e2f1c094af83d4b247
+
+build:
+  number: 0
+  noarch: python
+  script: "{{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation"
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - pandas
+
+test:
+  imports:
+    - fredapi
+  requires:
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/mortada/fredapi
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python API for Federal Reserve Economic Data (FRED) from St. Louis Fed
+
+extra:
+  recipe-maintainers:
+    - adament
+    - tk3369

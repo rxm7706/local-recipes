@@ -1,0 +1,55 @@
+{% set name = "itsdangerous" %}
+{% set version = "2.2.0" %}
+{% set hash = "e0050c0b7da1eea53ffaf149c0cfbb5c6e2e2b69c4bef22c81fa6eb73e5f6173" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ hash }}
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vvv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - flit-core <4
+
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - itsdangerous
+
+about:
+  home: https://palletsprojects.com/p/itsdangerous/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: Safely pass data to untrusted environments and back.
+  description: |
+    Various helpers to pass data to untrusted environments and to get it
+    back safe and sound. Data is cryptographically signed to ensure that a
+    token has not been tampered with.
+
+    It's possible to customize how data is serialized. Data is compressed as
+    needed. A timestamp can be added and verified automatically while
+    loading a token.
+  doc_url: https://itsdangerous.palletsprojects.com/
+  dev_url: https://github.com/pallets/itsdangerous/
+
+extra:
+  recipe-maintainers:
+    - goanpeca
+    - nicoddemus
+    - williamjamir

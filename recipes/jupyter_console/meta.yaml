@@ -1,0 +1,58 @@
+{% set version = "6.6.3" %}
+
+package:
+  name: jupyter_console
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/jupyter_console/jupyter_console-{{ version }}.tar.gz
+  sha256: 566a4bf31c87adbfadf22cdf846e3069b59a71ed5da71d6ba4d8aaad14a53539
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  entry_points:
+    - jupyter-console = jupyter_console.app:main
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling >=1.5
+  run:
+    - python >={{ python_min }}
+    - jupyter_client >=7.0.0
+    - ipython
+    - ipykernel >=6.14
+    - jupyter_core >=4.12,!=5.0.*
+    - prompt_toolkit >=3.0.30
+    - pyzmq >=17
+    - traitlets >=5.4
+    - pygments
+
+test:
+  requires:
+    - python {{ python_min }}
+  commands:
+    - jupyter-console -h
+  imports:
+    - jupyter_console
+
+about:
+  home: http://jupyter.org
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Jupyter terminal console
+
+extra:
+  recipe-maintainers:
+    - SylvainCorlay
+    - jakirkham
+    - minrk
+    - pelson
+    - takluyver
+    - ocefpaf
+    - blink1073
+    - Carreau
+    - davidbrochart

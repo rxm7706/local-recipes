@@ -1,0 +1,44 @@
+{% set name = "crontab" %}
+{% set version = "1.0.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/crontab-{{ version }}.tar.gz
+  sha256: f80e01b4f07219763a9869f926dd17147278e7965a928089bca6d3dc80ae46d5
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - crontab
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+
+about:
+  home: https://github.com/josiahcarlson/parse-crontab
+  license: LGPL-2.1-only
+  license_family: LGPL
+  license_file: LICENSE
+  summary: Parse and use crontab schedules in Python
+
+extra:
+  recipe-maintainers:
+    - mcs07
+    - sanurielf

@@ -1,0 +1,46 @@
+{% set version = "2.0.0" %}
+
+package:
+  name: backports.functools_lru_cache
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/backports.functools_lru_cache/backports.functools_lru_cache-{{ version }}.tar.gz
+  sha256: dcbfa5e0dae8a014168807c9e026d33eead71df5af76c1fb78fd248bf07f6f99
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools_scm
+    - backports
+
+  run:
+    - python >={{ python_min }}
+    - setuptools
+    - backports
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - backports.functools_lru_cache
+
+about:
+  home: https://github.com/jaraco/backports.functools_lru_cache
+  license: MIT
+  license_file: LICENSE
+  license_family: MIT
+  summary: Backport of functools.lru_cache from Python 3.3 as published at ActiveState.
+  doc_url: https://pypi.python.org/pypi/backports.functools_lru_cache
+  dev_url: https://github.com/jaraco/backports.functools_lru_cache
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk
+    - stuertz

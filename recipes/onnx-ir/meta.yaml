@@ -1,0 +1,47 @@
+{% set version = "1.0.0" %}
+
+package:
+  name: onnx-ir
+  version: {{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/o/onnx-ir/onnx_ir-{{ version }}.tar.gz
+  sha256: 9e261f25fde8da9612ae5cb43b3b374d5ff469c04af0363cad588b2bb000b812
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=77
+    - pip
+  run:
+    - python >={{ python_min }}
+    - numpy
+    - onnx >=1.16
+    - typing_extensions >=4.10
+    - ml_dtypes >=0.5.0
+    - sympy >=1.13
+
+test:
+  imports:
+    - onnx_ir
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/onnx/ir-py
+  summary: Efficient in-memory representation for ONNX
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - hmaarrfk
+    - apmorton

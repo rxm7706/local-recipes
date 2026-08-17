@@ -1,5 +1,5 @@
 {% set name = "dash" %}
-{% set version = "3.0.4" %}
+{% set version = "4.4.1" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/dash-{{ version }}.tar.gz
-  sha256: 4f9e62e9d8c5cd1b42dc6d6dcf211fe9498195f73ef0edb62a26e2a1b952a368
+  sha256: 9356ca7856bc496c12c5b6de5978aaf783e090d07450ee395ade1c0c2cbdf816
 
 build:
   entry_points:
@@ -16,8 +16,8 @@ build:
     - dash-update-components = dash.development.update_components:cli
   noarch: python
   script:
-    - sed -i.bak "s/Flask>=1.0.4,<3.1/flask>=1.0.4/g" requirements/install.txt
-    - sed -i.bak "s/Werkzeug<3.1/werkzeug/g" requirements/install.txt
+    - sed -i.bak "s/Flask>=1.0.4,<3.2/flask>=1.0.4/g" requirements/install.txt
+    - sed -i.bak "s/Werkzeug<3.2/werkzeug/g" requirements/install.txt
     - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
 
@@ -31,7 +31,7 @@ requirements:
     - pip
   run:
     - python >={{ python_min }}
-    # https://github.com/plotly/dash/blob/v2.18.2/requirements/install.txt
+    # https://github.com/plotly/dash/blob/dev/requirements/install.txt
     - flask >=1.0.4
     - werkzeug
     - plotly >=5.0.0
@@ -41,11 +41,13 @@ requirements:
     - retrying
     - nest-asyncio
     - setuptools
+    - janus >=1.0.0
+    - pydantic >=2.10
+    - comm
   run_constrained:
     - dash-html-components >=2.0.0
     - dash-core-components >=2.0.0
     - dash_table >=5.0.0
-
 test:
   requires:
     - pytest

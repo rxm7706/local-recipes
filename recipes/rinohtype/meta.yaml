@@ -1,0 +1,52 @@
+{% set name = "rinohtype" %}
+{% set version = "0.5.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/rinohtype-{{ version }}.tar.gz
+  sha256: e9392bd4e9117f5bef1285b81d6420183df5393aed289b176f7a81b6c9646d15
+
+build:
+  entry_points:
+    - rinoh = rinoh.__main__:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - poetry-core >=1.0.8
+    - pip
+  run:
+    - python >={{ python_min }}
+    - appdirs >=1.4.3,<2.0.0
+    - docutils >=0.15
+    - importlib-metadata >=0.21, <8
+    - packaging >=14.0
+    - recommonmark >=0.6.0
+    - sphinx >=2.2.1
+  run_constrained:
+    - sphinx >=2.2.1
+
+test:
+  imports:
+    - rinoh
+  commands:
+    - rinoh --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/brechtm/rinohtype
+  summary: The Python document processor
+  license: AGPL-3.0-only
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - mediocretech

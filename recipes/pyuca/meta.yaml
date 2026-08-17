@@ -1,0 +1,43 @@
+{% set name = "pyuca" %}
+{% set version = "1.2" %}
+{% set hash = "8a382fe74627f08c0d18908c0713ca4a20aad5385f077579e56208beea2893b2" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ hash }}
+
+build:
+  noarch: python
+  number: 2
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - pyuca
+
+about:
+  home: https://pypi.org/project/pyuca
+  license: MIT
+  license_file: LICENSE
+  summary: a Python implementation of the Unicode Collation Algorithm
+  dev_url: https://github.com/jtauber/pyuca
+
+extra:
+  recipe-maintainers:
+    - nicoddemus

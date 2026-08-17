@@ -1,0 +1,49 @@
+{% set name = "rstcheck" %}
+{% set version = "6.3.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 583072b43939627b1b0f4492e8af2587092efc1fb5e9f0228fa2df9ea3b44873
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  entry_points:
+    - rstcheck = rstcheck._cli:main
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }}
+    - pip
+    - rstcheck-core >=1.3.1
+    - typer >=0.12
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - rstcheck
+  commands:
+    - rstcheck --help
+    - pip check
+
+about:
+  home: https://pypi.org/project/rstcheck
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Checks syntax of reStructuredText and code blocks nested within it
+  doc_url: https://pypi.org/project/rstcheck
+  dev_url: https://github.com/rstcheck/rstcheck
+
+extra:
+  recipe-maintainers:
+    - kynan

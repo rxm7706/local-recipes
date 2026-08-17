@@ -1,0 +1,49 @@
+{% set name = "uuid6" %}
+{% set version = "2025.0.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/uuid6-{{ version }}.tar.gz
+  sha256: cd0af94fa428675a44e32c5319ec5a3485225ba2179eefcf4c3f205ae30a81bd
+
+build:
+  noarch: python
+  script_env:
+    # this is what determines the version in setup.py
+    - GITHUB_REF=refs/tags/{{ version }}
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=45
+    - setuptools_scm >=6.2
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - uuid6
+  commands:
+    - pip check
+    # make sure the version reported by pip is correct
+    - "pip show {{ name }} | grep -Fx 'Version: {{ version }}'"
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/oittaa/uuid6-python
+  summary: New time-based UUID formats which are suited for use as a database key
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - deepsihag
+    - xylar

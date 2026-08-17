@@ -1,0 +1,56 @@
+{% set name = "promise" %}
+{% set version = "2.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: dfd18337c523ba4b6a58801c164c1904a9d4d1b1747c7d5dbf45b693a49d93d0
+
+build:
+  number: 10
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+  host:
+    - python
+    - setuptools
+    - pip
+
+  run:
+    - python
+    - six
+    - typing >=3.6.4  # [py<35]
+
+test:
+  imports:
+    - promise
+  requires:
+    - pip
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/syrusakbary/promise
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: 'Ultra-performant Promise implementation in Python'
+  description: |
+      This is a implementation of Promises in Python. It is a super set of
+      Promises/A+ designed to have readable, performant code and to provide
+      just the extensions that are absolutely necessary for using promises in
+      Python.  Its fully compatible with the Promises/A+ spec
+  doc_url: https://github.com/syrusakbary/promise
+  dev_url: https://github.com/syrusakbary/promise
+
+extra:
+  recipe-maintainers:
+    - dfroger
+    - carlodri
+    

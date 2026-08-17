@@ -1,13 +1,13 @@
 {% set name = "django-allauth" %}
-{% set version = "65.1.0" %}
+{% set version = "65.19.1" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_allauth-{{ version }}.tar.gz
-  sha256: ab2c32c51797bab1e7a334f37afa61ef4a88c6f13dfd7bd898a16e2b7e567ef0
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/django_allauth-{{ version }}.tar.gz
+  sha256: 999d01d5c422a82734cf5804df9f5a0d1d4ddd6acbb2f807db976ed7d49f9cb3
 
 build:
   noarch: python
@@ -16,11 +16,11 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - setuptools >=40.8.0
     - pip
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - django >=4.2
     - asgiref >=3.8.1
 
@@ -31,14 +31,21 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
-  home: https://allauth.org
-  summary: Integrated set of Django applications addressing authentication, registration, account management as well as 3rd party (social) account authentication.
-  dev_url: https://codeberg.org/allauth/django-allauth
+  home: https://github.com/pennersr/django-allauth
   license: MIT
+  license_family: MIT
   license_file: LICENSE
+  summary: Integrated set of Django applications addressing authentication, registration, account management as well as 3rd party (social) account authentication
+  description: Integrated set of Django applications addressing authentication, registration, account management as well as 3rd party (social) account authentication
+  doc_url: https://django-allauth.readthedocs.io/en/latest/
+  dev_url: https://github.com/pennersr/django-allauth
 
 extra:
   recipe-maintainers:
     - rxm7706
+    - jacksund
+    - cshaley
+    - sannykr

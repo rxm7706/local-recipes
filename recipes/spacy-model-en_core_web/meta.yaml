@@ -1,0 +1,159 @@
+{% set prefix = "spacy-model-" %}
+{% set name = "en_core_web_" %}
+{% set version = "3.3.0" %}
+{% set build_number = 0 %}
+# see https://github.com/explosion/spacy-models/blob/master/compatibility.json
+# but the pattern _generally_ seems to be x.x
+{% set spacy_version = ".".join(version.split(".")[:2] + ['*']) %}
+
+package:
+  name: {{ prefix }}{{ name[:-1] }}
+  version: {{ version }}
+
+source:
+  - url: https://github.com/explosion/spacy-models/releases/download/{{ name }}sm-{{ version }}/{{ name }}sm-{{ version }}.tar.gz
+    sha256: 348aa7a0afc04ef52b2f63a9de29a9bcc4463260f023b2814ff506214d9476ae
+    folder: sm
+  - url: https://github.com/explosion/spacy-models/releases/download/{{ name }}md-{{ version }}/{{ name }}md-{{ version }}.tar.gz
+    sha256: b4599087ee8810a2f3c65f55f25962bbc95bd87e691d19fc3a8ee731e946d8aa
+    folder: md
+  - url: https://github.com/explosion/spacy-models/releases/download/{{ name }}lg-{{ version }}/{{ name }}lg-{{ version }}.tar.gz
+    sha256: 432ae42b4c26fab11574b48a8d47ef543a2b48fdf0a990bf8f6a61dc454c2d48
+    folder: lg
+  - url: https://github.com/explosion/spacy-models/releases/download/{{ name }}trf-{{ version }}/{{ name }}trf-{{ version }}.tar.gz
+    sha256: bc6195dd3a01efdbabca3c93f0eb4701ad9e78c05528d6fcdc2fe9df848bd3e1
+    folder: trf
+  - url: https://raw.githubusercontent.com/explosion/spaCy/master/LICENSE
+    sha256: c07800e058b1b544eb9d47dd81687582fe6830c1ddc47f57521fc93628685915
+
+build:
+  noarch: python
+  number: {{ build_number }}
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - setuptools
+    - python >=3.6
+
+test:
+  commands:
+    - echo "make lint happy"
+
+outputs:
+  - name: {{ prefix }}{{ name }}sm
+    files:
+      - sm
+      - LICENSE
+    build:
+      noarch: python
+      number: {{ build_number }}
+      script: cd sm && {{ PYTHON }} -m pip install . --no-deps -vv
+    requirements:
+      host:
+        - python >=3.6
+        - pip
+      run:
+        - python >=3.6
+        - setuptools
+        - spacy =={{ spacy_version }}
+    test:
+      imports:
+        - {{ name }}sm
+      requires:
+        - spacy
+      commands:
+        - python -c "__import__('{{ name }}sm').load()"
+        - python -c "__import__('spacy').load('{{ name }}sm')"
+
+  - name: {{ prefix }}{{ name }}md
+    files:
+      - md
+      - LICENSE
+    build:
+      noarch: python
+      number: {{ build_number }}
+      script: cd md && {{ PYTHON }} -m pip install . --no-deps -vv
+    requirements:
+      host:
+        - python >=3.6
+        - pip
+      run:
+        - python >=3.6
+        - setuptools
+        - spacy =={{ spacy_version }}
+    test:
+      imports:
+        - {{ name }}md
+      requires:
+        - spacy
+      commands:
+        - python -c "__import__('{{ name }}md').load()"
+        - python -c "__import__('spacy').load('{{ name }}md')"
+
+  - name: {{ prefix }}{{ name }}lg
+    files:
+      - lg
+      - LICENSE
+    build:
+      noarch: python
+      number: {{ build_number }}
+      script: cd lg && {{ PYTHON }} -m pip install . --no-deps -vv
+    requirements:
+      host:
+        - python >=3.6
+        - pip
+      run:
+        - python >=3.6
+        - setuptools
+        - spacy =={{ spacy_version }}
+    test:
+      imports:
+        - {{ name }}lg
+      requires:
+        - spacy
+      commands:
+        - python -c "__import__('{{ name }}lg').load()"
+        - python -c "__import__('spacy').load('{{ name }}lg')"
+
+  - name: {{ prefix }}{{ name }}trf
+    files:
+      - trf
+      - LICENSE
+    build:
+      noarch: python
+      number: {{ build_number }}
+      script: cd trf && {{ PYTHON }} -m pip install . --no-deps -vv
+    requirements:
+      host:
+        - python >=3.6
+        - pip
+      run:
+        - python >=3.6
+        - setuptools
+        - spacy =={{ spacy_version }}
+        - spacy-alignments
+        - spacy-transformers
+    test:
+      imports:
+        - {{ name }}trf
+      requires:
+        - spacy
+      commands:
+        - python -c "__import__('{{ name }}trf').load()"
+        - python -c "__import__('spacy').load('{{ name }}trf')"
+about:
+  home: https://spacy.io
+  license: MIT
+  license_file: LICENSE
+  summary: English multi-task CNN trained on OntoNotes, with GloVe vectors trained on Common Crawl.
+  doc_url: https://spacy.io/models/en
+  dev_url: https://github.com/explosion/spacy-models
+
+extra:
+  recipe-maintainers:
+    - sodre
+    - bollwyvl
+    - setu4993

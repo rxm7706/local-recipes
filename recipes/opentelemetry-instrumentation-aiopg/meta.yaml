@@ -1,0 +1,110 @@
+{% set name = "opentelemetry-instrumentation-aiopg" %}
+{% set version = "0.65b0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_aiopg-{{ version }}.tar.gz
+  sha256: 9a0935a673dcd43ed1d0639d439581d334454d3403b496190408e0bc2547c178
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >={{ python_min }}
+    - opentelemetry-api ~=1.12
+    - opentelemetry-instrumentation-dbapi ==0.65b0
+    - opentelemetry-instrumentation ==0.65b0
+    - wrapt <3.0.0,>=1.0.0
+    # - opentelemetry-test-utils ==0.37b0
+    # - opentelemetry-semantic-conventions ==0.37b0
+    # - opentelemetry-instrumentation-aiopg 
+    # - aiopg <2.0.0,>=0.13.0
+    # - opentelemetry-test-utils ==0.38b0
+    # - opentelemetry-semantic-conventions ==0.38b0
+    # - opentelemetry-instrumentation-aiopg 
+    # - aiopg <2.0.0,>=0.13.0
+    # - opentelemetry-test-utils ==0.39b0
+    # - opentelemetry-semantic-conventions ==0.39b0
+    # - opentelemetry-instrumentation-aiopg 
+    # - aiopg <2.0.0,>=0.13.0
+    # - opentelemetry-test-utils ==0.40b0
+    # - opentelemetry-semantic-conventions ==0.40b0
+    # - opentelemetry-instrumentation-aiopg 
+    # - aiopg <2.0.0,>=0.13.0
+    # - opentelemetry-test-utils ==0.41b0
+    # - opentelemetry-semantic-conventions ==0.41b0
+    # - opentelemetry-instrumentation-aiopg 
+    # - aiopg <2.0.0,>=0.13.0
+    # - opentelemetry-test-utils ==0.42b0
+    # - opentelemetry-semantic-conventions ==0.42b0
+    # - opentelemetry-instrumentation-aiopg 
+    # - aiopg <2.0.0,>=0.13.0
+    # - opentelemetry-test-utils ==0.43b0
+    # - opentelemetry-semantic-conventions ==0.43b0
+    # - opentelemetry-instrumentation-aiopg 
+    # - aiopg <2.0.0,>=0.13.0
+    # - opentelemetry-test-utils ==0.44b0
+    # - opentelemetry-semantic-conventions ==0.44b0
+    # - opentelemetry-instrumentation-aiopg 
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+    # - aiopg <2.0.0,>=0.13.0
+
+test:
+  imports:
+    - opentelemetry
+    - opentelemetry.instrumentation
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-aiopg
+  summary: OpenTelemetry aiopg instrumentation
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk

@@ -1,0 +1,45 @@
+{% set name = "deprecation-alias" %}
+{% set version = "0.4.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: a58d2e74491c7834e9d318788da60272fa2f81aeb814b4055a4ba90a0a41740f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - hatchling
+    - hatch-requirements-txt
+    - pip
+    - python {{ python_min }}
+  run:
+    - deprecation >=2.1.0
+    - packaging >=20.4
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - deprecation_alias
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/domdfcoding/deprecation-alias
+  summary: A wrapper around 'deprecation' providing support for deprecated aliases.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - domdfcoding

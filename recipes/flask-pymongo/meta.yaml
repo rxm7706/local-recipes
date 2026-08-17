@@ -1,0 +1,53 @@
+{% set name = "flask-pymongo" %}
+{% set version = "3.0.1" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: d225b51c21ceca2e670e6cca79b5c584ad17b96252b48e84e3b423ddb73304cc
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - vcversioner
+    - setuptools
+    - hatchling
+  run:
+    - flask >=0.11
+    - pymongo >=3.3
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - flask_pymongo
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: http://flask-pymongo.readthedocs.org/
+  summary: PyMongo support for Flask applications
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - sleepystick
+    - noahstapp
+    - aclark4life
+    - caseyclements
+    - jibola
+    - blink1073
+    - jan-janssen

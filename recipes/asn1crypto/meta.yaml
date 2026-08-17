@@ -1,0 +1,41 @@
+{% set version = "1.5.1" %}
+
+package:
+  name: asn1crypto
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/asn1crypto/asn1crypto-{{ version }}.tar.gz
+  sha256: 13ae38502be632115abf8a24cbe5f4da52e3b5231990aff31123c805306ccb9c
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - asn1crypto
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/wbond/asn1crypto
+  license: MIT
+  license_file: LICENSE
+  summary: Python ASN.1 library with a focus on performance and a pythonic API
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

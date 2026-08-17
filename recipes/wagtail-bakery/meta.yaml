@@ -6,21 +6,22 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail-bakery-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/wagtail-bakery-{{ version }}.tar.gz
   sha256: 6ed7bfca032ef69daa51267ea820d4a9780620783559122684f92569c1467ebc
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.8
-    - django-bakery >=0.13.1,<0.14.dev0
+    - python >={{ python_min }}
+    - django-bakery >=0.13.1,<0.14.0
     - wagtail >=4.1
 
 test:
@@ -30,14 +31,22 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/wagtail-nest/wagtail-bakery/
-  summary: A set of helpers for baking your Django Wagtail site out as flat files.
-  dev_url: https://github.com/wagtail-nest/wagtail-bakery/
   license: MIT
-  license_file: LICENSE
+  license_family: MIT
+  license_file: '{{ environ["RECIPE_DIR"] }}/LICENSE'
+  summary: 'A set of helpers for baking your Django Wagtail site out as flat files'
+  description: |
+    Wagtail-bakery is built on top of Django bakery. Wagtail-bakery is not limited to 
+    build Wagtail pages specifically, mixed content is possible!
+  doc_url: hhttps://wagtail-bakery.readthedocs.io
+  dev_url: https://github.com/wagtail-nest/wagtail-bakery/
 
 extra:
   recipe-maintainers:
+    - cshaley
     - rxm7706
+    - sannykr

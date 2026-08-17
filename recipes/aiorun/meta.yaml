@@ -1,0 +1,38 @@
+{% set name = "aiorun" %}
+{% set version = "2025.1.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 86d1075a034ce2671ab532db06e9204fe784cdd0c66ca7b8cc47a7527d0d50a3
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.5
+    - pip
+    - flit
+  run:
+    - python >=3.5
+
+test:
+  imports:
+    - aiorun
+
+about:
+  home: https://github.com/cjrh/aiorun
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: A "run" function for asyncio-based apps that does all the boilerplate.
+
+extra:
+  recipe-maintainers:
+    - scopatz

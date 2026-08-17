@@ -1,13 +1,14 @@
 {% set name = "poetry-conda" %}
-{% set version = "0.1.1" %}
+{% set version = "0.1.7" %}
+{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/poetry_conda-{{ version }}.tar.gz
-  sha256: cf9aff7d3c0d2f22938b87373d484c264ee7bc3699775cffa0109e124cc29290
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/poetry_conda-{{ version }}.tar.gz
+  sha256: 803f916d11f6fd8ff992d36a738e3d18877cc1b286a28c050ace7ec184910681
 
 build:
   noarch: python
@@ -16,12 +17,12 @@ build:
 
 requirements:
   host:
-    - python >=3.8,<4.0
+    - python {{ python_min }}
     - poetry-core
     - pip
   run:
-    - python >=3.8.0,<4.0.0
-    - poetry >=1.3.0,<2.0.0
+    - python >={{ python_min }}
+    - poetry >=1.5.0,<3
 
 test:
   imports:
@@ -30,6 +31,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/renan-r-santos/poetry-conda
@@ -40,3 +42,4 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - renan-r-santos

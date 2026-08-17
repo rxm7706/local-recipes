@@ -1,12 +1,12 @@
-{% set version = "24.1" %}
+{% set version = "26.2.1" %}
 
 package:
   name: pip
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/p/pip/pip-{{ version }}.tar.gz
-  sha256: bdae551038c0ce6a83030b4aedef27fc95f0daa683593fea22fa05e55ed8e317
+  url: https://pypi.org/packages/source/p/pip/pip-{{ version }}.tar.gz
+  sha256: f6ad667e89a1fe78046c8f13232b247200f5258d7828f3f7883d660878e0813f
 
 build:
   noarch: python
@@ -18,15 +18,21 @@ build:
 
 requirements:
   host:
-    - python >=3.8
-    - setuptools >=67.6.1
-    - wheel
-  run:
-    - python >=3.8
+    - python >=3.13.0a0                    # [not with_setuptools_wheel]
+    - python >={{ python_min }},<3.13.0a0  # [with_setuptools_wheel]
+    - flit-core
     - setuptools
     - wheel
+  run:
+    - python >=3.13.0a0                    # [not with_setuptools_wheel]
+    - python >={{ python_min }},<3.13.0a0  # [with_setuptools_wheel]
+    - setuptools                           # [with_setuptools_wheel]
+    - wheel                                # [with_setuptools_wheel]
 
 test:
+  requires:
+    - python {{ python_min }}              # [with_setuptools_wheel]
+    - python 3.13.0                        # [not with_setuptools_wheel]
   commands:
     - pip -h
     - pip list

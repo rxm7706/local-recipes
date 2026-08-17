@@ -12,14 +12,15 @@ source:
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python
+    - python >={{ python_min }}
     - immutables >=0.9
 
 test:
@@ -29,13 +30,18 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: http://github.com/MagicStack/contextvars
-  summary: PEP 567 Backport
   license: Apache-2.0
+  license_family: APACHE
   license_file: LICENSE
+  summary: PEP 567 Backport
+  description: "Implements a backport of Python 3.7 contextvar module (see PEP 567)"
+  dev_url: 'https://github.com/MagicStack/contextvars'
 
 extra:
   recipe-maintainers:
+    - nicoddemus
     - rxm7706

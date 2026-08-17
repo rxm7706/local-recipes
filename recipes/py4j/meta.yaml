@@ -1,0 +1,47 @@
+{% set name = "py4j" %}
+{% set version = "0.10.9.9" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: f694cad19efa5bd1dee4f3e5270eb406613c974394035e5bfc4ec1aba870b879
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - py4j
+    - py4j.tests
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+
+about:
+  home: http://py4j.sourceforge.net/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: Enables Python programs to dynamically access arbitrary Java objects
+  dev_url: https://github.com/bartdag/py4j
+  doc_url: http://py4j.sourceforge.net/
+
+extra:
+  recipe-maintainers:
+    - parente
+    - h-vetinari

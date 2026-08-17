@@ -1,5 +1,5 @@
 {% set name = "djangocms-frontend" %}
-{% set version = "2.3.1" %}
+{% set version = "2.5.1" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
-  sha256: 85c4c85cd8c464a6f943d011a1c4aab6902829fd2aad36b9268b151fdb499f6b
+  sha256: c9ba18fcef21239d3c59479957a5a7e7abd0da5a7d7a32dee7f053ed7ddb5f66
 
 build:
   noarch: python

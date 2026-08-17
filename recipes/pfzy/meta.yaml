@@ -1,0 +1,42 @@
+{% set name = "pfzy" %}
+{% set version = "0.3.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pfzy-{{ version }}.tar.gz
+  sha256: 717ea765dd10b63618e7298b2d98efd819e0b30cd5905c9707223dceeb94b3f1
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - poetry
+  run:
+    - python >={{ python_min }},<4.0
+
+test:
+  imports:
+    - pfzy
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/kazhala/pfzy
+  summary: Python port of the fzy fuzzy string matching algorithm
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - avsthiago

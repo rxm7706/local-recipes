@@ -1,0 +1,51 @@
+{% set name = "pip-tools" %}
+{% set version = "7.6.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 695556edeb647eb94ee8345cc7108657fdb7fb16b3876623a399b4f61bbede01
+
+build:
+  number: 0
+  noarch: python
+  entry_points:
+    - pip-compile = piptools.scripts.compile:cli
+    - pip-sync = piptools.scripts.sync:cli
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.7
+    - setuptools-scm
+    - pip
+  run:
+    - python >=3.7
+    - python-build
+    - click >=7
+    - pip >=21.2
+    - setuptools
+    - wheel
+
+test:
+  imports:
+    - piptools
+  commands:
+    - pip check
+    - pip-compile --help
+    - pip-sync --help
+  requires:
+    - pip
+
+about:
+  home: https://pypi.org/project/pip-tools/
+  summary: pip-tools keeps your pinned dependencies fresh.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - marcelotrevisani

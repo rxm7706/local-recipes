@@ -1,0 +1,52 @@
+{% set name = "azure-mgmt-storage" %}
+{% set version = "25.1.0" %}
+{% set sha256 = "cc4bd2158fd0dd80639142af06dc70c119bbfd6f79d53da4482e0b2c849af7ca" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.zip
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - msrest >=0.7.1
+    - python >={{ python_min }}
+    - isodate >=0.6.1
+    - azure-common >=1.1
+    - azure-mgmt-core >=1.6.0
+    - typing_extensions >=4.6.0
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - azure
+    - azure.mgmt
+    - azure.mgmt.storage
+  commands:
+    - python -m unittest discover -p "test_storage_*.py"
+
+about:
+  home: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/storage/azure-mgmt-storage
+  license: MIT
+  license_file: LICENSE
+  summary: Microsoft Azure Storage Resource Management Client Library for Python
+
+extra:
+  recipe-maintainers:
+    - janjagusch
+    - dhirschfeld
+    - Maxyme

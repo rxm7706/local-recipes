@@ -1,0 +1,58 @@
+{% set python_min = "3.11" %}
+{% set name = "music21" %}
+{% set version = "10.5.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: f72676fb953cb592bfb4e3bb246b0a234446f89088aa8a55ec9b5fcef2ce3db2
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - chardet
+    - joblib
+    - jsonpickle
+    - matplotlib-base
+    - more-itertools
+    - numpy >=1.26.4
+    - requests
+    - webcolors >=1.5
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - music21
+  commands:
+    - python -m music21.stream.tests
+
+about:
+  home: https://github.com/cuthbertLab/music21
+  license: BSD-3-Clause OR LGPL-3.0-or-later
+  license_family: BSD
+  license_file: LICENSE
+  summary: A Toolkit for Computer-Aided Musical Analysis.
+  description: |
+    People use music21 to answer questions from musicology using computers,
+    to study large datasets of music, to generate musical examples, to teach
+    fundamentals of music theory, to edit musical notation, study music and
+    the brain, and to compose music (both algorithmically and directly).
+  doc_url: https://www.music21.org/music21docs/
+  dev_url: https://github.com/cuthbertLab/music21
+
+extra:
+  recipe-maintainers:
+    - jacobtylerwalls

@@ -1,0 +1,49 @@
+{% set name = "vcrpy" %}
+{% set version = "8.3.0" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 46d64e77e8d95e5c76c7d9a94ff05d8b38b2ae4e1d4869eb0235024b6fcb5212
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+
+  run:
+    - python >={{ python_min }}
+    - pyyaml
+    - wrapt
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - vcr
+    - vcr.persisters
+    - vcr.serializers
+    - vcr.stubs
+
+about:
+  home: https://github.com/kevin1024/vcrpy
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt
+  summary: Automatically mock your HTTP interactions to simplify and speed up testing
+  dev_url: https://github.com/kevin1024/vcrpy
+  doc_url: https://vcrpy.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - dopplershift

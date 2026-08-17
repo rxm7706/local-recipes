@@ -1,0 +1,57 @@
+{% set name = "pytablewriter" %}
+{% set version = "1.2.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pytablewriter-{{ version }}.tar.gz
+  sha256: 7bd0f4f397e070e3b8a34edcf1b9257ccbb18305493d8350a5dbc9957fced959
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=64
+    - setuptools-scm >=8
+    - pip
+  run:
+    - python >={{ python_min }}
+    - setuptools >=38.3.0
+    - dataproperty >=1.1.0,<2
+    - mbstrdecoder >=1.0.0,<2
+    - pathvalidate >=2.3.0,<4
+    - tabledata >=1.3.1,<2
+    - tcolorpy >=0.0.5,<1
+    - typepy >=1.3.2,<2
+
+test:
+  imports:
+    - pytablewriter
+    - pytablewriter._logger
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/thombashi/pytablewriter
+  summary: |
+    pytablewriter is a Python library to write a table in various
+    formats: CSV / Elasticsearch / HTML / JavaScript / JSON / LaTeX
+    / LDJSON / LTSV / Markdown / MediaWiki / NumPy / Excel / Pandas
+    / Python / reStructuredText / SQLite / TOML / TSV / YAML.
+  dev_url: https://github.com/thombashi/pytablewriter
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - basnijholt
+    - ocefpaf

@@ -1,0 +1,42 @@
+{% set name = "pystoi" %}
+{% set version = "0.4.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pystoi-{{ version }}.tar.gz
+  sha256: 1c6f50d6fbfee46b00c922458cdbd27228d9830ca81cea788fd600fc2f7de6e4
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - numpy
+    - scipy
+
+test:
+  imports:
+    - pystoi
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/mpariente/pystoi
+  summary: Computes Short Term Objective Intelligibility measure
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - tyrius02

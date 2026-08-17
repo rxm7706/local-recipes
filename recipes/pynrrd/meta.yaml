@@ -1,0 +1,48 @@
+{% set name = "pynrrd" %}
+{% set version = "1.1.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/mhe/pynrrd/archive/v{{ version }}.tar.gz
+  sha256: 10ce743d69ecf54b41ecab56b74dc8a5f806d299c45fcc1ef07d7d8aef5949ea
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    # it looks like numpy is imported in the setup.py via
+    # another import, but the package does not build against
+    # the numpy C API - thus I am putting it in host here
+    - numpy
+  run:
+    - python >={{ python_min }}
+    - numpy
+    - typing_extensions
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - nrrd
+    # the way pynrrd tests are organized in source tree (sub-pkg of nrrd pkg)
+    # prevents us from running them. Import test must do.
+
+about:
+  home: https://github.com/mhe/pynrrd
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Simple pure-python module for reading and writing nrrd files.
+
+extra:
+  recipe-maintainers:
+    - beckermr

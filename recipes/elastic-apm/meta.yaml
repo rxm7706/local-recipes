@@ -1,0 +1,49 @@
+{% set name = "elastic-apm" %}
+{% set version = "6.23.0" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/elastic-apm-{{ version }}.tar.gz
+  sha256: 1aeef4562486bd9ad611bba15f9eca5aeede6a737777541cb68c47c6cf5df7d4
+
+build:
+  number: 0
+  noarch: python
+  script_env: ELASTIC_APM_WRAP_EXTENSIONS=false
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6,<4.0
+  run:
+    - certifi
+    - ecs-logging
+    - python >=3.6,<4.0
+    - urllib3
+    - wrapt >=1.14.1,!=1.15.0
+
+test:
+  imports:
+    - elasticapm
+    - elasticapm.conf
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/elastic/apm-agent-python
+  summary: The official Python module for Elastic APM
+  dev_url: https://github.com/elastic/apm-agent-python
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - basepi
+    - tobiasraabe

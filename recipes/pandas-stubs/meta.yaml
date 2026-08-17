@@ -1,0 +1,50 @@
+{% set name = "pandas-stubs" %}
+{% set version = "3.0.5.260730" %}
+{% set python_min = "3.11" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pandas_stubs-{{ version }}.tar.gz
+  sha256: f70a232c57d93a5a2c81f8a53953e10891a5374bc92652277deb325e2e4d0ff3
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - poetry
+  run:
+    - python >={{ python_min }}
+    - types-pytz >=2022.1.1
+    - numpy >=1.26.0
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+    - test -f $SP_DIR/pandas-stubs/_typing.pyi  # [unix]
+    - if not exist %SP_DIR%\\pandas-stubs\\_typing.pyi exit 1  # [win]
+
+about:
+  home: https://github.com/pandas-dev/pandas-stubs
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Collection of Pandas stub files
+  description: |
+    Collection of Pandas stub files supported by the pandas team
+  doc_url: https://github.com/pandas-dev/pandas-stubs
+  dev_url: https://github.com/pandas-dev/pandas-stubs
+
+extra:
+  recipe-maintainers:
+    - twoertwein
+    - Dr-Irv

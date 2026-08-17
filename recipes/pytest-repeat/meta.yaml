@@ -1,0 +1,43 @@
+{% set version = "0.9.4" %}
+
+package:
+  name: pytest-repeat
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pytest-repeat/pytest_repeat-{{ version }}.tar.gz
+  sha256: d92ac14dfaa6ffcfe6917e5d16f0c9bc82380c135b03c2a5f412d2637f224485
+
+build:
+  noarch: python
+  number: 0
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+    - hatch-vcs
+  run:
+    - python >={{ python_min }}
+    - pytest >=5
+
+test:
+  files:
+    - test_repeat.py
+  commands:
+    # Make sure to fail pytest on unknown markers
+    # this will ensure that pytest fails if pytest-repeat isn't registered
+    - pytest -Werror test_repeat.py
+
+about:
+  home: https://github.com/pytest-dev/pytest-repeat/
+  license: MPL-2.0
+  license_family: MOZILLA
+  license_file: LICENSE
+  summary: 'pytest-repeat is a plugin for py.test that makes it easy to repeat a single test, or multiple tests, a specific number of times.'
+
+extra:
+  recipe-maintainers:
+    - hmaarrfk

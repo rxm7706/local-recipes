@@ -1,0 +1,47 @@
+{% set name = "adal" %}
+{% set version = "1.2.7" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: d74f45b81317454d96e982fd1c50e6fb5c99ac2223728aea8764433a39f566f1
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - cryptography >=1.1.0
+    - pyjwt >=1.0.0
+    - python >=3.6
+    - python-dateutil >=2.1.0
+    - requests >=2.0.0
+
+test:
+  imports:
+    - adal
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/AzureAD/azure-activedirectory-library-for-python
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: |
+    The ADAL for Python library makes it easy for python application to authenticate 
+    to Azure Active Directory (AAD) in order to access AAD protected web resources.
+
+extra:
+  recipe-maintainers:
+    - marcelotrevisani

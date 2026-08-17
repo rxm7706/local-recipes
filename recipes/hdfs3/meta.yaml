@@ -1,0 +1,42 @@
+{% set version = "0.3.1" %}
+
+package:
+  name: hdfs3
+  version: "{{ version }}"
+
+source:
+  fn: hdfs3-{{ version }}.tar.gz
+  url: https://pypi.io/packages/source/h/hdfs3/hdfs3-{{ version }}.tar.gz
+  sha256: 3be9ca9d812e760969419e7288fef4d6700e7aa01d303aad4e56cd4ecb4f11ed
+
+build:
+  number: 2
+  script: python setup.py install --single-version-externally-managed --record=record.txt
+  # This packages uses libhdfs3, which is primarily used with HDFS on Linux.
+  skip: True  # [win]
+
+requirements:
+  build:
+    - python
+    - setuptools
+
+  run:
+    - python
+    - libhdfs3 >=2.3
+
+test:
+  imports:
+    - hdfs3
+
+about:
+  home: https://github.com/dask/hdfs3
+  license: BSD 3-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: Python wrapper for libhdfs3
+
+extra:
+  recipe-maintainers:
+    - mrocklin
+    - martindurant
+    - jcrist

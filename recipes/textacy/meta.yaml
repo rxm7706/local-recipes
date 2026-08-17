@@ -1,0 +1,94 @@
+{% set name = "textacy" %}
+{% set version = "0.12.0" %}
+{% set sha256sum = "2c92bdd6b47305447b64e4cb6cc43c11675f021f910a8074bc8149dbf5325e5b" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256sum }}
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  skip: true  # [win32 or linux32 or py<37]
+
+requirements:
+  build:
+    - python  # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}  # [build_platform != target_platform]
+
+  host:
+    - python
+    - setuptools
+    - pip
+  
+
+  run:
+    - python
+    - cachetools >=4.0.0
+    - cytoolz >=0.10.1
+    - jellyfish >=0.8.0
+    - joblib >=0.13.0
+    - matplotlib-base >=3.0.0
+    - networkx >=2.0
+    - {{ pin_compatible('numpy', min_pin='1.17.0') }}
+    - pyphen >=0.10.0
+    - requests >=2.10.0
+    - scipy >=0.17.0
+    - scikit-learn >=0.19.0
+    - spacy >=3.0.0
+    - tqdm >=4.19.6
+
+test:
+  imports:
+    - textacy
+    - textacy.augmentation
+    - textacy.cache
+    - textacy.constants
+    - textacy.corpus
+    - textacy.datasets
+    - textacy.errors
+    - textacy.spacier.extensions
+    - textacy.extract
+    - textacy.io
+    - textacy.lang_id
+    - textacy.preprocessing
+    - textacy.representations
+    - textacy.resources
+    - textacy.similarity
+    - textacy.spacier
+    - textacy.text_stats
+    - textacy.tm
+    - textacy.types
+    - textacy.utils
+    - textacy.viz
+  requires:
+    - pytest >=4.0.0
+  source_files:
+    - tests
+
+about:
+  home: https://github.com/chartbeat-labs/textacy
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  summary: NLP, before and after spaCy
+  description: |
+    textacy is a Python library for performing higher-level natural language
+    processing (NLP) tasks, built on the high-performance spaCy library. With
+    the basics --- tokenization, part-of-speech tagging, dependency parsing,
+    etc. --- offloaded to another library, textacy focuses on tasks facilitated
+    by the ready availability of tokenized, POS-tagged, and parsed text.
+    spaCy is a library for advanced natural language processing in Python and
+    Cython.
+  doc_url: https://chartbeat-labs.github.io/textacy/
+  dev_url: https://github.com/chartbeat-labs/textacy
+
+extra:
+  recipe-maintainers:
+    - rmax
+    - mageky
+    - bdewilde

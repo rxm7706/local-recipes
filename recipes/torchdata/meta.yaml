@@ -1,0 +1,134 @@
+{% set version = "0.11.0" %}
+
+package:
+  name: torchdata
+  version: {{ version }}
+
+source:
+  url: https://github.com/pytorch/data/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: 945c53a8587567624aaad2d66204fbae9acb9535696554c53ffeb83320c308b9
+
+build:
+  number: 2
+  ignore_run_exports_from:
+    # CMake really wants to find it, but we don't need it
+    - zlib
+  script:
+    - export BUILD_VERSION={{ version }}    # [unix]
+    - set BUILD_VERSION={{ version }}       # [win]
+    - {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('cxx') }}
+    - {{ stdlib("c") }}
+    - cmake
+    - ninja
+  host:
+    - pip
+    - setuptools
+    - python
+  run:
+    - python
+    - requests
+    - urllib3 >=1.25
+    - pytorch >=2
+
+test:
+  imports:
+    - torchdata
+  requires:
+    - pip
+    - pytest
+    - pytest-timeout
+    - pytest-xdist
+    - adlfs
+    - awscli
+    - cryptography
+    - datasets
+    - expecttest
+    - fsspec
+    - numpy *
+    - msal_extensions >=1.2
+    - parameterized
+    - portalocker >=2.0.0
+    - psutil
+    - s3fs >=2023.12.2
+  source_files:
+    - test/
+  commands:
+    - pip check
+    # ensure that the package metadata did not mangle in the git hash
+    - test -f $SP_DIR/torchdata-{{ version }}.dist-info/METADATA                # [unix]
+    - if not exist %SP_DIR%\torchdata-{{ version }}.dist-info\METADATA exit 1   # [win]
+    - cd test
+    {% set tests_to_skip = "_not_a_real_test" %}
+    # flaky tests
+    {% set tests_to_skip = tests_to_skip + " or test_large_sampler_indices" %}              # [osx or aarch64]
+    {% set tests_to_skip = tests_to_skip + " or (TestDataLoader and test_segfault)" %}      # [osx or aarch64]
+    {% set tests_to_skip = tests_to_skip + " or (TestDataLoader and test_no_segfault)" %}   # [osx or aarch64]
+    {% set tests_to_skip = tests_to_skip + " or test_get_worker_info" %}                    # [osx or aarch64]
+    {% set tests_to_skip = tests_to_skip + " or test_ind_worker_queue" %}                   # [osx or win or aarch64]
+    {% set tests_to_skip = tests_to_skip + " or test_batch_sampler" %}                      # [win and py==312]
+    {% set tests_to_skip = tests_to_skip + " or test_bulk_loading_nobatch" %}               # [win and py==312]
+    {% set tests_to_skip = tests_to_skip + " or test_chain_iterable_style_dataset" %}       # [win and py==312]
+    {% set tests_to_skip = tests_to_skip + " or test_dataset_not_reset" %}                  # [win and py==312]
+    {% set tests_to_skip = tests_to_skip + " or test_iterable_style_dataset" %}             # [win and py==312]
+    {% set tests_to_skip = tests_to_skip + " or test_large_sampler_indices" %}              # [win and py==312]
+    {% set tests_to_skip = tests_to_skip + " or test_multi_epochs_reproducibility" %}       # [(win or aarch64) and py==312]
+    {% set tests_to_skip = tests_to_skip + " or test_multiprocessing" %}                    # [win and py==312]
+    {% set tests_to_skip = tests_to_skip + " or test_nested_tensor_multiprocessing" %}      # [(win or osx or aarch64) and py>=312]
+    {% set tests_to_skip = tests_to_skip + " or test_out_of_order" %}                       # [(win or osx) and py>=312]
+    {% set tests_to_skip = tests_to_skip + " or test_sampler" %}                            # [win and py==312]
+    {% set tests_to_skip = tests_to_skip + " or test_segfault" %}                           # [win and py==312]
+    {% set tests_to_skip = tests_to_skip + " or test_sequential" %}                         # [win and py==312]
+    {% set tests_to_skip = tests_to_skip + " or test_shuffle" %}                            # [win and py==312]
+    {% set tests_to_skip = tests_to_skip + " or test_thread_dead_error" %}                  # [win]
+    {% set tests_to_skip = tests_to_skip + " or (TestDataLoaderPersistentWorkers and test_worker_seed)" %}  # [win]
+    # failures on py313
+    {% set tests_to_skip = tests_to_skip + " or TestStatefulDataLoaderIterable_shard0" %}   # [py>=312]
+    # may hang or OOM on windows
+    {% set tests_to_skip = tests_to_skip + " or test_builtin_collection_conversion" %}      # [win and py==312]
+    {% set tests_to_skip = tests_to_skip + " or test_error" %}                              # [win and py==312]
+    {% set tests_to_skip = tests_to_skip + " or test_in_order" %}                           # [win and py==312]
+    {% set tests_to_skip = tests_to_skip + " or test_multiple_dataloaders" %}               # [win and py==312]
+    {% set tests_to_skip = tests_to_skip + " or test_none_state" %}                         # [win and py==312]
+    {% set tests_to_skip = tests_to_skip + " or test_sampler_state_dict" %}                 # [win and py==312]
+
+    # may hang or OOM on osx/Windows
+    {% set tests_to_skip = tests_to_skip + " or test_seed_replicability" %}                 # [win or osx]
+    # typo sequential -> sequential reflects upstream naming
+    {% set tests_to_skip = tests_to_skip + " or test_seqential_batch" %}                    # [win and py>=312]
+    {% set tests_to_skip = tests_to_skip + " or test_tensor_state" %}                       # [win and py>=312]
+    {% set tests_to_skip = tests_to_skip + " or test_worker" %}                             # [win and py>=312]
+    {% set tests_to_skip = tests_to_skip + " or test_exception_handling_mapper_multi" %}    # [win]
+    {% set tests_to_skip = tests_to_skip + " or (TestMap and order_process)" %}             # [win]
+    # 19/26 tests that match this condition run >2min on osx/win/aarch64
+    {% set tests_to_skip = tests_to_skip + " or (test_state_dict.py and DataLoader)" %}     # [osx or win or aarch64]
+    # Extremely slow tests on aarch64 and osx (often >5 minutes each)
+    {% set tests_to_skip = tests_to_skip + " or (TestStatefulDataLoaderIterable_shard0 and test_mp_x)" %}       # [aarch64]
+    {% set tests_to_skip = tests_to_skip + " or test_shuffler_iterdatapipe" %}                                  # [aarch64 or osx]
+    {% set tests_to_skip = tests_to_skip + " or (TestMap and test_save_load_state_process_)" %}                 # [aarch64 or osx or win]
+    {% set tests_to_skip = tests_to_skip + " or test_multi_node_weighted_large_sample_size_with_prefetcher" %}  # [aarch64]
+    {% set tests_to_skip = tests_to_skip + " or test_iterable_style_dataset" %}                                 # [aarch64]
+    {% set tests_to_skip = tests_to_skip + " or test_multiprocessing_contexts" %}                               # [aarch64]
+    # Pickling has changed in Python 3.14, and the pickling only happens within the test itself
+    {% set tests_to_skip = tests_to_skip + " or test_set_affinity_in_worker_init" %}                            # [py==314]
+    # test_audio_examples uses an uninstalled local folder ("examples");
+    # avoid test_text_examples due to cycle since torchtext depends on torchdata
+    - pytest -n auto -v --ignore=test_audio_examples.py --ignore=test_text_examples.py -k "not ({{ tests_to_skip }})" --timeout=1200 --durations=50
+
+about:
+  home: https://github.com/pytorch/data
+  summary: A PyTorch repo for data loading and utilities to be shared by the PyTorch domain libraries.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - weiji14
+    - BastianZim
+    - Tobias-Fischer
+    - h-vetinari

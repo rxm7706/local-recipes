@@ -1,0 +1,88 @@
+{% set version = "0.20.0" %}
+
+package:
+  name: ipyleaflet-packages
+  version: {{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/i/ipyleaflet/ipyleaflet-{{ version }}.tar.gz
+    sha256: 098f317dd63c4bcac5176d5b78d40d5758c623f7cd013f0d0c9d7a70cefcdb34
+    folder: ipyleaflet
+  - url: https://pypi.org/packages/source/j/jupyter_leaflet/jupyter_leaflet-{{ version }}.tar.gz
+    sha256: ad826dd7976a2b6d8b91d762c25a69a44f123b7b3bd1acaba236bd9af8e68cb4
+    folder: jupyter_leaflet
+
+build:
+  number: 0
+  noarch: python
+
+outputs:
+  - name: jupyter_leaflet
+    version: {{ version }}
+    build:
+      noarch: python
+      script: |
+        cd jupyter_leaflet
+        python -m pip install . -vv --no-deps --no-build-isolation --ignore-installed --no-index
+    requirements:
+      host:
+        - python {{ python_min }}
+        - pip
+        - nodejs >=18,<19
+        - hatch-jupyter-builder >=0.5.3
+        - hatchling
+        - jupyterlab >=4,<5
+        - hatch-nodejs-version >=0.3.2
+    test:
+      requires:
+        - python {{ python_min }}
+      commands:
+        - test -f ${PREFIX}/share/jupyter/nbextensions/jupyter-leaflet/extension.js                             # [unix]
+        - test -f ${PREFIX}/share/jupyter/nbextensions/jupyter-leaflet/index.js                                 # [unix]
+        - test -f ${PREFIX}/share/jupyter/labextensions/jupyter-leaflet/package.json                            # [unix]
+        - if not exist %PREFIX%\\share\\jupyter\\nbextensions\\jupyter-leaflet\\extension.js (exit 1)           # [win]
+        - if not exist %PREFIX%\\share\\jupyter\\nbextensions\\jupyter-leaflet\\index.js (exit 1)               # [win]
+        - if not exist %PREFIX%\\share\\jupyter\\labextensions\\jupyter-leaflet\\package.json (exit 1)          # [win]
+
+  - name: ipyleaflet
+    version: {{ version }}
+    build:
+      noarch: python
+      script: |
+        cd ipyleaflet
+        python -m pip install . -vv --no-deps --no-build-isolation --ignore-installed --no-index
+    requirements:
+      host:
+        - python {{ python_min }}
+        - pip
+        - hatchling
+      run:
+        - python >={{ python_min }}
+        - ipywidgets >=7.6.0,<9
+        - traittypes >=0.2.1,<0.3.0
+        - xyzservices >=2021.8.1
+        - branca >=0.5.0
+        - jupyter_leaflet
+      run_constrained:
+        - jupyter_leaflet ={{ version }}
+    test:
+      requires:
+        - python {{ python_min }}
+      imports:
+        - ipyleaflet
+
+about:
+  home: https://github.com/jupyter-widgets/ipyleaflet
+  license: MIT
+  license_file: LICENSE
+  summary: A Jupyter widget for dynamic Leaflet maps
+  doc_url: http://ipyleaflet.readthedocs.io
+  dev_url: https://github.com/jupyter-widgets/ipyleaflet
+
+extra:
+  recipe-maintainers:
+    - SylvainCorlay
+    - ellisonbg
+    - jasongrout
+    - martinRenou
+    - davidbrochart

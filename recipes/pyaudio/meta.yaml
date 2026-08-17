@@ -1,43 +1,50 @@
-{% set name = "pyaudio" %}
 {% set version = "0.2.14" %}
 
 package:
-  name: {{ name|lower }}
+  name: pyaudio
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/PyAudio-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/P/PyAudio/PyAudio-{{ version }}.tar.gz
   sha256: 78dfff3879b4994d1f4fc6485646a57755c6ee3c19647a491f790a0895bd2f87
 
 build:
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 3
+  skip: true  # [win or osx]
+  script:
+    - export PORTAUDIO_PATH=$PREFIX  # [not win]
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   build:
     - {{ compiler('c') }}
+    - {{ stdlib("c") }}
   host:
     - python
-    - setuptools
-    - wheel
     - pip
+    - setuptools
+    - portaudio  # [not win]
+    - jack  # [linux]
   run:
     - python
+    - setuptools
+    - portaudio  # [not win]
+    - jack  # [linux]
 
 test:
   imports:
     - pyaudio
   commands:
-    - pip check
-  requires:
-    - pip
 
 about:
-  home: https://people.csail.mit.edu/hubert/pyaudio/
-  summary: Cross-platform audio I/O with PortAudio
+  home: http://people.csail.mit.edu/hubert/pyaudio/
   license: MIT
-  license_file: LICENSE.txt
+  license_family: MIT
+  license_file: LICENSE
+  summary: PortAudio Python Bindings.
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - chiranthsiddappa
+    - ocefpaf
+    - scopatz

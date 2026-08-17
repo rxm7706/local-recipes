@@ -1,45 +1,66 @@
-{% set name = "pyyaml" %}
-{% set version = "6.0.1" %}
+{% set version = "6.0.3" %}
 
 package:
-  name: {{ name|lower }}
+  name: pyyaml
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/PyYAML-{{ version }}.tar.gz
-  sha256: bfdf460b1736c775f2ba9f6a92bca30bc2095067b8a9d77876d1fad6cc3b4a43
+  url: https://pypi.org/packages/source/P/PyYAML/pyyaml-{{ version }}.tar.gz
+  sha256: d76623373421df22fb4cf8817020cbb7ef15c725b9d5e45f17e189bfc384190f
+  patches:
+    - 0001-Ensure-we-do-not-end-up-wih-CRLF-line-endings-on-tes.patch
+    - 0002-remove-setuptools-use-distutils-py38.patch  # [py<39]
 
 build:
-  skip: true  # [py2k]
-  script: {{ PYTHON }} -m pip install . -vv
-  number: 0
+  number: 1
+  skip: true  # [py<38]
+  noarch: python  # [use_noarch]
+  track_features:
+    - pyyaml_no_compile    # [use_noarch]
 
 requirements:
   build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython                                 # [build_platform != target_platform]
     - {{ compiler('c') }}
+    - {{ stdlib("c") }}
   host:
-    - python
+    - python                        # [not use_noarch]
+    - python {{ python_min }}.*     # [use_noarch]
+    - cython
     - setuptools
-    - wheel
-    - cython <3.0
+    - packaging
     - pip
+    - yaml
   run:
-    - python
+    - python                        # [not use_noarch]
+    - python >={{ python_min }}.*   # [use_noarch]
+    - yaml
 
 test:
   imports:
     - yaml
+    - _yaml   # [python_impl == "cpython" and not use_noarch]
   commands:
-    - pip check
+    # temporarily skipping pip check on win and pypy build because of bizarre tqdm issue
+    - pip check  # [not (win and python_impl == 'pypy')]
   requires:
     - pip
+    - python {{ python_min }}.*     # [use_noarch]
 
 about:
-  home: https://pyyaml.org/
-  summary: YAML parser and emitter for Python
-  license: MIT
+  home: http://pyyaml.org/wiki/PyYAML
   license_file: LICENSE
+  license: MIT
+  license_family: MIT
+  summary: YAML parser and emitter for Python
+  dev_url: https://github.com/yaml/pyyaml
+  doc_url: http://pyyaml.org/wiki/PyYAML
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - jakirkham
+    - msarahan
+    - pelson
+    - ocefpaf

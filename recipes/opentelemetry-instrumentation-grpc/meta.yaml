@@ -1,13 +1,13 @@
 {% set name = "opentelemetry-instrumentation-grpc" %}
-{% set version = "0.42b0" %}
+{% set version = "0.65b0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_grpc-{{ version }}.tar.gz
-  sha256: 4c5701b1e54765f9000336a243ddfd4ecf3f76cd62070a8e7f3054a3b928679e
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_grpc-{{ version }}.tar.gz
+  sha256: b05b3a1f476f350fdb12514ca1ebaed0d596095f91188c2efd26b3e6e2a4cc82
 
 build:
   noarch: python
@@ -16,26 +16,57 @@ build:
 
 requirements:
   host:
-    - python >=3.7
-    - hatchling
+    - python {{ python_min }}
     - pip
+    - hatchling
   run:
-    - python >=3.7
-    - opentelemetry-api >=1.12,<2.dev0
-    - opentelemetry-instrumentation ==0.42b0
-    - opentelemetry-sdk >=1.12,<2.dev0
-    - opentelemetry-semantic-conventions ==0.42b0
-    - wrapt >=1.0.0,<2.0.0
+    - python >={{ python_min }}
+    - opentelemetry-api ~=1.12
+    - opentelemetry-instrumentation ==0.65b0
+    - opentelemetry-sdk ~=1.12
+    - opentelemetry-semantic-conventions ==0.65b0
+    - wrapt <3.0.0,>=1.0.0
+    # - grpcio ~=1.27
+    # - grpcio ~=1.27
+    # - grpcio ~=1.27
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
 
 test:
   imports:
-    - opentelemetry_instrumentation_grpc
+    - opentelemetry
+    - opentelemetry.instrumentation
   commands:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
+  home: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-grpc
   summary: OpenTelemetry gRPC instrumentation
   license: Apache-2.0
   license_file: LICENSE
@@ -43,3 +74,4 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - mariusvniekerk

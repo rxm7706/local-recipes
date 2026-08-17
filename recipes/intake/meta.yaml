@@ -1,0 +1,50 @@
+{% set version = "2.0.9" %}
+
+package:
+  name: intake
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/i/intake/intake-{{ version }}.tar.gz
+  sha256: 39b4b20abd3ccb7ddc735412b28e411db8bf6b27ff16e705cf77e4dc96137165
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - setuptools_scm
+  run:
+    - python >={{ python_min }}
+    - platformdirs
+    - fsspec >=2023.0.0
+    - pyyaml
+    - networkx
+
+test:
+  source_files:
+    - intake
+  imports:
+    - intake
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/intake/intake
+  license: BSD-2-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Data load and catalog system
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - martindurant

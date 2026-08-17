@@ -1,0 +1,53 @@
+{% set name = "jupyterlab_execute_time" %}
+{% set version = "3.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 9b13b65c2c139bfabb3f6ff1706c4d33ed5a56203a89d0297608334e15bc9c0b
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - jupyter-packaging
+  run:
+    - python >={{ python_min }}
+    - jupyterlab >=4,<5
+
+test:
+  requires:
+    - nodejs >=12
+    - pip
+    - jupyter-packaging
+    - python {{ python_min }}
+  imports:
+    - jupyterlab
+  commands:
+    - pip check
+    - jupyter lab --version
+    - jlpm --version
+    - jupyter labextension list
+    - jupyter labextension list 2>&1 | grep -ie "jupyterlab-execute-time.*OK"
+
+about:
+  home: https://github.com/deshaw/jupyterlab-execute-time
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: Execute Time Plugin for Jupyter Lab
+  description: Display cell timings in Jupyter Lab
+
+extra:
+  recipe-maintainers:
+    - krassowski
+    - moble
+    - mlucool

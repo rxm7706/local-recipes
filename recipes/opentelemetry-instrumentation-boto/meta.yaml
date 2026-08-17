@@ -1,0 +1,111 @@
+{% set name = "opentelemetry-instrumentation-boto" %}
+{% set version = "0.61b0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_boto-{{ version }}.tar.gz
+  sha256: f8066f5b8a32bc0fe98d0416d161cfcf5a4b94f25f351a49c772679a4a5f09d7
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >={{ python_min }}
+    - opentelemetry-api ~=1.12
+    - opentelemetry-instrumentation ==0.61b0
+    - opentelemetry-semantic-conventions ==0.61b0
+    # - opentelemetry-test-utils ==0.37b0
+    # - opentelemetry-instrumentation-boto 
+    # - moto ~=2.0
+    # - markupsafe ==2.0.1
+    # - boto ~=2.0
+    # - opentelemetry-test-utils ==0.38b0
+    # - opentelemetry-instrumentation-boto 
+    # - moto ~=2.0
+    # - markupsafe ==2.0.1
+    # - boto ~=2.0
+    # - opentelemetry-test-utils ==0.39b0
+    # - opentelemetry-instrumentation-boto 
+    # - moto ~=2.0
+    # - markupsafe ==2.0.1
+    # - boto ~=2.0
+    # - opentelemetry-test-utils ==0.40b0
+    # - opentelemetry-instrumentation-boto 
+    # - moto ~=2.0
+    # - markupsafe ==2.0.1
+    # - boto ~=2.0
+    # - opentelemetry-test-utils ==0.41b0
+    # - opentelemetry-instrumentation-boto 
+    # - moto ~=2.0
+    # - markupsafe ==2.0.1
+    # - boto ~=2.0
+    # - opentelemetry-test-utils ==0.42b0
+    # - opentelemetry-instrumentation-boto 
+    # - moto ~=2.0
+    # - markupsafe ==2.0.1
+    # - boto ~=2.0
+    # - opentelemetry-test-utils ==0.43b0
+    # - opentelemetry-instrumentation-boto 
+    # - moto ~=2.0
+    # - markupsafe ==2.0.1
+    # - boto ~=2.0
+    # - opentelemetry-test-utils ==0.44b0
+    # - opentelemetry-instrumentation-boto 
+    # - moto ~=2.0
+    # - markupsafe ==2.0.1
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+    # - boto ~=2.0
+
+test:
+  imports:
+    - opentelemetry
+    - opentelemetry.instrumentation
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-boto
+  summary: OpenTelemetry Boto instrumentation
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk

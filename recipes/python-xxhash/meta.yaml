@@ -1,0 +1,53 @@
+{% set version = "3.7.0" %}
+{% set pip_name = "xxhash" %}
+{% set name = "python-xxhash" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  sha256: 6cc4eefbb542a5d6ffd6d70ea9c502957c925e800f998c5630ecc809d6702bae
+  url: https://pypi.org/packages/source/{{ pip_name[0] }}/{{ pip_name }}/{{ pip_name }}-{{ version }}.tar.gz
+
+build:
+  number: 0
+  script:
+    - export XXHASH_LINK_SO=1  # [unix]
+    - SET XXHASH_LINK_SO=1  # [win]
+    - {{ PYTHON }} -m pip install --no-deps --ignore-installed .
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - python
+    - setuptools >=63
+    - msinttypes  # [win and py<35]
+    - pip
+    - xxhash
+  run:
+    - python
+    - xxhash
+
+test:
+  imports:
+    - xxhash
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/ifduyue/python-xxhash
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Python binding for xxHash
+  license_family: BSD
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk

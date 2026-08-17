@@ -1,0 +1,47 @@
+{% set name = "mpire" %}
+{% set version = "2.10.2" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/mpire-{{ version }}.tar.gz
+  sha256: f66a321e93fadff34585a4bfa05e95bd946cf714b442f51c529038eb45773d97
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - tqdm >=4.27
+    - pywin32-on-windows
+    - pygments >=2.0
+
+test:
+  imports:
+    - mpire
+    - mpire.dashboard
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/sybrenjansen/mpire
+  summary: A Python package for easy multiprocessing, but faster than multiprocessing
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - synapticarbors

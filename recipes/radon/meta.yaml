@@ -5,11 +5,11 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/r/radon/radon-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/r/radon/radon-{{ version }}.tar.gz
   sha256: d1ac0053943a893878940fedc8b19ace70386fc9c9bf0a09229a44125ebf45b5
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: {{ PYTHON }} -m pip install . --no-deps -vv
   entry_points:
@@ -17,15 +17,17 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - poetry-core
     - pip
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - mando >=0.6,<0.8
     - colorama >=0.4.1
 
 test:
+  requires:
+    - python {{ python_min }}
   imports:
     - radon
   commands:
@@ -48,6 +50,6 @@ about:
 
 extra:
   recipe-maintainers:
+    - rxm7706
     - igortg
     - tonybaloney
-    - rxm7706

@@ -1,0 +1,43 @@
+{% set name = "fastapi-socketio" %}
+{% set version = "0.0.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/fastapi-socketio-{{ version }}.tar.gz
+  sha256: 202f9b319f010001cbd1114ec92a0d9eb5f5ca9316eae5fd41a6088da0812727
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }}
+    - fastapi >=0.61.1
+    - python-socketio >=4.6.0
+
+test:
+  imports:
+    - fastapi_socketio
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/pyropy/fastapi-socketio
+  summary: Easily integrate socket.io with your FastAPI app.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rodja

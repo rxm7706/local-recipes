@@ -1,0 +1,46 @@
+{% set name = "flexparser" %}
+{% set version = "0.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/flexparser-{{ version }}.tar.gz
+  sha256: 266d98905595be2ccc5da964fe0a2c3526fbbffdc45b65b3146d75db992ef6b2
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=61
+    - wheel
+    - setuptools-scm >=3.4.3
+    - pip
+  run:
+    - typing_extensions
+    - python >={{ python_min }}
+    - typing-extensions
+
+test:
+  imports:
+    - flexparser
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: Parsing made fun ... using typing.
+  home: https://github.com/hgrecco/flexparser
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

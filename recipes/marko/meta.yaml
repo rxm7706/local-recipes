@@ -1,0 +1,47 @@
+{% set name = "marko" %}
+{% set version = "2.2.4" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/marko-{{ version }}.tar.gz
+  sha256: c042c66f835425673123d7536b39b4660de3b68e30078c70fd26245b31170683
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  entry_points:
+    - marko=marko.cli:main
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - pdm-backend
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - marko
+  commands:
+    - pip check
+    - marko --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://pypi.org/project/marko/
+  summary: A markdown parser with high extensibility.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - xhochy
+    - asford

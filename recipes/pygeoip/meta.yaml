@@ -1,0 +1,42 @@
+{% set name = "pygeoip" %}
+{% set version = "0.3.2" %}
+{% set compress_type = "tar.gz" %}
+{% set hash_type = "sha256" %}
+{% set hash_val = "f22c4e00ddf1213e0fae36dc60b46ee7c25a6339941ec1a975539014c1f9a96d" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.{{ compress_type }}
+  {{ hash_type }}: {{ hash_val }}
+
+build:
+  number: 1
+  noarch: python
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv"
+
+requirements:
+  host:
+    - python
+    - pip
+
+  run:
+    - python
+
+test:
+  imports:
+    - pygeoip
+
+about:
+  home: https://github.com/appliedsec/pygeoip
+  license: LGPL 3.0
+  license_file:  LICENSE.md
+  license_family: LGPL
+  summary: 'Pure Python GeoIP API'
+  dev_url: https://github.com/appliedsec/pygeoip
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr

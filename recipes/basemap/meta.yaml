@@ -1,0 +1,164 @@
+{% set version = "2.0.0" %}
+{% set build_number = 5 %}
+
+{% set data_version = "2.0.0" %}
+{% set data_build_number = 0 %}
+
+{% set python_min = "3.9" %}
+
+package:
+  name: basemap-split
+  version: {{ version }}
+
+source:
+  url: https://github.com/matplotlib/basemap/archive/v{{ version }}.tar.gz
+  sha256: 192ee1c63291d7d1af98fab798c45239ea27e6ca31041afa8c42c8b697e44596
+  patches:
+    - patches/fix_install_hires_instructions.patch
+    # v2.0.0 does not define python 3.14 + numpy entry
+    - patches/add_python314_numpy_to_pyproject.patch
+    # v2.0.0 hard codes a python <3.14 dep in setup
+    - patches/relax_setup_python_check.patch
+
+build:
+  number: {{ build_number }}
+
+requirements:
+  build:
+    - m2-patch  # [win]
+    - patch     # [not win]
+
+outputs:
+
+  - name: basemap
+    version: {{ version }}
+    # These scripts will delete `pyproject.toml`. Remove ASAP.
+    script: build-basemap.sh  # [not win]
+    script: bld-basemap.bat  # [win]
+    build:
+      number: {{ build_number }}
+      skip: true  # [python_impl == 'pypy' or win32 or s390x]
+
+    requirements:
+      build:
+        - python                              # [build_platform != target_platform]
+        - cross-python_{{ target_platform }}  # [build_platform != target_platform]
+        - cython                              # [build_platform != target_platform]
+        - numpy                               # [build_platform != target_platform]
+        - {{ stdlib("c") }}
+        - {{ compiler('c') }}
+        - {{ compiler('cxx') }}
+      host:
+        - python
+        - pip
+        - setuptools
+        - wheel
+        - cython
+        - numpy
+        - geos
+        - pyproj
+      run:
+        - python
+        - numpy <2.4
+        - {{ pin_subpackage('basemap-data', min_pin='x.x', max_pin='x.x') }}
+        - {{ pin_compatible('geos', min_pin='x.x.x', max_pin='x.x.x') }}
+        - packaging >=20.5,<26.0
+        - matplotlib-base >=3.4,<3.11
+        - pyproj >=3.0,<3.8
+        - pyshp >=2.0,<2.4
+    test:
+      imports:
+        - mpl_toolkits.basemap
+      requires:
+        - pip
+        - {{ pin_subpackage('basemap-data', min_pin='x.x', max_pin='x.x') }}
+        - matplotlib-base >=3.4
+      commands:
+        # removed for now until upstream moves to 3.10
+        # - pip check
+        - python -c "from mpl_toolkits.basemap import Basemap"
+        - python {{ RECIPE_DIR }}/run_test.py
+    about:
+      home: https://matplotlib.org/basemap
+      license: MIT
+      license_family: MIT
+      license_file:
+        - LICENSE
+      summary: Plot data on map projections with matplotlib
+      description: |
+        Basemap toolkit is a library for plotting 2D data on maps in Python.
+        It is similar in functionality to the matlab mapping toolbox,
+        the IDL mapping facilities, GrADS, or the Generic Mapping Tools.
+      dev_url: https://github.com/matplotlib/basemap
+      doc_url: https://matplotlib.org/basemap/
+      doc_source_url: https://github.com/matplotlib/basemap/blob/v{{ version }}/doc/source/index.rst
+
+  - name: basemap-data
+    version: {{ data_version }}
+    script: build-basemap.sh  # [not win]
+    script: bld-basemap.bat  # [win]
+    build:
+      number: {{ data_build_number }}
+      string: "basemap_{{ data_build_number }}"
+      noarch: python
+    requirements:
+      build:
+        - python {{ python_min }}             # [build_platform != target_platform]
+        - cross-python_{{ target_platform }}  # [build_platform != target_platform]
+      host:
+        - python {{ python_min }}
+        - pip
+        - setuptools
+        - wheel
+      run:
+        - python >={{ python_min }}
+    about:
+      home: https://matplotlib.org/basemap
+      license: LGPL-3.0-or-later
+      license_family: LGPL
+      license_file: data/basemap_data/COPYING.LESSER
+      summary: Data assets for matplotlib basemap
+      dev_url: https://github.com/matplotlib/basemap
+
+  - name: basemap-data-hires
+    version: {{ data_version }}
+    script: build-basemap.sh  # [not win]
+    script: bld-basemap.bat  # [win]
+    build:
+      number: {{ data_build_number }}
+      string: "basemap_{{ data_build_number }}"
+      noarch: python
+    requirements:
+      build:
+        - python {{ python_min }}             # [build_platform != target_platform]
+        - cross-python_{{ target_platform }}  # [build_platform != target_platform]
+      host:
+        - python {{ python_min }}
+        - pip
+        - setuptools
+        - wheel
+      run:
+        - python >={{ python_min }}
+        - {{ pin_subpackage('basemap-data', min_pin='x.x', max_pin='x.x') }}
+    about:
+      home: https://matplotlib.org/basemap
+      license: LGPL-3.0-or-later
+      license_family: LGPL
+      license_file: data/basemap_data_hires/COPYING.LESSER
+      summary: High-resolution data assets for matplotlib basemap
+      dev_url: https://github.com/matplotlib/basemap
+
+about:
+  home: https://matplotlib.org/basemap
+  license: MIT
+  license_family: MIT
+  summary: Split feedstock for basemap
+  license_file:
+    - LICENSE
+
+extra:
+  recipe-maintainers:
+    - molinav
+    - ocefpaf
+    - ReimarBauer
+    - beckermr

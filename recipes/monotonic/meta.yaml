@@ -1,0 +1,42 @@
+{% set name = "monotonic" %}
+{% set version = "1.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 3a55207bcfed53ddd5c5bae174524062935efed17792e9de2ad0205ce9ad63f7
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - monotonic
+  requires:
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/atdt/monotonic
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: An implementation of time.monotonic() for Python 2 & Python 3.
+
+extra:
+  recipe-maintainers:
+    - alimanfoo
+    - anguslees
+    - sodre
+    - synapticarbors

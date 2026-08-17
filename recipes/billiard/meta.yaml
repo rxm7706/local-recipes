@@ -1,0 +1,44 @@
+{% set version = "4.2.4" %}
+
+package:
+  name: billiard
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/billiard/billiard-{{ version }}.tar.gz
+  sha256: 55f542c371209e03cd5862299b74e52e4fbcba8250ba611ad94276b369b6a85f
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler("c") }}
+    - {{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+test:
+  imports:
+    - billiard
+    - billiard.dummy
+
+about:
+  home: https://github.com/celery/billiard
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: Python multiprocessing fork with improvements and bugfixes
+  dev_url: https://github.com/celery/billiard
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - kwilcox

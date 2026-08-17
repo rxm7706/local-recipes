@@ -1,0 +1,51 @@
+{% set name = "pyopengl" %}
+{% set version = "3.1.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: c4a02d6866b54eb119c8e9b3fb04fa835a95ab802dd96607ab4cdb0012df8335
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  number: 2
+
+requirements:
+  host:
+    - pip
+    - setuptools
+    - python {{ python_min }}
+
+  run:
+    - __linux   # [linux]
+    - __osx     # [osx]
+    - __win     # [win]
+    - python >={{ python_min }}
+    - libopengl-devel    # [linux]
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - OpenGL.GL
+
+about:
+  home: http://pyopengl.sourceforge.net
+  license: LicenseRef-pyopengl
+  license_file: license.txt
+  summary: Standard OpenGL bindings for Python
+  doc_url: http://pyopengl.sourceforge.net/documentation/index.html
+  doc_source_url: https://sourceforge.net/projects/pyopengl/
+  dev_url: https://github.com/mcfletch/pyopengl
+
+extra:
+  recipe-maintainers:
+    - almarklein
+    - mcfletch
+    - tadeu
+    - psobolewskiPhD
+    - pauldmccarthy

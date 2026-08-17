@@ -1,0 +1,45 @@
+{% set version = "3.0.0" %}
+
+package:
+  name: googlesearch
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/google/google-{{ version }}.tar.gz
+  sha256: 143530122ee5130509ad5e989f0512f7cb218b2d4eddbafbad40fd10e8d8ccbe
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - beautifulsoup4
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - googlesearch
+
+about:
+  home: https://github.com/MarioVilas/googlesearch
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Google search from Python.
+
+  description: Google search from Python.
+  doc_url: https://python-googlesearch.readthedocs.io/en/latest/
+  dev_url: https://github.com/MarioVilas/googlesearch
+
+extra:
+  recipe-maintainers:
+    - MarioVilas
+    - h-vetinari

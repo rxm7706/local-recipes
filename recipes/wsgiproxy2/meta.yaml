@@ -1,0 +1,44 @@
+{% set version = "0.5.1" %}
+
+package:
+  name: wsgiproxy2
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/W/WSGIProxy2/WSGIProxy2-{{ version }}.tar.gz
+  sha256: 0d9ecb141de720e2fd4f7a275a4a83a961ffeb6717483d940021ffa1c46f665c
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation 
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - setuptools
+    - webob
+    - six
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - wsgiproxy
+
+about:
+  home: https://github.com/gawel/WSGIProxy2
+  license: MIT
+  license_family: MIT
+  license_file: COPYING
+  summary: A WSGI Proxy with various http client backends
+  doc_url: https://wsgiproxy2.readthedocs.org
+  dev_url: https://github.com/gawel/WSGIProxy2
+
+extra:
+  recipe-maintainers:
+    - nehaljwani

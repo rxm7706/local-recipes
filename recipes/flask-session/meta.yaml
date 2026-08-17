@@ -1,0 +1,45 @@
+{% set name = "flask-session" %}
+{% set version = "0.8.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/flask_session-{{ version }}.tar.gz
+  sha256: 20e045eb01103694e70be4a49f3a80dbb1b57296a22dc6f44bbf3f83ef0742ff
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - flit-core <4
+    - pip
+  run:
+    - python >={{ python_min }}
+    - flask >=2.2
+    - msgspec >=0.18.6
+    - cachelib
+
+test:
+  imports:
+    - flask_session
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/pallets-eco/flask-session
+  summary: Server-side session support for Flask
+  license: BSD-3-Clause
+  license_file: LICENSE.rst
+
+extra:
+  recipe-maintainers:
+    - xylar

@@ -1,0 +1,45 @@
+{% set version = "0.2.4" %}
+
+package:
+  name: jsonschema-spec
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/jsonschema-spec/jsonschema_spec-{{ version }}.tar.gz
+  sha256: 873e396ad1ba6edf9f52d6174c110d4fafb7b5f5894744246a53fe75e5251ec2
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - pip
+    - poetry-core >=1.0.0
+    - python {{ python_min }}
+  run:
+    - pathable >=0.4.1,<0.5.0
+    - python >={{ python_min }}
+    - pyyaml >=5.1
+    - referencing >=0.28.0,<0.31.0
+    - requests >=2.31.0,<3.0.0
+
+test:
+  imports:
+    - jsonschema_spec
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/p1c2u/jsonschema-spec
+  summary: JSONSchema Spec with object-oriented paths
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

@@ -1,0 +1,59 @@
+{% set name = "dash-mantine-components" %}
+{% set version = "2.8.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/dash_mantine_components-{{ version }}.tar.gz
+  sha256: 8891dd8042c93697f673f30df9ea34e5a4e9a0486d6f42499e16825a2a07784a
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - dash >=2
+  run_constrained:
+    - dash-html-components >=2.0.0
+    - dash-core-components >=2.0.0
+    - dash_table >=5.0.0
+
+test:
+  imports:
+    - dash_mantine_components
+    - dash_mantine_components.Card
+    - dash_mantine_components.Image
+    - dash_mantine_components.Center
+    - dash_mantine_components.Tooltip
+  commands:
+    # Resolve using same approach as https://github.com/conda-forge/dash-feedstock/blob/main/recipe/meta.yaml
+    # Refer to https://github.com/conda-forge/dash-feedstock/pull/153#discussion_r1877395296
+    - conda install -c conda-forge dash-html-components dash-core-components dash-table -y
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/snehilvj/dash-mantine-components
+  summary: Custom dash components based on Mantine React Components library
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  doc_url: https://www.dash-mantine-components.com/
+  dev_url: https://github.com/snehilvj/dash-mantine-components
+
+extra:
+  recipe-maintainers:
+    - ludaavics
+    - snehilvj
+    - '0xbe7a'

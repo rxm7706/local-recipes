@@ -1,0 +1,52 @@
+{% set name = "aiohttp-client-cache" %}
+{% set version = "0.14.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/aiohttp_client_cache-{{ version }}.tar.gz
+  sha256: 329f4038c6a8ed0b410023980b6d1a2c484af33e667a89ce245c899d62c1fba1
+
+build:
+  script: python -m pip install . -vv
+  noarch: python
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling >=1.12
+    - pip
+  run:
+    - python >={{ python_min }}
+    - aiohttp >=3.8
+    - aiosqlite >=0.20
+    - attrs >=21.2
+    - itsdangerous >=2.0
+    - url-normalize >=2.2
+    - typing-extensions >=4
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+  imports:
+    - aiohttp_client_cache
+    - aiohttp_client_cache.backends
+
+about:
+  home: https://github.com/requests-cache/aiohttp-client-cache
+  summary: Persistent cache for aiohttp requests
+  license: MIT
+  license_file: LICENSE
+  dev_url: https://github.com/requests-cache/aiohttp-client-cache
+  doc_url: https://aiohttp-client-cache.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - JWCook
+    - cheginit

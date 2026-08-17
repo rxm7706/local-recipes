@@ -1,0 +1,48 @@
+{% set name = "pyobjc-framework-corebluetooth" %}
+{% set version = "12.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/4b/25/d21d6cb3fd249c2c2aa96ee54279f40876a0c93e7161b3304bf21cbd0bfe/pyobjc_framework_corebluetooth-{{ version }}.tar.gz
+  sha256: 8060c1466d90bbb9100741a1091bb79975d9ba43911c9841599879fc45c2bbe0
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+  skip: true  # [linux or win]
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - pyobjc-core >=12.1
+    - pyobjc-framework-cocoa >=12.1
+    - python
+
+test:
+  imports:
+    - CoreBluetooth
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/ronaldoussoren/pyobjc
+  summary: Wrappers for the framework CoreBluetooth on macOS
+  license: MIT
+  license_file:
+    - LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - xhochy

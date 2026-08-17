@@ -1,0 +1,55 @@
+{% set name = "fuzzywuzzy" %}
+{% set version = "0.18.0" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 45016e92264780e58972dca1b3d939ac864b78437422beecebb3095f8efd00e8
+
+build:
+  number: 1
+  noarch: python
+  script: "{{ PYTHON }} -m pip install . -vv"
+  
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+
+  run:
+    - python >={{ python_min }}
+    - python-levenshtein >=0.12
+
+test:
+  requires:
+    - python {{ python_min }}
+    - pip
+  imports:
+    - fuzzywuzzy
+    - fuzzywuzzy.StringMatcher
+    - fuzzywuzzy.fuzz
+    - fuzzywuzzy.process
+    - fuzzywuzzy.string_processing
+    - fuzzywuzzy.utils
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/seatgeek/fuzzywuzzy
+  license: GPL-2.0-or-later
+  license_family: GPL
+  license_file: LICENSE.txt
+  summary: 'Fuzzy string matching in python'
+  dev_url: https://github.com/seatgeek/fuzzywuzzy
+  doc_url: http://chairnerd.seatgeek.com/fuzzywuzzy-fuzzy-string-matching-in-python/
+
+extra:
+  recipe-maintainers:
+    - josegonzalez
+    - synapticarbors
+    - hadim

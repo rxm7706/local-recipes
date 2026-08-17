@@ -1,0 +1,45 @@
+{% set name = "gptcache" %}
+{% set version = "0.1.44" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/gptcache-{{ version }}.tar.gz
+  sha256: d3d5e6a75c57594dc58212c2d6c53a7999c23ede30e0be66d213d885c0ad0be9
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }}
+    - openai
+    - numpy
+    - cachetools
+    - requests
+
+test:
+  imports:
+    - gptcache
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/zilliztech/GPTCache
+  summary: GPTCache, a powerful caching library that can be used to speed up and lower the cost of chat applications that rely on the LLM service. GPTCache works as a memcache for AIGC applications, similar to how Redis works for traditional applications.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - YYYasin19

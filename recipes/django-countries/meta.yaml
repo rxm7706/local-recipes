@@ -1,6 +1,5 @@
 {% set name = "django-countries" %}
-{% set version = "7.8" %}
-{% set python_min = "3.10" %}
+{% set version = "9.0.0" %}
 
 package:
   name: {{ name|lower }}
@@ -8,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_countries-{{ version }}.tar.gz
-  sha256: b8413065160bc93efe1293d746bbde32951d9a1fe7e44f1fe2add1bebbb6962f
+  sha256: a993416af08a8a4e6e866d56b71c7ce92351c81a2543da213cd7899917567a42
 
 build:
   noarch: python
@@ -21,7 +20,7 @@ requirements:
     - uv-build >=0.9.6,<0.10.0
     - pip
   run:
-    - python >={{ python_min }},<4.0
+    - python >={{ python_min }}
     - asgiref
     - typing_extensions
     - django >=3.2,<6.0

@@ -1,0 +1,47 @@
+{% set name = "pymdown-extensions" %}
+{% set version = "11.0.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: "{{ version }}"
+
+source:
+  url: https://pypi.org/packages/source/p/pymdown_extensions/pymdown_extensions-{{ version }}.tar.gz
+  sha256: dd2905ae6fc5b75582fafb139a1266ffc754705efa902aa50067fa7ff4f94ec0
+
+build:
+  number: 0
+  noarch: python
+  script: '{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv '
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - hatchling >=0.21.1
+  run:
+    - python >={{ python_min }}
+    - markdown >=3.6
+    - pyyaml
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - pymdownx
+
+about:
+  home: https://github.com/facelessuser/pymdown-extensions
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.md
+  summary: Extension pack for Python Markdown.
+  doc_url: https://facelessuser.github.io/pymdown-extensions/
+  dev_url: https://github.com/facelessuser/pymdown-extensions
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - monaldoj
+    - ewels
+    - maxibor

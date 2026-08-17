@@ -1,0 +1,71 @@
+{% set name = "pyerfa" %}
+{% set version = "2.0.1.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 17d6b24fe4846c65d5e7d8c362dcb08199dc63b30a236aedd73875cc83e1f6c0
+
+build:
+  number: 2
+  python_version_independent: true  # [is_abi3]
+  skip: true  # [is_abi3 and not is_python_min]
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - python-abi3                            # [is_abi3]
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - numpy                                  # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - pip
+    - setuptools_scm
+    - setuptools
+    - jinja2 >=2.10.3
+    - python
+    - numpy
+    - packaging
+  run:
+    - python
+
+test:
+  requires:
+    - abi3audit  # [is_abi3]
+  imports:
+    - erfa
+  commands:
+    - abi3audit $SP_DIR/erfa/ufunc.abi3.so -s -v --assume-minimum-abi3 3.11  # [unix and is_abi3]
+    - abi3audit %SP_DIR%/erfa/ufunc.pyd -s -v --assume-minimum-abi3 3.11     # [win and is_abi3]
+
+
+about:
+  home: https://pyerfa.readthedocs.io/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.rst
+  summary: Python bindings for ERFA routines
+  description: |
+    PyERFA is the Python wrapper for the ERFA library (Essential Routines for
+    Fundamental Astronomy), a C library containing key algorithms for astronomy,
+    which is based on the SOFA library published by the International
+    Astronomical Union (IAU). All C routines are wrapped as Numpy universal
+    functions, so that they can be called with scalar or array inputs.
+
+    The project is a split of astropy._erfa module, developed in the context of
+    Astropy project, into a standalone package. It contains the ERFA C source
+    code as a git submodule. The wrapping is done with help of the Jinja2
+    template engine.
+  doc_url: https://pyerfa.readthedocs.io/
+  dev_url: https://github.com/liberfa/pyerfa
+
+extra:
+  recipe-maintainers:
+    - mwcraig
+    - astrofrog
+    - avalentino

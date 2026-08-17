@@ -1,0 +1,82 @@
+{% set name = "geemap" %}
+{% set version = "0.38.3" %}
+{% set python_min = "3.12" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 01770138214123aa9618ddc26a3e7bb40d936685d85bfd8d65be3436d203af83
+
+build:
+  number: 0
+  entry_points:
+    - geemap=geemap.cli:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - setuptools
+    - python {{ python_min }}
+    - hatchling
+    - hatch-jupyter-builder
+  run:
+    - anywidget
+    - bqplot
+    - colour
+    - earthengine-api >=1.6.13
+    - eerepr >=0.1.0
+    - ffmpeg-python
+    - folium >=0.17.0
+    - gdown
+    - geeadd >=0.5.1
+    - geocoder
+    - geojson
+    - ipyevents
+    - ipyfilechooser >=0.6.0
+    - ipyleaflet >=0.19.2
+    - ipytree
+    - ipywidgets
+    - matplotlib-base
+    - numpy
+    - pandas
+    - pillow
+    - plotly
+    - pycrs
+    - pyperclip
+    - pyshp >=2.1.3
+    - python >={{ python_min }}
+    - python-box
+    - scooby
+    - xarray
+    - xyzservices
+
+test:
+  imports:
+    - geemap
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://geemap.org
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Earth Engine Python API and interactive mapping
+  description: A Python package for interactive geospatial analysis and visualization with Google Earth Engine.
+  doc_url: https://geemap.org
+  dev_url: https://github.com/gee-community/geemap
+
+extra:
+  recipe-maintainers:
+    - giswqs
+    - jdbcode
+    - naschmitz
+    - schwehr

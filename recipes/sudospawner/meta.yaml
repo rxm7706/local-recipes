@@ -1,0 +1,46 @@
+{% set version = "1.0.0" %}
+
+package:
+  name: sudospawner
+  version: {{ version }}
+
+source:
+  fn: sudospawner-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/sudospawner/sudospawner-{{ version }}.tar.gz
+  sha256: 0f80ee90f4fb8927ee5b09ffbda354e730bef75759ff47e62010168a3b6a20b8
+
+build:
+  number: 0
+  script: pip install --no-deps .
+  noarch: python
+  entry_points:
+    - sudospawner = sudospawner.mediator:main
+
+requirements:
+  host:
+    - python {{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - jupyterhub-base >=4
+
+test:
+  requires:
+    - python {{ python_min }}.*
+  imports:
+    - sudospawner
+  commands:
+    - test -f $PREFIX/bin/sudospawner
+    - sudospawner --help
+
+about:
+  home: https://github.com/jupyterhub/sudospawner
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Enables JupyterHub to spawn single-user notebook servers without being root
+
+extra:
+  recipe-maintainers:
+    - minrk
+    - parente

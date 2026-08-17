@@ -1,0 +1,74 @@
+{% set version = "4.6.2" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: pre-commit
+  version: {{ version }}
+
+source:
+  url: https://github.com/pre-commit/pre-commit/archive/v{{ version }}.tar.gz
+  sha256: 1882465a71ded8024e9b306c871c04244ce17cf9c680c099698e8c02c78805d6
+
+build:
+  number: 0
+  noarch: python
+  entry_points:
+    - pre-commit = pre_commit.main:main
+
+outputs:
+  - name: pre-commit
+    script: build_base.bat  # [win]
+    script: build_base.sh  # [not win]
+    requirements:
+      build:
+        - python                                 # [build_platform != target_platform]
+        - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+      host:
+        - pip
+        - python {{ python_min }}
+        - setuptools
+      run:
+        - cfgv >=2.0.0
+        - identify >=1.0.0
+        - nodeenv >=0.11.1
+        - python >={{ python_min }}
+        - pyyaml >=5.1
+        - virtualenv >=20.10.0
+    test:
+      requires:
+        - pip
+        - python {{ python_min }}
+      imports:
+        - pre_commit
+        - pre_commit.commands
+        - pre_commit.languages
+      commands:
+        - pip check
+        - pre-commit --help
+        - pre-commit-validate-config --help
+        - pre-commit-validate-manifest --help
+
+  - name: pre_commit
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - {{ pin_subpackage('pre-commit', max_pin="x.x.x") }}
+    test:
+      imports:
+        - pre_commit
+
+about:
+  home: http://pre-commit.com/
+  license: MIT
+  license_file: LICENSE
+  summary: A framework for managing and maintaining multi-language pre-commit hooks.
+  license_family: MIT
+  dev_url: https://github.com/pre-commit/pre-commit
+  doc_url: https://github.com/pre-commit/pre-commit
+
+extra:
+  recipe-maintainers:
+    - deadsnakes-issues-bot
+    - nicoddemus
+    - xmnlab

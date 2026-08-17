@@ -1,0 +1,56 @@
+{% set version = "2.0.13" %}
+{% set sha256sum = "1c91a92ae8c7104275ac26bd4d29b08ccd3e7faff5893d3858cb6fadf1bc1588" %}
+
+package:
+  name: cymem
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/cymem/cymem-{{ version }}.tar.gz
+  sha256: {{ sha256sum }}
+
+build:
+  number: 1
+  script: {{ PYTHON }} -m pip install --no-deps --ignore-installed .
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython                                 # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - {{ compiler('cxx') }}
+  host:
+    - cython
+    - pip
+    - python
+    - setuptools
+    - wheel
+
+  run:
+    - python
+
+test:
+  requires:
+    - pytest
+  imports:
+    - cymem
+  commands:
+    - python -m pytest --tb=native --pyargs cymem
+
+about:
+  home: https://github.com/explosion/cymem
+  license: MIT
+  license_file: LICENSE
+  summary: Manage calls to calloc/free through Cython
+  description: |
+    cymem provides two small memory-management helpers for Cython. They make it
+    easy to tie memory to a Python object’s life-cycle, so that the memory is
+    freed when the object is garbage collected.
+
+extra:
+  recipe-maintainers:
+    - rmax
+    - h-vetinari
+    - conda-forge/spacy

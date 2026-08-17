@@ -1,108 +1,49 @@
 {% set name = "sf-hamilton" %}
-{% set pypi_name = "sf-hamilton" %}
-{% set version = "1.81.2" %}
+{% set version = "1.88.0" %}
+
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ pypi_name[0] }}/{{ pypi_name }}/sf_hamilton-{{ version }}.tar.gz
-  sha256: 1fa5eff514fe3203b41ba6dcf1298553b6beb704c8b57420d780bcc9c3189609
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 58fbc5ad1e5b130d7256b11d3e5e6823afd06fe9f4b1d49203a72ff99eaa94cc
+
 
 build:
   number: 0
   noarch: python
-  #script: {{ PYTHON }} -m pip install . -vv --no-deps
-  script: python -m pip install . -vv --no-deps
+  script: {{ PYTHON }} -m pip install . -vv
 
 requirements:
-  build:
-    - python                                 # [build_platform != target_platform]
-    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
   host:
-    - python >=3.8,<4.0
     - pip
+    - python {{ python_min }}
     - setuptools >=72.1
   run:
-    - python >=3.8,<4.0
     - numpy
     - pandas
+    - python >={{ python_min }}
     - typing_extensions >4.0.0
     - typing_inspect
+
 test:
   imports:
     - hamilton
-
-outputs:
-  - name: sf-hamilton
-  - name: sf_hamilton
-    build:
-      noarch: python
-    requirements:
-      host:
-        - python
-      run:
-        - {{ pin_subpackage("sf-hamilton", exact=True) }}
-    test:
-      imports:
-        - hamilton
-      commands:
-        - pip check
-      requires:
-        - pip
-
-  - name: {{ name }}-with-visualization
-    build:
-      noarch: python
-    requirements:
-      run:
-        - python >=3.8,<3.13
-        - {{ pin_subpackage(name, exact=True) }}
-        - graphviz
-        - networkx
-    test:
-      imports:
-        - hamilton
-      commands:
-        - pip check
-      requires:
-        - pip
-
-  - name: {{ name }}-with-ray
-    build:
-      noarch: python
-    requirements:
-      run:
-        - python >=3.8,<3.13
-        - {{ pin_subpackage(name, exact=True) }}
-        - ray-default >=2.0.0
-        - pyarrow
-    test:
-      imports:
-        - hamilton
-      commands:
-        - pip check
-      requires:
-        - pip
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
 
 about:
-  home: https://www.dagworks.io/
+  home: https://github.com/DAGWorks-Inc/hamilton
+  summary: Hamilton, the micro-framework for creating dataframes.
   doc_url: https://hamilton.dagworks.io/en/latest/
-  dev_url: https://github.com/DAGWorks-Inc/hamilton
   license: BSD-3-Clause
-  license_file:
-    - LICENSE
-  summary: |
-    Hamilton, the micro-framework for creating dataframes.
-
-  description: |
-    Hamilton, the micro-framework for creating dataframes.
-
-    Hamilton helps data scientists and engineers define testable, modular, self-documenting dataflows, 
-    that encode lineage/tracing and metadata. Runs and scales everywhere python does.
+  license_file: LICENSE
 
 extra:
   recipe-maintainers:
-    - xm7706
     - thewchan

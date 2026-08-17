@@ -1,0 +1,55 @@
+{% set name = "msg-extractor" %}
+{% set version = "0.56.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/e/extract-msg/extract_msg-{{ version }}.tar.gz
+  sha256: de94121cf5503377d932d503280293837baf630cd51ce36de901936b3172c43a
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - olefile =0.47
+    - python >={{ python_min }}
+    - tzlocal >=4.2,<6
+    - compressed-rtf >=1.0.6,<2
+    - ebcdic >=1.1.1,<2
+    - beautifulsoup4 >=4.11.1,<5
+    - rtfde >=0.1.1,<0.2
+    - red-black-tree-mod =1.20
+
+test:
+  imports:
+    - extract_msg
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/mattgwwalker/msg-extractor
+  license: GPL 3.0
+  license_family: GPL3
+  license_file: LICENSE.txt
+  summary: Extracts emails and attachments saved in Microsoft Outlook's .msg files
+  dev_url: https://github.com/mattgwwalker/msg-extractor
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - agcopenhaver
+    - rluria14
+    - oblute
+    - jan-janssen

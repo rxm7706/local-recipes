@@ -1,0 +1,55 @@
+{% set name = "editdistance" %}
+{% set version = "0.8.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/roy-ht/editdistance/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: 443674f20d469a724c4286906d8abd9e859a18b70ef1145b02acd26eb93ea661
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython                                 # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - {{ compiler('cxx') }}
+  host:
+    - python
+    - pip
+    - cython
+    - setuptools
+    - pdm-backend
+  run:
+    - python
+
+test:
+  source_files:
+    - test
+  imports:
+    - editdistance
+  commands:
+    - python test/test_editdistance.py
+
+about:
+  home: https://www.github.com/aflc/editdistance
+  license: MIT
+  license_family: MIT
+  license_file: {{ environ["RECIPE_DIR"] }}/LICENSE
+  summary: Fast implementation of the edit distance(Levenshtein distance)
+  description: Fast implementation of the edit distance(Levenshtein distance)
+  doc_url: https://github.com/aflc/editdistance
+  dev_url: https://github.com/aflc/editdistance
+
+extra:
+  recipe-maintainers:
+    - nelson-liu
+    - notestaff
+    - andrewprzh

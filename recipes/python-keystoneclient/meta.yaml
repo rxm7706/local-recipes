@@ -1,0 +1,52 @@
+{% set name = "python-keystoneclient" %}
+{% set version = "5.8.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 3ca87c67c404298ce862310b569f545a58acf75cd5685094c82f35320b3a355d
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pbr
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - debtcollector
+    - keystoneauth1
+    - oslo.config
+    - oslo.i18n
+    - oslo.serialization
+    - oslo.utils
+    - packaging
+    - python >={{ python_min }}
+    - requests
+    - stevedore
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - keystoneclient
+
+about:
+  home: https://github.com/openstack/python-keystoneclient
+  license: Apache-2.0
+  license_family: APACHE
+  license_file: LICENSE
+  summary: Client Library for OpenStack Identity
+  doc_url: https://docs.openstack.org/python-keystoneclient/latest/
+  dev_url: https://opendev.org/openstack/python-keystoneclient
+
+extra:
+  recipe-maintainers:
+    - tschoonj

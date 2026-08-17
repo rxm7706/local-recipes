@@ -1,0 +1,71 @@
+{% set name = "scapy" %}
+{% set version = "2.7.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: bfc1ef1b93280aea1ddee53be7f74232aa28ac3d891244d41ee85200d24aa446
+
+build:
+  number: 0
+  noarch: python
+  entry_points:
+    - scapy = scapy.main:interact
+    - UTscapy = scapy.tools.UTscapy:main
+  script: '{{ PYTHON }} -m pip install . --ignore-installed -vv '
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - ipython
+    - cryptography
+    - matplotlib-base
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - scapy
+    - scapy.arch
+    - scapy.asn1
+    - scapy.contrib
+    - scapy.contrib.automotive
+    - scapy.contrib.automotive.bmw
+    - scapy.contrib.automotive.gm
+    - scapy.contrib.automotive.obd
+    - scapy.contrib.automotive.obd.iid
+    - scapy.contrib.automotive.obd.mid
+    - scapy.contrib.automotive.obd.pid
+    - scapy.contrib.automotive.obd.tid
+    - scapy.contrib.scada
+    - scapy.contrib.scada.iec104
+    - scapy.layers
+    - scapy.layers.tls
+    - scapy.layers.tls.crypto
+    - scapy.modules
+    - scapy.tools
+  commands:
+    - scapy -h
+    - UTscapy -h
+
+about:
+  home: https://scapy.net
+  license: GPL-2.0-only
+  license_family: GPL2
+  license_file: LICENSE
+  summary: 'Scapy: interactive packet manipulation tool'
+  description: |
+    Scapy is a powerful Python-based interactive packet manipulation program and library.
+  doc_url: https://scapy.readthedocs.io
+  dev_url: https://github.com/secdev/scapy
+
+extra:
+  recipe-maintainers:
+    - gpotter2

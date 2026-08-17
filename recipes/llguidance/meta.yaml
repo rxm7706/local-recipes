@@ -1,0 +1,62 @@
+{% set name = "llguidance" %}
+{% set version = "1.8.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 18d1579eabb040e65c870d50c6df19a7bef140c5260d12ad35b7f0dc446312e0
+
+build:
+  number: 0
+  python_version_independent: true  # [is_abi3]
+  skip: true  # [is_abi3 and not is_python_min]
+  ignore_run_exports:
+    from_package:
+      - cross-python_${{ target_platform }}  # [build_platform != target_platform]
+
+requirements:
+  build:
+    - {{ compiler('rust') }}
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - cargo-bundle-licenses
+    - python                              # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}  # [build_platform != target_platform]
+    - maturin >=1.0,<2.0                  # [build_platform != target_platform]
+  host:
+    - python-abi3  # [is_abi3]
+    - python
+    - maturin >=1.0,<2.0
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - llguidance
+  commands:
+    - pip check
+    - abi3audit $SP_DIR/llguidance/_lib.abi3.so -s -v --assume-minimum-abi3 {{ python_min }}   # [unix and is_abi3]
+    - abi3audit %SP_DIR%/llguidance/_lib.pyd -s -v --assume-minimum-abi3 {{ python_min }}      # [win and is_abi3]
+  requires:
+    - pip
+    - abi3audit                      # [is_abi3]
+
+about:
+  home: https://github.com/guidance-ai/llguidance
+  summary: Bindings for the Low-level Guidance (llguidance) Rust library for use within Guidance
+  license: MIT
+  license_file:
+    - LICENSE
+    - parser/LICENSE
+    - toktrie_hf_tokenizers/LICENSE
+    - toktrie_hf_downloader/LICENSE
+    - toktrie/LICENSE
+    - THIRDPARTY.yml
+
+extra:
+  recipe-maintainers:
+    - shermansiu

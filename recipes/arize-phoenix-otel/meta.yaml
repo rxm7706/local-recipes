@@ -1,0 +1,57 @@
+{% set name = "arize-phoenix-otel" %}
+{% set version = "0.16.1" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/arize_phoenix_otel-{{ version }}.tar.gz
+  sha256: 28ba1d43dcd2dc556f6cac25622c3333e613e2cf1d687832a9ed5ce2c20e17be
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - opentelemetry-semantic-conventions
+    - opentelemetry-exporter-otlp
+    - opentelemetry-proto >=1.12.0
+    - opentelemetry-sdk
+    - openinference-semantic-conventions >=0.1.17
+    - openinference-instrumentation >=0.1.38
+    - typing-extensions >=4.5,<5
+    - wrapt
+
+test:
+  imports:
+    - phoenix.otel
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  summary: LLM Observability
+  home: https://github.com/Arize-ai/phoenix/tree/main/packages/phoenix-otel
+  doc_url: https://arize-phoenix.readthedocs.io/en/latest/api/otel.html
+  license: Elastic-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - anticorrelator
+    - mikeldking
+    - rogerhyang
+    - michaelschiff
+    - fjcasti1
+    - axiomofjoy

@@ -1,0 +1,48 @@
+{% set name = "autodoc-pydantic" %}
+{% set version = "2.1.0" %}
+{% set python_min = "3.8" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/autodoc_pydantic-{{ version }}.tar.gz
+  sha256: 3cf1b973e2f5ff0fbbe9b951c11827b5e32d3409e238f7f5782359426ab8d360
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - poetry
+  run:
+    - python >={{ python_min }},<4.0
+    - sphinx >=4.0
+    - pydantic >=2.0,<3.0.0
+    - pydantic-settings >=2.0,<3.0.0
+
+test:
+  imports:
+    - sphinxcontrib
+    - sphinxcontrib.autodoc_pydantic
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/mansenfranzen/autodoc_pydantic
+  doc_url: https://autodoc-pydantic.readthedocs.io/en/latest/
+  summary: Seamlessly integrate pydantic models in your Sphinx documentation.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - bandersen23

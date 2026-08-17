@@ -1,5 +1,5 @@
 {% set name = "pathvalidate" %}
-{% set version = "3.2.1" %}
+{% set version = "3.3.1" %}
 
 package:
   name: {{ name|lower }}
@@ -7,22 +7,22 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pathvalidate-{{ version }}.tar.gz
-  sha256: f5d07b1e2374187040612a1fcd2bcb2919f8db180df254c9581bb90bf903377d
+  sha256: b18c07212bfead624345bb8e1d6141cdcf15a39736994ea0b94035ad2b1ba177
 
 build:
-  skip: true  # [py<37]
+  noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
 
 requirements:
   host:
-    - python
+    - python {{ python_min }}
     - setuptools >=64
-    - setuptools-scm >=7,<8  # [py<38]
+    - setuptools-scm
     - releasecmd
     - pip
   run:
-    - python
+    - python >={{ python_min }}
 
 test:
   imports:
@@ -31,6 +31,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/thombashi/pathvalidate
@@ -41,4 +42,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - basnijholt

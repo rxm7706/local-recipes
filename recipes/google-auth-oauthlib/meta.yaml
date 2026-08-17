@@ -1,45 +1,58 @@
 {% set name = "google-auth-oauthlib" %}
-{% set version = "1.0.0" %}
+{% set version = "1.4.0" %}
+{% set sha256 = "18b5e28880eb8eba9065c436becdc0ee8e4b59117a73a510679c82f70cd363d2" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/google-auth-oauthlib-{{ version }}.tar.gz
-  sha256: e375064964820b47221a7e1b7ee1fd77051b6323c3f9e3e19785f78ab67ecfc5
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
 
 build:
-  entry_points:
-    - google-oauthlib-tool=google_auth_oauthlib.tool.__main__:main [tool]
-  noarch: python
-  script: {{ PYTHON }} -m pip install . -vv
   number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  noarch: python
+  entry_points:
+    - google-oauthlib-tool = google_auth_oauthlib.tool.__main__:main
 
 requirements:
   host:
-    - python >=3.6
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.6
-    - google-auth >=2.15.0
+    - python >={{ python_min }}
+    - google-auth >=2.15.0,<3.0.0,!=2.43.0,!=2.44.0,!=2.45.0
     - requests-oauthlib >=0.7.0
+    - click >=6.0.0  # not shown as depdendency by grayskull
 
 test:
+  requires:
+    - python {{ python_min }}
+    - pip
   imports:
     - google_auth_oauthlib
   commands:
-    - pip check
     - google-oauthlib-tool --help
-  requires:
-    - pip
+    - python -m pip check
 
 about:
-  home: https://github.com/GoogleCloudPlatform/google-auth-library-python-oauthlib
-  summary: Google Authentication Library
+  home: https://github.com/googleapis/google-auth-library-python-oauthlib
   license: Apache-2.0
+  license_family: Apache
   license_file: LICENSE
+  summary: Google Authentication Library, oauthlib integration with google-auth
+  description: This library provides oauthlib integration with google-auth.
+  doc_url: http://google-auth-oauthlib.readthedocs.io/en/latest/
+  dev_url: https://github.com/googleapis/google-auth-library-python-oauthlib
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - jan-janssen
+    - cpcloud
+    - jreback
+    - parthea
+    - tswast

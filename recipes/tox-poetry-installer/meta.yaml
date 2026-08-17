@@ -6,27 +6,26 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/tox_poetry_installer-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
   sha256: 58af36082293b87e3488184f46ccf6f288c52c90e802066f53d3209c0f1c6226
 
 build:
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv
-  number: 0
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
 
 requirements:
   host:
-    - python >=3.7,<4.0
+    - python {{ python_min }}
     - poetry-core >=1.1.0
     - pip
   run:
-    - python >=3.7.0,<4.0.0
+    - python >={{ python_min }},<4.0
     - poetry-core >=1.1.0,<2.0.0
     - tox >=3.8.0,<4.0.0
   run_constrained:
     - cleo >=1.0,<3.0
     - poetry >=1.2.0,<1.5.0
-
 test:
   imports:
     - tox_poetry_installer
@@ -34,6 +33,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/enpaul/tox-poetry-installer/

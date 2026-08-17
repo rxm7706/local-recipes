@@ -1,0 +1,42 @@
+{% set name = "aiomcache" %}
+{% set version = "0.8.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 43b220d7f499a32a71871c4f457116eb23460fa216e69c1d32b81e3209e51359
+
+build:
+  number: 1
+  noarch: python
+  script: '{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv '
+
+requirements:
+  host:
+    - pip
+    - setuptools
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+    - typing-extensions
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - aiomcache
+
+about:
+  home: https://github.com/aio-libs/aiomcache/
+  license: BSD-2-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: Minimal pure python memcached client
+
+extra:
+  recipe-maintainers:
+    - akrherz
+    - epruesse

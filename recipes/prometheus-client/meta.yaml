@@ -1,0 +1,48 @@
+{% set name = "prometheus_client" %}
+{% set version = "0.26.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/prometheus_client-{{ version }}.tar.gz
+  sha256: 04a91bcf94e2cf74a44a1a874d651a2e853ed354b6e822f3b7487751465d5c2b
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - prometheus_client
+    - prometheus_client.bridge
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/prometheus/client_python
+  license: Apache-2.0
+  summary: Python client for the Prometheus monitoring system
+  license_family: Apache
+  license_file:
+    - NOTICE
+    - LICENSE
+
+extra:
+  recipe-maintainers:
+    - jessicaaustin
+    - kwilcox
+    - ocefpaf

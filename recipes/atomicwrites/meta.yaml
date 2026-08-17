@@ -1,0 +1,47 @@
+{% set version = "1.4.1" %}
+
+package:
+  name: atomicwrites
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/atomicwrites/atomicwrites-{{ version }}.tar.gz
+  sha256: 81b2c9071a49367a7f770170e5eec8cb66567cfbbc8c73d20ce5ca4a8d71cf11
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  source_files:
+    - tests
+  imports:
+    - atomicwrites
+  commands:
+    - pytest tests
+  requires:
+    - pytest
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/untitaker/python-atomicwrites
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Atomic file writes
+  dev_url: https://github.com/untitaker/python-atomicwrites
+
+extra:
+  recipe-maintainers:
+    - nicoddemus
+    - tadeu
+    - ocefpaf

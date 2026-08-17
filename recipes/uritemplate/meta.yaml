@@ -1,0 +1,44 @@
+{% set version = "4.2.0" %}
+
+package:
+  name: uritemplate
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/u/uritemplate/uritemplate-{{ version }}.tar.gz
+  sha256: 480c2ed180878955863323eea31b0ede668795de182617fef9c6ca09e6ec9d0e
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - uritemplate
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://uritemplate.readthedocs.org
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: Implementation of RFC 6570 URI Templates
+  dev_url: http://github.com/uri-templates/uritemplate-py/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - ocefpaf

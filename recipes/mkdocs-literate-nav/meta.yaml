@@ -1,0 +1,45 @@
+{% set name = "mkdocs-literate-nav" %}
+{% set version = "0.6.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: edbaca22343f861fe4e34aac47d55a0c9955c640dbf02eea99fe631e914cf9ee
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - properdocs >=1.6.5
+    - python >={{ python_min }}
+    - mkdocs >=1.4.1,<=1.6.1
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - mkdocs_literate_nav
+
+about:
+  home: https://github.com/oprypin/mkdocs-literate-nav
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.md
+  summary: Plugin for MkDocs to specify the navigation in Markdown instead of YAML
+  description: Plugin for MkDocs to specify the navigation in Markdown instead of YAML
+  dev_url: https://github.com/oprypin/mkdocs-literate-nav
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - cpcloud

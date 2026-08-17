@@ -1,0 +1,73 @@
+{% set name = "salesforce-merlion" %}
+{% set version = "2.0.4" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: adc939ec07d95d64a97e6019c5e709dbf03d2eb7b7adc28d80ebfe8a5a84d2a8
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - cython
+    - dill
+    - gitpython
+    - py4j
+    - matplotlib-base
+    - plotly >=4.13
+    - numpy >=1.21,<2.0
+    - packaging
+    - pandas >=1.1.0
+    - prophet >=1.1
+    - scikit-learn >=0.22
+    - scipy >=1.6.0
+    - statsmodels >=0.12.2
+    - lightgbm
+    - tqdm
+
+test:
+  imports:
+    - merlion
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/salesforce/Merlion
+  doc_url: https://opensource.salesforce.com/Merlion/latest/index.html
+  summary: A Machine Learning Framework for Time Series Intelligence
+  license: BSD-3-Clause
+  license_file: LICENSE
+  description: |
+    Merlion is a Python library for time series intelligence. It
+     features a unified interface for many commonly used models and
+     datasets for anomaly detection and forecasting on both univariate
+     and multivariate time series, along with standard pre-processing
+     and post-processing layers. It has several modules to improve
+     ease-of-use, including visualization, anomaly score calibration to
+     improve interpetability, AutoML for hyperparameter tuning and model
+     selection, and model ensembling. Merlion also provides a unique
+     evaluation framework that simulates the live deployment and
+     re-training of a model in production. This library aims to provide
+     engineers and researchers a one-stop solution to rapidly develop
+     models for their specific time series needs, and benchmark them
+     across multiple time series datasets.
+
+extra:
+  recipe-maintainers:
+    - thewchan

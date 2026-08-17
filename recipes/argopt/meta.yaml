@@ -1,0 +1,40 @@
+{% set name = "argopt" %}
+{% set version = "0.9.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 29780679f4ff620ffbc897c74415bf99a80fb61c26afdb10fe7aac887efb770e
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+    - setuptools_scm >=3.4
+    - toml
+  run:
+    - python >=3.7
+
+test:
+  imports:
+    - argopt
+
+about:
+  home: https://pypi.python.org/pypi/tqdm
+  license: MPL-2.0
+  license_family: MOZILLA
+  license_file: LICENCE
+  summary: doc to argparse driven by docopt
+
+extra:
+  recipe-maintainers:
+    - casperdcl
+    - jiangweiyao

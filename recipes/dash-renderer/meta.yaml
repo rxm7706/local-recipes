@@ -1,0 +1,44 @@
+{% set name = "dash-renderer" %}
+{% set filename = "dash_renderer" %}
+{% set version = "1.9.1" %}
+{% set sha256 = "73a69e3d145880e68e42723ad10182251d92b44f3efe92b8763145cfd2158e7e" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ filename }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ filename }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 1
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - dash_renderer
+
+about:
+  home: https://plot.ly/dash
+  dev_url: https://github.com/plotly/dash-renderer
+  license: MIT
+  license_family: MIT
+  license_file: {{ environ["RECIPE_DIR"] }}/LICENSE
+  summary: Front-end component renderer for dash
+
+extra:
+  recipe-maintainers:
+    - moorepants

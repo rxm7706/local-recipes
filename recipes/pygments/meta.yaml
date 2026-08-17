@@ -1,0 +1,55 @@
+{% set name = "pygments" %}
+{% set version = "2.20.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 6757cd03768053ff99f3039c1a36d6c0aa0b263438fcab17520b30a303a82b5f
+
+build:
+  entry_points:
+    - pygmentize = pygments.cmdline:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=61
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - pygments.styles
+    - pygments
+    - pygments.lexers
+    - pygments.filters
+    - pygments.formatters
+    - pygments.plugin
+  commands:
+    - pip check
+    - pygmentize -h
+  requires:
+    - pip
+    - python {{ python_min }}
+
+
+about:
+  home: http://pygments.org/
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Pygments is a generic syntax highlighter suitable for use in code hosting, forums, wikis or other applications that need to prettify source code.
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - pelson
+    - ocefpaf
+    - scopatz

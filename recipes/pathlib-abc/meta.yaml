@@ -1,0 +1,42 @@
+{% set name = "pathlib-abc" %}
+{% set version = "0.5.2" %}
+{% set pypi_name = name.replace("-", "_") %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ pypi_name[0] }}/{{ pypi_name }}/{{ pypi_name }}-{{ version }}.tar.gz
+  sha256: fcd56f147234645e2c59c7ae22808b34c364bb231f685ddd9f96885aed78a94c
+
+build:
+  noarch: python
+  number: 0
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - hatchling
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - pathlib_abc
+
+about:
+  home: https://github.com/barneygale/pathlib-abc
+  license: PSF-2.0
+  license_family: PSF
+  license_file: LICENSE
+  summary: Base classes for pathlib.Path-ish objects
+  dev_url: https://github.com/barneygale/pathlib-abc
+
+extra:
+  recipe-maintainers:
+    - kfot

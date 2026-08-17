@@ -1,13 +1,13 @@
 {% set name = "django-appconf" %}
-{% set version = "1.0.6" %}
+{% set version = "1.2.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-appconf-{{ version }}.tar.gz
-  sha256: cfe87ea827c4ee04b9a70fab90b86d704cb02f2981f89da8423cb0fabf88efbf
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 15a88d60dd942d6059f467412fe4581db632ef03018a3c183fb415d6fc9e5cec
 
 build:
   noarch: python
@@ -16,11 +16,12 @@ build:
 
 requirements:
   host:
-    - python >=3.7
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.7
-    - django
+    - python >={{ python_min }}
+    - django 
 
 test:
   imports:
@@ -29,14 +30,24 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
-  home: https://django-appconf.readthedocs.io/
-  summary: A helper class for handling configuration defaults of packaged apps gracefully.
-  dev_url: https://github.com/django-compressor/django-appconf
+  home: https://github.com/django-compressor/django-appconf
   license: BSD-3-Clause
+  license_family: BSD
   license_file: LICENSE
+  summary: An app to handle configuration defaults of packaged Django apps gracefully
+  description: |
+    A helper class for handling configuration defaults of packaged Django apps gracefully. This app precedes Django's 
+    own AppConfig classes that act as "objects [to] store metadata for an application" inside Django's app loading 
+    mechanism. In other words, they solve a related but different use case than django-appconf and can't easily be 
+    used as a replacement. The similarity in name is purely coincidental.
+  doc_url: https://readthedocs.org/projects/django-appconf/
+  dev_url: https://github.com/django-compressor/django-appconf
 
 extra:
   recipe-maintainers:
+    - cshaley
+    - sannykr
     - rxm7706

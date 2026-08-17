@@ -1,0 +1,62 @@
+{% set name = "fastparquet" %}
+{% set version = "2026.5.0" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 12a813d1c91b9d316a8d43860074daf4566849f776f9cd549742aa71d907e4f6
+
+build:
+  skip: true  # [py<39]
+  number: 0
+  script:
+    - del fastparquet\*.c  # [win]      
+    - rm fastparquet/*.c   # [unix]    
+    - {{ PYTHON }} {{ RECIPE_DIR }}/un_oldest.py
+    - '{{ PYTHON }} -m pip install . --no-deps -vv '
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython >=0.29.23                       # [build_platform != target_platform]
+    - numpy                                  # [build_platform != target_platform]
+    - {{ compiler("c") }}
+    - {{ stdlib("c") }}
+  host:
+    - python
+    - cython >=0.29.23
+    - pandas
+    - pip
+    - setuptools
+    - setuptools-scm >1.5.4
+    - numpy
+    - pytest-runner
+    - packaging
+  run:
+    - python
+    - pandas >=1.5.0
+    - numpy
+    - cramjam >=2.3
+    - fsspec
+    - packaging
+
+test:
+  imports:
+    - fastparquet
+
+about:
+  home: http://github.com/dask/fastparquet
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Python interface to the parquet format
+  dev_url: https://github.com/dask/fastparquet
+
+extra:
+  recipe-maintainers:
+    - martindurant
+    - mrocklin
+    - TomAugspurger

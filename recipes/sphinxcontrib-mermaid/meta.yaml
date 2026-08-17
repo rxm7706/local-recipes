@@ -1,0 +1,46 @@
+{% set name = "sphinxcontrib-mermaid" %}
+{% set version = "2.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/sphinxcontrib_mermaid-{{ version }}.tar.gz
+  sha256: 13c5f9ac395cb6abf403eca34e228dc9fb3a30c9d960dbf3e40e9a8cef969549
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - hatchling
+  run:
+    - python >={{ python_min }}
+    - pyyaml
+    - sphinx
+
+test:
+  imports:
+    - sphinxcontrib
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/mgaitan/sphinxcontrib-mermaid
+  summary: Mermaid diagrams in yours Sphinx powered docs
+  license: BSD-2-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - timkpaine
+    - conda-forge/sphinx
+    - ericpre

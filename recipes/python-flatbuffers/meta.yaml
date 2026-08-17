@@ -1,0 +1,50 @@
+{% set name = "python-flatbuffers" %}
+{% set pypi_name = "flatbuffers" %}
+{% set version = "25.12.19" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/google/flatbuffers/archive/v{{ version }}.tar.gz 
+  sha256: f81c3162b1046fe8b84b9a0dbdd383e24fdbcf88583b9cb6028f90d04d90696a
+
+build:
+  number: 0
+  script: cd python && VERSION=v{{ version }} {{ PYTHON }} -m pip install . -vv
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - flatbuffers
+    - flatbuffers.builder
+    - flatbuffers.table
+
+about:
+  home: https://google.github.io/flatbuffers/
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE.txt
+  summary: Python runtime library for use with the Flatbuffers serialization format.
+  description: |
+    FlatBuffers is an efficient cross platform serialization library for C++, C#, C, Go, Java, JavaScript, Lobster, Lua, TypeScript, PHP, Python, and Rust. It was originally created at Google for game development and other performance-critical applications. This package is the python runtime library. The flatc compiler is in the flatbuffers conda package.
+  doc_url: https://google.github.io/flatbuffers/
+  doc_source_url: https://github.com/google/flatbuffers/tree/master/docs
+  dev_url: https://github.com/google/flatbuffers
+
+extra:
+  recipe-maintainers:
+    - kalefranz
+    - njzjz
+    - xhochy

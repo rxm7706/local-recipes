@@ -1,0 +1,49 @@
+{% set name = "ldap3" %}
+{% set version = "2.9.1" %}
+{% set sha256 = "f3e7fc4718e3f09dda568b57100095e0ce58633bcabbed8667ce3f8fbaa4229f" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+    - pyasn1 >=0.4.6
+  run:
+    - python >={{ python_min }}
+    - pyasn1 >=0.4.6
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - ldap3
+
+about:
+  home: https://github.com/cannatag/ldap3
+  license: LGPL-3.0-or-later
+  license_family: LGPL
+  license_file:
+    - LICENSE.txt
+    - COPYING.LESSER.txt
+  summary: A strictly RFC 4510 conforming LDAP V3 pure Python client library
+  doc_url: http://ldap3.readthedocs.io
+  dev_url: https://github.com/cannatag/ldap3
+
+extra:
+  recipe-maintainers:
+    - mcs07
+    - adament

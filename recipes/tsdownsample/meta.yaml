@@ -1,0 +1,52 @@
+{% set name = "tsdownsample" %}
+{% set version = "0.1.5.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/tsdownsample-{{ version }}.tar.gz
+  sha256: e597d6f1891f8163d9425b5f71759bfb17e3545ab72618d7ebaae0356e702829
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  build:
+    - python                                   # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}       # [build_platform != target_platform]
+    - crossenv                                 # [build_platform != target_platform]
+    - maturin >=0.14,<2                        # [build_platform != target_platform]
+    - {{ compiler("c") }}
+    - {{ stdlib("c") }}
+    - {{ compiler("rust") }}
+  host:
+    - python
+    - maturin >=0.14,<2
+    - pip
+  run:
+    - python
+    - numpy
+
+
+test:
+  imports:
+    - tsdownsample
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/predict-idlab/tsdownsample
+  summary: Time series downsampling in Rust
+  license: MIT
+  license_file:
+    - LICENSE
+    - downsample_rs/LICENSE
+
+extra:
+  recipe-maintainers:
+    - thewchan

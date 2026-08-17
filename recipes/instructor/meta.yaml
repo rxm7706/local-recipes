@@ -1,0 +1,77 @@
+{% set name = "instructor" %}
+{% set version = "1.15.4" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/jxnl/instructor/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: 511dc875660153e74bb83d1dac87a00182b345fa35132081bfb4431a4019eb7d
+
+build:
+  entry_points:
+    - instructor = instructor.cli.cli:app
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - poetry-core
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - openai >=2.0.0,<3.0.0
+    - pydantic >=2.8.0,<3.0.0
+    - docstring_parser >=0.16,<1.0
+    - typer >=0.9.0,<1.0.0
+    - rich >=13.7.0,<15.0.0
+    - aiohttp >=3.9.1,<4.0.0
+    - tenacity >=8.2.3,<10.0.0
+    - pydantic-core >=2.18.0,<3.0.0
+    - jiter >=0.6.1,<0.12
+    - jinja2 >=3.1.4,<4.0.0
+    - requests >=2.32.3,<3.0.0
+    - diskcache >=5.6.3
+  run_constrained:
+    - anthropic ==0.76.0
+    - xmltodict >=0.13,<1.1
+    - groq >=0.4.2,<1.1.0
+    - cohere >=5.1.8,<6.0.0
+    - jsonref >=1.1.0,<2.0.0
+    - writer-sdk >=2.2.0,<3.0.0
+    - boto3 >=1.34.0,<2.0.0
+    - mistralai >=1.5.1,<2.0.0
+    - openai >=2.0.0,<3.0.0
+    - google-genai >=1.5.0
+    - litellm >=1.35.31,<2.0.0
+    - xai-sdk >=0.2.0
+    - python-dotenv >=1.0.0
+    - sqlmodel >=0.0.22,<1.0.0
+    - trafilatura >=1.12.2,<3.0.0
+    - pydub >=0.25.1,<1.0.0
+    - datasets >=3.0.1,<5.0.0
+
+test:
+  imports:
+    - instructor
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/jxnl/instructor
+  summary: structured outputs for llm
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - moritzwilksch
+    - philippjfr

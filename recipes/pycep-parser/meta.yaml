@@ -1,0 +1,48 @@
+{% set name = "pycep-parser" %}
+{% set version = "0.7.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pycep_parser-{{ version }}.tar.gz
+  sha256: ff61a68f2fdc052206a3db16e6b398790822dd20aaa8e7b4cc3e632f67c3eec8
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - poetry-core >=1.0.0
+    - pip
+    - uv-build
+  run:
+    - python >={{ python_min }},<4.0.0
+    - lark >=1.1.2
+    - regex >=2022.1.18
+    - typing-extensions >=3.10.0
+    - importlib-resources >=2.0.0
+
+test:
+  imports:
+    - pycep
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/gruebel/pycep
+  summary: A Python based Bicep parser
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - borchero
+    - nick-harmening

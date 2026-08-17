@@ -24,8 +24,8 @@ requirements:
     - pip
   run:
     - python >={{ python_min }}
-    # - zstandard
-    # - python-snappy
+    # - zstandard 
+    # - python-snappy 
 
 test:
   imports:

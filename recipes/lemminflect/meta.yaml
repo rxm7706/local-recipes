@@ -1,0 +1,42 @@
+{% set name = "lemminflect" %}
+{% set version = "0.2.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: e0065aea1aec7ed36651186aa15567959aefcdf519ea3f6e9ac86e4c1daf3092
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  noarch: python
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+    - numpy
+  run:
+    - python >=3.6
+    - {{ pin_compatible('numpy') }}
+
+test:
+  imports:
+    - lemminflect
+
+about:
+  home: https://lemminflect.readthedocs.io/en/
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Generating adversarial examples for NLP models
+  doc_url: https://lemminflect.readthedocs.io/en/latest/
+  dev_url: https://github.com/bjascob/LemmInflect
+
+extra:
+  recipe-maintainers:
+    - oblute
+    - mxr-conda

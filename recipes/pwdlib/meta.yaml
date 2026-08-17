@@ -1,0 +1,49 @@
+{% set name = "pwdlib" %}
+{% set version = "0.3.1" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 2ffd1955c92190d5bfbdc5071bf7d422568b83f943453ebd3d43d031ccba37b1
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - hatchling
+    - hatch-regex-commit
+    - pip
+    - python {{ python_min }}
+
+  run:
+    - python >={{ python_min }}
+    - typing-extensions >=4.16.0
+
+test:
+  imports:
+    - pwdlib
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/frankie567/pwdlib
+  summary: Modern password hashing for Python.
+  doc_url: https://frankie567.github.io/pwdlib
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - davidbrochart
+    - frankie567
+    - thewchan

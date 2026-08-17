@@ -1,0 +1,45 @@
+{% set name = "opentelemetry-propagator-jaeger" %}
+{% set version = "1.44.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_propagator_jaeger-{{ version }}.tar.gz
+  sha256: 0fba4127600f5eca1d5ce31f208f4e13bdd80050a236f3953f6f244c197178b7
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >={{ python_min }}
+    - opentelemetry-api ~=1.3
+
+test:
+  imports:
+    - opentelemetry
+    - opentelemetry.propagators
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/open-telemetry/opentelemetry-python/tree/main/propagator/opentelemetry-propagator-jaeger
+  summary: OpenTelemetry Jaeger Propagator
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk

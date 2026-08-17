@@ -1,0 +1,45 @@
+{% set name = "azure-common" %}
+{% set version = "1.1.28" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/azure-common-{{ version }}.zip
+  sha256: 4ac0cd3214e36b6a1b6a442686722a5d8cc449603aa833f3f0f40bda836704a3
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - azure.common
+    - azure.profiles
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/Azure/azure-sdk-for-python
+  license: MIT
+  summary: Microsoft Azure Client Library for Python (Common)
+  license_file: LICENSE.txt
+  dev_url: https://github.com/Azure/azure-sdk-for-python
+  doc_url: https://docs.microsoft.com/en-us/azure/developer/python/
+
+extra:
+  recipe-maintainers:
+    - Maxyme
+    - xylar

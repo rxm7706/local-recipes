@@ -1,0 +1,48 @@
+{% set name = "django-import-export" %}
+{% set version = "4.4.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_import_export-{{ version }}.tar.gz
+  sha256: 165dc7fdcd56a6356342eef3f88f3f3682b64b6f67e9a259a137e8b57aeff10c
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=60
+    - setuptools-scm >=7.1.0
+    - pip
+  run:
+    - python >={{ python_min }}
+    - diff-match-patch ==20241021
+    - django >=4.2
+    - tablib >=3.7.0
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+  imports:
+    - import_export
+    - import_export.formats
+    - import_export.templatetags
+
+about:
+  home: https://github.com/bmihelac/django-import-export
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Django application and library for importing and exporting data with included admin integration
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

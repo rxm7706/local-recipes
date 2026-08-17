@@ -1,0 +1,51 @@
+{% set name = "azure-mgmt-containerregistry" %}
+{% set version = "15.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: a31a70b7b6811d343c26804a146f1e4c1b12f6660c6e381d2d5017b27bcab573
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - msrest >=0.7.1
+    - azure-common >=1.1,<2.dev0
+    - azure-mgmt-core >=1.3.2,<2.0.0
+
+test:
+  imports:
+    - azure.mgmt.containerregistry
+    - azure.mgmt.containerregistry.aio
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/Azure/azure-sdk-for-python
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Microsoft Azure Container Registry Client Library for Python
+
+  doc_url: https://docs.microsoft.com/en-us/python/api/overview/azure/container-registry
+  dev_url: https://github.com/Azure/azure-sdk-for-python
+
+extra:
+  recipe-maintainers:
+    - awvwgk
+    - andreyz4k

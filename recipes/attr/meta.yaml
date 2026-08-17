@@ -1,0 +1,86 @@
+{% set version = "2.6.0" %}
+
+package:
+  name: attr-split
+  version: {{ version }}
+
+source:
+  url: https://download.savannah.gnu.org/releases/attr/attr-{{ version }}.tar.gz
+  sha256: d42fa374513180bb48cb11a46696f488240e5124ff1e6ad88b0abff706985612
+
+build:
+  number: 1
+  skip: true  # [not linux]
+
+outputs:
+  - name: libattr
+    script: build_package.sh
+    run_exports:
+      - {{ pin_subpackage('libattr', max_pin='x.x') }}
+    requirements:
+      build:
+        - {{ stdlib('c') }}
+        - {{ compiler('c') }}
+        - make
+    test:
+      commands:
+        - test -f "${PREFIX}/lib/libattr${SHLIB_EXT}"
+        # GPL licensed tools should not be in this subpackage
+        - test ! -x "${PREFIX}/bin/attr"
+        - test ! -x "${PREFIX}/bin/getfattr"
+        - test ! -x "${PREFIX}/bin/setfattr"
+
+    about:
+      home: http://savannah.nongnu.org/projects/attr
+      license: LGPL-2.1-or-later
+      license_family: LGPL
+      license_file:
+        - doc/COPYING.LGPL
+      summary: Library for Manipulating Filesystem Extended Attributes
+
+  - name: attr
+    script: build_package.sh
+    build:
+      run_exports:
+        - {{ pin_subpackage('libattr', max_pin='x.x') }}
+    requirements:
+      build:
+        - {{ stdlib('c') }}
+        - {{ compiler('c') }}
+        - make
+      host:
+        - {{ pin_subpackage('libattr', exact=True) }}
+      run:
+        - {{ pin_subpackage('libattr', exact=True) }}
+    test:
+      commands:
+        - attr -l "${PREFIX}/bin/attr"
+        - getfattr --help
+        - setfattr --help
+
+    about:
+      home: http://savannah.nongnu.org/projects/attr
+      license: GPL-2.0-or-later
+      license_family: GPL
+      license_file:
+        - doc/COPYING
+      summary: Commands for Manipulating Filesystem Extended Attributes
+
+# hmaarrfk -- 2025/12
+# While this section isn't fully necessary our existing conda-forge linter
+# isn't able to deal with the lack of this section
+about:
+  home: http://savannah.nongnu.org/projects/attr
+  license: GPL-2.0-or-later or LGPL-2.1-or-later
+  license_family: GPL
+  license_file:
+    - doc/COPYING
+    - doc/COPYING.LGPL
+  summary: Commands for Manipulating Filesystem Extended Attributes
+
+extra:
+  feedstock-name: attr
+  recipe-maintainers:
+    - scopatz
+    - saraedum
+    - hmaarrfk

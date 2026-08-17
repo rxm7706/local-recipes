@@ -1,0 +1,44 @@
+{% set name = "vbuild" %}
+{% set version = "0.8.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/vbuild-{{ version }}.tar.gz
+  sha256: 270cd9078349d907dfae6c0e6364a5a5e74cb86183bb5093613f12a18b435fa9
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - poetry >=0.12
+    - poetry-core
+    - pip
+  run:
+    - python >={{ python_min }}
+    - pscript >=0.7.0,<0.8.0
+
+test:
+  imports:
+    - vbuild
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/manatlan/vbuild
+  summary: A simple module to extract html/script/style from a vuejs '.vue' file (can minimize/es2015 compliant js) ... just py2 or py3, NO nodejs !
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rodja

@@ -1,0 +1,43 @@
+{% set name = "pluginbase" %}
+{% set version = "1.0.1" %}
+{% set sha256 = "ff6c33a98fce232e9c73841d787a643de574937069f0d18147028d70d7dee287" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - pluginbase
+
+about:
+  home: http://github.com/mitsuhiko/pluginbase
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A support library for building plugins sytems in Python.
+  dev_url: https://github.com/mitsuhiko/pluginbase
+
+extra:
+  recipe-maintainers:
+    - windelbouwman
+    - abloemert

@@ -1,0 +1,81 @@
+{% set name = "prophet" %}
+{% set version = "1.3.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 7ec252e898199a1965ca10db3ca625a4ec75e4e6f738d2b4108fe603666a9ef0
+
+build:
+  skip: true  # [python_impl == 'pypy']
+  number: 1
+  script_env:
+    - PROPHET_REPACKAGE_CMDSTAN=false
+    - PRECOMPILED_HEADERS=false
+  script: {{ PYTHON }} -m pip install . -vv
+  binary_has_prefix_files:
+    - {{ SP_DIR|replace("\\", "/") }}/stan_model/prophet_model.bin
+  ignore_prefix_files:
+    - bin/cmdstan/src/stan/model/model_header.hpp.gch
+    - bin/cmdstan/src/stan/model/main.d
+    - bin/cmdstan/src/cmdstan/main.d
+
+requirements:
+
+  host:
+    - python
+    - pip
+    - cmdstanpy >=1.0.4
+    - cmdstan ==2.37.0
+    - setuptools >=42
+    - wheel >=0.37.0
+    - importlib_resources
+    - tbb-devel
+
+  run:
+    - python
+    # Pin the cmdstan version
+    - cmdstan ==2.37.0
+    - cmdstanpy >=1.0.4
+    - numpy >=1.15.4
+    - matplotlib-base >=2.0.0
+    - pandas >=1.0.4
+    - holidays >=0.25.0,<1
+    - tqdm >=4.36.1
+    - importlib_resources
+
+test:
+  imports:
+    - prophet
+    - prophet.tests
+  commands:
+    - pip check
+    - py.test -v --pyargs prophet
+  requires:
+    - pip
+    - pytest
+
+about:
+  home: https://facebook.github.io/prophet/
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Automatic Forecasting Procedure
+  description: |
+    Implements a procedure for forecasting time series data based on an
+    additive model where non-linear trends are fit with yearly, weekly, and
+    daily seasonality, plus holiday effects. It works best with time series
+    that have strong seasonal effects and several seasons of historical data.
+    Prophet is robust to missing data and shifts in the trend, and typically
+    handles outliers well.
+  doc_url: https://facebook.github.io/prophet/docs/quick_start.html
+  dev_url: https://github.com/facebook/prophet
+
+extra:
+  recipe-maintainers:
+    - bletham
+    - maresb
+    - WardBrian

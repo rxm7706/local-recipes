@@ -1,0 +1,55 @@
+{% set name = "dask-glm" %}
+{% set version = "0.3.2" %}
+{% set sha256 = "c947a566866698a01d79978ae73233cb5e838ad5ead6085143582c5e930b9a4a" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 0
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - python >=3
+    - setuptools
+    - setuptools_scm
+    - pip
+  run:
+    - python >=3
+    - dask
+    - scikit-learn >=0.18
+    - scipy >=0.18.1
+    - sparse >=0.7.0
+    - multipledispatch >=0.4.9
+    - numpy
+
+test:
+  imports:
+    - dask_glm
+    - dask_glm.estimators
+
+about:
+  home: http://github.com/dask/dask-glm
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: 'Generalized Linear Models in Dask'
+  description: |
+    Generalized Linear Models for parallel and
+    distributed machine learning, built using dask.
+  doc_url: http://dask-glm.readthedocs.io/en/latest/
+  dev_url: https://github.com/dask/dask-glm
+
+extra:
+  recipe-maintainers:
+    - TomAugspurger
+    - cicdw
+    - fjetter

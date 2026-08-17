@@ -1,0 +1,49 @@
+{% set python_min = "3.12" %}
+# Generated using grayskull; edited by @ericmjl.
+{% set name = "xarray-einstats" %}
+{% set version = "0.11.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 69f48a60f62151d40c49fd6d9a6dc0b970aecef2813a33209e4dcde897fca48b
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - pip >=21.3
+    - python {{ python_min }}
+    - flit
+  run:
+    - numpy >=2.0
+    - python >={{ python_min }}
+    - scipy >=1.14
+    - xarray >=2024.07.0
+
+test:
+  imports:
+    - xarray_einstats
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/arviz-devs/xarray-einstats
+  summary: Stats, linear algebra and einops for xarray.
+  license: Apache-2.0
+  license_file: LICENSE
+  doc_url: https://xarray-einstats.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - ericmjl
+    - OriolAbril

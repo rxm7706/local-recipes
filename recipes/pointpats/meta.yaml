@@ -1,0 +1,66 @@
+{% set python_min = "3.12" %}
+{% set name = "pointpats" %}
+{% set version = "2.6.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pointpats-{{ version }}.tar.gz
+  sha256: 6c21e0a03d9ad4ca0f62393f888842212580d99b828b4b68ddeb1929eac8bdf2
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools >=61.0
+    - setuptools-scm >=6.2
+  run:
+    - libpysal >=4.10
+    - matplotlib-base >=3.9
+    - numpy >=1.26
+    - pandas >=2.2
+    - python >={{ python_min }}
+    - scipy >=1.12
+    - shapely >=2.1
+    - geopandas >=1.0
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - pointpats
+  # conda-forge does not have an opencv-contrib-python package yet
+  # and it looks like an optional dependency here.
+  # See https://github.com/pysal/pointpats/pull/82
+  # commands:
+  #   - pip check
+  # requires:
+  #   - pip
+
+about:
+  home: http://pysal.org
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: Statistical analysis of planar point patterns.
+
+  description: |
+    This pointpats package is intended to support the statistical analysis
+    of planar point patterns.
+  doc_url: https://pointpats.readthedocs.io/en/latest/
+  dev_url: https://github.com/pysal/pointpats
+
+extra:
+  recipe-maintainers:
+    - weikang9009
+    - slumnitz
+    - martinfleis
+    - knaaptime
+    - jGaboardi

@@ -1,0 +1,53 @@
+{% set name = "qdrant-client" %}
+{% set version = "1.18.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/qdrant_client-{{ version }}.tar.gz
+  sha256: 52e8ece1a7d40519801bf0b70713bfa0f6b7ae28c7275bbe0b0286fbed7f6db4
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - poetry
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - httpx >=0.20.0
+    - numpy >=1.21
+    - pydantic >=1.10.8
+    - grpcio >=1.41.0
+    - grpcio-tools >=1.41.0
+    - urllib3 >=1.26.14,<3
+    - portalocker >=2.7.0,<4.0.0
+  run_constrained:
+    - fastembed >=0.2.5
+
+
+test:
+  imports:
+    - qdrant_client
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/qdrant/qdrant-client
+  summary: Python client for Qdrant vector search engine
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - moritzwilksch

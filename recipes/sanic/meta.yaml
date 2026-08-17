@@ -1,0 +1,63 @@
+{% set name = "sanic" %}
+{% set version = "25.12.1" %}
+
+package:
+  name: sanic
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 7b51bf608e4030f06a6c002cd08fed2872e4936527e63c9a8a97d5cd06a2b47f
+
+build:
+  number: 0
+  skip: true  # [py<39 or win]
+  entry_points:
+    - sanic = sanic.__main__:main
+  script: {{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+  host:
+    - python
+    - pip
+    - setuptools >=70.1
+    - wheel
+  run:
+    - python
+    - sanic-routing >=23.12.0
+    - httptools >=0.0.10
+    - uvloop >=0.15.0  # [not win]
+    - ujson >=1.35  # [not win]
+    - aiofiles >=0.6.0
+    - websockets >=10.0
+    - multidict >=5.0,<7.0
+    - html5tagger >=1.2.1
+    - tracerite >=1.0.0
+    - typing_extensions >=4.4.0
+    - setuptools >=70.1
+
+test:
+  imports:
+    - sanic
+    - sanic.mixins
+  commands:
+    - pip check
+    - sanic --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/channelcat/sanic
+  summary: Async Python 3.9+ web server and web framework that's written to go fast.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - ahopkins
+    - kszucs
+    - nicoddemus
+    - thewchan

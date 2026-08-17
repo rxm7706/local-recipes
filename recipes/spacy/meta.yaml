@@ -1,38 +1,40 @@
-{% set name = "spacy" %}
-{% set version = "3.7.5" %}
+{% set version = "3.8.14" %}
 
 package:
-  name: {{ name|lower }}
+  name: spacy
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/spacy-{{ version }}.tar.gz
-  sha256: a648c6cbf2acc7a55a69ee9e7fa4f22bdf69aa828a587a1bc5cfff08cf3c2dd3
+  url: https://github.com/explosion/spaCy/archive/refs/tags/release-v{{ version }}.tar.gz
+  sha256: ad0ea4e15153de6703a1a77f22c34bdbf105b9362ccde4f4789e02dc9abcb538
   patches:
     - patches/0001-skip-beam-density-test.patch
+    # backport https://github.com/explosion/spaCy/pull/13943
+    - patches/0002-match-confection-bounds-between-requirements.txt-and.patch
 
 build:
-  skip: true  # [py==312]
   number: 0
   script: {{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  # no cython-blis v1.3.x builds (dependency of newer thinc)
+  skip: true  # [ppc64le]
 
 requirements:
   build:
     - python                                 # [build_platform != target_platform]
     - cross-python_{{ target_platform }}     # [build_platform != target_platform]
-    - cython >=0.25,<3.0                     # [build_platform != target_platform]
-    - numpy >=1.15.0                         # [build_platform != target_platform]
+    - cython >=3.0,<4.0                      # [build_platform != target_platform]
+    - numpy                                  # [build_platform != target_platform]
     - {{ compiler('cxx') }}
     - {{ stdlib("c") }}
   host:
     - python
     - setuptools
-    - cython >=0.25,<3.0
+    - cython >=3.0,<4.0
     - cymem >=2.0.2,<2.1.0
     - preshed >=3.0.2,<3.1.0
     - murmurhash >=0.28.0,<1.1.0
-    - thinc >=8.2.2,<8.3.0
-    - numpy >=1.15.0
+    - thinc >=8.3.12,<8.4.0
+    - numpy
     - pip
     - wheel
   run:
@@ -41,27 +43,25 @@ requirements:
     - spacy-legacy >=3.0.11,<3.1.0
     - spacy-loggers >=1.0.0,<2.0.0
     - murmurhash >=0.28.0,<1.1.0
+    - confection >=1.1.0,<2.0.0
     - cymem >=2.0.2,<2.1.0
     - preshed >=3.0.2,<3.1.0
-    - thinc >=8.2.2,<8.3.0
+    - thinc >=8.3.12,<8.4.0
     # Not Available on conda-forge, ml_datasets is only in requirements.txt and not setup.cg
     #- ml_datasets >=0.2.0,<0.3.0 
     - wasabi >=0.9.1,<1.2.0
-    - srsly >=2.4.3,<3.0.0
+    - srsly >=2.5.3,<3.0.0
     - catalogue >=2.0.6,<2.1.0
-    - weasel >=0.1.0,<0.5.0
     - typer >=0.3.0,<1.0.0
+    - weasel >=1.0.0,<2.0.0
     # Third-party dependencies
-    - {{ pin_compatible('numpy') }}
     - tqdm >=4.38.0,<5.0.0
     - requests >=2.13.0,<3.0.0
-    - pydantic >=1.7.4,!=1.8,!=1.8.1,<3.0.0
+    - pydantic >=2.0.0,<3.0.0
     - jinja2
-    - langcodes >=3.2.0,<4.0.0
     # Official Python utilities
     - setuptools
     - packaging >=20.0
-    - typing_extensions >=3.7.4.1,<4.5.0  # [py<=37]
 
 test:
   requires:
@@ -75,8 +75,11 @@ test:
   imports:
     - spacy
   commands:
-    # tests run slowly on ci servers, so we skip them in particular aarch64 and ppc64le take between 3 hrs to sometimes going over 6 hours and failing.
-    - python -m pytest --tb=native --pyargs {{ name }}  # [not aarch64 and not ppc64le and python_impl == "cpython"]
+    {% set tests_to_skip = "_not_a_real_test" %}
+    # due to missing https://github.com/explosion/ml-datasets
+    {% set tests_to_skip = tests_to_skip + " or test_registry_entries" %}
+    # avoid long runtime in emulation
+    - python -m pytest --tb=native --pyargs spacy -k "not ({{ tests_to_skip }})"    # [not aarch64]
 
 about:
   home: https://spacy.io/
@@ -94,4 +97,4 @@ extra:
     - rmax
     - honnibal
     - ines
-    - adrianeboyd
+    - h-vetinari

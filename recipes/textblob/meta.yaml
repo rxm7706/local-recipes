@@ -1,0 +1,47 @@
+{% set version = "0.20.1" %}
+
+package:
+  name: textblob
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/textblob/textblob-{{ version }}.tar.gz
+  sha256: fbd1a3307532e9dddb8f50284874559e01020e79b5fe5ae4c1da709a9e2087ea
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - flit-core <4
+    - pip
+  run:
+    - python >={{ python_min }}
+    - nltk >=3.1
+
+test:
+  imports:
+    - textblob
+    - textblob.en
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/sloria/TextBlob
+  license: MIT
+  license_file: LICENSE
+  summary: 'Simple, Pythonic text processing. Sentiment analysis, part-of-speech tagging, noun phrase parsing, and more.'
+  license_family: MIT
+  doc_url: https://textblob.readthedocs.io/en/dev/
+  dev_url: https://github.com/sloria/TextBlob
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - jan-janssen

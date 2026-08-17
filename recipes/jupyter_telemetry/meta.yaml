@@ -1,0 +1,54 @@
+{% set name = "jupyter_telemetry" %}
+{% set version = "0.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 445c613ae3df70d255fe3de202f936bba8b77b4055c43207edf22468ac875314
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.5
+    - pip
+  run:
+    - python >=3.5
+    - jsonschema
+    - traitlets
+    - ruamel.yaml
+    - python-json-logger
+
+test:
+  imports:
+    - jupyter_telemetry
+  requires:
+    - pip
+  commands:
+    - pip check
+
+about:
+  home: https://jupyter-telemetry.readthedocs.io
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Telemetry for Jupyter Applications and extensions.
+
+  description: |
+    Telemetry provides a configurable traitlets object, EventLog,
+    for structured event-logging in Python.
+    It leverages Python’s standard logging library for filtering, handling, and recording events.
+    All events are validated (using jsonschema) against registered JSON schemas.
+  doc_url: https://jupyter-telemetry.readthedocs.io
+  dev_url: https://github.com/jupyter/telemetry
+
+extra:
+  recipe-maintainers:
+    - minrk
+    - consideratio

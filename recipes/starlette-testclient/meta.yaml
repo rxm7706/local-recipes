@@ -1,0 +1,44 @@
+{% set name = "starlette-testclient" %}
+{% set version = "0.4.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/starlette_testclient-{{ version }}.tar.gz
+  sha256: 9e993ffe12fab45606116257813986612262fe15c1bb6dc9e39cc68693ac1fc5
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - hatchling
+    - pip
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+    - starlette >=0.20.1
+    - requests
+
+test:
+  imports:
+    - starlette_testclient
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: A backport of Starlette TestClient using requests!
+  home: https://github.com/Kludex/starlette-testclient
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - thewchan

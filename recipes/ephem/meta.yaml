@@ -1,0 +1,63 @@
+{% set version = "4.2.1" %}
+
+package:
+  name: ephem
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/e/ephem/ephem-{{ version }}.tar.gz
+  sha256: 920cb30369c79fde1088c2060d555ea5f8a50fdc80a9265832fd5bf195cf147f
+
+build:
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - python
+    - setuptools
+    - pip
+  run:
+    - python
+
+test:
+  requires:
+    - pip
+  commands:
+    - pip check
+  imports:
+    - ephem
+    - ephem._libastro
+
+about:
+  home: http://rhodesmill.org/pyephem/
+  license: MIT
+  license_file: LICENSE
+  summary: Basic astronomical computations for Python
+  description: |
+    PyEphem provides an ``ephem`` Python package for performing high-precision
+    astronomy computations. The underlying numeric routines are coded in C and
+    are the same ones that drive the popular `XEphem`_ astronomy application,
+    whose author, Elwood Charles Downey, generously gave permission for their
+    use in PyEphem. The name *ephem* is short for the word *ephemeris*, which
+    is the traditional term for a table giving the position of a planet,
+    asteroid, or comet for a series of dates. The design of PyEphem emphasizes
+    convenience and ease of use. Both celestial bodies and the observer's
+    location on Earth are represented by Python objects, while dates and
+    angles automatically print themselves in standard astronomical formats.
+  doc_url: http://rhodesmill.org/pyephem/
+  dev_url: https://github.com/brandon-rhodes/pyephem
+
+extra:
+  recipe-maintainers:
+    - bsipocz
+    - mwcraig
+    - tacaswell
+    - ocefpaf

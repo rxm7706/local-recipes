@@ -1,0 +1,41 @@
+{% set version = "1.0.0" %}
+
+package:
+  name: backports.shutil_get_terminal_size
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/backports.shutil_get_terminal_size/backports.shutil_get_terminal_size-{{ version }}.tar.gz
+  sha256: 713e7a8228ae80341c70586d1cc0a8caa5207346927e23d09dcbcaf18eadec80
+
+build:
+  number: 4
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+    - backports
+  run:
+    - python >={{ python_min }}
+    - backports
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - backports
+    - backports.shutil_get_terminal_size
+
+about:
+  home: https://github.com/chrippa/backports.shutil_get_terminal_size
+  license: MIT
+  license_file: LICENSE
+  summary: "A backport of the get_terminal_size function from Python 3.3's shutil."
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

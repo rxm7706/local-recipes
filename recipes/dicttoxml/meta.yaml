@@ -1,0 +1,43 @@
+{% set version = "1.7.16" %}
+
+package:
+  name: dicttoxml
+  version: {{ version }}
+
+source:
+  fn: dicttoxml-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/dicttoxml/dicttoxml-{{ version }}.tar.gz
+  sha256: 6f36ce644881db5cd8940bee9b7cb3f3f6b7b327ba8a67d83d3e2caa0538bf9d
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - dicttoxml
+
+about:
+  home: https://github.com/quandyfactory/dicttoxml
+  license: GPL-2.0-only
+  summary: Converts a Python dictionary or other native data type into a valid XML string.
+  license_family: GPL
+  license_file: LICENCE.txt
+  dev_url: https://github.com/quandyfactory/dicttoxml
+  doc_url: https://github.com/quandyfactory/dicttoxml
+
+extra:
+  recipe-maintainers:
+    - johanneskoester
+    - jan-janssen

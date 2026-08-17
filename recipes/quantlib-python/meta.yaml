@@ -1,0 +1,62 @@
+{% set name = "QuantLib-python" %}
+{% set version = "1.43" %}
+
+package:
+  name: {{ name|lower }}
+  version: "{{ version }}"
+
+source:
+  url: https://github.com/lballabio/QuantLib-SWIG/releases/download/v{{ version }}/QuantLib-SWIG-{{ version }}.tar.gz
+  sha256: 3bc45bc596bf5fd123a3ca5d3bad9439ab6a052bc278a24398a10c0053f84998
+  patches:
+    - no-isolation.diff
+
+build:
+  number: 1
+  skip: true  # [win and vc<14]
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - {{ compiler('cxx') }}
+    - autoconf  # [unix]
+    - automake  # [unix]
+    - make  # [unix]
+    - swig
+  host:
+    - python
+    - pip
+    - libboost-devel
+    - setuptools
+    - python-build
+    - quantlib =={{ version }}
+    - pytest
+  run:
+    - python
+    - quantlib  # [not win]
+
+test:
+  requires:
+    - pytest
+  source_files:
+    - Python/test/*
+  commands:
+    - pytest Python/test/
+
+about:
+  home: https://github.com/lballabio/QuantLib
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.TXT
+  summary: The python wrapper of QuantLib.
+  description: The QuantLib project (https://www.quantlib.org) is aimed at providing a comprehensive software framework for quantitative finance. QuantLib is a free/open-source library for modeling, trading, and risk management in real-life.
+  doc_url: https://www.quantlib.org
+  dev_url: https://github.com/lballabio/QuantLib
+
+extra:
+  recipe-maintainers:
+    - timkpaine
+    - ruben-arts

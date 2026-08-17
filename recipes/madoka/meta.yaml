@@ -1,0 +1,46 @@
+{% set name = "madoka" %}
+{% set version = "0.7.2.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/madoka-{{ version }}.tar.gz
+  sha256: a594f7acd173bc92928c9661ff92ba8b77ac85f2d7697f05ebb07f03184b4a08
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('cxx') }}
+    - {{ stdlib('c') }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+test:
+  imports:
+    - madoka
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python
+
+about:
+  home: https://github.com/ikegami-yukino/madoka-python
+  summary: Memory-efficient CountMin Sketch key-value structure (based on Madoka C++ library)
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

@@ -1,0 +1,42 @@
+{% set name = "win32_setctime" %}
+{% set version = "1.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: ae1fdf948f5640aae05c511ade119313fb6a30d7eabe25fef9764dca5873c4c0
+
+build:
+  number: 0
+  # This library is only useful on Windows but there is no constraint on OS
+  # or Python version.
+  noarch: python
+  script: '{{ PYTHON }} -m pip install . -vv '
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - win32_setctime
+
+about:
+  home: https://github.com/Delgan/win32-setctime
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A small Python utility to set file creation time on Windows
+
+extra:
+  recipe-maintainers:
+    - xhochy

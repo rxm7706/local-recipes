@@ -1,0 +1,48 @@
+{% set name = "lightning-utilities" %}
+{% set version = "0.15.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 792ae0204c79f6859721ac7f386c237a33b0ed06ba775009cb894e010a842033
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - packaging >=17.1
+    - typing_extensions
+    - setuptools
+
+test:
+  imports:
+    - lightning_utilities
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+
+about:
+  home: https://github.com/Lightning-AI/utilities
+  summary: PyTorch Lightning Sample project.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - Borda
+    - carmocca
+    - Tobias-Fischer

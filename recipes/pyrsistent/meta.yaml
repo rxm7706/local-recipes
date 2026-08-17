@@ -1,0 +1,46 @@
+{% set name = "pyrsistent" %}
+{% set version = "0.20.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pyrsistent-{{ version }}.tar.gz
+  sha256: 4c48f78f62ab596c679086084d0dd13254ae4f3d6c72a83ffdf5ebdef8f265a4
+
+build:
+  number: 2
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - python
+    - setuptools
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - pyrsistent
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: http://github.com/tobgu/pyrsistent/
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.mit
+  summary: Persistent/Functional/Immutable data structures
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

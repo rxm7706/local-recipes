@@ -1,6 +1,5 @@
 {% set name = "whitenoise" %}
-{% set version = "6.11.0" %}
-{% set python_min = "3.10" %}
+{% set version = "6.12.0" %}
 
 package:
   name: {{ name|lower }}
@@ -8,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/whitenoise-{{ version }}.tar.gz
-  sha256: 0f5bfce6061ae6611cd9396a8231e088722e4fc67bc13a111be74c738d99375f
+  sha256: f723ebb76a112e98816ff80fcea0a6c9b8ecde835f8ddda25df7a30a3c2db6ad
 
 build:
   noarch: python
@@ -18,9 +17,8 @@ build:
 requirements:
   host:
     - python {{ python_min }}
+    - setuptools >=77
     - pip
-    - setuptools >=77,<81.0.0
-
   run:
     - python >={{ python_min }},<4.0
 

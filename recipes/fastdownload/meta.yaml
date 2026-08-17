@@ -1,0 +1,43 @@
+{% set name = "fastdownload" %}
+{% set version = "0.0.7" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/fastdownload-{{ version }}.tar.gz
+  sha256: 20507edb8e89406a1fbd7775e6e2a3d81a4dd633dd506b0e9cf0e1613e831d6a
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }}
+    - fastprogress
+    - fastcore >=1.3.26
+
+test:
+  imports:
+    - fastdownload
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/fastai/fastdownload/tree/master/
+  summary: A general purpose data downloading library.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - giswqs

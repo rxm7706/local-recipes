@@ -1,0 +1,61 @@
+{% set maturin_version = ">=0.14,<0.15" %}
+{% set version = "0.6.2" %}
+{% set maturin_version = ">=0.14,<0.15" %}
+
+package:
+  name: y-py
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/y/y_py/y_py-{{ version }}.tar.gz
+  sha256: 4757a82a50406a0b3a333aa0122019a331bd6f16e49fed67dca423f928b3fd4d
+
+build:
+  number: 1
+  script:
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - maturin {{ maturin_version }}          # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - {{ compiler('rust') }}
+    - cargo-bundle-licenses
+  host:
+    - maturin {{ maturin_version }}
+    - pip
+    - python
+  run:
+    - python
+
+test:
+  source_files:
+    - tests
+  requires:
+    - pip
+    - pytest-cov
+  commands:
+    - pip check
+    - pytest --cov=y_py --cov-branch --cov-report=term-missing:skip-covered --no-cov-on-fail --cov-fail-under=83
+  imports:
+    - y_py
+
+about:
+  home: https://github.com/y-crdt/ypy
+  license: MIT
+  license_family: MIT
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  summary: Python bindings for the Rust port of Yjs
+  dev_url: https://github.com/y-crdt/ypy
+
+extra:
+  recipe-maintainers:
+    - davidbrochart
+    - Waidhoferj
+    - fcollonval

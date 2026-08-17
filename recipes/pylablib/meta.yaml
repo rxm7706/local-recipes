@@ -1,0 +1,60 @@
+{% set name = "pylablib" %}
+{% set version = "1.4.5" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pylablib-{{ version }}.tar.gz
+  sha256: ea38b4a5a913d045b9228680c9f5fb5be2bfec1b1648441a22cf0a08d234efdb
+
+build:
+  skip: true  # [py<36]
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - {{ compiler("c") }}
+    - {{ stdlib("c") }}
+    - cross-python_{{ target_platform }}    # [build_platform != target_platform]
+    - python                                # [build_platform != target_platform]
+  host:
+    - python
+    - pip
+    - setuptools
+    - wheel
+    - cython 3.0.12
+  run:
+    - python
+    - numba
+    - numpy
+    - pandas
+    - pyqt >=5.9
+    - pyqtgraph
+    - pyserial
+    - pyusb
+    - pyvisa >=1.6
+    - rpyc
+    - scipy
+
+test:
+  imports:
+    - pylablib
+    - pylablib.core
+  requires:
+    - pip
+
+about:
+  home: https://github.com/AlexShkarin/pyLabLib
+  summary: 'Code for use in lab environment: experiment automation, data acquisition, device communication'
+  doc_url: https://pylablib.readthedocs.io/
+  dev_url: https://github.com/AlexShkarin/pyLabLib/
+  license: GPL-3.0-only
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - AlexShkarin

@@ -1,0 +1,72 @@
+{% set name = "trimesh" %}
+{% set version = "5.0.0" %}
+{% set sha256 = "0195003198baaf2550aebe612254ba2f01c385cec46c37ecc5beca8291f79a13" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - numpy
+  run_constrained:
+    - jsonschema
+    - mapbox_earcut
+    - setuptools
+    - scipy
+    - pycollada
+    - networkx
+    - chardet
+    - svg.path
+    - xxhash
+    - pillow
+    - psutil
+    - rtree
+    - pyglet
+    - sympy
+    - meshio
+    - msgpack-python
+    - shapely
+    - requests
+    - lxml
+    - colorlog
+    - scikit-image
+
+test:
+  requires:
+    - python {{ python_min }}
+  commands:
+    - python -c "import trimesh"
+
+about:
+  home: https://github.com/mikedh/trimesh
+  license: MIT
+
+  # We can remove LICENSE.md from
+  # the recipe when it is included
+  # in the trimesh source dist:
+  #
+  # https://github.com/mikedh/trimesh/pull/176
+  license_file: LICENSE.md
+  summary: Import, export, process, analyze and view triangular meshes.
+  dev_url: https://github.com/mikedh/trimesh
+
+extra:
+  recipe-maintainers:
+    - mikedh
+    - pauldmccarthy

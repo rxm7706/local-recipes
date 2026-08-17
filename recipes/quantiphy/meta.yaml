@@ -1,0 +1,54 @@
+{% set name = "quantiphy" %}
+{% set version = "2.22.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: e14c0806eff01dfbb0c19ca12934719a2124c64f7100e60bed019efd634e545b
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - flit-core >=2
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - quantiphy
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+
+about:
+  home: https://quantiphy.readthedocs.io/
+  summary: 'QuantiPhy is a Python library that offers support for physical quantities'
+  description: |
+    Author - Ken Kundert
+    QuantiPhy is a Python library that offers support for physical quantities.
+    A quantity is the pairing of a number and a unit of measure that indicates
+    the amount of some measurable thing. QuantiPhy provides quantity objects
+    that keep the units with the number, making it easy to share them as single
+    object. They subclass float and so can be used anywhere a real number is
+    appropriate.
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt
+  doc_url: https://quantiphy.readthedocs.io/
+  dev_url: https://github.com/kenkundert/quantiphy
+
+extra:
+  recipe-maintainers:
+    - danielbrown2
+    - KenKundert

@@ -1,0 +1,54 @@
+{% set name = "pipx" %}
+{% set version = "1.14.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pipx-{{ version }}.tar.gz
+  sha256: 6566e35e64292d1df8a2e3c7ab51093521201cf7a9ed2f23217e5f843aad05b8
+
+build:
+  noarch: python
+  number: 0
+
+  entry_points:
+    - pipx = pipx.main:cli
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatch-vcs >=0.4
+    - hatchling >=1.27
+    - pip
+  run:
+    - python >={{ python_min }}
+    - argcomplete >=1.9.4
+    - colorama >=0.4.4
+    - packaging >=20
+    - platformdirs >=2.1
+    - tomli
+    - userpath >=1.6,!=1.9
+
+test:
+  imports:
+    - pipx
+    - pipx.commands
+  commands:
+    - pip check
+    - pipx --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/pypa/pipx
+  summary: Install and Run Python Applications in Isolated Environments
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - maresb

@@ -1,5 +1,5 @@
 {% set name = "tabcmd" %}
-{% set version = "2.0.18" %}
+{% set version = "2.0.21" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/tabcmd-{{ version }}.tar.gz
-  sha256: 7ab1a7809dc25be7373ee56ae014eb3c6499d8bfccd04ca44a8668724bb494e1
+  sha256: 80eebb14f92ca08ac9b7ffce7c3e5b698b3bec47ce898cfbec9f33287981ece1
 
 build:
   entry_points:
@@ -25,6 +25,7 @@ requirements:
     - setuptools-scm >=6.2
     - pip
   run:
+    - setuptools
     - click
     - pytest-order
     - python >={{ python_min }},<3.12
@@ -38,7 +39,7 @@ requirements:
     - types-mock
     - types-requests
     - types-setuptools
-    - tableauserverclient ==0.37
+    - tableauserverclient ==0.41
     - urllib3
 
 test:

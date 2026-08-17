@@ -1,0 +1,41 @@
+{% set name = "pickle5" %}
+{% set version = "0.0.12" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 80143d4e4ea9d6cd70e841af8745dbc4d50adef5adf99e725d240bcb92e6f1e8
+
+build:
+  number: 0
+  skip: true  # [py < 35 or py > 37 or python_impl == "pypy"]
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - {{ compiler("c") }}
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - pickle5
+  commands:
+    - python -m pickle5.test.test_pickle
+
+about:
+  home: https://github.com/pitrou/pickle5-backport
+  license: PSF-2.0
+  license_file: LICENSE
+  summary: Experimental backport of the pickle 5 protocol (PEP 574)
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - pitrou

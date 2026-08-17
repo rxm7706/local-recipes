@@ -1,0 +1,61 @@
+{% set name = "python-box" %}
+{% set version = "7.4.1" %}
+{% set sha256 = "e412e36c25fca8223560516d53ef6c7993591c3b0ec8bb4ec582bf7defdd79f0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 1
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython                                 # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - python
+    - cython
+    - pip
+    - pytest-runner
+    - poetry
+  run:
+    - python
+    - pip
+    - ruamel.yaml
+    - toml
+
+test:
+  imports:
+    - box
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/cdgriffith/Box
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Python dictionaries with recursive dot notation access
+  description: |
+    Box is designed to be an easy drop in transparently replacements for dictionaries, 
+    thanks to Python’s duck typing capabilities, which adds dot notation access. Any sub 
+    dictionaries or ones set after initiation will be automatically converted to a Box 
+    object. You can always run .to_dict() on it to return the object and all sub objects 
+    back into a regular dictionary.
+  doc_url: https://github.com/cdgriffith/Box
+  dev_url: https://github.com/cdgriffith/Box
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - cdgriffith

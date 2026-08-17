@@ -6,20 +6,23 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail-tag-manager-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/wagtail-tag-manager-{{ version }}.tar.gz
   sha256: aa9bd32de537529240af51866d619440a7171bff401a28b0fa7ebdae31e19691
 
 build:
   noarch: python
+  script_env:
+    - PYTHONUTF8=1
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python
+    - python >={{ python_min }}
     - wagtail >=4.0,<6.0
     - wagtail-modeladmin <1.1.0,>=1.0.0
     - selenium >=3.141.0,<3.142.0
@@ -31,6 +34,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/jberghoef/wagtail-tag-manager

@@ -1,0 +1,73 @@
+{% set name = "optimum" %}
+{% set version = "2.3.0" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/optimum-{{ version }}.tar.gz
+  sha256: aa96ad535a5cec68d12c6372574125452284632fe13699633a61e8bbfb09c4df
+
+build:
+  number: 0
+  noarch: python
+  script: "{{ PYTHON }} -m pip install . -vv"
+  entry_points:
+    - optimum-cli = optimum.commands.optimum_cli:main
+
+requirements:
+  host:
+    - pip
+    - setuptools
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+    - transformers >=4.29.0
+    - sentencepiece >=0.1.91,!=0.1.92 # dependency of transformers(sentencepiece)
+    - protobuf # dependency of transformers(sentencepiece)
+    - packaging
+    - pytorch >=1.11
+    - numpy
+    - huggingface_hub >=0.8.0
+
+test:
+  imports:
+    - optimum
+  commands:
+    - pip check
+    - optimum-cli --help
+  requires:
+    - pip
+    - python {{ python_min }}
+    - huggingface_hub <1.0  # Old transformers Conda packages don't enforce the upper bound. Remove once we start using transformers >=5.0.0 in the requirements.
+
+about:
+  home: https://huggingface.co/hardware
+  summary: |
+    Optimum Library is an extension of the Hugging Face Transformers 
+    library, providing a framework to integrate third-party libraries 
+    from Hardware Partners and interface with their specific functionality.
+  license: Apache-2.0
+  license_file: LICENSE
+  description: |
+    🤗 Optimum is an extension of 🤗 Transformers, providing a set of performance 
+    optimization tools enabling maximum efficiency to train and run models on 
+    targeted hardware.
+
+    The AI ecosystem evolves quickly and more and more specialized hardware along 
+    with their own optimizations are emerging every day. As such, Optimum enables 
+    users to efficiently use any of these platforms with the same ease inherent 
+    to transformers.
+
+    PyPI: [https://pypi.org/project/optimum/](https://pypi.org/project/optimum/)
+
+  doc_url: https://huggingface.co/docs/optimum/
+  dev_url: https://github.com/huggingface/optimum
+
+extra:
+  recipe-maintainers:
+    - ilya-lavrenov
+    - sugatoray
+    - shermansiu

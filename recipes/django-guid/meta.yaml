@@ -1,0 +1,47 @@
+{% set name = "django-guid" %}
+{% set version = "3.6.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_guid-{{ version }}.tar.gz
+  sha256: 701274b253d8cd92aa1d72f383e9ac245f17dc94038dd8d04b5719d479e3baea
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - poetry
+  run:
+    - python >={{ python_min }}
+    - django >=4
+    - packaging
+
+test:
+  imports:
+    - django_guid
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/snok/django-guid
+  summary: Middleware that enables single request-response cycle tracing by injecting a unique ID into project logs
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  doc_url: https://django-guid.readthedocs.io/en/latest
+  dev_url: https://github.com/snok/django-guid
+
+extra:
+  recipe-maintainers:
+    - sumanth-manchala

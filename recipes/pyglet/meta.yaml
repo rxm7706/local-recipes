@@ -1,0 +1,55 @@
+{% set version = "2.1.15" %}
+
+package:
+  name: pyglet
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pyglet/pyglet-{{ version }}.tar.gz
+  sha256: 0ef34fe730808a97e48c24dd6ed4ff614024b980955ed8dbc2dd01ededaa08cb
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - flit-core
+  run:
+    - python >={{ python_min }}
+    - freetype
+    - ffmpeg >=4.0.0
+
+test:
+  # We moved all "import ..." tests to `run_tests.py` because on Linux, we
+  # need to run the tests through xvfb-run as some of them require a
+  # (virtual) display. On Windows and macOS, on the other hand, we can run the
+  # test script directly.
+  requires:
+    - libglu  # [linux]
+    - python {{ python_min }}
+    - pip
+  files:
+    - run_tests.py
+  commands:
+    - pip check
+    - python run_tests.py  # [not linux]
+    - xvfb-run --server-args=":99 -screen 0 1024x768x24 -ac +extension GLX -noreset" python run_tests.py  # [linux]
+
+about:
+  home: http://pyglet.org
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Cross-platform windowing and multimedia library
+  dev_url: https://github.com/pyglet/pyglet
+
+extra:
+  recipe-maintainers:
+    - mwcraig
+    - jakirkham
+    - bitcraft
+    - hmaarrfk  # just a maintainer to help move things forward. Happy to retire myself

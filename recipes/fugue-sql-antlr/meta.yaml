@@ -1,0 +1,52 @@
+{% set name = "fugue-sql-antlr" %}
+{% set version = "0.2.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 688cec1f76ff88dd1b1a714629e097989384b27e54c0a672cc3d6adcbed824d2
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - antlr4-python3-runtime <4.14
+    - jinja2
+    - python >={{ python_min }}
+    - triad >=0.6.8
+
+    # Not listed upstream but required
+    - packaging
+
+test:
+  imports:
+    - fugue_sql_antlr
+    - fugue_sql_antlr_version
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/fugue-project/fugue-sql-antlr
+  summary: Fugue SQL Antlr Parser
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - charlesbluca
+    - kvnkho
+    - goodwanghan
+    - thewchan

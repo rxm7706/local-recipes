@@ -1,0 +1,47 @@
+{% set name = "cmakelint" %}
+{% set version = "1.4.3" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 98a1e485318b41eeaf4dee3469ca3039d4745985353ecea208d6dd2c1204c71d
+
+build:
+  noarch: python
+  number: 1
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv"
+  entry_points:
+    - cmakelint = cmakelint.main:main
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - pytest-runner
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - cmakelint
+  commands:
+    - cmakelint --version
+
+about:
+  home: https://github.com/cmake-lint/cmake-lint
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: Static code checker for CMake files
+  dev_url: https://github.com/cmake-lint/cmake-lint
+
+extra:
+  recipe-maintainers:
+    - asafkahlon
+    - timkpaine

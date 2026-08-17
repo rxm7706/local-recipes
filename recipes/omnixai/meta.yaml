@@ -6,20 +6,24 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/omnixai-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/omnixai-{{ version }}.tar.gz
   sha256: 060a77f5accdab388097f92ed7635c7bd94e0ecebe9b4730445527857b0609dc
 
 build:
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv
-  number: 0
+  script:
+    - {{ PYTHON }} -m pip install . -vv
+    # Open Upstream Bug, looks like it is installing its docs globally
+    - rm -rf ${SP_DIR}/docs
+  number: 1
 
 requirements:
   host:
-    - python >=3.7,<4.0
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.7,<4.0
+    - python >={{ python_min }},<4.0
     - numpy >=1.17,<1.24
     - pandas >=1.1.0
     - scikit-learn >=0.24,<1.2
@@ -42,12 +46,14 @@ requirements:
 
 test:
   imports:
-    - docs
+    # Open Upstream Bug, looks like it is installing its docs globally
+    #- docs
     - omnixai
   commands:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/salesforce/omnixai

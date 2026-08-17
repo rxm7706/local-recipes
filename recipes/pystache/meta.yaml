@@ -1,0 +1,56 @@
+{% set name = "pystache" %}
+{% set version = "0.6.8" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pystache-{{ version }}.tar.gz
+  sha256: 3707518e6a4d26dd189b07c10c669b1fc17df72684617c327bd3550e7075c72c
+
+build:
+  entry_points:
+    - pystache=pystache.commands.render:main
+    - pystache-test=pystache.commands.test:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=61
+    - setuptools-scm >=6.2
+    - pip
+  run:
+    - python >={{ python_min }}
+    # only required for py<310 but want to stay noarch: python
+    - importlib-metadata >=4.6
+
+test:
+  imports:
+    - pystache
+  commands:
+    - pip check
+    - pip show pystache
+    - "pip show {{ name }} | grep -Fx 'Version: {{ version }}'"
+    - pystache --help
+    - pystache-test --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/PennyDreadfulMTG/pystache
+  summary: Mustache for Python
+  license: MIT
+  license_file: LICENSE
+  dev_url: https://github.com/PennyDreadfulMTG/pystache
+  doc_url: https://github.com/PennyDreadfulMTG/pystache/blob/master/README.rst
+
+extra:
+  recipe-maintainers:
+    - xylar
+    - kwilcox
+    - jan-janssen

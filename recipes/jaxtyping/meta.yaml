@@ -1,0 +1,46 @@
+{% set name = "jaxtyping" %}
+{% set version = "0.3.11" %}
+{% set python_min = "3.11" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/jaxtyping-{{ version }}.tar.gz
+  sha256: b09c14acf6686feb9e0df5b0d8c6e7c5b6f8d36bf059ee54cd522a186c2ef050
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >={{ python_min }}
+    - wadler-lindig >=0.1.3
+
+test:
+  imports:
+    - jaxtyping
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/google/jaxtyping
+  summary: Type annotations and runtime checking for shape and dtype of JAX arrays, and PyTrees.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - asford
+    - ngam
+    - iamthebot

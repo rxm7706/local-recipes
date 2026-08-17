@@ -1,0 +1,67 @@
+{% set name = "mizani" %}
+{% set version = "0.14.4" %}
+{% set bundle = "tar.gz" %}
+{% set hash = "28934d91516d922d7cb0382c82a6c513692abc0174c42a50294ae571520633f9" %}
+{% set build = 0 %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.{{ bundle }}
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.{{ bundle }}
+  sha256: {{ hash }}
+
+build:
+  number: {{ build }}
+  script: {{ PYTHON }} -m pip install . -vv
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - setuptools_scm
+
+  run:
+    - python >={{ python_min }}
+    - numpy >=1.23.5
+    - scipy >=1.8.0
+    - pandas >=2.2.0
+    - python-dateutil
+    - tzdata  # os == windows
+
+test:
+  requires:
+    - python {{ python_min }}
+    - pip
+    - pytest
+    - pytest-cov
+  source_files:
+    - "tests"
+    - "pyproject.toml"
+  commands:
+    # The pip version can reported incorrectly if setuptools_scm isn't available
+    # at build time
+    - pip list | grep -i {{ name }} | grep {{ version }}
+    - pip check
+    - echo $PWD
+    - ls -larth
+    - pytest
+
+about:
+  home: https://github.com/has2k1/mizani
+  license_file: LICENSE
+  license: BSD-3-Clause
+  license_family: BSD
+  summary: Scales for Python
+  dev_url: https://github.com/has2k1/mizani
+  doc_url: https://mizani.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - has2k1

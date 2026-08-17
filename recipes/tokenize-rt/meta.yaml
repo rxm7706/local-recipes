@@ -1,0 +1,48 @@
+{% set name = "tokenize-rt" %}
+{% set version = "6.2.0" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/tokenize_rt-{{ version }}.tar.gz
+  sha256: 8439c042b330c553fdbe1758e4a05c0ed460dbbbb24a606f11f0dee75da4cad6
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  entry_points:
+    - tokenize-rt = tokenize_rt:main
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - tokenize_rt
+  commands:
+    - tokenize-rt --help
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/asottile/tokenize-rt
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A wrapper around the stdlib `tokenize` which roundtrips.
+
+extra:
+  recipe-maintainers:
+    - sterlingbaldwin
+    - deadsnakes-issues-bot
+    - nicoddemus

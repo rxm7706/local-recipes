@@ -1,0 +1,151 @@
+{% set name = "cloudpathlib" %}
+{% set version = "0.24.0" %}
+
+
+package:
+  name: cloudpathlib-meta
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: c521a984e77b47e656fe78e20a7e3e260e0ab45fc69e33ac01094227c979e34a
+
+build:
+  number: 0
+  noarch: python
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - flit-core >=3.2,<4
+
+
+
+outputs:
+  - name: cloudpathlib
+    build:
+      noarch: python
+      script: {{ PYTHON }} -m pip install . -vv
+    requirements:
+      host:
+        - pip
+        - python {{ python_min }}
+        - flit-core >=3.2,<4
+      run:
+        - python >={{ python_min }}
+        - typing_extensions
+    test:
+      imports:
+        - cloudpathlib
+      commands:
+        - pip check
+      requires:
+        - pip
+        - python {{ python_min }}
+
+  - name: cloudpathlib-azure
+    build:
+      noarch: python
+    requirements:
+      host:
+        - pip
+        - python {{ python_min }}
+        - flit-core >=3.2,<4
+      run:
+        - python >={{ python_min }}
+        - {{ pin_subpackage('cloudpathlib', exact=True) }}
+        - azure-storage-blob >=12
+        - azure-storage-file-datalake >=12
+    test:
+      imports:
+        - cloudpathlib
+      commands:
+        - pip check
+        - python -c "from cloudpathlib.cloudpath import implementation_registry; implementation_registry['azure'].validate_completeness()"
+      requires:
+        - pip
+        - python {{ python_min }}
+
+  - name: cloudpathlib-gs
+    build:
+      noarch: python
+    requirements:
+      host:
+        - pip
+        - python {{ python_min }}
+        - flit-core >=3.2,<4
+      run:
+        - python >={{ python_min }}
+        - {{ pin_subpackage('cloudpathlib', exact=True) }}
+        - google-cloud-storage
+    test:
+      imports:
+        - cloudpathlib
+      commands:
+        - pip check
+        - python -c "from cloudpathlib.cloudpath import implementation_registry; implementation_registry['gs'].validate_completeness()"
+      requires:
+        - pip
+        - python {{ python_min }}
+
+  - name: cloudpathlib-s3
+    build:
+      noarch: python
+    requirements:
+      host:
+        - pip
+        - python {{ python_min }}
+        - flit-core >=3.2,<4
+      run:
+        - python >={{ python_min }}
+        - {{ pin_subpackage('cloudpathlib', exact=True) }}
+        - boto3 >=1.34.0
+    test:
+      imports:
+        - cloudpathlib
+      commands:
+        - pip check
+        - python -c "from cloudpathlib.cloudpath import implementation_registry; implementation_registry['s3'].validate_completeness()"
+      requires:
+        - pip
+        - python {{ python_min }}
+
+  - name: cloudpathlib-all
+    build:
+      noarch: python
+    requirements:
+      host:
+        - pip
+        - python {{ python_min }}
+        - flit-core >=3.2,<4
+      run:
+        - python >={{ python_min }}
+        - {{ pin_subpackage('cloudpathlib-azure', exact=True) }}
+        - {{ pin_subpackage('cloudpathlib-gs', exact=True) }}
+        - {{ pin_subpackage('cloudpathlib-s3', exact=True) }}
+    test:
+      imports:
+        - cloudpathlib
+      commands:
+        - pip check
+        - python -c "from cloudpathlib.cloudpath import implementation_registry; implementation_registry['azure'].validate_completeness()"
+        - python -c "from cloudpathlib.cloudpath import implementation_registry; implementation_registry['gs'].validate_completeness()"
+        - python -c "from cloudpathlib.cloudpath import implementation_registry; implementation_registry['s3'].validate_completeness()"
+      requires:
+        - pip
+        - python {{ python_min }}
+
+
+about:
+  home: https://github.com/drivendataorg/cloudpathlib
+  summary: pathlib.Path-style classes for interacting with files in different cloud storage services.
+  license: MIT
+  license_file: LICENSE
+  doc_url: https://cloudpathlib.drivendata.org/
+  dev_url: https://github.com/drivendataorg/cloudpathlib
+
+extra:
+  feedstock-name: cloudpathlib
+  recipe-maintainers:
+    - jayqi

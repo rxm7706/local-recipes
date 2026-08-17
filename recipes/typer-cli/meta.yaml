@@ -1,0 +1,50 @@
+{% set name = "typer-cli" %}
+{% set version = "0.0.13" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name | replace('_', '-') }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: f5b85764e56fb3fe835ed008ad5bc7db4961f7bcce1f1c1698ac46b6c5d9b86f
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  entry_points:
+    - typer = typer_cli.main:main
+
+requirements:
+  host:
+    - pip
+    - hatchling
+    - python >=3.7
+  run:
+    - python >=3.7
+    - typer >=0.4.0,<=0.7.0
+    - colorama >=0.4.3,<0.5.0
+    - shellingham >=1.3.2,<=1.4.0
+
+test:
+  requires:
+    - pip
+  imports:
+    - typer_cli
+  commands:
+    - typer --help
+    - pip check
+
+about:
+  home: https://github.com/tiangolo/typer-cli
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Run Typer scripts with completion, without having to create a package, using Typer CLI.
+  doc_url: https://typer.tiangolo.com/typer-cli/
+
+extra:
+  recipe-maintainers:
+    - fcollonval
+    - mariusvniekerk

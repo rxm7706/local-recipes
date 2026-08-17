@@ -1,0 +1,49 @@
+{% set version = "1.4.1" %}
+
+package:
+  name: pytest-console-scripts
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pytest-console-scripts/pytest-console-scripts-{{ version }}.tar.gz
+  sha256: 5a826ed84cc0afa202eb9e44381d7d762f7bdda8e0c23f9f79a7f1f44cf4a895
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+    - setuptools-scm
+  run:
+    - importlib-metadata >=3.6
+    - pytest >=4.0.0
+    - python >={{ python_min }}
+
+test:
+  source_files:
+    - tests
+  imports:
+    - pytest_console_scripts
+  commands:
+    - pip check
+    - pytest -vv --cov pytest_console_scripts -k "not test_env[subprocess]"
+  requires:
+    - pip
+    - pytest-cov
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/kvas-it/pytest-console-scripts
+  summary: Pytest plugin for testing console scripts
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - holgern
+    - bollwyvl

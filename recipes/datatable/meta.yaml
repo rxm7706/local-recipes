@@ -1,33 +1,62 @@
 {% set name = "datatable" %}
 {% set version = "1.1.0" %}
 
+
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/datatable-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/datatable-{{ version }}.tar.gz
   sha256: 8a9f6953ef6b02ede3d7c490f17d5c18c9b1bf2d58dd5451a8cac40ed887d775
 
 build:
-  noarch: python
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
+  skip: true  # [py>312 or win]
+  script: |
+    {{ PYTHON }} ci/ext.py build
+    {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
+  build:
+    - {{ compiler('cxx') }}
+    - {{ stdlib("c") }}
   host:
-    - python >=3.6
     - pip
+    - python
+    - setuptools
   run:
-    - python >=3.6
+    - python
 
 test:
   imports:
     - datatable
+  files:
+    - setup.cfg
+  source_files:
+    - src
+    - tests
+    - tests_random
+    - LICENSE
   commands:
-    - pip check
+    - rm tests/test-docs.py
+    - pytest tests -k 'not test_fread_from_cmd2 and not test_dt_version and not test_random_attack'
   requires:
     - pip
+    # requirements_extra.txt
+    - numpy <2.0
+    - pandas
+    - pyarrow
+    - xlrd <=1.2.0
+    # requirements_docs.txt
+    - docutils >=0.15
+    - pygments >=2.6
+    - sphinx >=4.0,<5.0
+    - sphinx_rtd_theme >=0.5
+    - nbsphinx >=0.5
+    # requirements_tests.txt
+    - pytest >=3.1
+    - pytest-cov
 
 about:
   home: https://github.com/h2oai/datatable
@@ -37,4 +66,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - xylar

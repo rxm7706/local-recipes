@@ -1,0 +1,59 @@
+{% set name = "py7zr" %}
+{% set version = "1.1.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 8d51894abb38355bf14881088bb97f01fe4cb5b14ebe22f66d6297668c7e1a74
+
+build:
+  number: 1
+  noarch: python
+  entry_points:
+    - py7zr = py7zr.__main__:main
+  script:
+    - {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - python-build
+    - setuptools >=63
+    - setuptools-scm >=7.0.5
+  run:
+    - brotli-python >=1.2.0
+    - brotlicffi >=1.2.0.0
+    - importlib-metadata
+    - inflate64 >=1.0.4
+    - multivolumefile >=0.2.3
+    - psutil
+    - pybcj >=1.0.6
+    - pycryptodomex >=3.20.0
+    - pyppmd >=1.3.1
+    - python >={{ python_min }}
+    - pyzstd >=0.14.4
+    - texttable
+
+test:
+  imports:
+    - py7zr
+  commands:
+    - py7zr --help
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/miurahr/py7zr
+  summary: Pure python 7-zip library
+  license: LGPL-2.1-or-later
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - sarthakpati

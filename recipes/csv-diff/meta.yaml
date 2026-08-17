@@ -1,0 +1,47 @@
+{% set name = "csv-diff" %}
+{% set version = "1.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: f6c251542fbcd9d6eef8b27c3870fc4dfc3592c880c34dac57ed94e382f2d53b
+
+build:
+  entry_points:
+    - csv-diff = csv_diff.cli:cli
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.6
+    - pytest-runner
+    - pip
+  run:
+    - python >=3.6
+    - click
+    - dictdiffer
+
+test:
+  imports:
+    - csv_diff
+  commands:
+    - pip check
+    - csv-diff --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/simonw/csv-diff
+  summary: Python CLI tool and library for diffing CSV and JSON files
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - corneliusroemer
+    - tsibley

@@ -1,0 +1,48 @@
+{% set name = "pytest_ruff" %}
+{% set python_min = "3.8" %}
+{% set version = "0.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: f611c780fc2b9b8d7041fa0e7589f0a9f352b288d0cfc330881101b35d382063
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - poetry-core
+    - poetry-dynamic-versioning
+    - pip
+  run:
+    - python >={{ python_min }}
+    - pytest >=5
+    - ruff >=0.0.242
+
+test:
+  imports:
+    - pytest_ruff
+  requires:
+    - python {{ python_min }}
+    - pip
+  commands:
+    - pip check
+
+about:
+  home: https://pypi.org/project/pytest-ruff/
+  summary: 'A pytest plugin to run ruff'
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  dev_url: https://github.com/businho/pytest-ruff
+
+extra:
+  recipe-maintainers:
+    - kynan

@@ -1,13 +1,14 @@
 {% set name = "django-autocomplete-light" %}
-{% set version = "3.9.7" %}
+{% set version = "5.0.0" %}
+{% set python_min = "3.11" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-autocomplete-light-{{ version }}.tar.gz
-  sha256: a34f192ac438c4df056dbfd399550799ddc631c4661960134ded924648770373
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 115ee3541ee4a7ddd1b92396ea75d0f38d0b91899b0dc17259310975c728b32e
 
 build:
   noarch: python
@@ -16,31 +17,36 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
+    - setuptools >=65.5.1
+    - wheel
     - pip
   run:
-    - python >=3.8
-    - django >=3.2
-    - six
+    - python >={{ python_min }}
+    - django >=5.2
+    #- six
+    # - django-taggit 
+    # - django-querysetsequence >=0.11
+    # - django-nested-admin >=3.0.21
+    # - django-taggit 
+    # - django-querysetsequence >=0.11
+    # - django-nested-admin >=3.0.21
 
 test:
   imports:
     - dal
+    - dal_alight
+    - dal_alight_queryset_sequence
     - dal_contenttypes
-    - dal_genericm2m
-    - dal_genericm2m_queryset_sequence
-    - dal_gm2m
-    - dal_gm2m_queryset_sequence
-    - dal_legacy_static
     - dal_queryset_sequence
     - dal_select2
     - dal_select2_queryset_sequence
-    - dal_select2_tagging
     - dal_select2_taggit
   commands:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: http://django-autocomplete-light.rtfd.org

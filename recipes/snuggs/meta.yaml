@@ -1,0 +1,44 @@
+{% set name = "snuggs" %}
+{% set version = "1.4.7" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/snuggs-{{ version }}.tar.gz
+  sha256: 501cf113fe3892e14e2fee76da5cd0606b7e149c411c271898e6259ebde2617b
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 2
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - numpy
+    - pyparsing >=2.1.6
+
+test:
+  imports:
+    - snuggs
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/mapbox/snuggs
+  summary: Snuggs are s-expressions for Numpy
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

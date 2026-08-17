@@ -1,0 +1,48 @@
+{% set version = "0.11.5" %}
+
+package:
+  name: ggplot
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/g/ggplot/ggplot-{{ version }}.tar.gz
+  sha256: 48bbc9ea5987f815ad25856d76573506dbfe153ff696f026ce324582af56469f
+
+build:
+  number: 5
+  noarch: python
+  script: "{{ PYTHON }} -m pip install . --no-deps -vv"
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - six
+    - statsmodels
+    - brewer2mpl
+    - matplotlib-base
+    - scipy
+    - patsy >=0.4
+    - pandas <=0.22.0
+    - cycler
+    - numpy
+
+test:
+  imports:
+    - ggplot
+
+about:
+  home: https://github.com/yhat/ggplot
+  license_file: {{ RECIPE_DIR }}/LICENSE
+  license: BSD 2-Clause
+  license_family: BSD
+  summary: 'ggplot for python'
+  dev_url: https://github.com/yhat/ggplot
+  doc_url: https://github.com/yhat/ggplot/tree/master/docs
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - ocefpaf

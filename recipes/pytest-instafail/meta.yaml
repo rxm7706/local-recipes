@@ -12,30 +12,36 @@ source:
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python >=3.7
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.7
-    - pytest >=5
+    - python >={{ python_min }}
+    - pytest >=5.0
 
 test:
+  requires:
+    - python {{ python_min }}
   imports:
     - pytest_instafail
-  commands:
-    - pip check
-  requires:
-    - pip
 
 about:
   home: https://github.com/pytest-dev/pytest-instafail
-  summary: pytest plugin to show failures instantly
   license: BSD-3-Clause
+  license_family: BSD
   license_file: LICENSE
+  summary: 'py.test plugin to show failures instantly '
+  description: |
+    pytest-instafail is a plugin for py.test that shows failures and errors
+    instantly instead of waiting until the end of test session.
+  doc_url: https://github.com/pytest-dev/pytest-instafail
+  dev_url: https://github.com/pytest-dev/pytest-instafail
 
 extra:
   recipe-maintainers:
     - rxm7706
+    - asford

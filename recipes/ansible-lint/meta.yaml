@@ -1,0 +1,71 @@
+{% set python_min = "3.10" %}
+{% set name = "ansible-lint" %}
+{% set version = "26.6.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 790d08ff6ee56525244677411c90a17b374245d3913bc6a462b5d913ece6d615
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  entry_points:
+    - ansible-lint = ansiblelint.__main__:main
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - setuptools_scm
+    - setuptools_scm_git_archive
+  run:
+    - python >={{ python_min }}
+    - ansible-core >=2.12.0
+    - ansible-compat >=24.10.0
+    - black >=22.8.0
+    - filelock >=3.3.0
+    - jsonschema >=4.10.0
+    - packaging >=21.3
+    - pathspec <1.1.0,>=1.0.3
+    - pyyaml >=5.4.1
+    - requests >=2.31.0
+    - rich >=12.0.0
+    - ruamel.yaml >=0.18.5
+    - subprocess-tee >=0.4.1
+    - yamllint >=1.38.0
+    - wcmatch >=8.5.0
+    - importlib-metadata
+    - distro
+
+test:
+  imports:
+    - ansiblelint
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/ansible/ansible-lint
+  license: MIT
+  license_family: MIT
+  license_file: COPYING
+  summary: Checks playbooks for practices and behaviour that could potentially be improved
+  description: |
+    Ansible Lint is a commandline tool for linting playbooks. Use it to detect behaviors and practices that could potentially be improved.
+    The tool is used by the Ansible Galaxy project to lint and calculate quality scores for content contributed to the Galaxy Hub.
+    The project was originally started by @willthames, and has since been transferred to the Ansible project team.
+  doc_url: https://docs.ansible.com/ansible-lint/
+  dev_url: https://github.com/ansible/ansible-lint
+
+extra:
+  recipe-maintainers:
+    - knightdave
+    - tschoonj

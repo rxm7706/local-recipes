@@ -1,0 +1,261 @@
+{% set version = "9.0.1" %} # semver: (x.y.z)
+{% set x,y,z = version.split('.') %}
+{% set version_ffmpeg_style = x ~ '.' ~ y if z == "0" else version %}
+{% set build_number_increment = build_number_increment | default(0) %}
+{% set license_family = license_family | default("lgpl") %}
+
+package:
+  name: ffmpeg
+  version: {{ version }}
+
+source:
+  url: https://ffmpeg.org/releases/ffmpeg-{{ version_ffmpeg_style }}.tar.gz
+  sha256: 657dbf258cce6c0681714b6e40b8ca69e988c67ecfc2f7aab47574e6ebaceb38
+  patches:
+    ### conda-forge patches below
+    - patches/0001-Generate-pkgconfig-for-windows.patch  # [win]
+    # I don't really think that the original changes made at FFmpeg make sense for
+    # conda-forge's conmpiler stack on windows
+    # https://github.com/FFmpeg/FFmpeg/commit/f8d6d0fbf12b3247a37885cd0a5cd32ddc1f01b3
+    # https://github.com/conda-forge/ffmpeg-feedstock/pull/193#issuecomment-1484476264
+    - patches/0002-Revert-compat-Use-instead-of-for-rc.exe-options.patch
+
+    # With updates to conda-forge tooling
+    # it seems that gnu-windres that it is found
+    # but we want to use vc's rc compiler
+    # https://github.com/conda-forge/ffmpeg-feedstock/pull/351#issuecomment-3637099344
+    - patches/0003-disable-gnu-windres.patch
+
+    # https://github.com/conda-forge/ffmpeg-feedstock/issues/347
+    - patches/0004-Remove-private-requirements-to-help-downstream-compi.patch
+
+    # needed for qtwebengine
+    - patches/0005-Chromium-patches-for-qtwebengine.patch
+
+    # hmaarrfk -- not sure why i need this one. need to report upstream
+    - patches/0006-Use-forward-lahs-on-windows.patch
+
+    # nvenc aborts the process instead of failing cleanly when
+    # nvEncCreateBitstreamBuffer() fails during encoder init: the input buffer
+    # is destroyed on the error path but the handle is left dangling, and
+    # ff_nvenc_encode_close() then destroys it a second time.
+    # https://code.ffmpeg.org/FFmpeg/FFmpeg/issues/24019
+    - patches/0007-avcodec-nvenc-fix-double-free-of-the-input-buffer.patch
+
+{% set build = 0 %}
+{% set build = build | int + build_number_increment | int %}
+{% if license_family == 'gpl' %}
+    {% set build = build + 100 %}
+{% endif %}
+
+build:
+  number: {{ build }}
+  string: {{ license_family }}_h{{ PKG_HASH }}_{{ PKG_BUILDNUM }}
+  run_exports:
+  # seems to be major version compatibility
+  # https://abi-laboratory.pro/tracker/timeline/ffmpeg/
+    - {{ pin_subpackage('ffmpeg', max_pin='x') }}
+  ignore_run_exports_from:
+    - glib
+
+requirements:
+  build:
+    - {{ compiler("c") }}
+    - {{ compiler("cxx") }}
+    - {{ stdlib("c") }}
+    # clangxx is required for support of the nvidia encoders and decoders
+    - clangxx                # [linux64 or win]
+    - autotools_clang_conda  # [win]
+    - pkg-config
+    - libtool  # [not win]
+    - nasm
+    - make  # [not win]
+    - m2-sed  # [win]
+    # makedef uses the printf command which is provided by coreutils
+    # - m2-coreutils  # [win]
+    - shaderc
+  host:
+    - openssl
+    - bzip2
+    - freetype
+    - expat
+    - libass    # [unix]
+    - harfbuzz
+    - libvpl    # [linux64]
+    # glib is only required to find harfbuzz with pkg-config at compilation time
+    # but it is not directly linked to the system
+    - glib
+    - fontconfig
+    - libiconv
+    - libxml2-devel
+    {% if license_family == 'gpl' %}
+    - x264
+    - x265
+    {% endif %}
+    - libvpx  # [not win]
+    - zlib
+    - openh264
+    - librsvg
+    - gmp                # [unix]
+    - libva              # [linux64]
+    - aom
+    - svt-av1
+    - ffnvcodec-headers  {{ ffnvcodec_headers }}  # [ffnvcodec_headers != "None"]
+    - libopus
+    - lame
+    - libass             # [not win]
+    - libopenvino-dev    # [not win and not ppc64le]
+    - dav1d
+    - liblzma-devel
+    - sdl2
+    - libxcb             # [linux]
+    - xorg-libx11        # [linux]
+    - xorg-xorgproto     # [linux]
+    - alsa-lib           # [linux]
+    - pulseaudio-client  # [linux]
+    - libvorbis
+    - libvulkan-loader
+    - libvulkan-headers
+    - spirv-headers
+    - libplacebo  # [not win and not ppc64le]
+    - libjxl
+    - libwebp
+  run_constrained:
+    - __cuda  >={{ cuda_version_for_ffnvcodec }}  # [ffnvcodec_headers != "None"]
+
+{% set grep = "grep" %}  # [unix]
+{% set grep = "findstr" %}  # [win]
+
+test:
+  requires:
+    # we had a repodata patch that changed the compatibility from libxcb
+    # to encompass 1.16 and 1.17, for some reason build 0 of ffmpeg 7.1
+    # is only compatibile with libxcb 1.16
+    # libxcb 1.17 is required for Ubuntu 24.10 compatibility
+    - libxcb >=1.17    # [linux]
+  commands:
+    - ffmpeg --help
+    - ffmpeg -hide_banner -codecs
+    - ffmpeg -hide_banner -protocols
+    - ffmpeg -hide_banner -protocols | {{ grep }} "https"
+    - ffmpeg -hide_banner -codecs | {{ grep }} "libmp3lame"       # [unix]
+    - ffmpeg -hide_banner -codecs | {{ grep }} "DEVI.S\ zlib"
+    - ffmpeg -hide_banner -codecs | {{ grep }} "DEV.LS h264"
+    - ffmpeg -hide_banner -codecs | {{ grep }} "libopenh264"
+    - ffmpeg -hide_banner -codecs | {{ grep }} "vaapi"            # [linux64]
+    - ffmpeg -hide_banner -codecs | {{ grep }} "libaom"
+    - ffmpeg -hide_banner -codecs | {{ grep }} "libsvtav1"
+    # Verify ffplay is available
+    - ffplay -version
+    # Verify dynamic libraries on all systems
+    {% set ffmpeg_libs = [
+        "avdevice",
+        "swresample",
+        "avfilter",
+        "avcodec",
+        "avformat",
+        "swscale",
+        "avutil",
+    ] %}
+    {% for each_ffmpeg_lib in ffmpeg_libs %}
+    - test -f $PREFIX/lib/lib{{ each_ffmpeg_lib }}${SHLIB_EXT}  # [unix]
+    - if not exist %PREFIX%\\Library\\lib\\{{ each_ffmpeg_lib }}.lib exit 1  # [win]
+    {% endfor %}
+    # Windows dynamic libraries have a suffix
+    # This is useful to keep since it helps detect ABI breakage
+    # One can find the SO versions by reading the release notes
+    # https://ffmpeg.org/download.html#releases
+    {% set ffmpeg_libs = [
+        "avutil-61",
+        "avcodec-63",
+        "avformat-63",
+        "avdevice-63",
+        "swresample-7",
+        "avfilter-12",
+        "swscale-10",
+    ] %}
+    {% for each_ffmpeg_lib in ffmpeg_libs %}
+    - echo "Checking for existance of {{ each_ffmpeg_lib }}.dll"             # [win]
+    - if not exist %PREFIX%\\Library\\bin\\{{ each_ffmpeg_lib }}.dll exit 1  # [win]
+    {% endfor %}
+    {%- if license_family == 'gpl' %}
+    - ffmpeg -hide_banner -buildconf | {{ grep }} "enable-gpl"
+    - ffmpeg -hide_banner -codecs | {{ grep }} "libx264"
+    - ffmpeg -hide_banner -codecs | {{ grep }} "libx265"
+    # https://trac.ffmpeg.org/wiki/Null
+    - ffmpeg -hide_banner -f lavfi -i nullsrc=s=256x256:d=8 -vcodec libx264 -f null -
+    - ffmpeg -hide_banner -f lavfi -i nullsrc=s=256x256:d=8 -vcodec libx265 -f null -
+    {%- endif %}
+    {%- if license_family == 'lgpl' %}
+    - ffmpeg -hide_banner -buildconf | {{ grep }} "disable-gpl"
+    - test ! $(ffmpeg -hide_banner -codecs | grep "libx264")     # [unix]
+    - test ! $(ffmpeg -hide_banner -codecs | grep "libx265")     # [unix]
+    {%- endif %}
+    # Verify nvidia codecs on linux
+    {% set nvcodecs = [
+        "h264_nvenc",
+        "hevc_nvenc",
+        "mjpeg_cuvid",
+        "mpeg1_cuvid",
+        "mpeg2_cuvid",
+        "mpeg4_cuvid",
+        "vc1_cuvid",
+        "vp8_cuvid",
+        "vp9_cuvid"
+    ] %}
+    {% for nvcodec in nvcodecs %}
+    - ffmpeg -hide_banner -codecs | {{ grep }} "{{ nvcodec }}"  # [ffnvcodec_headers != "None"]
+    {% endfor %}
+    {% set qsv_codecs = [
+        "h264_qsv",
+        "hevc_qsv",
+        "mjpeg_qsv",
+        "mpeg2_qsv",
+        "vc1_qsv",
+        "vp8_qsv",
+        "vp9_qsv",
+    ] %}
+    {% for qsv_codec in qsv_codecs %}
+    - ffmpeg -hide_banner -codecs | {{ grep }} "{{ qsv_codec }}"  # [linux64]
+    {% endfor %}
+    # https://trac.ffmpeg.org/wiki/Null
+    - ffmpeg -hide_banner -f lavfi -i nullsrc=s=256x256:d=8 -vcodec libopenh264 -f null -
+    # Verify required devices on linux
+    - ffmpeg -hide_banner -devices | grep "alsa"  # [linux]
+    - ffmpeg -hide_banner -devices | grep "pulse"  # [linux]
+    # Test presence of certain codecs
+    - ffmpeg -hide_banner -codecs | {{ grep }} "libvorbis"
+    - ffmpeg -hide_banner -codecs | {{ grep }} "libjxl"
+    - ffmpeg -hide_banner -codecs | {{ grep }} "libwebp"
+    - ffmpeg -hide_banner -filters | {{ grep }} "libplacebo"  # [not win and not ppc64le]
+    # Test for Vulkan filters - verify they are actually available
+    - ffmpeg -hide_banner -filters | {{ grep }} "vulkan"
+
+about:
+  home: https://www.ffmpeg.org/
+  license: GPL-2.0-or-later  # [license_family=='gpl']
+  license: LGPL-2.1-or-later  # [license_family=='lgpl']
+  license_file:
+    - COPYING.GPLv2            # [license_family=='gpl']
+    - COPYING.GPLv3            # [license_family=='gpl']
+    - COPYING.LGPLv2.1         # [license_family=='lgpl']
+    - COPYING.LGPLv3           # [license_family=='lgpl']
+  license_family: GPL  # [license_family=='gpl']
+  license_family: LGPL  # [license_family=='lgpl']
+  summary: Cross-platform solution to record, convert and stream audio and video.
+  dev_url: https://git.ffmpeg.org/ffmpeg.git
+  doc_url: https://ffmpeg.org/documentation.html
+
+extra:
+  recipe-maintainers:
+    - hmaarrfk
+    - danielballan
+    - jakirkham
+    - 183amir
+    - patricksnape
+    - ocefpaf
+    - sdvillal
+    - carlodri
+    - benjaminrwilson
+    - matthiasdiener
+    - h-vetinari

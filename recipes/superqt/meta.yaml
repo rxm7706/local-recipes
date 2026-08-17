@@ -1,0 +1,58 @@
+{% set name = "superqt" %}
+{% set version = "0.8.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: faa3bd00ef1c9b209b1f31b154dd41c596fec3824f61a70c251fb5569acd7ba6
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - hatchling
+    - hatch-vcs
+    - pip
+    - python {{ python_min }}
+  run:
+    - pyconify >=0.1.4
+    - pygments >=2.4.0
+    - python >={{ python_min }}
+    - qtpy >=2.4.0
+    - typing_extensions >=4.5.0
+
+test:
+  imports:
+    - superqt
+  requires:
+    - pip
+    - pyqt
+    - python {{ python_min }}
+  commands:
+    - pip list
+    - pip check
+
+about:
+  home: https://github.com/pyapp-kit/superqt
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Missing widgets and components for PyQt/PySide
+  description: |
+    Superqt aims to provide high-quality community-contributed Qt widgets
+    and components for PyQt & PySide that are not provided in the native
+    QtWidgets module, such as range sliders, float sliders, and other 
+    extended widgets.
+  dev_url: https://github.com/pyapp-kit/superqt
+
+extra:
+  recipe-maintainers:
+    - goanpeca
+    - jni
+    - tlambert03

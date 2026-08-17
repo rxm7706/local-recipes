@@ -1,0 +1,51 @@
+{% set name = "httpx-ws" %}
+{% set version = "0.9.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/httpx_ws-{{ version }}.tar.gz
+  sha256: 797373326f70eec1ae96f6e43ae9f12002fd7d73aee139a4985eaab964338a08
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - hatch-regex-commit
+    - pip
+  run:
+    - python >={{ python_min }}
+    - anyio >=4
+    - httpx >=0.23.1
+    - httpcore >=1.0.4
+    - wsproto
+
+test:
+  imports:
+    - httpx_ws
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/frankie567/httpx-ws
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: WebSocket support for HTTPX
+  doc_url: https://frankie567.github.io/httpx-ws
+  dev_url: https://github.com/frankie567/httpx-ws
+
+extra:
+  recipe-maintainers:
+    - davidbrochart
+    - frankie567

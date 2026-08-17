@@ -1,0 +1,85 @@
+{% set version = "4.11.0" %}
+
+package:
+  name: python-blosc2
+  version: {{ version }}
+
+source:
+  url: https://github.com/Blosc/python-blosc2/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: 7878e4b78e7fee1e33a68ba556ef5e202ee0713ec24405b043d7e9c33bb71f4a
+
+build:
+  number: 0
+  skip: true  # [py<311]
+  script_env:
+    - USE_SYSTEM_BLOSC2=1
+  script:
+    - set CC=clang-cl                      # [win]
+    - set CXX=clang-cl                     # [win]
+    - set CMAKE_GENERATOR_TOOLSET=ClangCL  # [win]
+    - {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib('c') }}
+    - {{ compiler('cxx') }}
+    - cmake 4.3
+    - python                              # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}  # [build_platform != target_platform]
+    - cython                              # [build_platform != target_platform]
+    - numpy                               # [build_platform != target_platform]
+    - make                                # [unix]
+    - ninja
+    - pkg-config
+  host:
+    - c-blosc2
+    - cython
+    - numpy
+    - python
+    - python-build
+    - pip
+    - scikit-build-core
+  run:
+    - python
+    - msgpack-python
+    - ndindex
+    - numexpr >=2.14.1
+    - numpy >=1.26.0
+    - pydantic
+    - threadpoolctl
+    - textual
+    - textual-plotext
+    - rich
+    - httpx
+
+test:
+  imports:
+    - blosc2
+  commands:
+    - pip list
+    - pip check
+    - python -c "import blosc2; blosc2.print_versions()"
+  requires:
+    - pip
+
+about:
+  home: https://github.com/Blosc/python-blosc2
+  summary: A fast & compressed ndarray library with a flexible computational engine.
+  description: |
+    Blosc2 is a high-performance compressor optimized for binary and n-dimensional data.
+    It adds a flexible computational engine, making it ideal for scientific computing
+    and other data-intensive applications.
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file:
+    - LICENSE.txt
+  doc_url: https://www.blosc.org/python-blosc2
+  dev_url: https://github.com/Blosc/python-blosc2
+
+extra:
+  recipe-maintainers:
+    - hmaarrfk
+    - FrancescAlted
+    - goanpeca
+    - martaiborra

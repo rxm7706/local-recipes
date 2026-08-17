@@ -1,0 +1,58 @@
+{% set version = "3.0.13" %}
+
+package:
+  name: preshed
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/preshed/preshed-{{ version }}.tar.gz
+  sha256: d75f718bbfd97e992f7827e0fa7faf6a91bdd9c922d5baa4b50d62731396cb89
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython                                 # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - {{ compiler('cxx') }}
+  host:
+    - cymem >=2.0.2,<2.1.0
+    - murmurhash >=0.28.0,<1.1.0
+    - cython
+    - pip
+    - python
+    - setuptools
+    - wheel
+
+  run:
+    - python
+    - cymem >=2.0.2,<2.1.0
+    - murmurhash >=0.28.0,<1.1.0
+
+test:
+  requires:
+    - pytest
+  imports:
+    - preshed
+  commands:
+    - python -m pytest --tb=native --pyargs preshed
+
+about:
+  home: https://github.com/explosion/preshed
+  license: MIT
+  license_file: LICENSE
+  summary: Cython Hash Table for Pre-Hashed Keys
+  description: |
+    Simple but high performance Cython hash table mapping pre-randomized keys
+    to void* values.
+
+extra:
+  recipe-maintainers:
+    - rmax
+    - h-vetinari
+    - conda-forge/spacy

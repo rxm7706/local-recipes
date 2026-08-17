@@ -1,0 +1,45 @@
+{% set name = "pyenchant" %}
+{% set version = "3.3.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pyenchant-{{ version }}.tar.gz
+  sha256: 825288246b5debc9436f91967650974ef0d5636458502619e322c476f1283891
+
+build:
+  noarch: python
+  number: 0
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - enchant
+    - hunspell
+    - hunspell-en
+
+test:
+  imports:
+    - enchant
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://pyenchant.github.io/pyenchant/
+  summary: Python bindings for the Enchant spellchecking system
+  license: LGPL-2.1-only
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - izahn
+    - soapy1

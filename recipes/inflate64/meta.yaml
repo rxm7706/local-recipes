@@ -1,0 +1,49 @@
+{% set name = "inflate64" %}
+{% set version = "1.0.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/inflate64-{{ version }}.tar.gz
+  sha256: b398c686960c029777afc0ed281a86f66adb956cfc3fbf6667cc6453f7b407ce
+
+build:
+  skip: true  # [py<37]
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 2
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - pip
+    - python
+    - setuptools >=45
+    - setuptools-scm >=6.0.1
+  run:
+    - importlib-metadata  # [py<38]
+    - python
+
+test:
+  imports:
+    - inflate64
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://pypi.org/project/inflate64/
+  summary: deflate64 compression/decompression library
+  license: LGPL-2.1-or-later
+  license_file:
+    - COPYING
+
+extra:
+  recipe-maintainers:
+    - sarthakpati

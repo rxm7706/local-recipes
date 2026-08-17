@@ -1,0 +1,45 @@
+{% set name = "streamlit-keyup" %}
+{% set version = "0.3.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 8595a14892423243669e5d50e982853ffb7eb201b65952a48676133ab9bbc937
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - streamlit >=1.2
+    - jinja2
+
+test:
+  imports:
+    - st_keyup
+  commands:
+    - export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/blackary/streamlit-keyup
+  summary: Streamlit text input that returns value on keyup
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - thewchan

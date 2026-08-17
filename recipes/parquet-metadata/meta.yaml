@@ -6,7 +6,7 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/parquet-metadata-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/parquet-metadata-{{ version }}.tar.gz
   sha256: 9643276066f7d5d8a0984345eecc7e4f2e75e6f31d3a6c7e941450347b5701cf
 
 build:
@@ -14,14 +14,15 @@ build:
     - parquet-metadata = parquet_metadata.parquet_metadata:main
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - pyarrow
 
 test:
@@ -29,9 +30,9 @@ test:
     - parquet_metadata
   commands:
     - pip check
-    - parquet-metadata --help
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/cldellow/parquet-metadata

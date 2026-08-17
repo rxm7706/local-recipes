@@ -1,5 +1,5 @@
 {% set name = "shillelagh" %}
-{% set version = "1.4.4" %}
+{% set version = "1.4.5" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/shillelagh-{{ version }}.tar.gz
-  sha256: 9bafbad11b5ec6272d1ad3cd014575962b458c29a289c21f98ac1a8817486f8e
+  sha256: d22b5f6e357c0d34820179e9d62ac3ed8a7b46f996dd42071c6362e4746a9029
 
 build:
   noarch: python
@@ -93,6 +93,30 @@ requirements:
     # - boto3 >=1.24.28
     # - beautifulsoup4 >=4.11.1
     # - appdirs >=1.4.4
+    # - PyYAML >=5.4
+    # - sphinx >=4.0.1
+    # - ruff >=0.3.7
+    # - requests-mock >=1.8.0
+    # - python_dateutil >=2.8.1
+    # - python-jsonpath >=0.10.3
+    # - python-graphql-client >=0.4.3
+    # - pytest-mock >=3.5.1
+    # - pytest-integration ==0.2.2
+    # - pytest-cov >=2.11.1
+    # - pytest >=7.2.0
+    # - pyopenssl >=24.0.0
+    # - pylint >=2.16.2
+    # - pyfakefs >=4.3.3
+    # - pre-commit >=2.13.0
+    # - pip-tools >=6.4.0
+    # - pip-compile-multi >=2.6.3
+    # - html5lib >=1.1
+    # - google-auth >=1.23.0
+    # - freezegun >=1.1.0
+    # - flake8-pyproject >=1.2.3
+    # - dill >=0.3.6
+    # - codespell >=2.1.0
+    # - beautifulsoup4 >=4.11.1
     # - PyYAML >=5.4
     # - sphinx >=4.0.1
     # - ruff >=0.3.7

@@ -1,0 +1,44 @@
+{% set name = "kaitaistruct" %}
+{% set version = "0.11" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/kaitaistruct-{{ version }}.tar.gz
+  sha256: 053ee764288e78b8e53acf748e9733268acbd579b8d82a427b1805453625d74b
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - kaitaistruct
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://kaitai.io
+  summary: 'Kaitai Struct declarative parser generator for binary data: runtime library for Python'
+  license: MIT
+  license_file:
+    - LICENSE
+
+extra:
+  recipe-maintainers:
+    - jonashaag
+    - AdrianFreundQC
+    - freundTech

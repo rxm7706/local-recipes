@@ -1,0 +1,64 @@
+{% set version = "3.0.5" %}
+
+package:
+  name: pywinpty
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pywinpty/pywinpty-{{ version }}.tar.gz
+  sha256: 61db0db063de9865adbea66db294628f8577f608d9764a4c7d3384eeacc4e81b
+
+build:
+  number: 0
+  skip: true  # [not win]
+  skip: true  # [py<310]
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - {{ compiler('cxx') }}
+    - clang
+    - llvm
+    - rust
+    - llvmdev
+    - llvm-tools
+    - libclang
+    - maturin >=1.1,<2.0
+    - toml
+    - pip
+    - winpty
+  host:
+    - python
+    - pip
+    - winpty
+  run:
+    - python
+    - winpty
+
+test:
+  imports:
+    - winpty
+
+about:
+  home: https://github.com/spyder-ide/pywinpty
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Pseudoterminals for Windows in Python
+  description: |
+    PyWinpty allows creating and communicating with Windows processes that
+    receive input and print outputs via console input and output pipes.
+    PyWinpty supports both the native ConPTY interface and the previous,
+    fallback winpty library.
+  doc_url: https://github.com/spyder-ide/pywinpty
+  dev_url: https://github.com/spyder-ide/pywinpty
+
+extra:
+  recipe-maintainers:
+    - davidbrochart
+    - blink1073
+    - ccordoba12
+    - andfoy
+    - ocefpaf

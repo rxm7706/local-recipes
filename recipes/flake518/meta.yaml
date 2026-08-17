@@ -10,7 +10,7 @@ source:
   sha256: e02efcacb9609e4250265600c7efd559576ae75c93b8898e019fec63128c90b5
 
 build:
-  skip: true  # [py>=400 or py2k]
+  noarch: python
   entry_points:
     - flake518 = flake518.__main__:main
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
@@ -18,12 +18,12 @@ build:
 
 requirements:
   host:
-    - python >=3.9,<4
+    - python {{ python_min }}
     - pdm-backend
     - pip
   run:
-    - python >=3.9,<4
-    - tomli >=0.10.2  # [py<311]
+    - python >={{ python_min }},<4
+    - tomli >=0.10.2
     - flake8 >=3.0.0
 
 test:
@@ -34,6 +34,7 @@ test:
     - flake518 --help
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/carstencodes/flake518

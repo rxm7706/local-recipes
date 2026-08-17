@@ -1,0 +1,52 @@
+{% set version = "0.11.1" %}
+{% set python_min = "3.11" %}
+
+package:
+  name: pandas-datareader
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pandas-datareader/pandas_datareader-{{ version }}.tar.gz
+  sha256: e1eadb6d2ccaa4b7a876a1c81b6ff0307fa7a08b56f7799862a50207c2e65a05
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . -vv
+  
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - setuptools_scm >=8.0.0,<9
+    - wheel
+  run:
+    - python >={{ python_min }}
+    - lxml
+    - pandas >=2.1.4
+    - requests >=2.3.0
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - pandas_datareader
+
+about:
+  home: https://github.com/pydata/pandas-datareader
+  license: BSD-3-Clause
+  license_file: LICENSE.md
+  license_family: BSD
+  summary: Up to date remote data access for pandas, works for multiple versions of pandas
+  dev_url: https://github.com/pydata/pandas-datareader
+  doc_url: https://pandas-datareader.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - timkpaine
+    - mariusvniekerk
+    - femtotrader
+    - jreback
+    - davidastephens
+    - bashtage

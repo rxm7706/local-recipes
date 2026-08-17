@@ -1,0 +1,70 @@
+{% set version = "1.46.0" %}
+{% set hash = "5c1bd660bd3f967f5754a2267fb54e81edf379374faa27973671561888d39bf6" %}
+
+package:
+  name: awscli
+  version: {{ version }}
+
+source:
+  fn: awscli-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/awscli/awscli-{{ version }}.tar.gz
+  sha256: {{ hash }}
+
+build:
+  number: 0
+  script:
+    - {{ PYTHON }} -m pip install . --no-deps -vv
+    - mkdir -p $PREFIX/share/bash-completions/completions && echo complete -C aws_completer aws >$PREFIX/share/bash-completions/completions/aws  # [unix]
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+  host:
+    - python
+    #- python >=3.10
+    - pip
+    - setuptools
+
+  run:
+    - python
+    #- python >=3.10
+    - docutils >=0.18.1,<=0.19
+    - pyyaml >=3.10,<6.1
+    - colorama >=0.2.5,<0.4.7
+    - rsa >=3.1.2,<4.8
+    - jmespath >=0.7.1,<2.0.0
+    - python-dateutil >=2.1,<3.0.0
+    - urllib3 >=1.25.4,!=2.2.0,<3
+
+test:
+  imports:
+    - awscli
+    - awscli.customizations
+    - awscli.customizations.cloudtrail
+    - awscli.customizations.codedeploy
+    - awscli.customizations.configservice
+    - awscli.customizations.configure
+    - awscli.customizations.datapipeline
+    - awscli.customizations.ec2
+    - awscli.customizations.emr
+    - awscli.customizations.gamelift
+    - awscli.customizations.s3
+    - awscli.customizations.s3.syncstrategy
+  commands:
+    - test -f $PREFIX/bin/aws_completer                   # [unix]
+    - COMP_LINE="aws ec2 describe-inst" aws_completer     # [unix]
+
+about:
+  home: https://aws.amazon.com/cli/
+  license_file: LICENSE.txt
+  license: Apache-2.0
+  license_family: Apache
+  summary: Universal Command Line Environment for AWS.
+  dev_url: https://github.com/aws/aws-cli
+  doc_url: https://aws.amazon.com/cli/
+
+extra:
+  recipe-maintainers:
+    - hajapy
+    - tkelman

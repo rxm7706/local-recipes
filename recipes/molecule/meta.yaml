@@ -1,0 +1,72 @@
+{% set name = "molecule" %}
+{% set version = "26.6.0" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 1870c5f5442403d77b5953d344382265a521eb4948885260c0cac084aa3dec02
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  entry_points:
+    - molecule = molecule.__main__:main
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip >=19.3.1
+    - setuptools >=63
+    - setuptools_scm >=7
+  run:
+    # core dependencies
+    - python >={{ python_min }}
+    - ansible-compat >=4.1.2
+    - ansible-core >=2.12.10
+    - click >=8.0,<9
+    - click-help-colors >=0.9
+    - enrich >=1.2.7
+    - jsonschema >=4.9.1
+    - Jinja2 >=2.11.3
+    - packaging
+    - pluggy >=0.7.1,<2.0
+    - PyYAML >=5.1
+    - rich >=9.5.1
+    - wcmatch >=8.1.2
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - molecule
+  commands:
+    - molecule --version
+
+about:
+  home: https://github.com/ansible/molecule
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Molecule aids in the development and testing of Ansible roles
+
+  description: |
+    Molecule is designed to aid in the development and testing
+    of Ansible roles.
+    Molecule provides support for testing with multiple instances,
+    operating systems and distributions, virtualization providers,
+    test frameworks and testing scenarios.
+    Molecule encourages an approach that results in consistently
+    developed roles that are well-written, easily
+    understood and maintained.
+  doc_url: https://molecule.readthedocs.io/
+  dev_url: https://github.com/ansible/molecule
+
+extra:
+  recipe-maintainers:
+    - knightdave
+    - tschoonj

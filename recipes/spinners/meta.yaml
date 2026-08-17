@@ -1,0 +1,43 @@
+{% set name = "spinners" %}
+{% set version = "0.0.24" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 1eb6aeb4781d72ab42ed8a01dcf20f3002bf50740d7154d12fb8c9769bf9e27f
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - spinners
+
+about:
+  home: https://github.com/manrajgrover/py-spinners
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Spinners for terminals
+  description: |
+    More than 60 spinners for terminal, python wrapper for amazing node
+    library cli-spinners
+
+extra:
+  recipe-maintainers:
+    - duncanmmacleod

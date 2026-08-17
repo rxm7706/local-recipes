@@ -1,0 +1,45 @@
+{% set name = "mac_alias" %}
+{% set version = "2.2.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/mac_alias-{{ version }}.tar.gz
+  sha256: c99c728eb512e955c11f1a6203a0ffa8883b26549e8afe68804031aa5da856b7
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - pip
+    - pytest
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - mac_alias
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: http://alastairs-place.net/projects/mac_alias
+  doc_url: https://mac-alias.readthedocs.io/en/latest/
+  summary: Generate and parse Mac OS Alias records from Python
+  license: MIT
+  license_file:
+    - LICENSE
+
+extra:
+  recipe-maintainers:
+    - thewchan

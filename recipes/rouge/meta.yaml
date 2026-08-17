@@ -6,7 +6,7 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/rouge-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/rouge-{{ version }}.tar.gz
   sha256: 12b48346ca47d6bcf3c45061f315452b9ccec0620ee895ec85b7efc3d54aae34
 
 build:
@@ -14,14 +14,15 @@ build:
     - rouge=bin.rouge_cmd:main
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python
+    - python >={{ python_min }}
     - six
 
 test:
@@ -33,6 +34,7 @@ test:
     - rouge --help
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: http://github.com/pltrdy/rouge

@@ -1,0 +1,43 @@
+{% set version = "1.6.0" %}
+
+package:
+  name: pkgconfig
+  version: {{ version }}
+
+source:
+  url: https://github.com/matze/pkgconfig/archive/v{{ version }}.tar.gz
+  sha256: 2a0d7626fcb7ee97713c134a30aeb4bc22d06599fa92a3ed95d55debd5a289ff
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - poetry-core
+  run:
+    - python >={{ python_min }}
+    - pkg-config
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - pkgconfig
+
+about:
+  home: https://github.com/matze/pkgconfig
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A Python interface to the pkg-config command line tool
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - lbdreyer
+    - ocefpaf
+    - tdegeus

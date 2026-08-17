@@ -1,0 +1,72 @@
+{% set name = "vl-convert-python" %}
+{% set version = "2.0.0rc1" %}
+{% set whl = "whl" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/vl_convert_python-{{ version }}.tar.gz  # [not arm64 and not aarch64]
+  sha256: bfb5e52ea3a5d972228b096b18c8e18db4ab2b4edeed13674a0a3be05e42ddac  # [not arm64 and not aarch64]
+  patches:   # [not arm64 and not aarch64]
+    - 01-fix-libffi-msvc.patch  # [not arm64 and not aarch64]
+
+  url: https://files.pythonhosted.org/packages/e6/10/1a07c451ca23c5cf1382e9e00cd2579e3d47488bdc5b7fd4b8812aa5b403/vl_convert_python-{{ version }}-cp37-abi3-manylinux_2_28_aarch64.{{ whl }}  # [linux and aarch64]
+  sha256: 80163dcad94845b09bdd65728bc46af25f910311b014e16f04d58bf6f9e537b8  # [linux and aarch64]
+
+  url: https://files.pythonhosted.org/packages/c4/26/e1c33b2b958ad207b03b854660caf03ca8c0ee100afd3a8059185fa27066/vl_convert_python-{{ version }}-cp37-abi3-macosx_11_0_arm64.{{ whl }}  # [osx and arm64]
+  sha256: 8779a5a7916d6ab904e30f2e9eee122b96d43cb5e1b45a144f370a8a229d4881  # [osx and arm64]
+
+build:
+  number: 0
+  binary_relocation: false  # [arm64 or aarch64]
+  detect_binary_files_with_prefix: false  # [arm64 or aarch64]
+  ignore_prefix_files: true  # [arm64 or aarch64]
+  skip: true  # [aarch64 and python_impl == 'pypy']
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}        # [not win]
+    - {{ stdlib('c') }}
+    - make                       # [not win]
+    - cmake
+    - rust >=1.81.0
+    - protobuf
+    - libffi  # [win]
+    - jq                     # [linux and x86_64]
+    - libclang               # [linux and x86_64]
+    - llvmdev                # [linux and x86_64]
+    - nasm                   # [win]
+  host:
+    - python
+    - pip
+    - maturin
+    - sqlite                 # [not arm64 and not aarch64]
+    - pkg-config             # [not arm64 and not aarch64]
+  run:
+    - python
+
+test:
+  imports:
+    - vl_convert
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/jonmmease/vl-convert
+  summary: Convert Vega-Lite chart specifications to SVG, PNG, or Vega
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE                                     # [arm64 or aarch64]
+    - vl-convert-python/LICENSE                   # [not arm64 and not aarch64]
+    - vl-convert-python/thirdparty_font.md        # [not arm64 and not aarch64]
+    - vl-convert-python/thirdparty_javascript.md  # [not arm64 and not aarch64]
+    - vl-convert-python/thirdparty_rust.yaml      # [not arm64 and not aarch64]
+
+extra:
+  recipe-maintainers:
+    - jonmmease

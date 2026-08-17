@@ -1,0 +1,46 @@
+{% set version = "2.4.1" %}
+
+package:
+  name: convertdate
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/convertdate/convertdate-{{ version }}.tar.gz
+  sha256: ace904a9d0230742732471748160b99d6ae881c2d0dc9a2463c7a37340c56c91
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - pymeeus <=1,>=0.3.6
+    - pytz >=2014.10
+
+
+test:
+  imports:
+    - convertdate
+    - convertdate.data
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/fitnr/convertdate
+  license: MIT
+  license_file: LICENSE
+  summary: "Converts between Gregorian dates and other calendar systems.Calendars included: Baha'i, French Republican, Hebrew, Indian Civil, Islamic, ISO, Julian, Mayan and Persian."
+
+extra:
+  recipe-maintainers:
+    - tacaswell
+    - ocefpaf

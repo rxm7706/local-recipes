@@ -1,5 +1,5 @@
 {% set name = "pydantic-yaml" %}
-{% set version = "1.6.0" %}
+{% set version = "1.7.0" %}
 {% set python_min = "3.10" %}
 
 package:
@@ -8,7 +8,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pydantic_yaml-{{ version }}.tar.gz
-  sha256: ce5f10b65d95ca45846a36ea8dae54e550fa3058e7d6218e0179184d9bf6f660
+  sha256: b7c9420647537166c58ff9b150176a434fbdbae843d076e37011dd7e3e2e0044
 
 build:
   noarch: python
@@ -18,18 +18,15 @@ build:
 requirements:
   host:
     - python {{ python_min }}
-    - setuptools >=61.0.0
-    - setuptools-scm >=6.2
-    - importlib-metadata >=4.2.0
+    - hatchling >=1.29.0
+    - hatch-vcs >=0.5.0
     - pip
   run:
-    - ruamel
     - typing_extensions >=4.5.0
     - python >={{ python_min }}
-    - pydantic >=1.8
-    - ruamel.yaml >=0.17.0,<0.19.0
+    - pydantic >=1.10.0,<3
+    - ruamel.yaml >=0.17.0,<0.20.0
     - importlib-metadata
-    - typing-extensions >=4.5.0
 
 test:
   imports:

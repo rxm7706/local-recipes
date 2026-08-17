@@ -1,0 +1,48 @@
+{% set version = "0.7.1" %}
+
+package:
+  name: onnxscript
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/onnxscript/onnxscript-{{ version }}.tar.gz
+  sha256: 309fb86484b11fa4ded90dba580e0d63f1a0827588e521cecaf2eeddb46d6e86
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=70.0.0
+    - pip
+  run:
+    - python >={{ python_min }}
+    - ml_dtypes
+    - numpy
+    - onnx-ir >=0.1.16,<2
+    - onnx >=1.17
+    - packaging
+    - typing_extensions >=4.10
+
+test:
+  imports:
+    - onnxscript
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/microsoft/onnxscript
+  summary: Naturally author ONNX functions and models using a subset of Python
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - hmaarrfk
+    - apmorton

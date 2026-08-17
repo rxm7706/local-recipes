@@ -1,0 +1,130 @@
+{% set version = "2026.8.16" %}
+
+package:
+  name: imagecodecs
+  version: {{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/i/imagecodecs/imagecodecs-{{ version }}.tar.gz
+  sha256: 03a6add9ad9ba61dce1520489fd090b1b5cf2a2701a9666d1ab8e7653278175f
+
+build:
+  number: 0
+  skip: true  # [py<312]
+  script:
+    - export OPENJPEG=2.5                   # [unix]
+    - set OPENJPEG=2.5                      # [win]
+    - {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython                                 # [build_platform != target_platform]
+    - numpy                                  # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib('c') }}
+    - {{ compiler('cxx') }}
+    - pkg-config
+  host:
+    - python
+    - pip
+    - setuptools
+    - numpy
+    - cython
+    - zlib
+    - zlib-ng
+    - bzip2
+    - liblzma-devel
+    - zstd
+    - lz4-c
+    - libpng
+    - libwebp
+    - jxrlib
+    - libjpeg-turbo
+    - giflib
+    - openjpeg
+    - libjxl
+    - blosc
+    - c-blosc2
+    - lcms2
+    - libaec
+    - brotli
+    - libzopfli
+    - charls
+    - snappy
+    - libtiff
+    - libavif
+    - lerc
+    - zfp
+    - libdeflate
+    - openjph
+    - brunsli   # [not win]
+  run:
+    - python
+
+test:
+  imports:
+    - imagecodecs
+    - imagecodecs._imagecodecs
+  commands:
+    # Test feor existance of a subset of the codecs so I can feel like the test works. Add more as needed
+{% set expected_codecs = ["BLOSC", "BLOSC2", "ZSTD", "LZ4", "ZLIB", "ZLIBNG", "LZMA", "JPEGXL", "HTJ2K"] %}
+{% for codec in expected_codecs %}
+    - echo "Testing for {{ codec }}"
+    - python -c "import imagecodecs; assert imagecodecs.{{ codec }}.available"
+{% endfor %}
+# Running the full test suite adds about 17 MB of files...
+{% if false %}
+    # if true -- fall through and run the full test suite
+    - cd tests
+    # 20210717 hmaarrfk: This test seems to be flaky in the upstream
+    # test procedure
+    # https://github.com/conda-forge/imagecodecs-feedstock/pull/32#issuecomment-863041029
+    - python test_imagecodecs.py -k "not test_image_roundtrips[jpeg2k-uint16-rgb-out-bytearray-None]"
+  source_files:
+    - tests
+  requires:
+    - pytest
+{% endif %}
+
+about:
+  home: https://www.cgohlke.com
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file:
+    - LICENSE
+    - 3rdparty/liblzf/LICENSE
+    - 3rdparty/bitshuffle/LICENSE
+    - 3rdparty/openjpeg/LICENSE
+  summary: Image transformation, compression, and decompression codecs
+  description: |
+    Imagecodecs is a Python library that provides block-oriented, in-memory buffer
+    transformation, compression, and decompression functions for use in tifffile,
+    liffile, czifile, zarr, and other scientific image input/output packages.
+
+    Decode and/or encode functions are implemented for
+    Zlib (DEFLATE), GZIP, LZMA, ZStandard (ZSTD), Blosc, Brotli, Snappy,
+    BZ2, LZ4, LZ4F, LZ4HC, LZ4H5, LZW, LZO, LZF, LZFSE, LZHAM,
+    PGLZ (PostgreSQL LZ), RCOMP (Rice), ZFP, SZ3, Meshopt, Pcodec, SPERR,
+    AEC, SZIP, LERC, EER, NPY, BCn, DDS, BMP, PNG, APNG, GIF, TIFF, WebP,
+    JPEG (2 to 16-bit), Lossless JPEG (LJPEG, LJ92, JPEGLL), JPEG 2000 (JP2, J2K),
+    High-throughput JPEG 2000 (HTJ2K, JPH), JPEG LS, JPEG XL, JPEG XS,
+    JPEG XR (WDP, HD Photo), Ultra HDR (JPEG_R), MOZJPEG, AVIF, HEIF,
+    QOI, RGBE (HDR), PixarLog, Jetraw, DICOM RLE, CCITT (RLE, T.4 and T.6),
+    PackBits, Packed Integers (TIFF, MONO p and packed), Delta, XOR Delta,
+    Floating Point Predictor, Bitorder reversal, Byteshuffle, Bitshuffle,
+    Float24 (24-bit floating point), Bfloat16 (brain floating point),
+    Quantize (Scale, BitGroom, BitRound, GranularBR), and
+    CMS (color space transformations).
+    Checksum functions are implemented for CRC-32, Adler-32, Fletcher-32, and
+    Jenkins lookup3.
+
+  dev_url: https://github.com/cgohlke/imagecodecs
+
+extra:
+  recipe-maintainers:
+    - csachs
+    - hmaarrfk
+    - sdvillal
+    - traversaro

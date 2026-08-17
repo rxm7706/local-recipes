@@ -1,0 +1,46 @@
+{% set version = "8.0.6" %}
+
+package:
+  name: pydash
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pydash/pydash-{{ version }}.tar.gz
+  sha256: b2821547e9723f69cf3a986be4db64de41730be149b2641947ecd12e1e11025a
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - typing_extensions
+
+test:
+  imports:
+    - pydash
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/dgilland/pydash
+  license: MIT
+  license_file: LICENSE.rst
+  summary: The kitchen sink of Python utility libraries for doing "stuff" in a functional way.
+  description: The kitchen sink of Python utility libraries for doing stuff in a functional way. Based on Lo-Dash JS library
+  doc_url: https://pydash.readthedocs.io/en/latest/
+  dev_url: https://github.com/dgilland/pydash
+
+extra:
+  recipe-maintainers:
+    - souravsingh
+    - dbast

@@ -22,7 +22,6 @@ requirements:
     - requests >=2.24
     - setuptools >=46.4
     - sphinx
-    # tomli >=1.2.3  "python_version<'3.11'"
     - tomli >=1.2.3
     - urllib3 >=1.24.2
     - wheel
@@ -30,7 +29,6 @@ requirements:
     - python >={{ python_min }}
     - pyxdg >=0.26
     - requests >=2.24
-    # tomli >=1.2.3  "python_version<'3.11'"
     - tomli >=1.2.3
     - urllib3 >=1.24.2
 

@@ -1,0 +1,61 @@
+{% set name = "python-jose" %}
+{% set version = "3.5.0" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: fb4eaa44dbeb1c26dcc69e4bd7ec54a1cb8dd64d3b4d81ef08d90ff453f2b01b
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - pytest-runner
+  run:
+    - python >={{ python_min }}
+    - cryptography >=3.4.0
+    - ecdsa !=0.15
+    - rsa >=4.0,<5.0,!=4.4,!=4.1.1
+    - pyasn1 >=0.5.0
+
+test:
+  files:
+    - usage.py
+  source_files:
+    - tests
+  commands:
+    - pip check
+    - python usage.py
+    - pytest -m "not (pycryptodome or pycrypto or backend_compatibility)" tests
+  requires:
+    - pip
+    - pytest
+    - python {{ python_min }}
+  imports:
+    - jose
+    - jose.backends
+
+about:
+  home: http://github.com/mpdavis/python-jose
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: JOSE implementation in Python
+  doc_url: https://python-jose.readthedocs.io
+  dev_url: https://github.com/mpdavis/python-jose
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk
+    - dgasmith
+    - swainn

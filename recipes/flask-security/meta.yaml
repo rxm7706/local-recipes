@@ -1,0 +1,56 @@
+{% set python_min = "3.10" %}
+{% set name = "Flask-Security" %}
+{% set version = "5.8.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_').lower() }}-{{ version }}.tar.gz
+  sha256: 827199c0a7b8a887cca7c96611d586fa61f4b1957fc2f1fb040746549ef3d918
+
+build:
+  noarch: python
+  number: 0
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - flit-core >=3.8,<4
+    - pip
+    - python {{ python_min }}
+
+  run:
+    - python >={{ python_min }}
+    - flask >=3.1.0
+    - flask-login >=0.6.3
+    - flask-principal >=0.4.0
+    - flask-wtf >=1.1.2
+    - email-validator >=2.0.0
+    - markupsafe >=2.1.0
+    - libpass >=1.9.3
+    - wtforms >=3.0.0
+    - importlib_resources >=5.10.0
+
+test:
+  requires:
+    - python {{ python_min }}
+    - setuptools  # due to 'passlib.pwd' importing pkg_resources.
+  imports:
+    - flask_security
+
+about:
+  home: https://github.com/pallets-eco/flask-security
+  license: MIT
+  license_file: LICENSE.txt
+  license_family: MIT
+  summary: 'Quickly add security features to your Flask application'
+  dev_url: https://github.com/pallets-eco/flask-security
+  doc_url: https://flask-security.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - nicoddemus
+    - williamjamir

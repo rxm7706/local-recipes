@@ -1,0 +1,46 @@
+{% set name = "PasteDeploy" %}
+{% set version = "3.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 9ddbaf152f8095438a9fe81f82c78a6714b92ae8e066bed418b6a7ff6a095a95
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - setuptools
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - paste
+    - paste.deploy
+
+about:
+  home: https://pylonsproject.org/
+  license: MIT
+  license_family: MIT
+  license_file: license.txt
+  summary: Load, configure, and compose WSGI applications and servers
+  doc_url: https://docs.pylonsproject.org/projects/pastedeploy/
+  dev_url: https://github.com/Pylons/pastedeploy
+
+extra:
+  recipe-maintainers:
+    - lincrosenbach
+    - kfasolin
+    - synapticarbors

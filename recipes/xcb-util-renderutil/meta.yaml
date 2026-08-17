@@ -1,0 +1,41 @@
+{% set name = "xcb-util-renderutil" %}
+{% set version = "0.3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://xcb.freedesktop.org/dist/xcb-util-renderutil-{{ version }}.tar.xz
+  sha256: 3e15d4f0e22d8ddbfbb9f5d77db43eacd7a304029bf25a6166cc63caa96d04ba
+
+build:
+  number: 0
+  skip: true  # [not linux]
+  run_exports:
+    - {{ pin_subpackage('xcb-util-renderutil', max_pin='x.x') }}
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib('c') }}
+    - make
+    - pkg-config
+  host:
+    - libxcb
+    - xorg-xproto
+
+test:
+  commands:
+    - test -f ${PREFIX}/lib/libxcb-render-util.so
+
+about:
+  home: https://xcb.freedesktop.org/
+  license: MIT
+  license_family: MIT
+  license_file: COPYING
+  summary: 'Provides additional extensions to the XCB library'
+
+extra:
+  recipe-maintainers:
+    - erykoff

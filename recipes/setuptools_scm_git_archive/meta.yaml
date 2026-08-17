@@ -1,0 +1,48 @@
+{% set version = "1.4.1" %}
+
+package:
+  name: setuptools_scm_git_archive
+  version: {{ version }}
+
+source:
+  fn: setuptools_scm_git_archive-{{ version }}.tar.gz
+  url: https://pypi.python.org/packages/source/s/setuptools_scm_git_archive/setuptools_scm_git_archive-{{ version }}.tar.gz
+  sha256: c418bc77b3974d3ac65f268f058f23e01dc5f991f2233128b0e16a69de227b09
+
+build:
+  number: 1
+  noarch: python
+  script: '{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv '
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - setuptools_scm <8
+  run:
+    - python >={{ python_min }}
+    - setuptools_scm <8
+
+test:
+  requires:
+    - setuptools
+    - python {{ python_min }}
+    - pip
+  imports:
+    - setuptools_scm_git_archive
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/Changaco/setuptools_scm_git_archive/
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: setuptools_scm plugin for git archives
+
+extra:
+  recipe-maintainers:
+    - thewchan
+    - wesm
+    - xhochy

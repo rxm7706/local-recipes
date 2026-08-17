@@ -1,0 +1,45 @@
+{% set name = "asgi-lifespan" %}
+{% set version = "2.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/asgi-lifespan-{{ version }}.tar.gz
+  sha256: 5e2effaf0bfe39829cf2d64e7ecc47c7d86d676a6599f7afba378c31f5e3a308
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+  run:
+    - async-exit-stack
+    - python >={{ python_min }}
+    - sniffio
+
+test:
+  imports:
+    - asgi_lifespan
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+
+about:
+  home: https://github.com/florimondmanca/asgi-lifespan
+  summary: Programmatic startup/shutdown of ASGI apps.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - williamjamir

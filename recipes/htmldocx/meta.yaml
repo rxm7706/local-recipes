@@ -6,22 +6,22 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/htmldocx-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/htmldocx-{{ version }}.tar.gz
   sha256: b4bcec895f86d7a50ffc7133ca24d85c24f3614db2b37d33a30d9d04654a5486
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - setuptools >=42
     - wheel
     - pip
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - python-docx >=0.8.10
     - beautifulsoup4 >=4.7.0
 
@@ -32,6 +32,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/pqzx/html2docx

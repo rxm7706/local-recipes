@@ -1,0 +1,49 @@
+{% set name = "elasticsearch-async" %}
+{% set version = "6.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 2534f3ec80da275723cabd6d354c83eb4b4f6241ad1432b48c2c05fb12175ab1
+
+build:
+  number: 1002
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv "
+  skip: true  # [py<34]
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - aiohttp
+    - async-timeout
+    - elasticsearch >=6.0.0
+
+test:
+  imports:
+    - elasticsearch_async
+
+about:
+  home: https://github.com/elastic/elasticsearch-py-async
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: Async backend for elasticsearch-py
+  description: |
+    This is an adapter for elasticsearch-py providing a transport layer based
+    on Python’s asyncio module. All API calls now return a future wrapping
+    the response.
+  dev_url: https://github.com/elastic/elasticsearch-py-async
+  doc_url: https://pypi.python.org/pypi/elasticsearch-async
+  doc_source_url: https://github.com/elastic/elasticsearch-py-async/blob/master/README
+
+extra:
+  recipe-maintainers:
+    - nehaljwani
+    - sethmlarson

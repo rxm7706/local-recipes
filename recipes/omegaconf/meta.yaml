@@ -1,0 +1,66 @@
+{% set name = "omegaconf" %}
+{% set version = "2.3.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/ce/3d/e4b57b8d9008c6ebe0d5eff901f91d5700cf7bdb8c8863df817463a7fd5e/omegaconf-{{ version }}.tar.gz
+  sha256: e5e7de64aeebeddaf8e6d3f7a783b32ac2a01c0fbd9c878012caecb891a1f42a
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+    - setuptools
+    - antlr 4.9
+  run:
+    - python >=3.7
+    - pyyaml >=5.1.0
+    - antlr-python-runtime 4.9
+    - typing_extensions
+
+test:
+  imports:
+    - omegaconf
+  requires:
+    - python 3.11.*
+    - attrs
+    - pytest <8
+    - pytest-benchmark
+    - pytest-mock
+    - pip
+    # Temporary pin <https://github.com/conda-forge/omegaconf-feedstock/pull/40#issuecomment-1294669062>
+  source_files:
+    - tests
+  commands:
+    - pip check
+    - pytest --ignore tests/test_pydev_resolver_plugin.py
+
+about:
+  home: https://github.com/omry/omegaconf
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Flexible python configuration system
+
+  description: |
+    OmegaConf is a hierarchical configuration system, with support for merging
+    configurations from multiple sources (YAML config files,
+    dataclasses/objects and CLI arguments) providing a consistent API
+    regardless of how the configuration was created.
+  doc_url: https://omegaconf.readthedocs.io/
+  dev_url: https://github.com/omry/omegaconf
+
+extra:
+  recipe-maintainers:
+    - maresb
+    - mdraw
+    - omry
+    - benjaminrwilson

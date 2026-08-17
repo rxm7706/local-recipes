@@ -1,0 +1,70 @@
+{% set name = "segregation" %}
+{% set version = "2.5.5" %}
+{% set python_min = "3.12" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/segregation-{{ version }}.tar.gz
+  sha256: 9e3697e18072dffc3674049eb02e25d199fbdb7712abb5632d664dbd54b6b23e
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=61.0
+    - setuptools-scm >=6.2
+    - pip
+  run:
+    - python >={{ python_min }}
+    - deprecation
+    - geopandas >=1.1.0
+    - joblib >=1.5.0
+    - libpysal >=4.12.1
+    - mapclassify >=2.8
+    - matplotlib-base >=3.10
+    - numpy >=2.0.0
+    - pandas >=2.3.0
+    - scikit-learn >=1.5.0
+    - scipy >=1.14.0
+    - seaborn
+    - tqdm
+    - numba >=0.60
+    - pyproj >=3
+
+test:
+  imports:
+    - segregation
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://pysal.org
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: Segregation Measures Framework in PySAL
+
+  description: |
+    The PySAL segregation module allow users to estimate several segregation measures and perform 
+    inference for single measures and comparative inference in a concise way.
+  doc_url: https://pysal.org/segregation/
+  dev_url: https://github.com/pysal/segregation
+
+extra:
+  recipe-maintainers:
+    - renanxcortes
+    - sjsrey
+    - knaaptime
+    - ocefpaf
+    - jGaboardi
+    - martinfleis

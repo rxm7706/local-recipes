@@ -1,0 +1,39 @@
+{% set name = "darkdetect" %}
+{% set version = "0.8.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: b5428e1170263eb5dea44c25dc3895edd75e6f52300986353cd63533fe7df8b1
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - darkdetect
+
+about:
+  home: https://github.com/albertosottile/darkdetect
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Detect OS Dark Mode from Python
+
+extra:
+  recipe-maintainers:
+    - hoechenberger

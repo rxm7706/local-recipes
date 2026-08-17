@@ -1,0 +1,87 @@
+{% set version = "1.1.4" %}
+
+package:
+  name: geopandas
+  version: {{ version }}
+
+source:
+  url: https://github.com/geopandas/geopandas/releases/download/v{{ version }}/geopandas-{{ version }}.tar.gz
+  sha256: 06f2890a07e1a239047daa14b486a7c6ae5ce82dcf7405e13c46bf31f5d0dd66
+  patches:
+    # pyproj and pyogrio are intentionally excluded from geopandas-base, as they
+    # are large and not strictly required
+    - 0001-remove-pyproj-pyogrio-from-pyproject-toml.patch
+
+build:
+  number: 0
+  noarch: python
+
+outputs:
+  - name: geopandas-base
+    script: build_base.sh
+    build:
+      noarch: python
+    requirements:
+      build:
+        - python                                 # [build_platform != target_platform]
+        - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+      host:
+        - python {{ python_min }}
+        - setuptools
+        - pip
+      run:
+        - python >={{ python_min }}
+        - numpy >=1.24
+        - pandas >=2.0.0
+        - shapely >=2.0.0
+        - packaging
+        # pyproj and pyogrio are intentionally moved to geopandas, as they
+        # are large and not strictly required
+
+    test:
+      requires:
+        - python {{ python_min }}
+        - pip
+      imports:
+        - geopandas
+        - geopandas.io
+      files:
+        - test_data
+      commands:
+        - pip check
+
+  - name: geopandas
+    requirements:
+      host:
+        - python {{ python_min }}
+      run:
+        - python >={{ python_min }}
+        - {{ pin_subpackage('geopandas-base', exact=True) }}
+        - pyproj >=3.5.0
+        - pyogrio >=0.7.2
+        - matplotlib-base
+        - mapclassify >=2.5.0
+        - folium
+        - xyzservices
+
+    test:
+      requires:
+        - python {{ python_min }}
+      imports:
+        - geopandas
+        - geopandas.io
+      files:
+        - test_data
+
+about:
+  home: http://geopandas.org
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Geographic pandas extensions
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - jorisvandenbossche
+    - jdmcbr
+    - martinfleis

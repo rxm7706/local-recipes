@@ -1,0 +1,49 @@
+{% set name = "proglog" %}
+{% set version = "0.1.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 658c28c9c82e4caeb2f25f488fff9ceace22f8d69b15d0c1c86d64275e4ddab4
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+    - setuptools
+  run:
+    - python >=3.6
+    - tqdm
+
+test:
+  requires:
+    - pip
+  commands:
+    - pip check
+  imports:
+    - proglog
+
+about:
+  home: https://github.com/Edinburgh-Genome-Foundry/Proglog
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Logs and progress bars manager for Python
+
+  description: |
+    Proglog is a progress logging system for Python. It allows to build
+    complex libraries while giving your users control over logs, callbacks
+    and progress bars.
+  dev_url: https://github.com/Edinburgh-Genome-Foundry/Proglog
+
+extra:
+  recipe-maintainers:
+    - mdraw

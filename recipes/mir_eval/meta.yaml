@@ -1,0 +1,49 @@
+{% set name = "mir_eval" %}
+{% set version = "0.8.2" %}
+{% set python_min = "3.9" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 141a3e1193276889fc32e911547e73dcb3e829ee8cfea60f7bbcd633c0792569
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install .  -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools >=48
+  run:
+    - numpy >=1.7.0
+    - python >={{ python_min }}
+    - scipy >=1.0.0
+    - decorator
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - mir_eval
+
+about:
+  home: https://github.com/mir-evaluation/mir_eval
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt
+  summary: "Common metrics for common audio/music processing tasks."
+  doc_url: http://mir-evaluation.github.io/mir_eval/
+  dev_url: https://github.com/mir-evaluation/mir_eval
+
+extra:
+  recipe-maintainers:
+    - oblute
+    - rluria14
+    - ndmaxar
+    - bmcfee

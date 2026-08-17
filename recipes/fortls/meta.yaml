@@ -1,0 +1,53 @@
+{% set name = "fortls" %}
+{% set version = "3.2.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/fortls-{{ version }}.tar.gz
+  sha256: b43b2b8cbd447ae848c63b8f008c2df96fd48c3a967b33f6ed64b3421496883b
+
+build:
+  skip: true  # [py<37]
+  entry_points:
+    - fortls = fortls.__init__:main
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+  host:
+    - pip
+    - python
+    - setuptools
+    - setuptools_scm
+    - setuptools_scm_git_archive
+  run:
+    - importlib-metadata  # [py<38]
+    - python
+    - typing-extensions  # [py<38]
+    - json5
+    - packaging
+
+test:
+  imports:
+    - fortls
+  commands:
+    - pip check
+    - fortls --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/fortran-lang/fortls
+  summary: fortls - Fortran Language Server
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - gnikit

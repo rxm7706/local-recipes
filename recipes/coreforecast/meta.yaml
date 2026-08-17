@@ -1,0 +1,52 @@
+{% set name = "coreforecast" %}
+{% set version = "0.0.18" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/coreforecast-{{ version }}.tar.gz
+  sha256: 2712aa23699302faf602253e413b6900eff395ddaebfed19ed4f9d9323ee7443
+
+build:
+  skip: true  # [py<39]
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('cxx') }}
+    - {{ stdlib("c") }}
+    - cmake
+    - make  # [not win]
+    - ninja  # [win]
+  host:
+    - python
+    - scikit-build-core
+    - pip
+    - pybind11
+  run:
+    - python
+    - numpy >=1.20.0
+
+test:
+  requires:
+    - pytest
+  files:
+    - test_scalers.py
+  commands:
+    - pytest test_scalers.py
+
+about:
+  home: https://nixtla.github.io/coreforecast
+  summary: Fast implementations of common forecasting routines
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - jmoralez
+    - nasaul

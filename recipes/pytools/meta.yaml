@@ -1,0 +1,62 @@
+{% set python_min = "3.10" %}
+{% set name = "pytools" %}
+{% set version = "2026.1.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: "{{ version }}"
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 260e0d88c9a903c65cfe34fbe818764f44a3f96e722e1a3645ce4d596add22b1
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+    - hatchling
+  run:
+    - python >={{ python_min }}
+    - typing-extensions >=4
+    - siphash24 >=1.6
+    - platformdirs >=2.2
+    - typing_extensions >=4.5
+
+test:
+  requires:
+    - python {{ python_min }}
+    - pytest
+    - pip
+    - numpy >=1.6.0
+  imports:
+    - pytools
+  commands:
+    - pip check
+    - python -m pytest --pyargs pytools
+
+about:
+  home: https://pypi.python.org/pypi/pytools
+  license: MIT
+  license_file: LICENSE
+  summary: A collection of tools for Python
+
+  description: |
+    Pytools is a big bag of things that are "missing" from the Python standard
+    library. This is mainly a dependency of my other software packages, and is
+    probably of little interest to you unless you use those. If you're curious
+    nonetheless, here's what's on offer.
+
+  dev_url: https://github.com/inducer/pytools
+  doc_url: https://documen.tician.de/pytools
+
+extra:
+  recipe-maintainers:
+    - inducer
+    - ocefpaf
+    - matthiasdiener

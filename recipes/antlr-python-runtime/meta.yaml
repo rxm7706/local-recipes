@@ -1,0 +1,72 @@
+{% set version = "4.13.2" %}
+
+{% set PYTHON = PYTHON | default("$PYTHON") %}
+
+package:
+  name: antlr-python-runtime
+  version: {{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/a/antlr4-python3-runtime/antlr4_python3_runtime-{{ version }}.tar.gz
+    sha256: 909b647e1d2fc2b70180ac586df3933e38919c85f98ccc656a96cd3f25ef3916
+  - url: https://raw.githubusercontent.com/antlr/antlr4/{{ version }}/LICENSE.txt
+    sha256: 3db1fb3ee79a4b4f9918fc4d0f6133bf18a3cf787f126cd22f8aa9b862281c0c
+
+build:
+  number: 1
+  noarch: python
+  script:
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  entry_points:
+    - pygrun = antlr4._pygrun:main
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - pip
+  imports:
+    - antlr4
+    - antlr4.atn
+    - antlr4.dfa
+    - antlr4.error
+    - antlr4.tree
+    - antlr4.xpath
+  commands:
+    - pip check
+    - pygrun -h
+
+outputs:
+  - name: antlr-python-runtime
+
+  - name: antlr4-python3-runtime
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - {{ pin_subpackage("antlr-python-runtime", exact=True) }}
+    test:
+      requires:
+        - python {{ python_min }}
+      imports:
+        - antlr4
+
+about:
+  home: https://www.antlr.org
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: This is the Python runtime for ANTLR.
+  dev_url: https://github.com/antlr/antlr4
+  doc_url: https://github.com/antlr/antlr4/blob/master/doc/python-target.md
+
+extra:
+  feedstock-name: antlr-python-runtime
+  recipe-maintainers:
+    - bollwyvl

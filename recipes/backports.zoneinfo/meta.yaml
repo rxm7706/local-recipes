@@ -1,0 +1,60 @@
+{% set name = "backports.zoneinfo" %}
+{% set version = "0.2.1" %}
+{% set hash = "fadbfe37f74051d024037f223b8e001611eac868b5c5b06144ef4d8b799862f2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ hash }}
+  patches:
+    - tzdata-location.patch
+
+build:
+  number: 11
+  script:
+    - "{{ PYTHON }} -m pip install . -vv"  # [py<39]
+
+requirements:
+  build:
+    - python                                 # [py<39 and build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [py<39 and build_platform != target_platform]
+    - {{ compiler('c') }}                    # [py<39]
+    - {{ stdlib("c") }}                      # [py<39]
+  host:
+    - backports            # [py<39]
+    - python
+    - pip
+    - setuptools >=40.8.0
+  run:
+    - backports            # [py<39]
+    - python
+    - tzdata               # [py<39]
+    - importlib_resources  # [py<37]
+
+test:
+  imports:
+    - backports.zoneinfo   # [py<39]
+    - zoneinfo             # [py>=39]
+  commands:
+    - python -c "from backports.zoneinfo import ZoneInfo; from datetime import datetime; dt = datetime(2020, 10, 31, 12, tzinfo=ZoneInfo('America/Los_Angeles')); print(dt.tzname())"  # [py<39]
+    - python -c "from zoneinfo import ZoneInfo; from datetime import datetime; dt = datetime(2020, 10, 31, 12, tzinfo=ZoneInfo('America/Los_Angeles')); print(dt.tzname())"  # [py>=39]
+
+about:
+  home: https://github.com/pganssle/zoneinfo
+  license: Apache-2.0
+  license_family: APACHE
+  license_file: LICENSE
+  summary: 'Backport of the standard library zoneinfo module'
+
+  description: |
+    Backport of the standard library zoneinfo module
+  doc_url: https://zoneinfo.readthedocs.io/en/latest/
+  dev_url: https://github.com/pganssle/zoneinfo
+
+extra:
+  recipe-maintainers:
+    - kevans
+    - dhirschfeld

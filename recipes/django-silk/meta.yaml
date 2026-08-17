@@ -1,0 +1,48 @@
+{% set name = "django-silk" %}
+{% set version = "5.5.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: c488ee1eab763a6f3d0db09a969e7a91b637743f04159cd8d10141386157ec0d
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools-scm
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - django >=4.2
+    - sqlparse
+    - autopep8
+    - gprof2dot >=2017.09.19
+
+test:
+  imports:
+    - silk
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/jazzband/django-silk
+  summary: Silky smooth profiling for the Django Framework
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - cshaley

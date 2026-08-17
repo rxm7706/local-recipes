@@ -1,0 +1,59 @@
+{% set name = "qpd" %}
+{% set version = "0.4.4" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/qpd-{{ version }}.tar.gz
+  sha256: e0ed05b88e321ea9935874377bda11339c90f1469f34344e9b41d16b8088e136
+
+build:
+  number: 2
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - adagio
+    - antlr4-python3-runtime >=4.11.1,<4.12
+    - pandas >=1.2.0
+    - python >={{ python_min }}
+    - triad >=0.9.0
+
+test:
+  imports:
+    - qpd
+    - qpd_dask
+    - qpd_pandas
+    - qpd_ray
+    - qpd_test
+    - qpd_version
+  commands:
+    - pip check
+  requires:
+    - cloudpickle >=1.4.0
+    - dask
+    - modin-ray
+    - pandas >=1.1.2
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://pypi.org/project/qpd/
+  summary: Query Pandas Using SQL
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - charlesbluca
+    - kvnkho
+    - goodwanghan
+    - thewchan

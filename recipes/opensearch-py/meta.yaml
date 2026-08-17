@@ -1,0 +1,47 @@
+{% set name = "opensearch-py" %}
+{% set version = "2.5.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/opensearch-py-{{ version }}.tar.gz
+  sha256: 0dde4ac7158a717d92a8cd81964cb99705a4b80bcf9258ba195b9a9f23f5226d
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.6,<4.0
+    - pip
+  run:
+    - python >=3.6,<4.0
+    - urllib3 >=1.26.18,<2
+    - requests >=2.4.0,<3.0.0
+    - six
+    - python-dateutil
+    - certifi >=2022.12.07
+
+test:
+  imports:
+    - opensearchpy
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/opensearch-project/opensearch-py
+  summary: Python low-level client for OpenSearch
+  doc_url: https://opensearch.org/docs/latest/clients/python/
+  dev_url: https://github.com/opensearch-project/opensearch-py
+  license: Apache-2.0
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - chrisburr

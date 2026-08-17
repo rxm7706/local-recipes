@@ -1,5 +1,6 @@
 {% set name = "django-revproxy" %}
 {% set version = "0.13.0" %}
+{% set python_min = python_min|default("3.8") %}
 
 package:
   name: {{ name|lower }}
@@ -13,29 +14,36 @@ build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
+  script_env:
+    - SETUPTOOLS_SCM_PRETEND_VERSION={{ version }}
 
 requirements:
   host:
-    - python >=3.7
+    - python {{ python_min }}
     - setuptools >=45
     - wheel
     - setuptools-scm >=6.2
     - pip
   run:
-    - python >=3.7
+    - python >={{ python_min }}
     - django >=3.0
     - urllib3 >=1.12
+  run_constrained:
+    - diazo >=1.0.5
+    - lxml >=3.4
 
 test:
   imports:
-    - django_revproxy
+    - revproxy
   commands:
     - pip check
   requires:
+    - python ={{ python_min }}
     - pip
 
 about:
-  summary: Yet another Django reverse proxy application
+  home: https://github.com/jazzband/django-revproxy
+  summary: Reverse Proxy view that supports all HTTP methods, Diazo transformations and Single Sign-On.
   license: MPL-2.0
   license_file: LICENSE
 

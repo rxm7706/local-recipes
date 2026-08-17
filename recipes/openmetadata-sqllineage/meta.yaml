@@ -14,15 +14,15 @@ build:
     - sqllineage = sqllineage.cli:main
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python >=3.7
-    - sqllineage
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.7
+    - python >={{ python_min }}
     - sqlparse ==0.4.3
     - networkx >=2.4
     - sqlfluff ==2.1.4
@@ -35,6 +35,7 @@ test:
     - sqllineage --help
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/open-metadata/openmetadata-sqllineage

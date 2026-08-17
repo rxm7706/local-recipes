@@ -1,0 +1,46 @@
+{% set name = "livereload" %}
+{% set version = "2.7.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/livereload-{{ version }}.tar.gz
+  sha256: 3d9bf7c05673df06e32bea23b494b8d36ca6d10f7d5c3c8a6989608c09c986a9
+
+build:
+  entry_points:
+    - livereload = livereload.cli:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - tornado
+
+test:
+  imports:
+    - livereload
+  commands:
+    - pip check
+    - livereload --help
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/lepture/python-livereload
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Python LiveReload is an awesome tool for web developers
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

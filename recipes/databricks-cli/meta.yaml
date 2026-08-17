@@ -1,0 +1,54 @@
+{% set name = "databricks-cli" %}
+{% set version = "1.12.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  - url: https://github.com/databricks/cli/archive/refs/tags/v{{ version }}.tar.gz
+    sha256: 89bcb4efef1bd5e0ec6faf4702eab3dfde87c663033500771ca4eade9b66863f
+  - url: https://raw.githubusercontent.com/mattn/go-localereader/refs/heads/master/LICENSE  # [win]
+    sha256: dceede03550621e65ec7b79fcba87cf6dbb9d31132a8ae71a8fe8ceec0af7da3  # [win]
+    fn: LICENSE-go-localereader  # [win]
+
+
+build:
+  number: 0
+  script_env:
+    - BINARY_FILEPATH={{ PREFIX }}/bin/databricks      # [not win]
+    - BINARY_FILEPATH={{ PREFIX }}/bin/databricks.exe  # [win]
+
+requirements:
+  build:
+    - {{ compiler('go') }} >=1.24.1
+    - go-licenses
+    - m2-base                  # [win]
+
+test:
+  requires:
+    - ripgrep
+  commands:
+    - databricks --help
+    - databricks --version | rg {{ version }}
+    # semver metadata must be stamped, not the 0.0.0 dev-build defaults
+    - 'databricks version --output json | rg "Major.: {{ version.split(".")[0] }},"'
+    - databricks version --output json | rg v{{ version }}
+
+about:
+  summary: A command line interface for Databricks
+  home: https://github.com/databricks/cli
+  license: LicenseRef-Databricks-License
+  license_file:
+    - LICENSE
+    - NOTICE
+    - thirdparty/
+    - LICENSE-go-localereader  # [win]
+
+extra:
+  recipe-maintainers:
+    - thewchan
+    - andrewmchen
+    - jaroslawk
+    - oblute
+    - dhirschfeld

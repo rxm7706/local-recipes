@@ -1,0 +1,55 @@
+{% set version = "4.3.0" %}
+
+package:
+  name: astroid
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/astroid/astroid-{{ version }}.tar.gz
+  sha256: 2b5b5048d6edc40e748e2728790e444b81c3d358e19cc89db6e973236192362f
+
+build:
+  number: 0
+  skip: true  # [py<310]
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+  host:
+    - python
+    - setuptools >=77
+    - pip
+  run:
+    - python
+    - typing_extensions >=4      # [py<311]
+
+test:
+  requires:
+    - pip
+  imports:
+    - astroid
+    - astroid.modutils
+  commands:
+    - python -m pip check
+
+about:
+  home: https://www.astroid.org/
+  license: LGPL-2.1-or-later
+  license_family: LGPL
+  license_file: LICENSE
+  summary: A abstract syntax tree for Python with inference support.
+  description: |
+    Astroid provide a common base representation of python source code for
+    projects such as pychecker, pyreverse, pylint.
+  doc_url: http://astroid.readthedocs.io/en/latest/?badge=latest
+  doc_source_url: https://github.com/pylint-dev/astroid/blob/master/doc/index.rst
+  dev_url: https://github.com/pylint-dev/astroid
+
+extra:
+  recipe-maintainers:
+    - wshanks
+    - timkpaine
+    - jakirkham
+    - ocefpaf

@@ -1,0 +1,52 @@
+{% set name = "opencensus-ext-azure" %}
+{% set version = "1.1.15" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 8d108af15875ea3c52238646fba924c3ba9fbfaaf1fd0d350707dc5b7880ade7
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - azure-core >=1.12.0,<2.0.0
+    - azure-identity >=1.5.0,<2.0.0
+    - opencensus >=0.11.4,<1.0.0
+    - psutil >=5.6.3
+    - requests >=2.19.0
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - opencensus.ext.azure
+
+about:
+  home: https://github.com/census-instrumentation/opencensus-python
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: OpenCensus Azure Monitor Exporters
+  description: |
+    OpenCensus Azure Monitor Exporters. The Azure Monitor Log Handler allows
+    you to export Python logs to Azure Monitor.
+  doc_url: https://github.com/census-instrumentation/opencensus-python/tree/master/contrib/opencensus-ext-azure/examples
+  dev_url: https://github.com/census-instrumentation/opencensus-python/tree/master/contrib/opencensus-ext-azure
+
+extra:
+  recipe-maintainers:
+    - basnijholt
+    - krisevans
+    - dhirschfeld
+    - soapy1

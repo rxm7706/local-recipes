@@ -1,0 +1,54 @@
+{% set name = "identify" %}
+{% set version = "2.6.19" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://github.com/pre-commit/identify/archive/v{{ version }}.tar.gz
+  sha256: b939a2e57f1085886aab677c7b78d07ca02bf1186c8aeaa12021b596229e5195
+
+build:
+  number: 0
+  script: python -m pip install . --no-deps --ignore-installed
+  noarch: python
+  entry_points:
+    - identify-cli = identify.cli:main
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - ukkonen
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - identify
+  requires:
+    - pytest
+    - python {{ python_min }}
+  source_files:
+    - LICENSE
+    - tests
+    - setup.py
+  commands:
+    - identify-cli --help
+    - pytest tests
+
+about:
+  home: https://github.com/pre-commit/identify
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: File identification library for Python
+
+extra:
+  recipe-maintainers:
+    - nicoddemus
+    - tdegeus
+    - deadsnakes-issues-bot

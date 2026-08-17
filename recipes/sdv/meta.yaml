@@ -1,0 +1,65 @@
+{% set name = "sdv" %}
+{% set version = "1.38.0" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/sdv-{{ version }}.tar.gz
+  sha256: 34c2fa49a1b7043678b3910e5d7e899e45524de7c79a1b159e5f0e5cecf57dce
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - pytest-runner >=2.11.1
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - boto3 >=1.28.0,<2
+    - botocore >=1.31,<2
+    - cloudpickle >=2.1.0
+    - copulas >=0.12.1
+    - ctgan >=0.11.1
+    - deepecho >=0.7.0
+    - python-graphviz >=0.13.2
+    - numpy >=1.22.2,<2
+    - pandas >=1.4.0,<3
+    - platformdirs >=4.0
+    - python >={{ python_min }},<3.15
+    - pyyaml >=6.0.1
+    - rdt >=1.18.2
+    - sdmetrics >=0.28.0
+    - tqdm >=4.29
+
+test:
+  imports:
+    - sdv
+    - sdv.constraints
+  requires:
+    - pip
+    - python {{ python_min }}
+
+
+about:
+  home: https://github.com/sdv-dev/SDV
+  summary: Synthetic Data Generation for tabular, relational and time series data.
+  license: BUSL-1.1
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - amontanez24
+    - fealho
+    - frances-h
+    - pvk-developer
+    - rwedge
+    - gsheni
+    - R-Palazzo
+    - sarahmish

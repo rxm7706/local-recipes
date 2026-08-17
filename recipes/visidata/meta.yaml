@@ -1,0 +1,56 @@
+{% set name = "visidata" %}
+{% set version = "3.3" %}
+{% set sha256 = "a94f4e398477e038541849cf4df1d1f2efc399da544d77db189bdb7f2fc014c4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - python-dateutil
+    - requests
+    - lxml
+    - openpyxl
+    - xlrd
+    - setuptools
+
+test:
+  requires:
+    - python {{ python_min }}
+  commands:
+    - vd --version
+
+about:
+  home: https://github.com/saulpw/visidata
+  license: GPL-3.0
+  license_family: GPL
+  license_file: {{ environ["RECIPE_DIR"] }}/LICENSE
+  summary: A terminal interface for exploring and arranging tabular data.
+
+  description: |
+    VisiData is a multipurpose terminal utility for exploring, cleaning,
+    restructuring and analysing tabular data. Current supported sources are
+    TSV, CSV, fixed-width text, JSON, SQLite, HTTP, HTML, .xls, and .xlsx
+    (Microsoft Excel).
+  doc_url: https://visidata.org/docs
+  dev_url: https://github.com/saulpw/visidata
+
+extra:
+  recipe-maintainers:
+    - anjakefala

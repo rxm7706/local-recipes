@@ -1,0 +1,44 @@
+{% set version = "1.2.2" %}
+
+package:
+  name: throttler
+  version: {{ version }}
+
+source:
+  url: https://github.com/uburuntu/throttler/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: 753bf1954f8580ca6ea7a9787dbacbe29f0da8fb32598a2386a3f04497d00ad9
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+
+test:
+  imports:
+    - throttler
+  requires:
+    - pip
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/uburuntu/throttler
+  summary: Easy throttling with asyncio support
+  description: |
+    Zero-dependency Python package for easy throttling with asyncio support.
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  doc_url: https://github.com/uburuntu/throttler
+  dev_url: https://github.com/uburuntu/throttler
+
+extra:
+  recipe-maintainers:
+    - johanneskoester

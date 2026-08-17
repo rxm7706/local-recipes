@@ -1,0 +1,73 @@
+{% set name = "email-validator" %}
+{% set version = "2.3.0" %}
+
+package:
+  name: {{ name|lower }}-meta
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/email_validator-{{ version }}.tar.gz
+  sha256: 9fc05c37f2f6cf439ff414f8fc46d917929974a82244c20eb10231ba60c54426
+
+build:
+  number: 0
+  noarch: python
+
+outputs:
+  - name: {{ name|lower }}
+    build:
+      noarch: python
+      entry_points:
+        - email_validator = email_validator.__main__:main
+    script: build_email_validator.sh
+    requirements:
+      host:
+        - python {{ python_min }}
+        - pip
+        - setuptools
+      run:
+        - python >={{ python_min }}
+        - dnspython >=2.0.0
+        - idna >=2.0.0
+    test:
+      source_files:
+        - tests
+      requires:
+        - coverage
+        - docutils
+        - flake8
+        - pytest
+        - pytest-cov
+        - python {{ python_min }}
+      imports:
+        - email_validator
+      commands:
+        - email_validator blah@blah.com
+        - pytest --cov=email_validator
+
+  # Provide package with alternative name for backward compatibility
+  - name: email_validator
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - {{ pin_subpackage('email-validator', max_pin="x.x.x") }}
+    test:
+      imports:
+        - email_validator
+      commands:
+        - email_validator blah@blah.com
+
+about:
+  home: https://github.com/JoshData/python-email-validator
+  summary: A robust email address syntax and deliverability validation library.
+  license: Unlicense
+  license_file: LICENSE
+  doc_url: https://github.com/JoshData/python-email-validator
+  dev_url: https://github.com/JoshData/python-email-validator
+
+extra:
+  feedstock-name: email-validator
+  recipe-maintainers:
+    - xylar
+    - pmlandwehr

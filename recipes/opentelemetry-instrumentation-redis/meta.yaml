@@ -1,0 +1,105 @@
+{% set name = "opentelemetry-instrumentation-redis" %}
+{% set version = "0.65b0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_redis-{{ version }}.tar.gz
+  sha256: f16409f189092984ff922f26939e7be79509365f5c9d202308c13fddf1368147
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >={{ python_min }}
+    - opentelemetry-api ~=1.12
+    - opentelemetry-instrumentation ==0.65b0
+    - opentelemetry-semantic-conventions ==0.65b0
+    - wrapt >=1.12.1
+    # - redis-py >=2.6
+    # - opentelemetry-test-utils ==0.37b0
+    # - opentelemetry-sdk ~=1.3
+    # - opentelemetry-instrumentation-redis 
+    # - redis-py >=2.6
+    # - opentelemetry-test-utils ==0.38b0
+    # - opentelemetry-sdk ~=1.3
+    # - opentelemetry-instrumentation-redis 
+    # - redis-py >=2.6
+    # - opentelemetry-test-utils ==0.39b0
+    # - opentelemetry-sdk ~=1.3
+    # - opentelemetry-instrumentation-redis 
+    # - redis-py >=2.6
+    # - opentelemetry-test-utils ==0.40b0
+    # - opentelemetry-sdk ~=1.3
+    # - opentelemetry-instrumentation-redis 
+    # - redis-py >=2.6
+    # - opentelemetry-test-utils ==0.41b0
+    # - opentelemetry-sdk ~=1.3
+    # - opentelemetry-instrumentation-redis 
+    # - redis-py >=2.6
+    # - opentelemetry-test-utils ==0.42b0
+    # - opentelemetry-sdk ~=1.3
+    # - opentelemetry-instrumentation-redis 
+    # - redis-py >=2.6
+    # - opentelemetry-test-utils ==0.43b0
+    # - opentelemetry-sdk ~=1.3
+    # - opentelemetry-instrumentation-redis 
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+    # - redis-py >=2.6
+
+test:
+  imports:
+    - opentelemetry
+    - opentelemetry.instrumentation
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-redis
+  summary: OpenTelemetry Redis instrumentation
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk

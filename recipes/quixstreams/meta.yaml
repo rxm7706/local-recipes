@@ -1,0 +1,54 @@
+{% set name = "quixstreams" %}
+{% set version = "3.11.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/quixio/quix-streams/archive/v{{ version }}.tar.gz
+  sha256: dc8803fe2e96de20542b3daed7f6739d63c8c63362bfc5ef21685c2929af5b76
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - python-confluent-kafka >=2.4,<2.5
+    - requests >=2.32
+    - rocksdict >=0.3,<0.4
+    - typing_extensions >=4.8
+    - orjson >=3.9,<4
+    - pydantic >=2.7,<2.11
+    - pydantic-settings >=2.3,<2.7
+    - jsonschema >=4.3.0
+    - jsonlines >=4,<5
+    - rich >=13,<14
+
+test:
+  imports:
+    - quixstreams
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/quixio/quix-streams
+  doc_url: https://docs.quix.io/
+  summary: Python library for building stream processing applications with Apache Kafka
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+
+extra:
+  recipe-maintainers:
+    - thewchan

@@ -1,0 +1,58 @@
+{% set name = "pyobjc-core" %}
+{% set version = "12.2.2" %}
+{% set sha256 = "3906452339cd06a3bb07df103c2511d4cb0f7a22d8771c0b802eba15d9a642b6" %}
+
+package:
+  name: {{ name }}
+  version: "{{ version }}"
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+  patches:
+    - fix_for_conda_build.diff
+
+build:
+  number: 0
+  script:
+    # force pyobjc to use conda-forge's chosen SDK
+    - export CFLAGS="${CFLAGS} -isysroot ${SDKROOT:-$CONDA_BUILD_SYSROOT}"
+    # force ignoring invalid compiler flag (-Wl,-export-dynamic)
+    - export CFLAGS="${CFLAGS} -Wno-unused-command-line-argument"  # [py == 37 or py == 38]
+    - {{ PYTHON }} -m pip install . -vv
+  skip: true  # [not osx or py2k or python_impl == 'pypy' or (arm64 and py < 39)]
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+  host:
+    - python
+    - pip
+    - setuptools
+    - libffi
+  run:
+    - python
+    - setuptools
+    - libffi
+
+test:
+  imports:
+    - PyObjCTools
+    - objc
+
+about:
+  home: https://github.com/ronaldoussoren/pyobjc
+  license: MIT
+  summary: Python<->ObjC Interoperability Module
+  license_family: MIT
+  license_file: License.txt
+  doc_url: https://pyobjc.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - kastman
+    - larsoner

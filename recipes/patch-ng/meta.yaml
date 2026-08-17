@@ -1,0 +1,42 @@
+{% set name = "patch-ng" %}
+{% set version = "1.19.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 036a3cc00134ec53f37e92333958ee75e117f2e62a5ec2b85c7122e5e815c29e
+
+build:
+  noarch: python
+  number: 0
+  entry_points:
+    - patch-ng = patch_ng:main
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  commands:
+    - patch-ng --help
+
+about:
+  home: https://github.com/conan-io/python-patch-ng
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Library to parse and apply unified diffs
+
+extra:
+  recipe-maintainers:
+    - abloemert

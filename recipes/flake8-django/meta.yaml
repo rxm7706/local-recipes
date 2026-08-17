@@ -6,22 +6,22 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/flake8_django-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/flake8_django-{{ version }}.tar.gz
   sha256: 4debba883084191568e3187416d1d6bdd4abd826da988f197a3c36572e9f30de
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python >=3.8,<4.0
+    - python {{ python_min }}
     - poetry-core >=1.0.0
     - pip
   run:
-    - python >=3.8,<4.0
-    - astroid >=2.15.2,<3.1.0
+    - python >={{ python_min }},<4.0
+    - astroid >=2.15.2,<3.0.0
     - flake8 >=3.8.4,<7
 
 test:
@@ -31,6 +31,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/rocioar/flake8-django

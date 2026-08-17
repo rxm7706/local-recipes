@@ -1,0 +1,53 @@
+{% set name = "scrypt" %}
+{% set version = "0.9.4" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 0d212010ba8c2e55475ba6258f30cee4da0432017514d8f6e855b7f1f8c55c77
+
+build:
+  number: 1
+  script:
+    - "{{ PYTHON }} %RECIPE_DIR%\\fix_openssl_win.py setup.py"     # [win]
+    - "{{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv"
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cffi                                   # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - openssl
+    - cffi >=1.7
+  run:
+    - python
+    - openssl
+    - cffi >=1.7
+
+test:
+  imports:
+    - scrypt
+
+about:
+  home: https://github.com/holgern/py-scrypt
+  license: BSD-2-Clause
+  license_family: BSD
+  license_file: LICENSE
+  dev_url: https://github.com/holgern/py-scrypt
+  doc_url: https://github.com/holgern/py-scrypt
+  summary: This is a set of Python bindings for the scrypt key derivation function.
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - holgern

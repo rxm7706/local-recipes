@@ -6,22 +6,22 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/intake-hive-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/intake-hive-{{ version }}.tar.gz
   sha256: 759e3c05e568a083ef0dcdc83956d1334355b98f12cb64b417b7c85f6f0aab98
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python >=3.6
-    - poetry >=0.12
+    - python {{ python_min }}
+    - poetry >=0.12    
     - poetry-core
     - pip
   run:
-    - python >=3.6
+    - python >={{ python_min }}
     - intake >=0.5.3
     - pyspark >=2.3.0
 
@@ -32,8 +32,10 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
+  home: https://github.com/zillow/intake-hive
   summary: Intake Hive DataSource Plugin.
   license: Apache-2.0
   license_file: LICENSE

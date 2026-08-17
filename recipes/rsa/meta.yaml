@@ -1,0 +1,58 @@
+{% set name = "rsa" %}
+{% set version = "4.9.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: e7bdbfdb5497da4c07dfd35530e1a902659db6ff241e39d9953cad06ebd0ae75
+
+build:
+  number: 0
+  entry_points:
+    - pyrsa-priv2pub = rsa.util:private_to_public
+    - pyrsa-keygen = rsa.cli:keygen
+    - pyrsa-encrypt = rsa.cli:encrypt
+    - pyrsa-decrypt = rsa.cli:decrypt
+    - pyrsa-sign = rsa.cli:sign
+    - pyrsa-verify = rsa.cli:verify
+  noarch: python
+  script: '{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv '
+
+requirements:
+  host:
+    - pip
+    - poetry-core
+    - python {{ python_min }}
+  run:
+    - pyasn1 >=0.1.3
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - rsa
+  commands:
+    - pip check
+    - pyrsa-priv2pub --help
+    - pyrsa-keygen --help
+    - pyrsa-encrypt --help
+    - pyrsa-decrypt --help
+    - pyrsa-sign --help
+    - pyrsa-verify --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://stuvel.eu/rsa
+  license: Apache-2.0
+  license_family: APACHE
+  license_file: LICENSE
+  summary: Pure-Python RSA implementation
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - dbast

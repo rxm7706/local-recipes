@@ -1,0 +1,52 @@
+{% set name = "pytest-mpl" %}
+{% set version = "0.19.0" %}
+{% set sha256 = "c08e7b51ba4c98eed77ac3f3c6e336ed6163647d9e27ea1d928f79b542178cbe" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools >=80
+    - setuptools_scm >=8
+
+  run:
+    - python >={{ python_min }}
+    - pytest >=6.2.5
+    - matplotlib-base >=3.5.3
+    - packaging >=22.0.0
+    - jinja2 >=2.10.2
+    - pillow >=8.1.1
+
+test:
+  requires:
+    - python {{ python_min }}
+  commands:
+    # Need to avoid discovering all tests in directory
+    - py.test --traceconfig ${SRCDIR} | grep pytest-mpl-{{ version }}
+
+about:
+  home: https://github.com/matplotlib/pytest-mpl
+  license: BSD-2-Clause
+  license_file: LICENSE
+  license_family: BSD
+  summary: pytest plugin to help with testing figures output from Matplotlib
+  dev_url: https://github.com/matplotlib/pytest-mpl
+
+extra:
+  recipe-maintainers:
+    - dopplershift
+    - astrofrog

@@ -1,6 +1,5 @@
 {% set name = "vulture" %}
 {% set version = "2.16" %}
-{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
@@ -33,7 +32,6 @@ test:
     - python {{ python_min }}
   imports:
      - dev
-     #- dist
      - vulture
   commands:
     - pip check

@@ -1,0 +1,56 @@
+{% set name = "flower" %}
+{% set version = "2.0.1" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/flower-{{ version }}.tar.gz
+  sha256: 5ab717b979530770c16afb48b50d2a98d23c3e9fe39851dcf6bc4d01845a02a0
+
+build:
+  number: 2
+  entry_points:
+    - flower = flower.__main__:main
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+    - setuptools
+    - celery >=5.0.5
+    - humanize
+    - prometheus_client >=0.8.0
+    - pytz
+    - tornado >=5.0.0,<7.0.0
+
+test:
+  imports:
+    - flower
+    - flower.api
+  # pip check fails due to a problem in celery, not flower.
+  # requires:
+  #   - pip
+  commands:
+    # - pip check
+    - flower --help
+
+about:
+  home: https://github.com/mher/flower
+  license: BSD-3-Clause
+  summary: Celery Flower
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - kwilcox
+    - thebestnom

@@ -1,0 +1,59 @@
+{% set version = "1.6.5" %}
+
+package:
+  name: cftime
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/cftime/cftime-{{ version }}.tar.gz
+  sha256: 8225fed6b9b43fb87683ebab52130450fc1730011150d3092096a90e54d1e81e
+
+build:
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython >=0.29.20                       # [build_platform != target_platform]
+    - numpy                                  # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools >=41.2
+    - cython >=0.29.20
+    - numpy
+  run:
+    - numpy >=1.21.2
+    - python
+
+test:
+  source_files:
+    - test
+  requires:
+    - pytest
+    - pip
+  imports:
+    - cftime
+  commands:
+    - pytest -vv test
+    - pip check
+
+about:
+  home: https://github.com/Unidata/cftime
+  license: MIT
+  license_file: LICENSE
+  summary: Time-handling functionality from netcdf4-python
+
+  description: |
+    Time-handling functionality from netcdf4-python
+  doc_url: https://github.com/Unidata/cftime
+  dev_url: https://github.com/Unidata/cftime
+
+extra:
+  recipe-maintainers:
+    - jhamman
+    - ocefpaf

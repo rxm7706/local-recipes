@@ -1,0 +1,69 @@
+{% set name = "unstructured-client" %}
+{% set version = "0.46.1" %}
+{% set python_min = "3.11" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: f187bd289e4ed6d453af35e22ddd3c0a5d776e35442d4fa24a31ecd57a1b84b6
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - poetry
+  run:
+    - pypdfium2 >=5.6.0
+    - httpcore >=1.0.9
+    - typing-inspection >=0.4.0
+    - aiofiles >=25.1.0
+    - eval-type-backport >=0.2.0
+    - pydantic >=2.12.5
+    - cryptography >=3.1
+    - httpx >=0.28.1
+    - nest-asyncio >=1.6.0
+    - requests-toolbelt >=1.0.0
+    - python >={{ python_min }}
+    - certifi >=2023.7.22
+    - charset-normalizer >=3.2.0
+    - dataclasses-json >=0.6.4
+    - deepdiff >=6.0
+    - idna >=3.4
+    - jsonpath-python >=1.0.6,<2.0.0
+    - marshmallow >=3.19.0
+    - mypy_extensions >=1.0.0
+    - packaging >=23.1
+    - pypdf >=6.9.2
+    - python-dateutil >=2.8.2
+    - requests >=2.31.0
+    - six >=1.16.0
+    - typing_inspect >=0.9.0
+    - typing-extensions >=4.7.1
+    - urllib3 >=1.26.18
+
+test:
+  imports:
+    - unstructured_client
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: Python Client SDK for Unstructured API
+  home: https://github.com/Unstructured-IO/unstructured-python-client
+  license: MIT
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

@@ -1,0 +1,47 @@
+{% set name = "log_symbols" %}
+{% set version = "0.0.14" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: cf0bbc6fe1a8e53f0d174a716bc625c4f87043cc21eb55dd8a740cfe22680556
+
+build:
+  noarch: python
+  number: 2
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - colorama >=0.3.9
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  imports:
+    - log_symbols
+  commands:
+    - python -m pip check
+    - python -m pip show log_symbols
+
+about:
+  home: https://github.com/manrajgrover/py-log-symbols
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Colored symbols for various log levels for Python
+  description: Colored symbols for various log levels for Python
+
+extra:
+  recipe-maintainers:
+    - timkpaine
+    - duncanmmacleod

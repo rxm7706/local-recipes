@@ -1,0 +1,46 @@
+{% set name = "pyvmomi" %}
+{% set version = "8.0.3.0.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: db795c960159cfa3c81e6af4cf1f46618e61cf0349db1666de75df98a4f29c69
+
+build:
+  number: 0
+  noarch: python
+  script: '{{ PYTHON }} -m pip install . -vv '
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - six >=1.7.3
+
+test:
+  requires:
+    - python {{ python_min }}
+    - pip
+  imports:
+    - pyVim
+    - pyVmomi
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/vmware/pyvmomi
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: VMware vSphere Python SDK
+
+extra:
+  recipe-maintainers:
+    - pg-hbk
+    - sy-hbk
+    - maresb

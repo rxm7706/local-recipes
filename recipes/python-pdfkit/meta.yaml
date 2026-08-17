@@ -1,0 +1,43 @@
+{% set pypi_name = "pdfkit" %}
+{% set name = "python-pdfkit" %}
+{% set version = "1.0.0" %}
+{% set sha256 = "992f821e1e18fc8a0e701ecae24b51a2d598296a180caee0a24c0af181da02a9" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.io/packages/source/{{ pypi_name[0] }}/{{ pypi_name }}/{{ pypi_name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python >=2.7,<3.0|>=3.2
+    - setuptools
+  run:
+    - python >=2.7,<3.0|>=3.2
+    - wkhtmltopdf
+
+test:
+  imports:
+    - pdfkit
+
+about:
+  home: https://github.com/JazzCore/python-pdfkit
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Wkhtmltopdf python wrapper to convert html to pdf
+
+extra:
+  recipe-maintainers:
+    - scopatz
+    - jsta

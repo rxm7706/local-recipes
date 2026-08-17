@@ -1,0 +1,228 @@
+{% set version = "3.4.0" %}
+{% set build_number = 0 %}
+{% set python_min = "3.12" %}
+{% set posix = 'm2-' if win else '' %}
+
+{% set string_prefix = "cuda" ~ (cuda_compiler_version | replace('.', '')) if (cuda_compiler_version or "None") != "None" else "cpu" %}
+
+package:
+  name: xgboost-split
+  version: {{ version }}
+
+source:
+  url: https://github.com/dmlc/xgboost/releases/download/v{{ version }}/xgboost-src-{{ version }}.tar.gz
+  sha256: af4588b34c7fa1bfde258006beebbe181454f1fb74266f81883b23059af3b9fb
+  patches:
+    # xgboost patches
+    - patches/0001-Enable-latest-libcxx-on-MacOS.patch                # [osx]
+
+build:
+  number: {{ build_number }}
+  # Skip if `python_min` is undefined. This ensures re-rendering picks it up.
+  skip: true  # [not python_min]
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - {{ compiler('cuda') }}           # [cuda_compiler_version != "None"]
+    - {{ compiler('m2w64_c') }}        # [win]
+    - {{ compiler('m2w64_cxx') }}      # [win]
+    - {{ stdlib('c') }}
+    - {{ stdlib('m2w64_c') }}          # [win]
+    - m2-sed                           # [win]
+    - cmake
+    - llvm-openmp  # [osx]
+    - libgomp      # [linux]
+    - vcomp14      # [win]
+    - ninja
+  host:
+    - cccl   # [cuda_compiler_version != "None"]
+    - nccl   # [linux and cuda_compiler_version != "None"]
+
+outputs:
+  - name: libxgboost
+    script: >-
+      {{ "install-libxgboost.sh" if not win else "install-win-wrapper.bat" }}
+    build:
+      activate_in_script: true
+      string: {{ string_prefix }}_h{{ PKG_HASH }}_{{ PKG_BUILDNUM }}
+      ignore_run_exports_from:
+        - {{ compiler('cuda') }}  # [cuda_compiler_version != "None"]
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ compiler('cxx') }}
+        - {{ compiler('cuda') }}  # [cuda_compiler_version != "None"]
+        - {{ stdlib('c') }}
+        - cmake
+        - ninja
+        - llvm-openmp  # [osx]
+        - libgomp      # [linux]
+        - vcomp14      # [win]
+      host:
+        - cuda-version {{ cuda_compiler_version }}  # [cuda_compiler_version != "None"]
+        - nccl                                      # [linux and cuda_compiler_version != "None"]
+        - vcomp14                                   # [win]
+      run:
+        - __cuda                                                    # [cuda_compiler_version != "None"]
+        - {{ pin_compatible("cuda-version", min_pin="x") }}         # [cuda_compiler_version != "None"]
+        - vcomp14                                                   # [win]
+    test:
+      commands:
+        - test -f "${PREFIX}/lib/libxgboost${SHLIB_EXT}"                  # [unix]
+        - test ! -f "${PREFIX}/lib/libdmlc.a"                             # [unix]
+        - test -d "${PREFIX}/lib/cmake"                                   # [unix]
+        - test ! -d "${PREFIX}/lib/cmake/dmlc"                            # [unix]
+        - test ! -d "${PREFIX}/include/dmlc"                              # [unix]
+        - if not exist %LIBRARY_PREFIX%\mingw-w64\lib\xgboost.lib exit 1  # [win]
+        - if not exist %LIBRARY_PREFIX%\mingw-w64\bin\xgboost.dll exit 1  # [win]
+        - if exist %LIBRARY_PREFIX%\mingw-w64\lib\dmlc.lib exit 1         # [win]
+        - if exist %LIBRARY_PREFIX%\mingw-w64\include\dmlc exit 1         # [win]
+        - if not exist %LIBRARY_PREFIX%\mingw-w64\lib\cmake exit 1        # [win]
+        - if exist %LIBRARY_PREFIX%\mingw-w64\lib\cmake\dmlc exit 1       # [win]
+
+  - name: py-xgboost
+    script: >-
+      {{ "install-py-xgboost.sh" if not win else "install-win-wrapper.bat" }}
+    build:
+      noarch: python
+      string: {{ string_prefix }}_pyh{{ PKG_HASH }}_{{ PKG_BUILDNUM }}
+    requirements:
+      build:                                                   # [build_platform != target_platform]
+        - python {{ python_min }}                              # [build_platform != target_platform]
+        - cross-python_{{ target_platform }} {{ python_min }}  # [build_platform != target_platform]
+      host:
+        - {{ pin_subpackage('libxgboost', max_pin='x.x.x') }}
+        - libxgboost * {{ string_prefix }}_h*_{{ PKG_BUILDNUM }}
+        - python {{ python_min }}
+        - scikit-build-core >=0.11.0
+        - packaging >=21.3
+        - pip
+      run:
+        - {{ pin_subpackage('libxgboost', max_pin='x.x.x') }}
+        - libxgboost * {{ string_prefix }}_h*_{{ PKG_BUILDNUM }}
+        - python >={{ python_min }}
+        - numpy
+        - scipy
+        - scikit-learn
+        - __cuda        # [cuda_compiler_version != "None"]
+    test:
+      requires:
+        - python {{ python_min }}
+        - pip
+      imports:
+        - xgboost
+      commands:
+        - pip check
+      script: test-py-xgboost.py
+
+  - name: xgboost
+    build:
+      noarch: python
+      string: {{ string_prefix }}_pyh{{ PKG_HASH }}_{{ PKG_BUILDNUM }}
+    requirements:
+      host:
+        - python {{ python_min }}
+        - {{ pin_subpackage('py-xgboost', exact=True) }}
+        - py-xgboost * {{ string_prefix }}_pyh*_{{ PKG_BUILDNUM }}
+      run:
+        - python >={{ python_min }}
+        - {{ pin_subpackage('py-xgboost', exact=True) }}
+        - py-xgboost * {{ string_prefix }}_pyh*_{{ PKG_BUILDNUM }}
+        - __cuda  # [cuda_compiler_version != "None"]
+    test:
+      requires:
+        - python {{ python_min }}
+      imports:
+        - xgboost
+
+  - name: r-xgboost
+    script: >-
+      {{ "install-r-xgboost.sh" if not win else "install-win-wrapper.bat" }}
+    build:
+      string: {{ string_prefix }}_r{{ r_base | replace('.', '') }}h{{ PKG_HASH }}_{{ PKG_BUILDNUM }}
+      missing_dso_whitelist:
+        # Conda-build raises the missing `R.dll` linkage erroneously.
+        # xref: https://github.com/conda/conda-build/pull/4786
+        - '*/R.dll'         # [win]
+      rpaths:
+        - lib/R/lib
+    requirements:
+      build:
+        - {{ compiler('c') }}              # [unix]
+        - {{ compiler('cxx') }}            # [unix]
+        - {{ compiler('m2w64_c') }}        # [win]
+        - {{ compiler('m2w64_cxx') }}      # [win]
+        - {{ stdlib('c') }}                # [unix]
+        - {{ stdlib('m2w64_c') }}          # [win]
+        - llvm-openmp                      # [osx]
+        - libgomp                          # [linux or win]
+        - {{ posix }}bash                  # [win]
+        - {{ posix }}make
+        - cross-r-base {{ r_base }}        # [build_platform != target_platform]
+        - r-base                           # [build_platform != target_platform]
+        - r-matrix                         # [build_platform != target_platform]
+        - r-data.table                     # [build_platform != target_platform]
+        - r-magrittr                       # [build_platform != target_platform]
+        - r-jsonlite                       # [build_platform != target_platform]
+        - r-knitr                          # [build_platform != target_platform]
+      host:
+        - {{ pin_subpackage('libxgboost', max_pin='x.x.x') }}
+        - libgomp                                                 # [win]
+        - libxgboost * {{ string_prefix }}_h*_{{ PKG_BUILDNUM }}
+        - r-base
+        - r-matrix
+        - r-data.table
+        - r-magrittr
+        - r-jsonlite
+        - r-knitr
+      run:
+        - {{ pin_subpackage('libxgboost', max_pin='x.x.x') }}
+        - libgomp                                                  # [win]
+        - libxgboost * {{ string_prefix }}_h*_{{ PKG_BUILDNUM }}
+        - r-base
+        - r-matrix
+        - r-data.table
+        - r-magrittr
+        - r-jsonlite
+        - __cuda  # [cuda_compiler_version != "None"]
+    test:
+      requires:
+        - r-base
+      files:
+        - test-r-xgboost.r
+      commands:
+        - $R -e "library('xgboost')"           # [unix]
+        - "\"%R%\" -e \"library('xgboost')\""  # [win]
+        - Rscript test-r-xgboost.r             # [unix]
+
+about:
+  home: https://github.com/dmlc/xgboost
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: |
+    Scalable, Portable and Distributed Gradient Boosting (GBDT, GBRT or GBM) Library, for
+    Python, R, Java, Scala, C++ and more. Runs on single machine, Hadoop, Spark, Flink
+    and DataFlow
+  description: |
+    XGBoost is an optimized distributed gradient boosting library designed to be highly efficient,
+    flexible and portable. It implements machine learning algorithms under the Gradient Boosting
+    framework. XGBoost provides a parallel tree boosting (also known as GBDT, GBM) that solve many
+    data science problems in a fast and accurate way. The same code runs on major distributed
+    environment (Hadoop, SGE, MPI) and can solve problems beyond billions of examples.
+  doc_url: https://xgboost.readthedocs.io/
+  dev_url: https://github.com/dmlc/xgboost/
+
+extra:
+  feedstock-name: xgboost
+  recipe-maintainers:
+    - chyunsu3
+    - trivialfis
+    - aldanor
+    - danielnachun
+    - fhoehle
+    - jakirkham
+    - ksangeek
+    - xhochy
+    - mfansler

@@ -1,0 +1,39 @@
+{% set name = "construct" %}
+{% set version = "2.10.70" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 4d2472f9684731e58cc9c56c463be63baa1447d674e0d66aeb5627b22f512c29
+
+build:
+  noarch: python
+  number: 0
+  script: '{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv '
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - python >=3.6
+
+test:
+  imports:
+    - construct
+    - construct.lib
+
+about:
+  home: http://construct.readthedocs.org
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A powerful declarative symmetric parser/builder for binary data
+
+extra:
+  recipe-maintainers:
+    - DominicAntonacci
+    - kevinheavey

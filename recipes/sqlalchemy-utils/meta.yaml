@@ -1,0 +1,320 @@
+{% set version = "0.42.1" %}
+{% set min_sqlalchemy = "1.3" %}
+
+{% set PYTHON = PYTHON | default("$PYTHON") %}
+
+package:
+  name: sqlalchemy-utils-split
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/S/SQLAlchemy-Utils/sqlalchemy_utils-{{ version }}.tar.gz
+  sha256: 881f9cd9e5044dc8f827bccb0425ce2e55490ce44fc0bb848c55cc8ee44cc02e
+
+build:
+  number: 0
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+
+outputs:
+  - name: sqlalchemy-utils-base
+    build:
+      noarch: python
+      script:
+        - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+    requirements:
+      host:
+        - pip
+        - python {{ python_min }}
+        - setuptools
+      run:
+        - python >={{ python_min }}
+        - sqlalchemy >={{ min_sqlalchemy }}
+        # technically, python_version<'3.8': not worth the loss of `noarch: python`
+        - importlib-metadata
+    test:
+      imports:
+        - sqlalchemy_utils
+      requires:
+        - pip
+        - python {{ python_min }}
+      commands:
+        - pip check
+    about:
+      home: https://github.com/kvesteri/sqlalchemy-utils
+      license_file: LICENSE
+      license: BSD-3-Clause
+      license_family: BSD
+      summary: Various utility functions for SQLAlchemy (with no extras)
+
+  - name: sqlalchemy-utils-arrow
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - {{ pin_subpackage("sqlalchemy-utils-base", max_pin="x.x.x") }}
+        - arrow >=0.3.4
+    test:
+      imports:
+        - sqlalchemy_utils
+      requires:
+        - pip
+        - python {{ python_min }}
+      commands:
+        - pip check
+    about:
+      home: https://github.com/kvesteri/sqlalchemy-utils
+      license_file: LICENSE
+      license: BSD-3-Clause
+      license_family: BSD
+      summary: Various utility functions for SQLAlchemy (with `[arrow]` extra)
+
+  - name: sqlalchemy-utils-babel
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - {{ pin_subpackage("sqlalchemy-utils-base", max_pin="x.x.x") }}
+        - babel >=1.3
+    test:
+      imports:
+        - sqlalchemy_utils
+      requires:
+        - pip
+        - python {{ python_min }}
+      commands:
+        - pip check
+    about:
+      home: https://github.com/kvesteri/sqlalchemy-utils
+      license_file: LICENSE
+      license: BSD-3-Clause
+      license_family: BSD
+      summary: Various utility functions for SQLAlchemy (with `[babel]` extra)
+
+  - name: sqlalchemy-utils-color
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - {{ pin_subpackage("sqlalchemy-utils-base", max_pin="x.x.x") }}
+        - colour >=0.0.4
+    test:
+      imports:
+        - sqlalchemy_utils
+      requires:
+        - pip
+        - python {{ python_min }}
+      commands:
+        - pip check
+    about:
+      home: https://github.com/kvesteri/sqlalchemy-utils
+      license_file: LICENSE
+      license: BSD-3-Clause
+      license_family: BSD
+      summary: Various utility functions for SQLAlchemy (with `[color]` extra)
+
+  - name: sqlalchemy-utils-encrypted
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - {{ pin_subpackage("sqlalchemy-utils-base", max_pin="x.x.x") }}
+        - cryptography >=0.6
+    test:
+      imports:
+        - sqlalchemy_utils
+      requires:
+        - pip
+        - python {{ python_min }}
+      commands:
+        - pip check
+    about:
+      home: https://github.com/kvesteri/sqlalchemy-utils
+      license_file: LICENSE
+      license: BSD-3-Clause
+      license_family: BSD
+      summary: Various utility functions for SQLAlchemy (with `[encrypted]` extra)
+
+  - name: sqlalchemy-utils-intervals
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - {{ pin_subpackage("sqlalchemy-utils-base", max_pin="x.x.x") }}
+        - intervals >=0.7.1
+    test:
+      imports:
+        - sqlalchemy_utils
+      requires:
+        - pip
+        - python {{ python_min }}
+      commands:
+        - pip check
+    about:
+      home: https://github.com/kvesteri/sqlalchemy-utils
+      license_file: LICENSE
+      license: BSD-3-Clause
+      license_family: BSD
+      summary: Various utility functions for SQLAlchemy (with `[intervals]` extra)
+
+  - name: sqlalchemy-utils-password
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - {{ pin_subpackage("sqlalchemy-utils-base", max_pin="x.x.x") }}
+        - passlib >=1.6,<2.0
+    test:
+      imports:
+        - sqlalchemy_utils
+      requires:
+        - pip
+        - python {{ python_min }}
+      commands:
+        - pip check
+    about:
+      home: https://github.com/kvesteri/sqlalchemy-utils
+      license_file: LICENSE
+      license: BSD-3-Clause
+      license_family: BSD
+      summary: Various utility functions for SQLAlchemy (with `[password]` extra)
+
+  - name: sqlalchemy-utils-pendulum
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - {{ pin_subpackage("sqlalchemy-utils-base", max_pin="x.x.x") }}
+        - pendulum >=2.0.5
+    test:
+      imports:
+        - sqlalchemy_utils
+      requires:
+        - pip
+        - python {{ python_min }}
+      commands:
+        - pip check
+    about:
+      home: https://github.com/kvesteri/sqlalchemy-utils
+      license_file: LICENSE
+      license: BSD-3-Clause
+      license_family: BSD
+      summary: Various utility functions for SQLAlchemy (with `[pendulum]` extra)
+
+  - name: sqlalchemy-utils-phone
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - {{ pin_subpackage("sqlalchemy-utils-base", max_pin="x.x.x") }}
+        - phonenumbers >=5.9.2
+    test:
+      imports:
+        - sqlalchemy_utils
+      requires:
+        - pip
+        - python {{ python_min }}
+      commands:
+        - pip check
+    about:
+      home: https://github.com/kvesteri/sqlalchemy-utils
+      license_file: LICENSE
+      license: BSD-3-Clause
+      license_family: BSD
+      summary: Various utility functions for SQLAlchemy (with `[phone]` extra)
+
+  - name: sqlalchemy-utils-timezone
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - {{ pin_subpackage("sqlalchemy-utils-base", max_pin="x.x.x") }}
+        - python-dateutil
+    test:
+      imports:
+        - sqlalchemy_utils
+      requires:
+        - pip
+        - python {{ python_min }}
+      commands:
+        - pip check
+    about:
+      home: https://github.com/kvesteri/sqlalchemy-utils
+      license_file: LICENSE
+      license: BSD-3-Clause
+      license_family: BSD
+      summary: Various utility functions for SQLAlchemy (with `[timezone]` extra)
+
+  - name: sqlalchemy-utils-url
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - {{ pin_subpackage("sqlalchemy-utils-base", max_pin="x.x.x") }}
+        - furl >=0.4.1
+    test:
+      imports:
+        - sqlalchemy_utils
+      requires:
+        - pip
+        - python {{ python_min }}
+      commands:
+        - pip check
+    about:
+      home: https://github.com/kvesteri/sqlalchemy-utils
+      license_file: LICENSE
+      license: BSD-3-Clause
+      license_family: BSD
+      summary: Various utility functions for SQLAlchemy (with `[url]` extra)
+
+  - name: sqlalchemy-utils
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - {{ pin_subpackage("sqlalchemy-utils-base", max_pin="x.x.x") }}
+        - {{ pin_subpackage("sqlalchemy-utils-arrow", max_pin="x.x.x") }}
+        - {{ pin_subpackage("sqlalchemy-utils-babel", max_pin="x.x.x") }}
+        - {{ pin_subpackage("sqlalchemy-utils-color", max_pin="x.x.x") }}
+        - {{ pin_subpackage("sqlalchemy-utils-encrypted", max_pin="x.x.x") }}
+        - {{ pin_subpackage("sqlalchemy-utils-intervals", max_pin="x.x.x") }}
+        - {{ pin_subpackage("sqlalchemy-utils-password", max_pin="x.x.x") }}
+        - {{ pin_subpackage("sqlalchemy-utils-pendulum", max_pin="x.x.x") }}
+        - {{ pin_subpackage("sqlalchemy-utils-phone", max_pin="x.x.x") }}
+        - {{ pin_subpackage("sqlalchemy-utils-timezone", max_pin="x.x.x") }}
+        - {{ pin_subpackage("sqlalchemy-utils-url", max_pin="x.x.x") }}
+    test:
+      imports:
+        - sqlalchemy_utils
+      requires:
+        - pip
+        - python {{ python_min }}
+      commands:
+        - pip check
+    about:
+      home: https://github.com/kvesteri/sqlalchemy-utils
+      license_file: LICENSE
+      license: BSD-3-Clause
+      license_family: BSD
+      summary: Various utility functions for SQLAlchemy (with all extras)
+
+about:
+  home: https://github.com/kvesteri/sqlalchemy-utils
+  license_file: LICENSE
+  license: BSD-3-Clause
+  license_family: BSD
+  summary: Various utility functions for SQLAlchemy
+  dev_url: https://github.com/kvesteri/sqlalchemy-utils
+  doc_url: https://sqlalchemy-utils.readthedocs.io
+
+extra:
+  feedstock-name: sqlalchemy-utils
+  recipe-maintainers:
+    - lvoliveira
+    - xmnlab
+    - bollwyvl

@@ -1,0 +1,48 @@
+{% set name = "mkdocstrings-python" %}
+{% set version = "2.0.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 3a4d92556ad39637e88af94a5374213af9a8e3040c3824ceaed04b486c017594
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - pdm >2
+    - pdm-backend
+  run:
+    - python >={{ python_min }}
+    - mkdocstrings >=0.30
+    - mkdocs-autorefs >=1.4
+    - typing_extensions >=4.0
+    - griffelib >=2.0
+
+test:
+  imports:
+    - mkdocstrings_handlers.python
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://mkdocstrings.github.io/python
+  dev_url: https://github.com/mkdocstrings/python
+  summary: A Python handler for mkdocstrings.
+  license: ISC
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - bandersen23

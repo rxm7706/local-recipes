@@ -1,65 +1,159 @@
 {% set name = "connexion" %}
-{% set version = "3.0.0a7" %}
+{% set version = "3.3.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/connexion-{{ version }}.tar.gz
-  sha256: d66349e6ee5865e44b1ff060fdbda41bb2c49010e9acb861b33b4ca1a3881129
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/connexion-{{ version }}.tar.gz
+  sha256: 63e4b32c170c297f245b63e26a78e299d4df86f8f6f37ef1f70db62efaba77cf
 
 build:
-  noarch: python
-  script: {{ PYTHON }} -m pip install . -vv
-  entry_points:
-    - connexion = connexion.cli:main
   number: 0
+  noarch: python
 
 requirements:
   host:
-    - python >=3.8.0,<4.0
+    - python {{ python_min }}
     - poetry-core >=1.2.0
     - pip
   run:
-    - python >=3.8.0,<4.0.0
-    - asgiref >=3.4
-    - clickclick >=1.2
-    - httpx >=0.23
-    - importlib-metadata >=6.0.0
-    - inflection >=0.3.1
-    - jsonschema >=4.0.1
-    - jinja2 >=3.0.0
-    - python-multipart >=0.0.5
-    - pyyaml >=5.1
-    - requests >=2.27
-    - starlette >=0.25
-    - typing-extensions >=4
-    - werkzeug >=2.2.1
-  run_constrained:
-    - a2wsgi >=1.7
-    - flask >=2.2
-    - py-swagger-ui >=1.1.0
-    - uvicorn >=0.17.6
+    - python >={{ python_min }},<4.0.0
 
-test:
-  imports:
-    - connexion
-    - connexion.apps
-    - connexion.decorators
-  commands:
-    - connexion --version
-    - pip check
-  requires:
-    - pip
+outputs:
+  - name: {{ name }}
+    build:
+      noarch: python
+      script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+    requirements:
+      host:
+        - python {{ python_min }}
+        - poetry-core >=1.2.0
+        - pip
+
+      run:
+        - python >={{ python_min }},<4.0.0
+        - asgiref >=3.4
+        - httpx >=0.23
+        - inflection >=0.3.1
+        - jsonschema >=4.17.3
+        - jinja2 >=3.0.0
+        - python-multipart >=0.0.15
+        - pyyaml >=5.1
+        - requests >=2.27
+        - starlette >=0.35
+        - typing_extensions >=4.6.1
+        - werkzeug >=2.2.1
+
+    test:
+      imports:
+        - connexion
+        - connexion.apps
+        - connexion.decorators
+      commands:
+        - connexion --version
+        - pip check
+      requires:
+        - pip
+        - python {{ python_min }}
+
+  - name: {{ name }}-with-flask
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python {{ python_min }}
+      run:
+        - python >={{ python_min }}
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - a2wsgi >=1.7
+        - flask >=2.2
+        # replace with flask-with-async as soon as available
+        # flask[async] extra
+        - asgiref >=3.2
+    test:
+      requires:
+        - pip
+        - python {{ python_min }}
+      imports:
+        - connexion
+        - connexion.apps.flask
+      commands:
+        - pip check
+
+  - name: {{ name }}-with-swagger-ui
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python {{ python_min }}
+      run:
+        - python >={{ python_min }}
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - swagger-ui-bundle >=1.1.0
+    test:
+      requires:
+        - pip
+        - python {{ python_min }}
+      imports:
+        - connexion
+        - swagger_ui_bundle
+      commands:
+        - pip check
+
+  - name: {{ name }}-with-uvicorn
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python {{ python_min }}
+      run:
+        - python >={{ python_min }}
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - uvicorn-standard >=0.17.6
+
+    test:
+      requires:
+        - pip
+        - python {{ python_min }}
+      imports:
+        - connexion
+        - uvicorn
+      commands:
+        - pip check
+
+  - name: {{ name }}-with-mock
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python {{ python_min }}
+      run:
+        - python >={{ python_min }}
+        - {{ pin_subpackage(name, max_pin='x.x.x.x.x.x') }}
+        - jsf >=0.10.0
+
+    test:
+      requires:
+        - pip
+        - python {{ python_min }}
+      imports:
+        - connexion
+        - jsf
+      commands:
+        - pip check
 
 about:
-  home: https://github.com/zalando/connexion
+  home: https://github.com/spec-first/connexion
+  summary: Connexion - API first applications with OpenAPI/Swagger
   license: Apache-2.0
-  summary: Swagger/OpenAPI First framework for Python on top of Flask with automatic endpoint validation & OAuth2 support
   license_family: APACHE
-  license_file: LICENSE.txt
-  dev_url: https://github.com/zalando/connexion
+  license_file:
+    - LICENSE
+    - NOTICE
+  dev_url: https://github.com/spec-first/connexion
   doc_url: https://connexion.readthedocs.io/
 
 extra:

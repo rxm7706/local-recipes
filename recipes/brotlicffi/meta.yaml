@@ -1,0 +1,52 @@
+{% set name = "brotlicffi" %}
+{% set version = "1.2.0.1" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: c20d5c596278307ad06414a6d95a892377ea274a5c6b790c2548c009385d621c
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cffi                                   # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - {{ compiler('cxx') }}
+  host:
+    - cffi >=1.0.0
+    - pip
+    - python
+    - setuptools
+  run:
+    - cffi >=1.0.0
+    - enum34  # [py<34]
+    - python
+
+test:
+  imports:
+    - brotlicffi
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/python-hyper/brotlicffi
+  summary: Python CFFI bindings to the Brotli library
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - sarthakpati
+    - sethmlarson

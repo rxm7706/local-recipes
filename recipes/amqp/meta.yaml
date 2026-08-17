@@ -1,13 +1,13 @@
 {% set name = "amqp" %}
-{% set version = "5.2.0" %}
+{% set version = "5.3.1" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/amqp-{{ version }}.tar.gz
-  sha256: a1ecff425ad063ad42a486c902807d1482311481c8ad95a72694b2975e75f7fd
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/amqp-{{ version }}.tar.gz
+  sha256: cddc00c725449522023bad949f70fff7b48f0b1ade74d170a6f10ab044739432
 
 build:
   noarch: python
@@ -16,10 +16,10 @@ build:
 
 requirements:
   host:
-    - python >=3.6
+    - python {{ python_min }}
     - pip
   run:
-    - python >=3.6
+    - python >={{ python_min }}
     - vine >=5.0.0,<6.0.0
 
 test:
@@ -29,13 +29,19 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
-  home: http://github.com/celery/py-amqp
-  summary: Low-level AMQP client for Python (fork of amqplib).
+  home: https://github.com/celery/py-amqp/
   license: BSD-3-Clause
   license_file: LICENSE
+  summary: Low-level AMQP client for Python (fork of amqplib)
+  doc_url: https://amqp.readthedocs.io/
+  dev_url: https://github.com/celery/py-amqp/
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - anguslees
+    - kwilcox
+    - wseaton
+    - frol

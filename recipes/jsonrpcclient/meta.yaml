@@ -1,0 +1,45 @@
+{% set name = "jsonrpcclient" %}
+{% set version = "4.0.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/explodinglabs/jsonrpcclient/archive/refs/tags/{{ version }}.tar.gz
+  sha256: f2343c0f4cacb6c7fd0a824593c08dd58e9adf197d9d932fa20fdfeae68bc54e
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  entry_points:
+    - jsonrpc=jsonrpcclient.__main__:main
+  noarch: python
+
+requirements:
+  host:
+    - pip
+    - setuptools
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - jsonrpcclient
+
+about:
+  home: https://github.com/bcb/jsonrpcclient
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Send JSON-RPC requests in Python.
+  doc_url: https://jsonrpcclient.readthedocs.io/
+  dev_url: https://github.com/bcb/jsonrpcclient
+
+extra:
+  recipe-maintainers:
+    - bcb
+    - beenje

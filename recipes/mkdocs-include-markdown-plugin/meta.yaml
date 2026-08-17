@@ -1,0 +1,45 @@
+{% set name = "mkdocs-include-markdown-plugin" %}
+{% set version = "7.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/mkdocs_include_markdown_plugin-{{ version }}.tar.gz
+  sha256: 4a67a91ade680dc0e15f608e5b6343bec03372ffa112c40a4254c1bfb10f42f3
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - mkdocs >=1.4
+    - wcmatch
+
+test:
+  imports:
+    - mkdocs_include_markdown_plugin
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://pypi.org/project/mkdocs-include-markdown-plugin
+  summary: Mkdocs Markdown includer plugin.
+  dev_url: https://github.com/mondeja/mkdocs-include-markdown-plugin
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - maresb

@@ -1,0 +1,55 @@
+{% set version = "1.3" %}
+
+
+package:
+  name: recordtype
+  version: {{ version }}
+
+source:
+  url: https://github.com/naegelyd/recordtype/archive/refs/tags/1.2.tar.gz
+  sha256: 7de9b988bb8939f8ce64f722d64849c571bc9baacdb2d3cf0430881e5c3a14be
+  patches:
+    - version13.patch
+    - python38.patch
+
+build:
+  noarch: python
+  number: 2
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - six
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - recordtype
+
+about:
+  home: https://bitbucket.org/ericvsmith/recordtype
+  license: Apache-2.0
+  license_family: APACHE
+  license_file: LICENSE.txt
+  summary: Similar to namedtuple, but instances are mutable.
+  description: |
+    recordtype provides a factory function, named recordtype.recordtype. It is
+    similar to collections.namedtuple, but recordtype instances are mutable,
+    recordtype supports per-field default values, and recordtype supports an
+    optional default value, to be used by all fields which do not have an
+    explicit default value.
+  doc_url: https://bitbucket.org/ericvsmith/recordtype
+  dev_url: https://bitbucket.org/ericvsmith/recordtype
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - davidbrochart
+    - SylvainCorlay
+    - martinRenou

@@ -1,0 +1,52 @@
+{% set name = "pytest-pylint" %}
+{% set version = "0.21.0" %}
+{% set sha256 = "88764b8e1d5cfa18809248e0ccc2fc05035f08c35f0b0222ddcfea1c3c4e553e" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - pytest-runner
+  run:
+    - python >={{ python_min }}
+    - six
+    - pylint >=2.3.0
+    - pytest >=5.4
+    - pytest-runner
+    - toml >=0.7.1
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - pytest_pylint
+
+about:
+  home: https://github.com/carsongee/pytest-pylint
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: pytest plugin for running pylint against your codebase
+  description: |
+    Run pylint with pytest and have configurable rule types (i.e. Convention, 
+    Warn, and Error) fail the build. You can also specify a pylintrc file.
+  doc_url: https://github.com/carsongee/pytest-pylint
+  dev_url: https://github.com/carsongee/pytest-pylint
+
+extra:
+  recipe-maintainers:
+    - holgern

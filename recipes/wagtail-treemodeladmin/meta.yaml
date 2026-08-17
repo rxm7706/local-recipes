@@ -1,13 +1,14 @@
 {% set name = "wagtail-treemodeladmin" %}
-{% set version = "1.9.0" %}
+{% set version = "1.11.0" %}
+{% set python_min = "3.12" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail-treemodeladmin-{{ version }}.tar.gz
-  sha256: 0b4fc7fe869695e773f0f7acd5997db0bf0a91daf1d4f9110443ab95b60016fd
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 357a619589168ee558a1d96249a46575d973a65c59a7f824ace04c0878e5d7d7
 
 build:
   noarch: python
@@ -16,13 +17,13 @@ build:
 
 requirements:
   host:
-    - python >=3.8
-    - setuptools >=43.0.0
-    - wheel
+    - python {{ python_min }}
+    - setuptools >=63
+    - setuptools-scm >=8
     - pip
   run:
-    - python >=3.8
-    - wagtail >=5.1,<5.3
+    - python >={{ python_min }}
+    - wagtail >=6.3
     - wagtail-modeladmin >=1.0
 
 test:
@@ -32,6 +33,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   summary: TreeModelAdmin for Wagtail

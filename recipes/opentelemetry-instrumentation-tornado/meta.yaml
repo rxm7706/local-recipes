@@ -1,0 +1,106 @@
+{% set name = "opentelemetry-instrumentation-tornado" %}
+{% set version = "0.65b0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_tornado-{{ version }}.tar.gz
+  sha256: 3178e163086eeafd534b87c7a932a797aefc21b17254463ecdd8b827b78826f5
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >={{ python_min }}
+    - opentelemetry-api ~=1.12
+    - opentelemetry-instrumentation ==0.65b0
+    - opentelemetry-semantic-conventions ==0.65b0
+    - opentelemetry-util-http ==0.65b0
+    # - tornado >=5.1.1
+    # - opentelemetry-test-utils ==0.37b0
+    # - opentelemetry-instrumentation-tornado 
+    # - tornado >=5.1.1
+    # - opentelemetry-test-utils ==0.38b0
+    # - opentelemetry-instrumentation-tornado 
+    # - tornado >=5.1.1
+    # - opentelemetry-test-utils ==0.39b0
+    # - opentelemetry-instrumentation-tornado 
+    # - tornado >=5.1.1
+    # - opentelemetry-test-utils ==0.40b0
+    # - opentelemetry-instrumentation-tornado 
+    # - http-server-mock 
+    # - tornado >=5.1.1
+    # - opentelemetry-test-utils ==0.41b0
+    # - opentelemetry-instrumentation-tornado 
+    # - http-server-mock 
+    # - tornado >=5.1.1
+    # - opentelemetry-test-utils ==0.42b0
+    # - opentelemetry-instrumentation-tornado 
+    # - http-server-mock 
+    # - tornado >=5.1.1
+    # - opentelemetry-test-utils ==0.43b0
+    # - opentelemetry-instrumentation-tornado 
+    # - http-server-mock 
+    # - tornado >=5.1.1
+    # - opentelemetry-test-utils ==0.44b0
+    # - opentelemetry-instrumentation-tornado 
+    # - http-server-mock 
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+    # - tornado >=5.1.1
+
+test:
+  imports:
+    - opentelemetry
+    - opentelemetry.instrumentation
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-tornado
+  summary: Tornado instrumentation for OpenTelemetry
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk

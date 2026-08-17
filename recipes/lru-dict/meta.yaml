@@ -1,0 +1,46 @@
+{% set name = "lru-dict" %}
+{% set version = "1.4.1" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: cc518ff2d38cc7a8ab56f9a6ae557f91e2e1524b57ed8e598e97f45a2bd708fc
+
+build:
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+
+test:
+  imports:
+    - lru
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/amitdev/lru-dict
+  summary: An Dict like LRU container.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - step21

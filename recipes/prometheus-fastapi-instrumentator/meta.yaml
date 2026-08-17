@@ -1,13 +1,13 @@
 {% set name = "prometheus-fastapi-instrumentator" %}
-{% set version = "7.0.0" %}
+{% set version = "8.1.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/prometheus_fastapi_instrumentator-{{ version }}.tar.gz
-  sha256: 5ba67c9212719f244ad7942d75ded80693b26331ee5dfc1e7571e4794a9ccbed
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/prometheus_fastapi_instrumentator-{{ version }}.tar.gz
+  sha256: b77f3043665e8d28e2bbd21017506195a43d9adf1d402d01bf95b494b7e560e1
 
 build:
   noarch: python
@@ -16,13 +16,13 @@ build:
 
 requirements:
   host:
-    - python >=3.8,<4.0
+    - python {{ python_min }}
     - poetry-core
     - pip
   run:
-    - python >=3.8.1,<4.0.0
-    - starlette >=0.30.0,<1.0.0
-    - prometheus_client >=0.8.0,<1.0.0
+    - python >={{ python_min }},<4.0
+    - starlette <2.0.0,>=1.0.0
+    - prometheus_client <1.0.0,>=0.8.0
 
 test:
   imports:
@@ -31,6 +31,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/trallnag/prometheus-fastapi-instrumentator
@@ -41,3 +42,4 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - lsetiawan

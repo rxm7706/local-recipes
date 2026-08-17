@@ -1,0 +1,45 @@
+{% set name = "cognitive_complexity" %}
+{% set version = "1.3.0" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/cognitive_complexity-{{ version }}.tar.gz
+  sha256: a0cfbd47dee0b19f4056f892389f501694b205c3af69fb703cc744541e03dde5
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - setuptools
+
+test:
+  imports:
+    - cognitive_complexity
+    - cognitive_complexity.utils
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/Melevir/cognitive_complexity
+  summary: Library to calculate Python functions cognitive complexity via code
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - thewchan

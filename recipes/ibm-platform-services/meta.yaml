@@ -1,0 +1,43 @@
+{% set name = "ibm-platform-services" %}
+{% set version = "0.77.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: fc7848310160d55ca55b4386a095db70f8badcc88890f3c1bbba0e41d4f000b2
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools >=67.7.2
+  run:
+    - python >={{ python_min }}
+    - ibm-cloud-sdk-core >=3.24.4,<4.0.0
+
+test:
+  imports:
+    - ibm_platform_services
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/IBM/platform-services-python-sdk
+  summary: Python client library for IBM Cloud Platform Services
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - wshanks

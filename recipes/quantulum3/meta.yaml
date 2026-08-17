@@ -1,0 +1,52 @@
+{% set name = "quantulum3" %}
+{% set version = "0.10.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: c0367f18745e51d67a65cb3fb1f48a45c8280090ec2d49b11d1a9ee496951946
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - inflect
+    - num2words
+
+test:
+  imports:
+    - quantulum3
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/nielstron/quantulum3
+  summary: Library for unit extraction under active development - fork of quantulum
+  description: |
+    Python library for information extraction of quantities, measurements and
+    their units from unstructured text. It is able to disambiguate between
+    similar looking units based on their k-nearest neighbours in their
+    [GloVe](https://nlp.stanford.edu/projects/glove/) vector representation.
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  doc_url: https://github.com/nielstron/quantulum3
+  dev_url: https://github.com/nielstron/quantulum3
+
+extra:
+  recipe-maintainers:
+    - kynan

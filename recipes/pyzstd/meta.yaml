@@ -1,0 +1,53 @@
+{% set name = "pyzstd" %}
+{% set version = "0.19.1" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 36723d3c915b3981de9198d0a2c82b2f5fe3eaa36e4d8d586937830a8afc7d72
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+    - hatch-vcs
+  run:
+    - python >={{ python_min }}
+    - backports.zstd >=1.0.0
+    - typing-extensions >=4.13.2
+
+test:
+  requires:
+    - python {{ python_min }}
+    - pip
+  imports:
+    - pyzstd
+  source_files:
+    - tests/
+  commands:
+    - pip check
+    - python -m unittest -v
+
+about:
+  home: https://github.com/Rogdham/pyzstd
+  doc_url: https://pyzstd.readthedocs.io/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Support for Zstandard (zstd) compression
+  description: |
+    Pyzstd module provides classes and functions for compressing and decompressing data, using Facebook's Zstandard (or zstd as short name) algorithm. The API style is similar to Python's bz2/lzma/zlib modules.
+
+extra:
+  recipe-maintainers:
+    - rogdham

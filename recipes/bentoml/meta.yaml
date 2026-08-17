@@ -1,6 +1,5 @@
-{% set python_min = "3.10" %}
 {% set name = "bentoml" %}
-{% set version = "1.4.30" %}
+{% set version = "1.4.39" %}
 
 package:
   name: {{ name|lower }}
@@ -8,16 +7,15 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/bentoml-{{ version }}.tar.gz
-  sha256: 59b9e9805d3a9a16dd5be5c250449ee9ebef8767a03f0d2811a9af11203641cc
+  sha256: e92381702fc13ac926fd41c48fee6721f5c50f6f9bbed6c8cfc3b9346b6b0d41
 
 build:
   entry_points:
     - bentoml = bentoml_cli.cli:cli
   noarch: python
   script:
-    #- sed -i '/"uv/d' ./pyproject.toml && {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation  # [linux]
-    #- {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation  # [win or osx]
-    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolatio
+    - sed -i '/"uv/d' ./pyproject.toml && {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation  # [linux]
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation  # [win or osx]
   number: 0
 
 requirements:
@@ -70,14 +68,14 @@ requirements:
     - a2wsgi >=1.10.7
     - fsspec >=2025.7.0
     - rich-toolkit >=0.15.1
-    #- aiohttp-asgi-connector >=1.1.2 Pending https://github.com/conda-forge/staged-recipes/pull/31702
+    - aiohttp-asgi-connector >=1.1.2
 
 test:
   imports:
     - bentoml
   commands:
     # pip check fails because uv is part of base env, remove uv from pyproject.toml and enable pip check for linux only
-    #- pip check  # [linux] Pending https://github.com/conda-forge/staged-recipes/pull/31702
+    - pip check  # [linux]
     - bentoml --help
   requires:
     - pip

@@ -1,0 +1,52 @@
+{% set version = "1.9.1" %}
+{% set sha256 = "7818c5c69ddf9efb7da74097bd741a4c7920133f41966f68537223a15ef798bc" %}
+
+package:
+  name: autograd
+  version: {{ version }}
+
+source:
+  fn: autograd-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/a/autograd/autograd-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - hatchling
+    - numpy >=1.25
+    - scipy >=1.11
+  run:
+    - python >={{ python_min }}
+    - numpy >=1.25,<3
+    - scipy >=1.11
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - autograd
+    - autograd.numpy
+    - autograd.scipy
+    - autograd.scipy.stats
+
+about:
+  home: https://github.com/HIPS/autograd
+  license: MIT
+  license_family: MIT
+  license_file: license.txt
+  summary: Efficiently computes derivatives of NumPy code.
+
+extra:
+  recipe-maintainers:
+    - fjosw
+    - agriyakhetarpal
+    - richardotis
+    - ericmjl
+    - benvial

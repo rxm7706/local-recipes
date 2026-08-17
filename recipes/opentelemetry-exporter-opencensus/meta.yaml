@@ -1,0 +1,52 @@
+{% set name = "opentelemetry-exporter-opencensus" %}
+{% set version = "0.52b1" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_exporter_opencensus-{{ version }}.tar.gz
+  sha256: be57907cdabb4c27db9b85c9c5a7e6e7a6ee9c54183834886775ab3682f0eb6c
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >={{ python_min }}
+    - grpcio >=1.66.2,<2.0.0
+    - opencensus-proto >=0.1.0,<1.0.0
+    - opentelemetry-api >=1.31.1
+    - opentelemetry-sdk >=1.15
+    - protobuf >=3.13
+    - setuptools >=16.0
+
+test:
+  imports:
+    - opentelemetry
+    - opentelemetry.exporter
+  commands:
+    #- pip check
+    # opentelemetry-exporter-opencensus 0.52b1 has requirement protobuf~=3.13, but you have protobuf 5.29.3 version 3.13 and version 3.14 are 4 years old - from 2021
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/open-telemetry/opentelemetry-python/tree/main/exporter/opentelemetry-exporter-opencensus
+  summary: OpenCensus Exporter
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk

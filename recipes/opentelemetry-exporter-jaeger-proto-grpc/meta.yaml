@@ -1,0 +1,50 @@
+{% set name = "opentelemetry-exporter-jaeger-proto-grpc" %}
+{% set version = "1.21.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_exporter_jaeger_proto_grpc-{{ version }}.tar.gz
+  sha256: 359ceb15b72e798881b4b7b2afdcbc189aef3a0508944856ac70d74968574ed7
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >={{ python_min }}
+    - googleapis-common-protos <1.60.0,~=1.52
+    - grpcio <2.0.0,>=1.0.0
+    - opentelemetry-api ~=1.3
+    - opentelemetry-sdk ~=1.11
+
+test:
+  imports:
+    - opentelemetry
+    - opentelemetry.exporter
+    - opentelemetry.exporter.jaeger
+  commands:
+    # The conda forge pinnings for googleapis-common-protos are less strict than pip so ignore this for now
+    # - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/open-telemetry/opentelemetry-python/tree/main/exporter/opentelemetry-exporter-jaeger-proto-grpc
+  summary: Jaeger Protobuf Exporter for OpenTelemetry
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk

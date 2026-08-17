@@ -1,0 +1,62 @@
+{% set name = "opentelemetry-instrumentation-aiohttp-client" %}
+{% set version = "0.65b0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_aiohttp_client-{{ version }}.tar.gz
+  sha256: 85906a2806ee5641756b5c33274e9aa75c3cc2441e3b830aa5804cf0e1fa9dd1
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >={{ python_min }}
+    - aiohttp ~=3.0
+    - opentelemetry-api ~=1.12
+    - opentelemetry-instrumentation ==0.65b0
+    - opentelemetry-semantic-conventions ==0.65b0
+    - opentelemetry-util-http ==0.65b0
+    - wrapt <3.0.0,>=1.0.0
+    # - opentelemetry-instrumentation-aiohttp-client 
+    # - opentelemetry-instrumentation-aiohttp-client 
+    # - opentelemetry-instrumentation-aiohttp-client 
+    # - opentelemetry-instrumentation-aiohttp-client 
+    # - http-server-mock 
+    # - opentelemetry-instrumentation-aiohttp-client 
+    # - http-server-mock 
+    # - opentelemetry-instrumentation-aiohttp-client 
+    # - http-server-mock 
+    # - opentelemetry-instrumentation-aiohttp-client 
+    # - http-server-mock 
+    # - opentelemetry-instrumentation-aiohttp-client 
+    # - http-server-mock 
+
+test:
+  imports:
+    - opentelemetry.instrumentation.aiohttp_client
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-aiohttp-client
+  summary: OpenTelemetry aiohttp client instrumentation
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - twoodwark
+    - mariusvniekerk

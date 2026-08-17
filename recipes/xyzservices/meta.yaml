@@ -1,0 +1,52 @@
+{% set name = "xyzservices" %}
+{% set version = "2026.3.0" %}
+{% set python_min = "3.9" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: d226866a5d8e9fef337034d8da37a8298f0a1d9d1489b4018e69579eb321fea4
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=77
+    - setuptools-scm >=6.2
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - xyzservices.providers
+    - xyzservices
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/geopandas/xyzservices
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Source of XYZ tiles providers
+  description: |
+    xyzservices is a lightweight library providing a repository of available XYZ
+    services offering raster basemap tiles. The repository is provided via
+    Python API and as a compressed JSON file.
+  doc_url: https://xyzservices.readthedocs.io/
+  dev_url: https://github.com/geopandas/xyzservices
+
+extra:
+  recipe-maintainers:
+    - martinfleis

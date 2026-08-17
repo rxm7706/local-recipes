@@ -1,0 +1,57 @@
+{% set name = "catalogue" %}
+{% set version = "2.0.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 4f56daa940913d3f09d589c191c74e5a6d51762b3a9e37dd53b7437afd6cda15
+
+build:
+  number: 2
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+    - zipp >=0.5  # [py<=37]
+    - typing-extensions >=3.6.4  # [py<=37]
+
+test:
+  requires:
+    - pytest
+  imports:
+    - catalogue
+  commands:
+    - python -m pytest --tb=native --pyargs {{ name }}
+
+about:
+  home: https://github.com/explosion/catalogue
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Super lightweight function registries for your library
+  description: |
+    catalogue is a tiny, zero-dependencies library that makes it easy to add
+    function (or object) registries to your code. Function registries are helpful
+    when you have objects that need to be both easily serializable and fully
+    customizable. Instead of passing a function into your object, you pass in
+    an identifier name, which the object can use to lookup the function from
+    the registry. This makes the object easy to serialize, because the name
+    is a simple string. If you instead saved the function, you'd have to use
+    Pickle for serialization, which has many drawbacks.
+  doc_url: https://github.com/explosion/catalogue
+  dev_url: https://github.com/explosion/catalogue
+
+extra:
+  recipe-maintainers:
+    - conda-forge/spacy

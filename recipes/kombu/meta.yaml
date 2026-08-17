@@ -1,0 +1,62 @@
+{% set name = "kombu" %}
+{% set version = "5.6.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/kombu-{{ version }}.tar.gz
+  sha256: 8060497058066c6f5aed7c26d7cd0d3b574990b09de842a8c5aaed0b92cc5a55
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    # See https://pypi.org/pypi/kombu/{{ version }}/json
+    - amqp >=5.1.1,<6.0.0
+    - vine ==5.1.0
+    - python-tzdata >=2025.2
+    - packaging
+    - boto3 >=1.26.143  # for sqs option
+
+test:
+  requires:
+    - python {{ python_min }}
+    - pip
+  commands:
+    - pip check
+  imports:
+    - kombu
+    - kombu.asynchronous
+    - kombu.asynchronous.aws
+    - kombu.asynchronous.http
+    - kombu.transport
+    - kombu.transport.virtual
+    - kombu.utils
+
+about:
+  home: https://kombu.readthedocs.io
+  summary: Messaging library for Python.
+  doc_url: https://pythonhosted.org/kombu/
+  dev_url: https://github.com/celery/kombu
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - chrisburr
+    - anguslees
+    - kwilcox
+    - jamesmyatt

@@ -1,5 +1,5 @@
 {% set name = "ydata-synthetic" %}
-{% set version = "1.3.2" %}
+{% set version = "2.0.0" %}
 
 package:
   name: {{ name|lower }}
@@ -7,40 +7,39 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/ydata-synthetic-{{ version }}.tar.gz
-  sha256: da634966a11b6f8d808e9cd4421d937eece6876530bf58441963c64da600f7de
+  sha256: b5bf6d4a92a56b673c3083955637162b7b747a1a25ad509a39f898751b52d514
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python >=3.9,<3.11
+    - python {{ python_min }}
     - pip
     - setuptools
   run:
-    - python >=3.9,<3.11
-    - requests >=2.30
-    - pandas >=2.0.0
-    - numpy >=1.23.0
-    - scikit-learn >=1.3.0
-    - matplotlib-base >=3.7.0
-    - tensorflow-cpu >=2.12.0
-    - tensorflow-probability >=0.19.0
-    - easydict >=1.10
-    - pmlb >=1.0.0
+    - python >={{ python_min }},<3.13
+    - requests >=2.24.0
+    - pandas >=1.3.0
+    - numpy >=1.21.0
+    - scikit-learn >=1.0.2
+    - matplotlib-base >=3.5.0
+    - tensorflow-cpu >=2.8.0
+    - tensorflow-probability >=0.16.0
+    - easydict >=1.9
+    - pmlb >=1.0.1
     - tqdm <5.0
-    - typeguard >=4.0.0
-    - pytest >=7.4.0
+    - typeguard >=2.13.0
+    - pytest >=6.2.0
 
 test:
   imports:
     - ydata_synthetic
-  #commands:
-    #- pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/ydataai/ydata-synthetic

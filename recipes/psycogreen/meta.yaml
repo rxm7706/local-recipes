@@ -1,0 +1,46 @@
+{% set name = "psycogreen" %}
+{% set version = "1.0.1" %}
+{% set sha256 = "86fe2a066d99526b3cff74ca45fd265b5b412a570195488603e298266e91be17" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 0
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  build:
+    - pip
+    - python
+    - setuptools
+
+  run:
+    - python
+
+test:
+  imports:
+    - psycogreen
+
+about:
+  home: https://bitbucket.org/dvarrazzo/psycogreen
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: COPYING
+  summary: 'psycopg2 integration with coroutine libraries'
+  description: |
+    The psycogreen package enables psycopg2 to work with coroutine libraries, using asynchronous
+    calls internally but offering a blocking interface so that regular code can run unmodified.
+  doc_url: https://bitbucket.org/dvarrazzo/psycogreen
+  dev_url: https://bitbucket.org/dvarrazzo/psycogreen
+
+extra:
+  recipe-maintainers:
+    - petercable

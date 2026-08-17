@@ -1,0 +1,45 @@
+{% set python_min = "3.10" %}
+{% set name = "etils" %}
+{% set version = "1.13.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/google/etils/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: 9daae4499336e6586e7025227ccdf37966f9778d37e9982895e6309d2dc13407
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - flit-core >=3.8,<4
+  run:
+    - python >={{ python_min }}
+
+
+test:
+  imports:
+    - etils
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://pypi.org/project/etils/
+  summary: Collection of common python utils
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - ngam
+    - traversaro

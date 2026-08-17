@@ -1,0 +1,45 @@
+{% set name = "jupyter_pivottablejs" %}
+{% set version = "0.9.0" %}
+{% set sha256 = "9f0f9f692330f2f635dc37f05ad99da84646e4f3dbf9fe849cf6889de4b3210b" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.python.org/packages/d9/ac/bd261fdff9f6a6e8e28abbb1b007b812b1feb1b6bfaf43191f042f4e1c3c/pivottablejs-0.9.0.tar.gz#md5=c2fb86345de75b2099bc88475b74f2a0
+  sha256: {{ sha256 }}
+
+build:
+  number: 0
+  script: python setup.py install --single-version-externally-managed --record record.txt
+  noarch: python
+
+requirements:
+  build:
+    - python
+    - setuptools
+  run:
+    - python
+    - ipython
+
+test:
+  imports:
+    - pivottablejs
+
+about:
+  home: https://github.com/nicolaskruchten/jupyter_pivottablejs
+  license: MIT
+  license_family: MIT
+  license_file: '{{ environ["RECIPE_DIR"] }}/LICENSE'
+  summary: 'Drag and drop Pivot Tables and Charts for Jupyter/IPython Notebook, care of PivotTable.js'
+  description: |
+    Drag and drop Pivot Tables and Charts for Jupyter/IPython Notebook
+  doc_url: http://nicolas.kruchten.com/content/2015/09/jupyter_pivottablejs/
+  dev_url: https://github.com/nicolaskruchten/jupyter_pivottablejs
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - sannykr

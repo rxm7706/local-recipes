@@ -1,0 +1,57 @@
+{% set name = "oauthlib" %}
+{% set version = "3.3.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 0f0f8aa759826a193cf66c12ea1af1637f87b9b4622d46e866952bb022e538c9
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - cryptography
+    - pyjwt >=1.0.0
+    - blinker
+
+test:
+  imports:
+    - oauthlib
+    - oauthlib.oauth1
+    - oauthlib.oauth1.rfc5849
+    - oauthlib.oauth1.rfc5849.endpoints
+    - oauthlib.oauth2
+    - oauthlib.oauth2.rfc6749
+    - oauthlib.oauth2.rfc6749.clients
+    - oauthlib.oauth2.rfc6749.endpoints
+    - oauthlib.oauth2.rfc6749.grant_types
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/idan/oauthlib
+  license_file: LICENSE
+  license: BSD-3-Clause
+  license_family: BSD
+  summary: A generic, spec-compliant, thorough implementation of the OAuth request-signing logic
+  dev_url: https://github.com/idan/oauthlib
+  doc_url: https://oauthlib.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - jan-janssen

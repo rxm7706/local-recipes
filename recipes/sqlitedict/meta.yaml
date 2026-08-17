@@ -1,0 +1,44 @@
+{% set name = "sqlitedict" %}
+{% set version = "2.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 03d9cfb96d602996f1d4c2db2856f1224b96a9c431bdd16e78032a72940f9e8c
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - sqlitedict
+
+about:
+  home: https://github.com/RaRe-Technologies/sqlitedict
+  license: Apache-2.0
+  license_family: APACHE
+  license_file: LICENSE.md
+  summary: Persistent dict in Python, backed up by sqlite3 and pickle, multithread-safe.
+  doc_url: https://github.com/RaRe-Technologies/sqlitedict
+  dev_url: https://github.com/RaRe-Technologies/sqlitedict
+
+extra:
+  recipe-maintainers:
+    - notestaff
+    - synapticarbors

@@ -1,0 +1,58 @@
+{% set xorg_name = "xproto" %}
+{% set xorg_category = "proto" %}
+{% set name = "xorg-" ~ xorg_name %}
+{% set version = "7.0.31" %}
+{% set sha256 = "c6f9747da0bd3a95f86b17fb8dd5e717c8f3ab7f0ece3ba1b247899ec1ef7747" %}
+{% set am_version = "1.15" %} # keep synchronized with build.sh
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.bz2
+  url: https://www.x.org/releases/individual/{{ xorg_category }}/{{ xorg_name }}-{{ version }}.tar.bz2
+  sha256: {{ sha256 }}
+  patches:
+    - windows-fd_bits.patch  # [win]
+    - windows-64bit.patch  # [win]
+
+build:
+  number: 1008
+  detect_binary_files_with_prefix: true
+
+requirements:
+  build:
+    - m2-autoconf                   # [win]
+    - m2-automake{{ am_version }}   # [win]
+    - m2-libtool                    # [win]
+    - pkg-config                    # [unix]
+    - m2-pkg-config                 # [win]
+    - gnuconfig                     # [unix]
+    - m2-base                       # [win]
+    - make                          # [unix]
+    - m2-make                       # [win]
+    - {{ compiler('c') }}           # [unix]
+    - {{ stdlib("c") }}             # [unix]
+    - {{ compiler('m2w64_c') }}     # [win]
+    - {{ stdlib("m2w64_c") }}       # [win]
+    - autoconf                      # [unix]
+    - automake                      # [unix]
+    - gettext                       # [unix]
+    - libtool                       # [unix]
+  host:
+    - xorg-util-macros
+
+test:
+  commands:
+
+about:
+  home: https://www.x.org/
+  license: MIT
+  license_family: MIT
+  license_file: COPYING
+  summary: 'Core X Windows C prototypes.'
+
+extra:
+  recipe-maintainers:
+    - pkgw

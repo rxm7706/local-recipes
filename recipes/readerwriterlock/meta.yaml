@@ -1,0 +1,48 @@
+{% set name = "readerwriterlock" %}
+{% set version = "1.0.9" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/readerwriterlock-{{ version }}.tar.gz
+  sha256: b7c4cc003435d7a8ff15b312b0a62a88d9800ba6164af88991f87f8b748f9bea
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - typing-extensions
+
+test:
+  source_files:
+    - tests
+  imports:
+    - readerwriterlock
+  commands:
+    - pip check
+    - set PYTHONUTF8=1  # [win]
+    - pytest -vvv --capture=tee-sys tests
+  requires:
+    - pip
+    - pytest
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/elarivie/pyReaderWriterLock
+  summary: A python implementation of the three Reader-Writer problems.
+  license: MIT
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - thewchan

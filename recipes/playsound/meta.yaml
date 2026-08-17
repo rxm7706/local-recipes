@@ -1,0 +1,43 @@
+{% set name = "playsound" %}
+{% set version = "1.3.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/playsound-{{ version }}.tar.gz
+  sha256: cc6ed11d773034b0ef624e6bb4bf50f4b76b8414a59ce6d38afb89b423297ced
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - playsound
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/TaylorSMarks/playsound
+  summary: Pure Python, cross platform, single function module with no dependencies for playing sounds.
+  license: MIT
+  license_file:
+    - LICENSE
+
+extra:
+  recipe-maintainers:
+    - thewchan

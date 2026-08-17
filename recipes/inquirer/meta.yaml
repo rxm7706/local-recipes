@@ -1,0 +1,50 @@
+{% set name = "inquirer" %}
+{% set version = "3.4.1" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/inquirer-{{ version }}.tar.gz
+  sha256: 60d169fddffe297e2f8ad54ab33698249ccfc3fc377dafb1e5cf01a0efb9cbe5
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - poetry
+    - setuptools
+  run:
+    - blessed >=1.19.0
+    - python >={{ python_min }}
+    - readchar >=4.2.0
+    - editor >=1.6.0
+
+test:
+  imports:
+    - inquirer
+    - inquirer.render
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/magmax/python-inquirer
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Collection of common interactive command line user interfaces, based on Inquirer.js
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - nicornk

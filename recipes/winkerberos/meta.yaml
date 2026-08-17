@@ -1,0 +1,46 @@
+{% set name = "winkerberos" %}
+{% set version = "0.13.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/winkerberos-{{ version }}.tar.gz
+  sha256: f3fbb67346fe8ed697e125724b0699d5c2a15b9a5f9151d25a1be88df8dac427
+
+build:
+  skip: true  # [py<38]
+  skip: true  # [not win]
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - python
+    - setuptools >=61.0
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - winkerberos
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/mongodb-labs/winkerberos
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: High level interface to SSPI for Kerberos client auth
+  license_family: Apache
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

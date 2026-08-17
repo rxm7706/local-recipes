@@ -1,0 +1,52 @@
+{% set name = "thefuzz" %}
+{% set version = "0.22.1" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/thefuzz-{{ version }}.tar.gz
+  sha256: 7138039a7ecf540da323792d8592ef9902b1d79eb78c147d4f20664de79f3680
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - python-levenshtein >=0.12
+
+test:
+  imports:
+    - thefuzz
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/seatgeek/thefuzz
+  summary: Fuzzy string matching in python
+  license: GPL-2.0-only
+  license_file: LICENSE.txt
+  description: |
+    Fuzzy string matching like a boss. It uses [Levenshtein Distance][_LD] to 
+    calculate the differences between sequences in a simple-to-use package.
+
+    [_LD]: https://en.wikipedia.org/wiki/Levenshtein_distance
+
+    PyPI: [https://pypi.org/project/thefuzz/](https://pypi.org/project/thefuzz/)
+
+  doc_url: https://github.com/seatgeek/thefuzz
+  dev_url: https://github.com/seatgeek/thefuzz
+
+extra:
+  recipe-maintainers:
+    - sugatoray

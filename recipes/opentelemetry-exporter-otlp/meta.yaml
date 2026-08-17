@@ -1,13 +1,13 @@
 {% set name = "opentelemetry-exporter-otlp" %}
-{% set version = "1.23.0" %}
+{% set version = "1.44.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_exporter_otlp-{{ version }}.tar.gz
-  sha256: 4af8798f9bc3bddb92fcbb5b4aa9d0e955d962aa1d9bceaab08891c355a9f907
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_exporter_otlp-{{ version }}.tar.gz
+  sha256: af1cde7c33ea8ed624bf04ac49a885730fe44c1f1ad698656e592c38f70ce106
 
 build:
   noarch: python
@@ -16,13 +16,13 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - hatchling
     - pip
   run:
-    - python >=3.8
-    - opentelemetry-exporter-otlp-proto-grpc =={{ version }}
-    - opentelemetry-exporter-otlp-proto-http =={{ version }}
+    - python >={{ python_min }}
+    - opentelemetry-exporter-otlp-proto-grpc ==1.44.0
+    - opentelemetry-exporter-otlp-proto-http ==1.44.0
 
 test:
   imports:
@@ -32,6 +32,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/open-telemetry/opentelemetry-python/tree/main/exporter/opentelemetry-exporter-otlp
@@ -41,6 +42,7 @@ about:
 
 extra:
   recipe-maintainers:
+    - pb01ka
     - mariusvniekerk
     - rxm7706
     - conda-forge/opentelemetry-api

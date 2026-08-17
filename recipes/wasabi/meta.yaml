@@ -1,0 +1,51 @@
+{% set version = "1.1.3" %}
+
+package:
+  name: wasabi
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wasabi/wasabi-{{ version }}.tar.gz
+  sha256: 4bb3008f003809db0c3e28b4daf20906ea871a2bb43f9914197d540f4f2e0878
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+    - pip
+    - pytest
+    # due to https://github.com/conda-forge/pandoc-feedstock/issues/133
+    - nbconvert  # [not ppc64le]
+    - ipykernel
+  imports:
+    - wasabi
+  commands:
+    - pip check
+    {% set tests_to_skip = "_not_a_real_test" %}
+    # needs nbconvert
+    {% set tests_to_skip = tests_to_skip + " or test_jupyter " %}   # [ppc64le]
+    - python -m pytest --tb=native --pyargs wasabi -k "not ({{ tests_to_skip }})"
+
+about:
+  home: https://github.com/explosion/wasabi
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A lightweight console printing and formatting toolkit
+  dev_url: https://github.com/explosion/wasabi
+
+extra:
+  recipe-maintainers:
+    - conda-forge/spacy

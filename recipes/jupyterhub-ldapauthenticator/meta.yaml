@@ -1,0 +1,45 @@
+{% set name = "jupyterhub-ldapauthenticator" %}
+{% set version = "2.0.2" %}
+{% set sha256 = "c08cecd9bd996ab523c810d45204bb4a5eaac7adae38d3ef05eebc58fffc7a87" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - jupyterhub >=4.1.6
+    - ldap3 >=2.9.1
+    - traitlets
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - ldapauthenticator
+
+about:
+  home: https://github.com/jupyterhub/ldapauthenticator
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: LDAP Authenticator for JupyterHub
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - minrk
+    - consideRatio

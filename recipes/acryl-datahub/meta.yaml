@@ -1,0 +1,79 @@
+{% set name = "acryl-datahub" %}
+{% set version = "1.3.1.5" %}
+{% set python_min = "3.10" %}
+{% set python_max = "3.11" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/acryl_datahub-{{ version }}.tar.gz
+  sha256: 1dd93490c186a1bfe8393f27e1f9a86c711b4fcd2849f1f3fcb7599f56410460
+
+build:
+  entry_points:
+    - datahub = datahub.entrypoints:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=63.0.0
+    - wheel
+    - pip
+  run:
+    - python >={{ python_min }},<={{ python_max }}
+    - requests-file
+    - avro-gen3 ==0.7.16
+    - tabulate
+    - click-spinner
+    - importlib-metadata >=4.0.0
+    - cached_property
+    - toml >=0.10.0
+    - typing_extensions >=4.2.0
+    - click >=7.1.2
+    - packaging
+    - pyyaml
+    - jsonref
+    - python-dateutil >=2.8.0
+    - ijson
+    - humanfriendly
+    - deprecated
+    - sentry-sdk
+    - expandvars >=0.6.5
+    - avro >=1.11.3,<1.12
+    - typing_inspect
+    - psutil >=5.8.0
+    - pydantic >=1.10.0,!=1.10.3
+    - click-default-group
+    - docker-py
+    - mixpanel >=4.9.0
+    - aiohttp <4
+    - jsonschema
+    - ruamel.yaml
+    - progressbar2
+
+test:
+  imports:
+    - datahub
+  commands:
+    - pip check
+    - datahub --help
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/datahub-project/datahub
+  summary: A CLI to work with DataHub metadata
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - shirshanka
+    - anshbansal
+    - pedro93

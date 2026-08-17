@@ -1,0 +1,52 @@
+{% set name = "outdated" %}
+{% set version = "0.2.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 4b7fdec88e36711120d096d485fc4d5035e4e5ffbd907cf3a6ce2af43058b970
+
+build:
+  noarch: python
+  number: 2
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools >=44
+    - setuptools_scm >=3.4.3
+  run:
+    - python >={{ python_min }}
+    - setuptools >=44
+    - littleutils
+    - requests
+
+test:
+  imports:
+    - outdated
+  commands:
+    # make sure the version reported by pip is correct
+    - "pip show {{ name }} | grep -Fx 'Version: {{ version }}'"
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/alexmojaki/outdated
+  license: MIT
+  license_family: MIT
+  # PR to include license file upstream: https://github.com/alexmojaki/outdated/pull/4
+  license_file: LICENSE
+  summary: Check if a version of a PyPI package is outdated
+  description: |
+    This is a mini-library which, given a package name and a version,
+    checks if it's the latest version available on PyPI.
+
+extra:
+  recipe-maintainers:
+    - hoechenberger

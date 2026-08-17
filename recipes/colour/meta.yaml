@@ -1,0 +1,47 @@
+{% set name = "colour" %}
+{% set version = "0.1.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/colour-{{ version }}.tar.gz
+  sha256: af20120fefd2afede8b001fbef2ea9da70ad7d49fafdb6489025dae8745c3aee
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 2
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - d2to1
+    - pip
+    - setuptools <=67  # deprecated setup.py install is used
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - colour
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/vaab/colour
+  summary: 'Python color representations manipulation library (RGB, HSL, web, ...)'
+  license_file: LICENSE
+  license: BSD-2-Clause
+  license_family: BSD
+  dev_url: https://github.com/vaab/colour
+  doc_url: https://github.com/vaab/colour
+
+extra:
+  recipe-maintainers:
+    - fhoehle
+    - pmlandwehr

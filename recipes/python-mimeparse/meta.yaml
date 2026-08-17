@@ -1,0 +1,52 @@
+{% set name = "python-mimeparse" %}
+{% set version = "2.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/python-mimeparse/python_mimeparse-{{ version }}.tar.gz
+  sha256: 5b9a9dcf7aa82465e31bd667f5cb7000604811dce83554f1c8a43693a32cb303
+
+build:
+  noarch: python
+  number: 0
+  script: python -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - mimeparse
+  commands:
+    - pip check
+    - pytest mimeparse_test.py
+  requires:
+    - pip
+    - pytest
+    - python {{ python_min }}
+  source_files:
+    - mimeparse_test.py
+    - testdata.json
+
+about:
+  home: https://github.com/dbtsai/python-mimeparse
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: 'A module provides basic functions for parsing mime-type names and matching them against a list of media-ranges.'
+  dev_url: https://github.com/dbtsai/python-mimeparse
+  doc_url: https://github.com/dbtsai/python-mimeparse
+
+extra:
+  recipe-maintainers:
+    - MementoRC
+    - anguslees
+    - pmlandwehr

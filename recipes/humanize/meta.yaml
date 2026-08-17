@@ -1,0 +1,46 @@
+{% set name = "humanize" %}
+{% set version = "4.16.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/humanize-{{ version }}.tar.gz
+  sha256: 7dc2244a2f84a4bfb1d36c37bac80cd78e35cdc5c119206d87b018e1445f3a3f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatch-vcs
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - humanize
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/python-humanize/humanize
+  license: MIT
+  license_file: LICENCE
+  summary: Python humanize utilities
+
+extra:
+  recipe-maintainers:
+    - ericdill
+    - licode
+    - tacaswell
+    - ocefpaf

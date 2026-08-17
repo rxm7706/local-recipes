@@ -1,0 +1,45 @@
+{% set name = "deprecation" %}
+{% set version = "2.1.0" %}
+{% set bundle = "tar.gz" %}
+{% set hash = "72b3bde64e5d778694b0cf68178aed03d15e15477116add3fb773e581f9518ff" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.{{ bundle }}
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.{{ bundle }}
+  sha256: {{ hash }}
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - python
+    - pip
+
+  run:
+    - python
+    - packaging
+
+test:
+  imports:
+    - deprecation
+
+about:
+  home: http://deprecation.readthedocs.io/
+  license_file: LICENSE
+  license: Apache-2.0
+  license_family: Apache
+  summary: A library to handle automated deprecations
+  dev_url: https://github.com/briancurtin/deprecation
+  doc_url: http://deprecation.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - kmuehlbauer

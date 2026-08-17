@@ -1,5 +1,5 @@
 {% set name = "pdfminer-six" %}
-{% set version = "20251230" %}
+{% set version = "20260107" %}
 {% set python_min = "3.10" %}
 
 package:
@@ -7,8 +7,10 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pdfminer_six-{{ version }}.tar.gz
-  sha256: e8f68a14c57e00c2d7276d26519ea64be1b48f91db1cdc776faa80528ca06c1e
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 96bfd431e3577a55a0efd25676968ca4ce8fd5b53f14565f85716ff363889602
+  # patches:
+  #   - patch.diff
 
 build:
   noarch: python
@@ -18,8 +20,8 @@ build:
 requirements:
   host:
     - python {{ python_min }}
-    - setuptools >=61.0
-    - setuptools-scm >=8
+    - setuptools
+    - setuptools-git-versioning <3
     - pip
   run:
     - python >={{ python_min }}
@@ -32,8 +34,8 @@ test:
   commands:
     - pip check
   requires:
-    - pip
     - python {{ python_min }}
+    - pip
 
 about:
   home: https://github.com/pdfminer/pdfminer.six

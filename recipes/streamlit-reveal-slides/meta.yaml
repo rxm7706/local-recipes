@@ -6,20 +6,21 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/streamlit-reveal-slides-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/streamlit-reveal-slides-{{ version }}.tar.gz
   sha256: a226c18758fa0c902c4fa06148e858316a5bebf914cf8932ce82f27d641ff752
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python >=3.6
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.6
+    - python >={{ python_min }}
     - streamlit >=0.63
 
 test:
@@ -29,9 +30,10 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
-  home: https://github.com/bouzidanas/streamlit.io/tree/master/streamlit-reveal-slides
+  home: https://github.com/bouzidanas/streamlit-reveal-slides
   summary: reveal.js HTML presentations for streamlit
   license: MIT
   license_file: LICENSE

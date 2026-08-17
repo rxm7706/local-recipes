@@ -1,0 +1,51 @@
+{% set name = "postgrest" %}
+{% set version = "2.31.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 2f395d84b2ee34fc57622ff2f711df603e2ede625f98e5015240741888f7bd0c
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - uv-build >=0.8.3,<0.9.0
+  run:
+    - python >={{ python_min }}
+    - deprecation >=2.1.0
+    - httpx >=0.26.0,<0.28
+    - pydantic >=1.9.0,<3
+    - strenum >=0.4.9
+    - yarl >=1.20.1
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+  imports:
+    - postgrest
+
+about:
+  home: https://github.com/supabase/supabase-py/tree/main/src/postgrest
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: PostgREST client for Python. This library provides an ORM interface to PostgREST
+  description: PostgREST client for Python. This library provides an ORM interface to PostgREST
+
+extra:
+  recipe-maintainers:
+    - timkpaine
+    - J0
+    - anand2312

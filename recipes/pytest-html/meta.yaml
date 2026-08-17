@@ -1,0 +1,50 @@
+{% set name = "pytest-html" %}
+{% set version = "4.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pytest_html-{{ version }}.tar.gz
+  sha256: b6a88cba507500d8709959201e2e757d3941e859fd17cfd4ed87b16fc0c67912
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatch-vcs >=0.3
+    - hatchling >=1.13
+    - pip
+  run:
+    - python >={{ python_min }}
+    - pytest >=7.0.0
+    - pytest-metadata >=2.0.0
+    - jinja2 >=3.0.0
+
+test:
+  imports:
+    - pytest_html
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/pytest-dev/pytest-html
+  license: MPL-2.0
+  license_file: LICENSE
+  summary: pytest plugin for generating HTML reports
+
+extra:
+  recipe-maintainers:
+    - '0xbe7a'
+    - birdsarah
+    - davehunt
+    - nicoddemus
+    - dbast

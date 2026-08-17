@@ -1,0 +1,54 @@
+{% set name = "diff-cover" %}
+{% set version = "10.5.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/diff_cover-{{ version }}.tar.gz
+  sha256: a1734543baaaa7d0860a6526016d487be24a0ffe9efb4eca0824c391d4a09d06
+
+build:
+  noarch: python
+  number: 0
+  entry_points:
+    - diff-cover = diff_cover.diff_cover_tool:main
+    - diff-quality = diff_cover.diff_quality_tool:main
+  script: '{{ PYTHON }} -m pip install . --no-deps -vv '
+
+requirements:
+  host:
+    - pip
+    - poetry-core
+    - python {{ python_min }}
+  run:
+    - jinja2 >=2.7.1
+    - pluggy >=0.13.1,<2
+    - pygments >=2.19.1
+    - python >={{ python_min }}
+    - chardet >=3.0.0
+
+  run_constrained:
+    - tomli >=1.2.1
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - diff_cover
+    - diff_cover.violationsreporters
+  commands:
+    - diff-cover --help
+    - diff-quality --help
+
+about:
+  home: https://github.com/Bachmann1234/diff-cover
+  license: Apache-2.0
+  license_family: APACHE
+  license_file: LICENSE
+  summary: Automatically find diff lines that need test coverage.
+
+extra:
+  recipe-maintainers:
+    - nicoddemus

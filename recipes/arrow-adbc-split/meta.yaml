@@ -1,0 +1,303 @@
+{% set release = "24" %}
+{% set version = "1.12.0" %}
+
+package:
+  name: arrow-adbc-split
+  version: {{ version }}
+
+source:
+  url: https://dlcdn.apache.org/arrow/apache-arrow-adbc-{{ release }}/apache-arrow-adbc-{{ release }}.tar.gz
+  sha256: 2b4b420937f62f7ae56f46dbd6951a5e4ef0da43158080a58cb44cdd09a8b2e0
+
+build:
+  number: 0
+
+outputs:
+  - name: libadbc-driver-manager
+    script: build-cpp.sh   # [not win]
+    script: build-cpp.bat  # [win]
+    requirements:
+      build:
+        - {{ compiler('cxx') }}
+        - {{ stdlib("c") }}
+        - cmake
+        - ninja
+      host:
+      run:
+    build:
+      run_exports:
+        - {{ pin_subpackage("libadbc-driver-manager", max_pin="x.x") }}
+    test:
+      commands:
+        - test -f $PREFIX/include/arrow-adbc/adbc.h                              # [unix]
+        - test -f $PREFIX/include/arrow-adbc/adbc_driver_manager.h               # [unix]
+        # For now, we still ship these headers for backwards compatibility
+        - test -f $PREFIX/include/adbc.h                                         # [unix]
+        - test -f $PREFIX/include/adbc_driver_manager.h                          # [unix]
+        - test -d $PREFIX/lib/cmake/AdbcDriverManager/                           # [unix]
+        - test -f $PREFIX/lib/pkgconfig/adbc-driver-manager.pc                   # [unix]
+        - test ! -f $PREFIX/lib/libadbc_driver_manager.a                         # [unix]
+        - test -f $PREFIX/lib/libadbc_driver_manager.so.112                      # [linux]
+        - test -f $PREFIX/lib/libadbc_driver_manager.112.dylib                   # [osx]
+
+        - if not exist %LIBRARY_BIN%\adbc_driver_manager.dll exit 1              # [win]
+        - if not exist %LIBRARY_INC%\arrow-adbc\adbc.h exit 1                    # [win]
+        - if not exist %LIBRARY_INC%\arrow-adbc\adbc_driver_manager.h exit 1     # [win]
+        - if not exist %LIBRARY_INC%\adbc.h exit 1                               # [win]
+        - if not exist %LIBRARY_INC%\adbc_driver_manager.h exit 1                # [win]
+        - if not exist %LIBRARY_LIB%\adbc_driver_manager.lib exit 1              # [win]
+        - if not exist %LIBRARY_LIB%\cmake\AdbcDriverManager exit 1              # [win]
+        - if not exist %LIBRARY_LIB%\pkgconfig\adbc-driver-manager.pc exit 1     # [win]
+
+  - name: libadbc-driver-flightsql
+    script: build-cpp.sh  # [not win]
+    script: build-cpp.bat  # [win]
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ compiler('cxx') }}
+        - {{ compiler('cgo') }}
+        - {{ stdlib("c") }}
+        - cmake
+        - go >=1.26
+        - ninja
+    build:
+      # XXX: punting on non-unix platforms due to general issues
+      skip: true  # [win]
+      run_exports:
+        - {{ pin_subpackage("libadbc-driver-flightsql", max_pin="x.x") }}
+      ignore_run_exports_from:
+        # apache/arrow-adbc#92: cmake config shouldn't initialize C++ unless needed
+        - {{ compiler('cxx') }}
+    test:
+      commands:
+        - test ! -f $PREFIX/include/adbc.h                                       # [unix]
+        - test ! -f $PREFIX/include/arrow-adbc/adbc.h                            # [unix]
+        - test -f $PREFIX/lib/pkgconfig/adbc-driver-flightsql.pc                 # [unix]
+        - test ! -f $PREFIX/lib/libadbc_driver_flightsql.a                       # [unix]
+        - test -f $PREFIX/lib/libadbc_driver_flightsql.so.112                    # [linux]
+        - test -f $PREFIX/lib/libadbc_driver_flightsql.dylib                     # [osx]
+        # TODO: testing exact dylib soname is fragile?
+        # - test -f $PREFIX/lib/libadbc_driver_flightsql.112.dylib               # [osx]
+
+        - if exist %LIBRARY_INC%\adbc.h exit 1                                   # [win]
+        - if not exist %LIBRARY_BIN%\adbc_driver_flightsql.dll exit 1            # [win]
+        - if not exist %LIBRARY_LIB%\adbc_driver_flightsql.lib exit 1            # [win]
+        - if not exist %LIBRARY_LIB%\pkgconfig\adbc-driver-flightsql.pc exit 1   # [win]
+
+  - name: libadbc-driver-postgresql
+    script: build-cpp.sh  # [not win]
+    script: build-cpp.bat  # [win]
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ compiler('cxx') }}
+        - {{ stdlib("c") }}
+        - cmake
+        - ninja
+        - pkg-config
+      host:
+        - libpq
+      run:
+        - libpq
+    build:
+      run_exports:
+        - {{ pin_subpackage("libadbc-driver-postgresql", max_pin="x.x") }}
+    test:
+      commands:
+        - test ! -f $PREFIX/include/adbc.h                                       # [unix]
+        - test ! -f $PREFIX/include/arrow-adbc/adbc.h                            # [unix]
+        - test -d $PREFIX/lib/cmake/AdbcDriverPostgreSQL/                        # [unix]
+        - test -f $PREFIX/lib/pkgconfig/adbc-driver-postgresql.pc                # [unix]
+        - test ! -f $PREFIX/lib/libadbc_driver_postgresql.a                      # [unix]
+        - test -f $PREFIX/lib/libadbc_driver_postgresql.so.112                   # [linux]
+        - test -f $PREFIX/lib/libadbc_driver_postgresql.dylib                    # [osx]
+        # TODO: testing exact dylib soname is fragile?
+        # - test -f $PREFIX/lib/libadbc_driver_postgresql.112.dylib              # [osx]
+
+        - if exist %LIBRARY_INC%\adbc.h exit 1                                   # [win]
+        - if not exist %LIBRARY_BIN%\adbc_driver_postgresql.dll exit 1           # [win]
+        - if not exist %LIBRARY_LIB%\adbc_driver_postgresql.lib exit 1           # [win]
+        - if not exist %LIBRARY_LIB%\cmake\AdbcDriverPostgreSQL exit 1           # [win]
+        - if not exist %LIBRARY_LIB%\pkgconfig\adbc-driver-postgresql.pc exit 1  # [win]
+
+  - name: libadbc-driver-sqlite
+    script: build-cpp.sh  # [not win]
+    script: build-cpp.bat  # [win]
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ compiler('cxx') }}
+        - {{ stdlib("c") }}
+        - cmake
+        - ninja
+        - pkg-config
+      host:
+        - libsqlite
+      run:
+        - libsqlite
+    build:
+      run_exports:
+        - {{ pin_subpackage("libadbc-driver-sqlite", max_pin="x.x") }}
+    test:
+      commands:
+        - test ! -f $PREFIX/include/adbc.h                                       # [unix]
+        - test ! -f $PREFIX/include/arrow-adbc/adbc.h                            # [unix]
+        - test -d $PREFIX/lib/cmake/AdbcDriverSQLite/                            # [unix]
+        - test -f $PREFIX/lib/pkgconfig/adbc-driver-sqlite.pc                    # [unix]
+        - test ! -f $PREFIX/lib/libadbc_driver_sqlite.a                          # [unix]
+        - test -f $PREFIX/lib/libadbc_driver_sqlite.so.112                       # [linux]
+        - test -f $PREFIX/lib/libadbc_driver_sqlite.dylib                        # [osx]
+        # TODO: testing exact dylib soname is fragile?
+        # - test -f $PREFIX/lib/libadbc_driver_sqlite.112.dylib                  # [osx]
+
+        - if exist %LIBRARY_INC%\adbc.h exit 1                                   # [win]
+        - if not exist %LIBRARY_BIN%\adbc_driver_sqlite.dll exit 1               # [win]
+        - if not exist %LIBRARY_LIB%\adbc_driver_sqlite.lib exit 1               # [win]
+        - if not exist %LIBRARY_LIB%\cmake\AdbcDriverSQLite exit 1               # [win]
+        - if not exist %LIBRARY_LIB%\pkgconfig\adbc-driver-sqlite.pc exit 1      # [win]
+
+  - name: adbc-driver-manager
+    script: build-python.sh  # [not win]
+    script: build-python.bat  # [win]
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ compiler('cxx') }}
+        - {{ stdlib("c") }}
+        - python                                 # [build_platform != target_platform]
+        - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+        - cython                                 # [build_platform != target_platform]
+      host:
+        - cython
+        - pip
+        - python
+        - setuptools
+      run:
+        - python
+      run_constrained:
+        - pyarrow >=8.0.0
+    build:
+      rpaths:
+        - lib/
+        - {{ SP_DIR }}/adbc_driver_manager
+    test:
+      commands:
+        - test ! -f $SP_DIR/adbc_driver_manager/adbc.h                            # [unix]
+        - test ! -f $SP_DIR/adbc_driver_manager/adbc_driver_manager.h             # [unix]
+        - test ! -f $SP_DIR/adbc_driver_manager/arrow-adbc/adbc.h                 # [unix]
+        - test ! -f $SP_DIR/adbc_driver_manager/arrow-adbc/adbc_driver_manager.h  # [unix]
+        - test ! -f $SP_DIR/adbc_driver_manager/adbc_driver_manager.cc            # [unix]
+      imports:
+        - adbc_driver_manager
+        - adbc_driver_manager._lib
+      requires:
+        - python >={{ python_min }}
+
+  - name: adbc-driver-flightsql
+    build:
+      noarch: python
+      # noarch requires only a single build
+      skip: true  # [not linux]
+      skip: true  # [build_platform != target_platform]
+    script: build-python.sh
+    requirements:
+      build:
+        - pip
+        - setuptools
+      host:
+        - {{ pin_subpackage('libadbc-driver-flightsql', max_pin='x.x.x', min_pin='x.x.x.x') }}
+        - pip
+        - python {{ python_min }}
+        - setuptools
+      run:
+        - {{ pin_subpackage('adbc-driver-manager') }}
+        - {{ pin_subpackage('libadbc-driver-flightsql', max_pin='x.x.x', min_pin='x.x.x.x') }}
+        - importlib_resources
+        - python >={{ python_min }}
+      run_constrained:
+        - pyarrow >=8.0.0
+    test:
+      imports:
+        - adbc_driver_flightsql
+      requires:
+        - python >={{ python_min }}
+
+  - name: adbc-driver-postgresql
+    build:
+      noarch: python
+      # noarch requires only a single build
+      skip: true  # [not linux]
+      skip: true  # [build_platform != target_platform]
+    script: build-python.sh
+    requirements:
+      build:
+        - pip
+        - setuptools
+      host:
+        - {{ pin_subpackage('libadbc-driver-postgresql', max_pin='x.x.x', min_pin='x.x.x.x') }}
+        - pip
+        - python {{ python_min }}
+        - setuptools
+      run:
+        - {{ pin_subpackage('adbc-driver-manager') }}
+        - {{ pin_subpackage('libadbc-driver-postgresql', max_pin='x.x.x', min_pin='x.x.x.x') }}
+        - importlib_resources
+        - python >={{ python_min }}
+      run_constrained:
+        - pyarrow >=8.0.0
+    test:
+      imports:
+        - adbc_driver_postgresql
+      requires:
+        - python >={{ python_min }}
+
+  - name: adbc-driver-sqlite
+    build:
+      noarch: python
+      # noarch requires only a single build
+      skip: true  # [not linux]
+      skip: true  # [build_platform != target_platform]
+    script: build-python.sh
+    requirements:
+      build:
+        - pip
+        - setuptools
+      host:
+        - {{ pin_subpackage('libadbc-driver-sqlite', max_pin='x.x.x', min_pin='x.x.x.x') }}
+        - pip
+        - python {{ python_min }}
+        - setuptools
+      run:
+        - {{ pin_subpackage('adbc-driver-manager') }}
+        - {{ pin_subpackage('libadbc-driver-sqlite', max_pin='x.x.x', min_pin='x.x.x.x') }}
+        - importlib_resources
+        - python >={{ python_min }}
+      run_constrained:
+        - pyarrow >=8.0.0
+    test:
+      imports:
+        - adbc_driver_sqlite
+      requires:
+        - python >={{ python_min }}
+
+about:
+  home: https://arrow.apache.org
+  summary: Database access libraries for Apache Arrow
+  description: |
+    ADBC is an API standard for database access libraries ("drivers")
+    in C and Java that uses Arrow for data. Instead of writing code
+    for each individual database, applications can build against the
+    ADBC APIs, and link against drivers that implement the
+    standard. Additionally, a JDBC/ODBC-style driver manager is
+    provided. This also implements the ADBC APIs, but dynamically
+    loads drivers and dispatches calls to them.
+  license: Apache-2.0
+  license_family: APACHE
+  license_file: LICENSE.txt
+  doc_url: https://arrow.apache.org/docs/
+  dev_url: https://github.com/apache/arrow-adbc
+
+extra:
+  recipe-maintainers:
+    - lidavidm

@@ -1,0 +1,49 @@
+{% set name = "dockerspawner" %}
+{% set version = "14.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 5641d4763ecc78c1b1c3c7621bfe88c055596893e43be7f66ee0dccac06c1d2a
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install --no-deps --ignore-installed --no-cache-dir -vv .
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - docker-py
+    - escapism
+    - jupyterhub-base >=4.0.0
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  imports:
+    - dockerspawner
+  commands:
+    - pip check
+
+
+about:
+  home: https://github.com/jupyterhub/dockerspawner
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: 'Spawns JupyterHub single user servers in Docker containers '
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - rzillman
+    - minrk

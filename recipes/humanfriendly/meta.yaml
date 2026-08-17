@@ -1,0 +1,50 @@
+{% set version = "10.0" %}
+
+package:
+  name: humanfriendly
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/humanfriendly/humanfriendly-{{ version }}.tar.gz
+  sha256: 6b0b831ce8f15f7300721aa49829fc4e83921a9a301cc7f606be6686a2288ddc
+
+build:
+  number: 8
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  entry_points:
+    - humanfriendly = humanfriendly.cli:main
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - pyreadline3  # [win]
+    - __unix  # [unix]
+    - __win   # [win]
+
+test:
+  imports:
+    - humanfriendly
+  requires:
+    - pip
+    # Test with old on unix
+    - python {{ python_min }}  # [unix]
+    # Test with hyper modern on windows
+    - python 3.13              # [win]
+  commands:
+    - pip check
+
+about:
+  home: https://humanfriendly.readthedocs.org
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Human friendly output for text interfaces using Python.
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - ccordoba12

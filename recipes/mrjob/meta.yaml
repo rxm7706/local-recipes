@@ -1,0 +1,58 @@
+{% set name = "mrjob" %}
+{% set version = "0.7.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 2c8d8dc8aa4b354a97de18d0260f551f018693af74af104b3d41daf165eebdd4
+
+build:
+  entry_points:
+    - mrjob = mrjob.cmd:main
+  number: 3
+  noarch: python
+  script: python -m pip install -vv .
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }}
+    - ujson
+    - boto3 >=1.4.6
+    - botocore >=1.6.0
+    - pyyaml >=3.08
+    - google-api-python-client >=1.5.0
+    - rapidjson
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - mrjob
+    - mrjob.examples
+    - mrjob.fs
+    - mrjob.logs
+    - mrjob.tools
+    - mrjob.tools.emr
+
+  commands:
+    - mrjob --help
+
+about:
+  home: https://github.com/Yelp/mrjob
+  license_file: LICENSE.txt
+  license: Apache 2.0
+  license_family: Apache
+  summary: Python MapReduce framework
+  dev_url: https://github.com/Yelp/mrjob
+  doc_url: https://pythonhosted.org/mrjob/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - mariusvniekerk

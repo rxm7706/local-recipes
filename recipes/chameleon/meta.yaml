@@ -1,0 +1,43 @@
+{% set name = "Chameleon" %}
+{% set version = "4.6.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/Chameleon-{{ version }}.tar.gz
+  sha256: 910cd729f6f7f38adad132ee51faa4f3ccc8344a6721aac31aa51a31f5781c1b
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - chameleon
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://chameleon.readthedocs.io
+  summary: Fast HTML/XML Template Compiler.
+  license: BSD-4-Clause 
+  license_family: BSD
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - ReimarBauer

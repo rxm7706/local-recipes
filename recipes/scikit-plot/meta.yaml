@@ -1,0 +1,54 @@
+{% set name = "scikit-plot" %}
+{% set version = "0.3.7" %}
+{% set sha256 = "2c7948817fd2dc06879cfe3c1fdde56a8e71fa5ac626ffbe79f043650baa6242" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 1
+  script: python -m pip install .
+
+requirements:
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+    - matplotlib-base
+    - scikit-learn
+    - scipy
+    - joblib
+
+test:
+  imports:
+    - scikitplot
+    - scikitplot.plotters
+    - scikitplot.helpers
+    - scikitplot.classifiers
+    - scikitplot.clustering
+    - scikitplot.estimators
+    - scikitplot.cluster
+    - scikitplot.decomposition
+    - scikitplot.metrics
+
+about:
+  home: https://github.com/reiinakano/scikit-plot/
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: 'An intuitive library to add plotting functionality to scikit-learn objects.'
+  doc_url: scikit-plot.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - ericmjl
+    - reiinakano

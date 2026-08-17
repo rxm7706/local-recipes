@@ -1,0 +1,42 @@
+{% set name = "docopt-ng" %}
+{% set version = "0.9.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/docopt_ng-{{ version }}.tar.gz
+  sha256: 91c6da10b5bb6f2e9e25345829fb8278c78af019f6fc40887ad49b060483b1d7
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pdm-backend
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - docopt
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/jazzband/docopt-ng
+  summary: Jazzband-maintained fork of docopt, the humane command line arguments parser.
+  license: MIT
+  license_file: LICENSE-MIT
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

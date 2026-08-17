@@ -1,0 +1,42 @@
+{% set name = "xcb-util-keysyms" %}
+{% set version = "0.4.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://xcb.freedesktop.org/dist/xcb-util-keysyms-{{ version }}.tar.xz
+  sha256: 7c260a5294412aed429df1da2f8afd3bd07b7cba3fec772fba15a613a6d5c638
+
+build:
+  number: 0
+  skip: true  # [not linux]
+  run_exports:
+    - {{ pin_subpackage('xcb-util-keysyms', max_pin='x.x') }}
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib('c') }}
+    - make
+    - pkg-config
+  host:
+    - libxcb
+    - xorg-xproto
+
+test:
+  commands:
+    - test -f ${PREFIX}/lib/libxcb-keysyms.so
+
+about:
+  home: https://xcb.freedesktop.org/
+  license: MIT
+  license_family: MIT
+  license_file: COPYING
+  summary: 'Standard X key constants and conversion to/from keycodes'
+
+extra:
+  recipe-maintainers:
+    - scopatz
+    - hmaarrfk

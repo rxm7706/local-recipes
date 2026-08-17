@@ -1,0 +1,67 @@
+{% set version = "1.23.1" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: holoviews
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/holoviews/holoviews-{{ version }}.tar.gz
+  sha256: 97877ee2fcf7bf38ce63f49b731dba75d9b2fcfaf093ca51bd229770a4273cc0
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  entry_points:
+    - holoviews = holoviews.util.command:main
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+    - hatch-vcs
+  run:
+    - python >={{ python_min }}
+    - bokeh >=3.1
+    - colorcet
+    - matplotlib-base >=3.0
+    - narwhals >=2
+    - numpy >=1.21
+    - pandas >=1.3
+    - panel >=1.0
+    - param >=2.0,<3.0
+    - python-dateutil >=2.8.2
+    - pyviz_comms >=2.1
+
+test:
+  imports:
+    - holoviews
+  commands:
+    - pip check
+    - holoviews -h
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://holoviews.org
+  summary: Stop plotting your data - annotate your data and let it visualize itself.
+  description: |
+    HoloViews is an open-source Python library designed to make data analysis
+    and visualization seamless and simple. With HoloViews, you can usually
+    express what you want to do in very few lines of code, letting you focus on
+    what you are trying to explore and convey, not on the process of plotting.
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  dev_url: https://github.com/holoviz/holoviews
+  doc_url: http://holoviews.org/getting_started/index.html
+
+extra:
+  recipe-maintainers:
+    - jlstevens
+    - philippjfr
+    - basnijholt
+    - maximlt
+    - hoxbro

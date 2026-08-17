@@ -1,0 +1,51 @@
+{% set name = "gotrue" %}
+{% set version = "2.12.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 35d2e58e066486321f4dff0033b30a53d057c7f436c15287122fa0cb833029b1
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - pyjwt >=2.10.1,<3.0.0
+    - pytest-mock >=3.14.0,<4.0.0
+    - python >={{ python_min }}
+    - httpx >=0.26,<0.29
+    - pydantic >=1.10,<3
+
+test:
+  requires:
+    - python {{ python_min }}
+    - pip
+  commands:
+    - pip check
+  imports:
+    - gotrue
+
+about:
+  home: https://github.com/supabase-community/gotrue-py
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Python client implementation of Supabase's GoTrue
+  description: |
+    Python client implementation of Supabase's GoTrue
+
+extra:
+  recipe-maintainers:
+    - timkpaine
+    - J0
+    - anand2312

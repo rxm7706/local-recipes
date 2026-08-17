@@ -1,0 +1,50 @@
+{% set name = "zeroconf" %}
+{% set version = "1.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/zeroconf-{{ version }}.tar.gz
+  sha256: 3834ccf45c1e12cae78707ce691b20969e78aead28ae939b158b7d08c4195ac9
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=65.4.1
+    - wheel
+    - cython
+    - poetry-core >=1.5.2
+    - pip
+  run:
+    - python >={{ python_min }},<4.0.0
+    - async-timeout >=3.0.0
+    - ifaddr >=0.1.7
+
+test:
+  imports:
+    - zeroconf
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/python-zeroconf/python-zeroconf
+  summary: A pure python implementation of multicast DNS service discovery
+  license: LGPL-2.1-only
+  license_family: LGPL
+  license_file: COPYING
+
+extra:
+  recipe-maintainers:
+    - jjerphan
+    - abloemert
+    - niecore

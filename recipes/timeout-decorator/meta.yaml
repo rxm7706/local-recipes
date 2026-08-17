@@ -1,0 +1,43 @@
+{% set name = "timeout-decorator" %}
+{% set version = "0.5.0" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/timeout-decorator-{{ version }}.tar.gz
+  sha256: 6a2f2f58db1c5b24a2cc79de6345760377ad8bdc13813f5265f6c3e63d16b3d7
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - timeout_decorator
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/pnpnpn/timeout-decorator
+  license: MIT
+  summary: Timeout decorator
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

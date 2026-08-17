@@ -1,0 +1,46 @@
+{% set name = "FormEncode" %}
+{% set version = "2.1.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | lower }}-{{ version }}.tar.gz
+  sha256: e17f16199d232e54f67912004f3ad333cdbbb81a1a1a10238acf09bab99f9199
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - setuptools_scm >=7
+  run:
+    - python >={{ python_min }}
+    - setuptools
+
+test:
+  imports:
+    - formencode
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+
+about:
+  home: http://formencode.org
+  license: MIT
+  license_file: LICENSE.txt
+  summary: HTML form validation, generation, and conversion package
+  dev_url: https://github.com/formencode/formencode
+
+extra:
+  recipe-maintainers:
+    - windelbouwman
+    - synapticarbors

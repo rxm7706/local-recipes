@@ -1,0 +1,43 @@
+{% set name = "aiorwlock" %}
+{% set version = "1.5.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/aiorwlock-{{ version }}.tar.gz
+  sha256: 2729c77ec736c8d85ec305aa3827a50394fd8c6d823f4404d301cc8c59a4b7f5
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - poetry-core >=1.0.0
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - aiorwlock
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/aio-libs/aiorwlock
+  summary: Read write lock for asyncio.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - wendazhou
+    - soapy1

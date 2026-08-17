@@ -1,0 +1,60 @@
+{% set version = "0.12.4" %}
+
+package:
+  name: ypy-websocket
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/y/ypy-websocket/ypy_websocket-{{ version }}.tar.gz
+  sha256: cbbf5fdaa9a301a0b5f9455f1f29478b7c05b62773b2dd2a65c6502b4e10afa1
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - hatchling
+    - pip
+    - python {{ python_min }}
+  run:
+    - aiosqlite >=0.18.0,<1
+    - anyio >=3.6.2,<5
+    - python >={{ python_min }}
+    - typing_extensions
+    - y-py >=0.6.0,<0.7.0
+
+test:
+  source_files:
+    - tests
+  requires:
+    - coverage
+    - nodejs >=18,<19
+    - pip
+    - pytest
+    - pytest-asyncio
+    - python {{ python_min }}
+    - uvicorn
+    - websockets >=10.0,<14
+  imports:
+    - ypy_websocket
+  commands:
+    - pip check
+    - cd tests && npm install
+    - cd ..
+    - coverage run --source=ypy_websocket --branch -m pytest -vv --tb=long --color=yes --asyncio-mode=auto
+    - coverage report --show-missing --skip-covered --fail-under 68
+
+about:
+  home: https://github.com/y-crdt/ypy-websocket
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: WebSocket connector for Ypy
+  doc_url: https://davidbrochart.github.io/ypy-websocket
+
+extra:
+  recipe-maintainers:
+    - davidbrochart
+    - conda-forge/jupyter_server

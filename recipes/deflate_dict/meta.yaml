@@ -1,0 +1,43 @@
+{% set name = "deflate_dict" %}
+{% set version = "1.2.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/deflate_dict-{{ version }}.tar.gz
+  sha256: a51f72562a2056118c6b0915b4ac46a483cc329b43d13d759307e4c027ea20ea
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+    - setuptools
+  run:
+    - python >=3.8
+    - support_developer >=1.0.2
+
+test:
+  imports:
+    - deflate_dict
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/LucaCappelletti94/deflate_dict
+  summary: Python package to deflate and re-inflate dictionaries.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - isuruf
+    - dillonroach

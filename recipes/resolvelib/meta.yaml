@@ -1,0 +1,55 @@
+{% set name = "resolvelib" %}
+{% set version = "1.2.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  # GitHub release contains tests/
+  url: https://github.com/sarugaku/{{ name|lower }}/archive/refs/tags/{{ version }}.tar.gz
+  sha256: 4d4c4137d7b8f8f27f298ff1af2faa767d790f271928506358d25e4252ed749a
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - resolvelib
+  requires:
+    - pip
+    - packaging
+    - pytest
+    - python {{ python_min }}
+  source_files:
+    - tests
+  commands:
+    - pip check
+    - pytest
+
+about:
+  home: https://github.com/sarugaku/resolvelib
+  license: ISC
+  license_file: LICENSE
+  summary: Simple, fast, extensible JSON encoder/decoder for Python
+  description: |
+    ResolveLib at the highest level provides a Resolver class that
+    includes dependency resolution logic. You give it some things, and a
+    little information on how it should interact with them, and it will
+    spit out a resolution result.
+  doc_url: https://github.com/sarugaku/resolvelib/blob/master/README.rst
+  dev_url: https://github.com/sarugaku/resolvelib
+
+extra:
+  recipe-maintainers:
+    - etcet

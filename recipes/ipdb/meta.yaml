@@ -1,0 +1,62 @@
+{% set name = "ipdb" %}
+{% set version = "0.13.13" %}
+{% set sha256 = "5bf95ec55224e5fa96a21acf6d13df075aa405cfb4ba946e717aa5e36c2a2def" %}
+
+{% set gh_org = "gotcha" %}
+{% set gh_repo = name %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://github.com/{{ gh_org }}/{{ gh_repo }}/archive/{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 1
+  entry_points:
+    - ipdb = ipdb.__main__:main
+  script:
+    - {{ PYTHON }} -m pip install . --no-deps -vv
+    - call %RECIPE_DIR%/install-scripts.bat  # [win]
+    - . ${RECIPE_DIR}/install-scripts.sh  # [not win]
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+
+  run:
+    - python >={{ python_min }}
+    - ipython
+    - toml >=0.10.2
+    - decorator
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - ipdb
+  commands:
+    - python -c 'import os; assert(os.environ["PYTHONBREAKPOINT"] == "ipdb.set_trace")'
+
+about:
+  home: https://github.com/{{ gh_org }}/{{ gh_repo }}
+  license: BSD-3-Clause
+  license_file: COPYING.txt
+  summary: Integration of IPython pdb
+
+  description: |
+    ipdb exports functions to access the IPython debugger,
+    which features tab completion, syntax highlighting, better
+    tracebacks, better introspection with the same interface
+    as the pdb module.
+  dev_url: https://github.com/{{ gh_org }}/{{ gh_repo }}
+
+extra:
+  recipe-maintainers:
+    - vamega

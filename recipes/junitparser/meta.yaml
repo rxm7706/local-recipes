@@ -1,0 +1,49 @@
+{% set name = "junitparser" %}
+{% set version = "5.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/junitparser-{{ version }}.tar.gz
+  sha256: f15e292877258d7c5755d672ce86f82c3622c7ea4c2f44f55de44ed7518484d3
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+  entry_points:
+    - junitparser = junitparser.cli:main
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools >=44
+    - wheel >=0.37
+    # used in setup.py
+    - future
+  run:
+    - python >={{ python_min }}
+    - future
+
+test:
+  imports:
+    - junitparser
+  commands:
+    - pip check
+    - junitparser --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/weiwei/junitparser
+  summary: Manipulates JUnit/xUnit Result XML files
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk

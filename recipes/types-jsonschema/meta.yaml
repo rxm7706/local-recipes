@@ -1,0 +1,44 @@
+{% set version = "4.26.0.20260518" %}
+
+package:
+  name: types-jsonschema
+  version: {{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/t/types-jsonschema/types_jsonschema-{{ version }}.tar.gz
+    sha256: e1dd53dc97a64f5eccdd6fa9839666e09bb500a8ebba2db6fdaf1789faea81a6
+  - url: https://raw.githubusercontent.com/python/typeshed/main/LICENSE
+    sha256: 295f8538c94ae5c3043301cf7cff1c852dab6a786a8ddee471e061b40d5ecabe
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - referencing
+
+test:
+  commands:
+    - pip check
+    - test -f $SP_DIR/jsonschema-stubs/__init__.pyi                 # [unix]
+    - if not exist %SP_DIR%\\jsonschema-stubs\\__init__.pyi exit 1  # [win]
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/python/typeshed
+  summary: Typing stubs for jsonschema
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - conda-forge/mypy

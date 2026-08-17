@@ -1,0 +1,41 @@
+{% set name = "pscript" %}
+{% set version = "0.8.1" %}
+{% set sha256 = "d3858bf9b34454af8018c7eab832c2f4aaf54f878d7e40f3131ff6dd634bcdfd" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=2.7,<3|>=3.5
+    - pip
+    - flit
+  run:
+    - python >=2.7,<3|>=3.5
+
+test:
+  imports:
+    - pscript
+
+about:
+  home: http://pscript.readthedocs.io
+  doc_url: http://pscript.readthedocs.io
+  dev_url: https://github.com/flexxui/pscript
+  summary: library for transpiling Python code to JavaScript.
+  license: BSD-2-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - almarklein

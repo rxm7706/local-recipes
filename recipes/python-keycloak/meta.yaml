@@ -1,0 +1,53 @@
+{% set name = "python-keycloak" %}
+{% set version = "7.1.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/python_keycloak-{{ version }}.tar.gz
+  sha256: 38973e54694a656fe6f3f8fc2af0b89c78136863f928261f0d243445e9e486bc
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - aiofiles >=24.1.0
+    - async-property >=0.2.2
+    - httpx >=0.23.2
+    - jwcrypto >=1.5.4
+    - python >={{ python_min }}
+    - requests >=2.20.0
+    - requests-toolbelt >=0.6.0
+    - deprecation >=2.1.0
+
+test:
+  imports:
+    - keycloak
+    - keycloak.authorization
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/marcospereirampj/python-keycloak
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: python-keycloak is a Python package providing access to the Keycloak API.
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - edennuriel
+    - fcollonval

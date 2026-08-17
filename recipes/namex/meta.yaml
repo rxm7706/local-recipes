@@ -1,0 +1,41 @@
+{% set name = "namex" %}
+{% set version = "0.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/namex-{{ version }}.tar.gz
+  sha256: 117f03ccd302cc48e3f5c58a296838f6b89c83455ab8683a1e85f2a430aa4306
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - namex
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/fchollet/namex?tab=readme-ov-file
+  summary: A simple utility to separate the implementation of your Python package and its public API surface.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - Anselmoo

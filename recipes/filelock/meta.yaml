@@ -1,0 +1,44 @@
+{% set name = "filelock" %}
+{% set version = "3.32.3" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 0ffa185a3540854c95caa7fa76b76cb219d907415e2c5dc9af25fd970563487f
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install --no-deps .
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - hatchling >=1.11.1
+    - hatch-vcs >=0.3
+
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - filelock
+
+about:
+  home: https://github.com/tox-dev/py-filelock
+  license: Unlicense
+  license_file: LICENSE
+  summary: A platform independent file lock.
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - mariusvniekerk
+    - nicoddemus

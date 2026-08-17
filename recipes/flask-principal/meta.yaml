@@ -1,0 +1,50 @@
+{% set name = "Flask-Principal" %}
+{% set version = "0.4.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: f5d6134b5caebfdbb86f32d56d18ee44b080876a27269560a96ea35f75c99453
+
+build:
+  noarch: python
+  number: 3
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+
+requirements:
+  host:
+    - pip
+    - setuptools
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+    - flask
+    - blinker
+
+test:
+  requires:
+    - python {{ python_min }}
+    - pip
+  imports:
+    - flask_principal
+  commands:
+    - pip check
+
+about:
+  home: http://packages.python.org/Flask-Principal/
+  license: MIT
+  # in package but need new sdist on PyPi - see https://github.com/mattupstate/flask-principal/pull/16
+  license_file: LICENSE 
+  license_family: MIT
+  summary: 'Identity management for flask'
+  doc_url: https://pythonhosted.org/Flask-Principal/
+  dev_url: https://github.com/mattupstate/flask-principal
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - synapticarbors

@@ -1,0 +1,45 @@
+{% set name = "sspilib" %}
+{% set version = "0.5.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/sspilib-{{ version }}.tar.gz
+  sha256: b62f7f2602aa1add0505eee2417e2df24421224cb411e53bf3ae42a71b62fe98
+
+build:
+  skip: true  # [not win or py<38]
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - python
+    - cython >=3.2.1,<4.0.0
+    - setuptools >=77.0.3
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - sspilib
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/jborean93/sspilib
+  summary: SSPI API bindings for Python
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld

@@ -1,0 +1,48 @@
+{% set name = "plyer" %}
+{% set version = "2.1.0" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/plyer-{{ version }}.tar.gz
+  sha256: 65b7dfb7e11e07af37a8487eb2aa69524276ef70dad500b07228ce64736baa61
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - cython
+    - pyjnius
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - plyer
+    - plyer.facades
+    - plyer.platforms
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/kivy/plyer
+  doc_url: https://plyer.readthedocs.org/en/latest/
+  summary: Platform-independent wrapper for platform-dependent APIs
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - thewchan

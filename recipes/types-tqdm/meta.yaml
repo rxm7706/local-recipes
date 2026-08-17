@@ -1,0 +1,47 @@
+{% set name = "types-tqdm" %}
+{% set python_min = "3.10" %}
+{% set version = "4.70.0.20260805" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 569efd0fd8b2a460e6e6548634ec253c1362ed8907f8b0daacf0a07eab204a26
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - types-requests
+
+test:
+  commands:
+    - pip check
+    - test -f $SP_DIR/tqdm-stubs/__init__.pyi  # [unix]
+    - if not exist %SP_DIR%\\tqdm-stubs\\__init__.pyi exit 1  # [win]
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/python/typeshed
+  summary: Typing stubs for tqdm
+  license: Apache-2.0
+  license_file: LICENSE
+  doc_url: https://github.com/python/typeshed
+  dev_url: https://github.com/python/typeshed/tree/main/stubs/tqdm
+
+extra:
+  recipe-maintainers:
+    - sobolevn
+    - Ubadub

@@ -1,26 +1,26 @@
 {% set name = "ebcdic-parser" %}
-{% set version = "3.0.0" %}
+{% set version = "3.4.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/ebcdic_parser-{{ version }}.tar.gz
-  sha256: 60cda9967d4d6c1deaa9b75a25b27e4f0fd76d3f6718ab4fd2da726f4b9ded9c
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/ebcdic_parser-{{ version }}.tar.gz
+  sha256: 568eb633b5000e3ad986b37d3954a4474734dcff8786372cb7606487ac7b63d0
 
 build:
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv
-  number: 0
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
 
 requirements:
   host:
-    - python >=3.7
+    - python {{ python_min }}
     - setuptools >=42
     - pip
   run:
-    - python >=3.7
+    - python >={{ python_min }}
 
 test:
   imports:
@@ -29,6 +29,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/larandvit/ebcdic-parser
@@ -38,4 +39,5 @@ about:
 
 extra:
   recipe-maintainers:
+    - larandvit
     - rxm7706

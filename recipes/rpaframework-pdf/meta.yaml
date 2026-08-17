@@ -30,7 +30,8 @@ requirements:
 
 test:
   imports:
-    - rpaframework_pdf
+    - RPA
+    - RPA.PDF
   commands:
     - pip check
   requires:
@@ -44,4 +45,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - conda-forge/rpaframework-core

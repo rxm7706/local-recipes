@@ -1,0 +1,68 @@
+{% set version = "0.56.0" %}
+
+package:
+  name: uharfbuzz
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/u/uharfbuzz/uharfbuzz-{{ version }}.tar.gz
+  sha256: 77f4ad1c9f32f44cc6f0c0c4f98fab54587719c96c810a043d01669f704d3e0c
+
+build:
+  script:
+    - rm -rf harfbuzz           # [unix]
+    - export USE_SYSTEM_LIBS=1  # [unix]
+    - del harfbuzz /s /q        # [win]
+    - set USE_SYSTEM_LIBS=1     # [win]
+    # Make sure we can find the harfbuzz-subset package
+    # This command makes debugging the setup script much easier
+    - pkg-config --exists harfbuzz-subset --debug
+    - {{ PYTHON }} -m pip install . -vv
+  number: 0
+  ignore_run_exports_from:
+    - zlib
+    - glib
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython                                 # [build_platform != target_platform]
+    - pkgconfig                              # [build_platform != target_platform]
+    - pkg-config
+    - {{ compiler('cxx') }}
+    - {{ compiler('c') }}
+    - {{ stdlib('c') }}
+  host:
+    - pip
+    - python
+    - setuptools-scm
+    - cython
+    - pkgconfig
+    - setuptools
+    - harfbuzz
+    # The following dependencies are needed for harfbuzz->freetype detection on windows
+    - zlib
+    - glib
+  run:
+    - python
+
+test:
+  imports:
+    - uharfbuzz
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/trufont/uharfbuzz
+  summary: Streamlined Cython bindings for the harfbuzz shaping engine
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+
+extra:
+  recipe-maintainers:
+    - thewchan
+    - jan-janssen

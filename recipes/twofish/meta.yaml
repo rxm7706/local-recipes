@@ -1,0 +1,41 @@
+{% set name = "twofish" %}
+{% set version = "0.3.0" %}
+
+package:
+  name: '{{ name|lower }}'
+  version: '{{ version }}'
+
+source:
+  fn: '{{ name }}-{{ version }}.tar.gz'
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  'sha256': 'b09d8bb50d33b23ff34cafb1f9209f858f752935c6a5c901efb92a41acb830fa'
+
+build:
+  number: 1003
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv "
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+  host:
+    - python
+    - pip
+    - msinttypes   # [win and vc < 14]
+  run:
+    - python
+
+test:
+  imports:
+    - twofish
+
+about:
+  home: http://github.com/keybase/python-twofish
+  license: BSD-3-Clause
+  license_file: LICENSE
+  license_family: BSD
+  summary: Bindings for the Twofish implementation by Niels Ferguson
+  description: Bindings for the Twofish implementation by Niels Ferguson
+
+extra:
+  recipe-maintainers:
+    - msarahan

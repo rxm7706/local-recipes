@@ -1,0 +1,43 @@
+{% set name = "striprtf" %}
+{% set version = "0.0.32" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/striprtf-{{ version }}.tar.gz
+  sha256: 7f375a375d99a2700842173168c90c9b545cb244241ffc5d868ed9f6baf9155f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >={{ python_min }}
+    - twine
+
+test:
+  imports:
+    - striprtf
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/joshy/striprtf
+  summary: A simple library to convert rtf to text
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

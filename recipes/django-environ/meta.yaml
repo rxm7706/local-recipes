@@ -1,6 +1,6 @@
 {% set name = "django-environ" %}
-{% set version = "0.11.0" %}
-{% set sha256 = "b0fb330ad306fd279c4badae067ff99334f2e39e7648949c128119ae16b759b1" %}
+{% set version = "0.14.0" %}
+{% set sha256 = "b6c48d93b9d2ff8a3ea14099e90c35aa4f101c1b4d5f262dfee0d27b06742ed7" %}
 
 package:
   name: {{ name|lower }}
@@ -8,7 +8,7 @@ package:
 
 source:
   fn: {{ name }}-{{ version }}.tar.gz
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
   sha256: {{ sha256 }}
 
 build:
@@ -18,11 +18,39 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - django >=1.8
+    # - sphinx-notfound-page 
+    # - sphinx >=5.0
+    # - setuptools >=71.0.0
+    # - pytest >=4.6.11
+    # - furo >=2024.8.6
+    # - coverage >=5.0a4
+    # - sphinx-notfound-page 
+    # - sphinx >=5.0
+    # - setuptools >=71.0.0
+    # - pytest >=4.6.11
+    # - furo >=2024.8.6
+    # - coverage >=5.0a4
+    # - sphinx-notfound-page 
+    # - sphinx-copybutton 
+    # - sphinx >=5.0
+    # - setuptools >=71.0.0
+    # - pytest >=4.6.11
+    # - furo >=2024.8.6
+    # - coverage >=5.0a4
+    # - typing_extensions >=3.10.0
+    # - sphinx-notfound-page 
+    # - sphinx-copybutton 
+    # - sphinx >=5.0
+    # - setuptools >=71.0.0
+    # - pytest >=4.6.11
+    # - furo >=2024.8.6
+    # - coverage >=5.0a4
 
 test:
   imports:
@@ -31,6 +59,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/joke2k/django-environ

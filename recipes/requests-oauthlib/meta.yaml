@@ -1,0 +1,89 @@
+{% set name = "requests-oauthlib" %}
+{% set version = "2.0.0" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/requests-oauthlib-{{ version }}.tar.gz
+  sha256: b3dffaebd884d8cd778494369603a9e7b58d29111bf6b41bdc2dcd87203af4e9
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+
+  run:
+    - python >={{ python_min }}
+    - oauthlib >=3.0.0
+    - requests >=2.0.0
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - requests_oauthlib
+    - requests_oauthlib.oauth1_auth
+    - requests_oauthlib.oauth1_session
+    - requests_oauthlib.oauth2_auth
+    - requests_oauthlib.oauth2_session
+    - requests_oauthlib.compliance_fixes
+
+about:
+  home: https://github.com/requests/requests-oauthlib
+  license: ISC
+  license_file: LICENSE
+  summary: OAuthlib authentication support for Requests.
+  description: |
+    Requests-OAuthlib
+    =========================================================
+
+    This project provides first-class OAuth library support for [Requests](http://python-requests.org).
+
+    The OAuth 1 workflow
+    --------------------
+
+    OAuth 1 can seem overly complicated and it sure has its quirks. Luckily,
+    requests_oauthlib hides most of these and let you focus at the task at hand.
+
+    Accessing protected resources using requests_oauthlib is as simple as:
+
+        >>> from requests_oauthlib import OAuth1Session
+        >>> twitter = OAuth1Session('client_key',
+                                    client_secret='client_secret',
+                                    resource_owner_key='resource_owner_key',
+                                    resource_owner_secret='resource_owner_secret')
+        >>> url = 'https://api.twitter.com/1/account/settings.json'
+        >>> r = twitter.get(url)
+
+    Before accessing resources you will need to obtain a few credentials from your
+    provider (e.g. Twitter) and authorization from the user for whom you wish to
+    retrieve resources for. You can read all about this in the full
+    [OAuth 1 workflow guide on RTD](https://requests-oauthlib.readthedocs.io/en/latest/oauth1_workflow.html)
+
+    The OAuth 2 workflow
+    --------------------
+
+    OAuth 2 is generally simpler than OAuth 1 but comes in more flavours. The most
+    common being the Authorization Code Grant, also known as the WebApplication
+    flow.
+
+    Fetching a protected resource after obtaining an access token can be extremely
+    simple. However, before accessing resources you will need to obtain a few
+    credentials from your provider (e.g. Google) and authorization from the user
+    for whom you wish to retrieve resources for. You can read all about this in the
+    full [OAuth 2 workflow guide on RTD](https://requests-oauthlib.readthedocs.io/en/latest/oauth2_workflow.html).
+
+  dev_url: https://github.com/requests/requests-oauthlib
+  doc_url: https://github.com/requests/requests-oauthlib
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - xylar

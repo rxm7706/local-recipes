@@ -1,0 +1,61 @@
+{% set name = "cliff" %}
+{% set version = "4.15.0" %}
+{% set bundle = "tar.gz" %}
+{% set hash = "eca699f6b390c755e6ed1816a76cdfc1abf5f5ef7d1cee19f3833667a3a1fe39" %}
+{% set python_min = "3.11" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.{{ bundle }}
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.{{ bundle }}
+  sha256: {{ hash }}
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - pbr !=2.1.0,>=2.0.0
+
+  run:
+    - python >={{ python_min }}
+    - autopage >=0.4.0
+    - cmd2 >=1.0.0
+    - importlib-metadata >=4.4
+    - prettytable >=0.7.2
+    - stevedore >=2.0.1
+    - pyyaml >=3.12
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - cliff
+    - cliff.app
+    - cliff.commandmanager
+    - cliff.command
+    - cliff.interactive
+
+about:
+  home: https://github.com/openstack/cliff
+  license: Apache-2.0
+  license_family: APACHE
+  license_file: LICENSE
+  summary: Command Line Interface Formulation Framework
+  dev_url: http://git.openstack.org/cgit/openstack/cliff
+  doc_url: http://docs.openstack.org/developer/cliff
+
+extra:
+  recipe-maintainers:
+    - anguslees
+    - amatthies
+    - tschoonj

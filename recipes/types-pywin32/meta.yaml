@@ -1,0 +1,46 @@
+{% set name = "types-pywin32" %}
+{% set version = "312.0.0.20260724" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 0ab44f2eaf24879929a934d4e989c6fbb4aa1df9e44e38eca6d47c680d7c1397
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  commands:
+    - pip check
+    - test -f $SP_DIR/win32-stubs/__init__.pyi  # [unix]
+    - if not exist %SP_DIR%\\win32-stubs\\__init__.pyi exit 1  # [win]
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/python/typeshed
+  summary: Typing stubs for pywin32
+  license: Apache-2.0
+  license_file: LICENSE
+  doc_url: https://github.com/python/typeshed
+  dev_url: https://github.com/python/typeshed/tree/main/stubs/pywin32
+
+extra:
+  recipe-maintainers:
+    - sobolevn
+    - Ubadub

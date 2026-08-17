@@ -1,0 +1,61 @@
+{% set name = "elasticsearch" %}
+{% set version = "9.4.1" %}
+{% set bundle = "tar.gz" %}
+{% set hash_val = "1d78fdfba97a903ec35a5eb5808a74e33392b7c620bd5f742d465a3a26c27d75" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.{{ bundle }}
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.{{ bundle }}
+  sha256: {{ hash_val }}
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+    - elastic-transport >=9.4.1,<10
+    - python-dateutil
+    - typing-extensions
+    - sniffio
+    - anyio
+
+  run:
+    - python >={{ python_min }}
+    - elastic-transport >=9.2.0,<10
+    - python-dateutil
+    - typing-extensions
+    - sniffio
+    - anyio
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - elasticsearch
+    - elasticsearch.helpers
+
+about:
+  home: https://github.com/elastic/elasticsearch-py
+  license: Apache-2.0
+  license_file: LICENSE
+  license_family: Apache
+  summary: Python client for Elasticsearch
+  doc_url: https://elasticsearch-py.readthedocs.io
+  dev_url: https://github.com/elastic/elasticsearch-py
+
+extra:
+  recipe-maintainers:
+    - ahlaw
+    - ezimuel
+    - joshmock
+    - miguelgrinberg
+    - pquentin

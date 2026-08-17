@@ -1,0 +1,43 @@
+{% set version = "0.9.4" %}
+
+package:
+  name: flask-babelex
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/F/Flask-BabelEx/Flask-BabelEx-{{ version }}.tar.gz
+  sha256: 39a59ccee9386a9d52d80b9101224402036aedc2c7873b11deef6e4e21cace27
+
+build:
+  number: 0
+  noarch: python
+  script: "{{ PYTHON }} -m pip install . --no-deps -vv"
+
+requirements:
+  build:
+    - python
+    - pip
+  run:
+    - python
+    - flask
+    - babel >=1.0
+    - speaklater >=1.2
+    - jinja2 >=2.5
+
+test:
+  imports:
+    - flask_babelex
+
+about:
+  home: http://github.com/mrjoes/flask-babelex
+  license_file: LICENSE
+  license: BSD-3-Clause
+  license_file: LICENSE
+  license_family: BSD
+  summary: 'Adds i18n/l10n support to Flask applications'
+  dev_url: http://github.com/mrjoes/flask-babelex
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - ocefpaf

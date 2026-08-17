@@ -1,0 +1,46 @@
+{% set name = "svcs" %}
+{% set version = "26.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/svcs-{{ version }}.tar.gz
+  sha256: 71550e3b228d529448136d78013b2d65528eec4632b8779f8f89c1d8585eed99
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling >=1.27.0
+    - hatch-vcs
+    - hatch-fancy-pypi-readme
+    - pip
+  run:
+    - python >={{ python_min }}
+    - attrs >=21.3.0
+    - typing_extensions >=4.13.0
+
+test:
+  imports:
+    - svcs
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  summary: A Flexible Service Locator
+  license: MIT
+  license_file: LICENSE
+  home: https://svcs.hynek.me/en/stable/index.html
+
+extra:
+  recipe-maintainers:
+    - tdsmith

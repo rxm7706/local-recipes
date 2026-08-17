@@ -1,17 +1,18 @@
 {% set name = "robocorp-excel" %}
-{% set version = "0.4.0" %}
+{% set version = "0.5.0" %}
+{% set python_min = "3.10" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/robocorp_excel-{{ version }}.tar.gz
-  sha256: c1cb8a3747dcd1d3cfee06d28455c02a9a93f71fe257026ac850c40450808a24
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/robocorp_excel-{{ version }}.tar.gz
+  sha256: 7a3dec4dc23ed6bbd08e1acbbfc1ad7e5f6b3b2028bada802164297e3c825a3a
 
 build:
   noarch: python
-  script: 
+  script:
     - echo f | xcopy /f /y /S %RECIPE_DIR%\README.md %SRC_DIR%\README.md  # [win]
     - cp -R {{ RECIPE_DIR }}/README.md {{ SRC_DIR }}/README.md  # [unix]
     - {{ PYTHON }} -m pip install . -vv
@@ -19,17 +20,18 @@ build:
 
 requirements:
   host:
-    - python >=3.9,<4.0
+    - python {{ python_min }}
     - poetry-core
     - pip
   run:
-    - python >=3.9.0,<4.0.0
-    - pillow >=9.1.1,<=10.0.0
+    - python >={{ python_min }},<4.0.0
+    - pillow >=9.1.1
     - xlrd >=2.0.1,<3.0.0
     - xlwt >=1.3.0,<2.0.0
     - xlutils >=2.0.0,<3.0.0
     - openpyxl >=3.0.9,<4.0.0
     - typing-extensions >=4.5.0,<5.0.0
+    - types-openpyxl >=3.1.5,<4.0.0
 
 test:
   imports:
@@ -38,6 +40,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   summary: Robocorp Excel automation library

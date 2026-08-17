@@ -1,0 +1,141 @@
+{% set version = "11.0.0" %}
+
+package:
+  name: mss
+  version: {{ version }}
+
+source:
+  url: https://github.com/Open-MSS/MSS/archive/{{ version }}.tar.gz
+  sha256: 858a48f1bfaafc1b2ca2d26229cdcb39889920410bdcaec4eecd5df6155db2a1
+build:
+  noarch: python
+  number: 1
+  script:
+    - mkdir -p "{{ PREFIX }}/Menu"
+    - cp "{{ RECIPE_DIR }}/menu.json" "{{ PREFIX }}/Menu/{{ PKG_NAME }}_menu.json"
+    - cp "{{ RECIPE_DIR }}/msui.png" "{{ PREFIX }}/Menu/msui.png"
+    - cp "{{ RECIPE_DIR }}/msui.icns" "{{ PREFIX }}/Menu/msui.icns"
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  entry_points:
+    - mscolab = mslib.mscolab.mscolab:main
+    - msidp = mslib.msidp.idp:main
+    - mssautoplot = mslib.utils.mssautoplot:main
+    - mss = mslib.msui.mss:main
+    - mswms = mslib.mswms.mswms:main
+    - msui = mslib.msui.msui:main
+
+requirements:
+  build:
+    - pip
+    - setuptools <82.0.0
+  host:
+    - python {{ python_min }}
+    - setuptools <82.0.0
+    - pip
+  run:
+    - python >={{ python_min }},<3.13
+    - setuptools <82.0.0
+    - __unix  # [unix]
+    - __win  # [win]
+    - numpy >=2.2.4
+    - defusedxml
+    - basemap >=1.3.3
+    - chameleon
+    - execnet
+    - fastkml >=1.1.0,<2
+    - isodate
+    - lxml
+    - netcdf4
+    - hdf4
+    - pillow
+    - pyqt >=5.15.0
+    - qt >=5.15.0
+    - requests >=2.31.0
+    - scipy
+    - skyfield >=1.12
+    - skyfield-data >=7
+    - tk
+    - owslib >=0.24
+    - unicodecsv
+    - cftime >=1.0.1
+    - matplotlib >=3.5.3
+    - itsdangerous
+    - pyjwt
+    - flask >=2.3.2
+    - flask-httpauth
+    - flask-mail
+    - flask-migrate
+    - werkzeug >=2.2.3,<3.0.0
+    - flask-socketio >=5.1.0
+    - flask-sqlalchemy >=3.0.0
+    - flask-cors
+    - passlib
+    - gitpython
+    - git
+    - psycopg2
+    - pymysql >=0.9.3
+    - validate_email
+    - multidict
+    - pint
+    - python-socketio >=5
+    - python-engineio >=4
+    - markdown
+    - xstatic <2.0.0
+    - xstatic-jquery
+    - xstatic-bootstrap
+    - humanfriendly >=10.0,<11
+    - gpxpy >=1.4.2
+    - metpy
+    - pycountry
+    - websocket-client
+    - libtiff
+    - flask-wtf
+    - email_validator
+    - keyring
+    - libgfortran5 >=14
+    - dbus-python  # [unix]
+    - python-slugify
+    - flask-login
+    - pysaml2
+    - libxmlsec1  # [unix]
+    - legacy-cgi  # [unix]
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - mslib
+  commands:
+    - mswms -h
+    - msui -h
+    - mscolab -h
+    - mssautoplot --help
+    - msidp -h  # [unix]
+
+about:
+  summary: 'A client/server application developed in the community to collaboratively create flight plans based on model data.'
+  home: https://github.com/Open-MSS/MSS
+  license: "Apache-2.0"
+  license_family: "APACHE"
+  license_file: LICENSE
+  description: |
+    MSS - Mission Support System
+
+    Documentation:
+    * https://mss.rtfd.io
+    * https://gmd.copernicus.org/articles/15/8983/2022/gmd-15-8983-2022.pdf
+    * http://www.geosci-model-dev.net/5/55/2012/gmd-5-55-2012.pdf
+
+    Software for planning research Aircraft Missions.
+    For discussion of the possibilities of the research flights,
+    the Mission Support System (MSS) was developed.
+    This software helps to review a big amount of metereological and
+    model data by viewing the forecasted parameters of interest along possible regions
+    of a proposed flight path. Data and possible flight paths can
+    be displayed on a hoizontal view (map projection) or on a vertical
+    view (along the proposed flight path). Flight paths can be constructed
+    and modified on these views. Exchange through a waypoint table is also possible.
+
+extra:
+  recipe-maintainers:
+    - ReimarBauer

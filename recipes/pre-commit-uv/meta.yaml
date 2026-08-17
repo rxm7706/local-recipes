@@ -1,0 +1,44 @@
+{% set name = "pre-commit-uv" %}
+{% set version = "4.3.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pre_commit_uv-{{ version }}.tar.gz
+  sha256: 7a46537c0c2cd346dc6f3b6d64c7c45250189d5e3d5a17f626ec3e3b2503bf46
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatch-vcs >=0.4
+    - hatchling >=1.25
+    - pip
+  run:
+    - python >={{ python_min }}
+    - pre-commit >=3.8
+    - python-uv >=0.4.7
+
+test:
+  imports:
+    - pre_commit_uv
+  requires:
+    - python {{ python_min }}
+  commands:
+    - uv pip check
+
+about:
+  home: https://github.com/tox-dev/pre-commit-uv
+  summary: Run pre-commit with uv
+  license: MIT
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - anjos

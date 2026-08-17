@@ -1,0 +1,50 @@
+{% set name = "atpublic" %}
+{% set version = "7.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 466ef10d0c8bbd14fd02a5fbd5a8b6af6a846373d91106d3a07c16d72d96b63e
+
+
+build:
+  number: 0
+  script: '{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv '
+  noarch: python
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - hatchling
+  run:
+    - python >={{ python_min }}
+
+
+test:
+  imports:
+    - public
+    - public.public
+    - public.private
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: http://public.readthedocs.io/
+  dev_url: https://gitlab.com/warsaw/public.git
+  license: Apache-2.0
+  license_family: APACHE
+  license_file: LICENSE
+  summary: Keep all y'all's __all__'s in sync
+  doc_url: https://public.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - keller00
+    - johanneskoester

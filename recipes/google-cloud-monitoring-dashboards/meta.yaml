@@ -1,0 +1,47 @@
+{% set name = "google-cloud-monitoring-dashboards" %}
+{% set version = "2.15.3" %}
+{% set sha256 = "c0544b6263844ab2ea9be4ca842e229112d2dad6bb62dd2efd4de22f46ca9a03" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python >=3.6
+    - pip >=18.1
+  run:
+    - python >=3.6
+    - google-api-core-grpc >=1.26.0,<2.0.0dev
+    - proto-plus >=0.4.0
+    - packaging >=14.3
+
+test:
+  imports:
+    - grpc
+    - google.cloud.monitoring_dashboard
+    - google.cloud.monitoring_dashboard.v1
+
+about:
+  home: https://github.com/googleapis/python-monitoring-dashboards
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: Monitoring Dashboards API client library
+  description: "Monitoring Dashboards API is a Google Cloud service that lets client applications manage dashboard configurations used in the Stackdriver UI.\nSee the [quick start guide](https://googleapis.dev/python/monitoring-dashboards/latest/index.html#quick-start)."
+
+  doc_url: https://googleapis.dev/python/monitoring-dashboards/latest/index.html
+  dev_url: https://github.com/googleapis/python-monitoring-dashboards
+
+extra:
+  recipe-maintainers:
+    - parthea

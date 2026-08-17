@@ -1,0 +1,53 @@
+{% set name = "mkdocs-autorefs" %}
+{% set version = "1.4.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: d54a284f27a7346b9c38f1f852177940c222da508e66edc816a0fa55fc6da197
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - pdm-backend
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+    - mkdocs >=1.1
+    - markdown >=3.3
+    - markupsafe >=2.0.1
+    - pymdown-extensions
+    # - Markdown >=3.3
+    # - Markdown >=3.3
+    # - Markdown >=3.3
+    # - Markdown >=3.3
+
+test:
+  imports:
+    - mkdocs_autorefs
+  commands:
+    - pip check
+  requires:
+    - pip
+    - pytest
+    - python {{ python_min }}
+  source_files:
+    - tests
+
+about:
+  home: https://github.com/mkdocstrings/autorefs
+  summary: Automatically link across pages in MkDocs.
+  license: ISC
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - bandersen23

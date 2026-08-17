@@ -1,0 +1,50 @@
+{% set name = "backports-datetime-fromisoformat" %}
+{% set version = "2.0.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: b58edc8f517b66b397abc250ecc737969486703a66eb97e01e6d51291b1a139d
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation  # [py<=311]
+  number: 1
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform and py<=311]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform and py<=311]
+    - {{ compiler('c') }}  # [py<=311]
+    - {{ stdlib("c") }}  # [py<=311]
+  host:
+    # so python > 3.11 don't get removed 
+    - python
+    - pip  # [py<=311]
+    - setuptools  # [py<=311]
+  run:
+    - python
+
+test:
+  imports:
+    - backports.datetime_fromisoformat   # [py<=311]
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/movermeyer/backports.datetime_fromisoformat
+  summary: Backport of Python 3.11's datetime.fromisoformat
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  dev_url: https://github.com/movermeyer/backports.datetime_fromisoformat
+  doc_url: https://github.com/movermeyer/backports.datetime_fromisoformat/blob/main/README.rst
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - xylar

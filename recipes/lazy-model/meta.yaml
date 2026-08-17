@@ -1,0 +1,44 @@
+{% set name = "lazy-model" %}
+{% set version = "0.4.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/lazy-model-{{ version }}.tar.gz
+  sha256: a851d85d0b518b0b9c8e626bbee0feb0494c0e0cb5636550637f032dbbf9c55f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - poetry-core
+    - pip
+  run:
+    - python >={{ python_min }}
+    - pydantic >=1.9.0
+
+test:
+  imports:
+    - lazy_model
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://pypi.org/project/lazy-model/
+  summary: 'This library provides a lazy interface for parsing objects from dictionaries. During the parsing, it saves the raw data inside the object and parses each field on demand.'
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - awvwgk
+    - marcelotrevisani

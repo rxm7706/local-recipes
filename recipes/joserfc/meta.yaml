@@ -1,0 +1,44 @@
+{% set name = "joserfc" %}
+{% set version = "1.7.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/joserfc-{{ version }}.tar.gz
+  sha256: b3bc561672ae541b17a9237053b48a03dacddd92d68047b3ecdfb4b5714a88ed
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - cryptography >=45.0.1
+
+test:
+  imports:
+    - joserfc
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://jose.authlib.org/en/dev/
+  summary: The ultimate Python library for JOSE RFCs, including JWS, JWE, JWK, JWA, JWT
+  dev_url: https://github.com/authlib/joserfc
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

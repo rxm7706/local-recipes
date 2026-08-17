@@ -1,0 +1,47 @@
+{% set version = "8.3.0" %}
+
+package:
+  name: cx_oracle
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/cx_Oracle/cx_Oracle-{{ version }}.tar.gz
+  sha256: 3b2d215af4441463c97ea469b9cc307460739f89fdfa8ea222ea3518f1a424d9
+  patches:
+    - 0001-Add-macro-for-isnan-msvc-2008.patch  # [win and vc<14]
+
+build:
+  number: 6
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+
+test:
+  imports:
+    - cx_Oracle
+
+about:
+  home: https://oracle.github.io/python-cx_Oracle
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: Python interface to Oracle
+  doc_url: https://cx-oracle.readthedocs.io/
+  dev_url: https://github.com/oracle/python-cx_Oracle
+
+extra:
+  recipe-maintainers:
+    - lincrosenbach
+    - kfasolin
+    - nicoddemus

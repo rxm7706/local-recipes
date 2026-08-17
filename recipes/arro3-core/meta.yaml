@@ -1,0 +1,115 @@
+{% set version = "0.8.1" %}
+
+package:
+  name: arro3-core-modules
+  version: {{ version }}
+
+source:
+  url: https://github.com/kylebarron/arro3/archive/refs/tags/py-v{{ version }}.tar.gz
+  sha256: c7edb854628b8fe15d17ae4a9867aa6d14bd538a68e9c55e98bf0c6f9fdc5ae6
+
+build:
+  # Build issue https://github.com/conda-forge/arro3-core-feedstock/pull/32
+  skip: true  # [ppc64le]
+  number: 1
+
+outputs:
+  - name: arro3-core
+    script: build-pkg.sh  # [not win]
+    script: build-pkg.bat  # [win]
+    requirements:
+      build:
+        - python                                 # [build_platform != target_platform]
+        - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+        - maturin >=1.7.0,<2.0                   # [build_platform != target_platform]
+        - {{ stdlib("c") }}
+        - {{ compiler("c") }}
+        - {{ compiler("rust") }}
+        - cargo-bundle-licenses
+      host:
+        - python
+        - maturin >=1.4.0,<2.0
+        - pip
+      run:
+        - python
+        - typing_extensions >=4.6.0  # [py<312]
+    test:
+      imports:
+        - arro3.core
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: arro3-compute
+    script: build-pkg.sh  # [not win]
+    script: build-pkg.bat  # [win]
+    requirements:
+      build:
+        - python                                 # [build_platform != target_platform]
+        - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+        - maturin >=1.7.0,<2.0                   # [build_platform != target_platform]
+        - {{ stdlib("c") }}
+        - {{ compiler("c") }}
+        - {{ compiler("rust") }}
+        - cargo-bundle-licenses
+      host:
+        - python
+        - maturin >=1.4.0,<2.0
+        - pip
+      run:
+        - python
+        - {{ pin_subpackage("arro3-core", exact=True) }}
+        - typing_extensions >=4.6.0  # [py<312]
+    test:
+      imports:
+        - arro3.compute
+      commands:
+        - pip check
+      requires:
+        - pip
+
+  - name: arro3-io
+    script: build-pkg.sh  # [not win]
+    script: build-pkg.bat  # [win]
+    requirements:
+      build:
+        - python                                 # [build_platform != target_platform]
+        - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+        - maturin >=1.7.0,<2.0                   # [build_platform != target_platform]
+        - {{ stdlib("c") }}
+        - {{ compiler("c") }}
+        - {{ compiler("rust") }}
+        - cargo-bundle-licenses
+      host:
+        - python
+        - maturin >=1.4.0,<2.0
+        - pip
+      run:
+        - python
+        - {{ pin_subpackage("arro3-core", exact=True) }}
+        - typing_extensions >=4.6.0  # [py<312]
+    test:
+      imports:
+        - arro3.io
+      commands:
+        - pip check
+      requires:
+        - pip
+
+about:
+  home: https://github.com/kylebarron/arro3
+  summary: Core library for representing Arrow data in Python.
+  license: MIT
+  license_family: MIT
+  license_file:
+    - LICENSE_MIT
+    - THIRDPARTY.yml
+  license_url: https://github.com/kylebarron/arro3/blob/main/LICENSE_MIT
+  doc_url: https://kylebarron.dev/arro3
+  dev_url: https://github.com/kylebarron/arro3
+
+extra:
+  recipe-maintainers:
+    - kylebarron
+  feedstock-name: arro3-core

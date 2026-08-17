@@ -1,0 +1,65 @@
+{% set python_min = "3.12" %}
+{% set name = "tifffile" %}
+{% set version = "2026.7.31" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 79b1f4b1aba3ef3e6b6f1691a32abb62f5d7383faa52a12771c695232ba40bee
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  entry_points:
+    - tifffile = tifffile:main
+    - tiffcomment = tifffile.tiffcomment:main
+    - tiff2fsspec = tifffile.tiff2fsspec:main
+    - lsm2bin = tifffile.lsm2bin:main
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - numpy >=2.1
+    - imagecodecs >=2026.5.10
+  run_constrained:
+    - matplotlib-base >=3.3
+    # zarr3 will now raise a value error
+    # those that need tifffile+zarr3 can
+    # install the corrrect combination
+    # https://github.com/cgohlke/tifffile/pull/296#issuecomment-2869132445
+    # - zarr <3
+
+test:
+  imports:
+    - tifffile
+  commands:
+    - pip check
+    - tifffile --help
+    - tiff2fsspec --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/cgohlke/tifffile
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Read and write image data from and to TIFF files.
+
+extra:
+  recipe-maintainers:
+    - blink1073
+    - ericpre
+    - jakirkham
+    - mrakitin
+    - ocefpaf
+    - stuarteberg

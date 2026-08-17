@@ -1,0 +1,65 @@
+{% set name = "fastexcel" %}
+{% set version = "0.20.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/ToucanToco/fastexcel/archive/v{{ version }}.tar.gz
+  sha256: f08dea8806754871d70e56cc940678c8f8fe03e9961ec33c672ef5ec09f08a43
+
+build:
+  script:
+    - {{ PYTHON }} -m pip install . -vv
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+  number: 0
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - maturin >=1.7.0,<2.0                   # [build_platform != target_platform]
+    - {{ stdlib("c") }}
+    - {{ compiler("c") }}
+    - {{ compiler("rust") }}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - maturin >=1.7.0,<2.0
+    - pip
+  run:
+    - python
+    - typing-extensions >=4.0.0  # [py<310]
+  run_constrained:
+    - pyarrow >=8.0.0
+    - pandas >=1.4.4
+    - polars >=0.16.14
+
+test:
+  imports:
+    - fastexcel
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  summary: A Python wrapper around calamine
+  home: https://github.com/ToucanToco/fastexcel
+  license: MIT
+  license_family: MIT
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  license_url: https://github.com/ToucanToco/fastexcel/blob/main/LICENSE
+  doc_url: https://fastexcel.toucantoco.dev
+  dev_url: https://github.com/ToucanToco/fastexcel
+  description: |
+    A fast excel file reader for Python, written in Rust. 
+    Based on calamine and Apache Arrow.
+
+extra:
+  recipe-maintainers:
+    - arnabanimesh
+    - borchero

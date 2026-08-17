@@ -1,13 +1,13 @@
 {% set name = "pygithub" %}
-{% set version = "2.1.1" %}
+{% set version = "2.9.1" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/PyGithub-{{ version }}.tar.gz
-  sha256: ecf12c2809c44147bce63b047b3d2e9dac8a41b63e90fcb263c703f64936b97c
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 59771d7ff63d54d427be2e7d0dad2208dfffc2b0a045fec959263787739b611c
 
 build:
   noarch: python
@@ -28,27 +28,27 @@ requirements:
     - typing-extensions >=4.0.0
     - urllib3 >=1.26.0
     - deprecated
+    - cryptography >=3.4.0
 
 test:
+  requires:
+    - pip
   imports:
     - github
   commands:
     - pip check
-  requires:
-    - pip
 
 about:
-  home: https://github.com/pygithub/pygithub
-  summary: Use the full Github API v3
-  dev_url: https://github.com/pygithub/pygithub
-  license: BSD-4-Clause AND LGPL-3.0 AND BSD-3-Clause AND GPL-3.0
-  license_file:
-    - COPYING.LESSER
-    - COPYING
-    - github/License.py
-    - tests/License.py
-    - tests/ReplayData/License.setUp.txt
+  home: http://pygithub.github.io/PyGithub
+  license_file: COPYING.LESSER
+  license: LGPL-3.0-only
+  license_family: LGPL
+  summary: Python library implementing the GitHub API v3
+  doc_url: http://pygithub.github.io/PyGithub
+  dev_url: https://github.com/PyGithub/PyGithub
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - jakirkham
+    - pelson
+    - xmnlab

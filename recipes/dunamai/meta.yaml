@@ -1,0 +1,49 @@
+{% set name = "dunamai" %}
+{% set version = "1.26.1" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 3b46007bd65b00b4824ead0a1aee365fd22d0ec2b9c219497d4fd48f52860c8b
+
+build:
+  number: 0
+  noarch: python
+  entry_points:
+    - dunamai = dunamai.__main__:main
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - poetry-core >=1.0.0
+    - python {{ python_min }}
+  run:
+    - importlib-metadata >=1.6.0
+    - packaging >=20.9
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - dunamai
+  commands:
+    - pip check
+    - dunamai --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/mtkennerly/dunamai
+  summary: Dynamic version generation
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - BastianZim

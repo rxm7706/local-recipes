@@ -1,0 +1,54 @@
+{% set name = "cgen" %}
+{% set version = "2025.1" %}
+{% set sha256 = "79f01e010d49c13e58b4ca8f2d4996a6b7178968f5f2d906262733480ae7a2d4" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pytools
+    - pip
+    - typing_extensions >=4.5    
+  run:
+    - python >={{ python_min }}
+    - pytools
+    - numpy
+    - typing_extensions
+
+test:
+  requires:
+    - pytest
+    - python {{ python_min }}
+  imports:
+    - {{ name }}
+  source_files:
+    - test
+  commands:
+    - cd test && python -m pytest
+
+about:
+  home: http://pypi.python.org/pypi/cgen
+  license: MIT
+  license_file: LICENSE
+  summary: C/C++ source generation from an AST
+  doc_url: https://documen.tician.de/cgen
+  dev_url: http://github.com/inducer/cgen
+
+extra:
+  recipe-maintainers:
+    - inducer

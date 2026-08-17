@@ -1,0 +1,49 @@
+{% set name = "opentelemetry-exporter-zipkin-proto-http" %}
+{% set version = "1.44.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_exporter_zipkin_proto_http-{{ version }}.tar.gz
+  sha256: b3d8a55576bbfa0146905c30441f3ae0d11bf5958d97461fd84c939f0283da04
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >={{ python_min }}
+    - opentelemetry-api ~=1.3
+    - opentelemetry-exporter-zipkin-json ==1.44.0
+    - opentelemetry-sdk ~=1.11
+    - protobuf ~=3.12
+    - requests ~=2.7
+
+test:
+  imports:
+    - opentelemetry
+    - opentelemetry.exporter
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/open-telemetry/opentelemetry-python/tree/main/exporter/opentelemetry-exporter-zipkin-proto-http
+  summary: Zipkin Span Protobuf Exporter for OpenTelemetry
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk

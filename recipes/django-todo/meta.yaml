@@ -1,5 +1,6 @@
+{% set python_min = "3.11" %}
 {% set name = "django-todo" %}
-{% set version = "2.5.6" %}
+{% set version = "2.6.2" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +8,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
-  sha256: 6dc00b23dc976c3136b5254ce046932adc692ba0d6403e66beafd882f60405ce
+  sha256: 00807def8fc6552f35560b39d2b8499c764f2efe83e70302e94980cb2330c8db
 
 build:
   noarch: python
@@ -23,7 +24,7 @@ requirements:
   run:
     - faker
     - python >={{ python_min }}
-    - django >=4.0
+    - django >=5.2
     - factory_boy
     - titlecase
     - bleach

@@ -1,0 +1,44 @@
+{% set name = "Deprecated" %}
+{% set version = "1.3.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name|lower }}-{{ version }}.tar.gz
+  sha256: b1b50e0ff0c1fddaa5708a2c6b0a6588bb09b892825ab2b214ac9ea9d92a5223
+
+build:
+  number: 1
+  noarch: python
+  script: python -m pip install --ignore-installed --no-deps .
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - wrapt <3,>=1.10
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - deprecated
+
+about:
+  home: https://github.com/tantale/deprecated
+  license: MIT
+  license_file: LICENSE.rst
+  license_family: MIT
+  summary: Python @deprecated decorator to deprecate old python classes, functions or methods.
+  dev_url: https://github.com/tantale/deprecated
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk
+    - dbast

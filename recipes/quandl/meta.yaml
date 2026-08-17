@@ -1,0 +1,54 @@
+{% set name = "Quandl" %}
+{% set version = "3.7.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 6e0b82fbc7861610b3577c5397277c4220e065eee0fed4e46cd6b6021655b64c
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }}
+    - pandas >=0.14
+    - numpy >=1.8
+    - requests >=2.7.0
+    - inflection >=0.3.1
+    - python-dateutil
+    - six
+    - more-itertools
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - test
+
+about:
+  home: https://www.quandl.com/
+  license: MIT
+  license_file: LICENSE.txt
+  license_family: MIT
+  # have requested to add it to the upstream: https://github.com/quandl/quandl-python/issues/103
+  # license_file: LICENSE.txt
+  summary: Source for financial, economic, and alternative datasets.
+
+  description: |
+    The premier source for financial, economic, and alternative
+    datasets, serving investment professionals.
+  doc_url: https://www.quandl.com/docs-and-help
+  dev_url: https://github.com/quandl/quandl-python
+
+extra:
+  recipe-maintainers:
+    - xhochy

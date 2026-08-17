@@ -1,0 +1,52 @@
+{% set name = "pybase64" %}
+{% set version = "1.5.0" %}
+{% set sha256 = "545ab2a433769e3b8e1ce2b4f7b07218bbde202f4954fbfe52948b2522120727" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 0
+  # set CIBUILDWHEEL to throw errors if the C extension fails to build
+  script_env:
+    - CIBUILDWHEEL=1
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  entry_points:
+    - pybase64=pybase64.__main__:main
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - cmake
+    - make  # [unix]
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+test:
+  imports:
+    - pybase64
+
+about:
+  home: https://github.com/mayeut/pybase64/
+  license: BSD-2-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Fast Base64 encoding/decoding in Python
+  doc_url: https://github.com/mayeut/pybase64/
+  dev_url: https://github.com/mayeut/pybase64/
+
+extra:
+  recipe-maintainers:
+    - njzjz

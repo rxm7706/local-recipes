@@ -1,0 +1,73 @@
+{% set name = "easyocr" %}
+{% set version = "1.7.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/jaidedai/easyocr/archive/v{{ version }}.tar.gz
+  sha256: 1c20356483964c7c80ccf86f2a0957cfed47768e9bbc99b9ff2eb47cb9cb1448
+  patches:
+    - 0001-remove-ninja-requirement.patch
+
+build:
+  skip: true  # [win]
+  entry_points:
+    - easyocr= easyocr.cli:main
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+  host:
+    - {{ compiler('cxx') }}
+    - {{ cdt('mesa-libgl-devel') }}  # [linux]
+    - {{ cdt('mesa-dri-drivers') }}  # [linux]
+    - {{ cdt('libselinux') }}  # [linux]
+    - {{ cdt('libxdamage') }}  # [linux]
+    - {{ cdt('libxxf86vm') }}  # [linux]
+    - {{ cdt('libxext') }}     # [linux]
+    - pip
+    - python
+    - setuptools
+  run:
+    - ninja
+    - numpy
+    - pillow
+    - python-bidi
+    - py-opencv
+    - pyclipper
+    - python
+    - pytorch
+    - pyyaml
+    - scikit-image
+    - scipy
+    - shapely
+    - torchvision >=0.5
+    - ninja
+
+test:
+  requires:
+    # https://github.com/conda-forge/opencv-feedstock/issues/400#issuecomment-2009561076
+    - libopencv *=headless*  # [linux]
+    - pip
+  imports:
+    - easyocr
+  commands:
+    - pip check
+    - easyocr --help
+
+about:
+  home: https://www.jaided.ai/
+  dev_url: https://github.com/jaidedai/easyocr
+  doc_url: https://www.jaided.ai/easyocr/documentation/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Ready-to-use OCR with 80+ supported languages and popular writing scripts.
+
+extra:
+  recipe-maintainers:
+    - thewchan

@@ -1,0 +1,54 @@
+{% set name = "trio-typing" %}
+{% set version = "0.10.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/trio-typing-{{ version }}.tar.gz
+  sha256: 065ee684296d52a8ab0e2374666301aec36ee5747ac0e7a61f230250f8907ac3
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    # https://github.com/python-trio/trio-typing/issues/85
+    - async_generator >=1.9
+    - importlib-metadata
+    - mypy_extensions >=0.4.2
+    - packaging
+    - trio >=0.16.0
+    - typing-extensions >=3.7.4
+  run_constrained:
+    - mypy >=1.0
+
+test:
+  imports:
+    - trio_typing
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/python-trio/trio-typing
+  summary: Static type checking support for Trio and related projects
+  license: Apache-2.0 AND MIT
+  license_file:
+    - LICENSE
+    - LICENSE.APACHE2
+    - LICENSE.MIT
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld

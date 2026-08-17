@@ -6,7 +6,7 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/truffleHog-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/truffleHog-{{ version }}.tar.gz
   sha256: 7f0d09c8cda2a90ae42f81405e5944a3325d90a5842d2dde014471e4d65c71e4
 
 build:
@@ -14,32 +14,32 @@ build:
     - trufflehog = truffleHog.truffleHog:main
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv
-  number: 0
+  number: 3
 
 requirements:
   host:
-    - python
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python
-    - gitpython ==3.0.6
+    - python >={{ python_min }},<3.12
+    - gitpython >=3.0.5
     - trufflehogregexes ==0.0.7
 
 test:
   imports:
     - truffleHog
-  commands:
-    - pip check
-    - trufflehog --help
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/dxa4481/truffleHog
   summary: Searches through git repositories for high entropy strings, digging deep into commit history.
-  license: GFDL-1.1-only
-  license_file: PLEASE_ADD_LICENSE_FILE
+  license: AGPL-3.0-or-later
+  license_file: LICENSE
 
 extra:
   recipe-maintainers:
+    - cshaley
     - rxm7706

@@ -1,0 +1,56 @@
+{% set name = "llama-index-readers-file" %}
+{% set version = "0.6.0" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/llama_index_readers_file-{{ version }}.tar.gz
+    sha256: ff366d6ff5ecb7119275ac859310d8b672d8b6b3261afae02f4084fce9076bd0
+  # https://github.com/run-llama/llama_index/issues/10806
+  - url: https://raw.githubusercontent.com/run-llama/llama_index/main/LICENSE
+    sha256: 24f40b5190fdacabc24ddbb5f76364d15e4f030925220ea300d8a2dd4993c8cb
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - defusedxml >=0.7.1
+    - pandas >=2.0.0,<3
+    - python >={{ python_min }},<4.0
+    - llama-index-core >=0.13.0,<0.15
+    - beautifulsoup4 >=4.12.3,<5
+    - pypdf >=6.1.3,<7
+    - striprtf >=0.0.26,<0.0.27
+  run_constrained:
+    - pymupdf >=1.23.21,<2.0.0
+
+test:
+  imports:
+    - llama_index.readers.file
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://llamaindex.ai
+  summary: llama-index readers file integration
+  license: MIT
+  license_file: LICENSE
+  dev_url: https://github.com/run-llama/llama_index/tree/main/llama-index-integrations/readers/llama-index-readers-file
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - pavelzw

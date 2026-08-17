@@ -1,0 +1,49 @@
+{% set version = "15.0.1" %}
+
+package:
+  name: coloredlogs
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/coloredlogs/coloredlogs-{{ version }}.tar.gz
+  sha256: 7c991aa71a4577af2f82600d8f8f3a89f936baeaf9b50a9c197da014e5bf16b0
+
+build:
+  noarch: python
+  number: 4
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  entry_points:
+    - coloredlogs = coloredlogs.cli:main
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+    - humanfriendly >=9.1
+  run:
+    - python >={{ python_min }}
+    - humanfriendly >=9.1
+
+test:
+  requires:
+    - python {{ python_min }}
+    - pip
+  imports:
+    - coloredlogs
+  commands:
+    - pip check
+  # Probably requires a valid TERM and a pager, it is hanging on our CIs.
+  # - coloredlogs --help  # [not osx]
+
+about:
+  home: https://coloredlogs.readthedocs.org
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Colored terminal output for Python's logging module
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - andfoy
+    - ccordoba12

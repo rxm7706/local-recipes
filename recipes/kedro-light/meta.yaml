@@ -1,26 +1,27 @@
+{% set python_min = "3.11" %}
 {% set name = "kedro-light" %}
-{% set version = "2023.3.13" %}
+{% set version = "2026.6.22" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/kedro-light-{{ version }}.tar.gz
-  sha256: eac29b2a0ab3fb5c311c6701cfb9d0c2649975c9e4e92944a26b0f14e4bd5003
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 325abbe1928c2b40980646fefcb6b3f260f5f7633466a7b5127c80f5cbeb762a
 
 build:
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: {{ PYTHON }} -m pip install . -vv
   number: 0
 
 requirements:
   host:
-    - python
+    - python {{ python_min }}
     - setuptools
     - pip
   run:
-    - python
+    - python >={{ python_min }}
     - kedro
     - kedro-viz
 
@@ -31,9 +32,11 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   summary: A lightweight interface to Kedro and Kedro-Viz
+  home: https://github.com/ellwise/kedro-light
   license: MIT
   license_file: LICENSE
 

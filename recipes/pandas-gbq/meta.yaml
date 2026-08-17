@@ -1,5 +1,5 @@
 {% set name = "pandas-gbq" %}
-{% set version = "0.24.0" %}
+{% set version = "0.28.0" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pandas_gbq-{{ version }}.tar.gz
-  sha256: 264415277059821497e74ed0b2240b538cba9646ee627fb4668cac5cf274e4c3
+  sha256: daa4ffb80c1c262185059adb4551ac0cc52013ca3b7ab72c11cec1011f242ae5
 
 build:
   noarch: python
@@ -16,11 +16,11 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - pip
     - setuptools
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - setuptools
     - db-dtypes >=1.0.4,<2.0.0
     - numpy >=1.18.1
@@ -43,6 +43,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/googleapis/python-bigquery-pandas

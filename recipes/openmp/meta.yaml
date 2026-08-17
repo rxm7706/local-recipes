@@ -1,0 +1,150 @@
+{% set version = "22.1.8" %}
+# check https://clang.llvm.org/docs/OpenMPSupport.html
+# occasionally to see last fully supported openmp ver.
+{% set openmp_ver = "4.5" %}
+
+{% set clang_major = version.split(".")[0]|int %}
+{% set clang_test_version = "19" %}
+
+package:
+  name: openmp
+  version: {{ version }}
+
+source:
+  url: https://github.com/llvm/llvm-project/archive/refs/tags/llvmorg-{{ version.replace(".rc", "-rc") }}.zip
+  sha256: d06ea5796b0979733f454b3e3120d2db501008f20a4ef04c1619713feaba3758
+  patches:
+    - patches/0001-disable-ADDITIONAL_MAKE_CLEAN_FILES-that-fails-on-wi.patch
+    - patches/0002-don-t-build-z_Linux_asm.S-with-MSVC-ensure-__kmp_inv.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - {{ stdlib("c") }}
+    - {{ compiler("cxx") }}
+    - {{ compiler("fortran") }}  # [win and x86_64]
+    - clang                      # [win]
+    # for llvm-mt & llvm-rc
+    - llvm-tools                 # [win]
+    - cmake
+    - ninja
+    - python >=3
+  host:
+    - llvmdev {{ version }}
+
+outputs:
+  - name: llvm-openmp
+    script: install_pkg.sh  # [unix]
+    script: install_pkg.bat  # [win]
+    build:
+      ignore_run_exports_from:
+        - {{ compiler("cxx") }}
+        - {{ compiler("fortran") }}
+        - python *
+      run_exports:
+        strong:
+          - {{ pin_subpackage("llvm-openmp", max_pin=None) }}
+          - _openmp_mutex >={{ openmp_ver }}  # [linux]
+          - _openmp_mutex * *_llvm            # [linux]
+    requirements:
+      build:
+        - cmake
+        # for run-exports
+        - {{ stdlib("c") }}
+        - {{ compiler("cxx") }}
+        - python >=3
+        - create-forwarder-dll       # [win]
+      host:
+      run_constrained:
+        - openmp {{ version }}|{{ version }}.*
+        - intel-openmp <0.0a0
+    test:
+      requires:
+        - clang-{{ clang_test_version }}
+        - {{ compiler('cxx') }}
+        - ld64                      # [osx]
+      files:
+        - omp_hello.c
+      commands:
+        # headers
+        - "@echo on"                                      # [win]
+        - test -f $PREFIX/include/omp.h                   # [unix]
+        - if not exist %LIBRARY_INC%\omp.h exit 1         # [win]
+        # clang-specific one (symlink on unix; copies on win, see install_pkg.bat)
+        - test -f $PREFIX/lib/clang/{{ clang_test_version }}/include/omp.h  # [unix]
+        {% for ver in range(18, 21) %}
+        - if not exist %LIBRARY_LIB%\clang\{{ ver }}\include\omp.h exit 1   # [win]
+        {% endfor %}
+
+        # absence of fortran bits
+        - test ! -f $PREFIX/include/omp_lib.mod             # [linux]
+        - test ! -f $PREFIX/include/omp_lib_kinds.mod       # [linux]
+        - if exist %LIBRARY_INC%\omp_lib.mod exit 1         # [win]
+        - if exist %LIBRARY_INC%\omp_lib_kinds.mod exit 1   # [win]
+
+        # shared library
+        - test -f $PREFIX/lib/libomp.so                   # [linux]
+        - test -f $PREFIX/lib/libomp.dylib                # [osx]
+        - if not exist %LIBRARY_BIN%\libomp.dll exit 1    # [win]
+        - if not exist %LIBRARY_BIN%\libiomp5md.dll exit 1  # [win]
+        - if not exist %LIBRARY_LIB%\libomp.lib exit 1    # [win]
+
+        # compilation test
+        - export LNK="-L$PREFIX/lib -Wl,-rpath,$PREFIX/lib"     # [unix]
+        - export LNK="${LNK} -Wl,--allow-shlib-undefined"       # [linux]
+        - $PREFIX/bin/clang-{{ clang_test_version }} -v -fopenmp -I$PREFIX/include $LNK omp_hello.c -o omp_hello                    # [unix]
+        - '%LIBRARY_BIN%\clang-{{ clang_test_version }} -v -fopenmp -I%LIBRARY_INC% -L%LIBRARY_LIB% omp_hello.c -o omp_hello.exe'   # [win]
+        - ./omp_hello            # [unix]
+        - '%cd%\omp_hello.exe'   # [win]
+
+  - name: llvm-openmp-fortran
+    script: install_pkg.sh  # [unix]
+    script: install_pkg.bat  # [win]
+    build:
+      # restricted to win64 for now
+      skip: true  # [not (win and x86_64)]
+      run_exports:
+        strong:
+          - {{ pin_subpackage("llvm-openmp", max_pin=None) }}
+          - _openmp_mutex >={{ openmp_ver }}  # [linux]
+          - _openmp_mutex * *_llvm            # [linux]
+    requirements:
+      build:
+        - cmake
+        # for run-exports
+        - {{ stdlib("c") }}
+        - {{ compiler("cxx") }}
+        - {{ compiler("fortran") }}     # [linux]
+        - create-forwarder-dll       # [win]
+      host:
+        - {{ pin_subpackage("llvm-openmp", exact=True) }}
+      run:
+        - {{ pin_subpackage("llvm-openmp", exact=True) }}
+      run_constrained:
+        # already contains the version
+        - {{ compiler("fortran") }}
+    test:
+      commands:
+        - test -f $PREFIX/include/omp_lib.mod                   # [linux]
+        - test -f $PREFIX/include/omp_lib_kinds.mod             # [linux]
+        - if not exist %LIBRARY_INC%\omp_lib.mod exit 1         # [win]
+        - if not exist %LIBRARY_INC%\omp_lib_kinds.mod exit 1   # [win]
+
+about:
+  home: http://openmp.llvm.org/
+  license: Apache-2.0 WITH LLVM-exception
+  license_file: openmp/LICENSE.TXT
+  summary: The OpenMP API supports multi-platform shared-memory parallel programming in C/C++ and Fortran.
+  dev_url: https://github.com/llvm/llvm-project/
+
+extra:
+  recipe-maintainers:
+    - inducer
+    - jakirkham
+    - yesimon
+    - isuruf
+    - beckermr
+    - katietz
+    - h-vetinari

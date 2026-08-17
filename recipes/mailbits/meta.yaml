@@ -1,0 +1,44 @@
+{% set name = "mailbits" %}
+{% set version = "0.2.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/mailbits-{{ version }}.tar.gz
+  sha256: 13140be94825d440986dee0a6e653d81d3b4df4b0059fbdb6d78ba8ccb0c4ec0
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+  noarch: python
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - hatchling
+  run:
+    - attrs >=18.1
+    - python >={{ python_min }}
+    - typing-extensions
+
+test:
+  imports:
+    - mailbits
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/jwodder/mailbits
+  summary: Assorted e-mail utility functions
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

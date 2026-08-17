@@ -1,0 +1,87 @@
+{% set name = "pooch" %}
+{% set version = "1.9.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: de46729579b9857ffd3e741987a2f6d5e0e03219892c167c6578c0091fb511ed
+
+build:
+  noarch: python
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+
+outputs:
+  - name: {{ name }}
+    build:
+      noarch: python
+      script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+    requirements:
+      host:
+        - python {{ python_min }}
+        - pip
+        - setuptools_scm >=6.2
+      run:
+        - python >={{ python_min }}
+        - platformdirs >=2.5.0
+        - packaging >=20.0
+        - requests >=2.19.0
+
+    test:
+      requires:
+        - pytest
+        - python {{ python_min }}
+      imports:
+        - pooch
+      commands:
+        - pytest --pyargs pooch.tests.test_integration
+
+  - name: {{ name }}-extra
+    build:
+      noarch: python
+
+    requirements:
+      host:
+        - python {{ python_min }}
+      run:
+        - {{ pin_subpackage(name, exact=True) }}
+        - tqdm >=4.41.0,<5.0.0
+        - python-xxhash >=1.4.3
+        - paramiko >=2.7.0
+
+    test:
+      requires:
+        - pytest
+        - python {{ python_min }}
+      imports:
+        - pooch
+        - xxhash
+        - tqdm
+        - paramiko
+      commands:
+        - pytest --pyargs pooch.tests.test_integration
+
+about:
+  home: https://github.com/fatiando/pooch
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: A friend to fetch your data files
+  description: |
+    Pooch manages your remote data files. It automatically downloads and stores
+    them in a local directory (using HTTP or FTP), with support for versioning,
+    corruption checks, and custom download and post-processing operations.
+  doc_url: https://www.fatiando.org/pooch
+  dev_url: https://github.com/fatiando/pooch
+
+extra:
+  recipe-maintainers:
+    - leouieda
+    - dopplershift

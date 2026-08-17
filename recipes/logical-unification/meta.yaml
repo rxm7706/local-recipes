@@ -1,0 +1,49 @@
+{% set name = "logical-unification" %}
+{% set version = "0.4.7" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 3d73b263a870827b3f52d89c94f3336afd7fcaecf1e0c67fa18e73025399775c
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=80.0.0
+    - setuptools-scm
+    - pip
+  run:
+    - python >={{ python_min }}
+    - toolz
+    - multipledispatch
+
+test:
+  imports:
+    - unification
+  commands:
+    - pip check
+    - python -c "from importlib.metadata import version; print(version('{{ name }}'))"
+    - python -c "from importlib.metadata import version; print(version('{{ name }}'))" | grep {{ version }}
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/pythological/unification/
+  summary: Logical unification in Python
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  dev_url: https://github.com/pythological/unification
+
+extra:
+  recipe-maintainers:
+    - maresb
+    - brandonwillard

@@ -1,0 +1,45 @@
+{% set name = "chevron" %}
+{% set version = "0.14.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 87613aafdf6d77b6a90ff073165a61ae5086e21ad49057aa0e53681601800ebf
+
+build:
+  noarch: python
+  number: 1
+  entry_points:
+    - chevron=chevron:cli_main
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python
+  run:
+    - python
+
+test:
+  imports:
+    - chevron
+  commands:
+    - chevron --help
+
+about:
+  home: https://github.com/noahmorrison/chevron
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Mustache templating language renderer
+  dev_url: https://github.com/noahmorrison/chevron
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - rluria14
+    - oblute
+    - ndmaxar

@@ -1,0 +1,49 @@
+{% set name = "argh" %}
+{% set version = "0.31.3" %}
+{% set hash = "f30023d8be14ca5ee6b1b3eeab829151d7bbda464ae07dc4dd5347919c5892f9" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ hash }}
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - flit-core >=3.2,<4
+    - pip
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - argh
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/neithere/argh
+  license: LGPL-3.0-or-later
+  license_file: COPYING.LESSER
+  summary: The Natural CLI.
+  description: |
+    An argparse wrapper that doesn't make you say "argh" each time you deal with it.
+  doc_url: http://argh.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - daler
+    - goanpeca
+    - tschoonj

@@ -1,0 +1,47 @@
+{% set name = "IMAPClient" %}
+{% set version = "3.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | lower }}-{{ version }}.tar.gz
+  sha256: b0413a516ffcc4b4d69f2c611c0e95da57968edf5a5c78ac82d1bf882305facc
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - six
+
+test:
+  imports:
+    - imapclient
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: http://imapclient.freshfoo.com/
+  license: BSD-3-Clause
+  license_file: COPYING
+  license_family: BSD
+  summary: Easy-to-use, Pythonic and complete IMAP client library
+  doc_url: http://imapclient.readthedocs.io/
+  dev_url: https://github.com/mjs/imapclient
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - jan-janssen

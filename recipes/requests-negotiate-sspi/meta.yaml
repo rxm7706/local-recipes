@@ -1,0 +1,43 @@
+{% set name = "requests-negotiate-sspi" %}
+{% set version = "0.5.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/brandond/{{ name }}/archive/{{ version }}.tar.gz
+  sha256: ada9105eab78e4f11081f13be63b61e1e9be80b705f6e132e05e4d7f7bfa429e
+
+build:
+  skip: true  # [not win]
+  number: 5
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+    - pywin32 >=223
+    - requests >=2.0
+
+test:
+  imports:
+    - requests_negotiate_sspi
+
+about:
+  home: https://github.com/brandond/requests-negotiate-sspi
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE.txt
+  summary: Windows SSPI-based Negotiate authentication support for Requests
+  dev_url: https://github.com/brandond/requests-negotiate-sspi
+
+extra:
+  recipe-maintainers:
+    - theavey
+    - dhirschfeld
+    - rzillman

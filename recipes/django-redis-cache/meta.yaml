@@ -1,0 +1,45 @@
+{% set version = "3.0.1" %}
+
+package:
+  name: django-redis-cache
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-redis-cache/django-redis-cache-{{ version }}.tar.gz
+  sha256: a7fbef101a053d2e430bd3befe6a87e6e730f98e335b516f25f30b17d9fe66e3
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - django
+    - redis-py <4.0
+
+test:
+  imports:
+    - redis_cache
+    - redis_cache.backends
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+
+about:
+  home: http://github.com/sebleier/django-redis-cache/
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Redis Cache Backend for Django
+
+extra:
+  recipe-maintainers:
+    - kwilcox

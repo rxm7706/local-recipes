@@ -1,0 +1,51 @@
+{% set name = "appmap" %}
+{% set version = "1.4.0" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/appmap-{{ version }}.tar.gz
+  sha256: 611300dc0386744bd359e4498657afc1bb59ef51b81065cf3223f0f4e1d6f376
+
+build:
+  number: 0
+  noarch: python
+  entry_points:
+    - appmap-agent-init = appmap.command.appmap_agent_init:run
+    - appmap-agent-status = appmap.command.appmap_agent_status:run
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - poetry
+    - pip
+    - python >=3.6,<4.0
+  run:
+    - importlib-metadata >=0.8
+    - inflection >=0.3.0
+    - python >=3.6,<4.0
+    - pyyaml >=5.3.0,<6.0.0
+
+test:
+  imports:
+    - appmap
+    - appmap._implementation
+  commands:
+    - pip check
+    - appmap-agent-init --help
+    - appmap-agent-status --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/applandinc/appmap-python
+  summary: Create AppMap files by recording a Python application.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - ickc

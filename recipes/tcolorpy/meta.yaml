@@ -1,0 +1,48 @@
+{% set name = "tcolorpy" %}
+{% set version = "0.1.6" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 8cea0bf5f8cf03f77528a9acfbf312df935573892ba5ea3b2516e61fa54de9a5
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - releasecmd
+    - setuptools >=64
+    - setuptools_scm >=7
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - tcolorpy
+  commands:
+    - pip check
+    # make sure the version reported by pip is correct
+    - "pip show {{ name }} | grep -Fx 'Version: {{ version }}'"
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/thombashi/tcolorpy
+  summary: tcolopy is a Python library to apply true color for terminal text.
+  dev_url: https://github.com/thombashi/tcolorpy
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - basnijholt

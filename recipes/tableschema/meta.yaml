@@ -1,0 +1,64 @@
+{% set python_min = "3.7" %}
+{% set name = "tableschema" %}
+{% set version = "1.21.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/tableschema-{{ version }}.tar.gz
+  sha256: d834130e4e9fcc912b0e4694592acf7b7fe99bea1d16c872e823ee30fd5e5fa4
+
+build:
+  entry_points:
+    - tableschema = tableschema.__main__:cli
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - dataflows-tabulator >=1.54.1
+    - python >={{ python_min }}
+    - six >=1.9
+    - click >=3.3
+    - requests >=2.5
+    - cached-property >=1.5
+    - python-dateutil >=2.4
+    - jsonschema >=2.5
+    - unicodecsv >=0.14
+    - isodate >=0.5.4
+    - rfc3986 >=1.1.0
+    - tabulator >=1.51.3
+
+test:
+  imports:
+    - tableschema
+    - tableschema.constraints
+    - tableschema.plugins
+    - tableschema.types
+  requires:
+    - python {{ python_min }}
+    - pylama
+    - tox
+    - pip
+  commands:
+    - pip check
+    - tableschema --help
+
+about:
+  home: https://github.com/frictionlessdata/tableschema-py
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.md
+  summary: A utility library for working with Table Schema in Python
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - roll

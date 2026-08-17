@@ -1,0 +1,47 @@
+{% set name = "azure-mgmt-core" %}
+{% set version = "1.6.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: b26232af857b021e61d813d9f4ae530465255cb10b3dde945ad3743f7a58e79c
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - azure-core >=1.31.0
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - azure
+    - azure.mgmt
+    - azure.mgmt.core
+
+about:
+  home: https://github.com/Azure/azure-sdk-for-python
+  license: MIT
+  license_family: MIT
+  license_file:
+    - LICENSE
+    - LICENSE.md
+  summary: Microsoft Azure Management Core Library for Python.
+  dev_url: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/core/azure-mgmt-core
+
+extra:
+  recipe-maintainers:
+    - tim-werner
+    - xylar

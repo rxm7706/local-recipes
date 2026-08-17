@@ -1,0 +1,80 @@
+{% set name = "mkdocs-git-revision-date-localized-plugin" %}
+{% set version = "1.2.9" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: df9a50873fba3a42ce9123885f8c53d589e90ef6c2443fe3280ef1e8d33c8f65
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - mkdocs >=1.0
+    - gitpython
+    - babel >=2.7.0
+    # - pytz 
+    # - pytz 
+    # - GitPython 
+    # - pytz 
+    # - GitPython 
+    # - pytz 
+    # - markupsafe 
+    # - GitPython 
+    # - pytz 
+    # - GitPython 
+    # - pytz 
+    # - GitPython 
+    # - pytz 
+    # - GitPython 
+    # - pytz 
+    # - GitPython 
+    # - pytz 
+    # - pytest-cov 
+    # - pytest 
+    # - mkdocs-static-i18n 
+    # - mkdocs-material 
+    # - mkdocs-git-authors-plugin 
+    # - mkdocs-gen-files 
+    # - codecov 
+    # - click 
+    # - GitPython 
+    # - pytz 
+    # - pytest-cov 
+    # - pytest 
+    # - mkdocs-static-i18n 
+    # - mkdocs-material 
+    # - mkdocs-git-authors-plugin 
+    # - mkdocs-gen-files 
+    # - codecov 
+    # - click 
+    # - GitPython 
+
+test:
+  imports:
+    - mkdocs_git_revision_date_localized_plugin
+  requires:
+    - pip
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/timvink/mkdocs-git-revision-date-localized-plugin
+  summary: MkDocs plugin that enables displaying the date of the last git modification of a page.
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - cpcloud

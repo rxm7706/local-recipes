@@ -1,0 +1,60 @@
+{% set python_min = "3.10" %}
+{% set name = "pydicom" %}
+{% set version = "3.0.2" %}
+{% set sha256 = "76f95d03cba3e978dc19470c0907c6ad8ca68e72311137622e5fe5e8f594d67f" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://github.com/pydicom/{{ name }}/archive/v{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - flit-core
+
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - pydicom
+  requires:
+    - flit-core
+    - python {{ python_min }}
+
+about:
+  home: http://github.com/pydicom/pydicom
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Pure python package for DICOM medical file reading and writing
+  description: |
+    pydicom is a pure python package for parsing DICOM files. DICOM is a
+    standard (https://dicomstandard.org) for communicating medical images and
+    related information such as reports and radiotherapy objects.  pydicom
+    makes it easy to read these complex files into natural pythonic structures
+    for easy manipulation. Modified datasets can be written again to DICOM
+    format files. See the `Getting Started
+    <https://pydicom.github.io/pydicom/stable/>`_ page for
+    installation and basic information, and the `Pydicom User Guide
+  doc_url: https://pydicom.github.io/pydicom
+  dev_url: https://github.com/pydicom/pydicom
+
+extra:
+  recipe-maintainers:
+    - mrbean-bremen
+    - scaramallion
+    - darcymason
+    - glemaitre
+    - arokem

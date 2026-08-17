@@ -1,0 +1,44 @@
+{% set version = "1.2.0" %}
+
+package:
+  name: stringcase
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/stringcase/stringcase-{{ version }}.tar.gz
+  sha256: 48a06980661908efe8d9d34eab2b6c13aefa2163b3ced26972902e3bdfd87008
+
+build:
+  noarch: python
+  number: 2
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+    - wheel
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - stringcase
+  requires:
+    - pip
+    - pytest
+    - coverage
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/okunishinishi/python-stringcase
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: |-
+    Convert string cases between camel case, pascal case, snake case etc...
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

@@ -1,0 +1,52 @@
+{% set name = "osc-lib" %}
+{% set version = "4.7.0" %}
+{% set python_min = "3.11" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 5b896de12ed69fb1111d2971467d403b838d414fc27df2024fc50e8652a53f2b
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pbr
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - cliff >=3.2.0
+    - keystoneauth1 >=3.14.0
+    - openstacksdk >=0.15.0
+    - oslo.i18n >=3.15.3
+    - oslo.utils >=3.33.0
+    - pbr
+    - python >={{ python_min }}
+    - setuptools
+    - stevedore >=1.20.0
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - osc_lib
+
+about:
+  home: https://opendev.org/openstack/osc-lib
+  license: Apache-2.0
+  license_family: APACHE
+  license_file: LICENSE
+  summary: OpenStackClient Library
+  doc_url: https://docs.openstack.org/osc-lib/latest/
+  dev_url: https://opendev.org/openstack/osc-lib
+
+extra:
+  recipe-maintainers:
+    - tschoonj

@@ -1,13 +1,13 @@
 {% set name = "pyarrow-hotfix" %}
-{% set version = "0.4" %}
+{% set version = "0.7" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pyarrow_hotfix-{{ version }}.tar.gz
-  sha256: eb6e2738ba6e023e93a5fd8078d12c437e90d79df87736f1b2ba1c46f0e242d1
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pyarrow_hotfix-{{ version }}.tar.gz
+  sha256: 59399cd58bdd978b2e42816a4183a55c6472d4e33d183351b6069f11ed42661d
 
 build:
   noarch: python
@@ -16,11 +16,12 @@ build:
 
 requirements:
   host:
-    - python >=3.5
+    - python {{ python_min }}
     - hatchling
     - pip
   run:
-    - python >=3.5
+    - python >={{ python_min }}
+    - pyarrow >=0.14
 
 test:
   imports:
@@ -29,12 +30,16 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
+  home: https://github.com/pitrou/pyarrow-hotfix
+  summary: Hotfix older pyarrow releases to avoid the CVE fixed in 14.0.1
   dev_url: https://github.com/pitrou/pyarrow-hotfix
   license: Apache-2.0
   license_file: LICENSE.txt
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - xhochy
+    - jorisvandenbossche

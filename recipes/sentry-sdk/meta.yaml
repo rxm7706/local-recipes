@@ -1,41 +1,52 @@
 {% set name = "sentry-sdk" %}
-{% set version = "1.36.0" %}
+{% set version = "2.68.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/sentry-sdk-{{ version }}.tar.gz
-  sha256: f32dd16547f2f45e1c71a96fd4a48925e629541f7ddfe3d5d25ef7d5e94eb3c8
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 648c58e9887311a03470a41539e24bdbbf64a30ca4f5336f7e3dcc87276400b3
 
 build:
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
   number: 0
 
 requirements:
   host:
-    - python
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python
-    - urllib3 >=1.25.7  # [py<=34]
+    - python >={{ python_min }}
+    - urllib3 >=1.25.7
     - certifi
 
 test:
+  requires:
+    - pip
+    - python {{ python_min }}
   imports:
     - sentry_sdk
   commands:
     - pip check
-  requires:
-    - pip
 
 about:
   home: https://github.com/getsentry/sentry-python
-  summary: Python client for Sentry (https://sentry.io)
   license: MIT
+  license_family: MIT
   license_file: LICENSE
+  summary: The official Python SDK for Sentry.io
+  description: |
+    The official Python SDK for Sentry.io 
+  doc_url: https://docs.sentry.io/platforms/python/
+  dev_url: https://github.com/getsentry/sentry-python
 
 extra:
   recipe-maintainers:
     - rxm7706
+    - alippai
+    - dgasmith
+    - djsutherland

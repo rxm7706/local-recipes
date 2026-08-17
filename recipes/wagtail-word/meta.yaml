@@ -6,21 +6,21 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wagtail_word-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/wagtail_word-{{ version }}.tar.gz
   sha256: a014fbc72d4a480278f301cfde37a482d10ba15a25b0c98ebf7fc920ff7328ab
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - setuptools >=40.8.0
     - pip
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - django >=4.2
     - wagtail >=4.2
     - python-docx >=1.1.0
@@ -32,11 +32,12 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/Nigel2392/wagtail_word
   summary: Easily upload your word documents to Wagtail as pages
-  license: GPL-2.0
+  license: GPL-3.0-only
   license_file: LICENSE
 
 extra:

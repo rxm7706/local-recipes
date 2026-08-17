@@ -1,0 +1,60 @@
+{% set name = "python-openstackclient" %}
+{% set version = "10.2.1" %}
+{% set python_min = "3.11" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: aa9f969f072f24afb2e3a188495c840f6f6722429d39f45b468461272c097014
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  entry_points:
+    - openstack = openstackclient.shell:main
+
+requirements:
+  host:
+    - pbr
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - cryptography >=2.7
+    - cliff >=3.5.0
+    - iso8601 >=0.1.11
+    - openstacksdk >=2.0.0
+    - osc-lib >=2.3.0
+    - oslo.i18n >=3.15.3
+    - python-keystoneclient >=3.22.0
+    - python-novaclient >=18.1.0
+    - python-cinderclient >=3.3.0
+    - stevedore >=2.0.1
+    - python >={{ python_min }}
+    - setuptools
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - openstackclient
+  commands:
+    - openstack --help
+
+
+about:
+  home: https://docs.openstack.org/python-openstackclient/latest/
+  license: Apache-2.0
+  license_family: APACHE
+  license_file: LICENSE
+  summary: Client for OpenStack services
+  doc_url: https://docs.openstack.org/python-openstackclient/latest/
+  dev_url: https://opendev.org/openstack/python-openstackclient
+
+extra:
+  recipe-maintainers:
+    - tschoonj

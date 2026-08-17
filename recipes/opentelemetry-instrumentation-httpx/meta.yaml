@@ -1,13 +1,13 @@
 {% set name = "opentelemetry-instrumentation-httpx" %}
-{% set version = "0.46b0" %}
+{% set version = "0.65b0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_httpx-{{ version }}.tar.gz
-  sha256: e08bcc9ac4086a207d216d81cf1e998253d197f3292327c8a43a5a420f98a109
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_httpx-{{ version }}.tar.gz
+  sha256: 4627aa9c6bb99bf4462c8b565b0ef6aeb9ffad95c6c92868be1ef7895de112ee
 
 build:
   noarch: python
@@ -16,25 +16,73 @@ build:
 
 requirements:
   host:
-    - python >=3.8
-    - hatchling
+    - python {{ python_min }}
     - pip
+    - hatchling
   run:
-    - python >=3.8
-    - opentelemetry-api >=1.12,<2.dev0
-    - opentelemetry-instrumentation ==0.46b0
-    - opentelemetry-semantic-conventions ==0.46b0
-    - opentelemetry-util-http ==0.46b0
+    - python >={{ python_min }}
+    - opentelemetry-api ~=1.12
+    - opentelemetry-instrumentation ==0.65b0
+    - opentelemetry-semantic-conventions ==0.65b0
+    - opentelemetry-util-http ==0.65b0
+    # - wrapt <2.0.0,>=1.0.0
+    # - httpx >=0.18.0
+    # - wrapt <2.0.0,>=1.0.0
+    # - httpx >=0.18.0
+    # - wrapt <2.0.0,>=1.0.0
+    # - httpx >=0.18.0
+    # - wrapt <2.0.0,>=1.0.0
+    # - httpx >=0.18.0
+    # - wrapt <2.0.0,>=1.0.0
+    # - httpx >=0.18.0
+    # - wrapt <2.0.0,>=1.0.0
+    # - httpx >=0.18.0
+    # - wrapt <2.0.0,>=1.0.0
+    # - httpx >=0.18.0
+    # - wrapt <2.0.0,>=1.0.0
+    # - httpx >=0.18.0
+    # - wrapt <2.0.0,>=1.0.0
+    # - httpx >=0.18.0
+    # - wrapt <2.0.0,>=1.0.0
+    # - httpx >=0.18.0
+    # - wrapt <2.0.0,>=1.0.0
+    # - httpx >=0.18.0
+    # - wrapt <2.0.0,>=1.0.0
+    # - httpx >=0.18.0
+    # - wrapt <2.0.0,>=1.0.0
+    # - httpx >=0.18.0
+    # - wrapt <2.0.0,>=1.0.0
+    # - httpx >=0.18.0
+    # - wrapt <2.0.0,>=1.0.0
+    # - httpx >=0.18.0
+    # - wrapt <2.0.0,>=1.0.0
+    # - httpx >=0.18.0
+    # - wrapt <2.0.0,>=1.0.0
+    # - httpx >=0.18.0
+    # - wrapt <3.0.0,>=1.0.0
+    # - httpx >=0.18.0
+    # - wrapt <3.0.0,>=1.0.0
+    # - httpx >=0.18.0
+    # - wrapt <3.0.0,>=1.0.0
+    # - httpx >=0.18.0
+    # - wrapt <3.0.0,>=1.0.0
+    # - httpx >=0.18.0
+    # - wrapt <3.0.0,>=1.0.0
+    # - httpx2 >=2.0.0
+    # - httpx >=0.18.0
 
 test:
   imports:
-    - opentelemetry_instrumentation_httpx
+    - opentelemetry
+    - opentelemetry.instrumentation
   commands:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
+  home: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-httpx
   summary: OpenTelemetry HTTPX Instrumentation
   license: Apache-2.0
   license_file: LICENSE
@@ -42,3 +90,8 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - mariusvniekerk
+    - conda-forge/opentelemetry-api
+    - conda-forge/opentelemetry-instrumentation
+    - conda-forge/opentelemetry-semantic-conventions
+    - conda-forge/opentelemetry-util-http

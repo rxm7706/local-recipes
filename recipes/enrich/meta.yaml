@@ -1,0 +1,46 @@
+{% set name = "enrich" %}
+{% set version = "1.2.7" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/enrich-{{ version }}.tar.gz
+  sha256: 0a2ab0d2931dff8947012602d1234d2a3ee002d9a355b5d70be6bf5466008893
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+    - setuptools_scm >=1.15.0
+    - setuptools_scm_git_archive >=1.0
+  run:
+    - python >={{ python_min }}
+    - rich >=9.5.1
+
+test:
+  imports:
+    - enrich
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/pycontribs/enrich
+  summary: enrich
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - tschoonj

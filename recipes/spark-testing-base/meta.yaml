@@ -1,0 +1,48 @@
+{% set name = "spark-testing-base" %}
+{% set version = "0.11.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: dba7fa70aef8eae364b563d5eea626e9e97af37cdaf11c9b465aaa291e9611b7
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - findspark
+    - pytest
+    - pip
+  run:
+    - python >={{ python_min }}
+    - findspark
+    - pytest
+
+test:
+  requires:
+    - pyspark
+    - python {{ python_min }}
+  imports:
+    - sparktestingbase
+    - sparktestingbase.test
+
+about:
+  home: https://github.com/holdenk/spark-testing-base
+  license: Apache-2.0
+  license_family: Apache
+  license_file: '{{ environ["RECIPE_DIR"] }}/LICENSE'
+  summary: Spark testing for python
+  description: Base classes to use when writing tests with Spark
+  dev_url: https://github.com/holdenk/spark-testing-base
+
+extra:
+  recipe-maintainers:
+    - dbast

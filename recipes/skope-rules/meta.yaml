@@ -11,17 +11,18 @@ source:
 
 build:
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 2
 
 requirements:
   host:
-    - python
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python
+    - python >={{ python_min }},<3.10
     - numpy >=1.10.4
-    - scikit-learn >=0.17.1
+    - scikit-learn >=0.17.1,<1.0.0
     - scipy >=0.17.0
     - pandas >=0.18.1
 
@@ -32,9 +33,11 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/scikit-learn-contrib/skope-rules
+  summary: Skope-rules is a Python machine learning module built on top of scikit-learn.
   license: BSD-3-Clause AND MIT
   license_file:
     - license.txt

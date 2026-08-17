@@ -1,0 +1,46 @@
+{% set name = "mslex" %}
+{% set version = "1.3.0" %}
+{% set python_min = "3.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/mslex-{{ version }}.tar.gz
+  sha256: 641c887d1d3db610eee2af37a8e5abda3f70b3006cdfd2d0d29dc0d1ae28a85d
+
+build:
+  entry_points:
+    - mslex-split=mslex:split_cli
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - mslex
+  commands:
+    - pip check
+    - mslex-split --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/smoofra/mslex
+  summary: shlex for windows
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - klauer

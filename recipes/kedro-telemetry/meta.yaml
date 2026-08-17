@@ -1,13 +1,13 @@
 {% set name = "kedro-telemetry" %}
-{% set version = "0.6.0" %}
+{% set version = "0.8.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/kedro_telemetry-{{ version }}.tar.gz
-  sha256: 65676ab451a5a3a6d45645e96d744c49c4877f82df310b31b506db287195bce1
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/kedro_telemetry-{{ version }}.tar.gz
+  sha256: f428005380d75c6796123c7c4dbc292635b6b514a61c53cb7508beccbd515162
 
 build:
   noarch: python
@@ -16,14 +16,15 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - setuptools
     - pip
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - kedro >=0.18.0
     - requests >=2.20,<3.0
     - appdirs >=1.4.4
+    - tomli-w
 
 test:
   imports:
@@ -32,6 +33,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   summary: Kedro-Telemetry is a plugin that gathers anonymised and aggregated usage analytics to help the Kedro team understand how Kedro is used and prioritise improvements to the product accordingly.

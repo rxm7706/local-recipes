@@ -1,0 +1,62 @@
+{% set name = "imgaug" %}
+{% set version = "0.4.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 46bab63ed38f8980630ff721a09ca2281b7dbd4d8c11258818b6ebcc69ea46c7
+  patches:
+    # opencv doesn't pass the pip check command
+    - remove_opencv_dependency_from_pip.patch
+
+build:
+  noarch: python
+  number: 1
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - python >=3.4
+    - pip
+  run:
+    - python >=3.4
+    - six
+    - numpy >=1.15
+    - scipy
+    - pillow
+    - matplotlib-base
+    - scikit-image >=0.14.2
+    - opencv
+    - imageio
+    - shapely
+
+test:
+  requires:
+    - pip
+  imports:
+    - imgaug
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/aleju/imgaug
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: 'Image augmentation for machine learning experiments'
+
+  description: |
+    This python library helps you with augmenting images for your machine
+    learning projects. It converts a set of input images into a new, much
+    larger set of slightly altered images.
+  doc_url: https://imgaug.readthedocs.io/
+  dev_url: https://github.com/aleju/imgaug
+
+extra:
+  recipe-maintainers:
+    - mdraw
+    - aleju
+    - hmaarrfk

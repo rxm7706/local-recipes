@@ -1,0 +1,42 @@
+{% set name = "autopage" %}
+{% set version = "0.6.0" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/autopage-{{ version }}.tar.gz
+  sha256: 42d07de90de63e83762828028bfd56d19906a18f7c951ef6eef3e9ad48a3071d
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - autopage
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/zaneb/autopage
+  summary: A library to provide automatic paging for console output
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - tschoonj

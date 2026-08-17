@@ -1,0 +1,41 @@
+{% set name = "discord.py" %}
+{% set version = "2.3.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/discord.py-{{ version }}.tar.gz
+  sha256: 4560f70f2eddba7e83370ecebd237ac09fbb4980dc66507482b0c0e5b8f76b9c
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - aiohttp >=3.7.4,<4
+
+test:
+  imports:
+    - discord
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/Rapptz/discord.py
+  summary: A Python wrapper for the Discord API
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - galaxyonfire

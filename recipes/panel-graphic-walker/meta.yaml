@@ -1,0 +1,51 @@
+{% set name = "panel-graphic-walker" %}
+{% set version = "0.6.5" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/panel_graphic_walker/panel_graphic_walker-{{ version }}.tar.gz
+  sha256: ae89a4a22f2db53b0bc48a2c86b95813277e3209b73b39edd306a0c8d2dc9cb7
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - hatch-vcs
+    - panel >=1.6.1
+    - packaging
+    - narwhals
+    - pip
+    - nodejs >=18
+    - esbuild
+  run:
+    - python >={{ python_min }}
+    - panel >=1.6.1
+    - narwhals
+
+test:
+  imports:
+    - panel_gwalker
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/panel-extensions/panel-graphic-walker
+  summary: A project providing a Graphic Walker Pane for use with HoloViz Panel.
+  license: MIT
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - philippjfr

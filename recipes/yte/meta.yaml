@@ -1,0 +1,59 @@
+{% set name = "yte" %}
+{% set version = "1.9.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 86a47e6d722cec9419a7ac88be57d0d6c4ce28f02860393b71a66f2c674069f6
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  noarch: python
+  entry_points:
+    - yte = yte.cli:main
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - uv
+    - uv-build
+    - pip
+  run:
+    - python >={{ python_min }}
+    - argparse-dataclass >=2.0.0,<3
+    - dpath >=2.1,<3.0
+    - pyyaml >=6.0,<7.0
+
+test:
+  imports:
+    - yte
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+    - yte --help
+    - "echo -e '?if True:\n  foo: 1' | yte"  # [not win]
+
+about:
+  home: https://github.com/koesterlab/yte
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: YAML template engine
+  # The remaining entries in this section are optional, but recommended.
+  description: |
+    YTE is a template engine for YAML format that utilizes the YAML 
+    structure in combination with Python expressions for enabling to 
+    dynamically build YAML documents.
+  doc_url: https://github.com/koesterlab/yte
+  dev_url: https://github.com/koesterlab/yte
+
+extra:
+  recipe-maintainers:
+    - johanneskoester
+    - fxwiegand

@@ -1,0 +1,53 @@
+{% set name = "nbval" %}
+{% set version = "0.11.0" %}
+{% set python_min = "3.7" %}
+{% set sha256 = "77c95797607b0a968babd2597ee3494102d25c3ad37435debbdac0e46e379094" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - pytest >=7
+    - six
+    - nbformat
+    - ipykernel
+    - jupyter_client
+    - coverage
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - nbval
+  commands:
+    - pytest --nbval | grep nbval-{{ version }}
+
+about:
+  home: https://github.com/computationalmodelling/nbval
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: A pytest plugin to validate Jupyter notebooks
+
+extra:
+  recipe-maintainers:
+    - hoxbro
+    - kain88-de
+    - takluyver

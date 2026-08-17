@@ -1,0 +1,44 @@
+{% set name = "openapi-pydantic" %}
+{% set version = "0.5.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/openapi_pydantic-{{ version }}.tar.gz
+  sha256: ff6835af6bde7a459fb93eb93bb92b8749b754fc6e51b2f1590a19dc3005ee0d
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >={{ python_min }}
+    - pydantic >=1.8
+
+test:
+  imports:
+    - openapi_pydantic
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/mike-oakley/openapi-pydantic
+  summary: Pydantic OpenAPI schema implementation
+  license: MIT
+  license_file:
+    - LICENSE
+
+extra:
+  recipe-maintainers:
+    - thewchan

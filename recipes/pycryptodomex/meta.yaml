@@ -1,0 +1,74 @@
+{% set name = "pycryptodomex" %}
+{% set version = "3.23.0" %}
+{% set sha256 = "71909758f010c82bc99b0abf4ea12012c98962fbf0583c2164f8b84533c2e4da" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+  patches:
+    # ctypes.util.find_library() isn't CONDA_PREFIX aware :'(
+    # https://github.com/ContinuumIO/anaconda-issues/issues/1716
+    - 0001-Make-load_lib-look-in-sys.prefix-lib-first.patch  # [unix]
+
+build:
+  number: 1
+  script: '{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vvv '
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+    - gmp   # [not win]
+
+test:
+  imports:
+    - Cryptodome
+    - Cryptodome.Cipher
+    - Cryptodome.Hash
+    - Cryptodome.IO
+    - Cryptodome.Math
+    - Cryptodome.Protocol
+    - Cryptodome.PublicKey
+    - Cryptodome.Random
+    - Cryptodome.SelfTest
+    - Cryptodome.SelfTest.Cipher
+    - Cryptodome.SelfTest.Hash
+    - Cryptodome.SelfTest.IO
+    - Cryptodome.SelfTest.Math
+    - Cryptodome.SelfTest.Protocol
+    - Cryptodome.SelfTest.PublicKey
+    - Cryptodome.SelfTest.Random
+    - Cryptodome.SelfTest.Signature
+    - Cryptodome.SelfTest.Util
+    - Cryptodome.Signature
+    - Cryptodome.Util
+  requires:
+    - psutil
+
+about:
+  home: http://www.pycryptodome.org
+  license: Public Domain/BSD 2-Clause
+  license_file: LICENSE.rst
+  summary: Cryptographic library for Python
+  description: |
+    PyCryptodome is a self-contained Python package of low-level cryptographic
+    primitives.
+  doc_url: https://www.pycryptodome.org/en/latest/
+  dev_url: https://github.com/Legrandin/pycryptodome
+
+extra:
+  recipe-maintainers:
+    - nehaljwani

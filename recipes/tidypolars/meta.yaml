@@ -1,0 +1,45 @@
+{% set name = "tidypolars" %}
+{% set version = "0.2.19" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/tidypolars-{{ version }}.tar.gz
+  sha256: 344e7abe3a973b0320a27d7eea48ffaf4efb5dd6f3d5441a2dfd835f6342ee93
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - poetry
+  run:
+    - python >={{ python_min }},<3.11
+    - polars >=0.14.18
+
+test:
+  imports:
+    - tidypolars
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://pypi.org/project/tidypolars/
+  summary: Tidy interface to polars
+  license: MIT
+  license_file:
+    - LICENSE
+
+extra:
+  recipe-maintainers:
+    - markfairbanks
+    - nsandau

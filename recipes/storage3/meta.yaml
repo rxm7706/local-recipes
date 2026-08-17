@@ -1,0 +1,51 @@
+{% set name = "storage3" %}
+{% set version = "2.31.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: d2161e2ea650dc115a1787c30e09b118365589ac772f4dd8643e3a503ecfc667
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - uv-build >=0.8.3,<0.9.0
+  run:
+    - python >={{ python_min }}
+    - httpx >=0.26,<0.29
+    - deprecation >=2.1.0
+    - pydantic >=2.11.7,<3
+    - yarl >=1.20.1
+    - pyiceberg >=0.10.0
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+  imports:
+    - storage3
+
+about:
+  home: https://github.com/supabase/supabase-py/tree/main/src/storage
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Python Client library to interact with Supabase Storage
+  description: Python Client library to interact with Supabase Storage
+
+extra:
+  recipe-maintainers:
+    - timkpaine
+    - J0
+    - anand2312

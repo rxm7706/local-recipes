@@ -1,0 +1,49 @@
+{% set name = "github-copilot-sdk" %}
+{% set version = "1.0.11" %}
+{% set python_min = "3.11" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/py3/{{ name[0] }}/{{ name }}/github_copilot_sdk-{{ version }}-py3-none-any.whl
+  sha256: 6f664c7b843c34ab5a7455f7effb4d339eae75969d2b72f43c2e6214c9c637dc
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install github*whl -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=45
+    - wheel
+    - setuptools-scm >=6.2
+    - pip
+  run:
+    - python >={{ python_min }}
+    - httpx
+    - python-dateutil >=2.9.0.post0
+    - pydantic >=2.0
+    - typing_extensions >=4.0.0
+
+test:
+  imports:
+    - copilot
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/github/copilot-sdk
+  summary: Python SDK for GitHub Copilot CLI
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - akrherz

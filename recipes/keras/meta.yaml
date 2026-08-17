@@ -1,0 +1,72 @@
+{% set version = "3.15.1" %}
+{% set python_min = "3.11" %}
+# Version bump reminder: Must manually check the file constraints to ensure
+# they match those similar to
+# 2024/01 hmaarrfk -- However we have found that these get somewhat stale
+# https://keras.io/getting_started/#compatibility-matrix
+{% set name = "keras" %}
+
+package:
+  name: keras
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/keras-{{ version }}.tar.gz
+  sha256: 92ae7c1dd7f61041953dc2d42253181ee099086f0b58ae36fcf98147a6f08a29
+build:
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  noarch: python
+  number: 0
+
+requirements:
+  host:
+    # see https://github.com/keras-team/keras/blob/master/oss_setup.py
+    - python {{ python_min }}
+    - pip
+    - setuptools >=61.0
+  run:
+    - python >={{ python_min }}
+    - absl-py
+    - numpy
+    - rich
+    - namex
+    - h5py
+    - optree
+    - ml_dtypes
+    - packaging
+  run_constrained:
+    # https://github.com/keras-team/keras/blob/master/requirements.txt
+    # 2024/08/14 - hmaarrfk
+    # They are rather poorly documented, so we are leaving them as lower bounds for
+    # now
+    - tensorflow >=2.18.0
+    - jax >=0.5.0
+    - pytorch >=2.6.0
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+    - jax
+    - tensorflow
+  commands:
+    - pip check
+    - KERAS_BACKEND=numpy python -c "import keras"
+    - KERAS_BACKEND=jax python -c "import keras"
+  imports:
+    - tensorflow.keras
+
+about:
+  home: https://github.com/keras-team/keras
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Deep Learning for Python
+
+extra:
+  recipe-maintainers:
+    - ngam
+    - mariusvniekerk
+    - croth1
+    - ocefpaf
+    - xhochy
+    - hmaarrfk

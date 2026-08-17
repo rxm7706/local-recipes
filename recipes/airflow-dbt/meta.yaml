@@ -1,0 +1,43 @@
+{% set name = "airflow-dbt" %}
+{% set version = "0.4.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/airflow_dbt-{{ version }}.tar.gz
+  sha256: d077a6d26e0571724f050673becf64a5e4c429c1d0ee3f90611e07e3f4469ec8
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - apache-airflow >=1.10.3
+
+test:
+  imports:
+    - airflow_dbt
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/gocardless/airflow-dbt
+  summary: Apache Airflow integration for dbt
+  license: MIT
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

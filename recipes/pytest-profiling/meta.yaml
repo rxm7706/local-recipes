@@ -1,0 +1,44 @@
+{% set name = "pytest-profiling" %}
+{% set version = "1.8.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 3f171fa69d5c82fa9aab76d66abd5f59da69135c37d6ae5bf7557f1b154cb08d
+
+build:
+  number: 0
+  noarch: python
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv "
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools <72
+    - setuptools-git
+  run:
+    - gprof2dot
+    - pytest
+    - python >={{ python_min }}
+    - six
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - pytest_profiling
+
+about:
+  home: https://github.com/man-group/pytest-plugins
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt
+  summary: Profiling plugin for py.test
+
+extra:
+  recipe-maintainers:
+    - pmgrafe

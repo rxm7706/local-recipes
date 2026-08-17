@@ -1,0 +1,63 @@
+{% set name = "python-levenshtein" %}
+{% set camelName = "python-Levenshtein" %}
+{% set version = "0.27.4" %}
+{% set hash_val = "0ae9deae0b0cdf4439bcc39d1408de1fb663aa3632a00264e9b2ff8ea878b38c" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_').lower() }}-{{ version }}.tar.gz
+  sha256: {{ hash_val }}
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - python >=3.10
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - levenshtein =={{ version }}
+  run:
+    - python >={{ python_min }}
+    - levenshtein =={{ version }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - Levenshtein
+  commands:
+    # Trivial test to ensure compiled C code is indeed available
+    - python -c "import sys; from Levenshtein import distance as d; assert 3==d('Good', 'Bad')"
+
+about:
+  home: https://github.com/maxbachmann/python-Levenshtein
+  license: GPL-2.0-or-later
+  license_family: GPL
+  license_file: LICENSE
+  summary: Python extension for computing string edit distances and similarities.
+  description: |
+    A Python extension written in C for fast computation of: Levenshtein (edit)
+    distance and edit sequence manipulation; string similarity; approximate median
+    strings, and generally string averaging; string sequence and set similarity.
+    Levenshtein has a some overlap with difflib (SequenceMatcher). It supports
+    only strings, not arbitrary sequence types, but on the other hand it's much
+    faster. Note the project was renamed, and python-Levenshtein is now just a
+    metapackage installing the Levenshtein package. 
+  doc_url: https://github.com/maxbachmann/Levenshtein
+  dev_url: https://github.com/maxbachmann/python-Levenshtein
+
+extra:
+  recipe-maintainers:
+    - maxbachmann
+    - pmlandwehr
+    - peterjc

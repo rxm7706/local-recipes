@@ -1,0 +1,49 @@
+{% set name = "O365" %}
+{% set version = "2.0.38" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/O365-{{ version }}.tar.gz
+  sha256: cee202b9980cf41904ab1406f25b720f8367fe51fe4172af226b9597e3e4b0b2
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - wheel
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - requests >=2.32.0
+    - requests-oauthlib >=2.0.0
+    - python-dateutil >=2.7
+    - tzlocal >=5.0
+    - beautifulsoup4 >=4.0.0
+    - python-tzdata >=2023.4
+
+test:
+  imports:
+    - O365
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/O365/python-o365
+  summary: Microsoft Graph and Office 365 API made easy
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - owenlamont

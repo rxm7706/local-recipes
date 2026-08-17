@@ -1,49 +1,58 @@
+{% set python_min = '3.10' %}
 {% set name = "kedro-pack" %}
-{% set version = "0.0.1" %}
+{% set version = "0.18.12.1" %}
+{% set module_name = "kedro_pack" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
-#source:
-#  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/kedro_vertexai-{{ version }}.tar.gz
-#  sha256: 9567365d4ab652fa8e0acf1363c00d87aa5a7500449757a8eb37e27601682938
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ module_name }}-{{ version }}.tar.gz
+  sha256: e8d0692702f0e7c972f92a723bb5e60812f259d390c40fa1f83bad01459577dd
 
-#build:
-#  noarch: python
-#  script: {{ PYTHON }} -m pip install . -vv
-#  number: 0
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install .  -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.10,<3.11
+    - python {{ python_min }}
     - poetry-core >=1.0.0
     - pip
   run:
-    - python >=3.10,<3.11
-    - kedro >=0.18.12,<0.19.0  #
-    - kedro-datasets >=1.6.0,<2.0.0  #
-    - kedro-airflow >=0.6.0,<1.0.0  #
-    - kedro-mlflow >=0.11.9,<1.0.0  #
-    - kedro-viz >=6.4.0,<7.0.0  #
-    - kedro-light >=2023.3.13  #
+    - python >={{ python_min }},<3.11
+    - kedro ==0.18.12
+    - kedro-datasets ==1.6.0
+    - kedro-airflow ==0.6.0
+    - kedro-mlflow ==0.11.9
+    - kedro-viz ==6.4.0
+    - kedro-light ==2023.3.13
 
 test:
   imports:
+    - kedro_pack
     - kedro
     - kedro_datasets
     - kedro_airflow
     - kedro_mlflow
     - kedro_viz
+    - kedro_light
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
-  home: https://github.com/ResponsibleAIML/kedro-pack
-  summary: Installation of the kedro framework and desired plugins
+  home: https://github.com/millsks/kedro-pack
+  summary: A generic recipe to install the kedro framework and additional kedro plugins.
   license: Apache-2.0
   license_file: LICENSE
 
 extra:
   recipe-maintainers:
+    - elanqo
+    - cshaley
+    - zaigner
+    - rxm7706
     - millsks

@@ -1,0 +1,72 @@
+{% set name = "mapbox_earcut" %}
+{% set version = "1.0.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: b6bac5d519d9947a6321a699c15d58e0b5740da61b9210ed229e05ad207c1c04
+
+build:
+  number: 2
+  script: "{{ PYTHON }} -m pip install -vv ."
+  skip: true  # [python_impl == 'pypy']
+  skip: true  # [py<39]
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - pybind11                               # [build_platform != target_platform]
+    - scikit-build-core                      # [build_platform != target_platform]
+    - {{ compiler('cxx') }}
+    - {{ stdlib('c') }}
+    - cmake
+    - make
+    - cross-python_{{ target_platform }}  # [build_platform != target_platform]
+    - numpy  # [build_platform != target_platform]
+  host:
+    - python
+    - numpy
+    - pip
+    - pybind11
+    - scikit-build-core
+  run:
+    - python
+    - {{ pin_compatible('libgd') }}
+
+test:
+  requires:
+    - pytest
+
+  imports:
+    - mapbox_earcut
+
+  files:
+    - test_earcut.py
+
+  commands:
+    - pytest test_earcut.py
+
+about:
+  home: https://github.com/skogler/mapbox_earcut_python
+  license: "ISC AND BSD-3-Clause"
+  license_file:
+    - LICENSE.md
+    - include/mapbox/LICENSE
+  summary: "Python version of Mapbox Earcut library: fast and quite robust triangulation of 2D polygons."
+  description: |
+    The library implements a modified ear slicing algorithm, optimized by z-order
+    curve hashing and extended to handle holes, twisted polygons, degeneracies and
+    self-intersections in a way that doesn't guarantee correctness of triangulation,
+    but attempts to always produce acceptable results for practical data like
+    geographical shapes.
+  dev_url: https://github.com/skogler/mapbox_earcut_python
+
+extra:
+  recipe-maintainers:
+    - ChrisBarker-NOAA
+    - jay-hennen
+    - JamesMakela-NOAA

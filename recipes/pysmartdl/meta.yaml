@@ -1,0 +1,42 @@
+{% set name = "pysmartdl" %}
+{% set version = "1.3.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pySmartDL-{{ version }}.tar.gz
+  sha256: 35275d1694f3474d33bdca93b27d3608265ffd42f5aeb28e56f38b906c0c35f4
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - pySmartDL
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: http://pypi.python.org/pypi/pySmartDL/
+  summary: A Smart Download Manager for Python
+  license: Unlicense
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

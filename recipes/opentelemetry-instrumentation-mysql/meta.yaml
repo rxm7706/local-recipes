@@ -1,0 +1,100 @@
+{% set name = "opentelemetry-instrumentation-mysql" %}
+{% set version = "0.65b0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_mysql-{{ version }}.tar.gz
+  sha256: 54f7f6897aa92378c34c2df330fb3817afe98179ec7b8c1f6c7deefd8f19379c
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >={{ python_min }}
+    - opentelemetry-api ~=1.12
+    - opentelemetry-instrumentation-dbapi ==0.65b0
+    - opentelemetry-instrumentation ==0.65b0
+    # - opentelemetry-test-utils ==0.37b0
+    # - opentelemetry-instrumentation-mysql 
+    # - mysql-connector-python ~=8.0
+    # - opentelemetry-test-utils ==0.38b0
+    # - opentelemetry-instrumentation-mysql 
+    # - mysql-connector-python ~=8.0
+    # - opentelemetry-test-utils ==0.39b0
+    # - opentelemetry-instrumentation-mysql 
+    # - mysql-connector-python ~=8.0
+    # - opentelemetry-test-utils ==0.40b0
+    # - opentelemetry-instrumentation-mysql 
+    # - mysql-connector-python ~=8.0
+    # - opentelemetry-test-utils ==0.41b0
+    # - opentelemetry-instrumentation-mysql 
+    # - mysql-connector-python ~=8.0
+    # - opentelemetry-test-utils ==0.42b0
+    # - opentelemetry-instrumentation-mysql 
+    # - mysql-connector-python ~=8.0
+    # - opentelemetry-test-utils ==0.43b0
+    # - opentelemetry-instrumentation-mysql 
+    # - mysql-connector-python ~=8.0
+    # - opentelemetry-test-utils ==0.44b0
+    # - opentelemetry-instrumentation-mysql 
+    # - mysql-connector-python ~=8.0
+    # - mysql-connector-python ~=8.0
+    # - mysql-connector-python ~=8.0
+    # - mysql-connector-python ~=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+    # - mysql-connector-python <10.0,>=8.0
+test:
+  imports:
+    - opentelemetry
+    - opentelemetry.instrumentation
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-mysql
+  summary: OpenTelemetry MySQL instrumentation
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk

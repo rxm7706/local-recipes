@@ -1,0 +1,42 @@
+{% set name = "aiohappyeyeballs" %}
+{% set version = "2.7.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/aiohappyeyeballs-{{ version }}.tar.gz
+  sha256: 065665c041c42a5938ed220bdcd7230f22527fbec085e1853d2402c8a3615d9d
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - aiohappyeyeballs
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/aio-libs/aiohappyeyeballs
+  summary: Happy Eyeballs for asyncio
+  license: PSF-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

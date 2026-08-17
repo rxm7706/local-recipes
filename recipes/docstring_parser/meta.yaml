@@ -1,0 +1,49 @@
+{% set name = "docstring_parser" %}
+{% set version = "0.18.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 292510982205c12b1248696f44959db3cdd1740237a968ea1e2e7a900eeb2015
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - poetry-core >=1.0.0
+    - pip
+    - hatchling
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - docstring_parser
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/rr-/docstring_parser
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.md
+  summary: 'Parse Python docstrings in reST and Google format '
+  description: |
+    Parse Python docstrings. Currently support ReST, Google, and Numpydoc-style
+    docstrings.
+  dev_url: https://github.com/rr-/docstring_parser
+
+extra:
+  recipe-maintainers:
+    - Chilipp
+    - rr-

@@ -1,0 +1,57 @@
+{% set name = "lightning-cloud" %}
+{% set version = "0.5.70" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/lightning_cloud-{{ version }}.tar.gz
+  sha256: 026a459f9b4f555439d291c5b1b5a5412173d5546dddf3f95fc6f9eb0f3fbd87
+
+build:
+  entry_points:
+    - lightning_cloud=lightning_cloud.cli.__main__:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+  run:
+    - boto3
+    - click
+    - fastapi
+    - protobuf
+    - pyjwt
+    - python >={{ python_min }}
+    - python-multipart
+    - requests
+    - rich
+    - six
+    - urllib3
+    - uvicorn
+    - websocket-client
+
+test:
+  imports:
+    - lightning_cloud
+  commands:
+    - pip check
+    - lightning_cloud --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/Lightning-AI/lightning
+  summary: Lightning Cloud
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - Borda
+    - weiji14

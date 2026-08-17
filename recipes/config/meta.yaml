@@ -1,0 +1,41 @@
+{% set name = "config" %}
+{% set version = "0.5.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/config-{{ version }}.zip
+  sha256: 2dd4a03aa383d30711d5a3325a1858de225328d61950a85be5b74c100f63016d
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - config
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: http://docs.red-dove.com/cfg/python.html
+  summary: A hierarchical, easy-to-use, powerful configuration module for Python
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - zklaus

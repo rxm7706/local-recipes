@@ -1,0 +1,48 @@
+{% set name = "pysoundcard" %}
+{% set version = "0.4.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/soundcard/soundcard-{{ version }}.tar.gz
+  sha256: 9b46d64a26f97cd7d88bcfc385c97c069f97c5ec3404e4e7c23771598a8cf47b
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - __linux     # [linux]
+    - __osx       # [osx]
+    - __win       # [win]
+    - pulseaudio  # [linux]
+    - numpy >=1.11
+    - cffi
+
+test:
+  imports:
+    - soundcard
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/bastibe/SoundCard
+  summary: Play and record audio without resorting to CPython extensions
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

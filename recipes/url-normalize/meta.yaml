@@ -1,0 +1,50 @@
+{% set name = "url-normalize" %}
+{% set version = "3.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 0552cbf2831a32a28994a13d29bca58a60e10ff6c0380e343ec6d1c2a0d232d8
+
+build:
+  noarch: python
+  number: 0
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - poetry
+  run:
+    - python >={{ python_min }}
+    - six
+    - idna
+
+test:
+  imports:
+    - url_normalize
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/niksite/url-normalize
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: URL normalization for Python
+  description: |
+    URL normalization for Python.
+    Normalizes encoding, schemes, hosts, ports, IDN domains, authorities, and other URL variations.
+  doc_url: https://github.com/niksite/url-normalize
+  dev_url: https://github.com/niksite/url-normalize
+
+extra:
+  recipe-maintainers:
+    - jwcook

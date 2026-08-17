@@ -1,0 +1,39 @@
+{% set version = "2.5" %}
+
+package:
+  name: progressbar
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/progressbar/progressbar-{{ version }}.tar.gz
+  sha256: 5d81cb529da2e223b53962afd6c8ca0f05c6670e40309a7219eacc36af9b6c63
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - progressbar
+
+about:
+  home: https://github.com/niltonvolpato/python-progressbar
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: Text progress bar library for Python
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

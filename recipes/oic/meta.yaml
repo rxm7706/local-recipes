@@ -1,0 +1,79 @@
+{% set name = "oic" %}
+{% set version = "1.7.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: e51705d0c14c97e9ca594374bfb54269a72c9b489e0e979598344c0189bfcb64
+
+build:
+  number: 1
+  noarch: python
+  script: '{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vvv '
+  entry_points:
+    - oic-client-management = oic.utils.client_management:run
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - requests
+    - pycryptodomex
+    - pydantic-settings
+    - pyjwkest >=1.3.6
+    - mako
+    - cryptography
+    - defusedxml
+    - typing-extensions
+    - python >={{ python_min }}
+  run_constrained:
+    - cherrypy ==3.2.4  # develop
+    - pyopenssl  # develop
+    - responses  # tests
+    - testfixtures  # tests
+    - pytest  # tests
+    - freezegun  # tests
+    - sphinx  # docs
+    - sphinx-autobuild  # docs
+    - alabaster  # docs
+    - autodoc-pydantic >=2.0.0  # docs
+    - pylama  # quality
+    - isort  # quality
+    - eradicate  # quality
+    - mypy  # quality
+    - black  # quality
+    - bandit  # quality
+    - readme_renderer  # quality
+    - python-ldap  # ldap-authn
+    - beaker  # examples
+
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - oic
+    - oic.oauth2
+    - oic.oic
+    - oic.utils
+    - oic.utils.authn
+    - oic.utils.userinfo
+    - oic.utils.rp
+    - oic.extension
+
+about:
+  home: https://github.com/OpenIDC/pyoidc/
+  license: Apache-2.0
+  license_family: APACHE
+  license_file: LICENSE.txt
+  summary: Python implementation of OAuth2 and OpenID Connect
+
+extra:
+  recipe-maintainers:
+    - wagnerpeer
+    - mariusvniekerk

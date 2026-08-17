@@ -1,0 +1,53 @@
+{% set name = "knack" %}
+{% set version = "0.14.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 2ddd32fd6343ec9b6ed0da729b212362d0e6b1208c0162633c90cb6f94a05877
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv --no-deps
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - packaging
+    - python >={{ python_min }}
+    - argcomplete
+    - jmespath
+    - pygments
+    - pyyaml
+    - tabulate
+
+test:
+  imports:
+    - knack
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/microsoft/knack
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A Command-Line Interface framework
+
+  doc_url: https://github.com/Microsoft/knack/tree/master/docs
+  dev_url: https://github.com/microsoft/knack
+
+extra:
+  recipe-maintainers:
+    - awvwgk
+    - dhirschfeld
+    - andreyz4k

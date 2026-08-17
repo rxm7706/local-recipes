@@ -1,0 +1,54 @@
+{% set name = "modulegraph" %}
+{% set version = "0.19.7" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 9ad8a81148ba1d90ade66617a153786f7d7cf6a88de83ee28e251183122c2a57
+
+build:
+  noarch: python
+  number: 0
+  entry_points:
+    - modulegraph = modulegraph.__main__:main
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - altgraph >=0.15
+    - python >={{ python_min }}
+    - setuptools
+
+test:
+  imports:
+    - modulegraph
+  commands:
+    - pip check
+    - modulegraph --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://pypi.org/project/modulegraph
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: |
+    modulegraph determines a dependency graph between Python modules primarily
+    by bytecode analysis for import statements. modulegraph uses similar methods
+    to modulefinder from the standard library, but uses a more flexible internal
+    representation, has more extensive knowledge of special cases, and is extensible.
+  dev_url: https://github.com/ronaldoussoren/modulegraph
+  doc_url: https://modulegraph.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - bkpoon

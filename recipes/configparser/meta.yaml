@@ -1,0 +1,47 @@
+{% set version = "7.2.0" %}
+
+package:
+  name: configparser
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/configparser/configparser-{{ version }}.tar.gz
+  sha256: b629cc8ae916e3afbd36d1b3d093f34193d851e11998920fdcfc4552218b7b70
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+    - setuptools_scm >=3.4.1
+    - toml
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  imports:
+    - backports
+    - backports.configparser
+    - configparser
+  commands:
+    - pip check
+
+about:
+  home: http://docs.python.org/3/library/configparser.html
+  license: MIT
+  license_file: LICENSE
+  summary: Updated configparser from Python 3.8 for Python 2.6+.
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - ocefpaf
+    - bgruening

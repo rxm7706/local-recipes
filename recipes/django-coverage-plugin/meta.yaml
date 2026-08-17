@@ -1,25 +1,27 @@
-{% set name = "django-coverage-plugin" %}
-{% set version = "3.1.0" %}
+{% set name = "django_coverage_plugin" %}
+{% set version = "3.2.2" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django_coverage_plugin-{{ version }}.tar.gz
-  sha256: 223d34bf92bebadcb8b7b89932480e41c7bd98b44a8156934488fbe7f4a71f99
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/django_coverage_plugin-{{ version }}.tar.gz
+  sha256: fcc507ee02f3a8f7c1d79b6eba1bafebb4a95b5055801987b715f4f88270c441
 
 build:
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
 
 requirements:
   host:
-    - python
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python
+    - python >={{ python_min }}
+    - django
     - coverage
 
 test:
@@ -29,15 +31,19 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/nedbat/django_coverage_plugin
-  summary: Django template coverage.py plugin
   license: Apache-2.0
-  license_file:
-    - NOTICE.txt
-    - LICENSE.txt
+  license_family: Apache
+  license_file: {{ environ["RECIPE_DIR"] }}/LICENSE
+  summary: A plugin for coverage.py to measure Django template execution
+  description: A coverage.py plugin to measure the coverage of Django templates. Supported Python versions are 2.7, 3.4, 3.5 and 3.6. Supported Django versions are 1.8 through 1.11. Supported coverage.py versions are 4.0 and higher.
+  doc_url: http://coverage.readthedocs.io/en/latest/plugins.html
+  dev_url: https://github.com/nedbat/django_coverage_plugin
 
 extra:
   recipe-maintainers:
     - rxm7706
+    - cshaley

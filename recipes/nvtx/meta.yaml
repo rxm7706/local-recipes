@@ -1,0 +1,50 @@
+{% set name = "nvtx" %}
+{% set version = "0.2.16" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/nvtx-{{ version }}.tar.gz
+  sha256: 252fdb870308be4a2beecb3ed174b1d59099eeb63c883f269944a765ce5f7720
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib('c') }}
+  host:
+    - cython
+    - nvtx-c
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+
+test:
+  imports:
+    - nvtx
+    - nvtx._lib
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/NVIDIA/nvtx
+  summary: PyNVTX - Python code annotation library
+  license: Apache-2.0 WITH LLVM-exception
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - guysz-nvidia
+    - conda-forge/cuda
+    - bdice
+    - shwina

@@ -1,0 +1,47 @@
+{% set name = "publicsuffixlist" %}
+{% set version = "1.0.2.20260815" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/publicsuffixlist-{{ version }}.tar.gz
+  sha256: 1b66ddb654990327af8c43db20a1d217e1856176214a3c9bd548fbae34d68373
+
+build:
+  entry_points:
+    - publicsuffixlist-download = publicsuffixlist.update:updatePSL
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - requests
+    # Needed for the CLI
+
+test:
+  imports:
+    - publicsuffixlist
+  commands:
+    - pip check
+    - publicsuffixlist-download --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/ko-zu/psl
+  summary: publicsuffixlist implement
+  license: MPL-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - BastianZim

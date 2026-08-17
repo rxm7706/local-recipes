@@ -1,0 +1,79 @@
+{% set name = "plotnine" %}
+{% set version = "0.15.8" %}
+{% set bundle = "tar.gz" %}
+{% set hash = "d3859997c3abd6edff6dee376d912716e75bbe0b0099b7054176d84fe11e8e20" %}
+{% set python_min = "3.10" %}
+{% set build = 0 %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.{{ bundle }}
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.{{ bundle }}
+  sha256: {{ hash }}
+
+build:
+  number: {{ build }}
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - setuptools_scm
+
+  run:
+    - python >={{ python_min }}
+    - matplotlib-base >=3.8.0
+    - pandas >=2.2.0
+    - mizani >=0.14.0,<0.15.0
+    - numpy >=1.23.5
+    - scipy >=1.8.0
+    - statsmodels >=0.14.6
+
+test:
+  requires:
+    - python {{ python_min }}
+    - pip
+    - pytest
+    - pytest-cov
+  imports:
+    - plotnine
+    - plotnine.coords
+    - plotnine.data
+    - plotnine.facets
+    - plotnine.geoms
+    - plotnine.guides
+    - plotnine.mapping
+    - plotnine.positions
+    - plotnine.scales
+    - plotnine.stats
+    - plotnine.themes
+  source_files:
+    - tests
+    - pyproject.toml
+  commands:
+    # The pip version can reported incorrectly if setuptools_scm isn't available
+    # at build time
+    - pip list | grep -i {{ name }} | grep {{ version }}
+    - pip check
+    - echo $PWD
+    - ls -larth
+    # - pytest
+
+about:
+  home: https://github.com/has2k1/plotnine
+  license_file: {{ RECIPE_DIR }}/LICENSE
+  license: MIT
+  summary: A grammar of graphics for python
+  dev_url: https://github.com/has2k1/plotnine
+  doc_url: https://plotnine.org
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - has2k1

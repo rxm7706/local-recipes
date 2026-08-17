@@ -1,0 +1,43 @@
+{% set name = "ecdsa" %}
+{% set version = "0.19.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 62635b0ac1ca2e027f82122b5b81cb706edc38cd91c63dda28e4f3455a2bf930
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - gmpy2
+    - python >={{ python_min }}
+    - six >=1.9.0
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - ecdsa
+
+about:
+  home: http://github.com/warner/python-ecdsa
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: ECDSA cryptographic signature library (pure python)
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk
+    - m-rossi

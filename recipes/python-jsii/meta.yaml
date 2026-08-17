@@ -1,0 +1,56 @@
+{% set name = "jsii" %}
+{% set version = "1.139.0" %}
+
+package:
+  name: python-{{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/jsii-{{ version }}.tar.gz
+  sha256: 163c5d3ec00fd4ec89a33b9097f20a6f27626dd69d6875a8f7cc7577b8021ad0
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=80.3,<81.dev0
+    - wheel >=0.45,<1.dev0
+    - pip
+  run:
+    - python >={{ python_min }}
+    - attrs >=21.2,<27.0
+    - cattrs >=1.8,<27.0
+    - importlib_resources >=5.2.0
+    - publication >=0.0.3
+    - typeguard ==2.13.3
+    - python-dateutil
+    - typing_extensions >=3.8,<5.0
+    # calls node CLI
+    - nodejs >=16
+
+test:
+  imports:
+    - jsii
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/aws/jsii
+  summary: Python client for jsii runtime
+  dev_url: https://github.com/aws/jsii.git
+  license: Apache-2.0
+  license_file:
+    - NOTICE
+    - LICENSE
+
+extra:
+  recipe-maintainers:
+    - manics
+    - ocefpaf

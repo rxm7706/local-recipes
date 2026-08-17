@@ -1,0 +1,45 @@
+{% set version = "0.5.0" %}
+
+package:
+  name: poyo
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/poyo/poyo-{{ version }}.tar.gz
+  sha256: e26956aa780c45f011ca9886f044590e2d8fd8b61db7b1c1cf4e0869f48ed4dd
+
+build:
+  number: 1
+  noarch: python
+  script:
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  source_files:
+    - tests
+  requires:
+    - pip
+    - pytest
+    - python {{ python_min }}
+  commands:
+    - pip check
+    - python -m pytest
+
+about:
+  home: https://github.com/hackebrot/poyo
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A lightweight YAML Parser for Python
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

@@ -1,0 +1,51 @@
+{% set name = "bc-detect-secrets" %}
+{% set version = "1.5.49" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 74412fde2f617b61f28312f0106a9f8902be80db0084fd3d7c88f673ee707d7b
+
+build:
+  entry_points:
+    - detect-secrets = detect_secrets.main:main
+    - detect-secrets-hook = detect_secrets.pre_commit_hook:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - pyyaml
+    - requests
+    - unidiff
+
+test:
+  imports:
+    - detect_secrets
+  commands:
+    - pip check
+    - detect-secrets --help
+    - detect-secrets-hook --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/bridgecrewio/detect-secrets
+  summary: Tool for detecting secrets in the codebase
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - borchero
+    - nick-harmening

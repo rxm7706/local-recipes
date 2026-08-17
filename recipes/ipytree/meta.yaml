@@ -1,0 +1,51 @@
+{% set name = "ipytree" %}
+{% set version = "0.2.2" %}
+{% set sha256 = "d53d739bbaaa45415733cd06e0dc420a2af3d173438617db472a517bc7a61e56" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - jupyter-packaging
+    - pip
+  run:
+    - python >={{ python_min }}
+    - ipywidgets >=7.6.0,<9
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - ipytree
+  commands:
+    - test -f ${PREFIX}/share/jupyter/nbextensions/{{ name }}/extension.js                             # [unix]
+    - test -f ${PREFIX}/share/jupyter/nbextensions/{{ name }}/index.js                                 # [unix]
+    - test -f ${PREFIX}/share/jupyter/labextensions/{{ name }}/package.json                            # [unix]
+    - if not exist %PREFIX%\\share\\jupyter\\nbextensions\\{{ name }}\\extension.js (exit 1)           # [win]
+    - if not exist %PREFIX%\\share\\jupyter\\nbextensions\\{{ name }}\\index.js (exit 1)               # [win]
+    - if not exist %PREFIX%\\share\\jupyter\\labextensions\\{{ name }}\\package.json (exit 1)          # [win]
+
+about:
+  home: http://github.com/QuantStack/ipytree
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A Jupyter Notebook Tree Widget using jsTree
+  dev_url: https://github.com/QuantStack/ipytree
+
+extra:
+  recipe-maintainers:
+    - martinRenou

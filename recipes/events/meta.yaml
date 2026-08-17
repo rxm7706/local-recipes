@@ -1,0 +1,46 @@
+{% set name = "Events" %}
+{% set version = "0.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  # 0.5 was published to PyPI as a wheel only, with no sdist, so build from the
+  # upstream git tag instead.
+  url: https://github.com/pyeve/events/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: 51fed10bad025e4bb81714b6114546b7f42773eda82df10e769d76a7859e9c3a
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - events
+
+about:
+  home: http://github.com/pyeve/events
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Python Event Handling the C# Style
+  description: |
+    Bringing the elegance of C# EventHandler to Python
+  doc_url: https://events.readthedocs.org
+  dev_url: http://github.com/pyeve/events
+
+extra:
+  recipe-maintainers:
+    - holgern

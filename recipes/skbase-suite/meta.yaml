@@ -1,0 +1,98 @@
+{% set name = "scikit-base" %}
+{% set version = "1.1.0" %}
+
+package:
+  name: {{ name|lower }}-suite
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 568195e85a695762ca522e477971f86c835760335b959b1c22d958d1d5277de6
+
+build:
+  noarch: python
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+
+
+outputs:
+  - name: {{ name|lower }}
+    build:
+      noarch: python
+      script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --no-index --no-compile
+    requirements:
+      host:
+        - python {{ python_min }}
+        - pip
+        - setuptools
+      run:
+        - python >={{ python_min }},<3.15
+
+    test:
+      requires:
+        - pip
+        - pytest
+        - numpy
+        - scipy
+        - pandas
+        - scikit-learn >=0.24.0
+        - python {{ python_min }}
+      commands:
+        - pip check
+      imports:
+        - skbase
+        - skbase.base
+        - skbase.lookup
+        - skbase.testing
+        - skbase.validate
+
+  - name: {{ name|lower }}-all-extras
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python {{ python_min }}
+      run:
+        - python >={{ python_min }},<3.15
+        - {{ pin_subpackage("scikit-base", exact=True) }}
+        - pandas
+        - numpy
+
+    test:
+      imports:
+        - skbase
+        - skbase.base
+        - skbase.lookup
+        - skbase.testing
+        - skbase.validate
+      commands:
+        - pip check
+      requires:
+        - pip
+        - pytest
+        - numpy
+        - scipy
+        - pandas
+        - scikit-learn >=0.24.0
+        - python {{ python_min }}
+
+about:
+  home: https://github.com/sktime/skbase
+  summary: Base classes for sklearn-like parametric objects
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  doc_url: https://skbase.readthedocs.io/en/latest/
+  dev_url: https://github.com/sktime/skbase
+
+extra:
+  recipe-maintainers:
+    - mcre-be
+    - dhirschfeld
+    - yarnabrina
+    - fkiraly

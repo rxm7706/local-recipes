@@ -1,0 +1,49 @@
+{% set name = "langchain-aws" %}
+{% set version = "1.7.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/langchain_aws-{{ version }}.tar.gz
+  sha256: e4e8d578b4be8fd3ad970373fc72c3e321fea7f955cb6c075464e30636ec583d
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }},<4.0
+    - langchain-core >=1.4.7
+    - boto3 >=1.43.32
+    - numpy >=1.0.0,<3.0.0
+    - pydantic >=2.10.6,<3
+
+test:
+  imports:
+    - langchain_aws
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/langchain-ai/langchain-aws
+  summary: An integration package connecting AWS and LangChain
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - 3coins
+    - dlqqq
+    - efriis
+    - michaelnchin

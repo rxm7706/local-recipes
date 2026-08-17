@@ -1,0 +1,131 @@
+{% set version = "4.4.3" %}
+
+package:
+  name: nexus-split
+  version: {{ version }}
+
+source:
+  url: https://github.com/nexusformat/code/archive/v{{ version }}.tar.gz
+  sha256: e78a116feb2ebd04de31a8d8707c65e8e15a64aa8999a40fea305e3909bd6533
+  patches:
+    - 0001-Remove-deprecated-functions.patch
+    - include_libxml_sax.patch
+    - nexus_windows.patch  # [win]
+
+build:
+  number: 18
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - {{ stdlib("c") }}
+    - cmake >=2.8.8
+    - ninja
+  host:
+    - hdf5
+    - hdf4
+    - libjpeg-turbo
+    - zlib
+    - libxml2-devel   # [not win]
+    - ncurses   # [not win]
+    - readline  # [not win]
+
+outputs:
+  # Do not package apps in libnexus to avoid conflict with nexusformat
+  # (which includes a pure python nxdir)
+  - name: libnexus
+    script: install.sh   # [unix]
+    script: install.bat  # [win]
+    build:
+      run_exports:
+        - {{ pin_subpackage("libnexus", max_pin="x.x") }}
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ compiler('cxx') }}
+        - {{ stdlib("c") }}
+        - cmake
+        - ninja
+      host:
+        - hdf5
+        - hdf4
+        - libjpeg-turbo
+        - zlib
+        - libxml2-devel   # [not win]
+        - ncurses   # [not win]
+        - readline  # [not win]
+    test:
+      commands:
+        - test -f $PREFIX/lib/libNeXus${SHLIB_EXT}         # [unix]
+        - test -f $PREFIX/lib/libNeXusCPP${SHLIB_EXT}      # [unix]
+        - test -f $PREFIX/include/nexus/NeXusFile.hpp      # [unix]
+        - if not exist %LIBRARY_BIN%\\NeXus.dll exit 1     # [win]
+        - if not exist %LIBRARY_LIB%\\NeXus.lib exit 1     # [win]
+        - if not exist %LIBRARY_LIB%\\NeXusCPP.lib exit 1  # [win]
+        # nxdir shouldn't be in that package
+        - test ! -f $PREFIX/bin/nxdir                      # [unix]
+        - if exist %LIBRARY_BIN%\\nxdir.exe exit 1         # [win]
+
+  # separate package for apps (executables)
+  - name: nexus-apps
+    script: install.sh   # [unix]
+    script: install.bat  # [win]
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ compiler('cxx') }}
+        - {{ stdlib("c") }}
+        - cmake
+        - ninja
+      host:
+        - hdf5
+        - hdf4
+        - libjpeg-turbo
+        - zlib
+        - libxml2-devel   # [not win]
+        - ncurses   # [not win]
+        - readline  # [not win]
+        - {{ pin_subpackage("libnexus", exact=True) }}
+      run:
+        - {{ pin_subpackage("libnexus", exact=True) }}
+      run_constrained:
+        # Package can't be installed with nexusformat due to conflict
+        # with included pure python nxdir
+        - nexusformat ==9999999999
+    test:
+      commands:
+        - nxtraverse -h
+        - nxsummary --help                              # [not win]
+        - nxtranslate --help                            # [not win]
+        - nxdir --help
+
+  # meta-package to install libnexus and applications
+  - name: nexus
+    requirements:
+      run:
+        - {{ pin_subpackage("libnexus", exact=True) }}
+        - {{ pin_subpackage("nexus-apps", exact=True) }}
+    test:
+      commands:
+        - nxsummary --help                              # [not win]
+        - nxdir --help
+
+
+about:
+  home: https://github.com/nexusformat/code
+  license: LGPL-2.1-or-later
+  license_file: COPYING
+  summary: NeXus is a common data format for neutron, x-ray, and muon science
+  description: |
+    NeXus is a common data format for neutron, x-ray, and muon science.
+    It is being developed as an international standard by scientists and
+    programmers representing major scientific facilities in order to facilitate
+    greater cooperation in the analysis and visualization of neutron, x-ray, and muon data.
+  doc_url: https://www.nexusformat.org
+  dev_url: https://github.com/nexusformat/code
+
+extra:
+  feedstock-name: nexus
+  recipe-maintainers:
+    - beenje

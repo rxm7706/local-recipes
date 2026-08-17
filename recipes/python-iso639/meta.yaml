@@ -1,0 +1,43 @@
+{% set name = "python-iso639" %}
+{% set version = "2026.7.23" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: c176522e92cc76b3581cd354e5544330980a36b017d7c291717eface84eaff57
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=65.3.0
+    - wheel
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - iso639
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: Look-up utilities for ISO 639 language codes and names
+  home: https://github.com/jacksonllee/iso639
+  license: Apache-2.0
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

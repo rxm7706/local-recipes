@@ -1,33 +1,35 @@
-{% set name = "wordcloud" %}
-{% set version = "1.9.3" %}
+{% set version = "1.9.6" %}
 
 package:
-  name: {{ name|lower }}
+  name: wordcloud
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/wordcloud-{{ version }}.tar.gz
-  sha256: a9aa738d63ed674a40f0cc31adb83f4ca5fc195f03a6aff6e010d1f5807d1c58
+  url: https://pypi.org/packages/source/w/wordcloud/wordcloud-{{ version }}.tar.gz
+  sha256: df17c468ff903bd0aba4f87c6540745d13a4931220dd4937cb363ad85a4771b9
 
 build:
-  skip: true  # [py<37]
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
   entry_points:
     - wordcloud_cli = wordcloud.__main__:main
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
 
 requirements:
   build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
     - {{ compiler('c') }}
+    - {{ stdlib("c") }}
   host:
-    - python >=3.7
+    - python
     - setuptools
-    - cython >=0.29.33
     - setuptools-scm
+    - toml
     - pip
+    - cython >=0.29.33
   run:
-    - python >=3.7
-    - numpy >=1.6.1
+    - python
+    - numpy >=1.19.3
     - pillow
     - matplotlib-base
 
@@ -36,15 +38,18 @@ test:
     - wordcloud
   commands:
     - pip check
-    - wordcloud_cli --help
+    - wordcloud_cli -h
   requires:
     - pip
 
 about:
-  summary: A little word cloud generator
+  home: https://github.com/amueller/word_cloud
   license: MIT
   license_file: LICENSE
+  summary: A little word cloud generator in Python
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - amueller
+    - ericdill
+    - ocefpaf

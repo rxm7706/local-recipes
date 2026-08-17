@@ -1,0 +1,57 @@
+{% set name = "pyroaring" %}
+{% set version = "1.0.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  - url: https://github.com/Ezibenroc/PyRoaringBitMap/archive/{{ version }}.tar.gz
+    sha256: 236cb1127c0ad5d66ac44d97d0eeec9f611a27fb15b3f73a3fd3abc7db0c748e
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install --no-deps --ignore-installed .
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython                                 # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - {{ compiler('cxx') }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - cython
+  run:
+    - python
+
+test:
+  imports:
+    - pyroaring
+
+about:
+  home: https://github.com/Ezibenroc/PyRoaringBitMap
+  dev_url: https://github.com/Ezibenroc/PyRoaringBitMap
+  doc_url: https://pyroaringbitmap.readthedocs.io/en/stable/?badge=stable
+
+  license: MIT
+  license_family: MIT
+  license_file:
+    - LICENSE
+    - LICENSE_CRoaring
+
+  summary: An efficient and light-weight ordered set of 32-bit integers
+  description: |
+    An efficient and light-weight ordered set of 32-bit integers
+    This is a Python wrapper for the C library [CRoaring][1].
+
+    [1]: https://github.com/RoaringBitmap/CRoaring
+
+extra:
+  recipe-maintainers:
+    - stuarteberg
+    - Ezibenroc

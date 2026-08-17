@@ -1,0 +1,71 @@
+{% set name = "scalene" %}
+{% set version = "1.5.51" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: ad33b6ce79239b5a6aff4ec78fa576fe2076b46f78c4c7e5fbc78a927b83374d
+
+build:
+  number: 1
+  entry_points:
+    - scalene = scalene.__main__:main
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - {{ compiler('cxx') }}
+    - make
+    - cython                                 # [build_platform != target_platform]
+  host:
+    - python
+    - pip
+    - setuptools >=65.5.0
+    - setuptools-scm >=8
+    - cython
+    - wheel
+  run:
+    - python
+    - astunparse >=1.6.3  # [py<39]
+    - cloudpickle >=2.2.1
+    - jinja2 >=3.0.3
+    - numpy >=1.24.0,!=1.27
+    - nvidia-ml-py >=12.555.43  # [not osx]
+    - psutil >=5.9.2
+    - pydantic >=2.6
+    - rich >=10.7.0
+    - wheel >=0.36.1
+
+test:
+  imports:
+    - {{ name }}
+  source_files:
+    - test/original/bm_mdp.py
+  requires:
+    - pyperf
+    - pip
+  commands:
+    - pip check
+    - scalene --cli test/original/bm_mdp.py
+about:
+  home: https://github.com/plasma-umass/scalene
+  summary: A high-performance, high-precision CPU, GPU, and memory profiler for Python
+  license: MIT AND Apache-2.0
+  license_file:
+    - LICENSE
+    - vendor/Heap-Layers/COPYING
+    - vendor/printf/LICENSE
+
+extra:
+  recipe-maintainers:
+    - apmorton
+    - emeryberger
+    - jaltmayerpizzorno
+    - sternj

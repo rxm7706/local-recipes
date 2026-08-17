@@ -1,0 +1,42 @@
+{% set name = "about-time" %}
+{% set version = "4.2.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 3562885d528d66a40e02be0bc0e893920e2396a9f4b632eb9148e0c8ff47078f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }},<4.0
+
+test:
+  imports:
+    - about_time
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/rsalmei/about-time
+  summary: Easily measure timing and throughput of code blocks, with beautiful human friendly representations.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - Brainor

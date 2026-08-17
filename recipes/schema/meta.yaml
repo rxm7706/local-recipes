@@ -1,0 +1,51 @@
+{% set name = "schema" %}
+{% set version = "0.7.8" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: e86cc08edd6fe6e2522648f4e47e3a31920a76e82cce8937535422e310862ab5
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install --no-deps . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - contextlib2 >=0.5.5
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  imports:
+    - schema
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/keleshev/schema
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE-MIT
+  summary: Schema validation just got Pythonic
+
+  description: |
+    schema is a Python library for validating data structures, such as those
+    obtained from config-files, forms, external services or command-line
+    parsing, converted from JSON/YAML (or something else) to Python data-types.
+  dev_url: https://github.com/keleshev/schema
+
+extra:
+  recipe-maintainers:
+    - shcheklein
+    - maxhora

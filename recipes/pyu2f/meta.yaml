@@ -1,0 +1,45 @@
+{% set name = "pyu2f" %}
+{% set version = "0.1.5" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: a3caa3a11842fc7d5746376f37195e6af5f17c0a15737538bb1cebf656fb306b
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - ez_setup
+    - pip
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+    - six
+
+test:
+  imports:
+    - pyu2f
+    - pyu2f.convenience
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://pypi.org/project/pyu2f/
+  summary: U2F host library for interacting with a U2F device over USB.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - xhochy

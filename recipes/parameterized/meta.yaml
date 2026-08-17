@@ -1,0 +1,44 @@
+{% set version = "0.9.0" %}
+
+package:
+  name: parameterized
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/parameterized/parameterized-{{ version }}.tar.gz
+  sha256: 7fc905272cefa4f364c1a3429cbbe9c0f98b793988efb5bf90aac80f08db09b1
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - parameterized
+
+about:
+  home: https://github.com/wolever/parameterized
+  license: BSD-2-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: Parameterized testing with any Python test framework
+  description: |
+    Parameterized testing in Python sucks.
+    parameterized fixes that. For everything. Parameterized testing for nose,
+    parameterized testing for py.test, parameterized testing for unittest.
+  dev_url: https://github.com/wolever/parameterized
+
+extra:
+  recipe-maintainers:
+    - chohner

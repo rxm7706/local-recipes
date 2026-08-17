@@ -1,0 +1,41 @@
+{% set name = "types-urllib3" %}
+{% set version = "1.26.25.14" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/types-urllib3-{{ version }}.tar.gz
+  sha256: 229b7f577c951b8c1b92c1bc2b2fdb0b49847bd2af6d1cc2a2e3dd340f3bda8f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/python/typeshed
+  summary: Typing stubs for urllib3
+  license: Apache-2.0
+  # License need to be packaged from upstream
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - thewchan

@@ -1,0 +1,42 @@
+{% set name = "streamlit_option_menu" %}
+{% set version = "0.4.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/streamlit-option-menu-{{ version }}.tar.gz
+  sha256: 48ec69d59e547fa2fa4bfae001620df8af56a80de2f765ddbb9fcbfb84017129
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }},<3.13
+    - streamlit >=0.63
+
+test:
+  imports:
+    - streamlit_option_menu
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/victoryhb/streamlit-option-menu
+  summary: streamlit-option-menu is a simple Streamlit component that allows users to select a single item from a list of options in a menu.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - standage

@@ -1,0 +1,41 @@
+{% set version = "0.7.2" %}
+
+package:
+  name: cligj
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/cligj/cligj-{{ version }}.tar.gz
+  sha256: a4bc13d623356b373c2c27c53dbd9c68cae5d526270bfa71f6c6fa69669c6b27
+
+build:
+  number: 2
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }},<4.0
+    - click >=4.0
+
+test:
+  imports:
+    - cligj
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/mapbox/cligj
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Click params for commmand line interfaces to GeoJSON
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

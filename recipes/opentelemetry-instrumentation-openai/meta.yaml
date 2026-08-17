@@ -1,0 +1,51 @@
+{% set name = "opentelemetry-instrumentation-openai" %}
+{% set version = "0.62.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_openai-{{ version }}.tar.gz
+  sha256: b9e1b9a1e6c48cdd436cfaa6fb9af1b393e806debbafd408f4b5232f9ec4df12
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - opentelemetry-api >=1.38.0,<2.0.0
+    - opentelemetry-instrumentation >=0.59b0
+    - opentelemetry-semantic-conventions >=0.59b0
+    - opentelemetry-semantic-conventions-ai >=0.5.1,<0.6.0
+    - tiktoken >=0.6.0,<1
+    - typing-extensions
+
+test:
+  imports:
+    - opentelemetry.instrumentation.openai
+  commands:
+    - pip check
+  requires:
+    - openai
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://www.traceloop.com/openllmetry
+  dev_url: https://github.com/traceloop/openllmetry
+  doc_url: https://www.traceloop.com/docs/openllmetry/introduction
+  summary: OpenTelemetry OpenAI instrumentation
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - timkpaine

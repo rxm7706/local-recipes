@@ -1,0 +1,42 @@
+{% set version = "1.1.10" %}
+
+package:
+  name: enum34
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/e/enum34/enum34-{{ version }}.tar.gz
+  sha256: cce6a7477ed816bd2542d03d53db9f0db935dd013b70f336a95c73979289f248
+  folder: hidden
+
+build:
+  number: 2
+  script: {{ PYTHON }} --version  # [py>=34]
+  script: {{ PYTHON }} -m pip install ./hidden --no-deps --ignore-installed --no-cache-dir -vvv  # [(not win) and (not py>=34)]
+  script: {{ PYTHON }} -m pip install .\hidden --no-deps --ignore-installed --no-cache-dir -vvv  # [win and (not py>=34)]
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  requires:
+    - pip
+  commands:
+    - pip check
+  imports:
+    - enum
+
+about:
+  home: https://bitbucket.org/stoneleaf/enum34
+  license: BSD-3-Clause
+  license_file: hidden/enum/LICENSE
+  summary: Python 3.4 Enum backported to 3.3, 3.2, 3.1, 2.7, 2.6, 2.5, and 2.4
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - jakirkham

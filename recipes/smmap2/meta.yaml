@@ -1,0 +1,42 @@
+{% set version = "3.0.1" %}
+
+package:
+  name: smmap2
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/smmap2/smmap2-{{ version }}.tar.gz
+  sha256: 44cc8bdaf96442dbb9a8e2e14377d074b3d0eea292eee3c95c8c449b6c92c557
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - smmap >=3.0.1
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+  imports:
+    - smmap
+
+about:
+  home: https://github.com/gitpython-developers/smmap
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: 'A pure python implementation of a sliding window memory map manager'
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

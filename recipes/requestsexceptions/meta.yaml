@@ -1,0 +1,45 @@
+{% set name = "requestsexceptions" %}
+{% set version = "1.4.0" %}
+{% set bundle = "tar.gz" %}
+{% set hash_type = "sha256" %}
+{% set hash = "b095cbc77618f066d459a02b137b020c37da9f46d9b057704019c9f77dba3065" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.{{ bundle }}
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.{{ bundle }}
+  {{ hash_type }}: {{ hash }}
+
+build:
+  noarch: python
+  number: 0
+  script: python setup.py install --single-version-externally-managed --record=record.txt
+
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - pbr >=2.0.0
+
+  run:
+    - python
+
+test:
+  imports:
+    - requestsexceptions
+
+about:
+  home: https://github.com/openstack-infra/requestsexceptions
+  license_file: {{ RECIPE_DIR }}/LICENSE
+  license: Apache 2.0
+  license_family: Apache
+  summary: 'Import exceptions from potentially bundled packages in requests.'
+  dev_url: https://github.com/openstack-infra/requestsexceptions
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr

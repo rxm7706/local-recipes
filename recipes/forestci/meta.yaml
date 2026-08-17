@@ -1,0 +1,58 @@
+{% set name = "forestci" %}
+{% set version = "0.8" %}
+{% set sha256 = "be40301b2181d0f4381d2f7b55bde7ba869db540587e9ef770f7f677e0bcda77" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+    - numpy
+    - scipy
+  run:
+    - python >={{ python_min }}
+    - scikit-learn
+    - numpy
+    - scipy
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - forestci
+
+about:
+  home: https://github.com/scikit-learn-contrib/forest-confidence-interval
+  license: MIT
+  license_file: LICENSE
+  # The LICENSE.txt file is not in the MANIFEST.in, so this will fail when trying to build from the pypi tarball since it won't be there. 
+  # Comment out license_file line and add it once theMANIFEST.in has been patched upstream.
+  #license_file: LICENSE.txt
+  summary: calculate confidence intervals for scikit-learn random forest regression or classification objects
+
+  description: |
+    a Python module for calculating variance and adding confidence intervals to scikit-learn
+    random forest regression or classification objects. The core functions calculate an in-bag and 
+    error bars for random forest objects
+  doc_url: http://contrib.scikit-learn.org/forest-confidence-interval/
+  dev_url: https://github.com/scikit-learn-contrib/forest-confidence-interval
+
+extra:
+  recipe-maintainers:
+    - pavelzw
+    - arokem
+    - kpolimis

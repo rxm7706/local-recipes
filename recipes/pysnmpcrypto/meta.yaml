@@ -1,0 +1,43 @@
+{% set name = "pysnmpcrypto" %}
+{% set version = "0.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pysnmpcrypto-{{ version }}.tar.gz
+  sha256: ee6819247ceee09aa2de54b998c51ccf595d75a9ccc2e303383b39a5ac63816c
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  noarch: python
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >={{ python_min }},<4.0.0
+    - cryptography >=43.0.1
+
+test:
+  imports:
+    - pysnmpcrypto
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/etingof/pysnmpcrypto
+  summary: Strong cryptography support for PySNMP (SNMP library for Python)
+  license: BSD-2-Clause
+  license_file: LICENSE.rst
+
+extra:
+  recipe-maintainers:
+    - nehaljwani

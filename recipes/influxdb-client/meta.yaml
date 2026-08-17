@@ -1,0 +1,48 @@
+{% set name = "influxdb-client" %}
+{% set version = "1.49.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/influxdb_client-{{ version }}.tar.gz
+  sha256: 4a53a218adef6ac9458bfbd31fa08c76194f70310c6b4e01f53d804bd2c48e03
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - reactivex >=4.0.4
+    - certifi >=14.05.14
+    - python-dateutil >=2.5.3
+    - setuptools >=21.0.0
+    - urllib3 >=1.26.0
+
+test:
+  imports:
+    - influxdb_client
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/influxdata/influxdb-client-python
+  summary: InfluxDB 2.0 Python client library
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - djhoese
+    - ruben-arts

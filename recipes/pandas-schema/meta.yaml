@@ -1,0 +1,50 @@
+{% set name = "pandas_schema" %}
+{% set version = "0.3.6" %}
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  url: "https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
+  sha256: c6bfc52c4bae9cdd7420fbe8c4b0622b769457827c3fc819928405638caf605f
+
+build:
+  number: 0
+  noarch: python
+  script: "{{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation"
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python >={{ python_min }}
+    - numpy
+    - pandas >=0.19
+    - packaging
+
+test:
+  requires:
+    - python {{ python_min }}
+    - pip
+  imports:
+    - pandas_schema
+  commands:
+    - pip check
+
+about:
+  home: "https://github.com/TMiguelT/PandasSchema"
+  # Upstream ships a GPLv3 LICENSE file even though setup.py/PyPI metadata say
+  # "MIT"; the bundled LICENSE text is what governs redistribution, so mirror it.
+  license: GPL-3.0-only
+  license_family: GPL3
+  license_file: LICENSE
+  summary: "A validation library for Pandas data frames using user-friendly schemas"
+
+extra:
+  recipe-maintainers:
+    - foellmelanie
+    - killua156

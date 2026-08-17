@@ -1,0 +1,50 @@
+{% set name = "deepecho" %}
+{% set version = "0.8.1" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/deepecho-{{ version }}.tar.gz
+  sha256: 7589d9b1be1a482a879caca7f674acf1195441de0c8ae020dd1c17a726472f86
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - pytest-runner >=2.11.1
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - numpy >=1.21.0,<3
+    - pandas >=1.4.0
+    - python >={{ python_min }},<3.15
+    - pytorch >=1.9.0
+    - tqdm >=4.29,<5
+
+test:
+  imports:
+    - deepecho
+    - deepecho.models
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+
+about:
+  home: https://github.com/sdv-dev/DeepEcho
+  summary: Mixed-type multivariate time series modeling with generative adversarial networks.
+  license: BUSL-1.1
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - conda-forge/sdv

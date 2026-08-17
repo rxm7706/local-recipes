@@ -1,0 +1,42 @@
+{% set name = "aiolimiter" %}
+{% set version = "1.2.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/aiolimiter-{{ version }}.tar.gz
+  sha256: e02a37ea1a855d9e832252a105420ad4d15011505512a1a1d814647451b5cca9
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - aiolimiter
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/mjpieters/aiolimiter
+  summary: asyncio rate limiter, a leaky bucket implementation
+  license: MIT
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - BastianZim

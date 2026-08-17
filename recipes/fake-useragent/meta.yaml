@@ -1,0 +1,48 @@
+{% set name = "fake-useragent" %}
+{% set version = "2.2.0" %}
+{% set python_min = "3.9" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 4e6ab6571e40cc086d788523cf9e018f618d07f9050f822ff409a4dfe17c16b2
+
+build:
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+  host:
+    - python
+    - pip
+    - setuptools
+    - importlib-resources >=6.0  # [py<310]
+  run:
+    - python
+    - importlib-resources >=6.0  # [py<310]
+
+test:
+  imports:
+    - fake_useragent
+  commands:
+    - pip check
+  requires:
+    - python
+    - pip
+
+about:
+  home: https://github.com/hellysmile/fake-useragent
+  summary: Up to date simple useragent faker with real world database
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rpanai

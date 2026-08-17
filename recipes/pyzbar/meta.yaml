@@ -1,0 +1,65 @@
+{% set version = "0.1.9" %}
+
+package:
+  name: pyzbar
+  version: {{ version }}
+
+source:
+  - folder: dist
+    url: https://github.com/NaturalHistoryMuseum/pyzbar/archive/v{{ version }}.tar.gz
+    sha256: 6b84ec4c1f36df590c65b610a7757ef8829f202a7df210d2891e6592a8bee8bb
+  - folder: src
+    url: https://github.com/NaturalHistoryMuseum/pyzbar/archive/refs/tags/v{{ version }}.tar.gz
+    sha256: 6b84ec4c1f36df590c65b610a7757ef8829f202a7df210d2891e6592a8bee8bb
+
+build:
+  number: 1
+  noarch: python
+  entry_points:
+    - read_zbar = pyzbar.scripts.read_zbar:main
+  script:
+    - cd dist 
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - zbar
+
+test:
+  source_files:
+    - src/pyzbar/tests
+  requires:
+    - pip
+    - numpy >=1.8.2
+    - pillow >=3.2.0
+    - nose
+    - coverage
+    - python {{ python_min }}
+  imports:
+    - pyzbar
+  commands:
+    - pip check
+    - read_zbar --help
+    - cd src/pyzbar
+    - nosetests --with-coverage --cover-package pyzbar --cover-min-percentage 98
+
+about:
+  home: https://github.com/NaturalHistoryMuseum/pyzbar
+  license: MIT
+  license_family: MIT
+  license_file: dist/LICENSE.txt
+  summary: Read one-dimensional barcodes and QR codes from Python 2 and 3 using the zbar library.
+  doc_url: https://github.com/NaturalHistoryMuseum/pyzbar
+  dev_url: https://github.com/NaturalHistoryMuseum/pyzbar
+
+extra:
+  recipe-maintainers:
+    - carlodri
+    - Ryan-Dmello
+    - bollwyvl
+    - mrakitin

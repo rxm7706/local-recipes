@@ -1,0 +1,53 @@
+{% set name = "Flask-OAuthlib" %}
+{% set version = "0.9.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 5bb79c8a8e670c2eb4cb553dfc3283b6c8d1202f674934676dc173cee94fe39c
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - flask
+    - oauthlib !=2.0.3,!=2.0.4,!=2.0.5,<3.0.0,>=1.1.2
+    - requests-oauthlib >=0.6.2,<1.2.0
+    - cachelib
+
+test:
+  imports:
+    - flask_oauthlib
+    - flask_oauthlib.contrib
+    - flask_oauthlib.contrib.client
+    - flask_oauthlib.provider
+  commands:
+    - pip check
+  requires: 
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/lepture/flask-oauthlib
+  license_file: LICENSE
+  license: BSD-3-Clause
+  license_family: BSD
+  summary: 'OAuthlib for Flask'
+  dev_url: https://github.com/lepture/flask-oauthlib
+  doc_url: https://flask-oauthlib.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - jan-janssen

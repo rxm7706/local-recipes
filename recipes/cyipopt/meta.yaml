@@ -1,0 +1,69 @@
+{% set name = "cyipopt" %}
+{% set version = "1.7.0" %}
+{% set sha256 = "527eab917415af8808df05ab1899df12bde6e95e5c5d32644b59a69e18561471" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name|lower }}/{{ name|lower }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  skip: true  # [python_impl == 'pypy']
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython >=0.29.37                       # [build_platform != target_platform]
+    - numpy >1.25                            # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - pkg-config
+  host:
+    - cython >=0.29.37
+    - ipopt >=3.13
+    - libblas
+    - liblapack
+    - numpy >=1.26.4
+    - pip
+    - python
+    - setuptools >=68.1.2
+  run:
+    - ipopt >=3.13
+    - numpy >=1.26.4
+    - python
+  run_constrained:
+    - scipy >=1.11.4
+
+test:
+  requires:
+    - scipy
+  imports:
+    - cyipopt
+  files:
+    - examplehs071.py
+  commands:
+    - python examplehs071.py
+
+about:
+  home: https://github.com/mechmotum/cyipopt
+  license: EPL-2.0
+  license_file: LICENSE
+  summary: A Cython wrapper to the IPOPT optimization package
+  description: |
+    Ipopt (Interior Point OPTimizer, pronounced eye-pea-Opt) is a software
+    package for large-scale nonlinear optimization. cyipopt is a python wrapper
+    around Ipopt. It enables using Ipopt from the comfort of the great Python
+    scripting language. Ipopt is available from the COIN-OR initiative, under
+    the Eclipse Public License (EPL).
+  doc_url: https://cyipopt.readthedocs.io
+  dev_url: https://github.com/mechmotum/cyipopt
+
+extra:
+  recipe-maintainers:
+    - moorepants

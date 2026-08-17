@@ -1,14 +1,14 @@
-{% set name = "weasel" %}
 {% set version = "1.0.0" %}
-{% set python_min = "3.10" %}
 
 package:
-  name: {{ name|lower }}
+  name: weasel
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/weasel-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/w/weasel/weasel-{{ version }}.tar.gz
   sha256: 7b129b44c90cc543b760532974ca1e4eb30dad2aa2026f57bdce66354ae610fc
+  patches:
+    - patches/0001-loosen-expected-error-in-test_project_config_interpo.patch
 
 build:
   entry_points:
@@ -23,29 +23,34 @@ requirements:
     - setuptools
     - pip
   run:
-    - python >={{ python_min }},<4.0
+    - python >={{ python_min }}
+    # explosion libraries
+    - cloudpathlib >=0.7.0
     - confection >=1.0.0
-    - packaging >=20.0
-    - wasabi >=0.9.1
+    - smart-open >=5.2.1
     - srsly >=2.4.3
     - typer >=0.3.0
-    - cloudpathlib >=0.7.0
-    - smart-open >=5.2.1
-    - requests
+    - typer-slim >=0.3.0,<1.0.0
+    - wasabi >=0.9.1
+    # third-party libraries
     - httpx >=0.24.0
+    - packaging >=20.0
     - pydantic >=2.0.0
+    - requests >=2.13.0,<3.0.0
 
 test:
   imports:
     - weasel
+  requires:
+    - pytest >=5.2.0,!=7.1.0
+    - pip
+    - git
+    - python {{ python_min }}
   commands:
     - pip check
     - weasel --help
-    - python -m pytest --tb=native --pyargs {{ name }}
-  requires:
-    - pip
-    - python {{ python_min }}
-    - pytest>=5.2.0,!=7.1.0
+    - python -m pytest --tb=native --pyargs weasel
+
 
 about:
   home: https://github.com/explosion/weasel
@@ -62,5 +67,5 @@ about:
 
 extra:
   recipe-maintainers:
-    - conda-forge/spacy
     - rxm7706
+    - conda-forge/spacy

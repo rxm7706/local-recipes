@@ -1,0 +1,47 @@
+{% set name = "ldap" %}
+{% set version = "1.0.2" %}
+
+package:
+  name: '{{ name|lower }}'
+  version: '{{ version }}'
+
+source:
+  fn: '{{ name }}-{{ version }}.tar.gz'
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  'sha256': 'ead51179daa5dbe6f635f5dbac4357ac7a2c278b5455393064522efb172377e5'
+
+build:
+  number: 1
+  entry_points:
+    - ldap = ldap:main
+  script: python -m pip install . --no-deps --ignore-installed
+  noarch: python
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - ldap3
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - ldap
+  commands:
+    - ldap --help
+
+about:
+  home: https://github.com/andreif/ldap
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: LDAP utils.
+  description: 'LDAP utils'
+
+extra:
+  recipe-maintainers:
+    - nicoddemus

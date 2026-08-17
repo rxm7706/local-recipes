@@ -1,0 +1,61 @@
+{% set name = "xsdata" %}
+{% set version = "26.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: c631af71aaa75734f8ce92a08fcf8389d905dee2aab0b5032c9032e9071009a6
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  entry_points:
+    - xsdata = xsdata.cli:cli
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - click >=8.0.0
+    - jinja2 >=3.0.0
+    - lxml >=5.0.0
+    - requests >=2.28.0
+    - ruff >=0.9.8
+    - toposort >=1.9
+    - typing-extensions >=4.12.0
+
+test:
+  requires:
+    - pytest
+    - pytest-benchmark
+    - python {{ python_min }}
+  source_files:
+    - tests/*
+  commands:
+    - pytest --benchmark-skip
+    - xsdata --help
+
+
+about:
+  home: https://github.com/tefra/xsdata
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Naive XML Bindings for python
+  description: |
+    xsData is a complete data binding library for python allowing developers
+    to access and use XML and JSON documents as simple objects rather than
+    using DOM.
+  doc_url: https://xsdata.readthedocs.io
+  dev_url: https://github.com/tefra/xsdata
+
+extra:
+  recipe-maintainers:
+    - tefra

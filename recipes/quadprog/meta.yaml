@@ -1,0 +1,50 @@
+{% set name = "quadprog" %}
+{% set version = "0.1.13" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 9d6dd32f2762f29b840fb83741d11e527ddf48745f63b79caad0e530b4a6a0ff
+
+build:
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - {{ compiler('cxx') }}
+    - {{ stdlib("c") }}
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython                                 # [build_platform != target_platform]
+  host:
+    - cython
+    - pip
+    - python
+    - setuptools
+  run:
+    - cython
+    - python
+    - numpy
+
+test:
+  imports:
+    - quadprog
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/rmcgibbo/quadprog
+  license: GPL-2.0-or-later
+  license_family: GPL2
+  license_file: LICENSE
+  summary: Quadratic Programming Solver
+
+extra:
+  recipe-maintainers:
+    - nfahlgren

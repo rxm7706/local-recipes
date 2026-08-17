@@ -1,6 +1,5 @@
 {% set name = "pylint-django" %}
-{% set version = "2.7.0" %}
-{% set python_min = "3.10" %}
+{% set version = "2.8.0" %}
 
 package:
   name: {{ name|lower }}
@@ -8,7 +7,7 @@ package:
 
 source:
   url: https://github.com/pylint-dev/pylint-django/archive/v{{ version }}.tar.gz
-  sha256: c5834c555d18000a3542ac63aadbd0c2da46ceaf2a72069d674ffee19937ec7a
+  sha256: 91764a088cefc7bbe85279652d21123ecde2e7b19b85ecae396b3d6412cf5613
 
 build:
   noarch: python

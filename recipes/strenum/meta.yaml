@@ -1,0 +1,47 @@
+{% set name = "StrEnum" %}
+{% set version = "0.4.15" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 878fb5ab705442070e4dd1929bb5e2249511c0bcf2b0eeacf3bcd80875c82eff
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - pytest-runner
+    - setuptools
+    - versioneer
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+  imports:
+    - strenum
+
+about:
+  home: https://github.com/irgeek/StrEnum
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A Python Enum that inherits from str.
+  description: |
+    A Python Enum that inherits from str.
+
+extra:
+  recipe-maintainers:
+    - timkpaine

@@ -1,0 +1,49 @@
+{% set name = "os-service-types" %}
+{% set version = "1.9.0" %}
+{% set python_min = "3.11" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 1f2e5fb71d1f6f4ff31d8992674f2368465bc2f25cd94018015c3ddbfc5c617f
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - pbr !=2.1.0,>=2.0.0
+
+  run:
+    - python >={{ python_min }}
+    - pbr !=2.1.0,>=2.0.0
+    - typing-extensions
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - os_service_types
+
+about:
+  home: https://docs.openstack.org/os-service-types/latest/
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: Summary of the package
+  description: Python library for consuming OpenStack sevice-types-authority data.
+  doc_url: https://docs.openstack.org/os-service-types/latest/
+  dev_url: https://git.openstack.org/cgit/openstack/os-service-types
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - tschoonj

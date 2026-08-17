@@ -6,7 +6,7 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/tableau-to-sqlite-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/tableau-to-sqlite-{{ version }}.tar.gz
   sha256: ae5ff89ed0c5a645f3a17e5eb795f68d84a4df77ecb9c7b31f9663bad4bb3c8c
 
 build:
@@ -14,14 +14,15 @@ build:
     - tableau-to-sqlite = tableau_to_sqlite.cli:cli
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - click
     - tableauscraper ==0.1.2
 
@@ -33,6 +34,7 @@ test:
     - tableau-to-sqlite --help
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/simonw/tableau-to-sqlite

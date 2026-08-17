@@ -1,0 +1,45 @@
+{% set name = "dict2css" %}
+{% set version = "0.6.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/dict2css-{{ version }}.tar.gz
+  sha256: 143e55cb71c98a88c79f2c41e08a5fa4d875659275756f794e31ccd69936ce88
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - whey >=0.0.20
+  run:
+    - domdf-python-tools >=2.2.0
+    - tinycss2 >=1.2.1
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - dict2css
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/sphinx-toolbox/dict2css
+  summary: A μ-library for constructing cascading style sheets from Python dictionaries.
+  license: MIT
+  license_file: LICENSE
+  doc_url: https://dict2css.readthedocs.io/en/latest
+
+extra:
+  recipe-maintainers:
+    - domdfcoding

@@ -6,24 +6,24 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/win-precise-time-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/win-precise-time-{{ version }}.tar.gz
   sha256: 89274785cbc5f2997e01675206da3203835a442c60fd97798415c6b3c179c0b9
 
 build:
-  #skip: true  # [py<37]
-  noarch: python
+  skip: true  # [py<37 or (not win) or (python_impl == 'pypy')]
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 3
+  number: 4
 
 requirements:
   build:
     - {{ compiler('c') }}
+    - {{ stdlib("c") }}
   host:
-    - python >=3.7
+    - python 
     - setuptools >=62.0
     - pip
   run:
-    - python >=3.7
+    - python
 
 test:
   imports:
@@ -43,4 +43,3 @@ about:
 extra:
   recipe-maintainers:
     - thewchan
-    - rxm7706

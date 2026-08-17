@@ -1,0 +1,62 @@
+{% set version = "7.3.0" %}
+
+package:
+  name: flake8
+  version: {{ version }}
+
+source:
+  url: https://github.com/PyCQA/flake8/archive/refs/tags/{{ version }}.tar.gz
+  sha256: 71a7d2ec4166f83c6fc66e6465a45c49b4565ee29b69f27b335366ce101d8c2b
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  entry_points:
+    - flake8 = flake8.main.cli:main
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - mccabe >=0.7.0,<0.8.0
+    - pycodestyle >=2.14.0,<2.15.0
+    - pyflakes >=3.4.0,<3.5.0
+    - python >={{ python_min }}
+test:
+  imports:
+    - flake8
+  source_files:
+    - src/flake8
+    - tests/integration
+    - tests/unit
+    - setup.py
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+# TODO: After release, upstream fixed some undefined variable issues
+#    - flake8 --ignore=D203,W503,E203 src/flake8 tests/integration tests/unit setup.py  # [unix]
+#    - flake8 --ignore=D203,W503,E203 src\\flake8 tests\\integration tests\\unit setup.py  # [win]
+    - flake8 --ignore=D203,W503,E203,F821 src/flake8 tests/integration tests/unit setup.py  # [unix]
+    - pip list
+    - pip check
+
+about:
+  home: http://flake8.pycqa.org/
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Your Tool For Style Guide Enforcement
+  doc_url: http://flake8.pycqa.org/
+  dev_url: https://github.com/PyCQA/flake8
+
+extra:
+  recipe-maintainers:
+    - aydinhan
+    - croth1
+    - dopplershift
+    - goanpeca
+    - sigmavirus24

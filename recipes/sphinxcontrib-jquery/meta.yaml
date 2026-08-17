@@ -1,0 +1,52 @@
+{% set name = "sphinxcontrib-jquery" %}
+{% set version = "4.1" %}
+{% set sha256 = "1620739f04e36a2c779f1a131a2dfd49b2fd07351bf1968ced074365933abc7a" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - flit-core >=3.7,<4
+  run:
+    - python >={{ python_min }}
+    - sphinx >=1.8
+
+test:
+  imports:
+    - sphinxcontrib.jquery
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://pypi.org/project/sphinxcontrib-jquery/
+  license: 0BSD AND MIT
+  license_file:
+    - LICENCE
+    - vendor-licenses/
+  summary: A sphinx extension to include jQuery on newer sphinx releases
+  description: |
+    sphinxcontrib-jquery ensures that jQuery is always installed for use in
+    Sphinx themes or extensions.
+  dev_url: https://github.com/sphinx-contrib/jquery
+
+extra:
+  recipe-maintainers:
+    - conda-forge/sphinx
+    - AA-Turner
+    - BSGalvan

@@ -1,26 +1,27 @@
 {% set name = "lark" %}
-{% set version = "1.2.1" %}
+{% set version = "1.3.1" %}
+
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://github.com/lark-parser/lark/archive/{{ version }}.tar.gz
-  sha256: 6e74e07b35829809e846e5d2b1e5b806394b35a8ad2569e1df45dd8d49b71681
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/lark-{{ version }}.tar.gz
+  sha256: b426a7a6d6d53189d318f2b6236ab5d6429eaf09259f1ca33eb716eed10d2905
 
 build:
-  noarch: python
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python >=3.8
-    - setuptools >=61.2.0
     - pip
+    - python {{ python_min }}
+    - setuptools >=61.2.0
   run:
-    - python >=3.8
+    - python >={{ python_min }}
 
 test:
   imports:
@@ -29,12 +30,14 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
+  home: https://github.com/lark-parser/lark
   summary: a modern parsing library
   license: MIT
   license_file: LICENSE
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - BastianZim

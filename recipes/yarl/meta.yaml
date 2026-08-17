@@ -1,0 +1,73 @@
+{% set name = "yarl" %}
+{% set version = "1.24.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: e81b83143bee16329c23db3c1b2d82b29892fcbcb849186d2f6e98a5abe9a57f
+
+build:
+  number: 0
+  noarch: python  # [use_noarch]
+  track_features:   # [use_noarch]
+    - yarl_no_compile  # [use_noarch]
+  script:
+    - {{ PYTHON }} -m pip install . --no-deps -vv                                      # [not use_noarch]
+    - {{ PYTHON }} -m pip install . --no-deps -vv  --config-settings=pure-python=true  # [use_noarch]
+
+requirements:
+  build:
+    - cython                                 # [build_platform != target_platform]
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - python {{ python_min }}     # [use_noarch]
+    - python                      # [not use_noarch]
+    - pip
+    - expandvars
+    - tomli
+    - cython
+    - setuptools
+  run:
+    - python >={{ python_min }}   # [use_noarch]
+    - python                      # [not use_noarch]
+    - multidict >=4.0
+    - idna >=2.0
+    - propcache >=0.2.1
+
+test:
+  source_files:
+    - tests
+  requires:
+    - python {{ python_min }}     # [use_noarch]
+    - python                      # [not use_noarch]
+    - pytest
+    - pytest-codspeed
+    - hypothesis >=6.0
+    - pip
+  imports:
+    - yarl
+  commands:
+    - pip check
+    - export YARL_NO_EXTENSIONS=1   # [use_noarch]
+    - py.test tests
+
+about:
+  home: https://github.com/aio-libs/yarl
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: Yet another URL library
+  doc_url: http://yarl.readthedocs.io
+  dev_url: https://github.com/aio-libs/yarl
+  doc_source_url: https://github.com/aio-libs/yarl/tree/master/docs
+
+extra:
+  recipe-maintainers:
+    - sodre
+    - xhochy

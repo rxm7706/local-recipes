@@ -1,44 +1,68 @@
 {% set name = "pandas-profiling" %}
-{% set version = "3.6.6" %}
+{% set version = "3.6.3" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pandas-profiling-{{ version }}.tar.gz
-  sha256: 1ef14a9cfa647ff95e13fd0b589f74897c0b078ef8ebcd44760b4031dcbf52a2
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 6a6c4f72d1cfe775711e408ede66c1be5da362ee37d50c01d6d3eb71d74de495
 
 build:
-  entry_points:
-    - pandas_profiling = pandas_profiling.controller.console:main
-  noarch: python
-  script: {{ PYTHON }} -m pip install . -vv
   number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
 
 requirements:
   host:
-    - python >=3.7,<3.11
+    - python <3.11
     - pip
   run:
-    - python >=3.7,<3.11
-    - ydata-profiling
+    - python <3.11
+    - scipy >=1.4.1,<1.10
+    - requests >=2.24.0,<2.29
+    - pydantic >=1.8.1,<1.11
+    - pyyaml >=5.0.0,<6.1
+    - pandas >1.1,<1.6,!=1.4.0
+    - matplotlib-base >=3.2,<3.7
+    - jinja2 >=2.11.1,<3.2
+    - htmlmin 0.1.12
+    - phik >=0.11.1,<0.13
+    - visions 0.7.5
+    - numpy >=1.16.0,<1.24
+    - tqdm >=4.48.2,<4.65
+    - imagehash
+    - pillow
+    - seaborn-base >=0.10.1,<0.13
+    - multimethod >=1.4,<1.10
+    - statsmodels >=0.13.2,<0.14
+    - typeguard >=2.13.2, <2.14
+    - ipywidgets >=7.5.1
+  run_constrained:
+    - jupyter-client >=5.3.4
+    - jupyter-core >=4.6.3
+    - tangled-up-in-unicode 0.2.0
 
 test:
   imports:
     - pandas_profiling
   commands:
     - pip check
-    - pandas_profiling --help
   requires:
     - pip
 
 about:
-  home: https://github.com/ydataai/pandas-profiling
-  summary: Deprecated 'pandas-profiling' package, use 'ydata-profiling' instead
+  home: http://github.com/pandas-profiling/pandas-profiling
   license: MIT
   license_file: LICENSE
+  summary: Generate profile report for pandas DataFrame
+  dev_url: http://github.com/pandas-profiling/pandas-profiling
+  doc_url: https://pandas-profiling.github.io/pandas-profiling/docs/
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - sbrugman
+    - proinsias
+    - philip-khor

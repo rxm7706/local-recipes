@@ -1,0 +1,54 @@
+{% set name = "picologging" %}
+{% set version = "0.9.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/picologging-{{ version }}.tar.gz
+  sha256: 6921f86ea0875ac85e252188627e9f04b872895327a7028e06c825ddb888a825
+
+build:
+  skip: true  # [(py<37) or (python_impl == 'pypy')]
+  script:
+    - export CXXFLAGS="${CXXFLAGS} -D_LIBCPP_DISABLE_AVAILABILITY"  # [osx]
+    - {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  build:
+    - {{ compiler('cxx') }}
+  host:
+    - cmake >=3.18
+    - make  # [linux]
+    - ninja
+    - pip
+    - python
+    - scikit-build >=0.17.0
+    - setuptools >=65.4.1
+  run:
+    - python
+
+test:
+  source_files:
+    - tests
+  imports:
+    - picologging
+  commands:
+    - pip check
+    - pytest -vvv --capture=tee-sys tests
+  requires:
+    - pip
+    - pytest
+
+about:
+  home: https://github.com/microsoft/picologging
+  summary: A fast and lightweight logging library for Python
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - tonybaloney
+    - thewchan

@@ -1,5 +1,5 @@
 {% set name = "opentelemetry-exporter-gcp-trace" %}
-{% set version = "1.12.0" %}
+{% set version = "1.14.0" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
-  sha256: 18c6e56fe123eed020d5005fdd819b196d64f651545bce1ca7e2e2cbaf9d343b
+  sha256: 1d9dbfa3e69843ff343ce5fcf622f6d6fcd8c62c02e30dd6ddf5b8fc6d568c08
 
 build:
   noarch: python
@@ -24,7 +24,9 @@ requirements:
     - google-cloud-trace ~=1.1
     - opentelemetry-api ~=1.30
     - opentelemetry-sdk ~=1.30
-    - opentelemetry-resourcedetector-gcp ==1.*,>=1.5.0dev0
+    - opentelemetry-resourcedetector-gcp <1.15,>=1.5.0dev0
+    # - typing_extensions 
+    # - typing_extensions 
 
 test:
   imports:

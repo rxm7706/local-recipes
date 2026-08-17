@@ -1,0 +1,46 @@
+{% set name = "base58" %}
+{% set version = "2.1.1" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/keis/base58/archive/v{{ version }}.tar.gz
+  sha256: 5df25ce3b3d2f7e9d5289b2c75ba9e5291b59b1c34f4f7c90df5ae5f87fe5fb9
+
+build:
+  number: 1
+  noarch: python
+  entry_points:
+    - base58 = base58.__main__:main
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - setuptools
+    - pip
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - base58
+  commands:
+    - pip check
+    - base58 --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/keis/base58
+  summary: Base58 and Base58Check implementation
+  license: MIT
+  license_file: COPYING
+
+extra:
+  recipe-maintainers:
+    - step21

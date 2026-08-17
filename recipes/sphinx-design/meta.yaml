@@ -1,0 +1,53 @@
+{% set name = "sphinx-design" %}
+{% set version = "0.7.0" %}
+{% set python_min = "3.11" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/executablebooks/{{ name }}/archive/v{{ version }}.tar.gz
+  sha256: c2d9e45ffafc930cb552296238da300d6d0623c0816cfbabdc14534fd16e9ca3
+
+build:
+  number: 0
+  script:
+    - {{ PYTHON }} -m pip install . -vv
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - flit-core >=3.4,<4
+  run:
+    - python >={{ python_min }}
+    - sphinx >=7,<10
+
+test:
+  requires:
+    - myst-parser >=4,<6
+    - pytest >=8.3,<8.4
+    - pytest-regressions
+    - defusedxml
+    - python {{ python_min }}
+  source_files:
+    - tests/
+  imports:
+    - sphinx_design
+  commands:
+    - pytest tests -vv
+
+about:
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A sphinx extension for designing beautiful, screen-size responsive web components.
+  home: https://github.com/executablebooks/sphinx-design
+  doc_url: https://sphinx-design.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - awvwgk
+    - dopplershift

@@ -1,0 +1,52 @@
+{% set name = "interrogate" %}
+{% set version = "1.7.0" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: a320d6ec644dfd887cc58247a345054fc4d9f981100c45184470068f4b3719b0
+
+build:
+  number: 1
+  noarch: python
+  entry_points:
+    - interrogate = interrogate.cli:main
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - attrs
+    - click
+    - colorama
+    - py
+    - tabulate
+    - tomli
+
+test:
+  imports:
+    - interrogate
+  commands:
+    - pip check
+    - interrogate --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://interrogate.readthedocs.io
+  summary: Interrogate a codebase for docstring coverage.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

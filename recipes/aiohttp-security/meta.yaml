@@ -1,0 +1,44 @@
+{% set name = "aiohttp-security" %}
+{% set version = "0.5.0" %}
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 50cb724d310e1d0289798bb98ae852c3b75b77e8f51ce5159c57b7261d0638bd
+
+build:
+  number: 1
+  noarch: python
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv "
+
+requirements:
+  host:
+    - aiohttp >=3.2.0
+    - pip
+    - python {{ python_min }}
+    - setuptools
+    - wheel
+  run:
+    - aiohttp >=3.2.0
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - aiohttp_security
+
+about:
+  home: https://github.com/aio-libs/aiohttp-security/
+  license: Apache Software
+  license_family: APACHE
+  license_file: LICENSE
+  summary: security for aiohttp.web
+  doc_url: https://aiohttp-security.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - epruesse

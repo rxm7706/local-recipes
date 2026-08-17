@@ -1,43 +1,57 @@
 {% set name = "opentelemetry-instrumentation-logging" %}
-{% set version = "0.42b0" %}
+{% set version = "0.65b0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_logging-{{ version }}.tar.gz
-  sha256: 222922cb666bcada986db5b3574656589dbd118ddf976a0f1c75098f2d8fb40f
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_logging-{{ version }}.tar.gz
+  sha256: c0a50cade5d54db6c6af12e2c69227ecd26f2b3b779e99ff850561d3d8dd77e3
 
 build:
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: {{ PYTHON }} -m pip install . -vv
   number: 0
 
 requirements:
   host:
-    - python
-    - hatchling
+    - python {{ python_min }}
     - pip
+    - hatchling
   run:
-    - python
-    - opentelemetry-api >=1.12,<2.dev0
-    - opentelemetry-instrumentation =={{ version }}
+    - python >={{ python_min }}
+    - opentelemetry-api ~=1.12
+    - opentelemetry-instrumentation ==0.65b0
+    # - opentelemetry-test-utils ==0.37b0
+    # - opentelemetry-test-utils ==0.38b0
+    # - opentelemetry-test-utils ==0.39b0
+    # - opentelemetry-test-utils ==0.40b0
+    # - opentelemetry-test-utils ==0.41b0
+    # - opentelemetry-test-utils ==0.42b0
+    # - opentelemetry-test-utils ==0.43b0
+    # - opentelemetry-test-utils ==0.44b0
+    # - opentelemetry-semantic-conventions ==0.63b0
+    # - opentelemetry-semantic-conventions ==0.63b1
+    # - opentelemetry-semantic-conventions ==0.64b0
+    # - opentelemetry-semantic-conventions ==0.65b0
 
 test:
   imports:
-    - opentelemetry.instrumentation.logging
+    - opentelemetry
+    - opentelemetry.instrumentation
   commands:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
-  summary: OpenTelemetry Logging instrumentation
   home: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/master/instrumentation/opentelemetry-instrumentation-logging
+  summary: OpenTelemetry Logging instrumentation
   license: Apache-2.0
   license_file: LICENSE
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - mariusvniekerk

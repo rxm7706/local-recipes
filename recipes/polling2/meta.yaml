@@ -1,0 +1,43 @@
+{% set version = "0.5.0" %}
+
+package:
+  name: polling2
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/polling2/polling2-{{ version }}.tar.gz
+  sha256: 90b7da82cf7adbb48029724d3546af93f21ab6e592ec37c8c4619aedd010e342
+
+build:
+  number: 1
+  noarch: python
+  script:
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - pytest-runner
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  imports:
+    - polling2
+  commands:
+    - pip check
+
+about:
+  home: http://github.com/ddmee/polling2
+  summary: Updated polling utility with many configurable options
+  license: MIT
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

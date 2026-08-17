@@ -22,7 +22,7 @@ requirements:
   run:
     - python >={{ python_min }}
     - django >=3.2
-    # - black
+    # - black 
     # - Django >=3.2
 
 test:

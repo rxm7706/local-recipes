@@ -1,16 +1,16 @@
 {% set name = "pysqlite3" %}
-{% set version = "0.5.3" %}
+{% set version = "0.6.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pysqlite3-{{ version }}.tar.gz
-  sha256: 54a98e05b087c2c064c8d5b58e9b8f403082eadf830d7d30ede4ecf6a5a5f143
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pysqlite3-{{ version }}.tar.gz
+  sha256: ecf5112b62a4e6c04438957e343fe9672707bd3191f789ecae6c95b226aa6bb6
 
 build:
-  noarch: python
+  noarch: generic
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
 
@@ -23,6 +23,7 @@ requirements:
     - pip
     - python >=3.8
     - sqlite
+    - setuptools
   run:
     - python >=3.8
     - sqlite

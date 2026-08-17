@@ -1,0 +1,44 @@
+{% set name = "asyncclick" %}
+{% set version = "8.1.7.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/asyncclick-{{ version }}.tar.gz
+  sha256: 219ea0f29ccdc1bb4ff43bcab7ce0769ac6d48a04f997b43ec6bee99a222daa0
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  noarch: python
+  number: 0
+
+requirements:
+  host:
+    - python >=3.7
+    - setuptools-scm
+    - pip
+  run:
+    - anyio
+    - python >=3.7
+    - colorama
+    - importlib-metadata
+
+test:
+  imports:
+    - asyncclick
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://palletsprojects.com/p/click/
+  summary: Composable command line interface toolkit, async version
+  license: BSD-3-Clause
+  license_file: LICENSE.rst
+
+extra:
+  recipe-maintainers:
+    - awvwgk

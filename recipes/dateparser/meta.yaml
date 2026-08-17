@@ -1,0 +1,53 @@
+{% set name = "dateparser" %}
+{% set version = "1.4.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/dateparser-{{ version }}.tar.gz
+  sha256: bed2a3fd9bad8f2fb2d72b57748bada260b3a9349a264c22ffc23c3249d7049a
+
+build:
+  entry_points:
+    - dateparser-download = dateparser_cli.cli:entrance
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - python-dateutil >=2.7.0
+    - pytz >=2024.2
+    - regex >=2024.9.11
+    - tzlocal >=0.2
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+    - dateparser-download --help
+  imports:
+    - dateparser
+    - dateparser.calendars
+    - dateparser.languages
+    - dateparser.utils
+
+about:
+  home: https://github.com/scrapinghub/dateparser
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Date parsing library designed to parse dates from HTML pages
+
+extra:
+  recipe-maintainers:
+    - tacaswell
+    - ocefpaf

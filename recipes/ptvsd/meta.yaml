@@ -1,0 +1,45 @@
+{% set name = "ptvsd" %}
+{% set version = "4.3.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.zip
+  sha256: 3b05c06018fdbce5943c50fb0baac695b5c11326f9e21a5266c854306bda28ab
+
+build:
+  number: 5
+  skip: True  # [win and py==38]
+  skip_compile_pyc: "*"  # [win]
+  binary_relocation: False  # [osx]
+  script: "{{ PYTHON }} -m pip install . --no-deps -vv"
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+  host:
+    - python
+    - pip
+    - pytest-runner
+    - setuptools
+  run:
+    - python
+
+test:
+  imports:
+    - ptvsd
+
+about:
+  home: https://github.com/Microsoft/ptvsd/
+  license: MIT
+  license_file: LICENSE
+  summary: 'Python debugger package for use with Visual Studio and Visual Studio Code'
+
+extra:
+  recipe-maintainers:
+    - int19h
+    - karthiknadig
+    - dhirschfeld
+    - rzillman

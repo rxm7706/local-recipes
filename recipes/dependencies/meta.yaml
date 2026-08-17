@@ -1,0 +1,45 @@
+{% set name = "dependencies" %}
+{% set version = "7.7.1" %}
+{% set python_min = "3.9" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 6fc79935f61ae33bf33ca0aa0cc612e9cad9a2bc05a34928becb4d9856725d1a
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps
+
+requirements:
+  host:
+    - pip
+    - poetry-core
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires: 
+    - python {{ python_min }}
+  imports:
+    - dependencies
+
+about:
+  home: https://github.com/dry-python/dependencies
+  license: BSD-2-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Dependency Injection for Humans
+  description: With help of DI you can use different parts of you system independently and combine their behavior really easy.
+  doc_url: http://dependencies.readthedocs.io/en/latest/
+  dev_url: https://github.com/dry-python/dependencies
+
+extra:
+  recipe-maintainers:
+    - nicoddemus

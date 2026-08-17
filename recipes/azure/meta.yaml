@@ -1,0 +1,50 @@
+{% set version = "4.0.0" %}
+
+package:
+  name: azure
+  version: {{ version }}
+
+source:
+  fn: azure-{{ version }}.zip
+  url: https://pypi.io/packages/source/a/azure/azure-{{ version }}.zip
+  md5: 6e614825d35adb90bfd8c878cbae833c
+
+
+build:
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+  number: 0
+
+requirements:
+  host:
+    - pip
+    - python
+    - setuptools
+    - azure-mgmt ==0.20.1
+    - azure-servicebus ==0.20.1
+    - azure-storage ==0.20.3
+    - azure-servicemanagement-legacy ==0.20.1
+  run:
+    - python
+    - setuptools
+    - azure-mgmt ==0.20.1
+    - azure-servicebus ==0.20.1
+    - azure-storage ==0.20.3
+    - azure-servicemanagement-legacy ==0.20.1
+
+test:
+  imports:
+    - azure
+  commands:
+    - python -m unittest discover -p "test_*.py"
+
+about:
+  home: https://github.com/Azure/azure-sdk-for-python
+  license: MIT
+  license_file: LICENSE.txt
+  license_family: MIT
+  summary: 'Microsoft Azure Client Libraries for Python'
+
+extra:
+  recipe-maintainers:
+    - Maxyme

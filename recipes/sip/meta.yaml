@@ -1,0 +1,92 @@
+{% set name = "sip" %}
+{% set version = "6.16.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 22dcb9d02347a3af22a2cba41730c9467f1f781362e97c5eea4ec75c4b7e4ffe
+
+build:
+  number: 0
+  skip: true  # [py<38]
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation  # [win]
+  run_exports:
+    - {{ pin_subpackage('sip', max_pin='x.x') }}
+  entry_points:
+    - sip-distinfo = sipbuild.tools.distinfo:main
+    - sip-module = sipbuild.tools.module:main
+    - sip-build = sipbuild.tools.build:main
+    - sip-install = sipbuild.tools.install:main
+    - sip-sdist = sipbuild.tools.sdist:main
+    - sip-wheel = sipbuild.tools.wheel:main
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - {{ compiler('cxx') }}
+    - make  # [not win]
+  host:
+    - python
+    - setuptools
+    - setuptools_scm >=8
+    - pip
+    - packaging
+    - tomli
+  run:
+    - python
+    - packaging
+    - tomli
+    - ply
+    - setuptools
+
+test:
+  requires:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - make  # [not win]
+    - pip
+  commands:
+    - pip check
+    # make sure the version reported by pip is correct
+    - "pip show {{ name }} | grep -Fx 'Version: {{ version }}'"  # [not win]
+    - sip-distinfo --help
+    - sip-module --help
+    - sip-build --help
+    - sip-install --help
+    - sip-sdist --help
+    - sip-wheel --help
+  imports:
+    - sipbuild
+  files:
+    - test
+
+about:
+  home: https://github.com/Python-SIP/sip/
+  license_family: BSD
+  license: BSD-2-Clause
+  license_file:
+    - LICENSE
+    - sipbuild/module/source/12/17/LICENSE
+    - sipbuild/module/source/13/1/LICENSE
+  summary: A Python bindings generator for C/C++ libraries
+  description: |
+    SIP is a collection of tools that makes it very easy to create Python
+    bindings for C and C++ libraries. It was originally developed in 1998
+    to create PyQt, the Python bindings for the Qt toolkit, but can be
+    used to create bindings for any C or C++ library. For example it is
+    also used to generate wxPython, the Python bindings for wxWidgets.
+  doc_url: https://python-sip.readthedocs.io/en/stable/
+
+extra:
+  recipe-maintainers:
+    - andfoy
+    - ccordoba12
+    - mingwandroid
+    - msarahan
+    - ocefpaf

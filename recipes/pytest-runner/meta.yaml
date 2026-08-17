@@ -1,0 +1,45 @@
+{% set version = "6.0.0" %}
+
+package:
+  name: pytest-runner
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/p/pytest-runner/pytest-runner-{{ version }}.tar.gz
+  sha256: b4d85362ed29b4c348678de797df438f0f0509497ddb8c647096c02a6d87b685
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+    - setuptools-scm >=3.4.1
+  run:
+    - python >=3.7
+    - setuptools
+    - pytest
+
+test:
+  imports:
+    - ptr
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/pytest-dev/pytest-runner
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Invoke py.test as distutils command with dependency resolution.
+  dev_url: https://github.com/pytest-dev/pytest-runner
+
+extra:
+  recipe-maintainers:
+    - dopplershift
+    - ocefpaf

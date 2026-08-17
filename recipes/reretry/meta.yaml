@@ -1,0 +1,51 @@
+{% set name = "reretry" %}
+{% set version = "0.11.8" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+# PyPI sdist URL would be:
+# https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+# It does not include the tests, so we use the GitHub source archive instead.
+source:
+  url: https://github.com/leshchenko1979/reretry/archive/{{ version }}/{{ name }}-{{ version }}.tar.gz
+  sha256: c04be774e1c09ff4acbfc4de686e9a0f18e3ae1c6daabc852a65456f36d4272f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - reretry
+  source_files:
+    - tests
+  commands:
+    - pip check
+    - pytest --pyargs tests
+  requires:
+    - pip
+    - pytest
+    - pytest-asyncio
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/leshchenko1979/reretry
+  summary: An easy to use, but functional decorator for retrying on exceptions.
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+
+extra:
+  recipe-maintainers:
+    - musicinmybrain

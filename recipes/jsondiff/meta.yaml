@@ -1,0 +1,53 @@
+{% set name = "jsondiff" %}
+{% set version = "2.2.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 658d162c8a86ba86de26303cd86a7b37e1b2c1ec98b569a60e2ca6180545f7fe
+
+build:
+  number: 1
+  noarch: python
+  entry_points:
+    - jdiff=jsondiff.cli:main
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools >=64.0.0
+    - setuptools_scm >=8
+    - wheel
+  run:
+    - python >={{ python_min }}
+    - pyyaml 
+    # - setuptools-scm 
+    # - python-build 
+    # - pytest 
+    # - hypothesis 
+
+test:
+  imports:
+    - jsondiff
+  commands:
+    - jdiff --help
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/ZoomerAnalytics/jsondiff
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Diff JSON and JSON-like structures in Python
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk

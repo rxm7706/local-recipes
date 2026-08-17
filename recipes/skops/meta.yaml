@@ -1,0 +1,52 @@
+{% set name = "skops" %}
+{% set version = "0.14" %}
+{% set python_min = "3.9" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/skops-dev/skops/archive/v{{ version }}.tar.gz
+  sha256: 34cc49e61678aefc930ea98eae803d117ff693dec4d7a86abc8204f6376eb54a
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - numpy >=1.25.0
+    - scipy >=1.10.0
+    - scikit-learn >=1.2
+    - prettytable >=3.9
+    - packaging >=17.0
+
+test:
+  imports:
+    - skops
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: http://github.com/skops-dev/skops
+  summary: A set of tools, related to machine learning in production.
+  license: MIT
+  license_file: LICENSE
+  doc_url: http://github.com/skops-dev/skops
+  dev_url: http://github.com/skops-dev/skops
+
+extra:
+  recipe-maintainers:
+    - sugatoray
+    # maintainers from upstream repo
+    - adrinjalali

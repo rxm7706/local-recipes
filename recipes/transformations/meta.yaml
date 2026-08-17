@@ -1,0 +1,48 @@
+{% set name = "transformations" %}
+{% set version = "2022.9.26" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/transformations-{{ version }}.tar.gz
+  sha256: 9141233392e768eb224b73059b60f19df748bb69493dfd16db7cac9f6e93a4ba
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 3
+  skip: true  # [py<38]
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - numpy
+    - pip
+    - python
+    - setuptools >=18.0
+  run:
+    - {{ pin_compatible('numpy') }}
+    - python
+
+test:
+  imports:
+    - transformations
+  commands:
+    - pip list
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://www.cgohlke.com/
+  summary: Homogeneous Transformation Matrices and Quaternions
+  dev_url: https://github.com/cgohlke/transformations
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - goanpeca

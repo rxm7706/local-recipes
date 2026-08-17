@@ -1,0 +1,59 @@
+{% set name = "jupyterlab_templates" %}
+{% set version = "0.5.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: c7c68e61f8eaa6f0d69a9117e9945a3bdbf01ab425c51386c0027f85a8f6eae4
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - nodejs
+    - yarn
+    - hatchling >=1.3.1
+    - hatch-jupyter-builder
+    - jupyterlab >=4,<5
+  run:
+    - python >={{ python_min }}
+    - jupyterlab >=4,<5
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - jupyterlab_templates
+
+outputs:
+  - name: jupyterlab_templates
+  - name: jupyterlab-templates
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python {{ python_min }}
+      run:
+        - python >={{ python_min }}
+        - {{ pin_subpackage("jupyterlab_templates", exact=True) }}
+
+about:
+  home: https://github.com/finos/jupyterlab_templates
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: Jupyter notebook templates
+  description: Jupyter notebook templates
+  dev_url: https://github.com/finos/jupyterlab_templates
+
+extra:
+  recipe-maintainers:
+    - timkpaine

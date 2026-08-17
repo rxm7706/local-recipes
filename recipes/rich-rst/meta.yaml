@@ -1,0 +1,44 @@
+{% set name = "rich-rst" %}
+{% set version = "2.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: f4d117b49697f338769759fa5cacf5197da4888b347b9fda2e50aef5cd8d93bd
+
+build:
+  noarch: python
+  number: 0
+  script_env: PYTHONUTF8=1
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv"
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }}
+    - rich >=12.0.0
+    - pygments >=2.0.0
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - rich_rst
+
+about:
+  home: https://rich-rst.readthedocs.io
+  summary: A reStructuredText renderer for rich
+  keywords: python cli sphinx python3 restructuredtext rich rst docutils command-line-interface
+  dev_url: https://github.com/wasi-master/rich-rst
+  license_file: LICENSE
+  license: MIT
+  license_family: MIT
+
+extra:
+  recipe-maintainers:
+    - davidbrochart

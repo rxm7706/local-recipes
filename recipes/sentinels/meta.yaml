@@ -1,0 +1,49 @@
+{% set name = "sentinels" %}
+{% set version = "1.1.1" %}
+{% set python_min = "3.9" %}
+{% set bundle = "tar.gz" %}
+{% set hash_type = "sha256" %}
+{% set hash_val = "3c2f64f754187c19e0a1a029b148b74cf58dd12ec27b4e19c0e5d6e22b5a9a86" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.{{ bundle }}
+  {{ hash_type }}: {{ hash_val }}
+
+build:
+  number: 0
+  noarch: python
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv"
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - sentinels
+
+about:
+  home: https://github.com/vmalloc/sentinels
+  license: BSD-3-Clause
+  license_file: LICENSE
+  license_family: BSD
+  summary: 'Various objects to denote special meanings in python'
+  dev_url: https://github.com/vmalloc/sentinels
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - pb01ka
+    - killua156
+    - mgorny

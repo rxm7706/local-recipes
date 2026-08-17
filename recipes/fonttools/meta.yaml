@@ -1,0 +1,84 @@
+{% set name = "fonttools" %}
+{% set version = "4.63.0" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/fonttools-{{ version }}.tar.gz
+  sha256: caeb583deeb5168e694b65cda8b4ee62abedfa66cf88488734466f2366b9c4e0
+
+build:
+  number: 0
+  noarch: python  # [use_noarch]
+  track_features:
+    - fonttools_no_compile    # [use_noarch]
+  entry_points:
+    - fonttools = fontTools.__main__:main
+    - ttx = fontTools.ttx:main
+    - pyftsubset = fontTools.subset:main
+    - pyftmerge = fontTools.merge:main
+  script:
+    - export FONTTOOLS_WITH_CYTHON=0      # [use_noarch]
+    - {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform and not use_noarch]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython                                 # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - cython
+    - pip
+    - setuptools
+    - python {{ python_min }}  # [use_noarch]
+    - python                   # [not use_noarch]
+  run:
+    - python >={{ python_min }}  # [use_noarch]
+    - python                     # [not use_noarch]
+    - brotli
+    - munkres
+    - unicodedata2 >=15.1.0  # [use_noarch or py<=312]
+
+test:
+  imports:
+    - fontTools
+    - fontTools.ttLib
+    - fontTools.cffLib
+  commands:
+    - pip check
+    - fonttools --help
+    - fonttools subset --help
+    - ttx -h
+    - pyftsubset --help
+    # pyftmerge has no help option
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/fonttools/fonttools
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: fontTools is a library for manipulating fonts, written in Python.
+
+  description: |
+    fontTools is a library for manipulating fonts, written in Python. The
+    project includes the TTX tool, that can convert TrueType and OpenType
+    fonts to and from an XML text format, which is also called TTX. It
+    supports TrueType, OpenType, AFM and to an extent Type 1 and some
+    Mac-specific formats. The project has a BSD-style open-source licence.
+
+  doc_url: https://groups.google.com/forum/#!forum/fonttools
+  dev_url: https://github.com/fonttools/fonttools
+
+extra:
+  recipe-maintainers:
+    - CJ-Wright
+    - dopplershift
+    - tacaswell

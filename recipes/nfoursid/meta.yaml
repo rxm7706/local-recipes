@@ -1,0 +1,48 @@
+{% set name = "nfoursid" %}
+{% set version = "1.0.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: d65ba1bb98715f6310d0136aecdc997313caa239c08cc95f7e48378f77d06a24
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+    - matplotlib-base >=3.3
+    - numpy >=1.19
+    - pandas >=1.1
+
+test:
+  imports:
+    - nfoursid
+    - nfoursid.tests
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - python -m unittest discover -v nfoursid.tests
+
+about:
+  home: https://github.com/spmvg/nfoursid
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Implementation of N4SID, Kalman filtering and state-space models
+  doc_url: https://nfoursid.readthedocs.io/en/latest/
+  dev_url: https://github.com/spmvg/nfoursid
+
+extra:
+  recipe-maintainers:
+    - spmvg

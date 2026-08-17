@@ -1,0 +1,46 @@
+{% set name = "click-config-file" %}
+{% set version = "0.6.0" %}
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name | replace("-", "_") }}/{{ name | replace("-", "_") }}-{{ version }}.tar.gz
+  sha256: ded6ec1a73c41280727ec9c06031e929cdd8a5946bf0f99c0c3db3a71793d515
+
+build:
+  number: 2
+  noarch: python
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv "
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - pytest-runner
+  run:
+    - python >={{ python_min }}
+    - click >=7.1
+    - configobj >=5.0.6
+
+test:
+  imports:
+    - click_config_file
+  requires:
+    - pytest
+    - twine
+    - python {{ python_min }}
+
+about:
+  home: http://github.com/phha/click_config_file
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Configuration file support for click applications.
+  dev_url: http://github.com/phha/click_config_file
+
+extra:
+  recipe-maintainers:
+    - ltalirz
+    - phha

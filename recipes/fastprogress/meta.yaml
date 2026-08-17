@@ -1,0 +1,45 @@
+{% set name = "fastprogress" %}
+{% set version = "1.1.6" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 7de3a5b136fdf0a9763c19180d0bdfc1bb8c6172b09123c0e4ba272d0c092d0c
+
+build:
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  number: 0
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=64.0
+    - pip
+  run:
+    - python >={{ python_min }}
+    - fastcore >=1.10.0
+    - python-fasthtml >=0.12.34
+    - ipython
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - fastprogress
+
+about:
+  home: https://github.com/fastai/fastprogress
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: A fast and simple progress bar for Jupyter Notebook and console.
+  dev_url: https://github.com/fastai/fastprogress
+  doc_url: https://github.com/fastai/fastprogress
+
+extra:
+  recipe-maintainers:
+    - andersy005

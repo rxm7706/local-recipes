@@ -1,0 +1,49 @@
+{% set name = "azure-cli-telemetry" %}
+{% set version = "1.1.0.post20250227030620" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 371b5249bfcaf0c133679f3a3f3a79168219dc69f03c7f6ac4b42e01b5a6db33
+
+build:
+  noarch: python
+  number: 0
+  script: "{{ PYTHON }} -m pip install . --no-deps -vv"
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - applicationinsights >=0.11.1,<0.12
+    - portalocker >=1.6,<3
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - azure
+    - azure.cli
+    - azure.cli.telemetry
+    - azure.cli.telemetry.components
+
+about:
+  home: https://github.com/Azure/azure-cli
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt
+  summary: Microsoft Azure CLI Telemetry Package
+
+  doc_url: https://docs.microsoft.com/en-us/cli/azure
+  dev_url: https://github.com/Azure/azure-cli/tree/main/src/azure-cli-telemetry
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - andreyz4k

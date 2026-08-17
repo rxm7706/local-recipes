@@ -1,0 +1,54 @@
+{% set name = "hydra-core" %}
+{% set version = "1.3.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/facebookresearch/hydra/archive/v{{ version }}.tar.gz
+  sha256: 38f9ae3729a6ea7b5a2f6c6e33d42ccc8bb10637587897503815eae60e2bdd95
+
+build:
+  noarch: python
+  number: 0
+  script:
+    - {{ PYTHON }} setup.py antlr
+    - {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - antlr ==4.9.*
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - omegaconf >=2.2,<2.4
+    - antlr-python-runtime ==4.9.*
+    - packaging
+
+test:
+  imports:
+    - hydra
+  requires:
+    - python {{ python_min }}
+    - pip
+  commands:
+    - pip check
+
+about:
+  home: https://hydra.cc/
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A framework for elegantly configuring complex applications
+  doc_url: https://hydra.cc/docs/intro/
+  dev_url: https://github.com/facebookresearch/hydra
+
+extra:
+  recipe-maintainers:
+    - omry
+    - mdraw
+    - benjaminrwilson

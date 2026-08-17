@@ -1,13 +1,13 @@
 {% set name = "dbt-spark" %}
-{% set version = "1.8.0" %}
+{% set version = "1.11.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/dbt_spark-{{ version }}.tar.gz
-  sha256: 50ad423ba36617e52fe7539137fc17e5baeef63eb5561809fc4dea26a87dd2fc
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 436aa57d662ebad8e56f606863e02045f73116566f85a600b9fa890a763f8c37
 
 build:
   noarch: python
@@ -18,12 +18,18 @@ requirements:
   host:
     - python {{ python_min }}
     - pip
+    - setuptools
+    - hatchling
   run:
     - python >={{ python_min }}
+    - pyhive >=0.7.0,<0.8.0
+    - dbt-adapters >=1.24.1,<2.0
+    - dbt-common >=1.10,<2.0
     - sqlparams >=3.0.0
-    - dbt-common >=0.1.0,<2.0
-    - dbt-adapters >=0.1.0,<2.0
-    - dbt-core >=1.8.0
+    - thrift >=0.13.0
+    - pyspark >=3.0.0,<4.0.0
+    - sqlparse >=0.4.2 # not directly required, pinned by Snyk to avoid a vulnerability
+    - dbt-core >=1.8.0rc1,<2.0
 
 test:
   imports:
@@ -31,8 +37,8 @@ test:
   commands:
     - pip check
   requires:
-    - python {{ python_min }}
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/dbt-labs/dbt-spark
@@ -43,3 +49,4 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - monaldoj

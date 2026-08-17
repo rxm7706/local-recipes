@@ -1,0 +1,45 @@
+{% set name = "gin-config" %}
+{% set version = "0.5.0" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/gin-config-{{ version }}.tar.gz
+  sha256: 0c6ea5026ded927c8c93c990b01c695257c1df446e45e549a158cfbc79e19ed6
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - python >=3.6
+
+test:
+  imports:
+    - gin
+    - gin.testdata
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/google/gin-config
+  license: Apache-2.0
+  license_family: APACHE
+  license_file: LICENSE
+  summary: 'Gin-Config: A lightweight configuration library for Python'
+  doc_url: https://github.com/google/gin-config/blob/master/docs/index.md
+  dev_url: https://github.com/google/gin-config
+
+extra:
+  recipe-maintainers:
+    - mxr-conda

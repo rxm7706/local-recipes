@@ -1,0 +1,49 @@
+{% set version = "0.7.3" %}
+{% set sha256 = "40216c1badfb2d38ac781ecb162a1d0ec40f8ee9747e610bcfefdfa79486cee3" %}
+
+package:
+  name: python-snappy
+  version: {{ version }}
+
+source:
+  fn: python-snappy-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/python-snappy/python_snappy-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 1
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - cramjam
+  run:
+    - python >={{ python_min }}
+    - cramjam
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+  imports:
+    - snappy
+
+about:
+  home: https://github.com/intake/python-snappy
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Python library for the snappy compression library from Google
+  dev_url: https://github.com/intake/python-snappy
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk
+    - martindurant
+    - djsutherland

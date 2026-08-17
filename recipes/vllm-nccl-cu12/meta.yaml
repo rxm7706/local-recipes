@@ -6,20 +6,21 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/vllm_nccl_cu12-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/vllm_nccl_cu12-{{ version }}.tar.gz
   sha256: d56535da1b893ac49c1f40be9245f999e543c3fc95b4839642b70dd1d72760c0
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python
+    - python >={{ python_min }}
 
 test:
   imports:
@@ -28,10 +29,11 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/vllm-project/vllm-nccl
-  summary: Manages vllm-nccl dependency 
+  summary: Manages vllm-nccl dependency.
   license: Apache-2.0
   license_file: LICENSE
 

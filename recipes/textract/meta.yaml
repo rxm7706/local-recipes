@@ -1,41 +1,41 @@
 {% set name = "textract" %}
-{% set version = "1.6.5" %}
+{% set version = "2.0.0" %}
+{% set sha256 = "358e0281d9668f9623da194a820c9d2b1224b42e96e79a8167a987d690a5bd2a" %}
 
 package:
-  name: {{ name|lower }}
+  name: {{ name }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/textract-{{ version }}.tar.gz
-  sha256: 68f0f09056885821e6c43d8538987518daa94057c306679f2857cc5ee66ad850
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
 
 build:
-  noarch: python
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
 
 requirements:
   host:
-    - python >=3.8
-    - setuptools==71.0.4
-    - pip==23.2.1
-  build:
-    - python >=3.8
-    - setuptools==71.0.4
-    - pip==23.2.1
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - uv-build
+
   run:
-    - python >=3.8
-    - argcomplete >=1.10.0
-    - beautifulsoup4 >=4.8.0
+    - python >={{ python_min }}
+    - argcomplete
     - chardet
-    - docx2txt >=0.8
+    - python-pptx >=0.5.1
+    - pdfminer.six
+    - docx2txt
+    - beautifulsoup4
+    - xlrd
     - ebooklib
+    - speechrecognition >=3.1.0
     - msg-extractor
-    - pdfminer.six >=20191110
-    - python-pptx >=0.6.18
-    - six >=1.12.0
-    - speechrecognition >=3.8.1
-    - xlrd >=1.2.0
+    - six
 
 test:
   imports:
@@ -72,11 +72,8 @@ test:
     - textract.parsers.xlsx_parser
   commands:
     - textract -h
-    - pip check
   requires:
-    - pip==23.2.1
-    - setuptools==71.0.4
-    - wheel >=0.41.1
+    - python {{ python_min }}
 
 about:
   home: https://github.com/deanmalmgren/textract
@@ -91,4 +88,3 @@ extra:
   recipe-maintainers:
     - pmlandwehr
     - jan-janssen
-    - rxm7706

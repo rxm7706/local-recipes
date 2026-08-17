@@ -1,0 +1,44 @@
+{% set name = "pdflatex" %}
+{% set version = "0.1.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pdflatex-{{ version }}.tar.gz
+  sha256: b8109ff5a5b813e15d6a9e05b4c4c1ae3893b407ad1f8567ef5b89ec37a7aed5
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - poetry >=0.12
+    - poetry-core
+    - pip
+  run:
+    - python >={{ python_min }},<4.0.0
+    - attrs >=18.2.0,<19.0.0
+
+test:
+  imports:
+    - pdflatex
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/mbello/pdflatex
+  summary: Simple wrapper to calling pdflatex
+  license: Unlicense
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - mediocretech

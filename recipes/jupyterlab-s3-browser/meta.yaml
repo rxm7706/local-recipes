@@ -1,3 +1,4 @@
+{% set python_min = '3.10.0' %}
 {% set name = "jupyterlab-s3-browser" %}
 {% set version = "0.12.0" %}
 
@@ -6,26 +7,26 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/jupyterlab_s3_browser-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/jupyterlab_s3_browser-{{ version }}.tar.gz
   sha256: 14eabbd562f26f1267a3b176f9d2c26f782f61267330bd1dab0504d2494f37b4
 
 build:
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv
-  number: 0
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 2
 
 requirements:
   host:
-    - python >=3.10.0
-    - jupyter_packaging >=0.7.9,<0.8.0
+    - python {{ python_min }}
+    - jupyter_packaging >=0.7.9
     - jupyterlab >=3.0,<4.0
     - setuptools >=40.8.0
     - wheel
     - poetry-core
     - pip
   run:
-    - python >=3.10.0
-    - jupyterlab >=3.2.3,<4.0.0
+    - python >={{ python_min }}
+    - jupyterlab >=2.0.0 # https://github.com/IBM/jupyterlab-s3-browser/blob/0.12.0/setup.py#L100
     - notebook
     - boto3
     - s3fs >=2021.10.1
@@ -39,9 +40,10 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
-  home: https://github.com/IBM/jupyterlab_s3_browser
+  home: https://github.com/IBM/jupyterlab-s3-browser
   summary: JupyterLab extension for browsing S3-compatible object storage
   license: Apache-2.0
   license_file: LICENSE

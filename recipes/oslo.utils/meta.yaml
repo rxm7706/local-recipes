@@ -1,0 +1,64 @@
+{% set name = "oslo.utils" %}
+{% set version = "10.1.1" %}
+{% set bundle = "tar.gz" %}
+{% set hash = "c8ac3ee295303cc5776c4d8e1d4ef10078ece60ede4931177e4f07aca58f81ab" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.{{ bundle }}
+  url: https://files.pythonhosted.org/packages/61/16/8cb5305abd34606bd9a5ee1c6fbe5db97981d323c8454f1d872c1781dcc8/oslo_utils-{{ version }}.tar.gz
+  sha256: {{ hash }}
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pbr !=2.1.0,>=2.0.0
+
+  run:
+    - python >={{ python_min }}
+    - iso8601 >=0.1.11
+    - oslo.i18n >=3.15.3
+    - netaddr >=0.10.0
+    - debtcollector >=1.2.0
+    - pyparsing >=2.1.0
+    - packaging >=20.4
+    - python-tzdata >=2022.4
+    - PyYAML >=3.13
+    - psutil >=3.2.2
+
+test:
+  imports:
+    - oslo_utils
+    - oslo_utils.encodeutils
+    - oslo_utils.eventletutils
+    - oslo_utils.excutils
+    - oslo_utils.fileutils
+    - oslo_utils.importutils
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+
+about:
+  home: https://docs.openstack.org/developer/oslo.utils/
+  license_file: LICENSE
+  license: Apache-2.0
+  license_family: Apache
+  summary: Support for common utility type functions, such as encoding, exception handling, string manipulation, and time handling.
+  doc_url: https://docs.openstack.org/developer/oslo.utils/
+  dev_url: https://git.openstack.org/cgit/openstack/oslo.utils
+
+extra:
+  recipe-maintainers:
+    - anguslees
+    - tschoonj

@@ -1,0 +1,45 @@
+{% set name = "langchain-anthropic" %}
+{% set version = "1.5.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/langchain_anthropic-{{ version }}.tar.gz
+  sha256: 648fdab25573fc9d29543c4b4af1d682b7b6e548d452bb46e67ebc586e195629
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - pydantic >=2.7.4,<3.0.0
+    - python >={{ python_min }},<4.0
+    - langchain-core >=1.5.4,<2.0.0
+    - anthropic >=0.120.0,<1.0.0
+
+test:
+  imports:
+    - langchain_anthropic
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/langchain-ai/langchain
+  summary: An integration package connecting AnthropicMessages and LangChain
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

@@ -1,0 +1,46 @@
+{% set version = "1.7.5" %}
+
+package:
+  name: pytest-forked
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pytest-forked/pytest_forked-{{ version }}.tar.gz
+  sha256: 00f2bee51612f29b8e6b81eed2c3b2975e824c2693394f5bdaf7a1369078ba5f
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - setuptools_scm
+  run:
+    - python >={{ python_min }}
+    - pytest >=3.10
+    - py
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - pytest_forked
+  files:
+    - dummy_test.py
+  commands:
+    - pytest --forked dummy_test.py
+
+about:
+  home: https://github.com/pytest-dev/pytest-forked
+  license: MIT
+  license_file: LICENSE
+  summary: run tests in isolated forked subprocesses
+  dev_url: https://github.com/pytest-dev/pytest-forked
+
+extra:
+  recipe-maintainers:
+    - nicoddemus

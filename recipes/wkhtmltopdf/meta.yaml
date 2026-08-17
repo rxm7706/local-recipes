@@ -1,0 +1,47 @@
+{% set name = "wkhtmltopdf" %}
+{% set major_minor = "0.12" %}
+{% set version = major_minor + ".4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: wkhtmltox-{{ version }}_linux-generic-amd64.tar.xz  # [linux]
+  url: https://github.com/{{ name }}/{{ name }}/releases/download/{{ version }}/wkhtmltox-{{ version }}_linux-generic-amd64.tar.xz  # [linux]
+  sha256: 049b2cdec9a8254f0ef8ac273afaf54f7e25459a273e27189591edc7d7cf29db  # [linux]
+
+  fn: wkhtmltox-{{ version }}_msvc2015-win64.exe  # [win]
+  url: https://github.com/{{ name }}/{{ name }}/releases/download/{{ version }}/wkhtmltox-{{ version }}_msvc2015-win64.exe  # [win]
+  sha256: 14a5996adc77dc606944dbc0dc682bff104cd38cc1bec19253444cb87f259797  # [win]
+
+build:
+  number: 1
+  skip: True  # [osx]
+
+requirements:
+  build:
+    - 7zip  # [win]
+  run:
+    - fontconfig  # [linux]
+    - xorg-libxrender  # [linux]
+    - xorg-libxext  # [linux]
+    - vc >=14  # [win]
+
+test:
+  commands:
+    - wkhtmltopdf -h
+
+about:
+  home: http://wkhtmltopdf.org/
+  license: LGPL-3.0-or-later
+  license_family: GPL
+  license_file: '{{ environ["RECIPE_DIR"] }}/LICENSE'
+  summary: 'Command line tools to render HTML into PDF and various image formats.'
+  description: |
+    wkhtmltopdf and wkhtmltoimage are open source (LGPLv3) command line tools
+    to render HTML into PDF and various image formats using the Qt WebKit rendering engine.
+
+extra:
+  recipe-maintainers:
+    - scopatz

@@ -1,0 +1,39 @@
+{% set name = "pypng" %}
+{% set version = "0.20220715.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://gitlab.com/drj11/pypng/-/archive/pypng-{{ version }}/pypng-pypng-{{ version }}.tar.bz2
+  sha256: cbcf24b25951bc8694cdbcf67ffeda6294b52109db3d02a90dd1a0ade69ebcaa
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - png
+
+about:
+  home: https://gitlab.com/drj11/pypng/
+  license: MIT
+  license_family: MIT
+  license_file: LICENCE
+  summary: Pure Python PNG image encoder and decoder
+
+extra:
+  recipe-maintainers:
+    - hmaarrfk

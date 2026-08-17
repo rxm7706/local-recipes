@@ -1,0 +1,83 @@
+{% set name = "snowflake-snowpark-python" %}
+{% set version = "1.54.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 5ae52602dc528bf822a3ee8e1c8a679484afcb44dd12463211b0238148e0cf7b
+
+build:
+  skip: true  # [py<38 or py>314]
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+  host:
+    - python
+    - pip
+    - setuptools >=40.6.0
+    - wheel
+    # Snowpark IR
+    - protobuf ==3.20.1  # [py<=310]
+    - protobuf ==4.25.3  # [py>310 and py<314]
+    - protobuf >=6.31,<7  # [py>=314]
+    # mypy-protobuf 3.7.0 requires protobuf >= 5.26; <=3.6.0 has no runtime-version check
+    # in its pb2 files so it is safe alongside any protobuf major version in the host env.
+    - mypy-protobuf <=3.6.0
+    # py314: protoc-wheel-0 has no cp314 wheel on PyPI, so pip's build-isolation venv has
+    # no protoc binary; setup.py falls back to shutil.which("protoc") from PATH.
+    # Pin <7 so the conda-forge solve picks libprotobuf 6.x, keeping the same major version
+    # as pyarrow's arrow-cpp (libprotobuf 6.33.x) and avoiding a libprotobuf 7 vs 6 conflict.
+    - libprotobuf >=6.31,<7  # [py>=314]
+  run:
+    - python
+    - setuptools >=40.6.0
+    - wheel
+    - cloudpickle >=1.6.0,<=3.1.1,!=2.1.0,!=2.2.0
+    - snowflake-connector-python >=3.17.0,<5.0.0
+    - typing-extensions >=4.1.0,<5.0.0
+    - pyyaml
+    - protobuf >=3.20,<6.34  # [py<314]
+    - protobuf >=6.31,<7     # [py>=314]
+    - python-dateutil
+    - tzlocal
+  run_constrained:
+    # Snowpark pandas
+    - modin >=0.36.0,<0.38.0
+
+test:
+  imports:
+    - snowflake.snowpark
+    - snowflake.snowpark._internal
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://www.snowflake.com/
+  summary: Snowflake Snowpark for Python
+  dev_url: https://github.com/snowflakedb/snowpark-python
+  license: Apache-2.0
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - sfc-gh-helmeleegy
+    - sfc-gh-mayliu
+    - sfc-gh-joshi
+    - sfc-gh-jrose
+    - sfc-gh-lmukhopadhyay
+    - sfc-gh-nkumar
+    - sfc-gh-jdu
+    - sfc-gh-aling
+    - sfc-gh-aalam
+    - sfc-gh-yixie
+    - sfc-gh-mkeller
+    - sfc-gh-yuwang

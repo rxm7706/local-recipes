@@ -1,0 +1,44 @@
+{% set version = "2.0.2" %}
+
+package:
+  name: xlrd
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/x/xlrd/xlrd-{{ version }}.tar.gz
+  sha256: 08b5e25de58f21ce71dc7db3b3b8106c1fa776f3024c54e45b45b374e89234c9
+
+build:
+  number: 0
+  noarch: python
+  script: "{{ PYTHON }} -m pip install . --no-deps -vv"
+
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  files:
+    - test.xls
+
+about:
+  home: 'http://www.python-excel.org/'
+  license: "BSD-3-Clause AND BSD-4-Clause"
+  license_family: BSD
+  license_file: '{{ environ["RECIPE_DIR"] }}/LICENSE'
+  summary: 'Library for developers to extract data from Microsoft Excel (tm) spreadsheet files'
+  doc_url: http://xlrd.readthedocs.io/en/stable/
+  dev_url: https://github.com/python-excel/xlrd/
+
+extra:
+  recipe-maintainers:
+   - cokelaer
+   - notestaff
+   - mjhoptics

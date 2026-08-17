@@ -1,0 +1,48 @@
+{% set name = "lorem" %}
+{% set version = "0.1.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/lorem-{{ version }}.tar.gz
+  sha256: 785f4109a241fc2891e59705e85d065f6e6d3ed6ad91750a8cb54d4f3e59d934
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1007
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - lorem
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/sfischer13/python-lorem
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: 'Generator for random text that looks like Latin'
+
+  description: |
+    lorem is a generator for random text that looks like Latin for Python 3.3+.
+    It is pure Python code with no dependencies.
+  dev_url: https://github.com/sfischer13/python-lorem
+
+extra:
+  recipe-maintainers:
+    - sfischer13

@@ -1,0 +1,48 @@
+{% set name = "pbs-installer" %}
+{% set version = "2026.8.14" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/pbs_installer-{{ version }}.tar.gz
+  sha256: e611fe862a3e3b72e6bf17f92d4bb78868e2e203fa7d7579b8d4bfc8d89be7a8
+
+build:
+  entry_points:
+    - pbs-install = pbs_installer.__main__:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pdm-backend
+    - pip
+  run:
+    - python >={{ python_min }}
+    - zstandard
+    - httpx
+
+test:
+  imports:
+    - pbs_installer
+  commands:
+    - pip check
+    - pbs-install --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/frostming/pbs-installer
+  summary: Installer for Python Build Standalone
+  license: MIT
+  license_file: LICENSE
+  doc_url: https://pbs-installer.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - daylinmorgan

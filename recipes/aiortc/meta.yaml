@@ -1,0 +1,49 @@
+{% set version = "1.15.0" %}
+
+package:
+  name: aiortc
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/aiortc/aiortc-{{ version }}.tar.gz
+  sha256: ee6c0757ca070cf6d6bee441936d6ede24eef51211bbff6653409c540f72e625
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - aioice >=0.10.1
+    - av >=14.0.0,<17.0.0a0
+    - cffi >=1.0.0
+    - cryptography >=44.0.0
+    - google-crc32c >=1.1
+    - pyee >=13.0.0
+    - pylibsrtp >=0.10.0
+    - pyopenssl >=25.0.0
+
+test:
+  imports:
+    - aiortc
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: An implementation of WebRTC and ORTC
+  license: BSD-3-Clause
+  license_file: LICENSE
+  home: https://github.com/aiortc/aiortc
+
+extra:
+  recipe-maintainers:
+    - hmaarrfk

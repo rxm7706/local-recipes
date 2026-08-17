@@ -1,0 +1,50 @@
+{% set name = "comtypes" %}
+{% set version = "1.4.16" %}
+{% set sha256 = "79bdb1e319a3e8cd26cf0aece54ff550aa0bb749625cf74c0cbe3cae2fe764d9" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://github.com/enthought/comtypes/archive/{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 0
+  skip: true  # [not win]
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python
+    - setuptools
+    - pip
+
+  run:
+    - python
+
+test:
+  imports:
+    - comtypes
+
+about:
+  home: http://starship.python.net/crew/theller/comtypes/
+  license: MIT
+  license_file: LICENSE.txt
+  summary: pure Python COM package
+  description: |
+    comtypes is a pure Python COM package based on the ctypes ffi foreign
+    function library.The comtypes package makes it easy to access and implement
+    both custom and dispatch based COM interfaces.While the pywin32 package
+    contains superior client side support for dispatch based COM interfaces,it is
+    not possible to access custom COM interfaces unless they are wrapped in
+    C++-code.
+  doc_url: http://pythonhosted.org/comtypes/
+  doc_source_url: https://github.com/enthought/comtypes/blob/master/docs/source/index.rst
+  dev_url: https://github.com/enthought/comtypes/
+
+extra:
+  recipe-maintainers:
+    - nehaljwani

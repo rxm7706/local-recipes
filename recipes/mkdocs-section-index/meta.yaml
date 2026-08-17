@@ -1,0 +1,45 @@
+{% set name = "mkdocs-section-index" %}
+{% set version = "0.3.12" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/mkdocs_section_index-{{ version }}.tar.gz
+  sha256: 285635bf86c643b0fc7a343053d7a818049817bff4408f52b80c4367bd5e7268
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - mkdocs >=1.2,<=1.6.1
+    - properdocs >=1.6.5
+
+test:
+  imports:
+    - mkdocs_section_index
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  summary: MkDocs plugin to allow clickable sections that lead to an index page
+  dev_url: https://github.com/oprypin/mkdocs-section-index
+  home: https://github.com/oprypin/mkdocs-section-index
+  license: MIT
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - psalvaggio

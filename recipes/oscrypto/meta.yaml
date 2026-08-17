@@ -1,0 +1,54 @@
+{% set name = "oscrypto" %}
+{% set version = "1.3.0" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 6f5fef59cb5b3708321db7cca56aed8ad7e662853351e7991fcf60ec606d47a4
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - asn1crypto >=1.0.0
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  imports:
+    - oscrypto
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/wbond/oscrypto
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Compiler-free Python crypto library backed by the OS, supporting CPython and PyPy
+
+  description: |
+    A compilation-free, always up-to-date encryption library for Python
+    that works on Windows, OS X, Linux and BSD.
+    Supports the following versions of
+    Python: 2.6, 2.7, 3.2, 3.3, 3.4, 3.5, 3.6, 3.7, 3.8 and pypy.
+  doc_url: https://github.com/wbond/oscrypto/blob/master/docs/readme.md
+  dev_url: https://github.com/wbond/oscrypto
+
+extra:
+  recipe-maintainers:
+    - talues
+    - soapy1

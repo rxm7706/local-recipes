@@ -6,21 +6,22 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/rise-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/rise-{{ version }}.tar.gz
   sha256: 641db777cb907bf5e6dc053098d7fd213813fa9a946542e52b900eb7095289a6
 
 build:
+  number: 5
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
 
 requirements:
   host:
-    - python <4.0
+    - python {{ python_min }}
     - pip
+    - notebook >=6.0,<7.0
   run:
-    - python <4.0
-    - notebook >=6.0
+    - python >={{ python_min }}
+    - notebook >=6.0,<7.0
 
 test:
   imports:
@@ -29,16 +30,22 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
-  summary: Reveal.js - Jupyter/IPython Slideshow Extension
-  license: BSD-3-Clause-LBNL AND MIT AND BSD-3-Clause
-  license_file:
-    - LICENSE.md
-    - rise/static/reveal.js/LICENSE
-    - rise/static/reveal.js/lib/font/source-sans-pro/LICENSE
-    - rise/static/reveal.js/lib/font/league-gothic/LICENSE
+  home: https://github.com/damianavila/RISE
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.md
+  summary: 'RISE: Live Reveal.js Jupyter/IPython Slideshow Extension'
+  description: Reveal.js - Jupyter/IPython Slideshow Extension, also known as live_reveal. Quickly turn your Jupyter Notebooks into a live presentation.
+  doc_url: http://rise.readthedocs.io
+  dev_url: https://github.com/damianavila/RISE
 
 extra:
   recipe-maintainers:
+    - cshaley
+    - sannykr
+    - damianavila
+    - parmentelat
     - rxm7706

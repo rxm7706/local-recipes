@@ -1,0 +1,66 @@
+{% set name = "PyMetis" %}
+{% set version = "2025.2.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | lower }}-{{ version }}.tar.gz
+  sha256: 79c6d56c30c6f3df7cc755617cbadcfc252a175ce4e5a59982edad0f1ab71c99
+
+build:
+  number: 0
+  skip: true  # [py<310]
+  script:
+    # Need to pass MESON_ARGS to make sure meson finds the correct executables for cross-compilation.
+    - $PYTHON -m build -w -n -x -Csetup-args=${MESON_ARGS// / -Csetup-args=} -Csetup-args="-Duse-shipped-metis=false"     # [unix]
+    - $PYTHON -m pip install dist/pymetis*.whl                                                                            # [unix]
+    - python -m pip install . -vv -Csetup-args="-Duse-shipped-metis=false"                                                # [win]
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - pybind11                               # [build_platform != target_platform]
+    - ninja                                  # [build_platform != target_platform]
+    - meson-python                           # [build_platform != target_platform]
+    - {{ stdlib("c") }}
+    - {{ compiler('cxx') }}
+    - metis                                  # [build_platform != target_platform]
+  host:
+    - python
+    - python-build
+    - pip
+    - pybind11
+    - meson-python
+    - metis
+  run:
+    - typing_extensions >=4.5
+    - python
+    - metis
+
+test:
+  imports:
+    - pymetis
+  requires:
+    - pip
+    - pytest
+    - numpy
+    - metis
+    - meshpy  # [unix and x86_64]
+  source_files:
+    - test
+  commands:
+    - pip check
+    # There were some test failures on Windows, but life is too short to debug them. :shrug:
+    - cd test && python -m pytest  # [unix and build_platform == target_platform]
+about:
+  home: https://github.com/inducer/pymetis
+  summary: A Graph Partitioning Package
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - inducer

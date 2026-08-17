@@ -1,0 +1,43 @@
+{% set name = "multitasking" %}
+{% set version = "0.0.13" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/multitasking-{{ version }}.tar.gz
+  sha256: d896b5df877c9ca5eeddbf0e5994124694d6cb535aba698fb23344c7025155a1
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - multitasking
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/ranaroussi/multitasking
+  summary: Non-blocking Python methods using decorators
+  license: Apache-2.0
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

@@ -1,0 +1,84 @@
+{% set name = "rpy2" %}
+{% set version = "3.6.7" %}
+{% set version_tag = version.replace('.', '_') %}
+{% set posix = 'm2-' if win else '' %}
+
+package:
+  name: rpy2
+  version: {{ version.replace('_', '.') }}
+
+source:
+  # the tag on github has the format RELEASE_x_x_x
+  url: https://github.com/rpy2/rpy2/archive/refs/tags/RELEASE_{{ version_tag }}.tar.gz
+  sha256: 5630570aad60fdb9974bf4b5258112c2292c91d1c2c91c67100ad0a6fa8b3d4c
+
+build:
+  skip: true  # [win]
+  number: 0
+  rpaths:
+    - lib/R/lib/
+    - lib/
+  missing_dso_whitelist:
+    # Conda-build raises the missing `R.dll` linkage erroneously.
+    # xref: https://github.com/conda/conda-build/pull/4786
+    - '*/R.dll'         # [win]
+
+requirements:
+  build:
+    - python                              # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}  # [build_platform != target_platform]
+    - cffi                                # [build_platform != target_platform]
+    - {{ stdlib('c') }}
+    - {{ compiler('c') }}
+    - liblzma-devel                       # [build_platform != target_platform]
+    - zlib                                # [build_platform != target_platform]
+    - {{ posix }}make
+    - {{ posix }}base                     # [win]
+  host:
+    - python
+    - pip
+    - setuptools >=77
+    - jinja2
+    - tzlocal
+    - r-base
+    - cffi >=1.15.1
+    - liblzma-devel                       # [not win]
+    - zlib                                # [not win]
+  run:
+    - python
+    - jinja2
+    - tzlocal
+    - r-base
+    - cffi >=1.15.1
+    - packaging
+
+test:
+  source_files:
+    - ./
+  requires:
+    - r-cairo  # [not win]
+    - r-ggplot2 >=2.2.1
+    - r-survival
+    - ipython
+    - numpy
+    - pandas
+    - pytest <9
+    - {{ posix }}make  # [win]
+  commands:
+    - pytest -s -rxs -v rpy2-rinterface/
+    - pytest -s -rxs -v rpy2-robjects/ -k "not test_svg_plotting_args and not test_POSIXct_datetime_from_timestamp and not test_ri2pandas"  # [not win]
+
+about:
+  home: https://github.com/rpy2/rpy2
+  license: GPL-2.0-or-later
+  license_family: GPL
+  license_file: gpl-2.0.txt
+  summary: Python interface to the R language (embedded R)
+  doc_url: https://rpy2.github.io/
+
+extra:
+  recipe-maintainers:
+    - flaviomartins
+    - conda-forge/r
+    - ceholden
+    - ocefpaf

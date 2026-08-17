@@ -1,43 +1,60 @@
 {% set name = "openlineage-airflow" %}
-{% set version = "1.7.0" %}
+{% set version = "1.14.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/openlineage-airflow-{{ version }}.tar.gz
-  sha256: 7547d6422ed6b97c4f699081bb1c88957e911d2969d4b6d0153625faa944e6aa
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 6e9b987445f0e1c143ef4b14d3a1f05aa9e2909d28ee10c73d91d04cc588cd1d
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.8
-    - attrs >=20.0
-    - openlineage-integration-common ==1.7.0
-    - openlineage-python ==1.7.0
+    - python >={{ python_min }}
+    - attrs >=20.3
+    - requests >=2.20.0
+    - openlineage-integration-common =={{ version }}
+    - openlineage-python =={{ version }}
+  run_constrained:
+    - apache-airflow >=2.3
 
 test:
   imports:
     - openlineage.airflow
     - openlineage.airflow.extractors
+    - openlineage.lineage_backend
   commands:
     - pip check
   requires:
     - pip
+    - apache-airflow >=2.3
+    - python {{ python_min }}
 
 about:
   summary: OpenLineage integration with Airflow
-  license: ''
-  license_file: PLEASE_ADD_LICENSE_FILE
+  home: https://github.com/OpenLineage/OpenLineage
+  description: "Starting from Airflow version 2.7.0 OpenLineage integration is included in Airflow repository as a provider. The apache-airflow-providers-openlineage package significantly ease lineage tracking in Airflow, ensuring stability by embedding the functionality directly into each provider and simplifying the process
+    for users to select and manage lineage collection consumers.As a result, starting from Airflow 2.7.0 one should use the native Airflow Openlineage provider package."
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  doc_url: https://openlineage.io/docs/integrations/airflow/
+  dev_url: https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow
 
 extra:
   recipe-maintainers:
     - rxm7706
+    - millsks
+    - conda-forge/openlineage-integration-common
+    - conda-forge/openlineage-sql
+    - conda-forge/openlineage-python

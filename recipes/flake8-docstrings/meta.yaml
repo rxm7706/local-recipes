@@ -1,0 +1,45 @@
+{% set name = "flake8-docstrings" %}
+{% set version = "1.7.0" %}
+{% set sha256 = "4c8cc748dc16e6869728699e5d0d685da9a10b0ea718e090b1ba088e67a941af" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - pydocstyle >=2.1
+    - flake8 >=3
+
+test:
+  requires:
+    - python {{ python_min }}
+  commands:
+    - flake8 --version | grep flake8_docstrings
+
+about:
+  home: https://github.com/PyCQA/flake8-docstrings
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Extension for flake8 which uses pydocstyle to check docstrings
+  dev_url: https://github.com/PyCQA/flake8-docstrings
+
+extra:
+  recipe-maintainers:
+    - dopplershift

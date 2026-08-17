@@ -1,0 +1,49 @@
+{% set name = "pykwalify" %}
+{% set version = "1.8.0" %}
+{% set sha256 = "796b2ad3ed4cb99b88308b533fb2f559c30fa6efb4fa9fda11347f483d245884" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pykwalify-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vvv --no-deps --no-build-isolation
+  entry_points:
+    - pykwalify = pykwalify.cli:cli_entrypoint
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }}
+    - docopt >=0.6.2
+    - ruamel.yaml >=0.16.0
+    - python-dateutil >=2.8.0
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - pykwalify
+  commands:
+    - pykwalify --help
+
+about:
+  home: http://github.com/grokzen/pykwalify
+  summary: Python lib/cli for JSON/YAML schema validation
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  doc_url: https://pykwalify.readthedocs.io/en/master/
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - mencian

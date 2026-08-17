@@ -1,0 +1,58 @@
+{% set name = "shodan" %}
+{% set version = "1.31.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/shodan-{{ version }}.tar.gz
+  sha256: c73275386ea02390e196c35c660706a28dd4d537c5a21eb387ab6236fac251f6
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+  entry_points:
+    - shodan=shodan.__main__:main
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - certifi
+    - python >={{ python_min }}
+    - click
+    - click-plugins
+    - xlsxwriter
+    - requests >=2.2.1
+    - colorama
+    - tldextract
+
+test:
+  source_files:
+    - tests
+  imports:
+    - shodan
+  commands:
+    - pip check
+    - shodan --help
+    # Skip test suite becuase it requires Shodan API key
+#     - pytest -vvv --capture=tee-sys tests
+  requires:
+    - pip
+    - pytest
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/achillean/shodan-python
+  summary: Python library and command-line utility for Shodan, a search engine for Internet-connected devices.
+  license: MIT
+  license_file:
+    - LICENSE
+
+extra:
+  recipe-maintainers:
+    - thewchan

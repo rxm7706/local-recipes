@@ -1,0 +1,50 @@
+{% set version = "0.5.4" %}
+
+package:
+  name: imutils
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/i/imutils/imutils-{{ version }}.tar.gz
+  sha256: 03827a9fca8b5c540305c0844a62591cf35a0caec199cb0f2f0a4a0fb15d8f24
+
+build:
+  noarch: python
+  number: 6
+  script: {{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - matplotlib-base
+    - numpy
+    - opencv
+    - scipy
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - imutils
+    - imutils.face_utils
+    - imutils.feature
+    - imutils.io
+    - imutils.video
+
+about:
+  home: https://github.com/jrosebr1/imutils
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt
+  summary: A series of convenience functions to make basic image processing functions such as translation, rotation, resizing, skeletonization, displaying Matplotlib images, sorting contours, detecting edges, and much more easier with OpenCV and both Python 2.7 and Python 3.
+  doc_url: https://github.com/jrosebr1/imutils
+  dev_url: https://github.com/jrosebr1/imutils
+
+extra:
+  recipe-maintainers:
+    - h-vetinari
+    - ehfd

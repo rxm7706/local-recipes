@@ -1,0 +1,48 @@
+{% set name = "azure-mgmt-subscription" %}
+{% set version = "3.1.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.zip
+  sha256: 4e255b4ce9b924357bb8c5009b3c88a2014d3203b2495e2256fa027bf84e800e
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }}
+    - msrest >=0.7.1
+    - azure-common ~=1.1
+    - azure-mgmt-core >=1.3.2,<2.0.0
+
+test:
+  imports:
+    - azure
+    - azure.mgmt
+    - azure.mgmt.subscription
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/subscription/azure-mgmt-subscription
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt
+  summary: Microsoft Azure Subscription Management Client Library for Python
+
+extra:
+  recipe-maintainers:
+    - tim-werner
+    - dhirschfeld

@@ -1,0 +1,60 @@
+{% set name = "albumentations" %}
+{% set version = "2.0.8" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 4da95e658e490de3c34af8fcdffed09e36aa8a4edd06ca9f9e7e3ea0b0b16856
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - typing_extensions >=4.9.0
+    - python >={{ python_min }}
+    - numpy >=1.24.4
+    - scipy >=1.10.0
+    - pyyaml
+    - opencv >=4.9.0.80
+    - albucore ==0.0.24
+    - pydantic >=2.9.2
+    - typing-extensions >=4.9.0
+    - eval-type-backport
+
+test:
+  requires:
+    - python {{ python_min }}
+    - pip
+  commands:
+    - pip check
+  imports:
+    - albumentations
+
+about:
+  home: https://github.com/albu/albumentations
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Fast image augmentation library and easy to use wrapper around other libraries
+
+  doc_url: https://albumentations.readthedocs.io/
+  dev_url: https://github.com/albu/albumentations
+
+extra:
+  recipe-maintainers:
+    - mukhery
+    - mdraw
+    - albu
+    - creafz
+    - ternaus
+    - BloodAxe

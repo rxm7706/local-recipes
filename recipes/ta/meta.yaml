@@ -1,0 +1,52 @@
+{% set name = "ta" %}
+{% set version = "0.11.0" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/bukosabino/{{ name }}/archive/{{ version }}.tar.gz
+  sha256: 18acbacf7efdb8ed21c63bb8df1b13c4f23f23f94f985f8805603745abc465c9
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+  run:
+    - numpy
+    - pandas
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - ta
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+  source_files:
+    - test
+
+about:
+  home: https://github.com/bukosabino/ta
+  summary: Technical Analysis Library in Python
+  description: |
+    It is a Technical Analysis library useful to do feature engineering from
+    financial time series datasets (Open, Close, High, Low, Volume). It is built on Pandas and Numpy.
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  doc_url: https://technical-analysis-library-in-python.readthedocs.io/en/latest/
+  dev_url: https://github.com/bukosabino/ta
+
+extra:
+  recipe-maintainers:
+    - BastianZim

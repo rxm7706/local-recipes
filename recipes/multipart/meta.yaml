@@ -1,0 +1,42 @@
+{% set name = "multipart" %}
+{% set version = "2.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/multipart-{{ version }}.tar.gz
+  sha256: d6076567b489270271d9ec103d404745da1501ad5b70e3a7f1f07f5623d82850
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - flit-core
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - multipart
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: http://github.com/defnull/multipart
+  summary: Parser for multipart/form-data.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

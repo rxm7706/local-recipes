@@ -1,0 +1,55 @@
+{% set name = "panel-material-ui" %}
+{% set version = "0.14.1" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/panel_material_ui-{{ version }}.tar.gz
+  sha256: 709827337c39eb6ebc40fbd0297ebb7c8e8e104be11defac5c22e4323d4ccefa
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - hatch-vcs
+    - panel-core >=1.8.0
+    - nodejs >=22.*
+    - esbuild
+    - packaging
+    - pip
+  run:
+    - python >={{ python_min }}
+    - panel-core >=1.8.0
+    - bokeh >=3.8.0
+    - packaging
+
+test:
+  imports:
+    - panel_material_ui
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: panel-material-ui.holoviz.org
+  summary: An extension to bring MaterialUI components to Panel.
+  dev_url: https://github.com/panel-extensions/panel-material-ui
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+
+
+extra:
+  recipe-maintainers:
+    - maximlt
+    - philippjfr
+    - hoxbro

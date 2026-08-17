@@ -1,0 +1,44 @@
+{% set name = "flake8-comprehensions" %}
+{% set version = "3.17.0" %}
+{% set sha256 = "bf4fa102b2bf4d6c9e999e29e4b2724cbadffb70b937600fc782161be4dc0f4a" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - flake8 >=3.0,!=3.2.0
+
+test:
+  requires:
+    - python {{ python_min }}
+  commands:
+    - 'flake8 --version | grep flake8-comprehensions:'
+
+about:
+  home: https://github.com/adamchainz/flake8-comprehensions
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A flake8 plugin that helps you write better list/set/dict comprehensions.
+  dev_url: https://github.com/adamchainz/flake8-comprehensions
+
+extra:
+  recipe-maintainers:
+    - dopplershift

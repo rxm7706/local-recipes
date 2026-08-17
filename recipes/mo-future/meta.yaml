@@ -1,0 +1,42 @@
+{% set name = "mo-future" %}
+{% set version = "7.685.25166" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 0846fc97bb12a688f44d98b246dab69a5757ab68b46ed1a641f2df317d455bed
+
+build:
+  number: 0
+  noarch: python
+  script: '{{ PYTHON }} -m pip install . -vv '
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - mo_future
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/klahnakoski/mo-files
+  license: MPL-2.0
+  license_family: MOZILLA
+  license_file: LICENSE
+  summary: More future! Make Python 2/3 compatibility a bit easier
+
+extra:
+  recipe-maintainers:
+    - xhochy

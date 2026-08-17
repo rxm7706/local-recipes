@@ -1,0 +1,47 @@
+{% set name = "sparktorch" %}
+{% set version = "0.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/sparktorch-{{ version }}.tar.gz
+  sha256: e31026a95846e7869d08de6e60c3e170eaf4c2c052d709bd2200977c0ec5f317
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }},<3.11
+    - pytorch >=1.3.0
+    - flask
+    - requests
+    - dill
+    - pyspark >=2.4.4
+
+test:
+  imports:
+    - sparktorch
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/dmmiller612/sparktorch
+  summary: Deep learning on Apache Spark with Pytorch
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

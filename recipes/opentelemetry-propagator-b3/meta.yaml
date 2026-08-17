@@ -1,5 +1,5 @@
 {% set name = "opentelemetry-propagator-b3" %}
-{% set version = "1.33.1" %}
+{% set version = "1.44.0" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_propagator_b3-{{ version }}.tar.gz
-  sha256: 46bbe76d95ac7e1f50b263230aa1ce86445120f10c7008d66cb08266468561a3
+  sha256: 93c94885fd75429121bb3d5c496c9bbd1b36199e194a0a6876867d7bf3999300
 
 build:
   noarch: python
@@ -16,13 +16,28 @@ build:
 
 requirements:
   host:
-    - python {{ python_min }}
+    - python >=3.7
     - pip
     - hatchling
   run:
-    - python >={{ python_min }}
+    - python >=3.7
     - deprecated >=1.2.6
-    - opentelemetry-api >=1.3,<2.dev0
+    - opentelemetry-api ~=1.3
+    # - typing_extensions >=4.5.0
+    # - typing_extensions >=4.5.0
+    # - typing_extensions >=4.5.0
+    # - typing_extensions >=4.5.0
+    # - typing_extensions >=4.5.0
+    # - typing_extensions >=4.5.0
+    # - typing_extensions >=4.5.0
+    # - typing_extensions >=4.5.0
+    # - typing_extensions >=4.5.0
+    # - typing_extensions >=4.5.0
+    # - typing_extensions >=4.5.0
+    # - typing_extensions >=4.5.0
+    # - typing_extensions >=4.5.0
+    # - typing_extensions >=4.5.0
+    # - typing_extensions >=4.5.0
 
 test:
   imports:
@@ -30,7 +45,6 @@ test:
   commands:
     - pip check
   requires:
-    - python {{ python_min }}
     - pip
 
 about:
@@ -43,5 +57,3 @@ about:
 extra:
   recipe-maintainers:
     - twoodwark
-    - rxm7706
-    - conda-forge/opentelemetry-api

@@ -1,0 +1,128 @@
+{% set name = "pyclean" %}
+{% set version = "3.7.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pyclean-{{ version }}.tar.gz
+  sha256: f4605562684fe721d79cfb92842d9d993d1aa7e9a1d13f316e45b29d02d9946b
+
+build:
+  entry_points:
+    - pyclean = pyclean.cli:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=77
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - pyclean
+  commands:
+    - pip check
+    - pyclean --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/bittner/pyclean
+  license: GPL-3.0-or-later
+  license_file: LICENSES/GPL-3.0-or-later.txt
+  summary: Pure Python cross-platform pyclean. Clean up your Python bytecode.
+  description: |
+    Worried about `.pyc` files and `__pycache__` directories? Fear not!
+    PyClean is here to help. Finally the single-command clean up for Python
+    bytecode files in your favorite directories. On any platform.
+
+    ### Usage
+
+    ```shell
+    pyclean .
+    pyclean . --dry-run --verbose
+    pyclean --help
+    ```
+
+    ### Clean up debris
+
+    PyClean can clean up leftovers, generated data and temporary files from
+    popular Python development tools in their default locations, along with
+    Python bytecode. The following topics are currently covered:
+
+    - Cache (general purpose folder for several tools, e.g. Python eggs,
+      legacy Pytest)
+    - Coverage (coverage database, and supported file formats)
+    - Packaging (build files and folders)
+    - Pytest (build files and folders)
+    - Ruff (ruff cache folder)
+    - Complexipy (complexity analysis of Python code) – _optional_
+    - Jupyter (notebook checkpoints) – _optional_
+    - Mypy (mypy cache folder) – _optional_
+    - Pyright (pyright app cache folder) – _optional_
+    - Tox (tox environments) – _optional_
+
+    ```shell
+    pyclean . --debris
+    pyclean . --debris all
+    pyclean . -d jupyter -n -v
+    ```
+
+    ### Abitrary file system objects
+
+    PyClean also lets you remove free-form targets using globbing. Note that
+    this is potentially dangerous: You can delete everything anywhere in the
+    file system, including the entire project you’re working on. For this
+    reason, the `--erase` option has a few artificial constraints:
+
+    - It doesn’t do recursive deletion by itself, which means that you have
+      to specify the directory and its contents, separately and explicitly.
+    - The above entails that you’re responsible for the deletion order,
+      i.e. removal of a directory will only work if you asked to delete all
+      files inside first.
+    - You’re prompted interactively to confirm deletion, unless you specify
+      the `--yes` option, in addition.
+
+    ```shell
+    pyclean . --erase tmp/**/* tmp/
+    ```
+
+    ### Empty directories
+
+    PyClean can safely detect and remove empty directories that are left in
+    your project after refactoring code.
+
+    ```shell
+    pyclean . --folders --verbose
+    ```
+
+    ### Git-clean integration
+
+    PyClean integrates with Git's `git clean` command to remove untracked
+    files from version-controlled directories. The `--git-clean` (or `-g`)
+    flag runs after all other cleanup operations.
+
+    By default, Git prompts interactively to confirm which files to delete.
+    Use `--dry-run` to preview, or `--yes` to force deletion without
+    prompts. The `--ignore` patterns are honored as exclusions.
+
+    ```shell
+    pyclean . --debris all --git-clean --dry-run
+    pyclean . --ignore .idea .vscode --git-clean --yes
+    ```
+
+    **Note:** Git must be installed for this feature. If a directory is not
+    under version control, a warning is logged and pyclean continues.
+  doc_url: https://pypi.org/project/pyclean
+
+extra:
+  recipe-maintainers:
+    - bittner

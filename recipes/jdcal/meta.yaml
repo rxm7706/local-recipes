@@ -1,0 +1,44 @@
+{% set name = "jdcal" %}
+{% set version = "1.4.1" %}
+{% set sha256 = "472872e096eb8df219c23f2689fc336668bdb43d194094b5cc1707e1640acfc8" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 0
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  build:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+
+test:
+  imports:
+    - jdcal
+
+about:
+  home: https://github.com/phn/jdcal
+  license: BSD 2-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: 'Julian dates from proleptic Gregorian and Julian calendars.'
+
+  description: |
+    This module contains functions for converting between Julian dates and calendar dates.
+  dev_url: https://github.com/phn/jdcal
+
+extra:
+  recipe-maintainers:
+    - curtisalexander

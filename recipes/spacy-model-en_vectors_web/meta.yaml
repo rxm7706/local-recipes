@@ -1,0 +1,65 @@
+{% set prefix = "spacy-model-" %}
+{% set name = "en_vectors_web" %}
+{% set version = "2.1.0" %}
+
+package:
+  name: {{ prefix }}{{ name|lower }}
+  version: {{ version }}
+
+source:
+  - folder: lg
+    url: https://github.com/explosion/spacy-models/releases/download/{{ name }}_lg-{{ version }}/{{ name }}_lg-{{ version }}.tar.gz
+    sha256: 24bd1f5f192bdcf5ba8fe3b9f517ec24024ea22dbd8c89b470250870f20d04eb
+  - url: https://creativecommons.org/licenses/by-sa/3.0/legalcode.txt
+    sha256: 3f941b3b89cf7b8370ceb83cc76d2120d471b58735d8ca60238a751a48d7f72f
+
+build:
+  noarch: python
+  number: 0
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - setuptools
+    - python
+
+test:
+  commands:
+    - echo "make lint happy"
+
+outputs:
+  - name: {{prefix}}{{ name }}_{{ size }}
+    build:
+      noarch: python
+      number: 0
+      script: cd {{ size }} && {{ PYTHON }} -m pip install . --no-deps -vv
+    requirements:
+      host:
+        - pip
+        - python
+      run:
+        - python
+        - setuptools
+    test:
+      imports:
+        - {{ name }}_{{ size }}
+      requires:
+        - spacy {{ version.split('.')[0] }}.*
+      commands:
+        - python -c "__import__('{{ name }}_{{ size }}').load()"
+        - python -c "__import__('spacy').load('{{ name }}_{{ size }}')"
+
+about:
+  home: https://spacy.io
+  license: CC BY-SA 3.0
+  summary: 'English multi-task CNN trained on OntoNotes, with GloVe vectors trained on Common Crawl.'
+  license_file: legalcode.txt
+
+  doc_url: https://spacy.io/models/en
+  dev_url: https://github.com/explosion/spacy-models
+
+extra:
+  recipe-maintainers:
+    - sodre

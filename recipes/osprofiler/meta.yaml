@@ -1,0 +1,52 @@
+{% set name = "osprofiler" %}
+{% set version = "4.4.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 6e08df7eef6afc0d2d027813d40e43cb228f0eb3eb3441d61495c2800ebfa320
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  entry_points:
+    - osprofiler = osprofiler.cmd.shell:main
+  noarch: python
+
+requirements:
+  host:
+    - pbr >=2.0
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - netaddr >=0.7.18
+    - oslo.concurrency >=3.26.0
+    - oslo.serialization >=2.18.0
+    - oslo.utils >=3.33.0
+    - prettytable >=0.7.2
+    - requests >=2.14.2
+    - webob >=1.7.1
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - osprofiler
+  commands:
+    - osprofiler -h
+
+about:
+  home: https://docs.openstack.org/osprofiler/latest/
+  license: Apache-2.0
+  license_family: APACHE
+  license_file: LICENSE
+  summary: OpenStack Profiler Library
+
+extra:
+  recipe-maintainers:
+    - tschoonj

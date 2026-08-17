@@ -1,0 +1,52 @@
+{% set name = "pytest-filter-subpackage" %}
+{% set version = "0.2.0" %}
+
+package:
+  name: "{{ name|lower }}"
+  version: "{{ version }}"
+
+source:
+  url: "https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz"
+  sha256: 3f468f1b36518128869b95deab661ba45ed6293854329fef14da4c8cac78af56
+
+build:
+  number: 1
+  noarch: python
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - pip
+    - setuptools_scm
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+    - pytest >=4.6
+    - packaging
+
+test:
+  requires:
+    - pytest
+    - pytest-doctestplus
+    - pytest-cov
+    - python {{ python_min }}
+  imports:
+    - pytest_filter_subpackage
+
+about:
+  home: https://github.com/astropy/pytest-filter-subpackage
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.rst
+  summary: "Pytest plugin for filtering based on sub-packages"
+  description: |
+    This package contains a simple plugin for the pytest framework that
+    provides a shortcut to testing all code and documentation for a given
+    sub-package.
+  doc_url: https://github.com/astropy/pytest-filter-subpackage/blob/master/README.rst
+  dev_url: https://github.com/astropy/pytest-filter-subpackage
+
+extra:
+  recipe-maintainers:
+    - mwcraig
+    - astrofrog

@@ -1,5 +1,5 @@
 {% set name = "concurrent-log-handler" %}
-{% set version = "0.9.24" %}
+{% set version = "0.9.29" %}
 
 
 package:
@@ -7,11 +7,11 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
-  sha256: 00f5646c6e5f6fc63654536f3b44aaa2b9b74b23245e14f5258ed91ce39d12e2
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: bc37a76d3f384cbf4a98f693ebd770543edc0f4cd5c6ab6bc70e9e1d7d582265
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv
 
@@ -19,11 +19,11 @@ requirements:
   host:
     - pip
     - python {{ python_min }}
-    - setuptools
+    - hatchling
   run:
     # Add minimum run constraint since in py2 there is an upper bound on portalocker
     - python >={{ python_min }}
-    - portalocker >=1.4.0
+    - portalocker >=2.6.0
 
 test:
   imports:
@@ -43,4 +43,3 @@ about:
 extra:
   recipe-maintainers:
     - mariusvniekerk
-    - rxm7706

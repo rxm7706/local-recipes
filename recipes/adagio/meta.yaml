@@ -1,0 +1,47 @@
+{% set name = "adagio" %}
+{% set version = "0.2.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 0c32768f3aba0e05273b36f9420a482034f2510f059171040d7e98ba34128d7a
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - triad
+
+test:
+  imports:
+    - triad
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/fugue-project/adagio
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A Dag IO framework for Fugue projects.
+
+extra:
+  recipe-maintainers:
+    - charlesbluca
+    - thewchan
+    - kvnkho
+    - goodwanghan
+    - rdmolony

@@ -6,20 +6,21 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/Collectfast-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/Collectfast-{{ version }}.tar.gz
   sha256: 2f6abc8cab7ec5114a7a9a3660ab629ec142556957220aa82857dc9b4381490d
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - django >=2.2
     - django-storages >=1.6
     - typing-extensions
@@ -31,13 +32,21 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/antonagestam/collectfast/
   summary: A Faster Collectstatic
+  license_family: MIT
   license: MIT
   license_file: LICENSE
+  description: |
+    The fast collectstatic for Django projects with S3 as storage backend.
+  doc_url: https://github.com/jazzband/collectfast
+  dev_url: https://github.com/jazzband/collectfast
 
 extra:
   recipe-maintainers:
+    - cshaley
+    - sannykr
     - rxm7706

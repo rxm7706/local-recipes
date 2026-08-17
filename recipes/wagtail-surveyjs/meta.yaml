@@ -1,5 +1,5 @@
 {% set name = "wagtail-surveyjs" %}
-{% set version = "0.3.0" %}
+{% set version = "0.3.1" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
-  sha256: f7f8e609a0f7b6334d0555d51c0ea382c558f1e43c7882579fd11c3c2ca1a2f9
+  sha256: edaf1997887f7aed2ca6c38ae956a958396403b8213b91bf84283e3800533037
 
 build:
   noarch: python

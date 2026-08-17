@@ -1,0 +1,57 @@
+{% set name = "itemloaders" %}
+{% set version = "1.4.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: b5338308a819098f43525b7afc5f7d46ba338ba4710f5ebe7a21b3b47bb29929
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >={{ python_min }}
+    # Same order as setup.py:
+    - parsel >=1.5.0
+    - jmespath >=0.9.5
+    - itemadapter >=0.1.0
+
+test:
+  imports:
+    - itemloaders
+  requires:
+    - pip
+    - pytest
+    - python {{ python_min }}
+  source_files:
+    - itemloaders
+    - tests
+  commands:
+    - pip check
+    - pytest tests
+
+about:
+  home: https://github.com/scrapy/itemloaders
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Collect data from HTML and XML sources
+  description: |
+    Library that helps you collect data from HTML and XML sources.
+
+extra:
+  recipe-maintainers:
+    - Gallaecio
+    - wRAR
+    - dangra
+    - rmax

@@ -1,0 +1,53 @@
+{% set name = "pyflakes" %}
+{% set version = "3.4.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: b24f96fafb7d2ab0ec5075b7350b3d2d2218eab42003821c06344973d3ea2f58
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  entry_points:
+    - pyflakes = pyflakes.api:main
+
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - pyflakes
+    - pyflakes.scripts
+  commands:
+    - pip check
+    - pyflakes --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+
+about:
+  home: https://github.com/PyCQA/pyflakes
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Pyflakes analyzes programs and detects various errors.
+  dev_url: https://github.com/PyCQA/pyflakes
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - sigmavirus24
+    - dopplershift
+    - ocefpaf

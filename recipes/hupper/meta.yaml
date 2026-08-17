@@ -1,0 +1,46 @@
+{% set name = "hupper" %}
+{% set version = "1.12.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 06bf54170ff4ecf4c84ad5f188dee3901173ab449c2608ad05b9bfd6b13e32eb
+
+build:
+  noarch: python
+  number: 1
+  entry_points:
+    - hupper = hupper.cli:main
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - hupper
+  commands:
+    - hupper --help
+
+about:
+  home: https://github.com/Pylons/hupper
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt
+  summary: Integrated process monitor for developing and reloading daemons.
+  doc_url: https://docs.pylonsproject.org/projects/hupper/
+  dev_url: https://github.com/Pylons/hupper
+
+extra:
+  recipe-maintainers:
+    - lincrosenbach
+    - kfasolin

@@ -1,0 +1,45 @@
+{% set name = "transaction" %}
+{% set version = "5.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: "{{ version }}"
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/transaction-{{ version }}.tar.gz
+  sha256: f6ca8639a3e54f6991de0d9c0983a7cd91acb21a825cb544c168269be956bd41
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - zope.interface
+
+test:
+  imports:
+    - transaction
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/zopefoundation/transaction
+  license_file: LICENSE.txt
+  license: ZPL-2.1
+  license_family: OTHER
+  summary: Transaction management for Python
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - jan-janssen

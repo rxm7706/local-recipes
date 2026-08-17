@@ -1,0 +1,45 @@
+{% set name = "asgi-correlation-id" %}
+{% set version = "5.0.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/asgi_correlation_id-{{ version }}.tar.gz
+  sha256: ad54374a300f000b8bef3b39738768842394de0a3c528a6f77ef3ca053eb89a1
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - uv-build >=0.7.2,<0.8
+  run:
+    - python >={{ python_min }}
+    - starlette >=0.18
+
+test:
+  imports:
+    - asgi_correlation_id
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/snok/asgi-correlation-id
+  summary: Middleware correlating project logs to individual requests
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - sondrelg
+    - ludaavics
+    - soapy1

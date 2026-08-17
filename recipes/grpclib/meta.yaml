@@ -1,0 +1,48 @@
+{% set name = "grpclib" %}
+{% set version = "0.4.9" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/grpclib-{{ version }}.tar.gz
+  sha256: cc589c330fa81004c6400a52a566407574498cb5b055fa927013361e21466c46
+
+build:
+  number: 0
+  noarch: python
+  entry_points:
+    - protoc-gen-python_grpc=grpclib.plugin.main:main
+    - protoc-gen-grpclib_python=grpclib.plugin.main:main
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+    - dataclasses
+    - h2 <5,>=3.1.0
+    - multidict
+test:
+  imports:
+    - grpclib
+    - grpclib.channelz
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/vmagamedov/grpclib
+  summary: Pure-Python gRPC implementation for asyncio
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - asford

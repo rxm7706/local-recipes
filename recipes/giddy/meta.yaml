@@ -1,0 +1,61 @@
+{% set name = "giddy" %}
+{% set version = "2.3.9" %}
+{% set python_min = "3.12" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: f31d83a3fb9275cc07b71b28512d44626186373485063bf4f28a1990b9f7a2cb
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools >=61.0
+    - setuptools-scm >=6.2
+  run:
+    - python >={{ python_min }}
+    - scipy >=1.14
+    - libpysal >=4.12
+    - mapclassify >=2.7
+    - esda >=2.7,<3
+    - quantecon >=0.8
+    - seaborn
+    - matplotlib-base
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - giddy
+
+about:
+  home: http://pysal.org
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: GeospatIal Distribution DYnamics (giddy) in PySAL
+
+  description: |
+    Giddy is an open-source python library for the analysis of dynamics of longitudinal spatial
+    data. Originating from the spatial dynamics module in PySAL (Python Spatial Analysis Library),
+    it is under active development for the inclusion of newly proposed analytics that consider the
+    role of space in the evolution of distributions over time.
+  doc_url: http://pysal.org/giddy
+  dev_url: https://github.com/pysal/giddy
+
+extra:
+  recipe-maintainers:
+    - weikang9009
+    - knaaptime
+    - sjsrey
+    - jGaboardi
+    - martinfleis

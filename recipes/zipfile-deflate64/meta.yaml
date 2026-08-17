@@ -1,0 +1,46 @@
+{% set name = "zipfile-deflate64" %}
+{% set version = "0.2.0" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 875a3299de102edf1c17f8cafcc528b1ca80b62dc4814b9cb56867ec59fbfd18
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 4
+  skip: true  # [py2k]
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}
+  host:
+    - pip
+    - python
+  run:
+    - python
+
+test:
+  imports:
+    - zipfile_deflate64
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/brianhelba/zipfile-deflate64
+  summary: Extract Deflate64 ZIP archives with Python's zipfile API.
+  dev_url: https://github.com/brianhelba/zipfile-deflate64
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - sarthakpati

@@ -1,0 +1,53 @@
+{% set name = "Levenshtein" %}
+{% set version = "0.27.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/levenshtein-{{ version }}.tar.gz
+  sha256: 3df1c12bf5e485774d6387f3894271ef3724414ecc20dd238ae4d2333e093c83
+
+build:
+  number: 0
+  script:
+    - {{ PYTHON }} -m pip install . -vvv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - {{ compiler('cxx') }}
+    - cmake
+    - make
+  host:
+    - pip
+    - python
+    - scikit-build-core
+    - wheel
+    - setuptools
+  run:
+    - python
+    - rapidfuzz >=3.8.0,<4.0.0
+
+test:
+  imports:
+    - Levenshtein
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/maxbachmann/Levenshtein
+  summary: Python extension for computing string edit distances and similarities.
+  license: GPL-2.0-or-later
+  license_file: LICENSE
+  dev_url: https://github.com/maxbachmann/Levenshtein
+
+extra:
+  recipe-maintainers:
+    - maxbachmann

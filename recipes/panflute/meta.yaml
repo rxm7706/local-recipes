@@ -1,0 +1,59 @@
+{% set name = "panflute" %}
+{% set version = "2.1.3" %}
+# inclusive
+{% set pandoc_minimum_version = "2.11.0.4" %}
+# exclusive
+{% set pandoc_maximum_version = "2.18" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/panflute-{{ version }}.tar.gz
+  sha256: cb94244fe766893bb2f172ebb827ec3ded761b8fffa84e4c84b678b9f8a9ff95
+
+build:
+  number: 1
+  noarch: python
+  entry_points:
+    - panflute=panflute:main
+    - panfl=panflute:panfl
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - click >=6,<9
+    - python >=3.6
+    - pyyaml >=3,<7
+  run_constrained:
+    - pandoc >={{ pandoc_minimum_version }},<{{ pandoc_maximum_version }}
+
+test:
+  imports:
+    - panflute
+  commands:
+    - pip check
+    - |
+      echo '# Testing' | pandoc -F panflute 
+    - panfl --help
+  requires:
+    - pip
+    - pandoc >={{ pandoc_minimum_version }},<{{ pandoc_maximum_version }}
+
+about:
+  home: https://github.com/sergiocorreia/panflute
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Pythonic Pandoc filters
+  doc_url: http://scorreia.com/software/panflute/
+  dev_url: https://github.com/sergiocorreia/panflute
+
+extra:
+  recipe-maintainers:
+    - ickc
+    - kiwi0fruit

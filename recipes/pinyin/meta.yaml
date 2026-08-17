@@ -6,7 +6,7 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pinyin-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pinyin-{{ version }}.tar.gz
   sha256: 8842ae53cb7a81c8c3ec03d1cd7dba9aedb20d8d6962aebc620fad74da0868f5
 
 build:
@@ -14,14 +14,15 @@ build:
     - pinyin = pinyin.cmd:pinyin
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.8
+    - python >={{ python_min }}
 
 test:
   imports:
@@ -31,6 +32,7 @@ test:
     - pinyin --help
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: http://lxyu.github.io/pinyin/

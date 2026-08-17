@@ -1,0 +1,43 @@
+{% set name = "jax-jumpy" %}
+{% set version = "1.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 195fb955cc4c2b7f0b1453e3cb1fb1c414a51a407ffac7a51e69a73cb30d59ad
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - hatchling >=1.4.0
+    - pip
+    - python {{ python_min }}
+  run:
+    - numpy >=1.18.0
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - jumpy
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/Farama-Foundation/Jumpy
+  summary: Common backend for JAX or numpy.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - thewchan

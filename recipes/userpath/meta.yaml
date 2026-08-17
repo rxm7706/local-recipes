@@ -1,0 +1,50 @@
+{% set name = "userpath" %}
+{% set version = "1.9.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 6c52288dab069257cc831846d15d48133522455d4677ee69a9781f11dbefd815
+
+build:
+  number: 0
+  noarch: python
+  entry_points:
+    - userpath = userpath.cli:userpath
+  script: |
+    {{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - hatchling
+  run:
+    - click
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - userpath
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - userpath --help
+    - pip check
+
+about:
+  home: https://github.com/ofek/userpath
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt
+  summary: Cross-platform tool for adding locations to the user PATH, no elevated privileges required!
+  dev_url: https://github.com/ofek/userpath
+
+extra:
+  recipe-maintainers:
+    - ofek
+    - mariusvniekerk

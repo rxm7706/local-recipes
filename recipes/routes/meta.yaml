@@ -1,0 +1,47 @@
+{% set name = "routes" %}
+{% set version = "2.5.1" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/Routes-{{ version }}.tar.gz
+  sha256: b6346459a15f0cbab01a45a90c3d25caf980d4733d628b4cc1952b865125d053
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - python >=3.6
+    - repoze.lru >=0.3
+    - six
+
+test:
+  imports:
+    - routes
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://pypi.org/project/Routes/
+  summary: Routing Recognition and Generation Tools
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt
+  dev_url: https://github.com/bbangert/routes
+  doc_url: https://routes.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - anthchirp
+    - pmlandwehr

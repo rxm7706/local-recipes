@@ -1,0 +1,46 @@
+{% set name = "pywinauto" %}
+{% set version = "0.6.9" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 94d710bfa796df245250f952ffa65d97233d9807bcd42e052b71b81af469b6de
+
+build:
+  number: 1
+  skip: true  # [osx]
+  script: "{{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - comtypes  # [win]
+    - python
+    - python-xlib  # [not win]
+    - pywin32  # [win]
+    - six
+
+test:
+  imports:
+    - pywinauto
+    - pywinauto.controls  # [win]
+    - pywinauto.linux
+
+about:
+  home: http://pywinauto.github.io/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: 'A set of Python modules to automate the Microsoft Windows GUI'
+  doc_url: https://pywinauto.readthedocs.io/en/latest/
+  dev_url: https://github.com/pywinauto/pywinauto
+
+extra:
+  recipe-maintainers:
+    - m-rossi

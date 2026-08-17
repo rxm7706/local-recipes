@@ -1,42 +1,41 @@
 {% set name = "robotframework-requests" %}
-{% set version = "0.9.5" %}
+{% set version = "0.8.0" %}
+{% set sha256 = "9c49eac2bb5bcf20224d099863dbd6fbc217f8c2519e3ffd4dd06f4d4813302b" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/robotframework-requests-{{ version }}.tar.gz
-  sha256: 0ee7d90146f1a7f4d312deeedbd39245823ba337cbcc84a4e9a32babb165715b
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
 
 build:
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv
   number: 0
+  script: {{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python
     - pip
+    - python >=2.7
   run:
-    - python
-    - robotframework
+    - python >=2.7
     - requests
+    - requests_ntlm
+    - robotframework
 
 test:
   imports:
     - RequestsLibrary
-  commands:
-    - pip check
-  requires:
-    - pip
 
 about:
   home: https://github.com/MarketSquare/robotframework-requests
-  summary: Robot Framework keyword library wrapper around requests
   license: MIT
+  license_family: MIT
   license_file: LICENSE.md
+  summary: RequestsLibrary is a Robot Framework test library that uses the Requests HTTP client.
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - daniel88ferreira

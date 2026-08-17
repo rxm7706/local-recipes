@@ -1,0 +1,47 @@
+{% set name = "xlsx2csv" %}
+{% set version = "0.8.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/xlsx2csv-{{ version }}.tar.gz
+  sha256: 618fc502612860de8ab8e3d6195e99ef332fffc68337f6b89e59690aad0d20b5
+
+build:
+  entry_points:
+    - xlsx2csv = xlsx2csv:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=61.2.0
+    - wheel
+    - setuptools-scm >=3.4.3
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - xlsx2csv
+  commands:
+    - pip check
+    - xlsx2csv --help
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/dilshod/xlsx2csv
+  summary: xlsx to csv converter
+  license: MIT
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - borchero

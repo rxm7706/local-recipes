@@ -1,0 +1,61 @@
+{% set version = "0.22.1" %}
+
+package:
+  name: uvloop
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/u/uvloop/uvloop-{{ version }}.tar.gz
+  sha256: 6c84bae345b9147082b17371e3dd5d42775bddce91f885499017f4607fdaf39f
+
+build:
+  number: 1
+  skip: true  # [py<38 or win]
+  script:
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --config-settings="--build-option=build_ext" --config-settings="--build-option=--cython-always" --config-settings="--build-option=--use-system-libuv"
+
+requirements:
+  build:
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython >=3,<4                          # [build_platform != target_platform]
+    - python                                 # [build_platform != target_platform]
+    - make                                   # [unix]
+    - {{ stdlib("c") }}
+    - {{ compiler("c") }}
+  host:
+    - cython >=3,<4
+    - libuv
+    - pip
+    - python
+    - setuptools >=60
+    - wheel
+  run:
+    - python
+    - {{ pin_compatible("libuv", max_pin="x") }}
+
+test:
+  requires:
+    - pip
+  imports:
+    - uvloop
+  commands:
+    - pip check
+
+about:
+  home: http://github.com/MagicStack/uvloop
+  license: MIT OR Apache-2.0
+  license_file:
+    - LICENSE-MIT
+    - LICENSE-APACHE
+  summary: Ultra fast implementation of asyncio event loop on top of libuv.
+  description: |
+    uvloop is a fast, drop-in replacement of the built-in asyncio event loop.
+    uvloop is implemented in Cython and uses libuv under the hood.
+  doc_url: http://uvloop.readthedocs.org
+  dev_url: http://github.com/MagicStack/uvloop
+
+extra:
+  recipe-maintainers:
+    - nehaljwani
+    - carlodri
+    - jakirkham

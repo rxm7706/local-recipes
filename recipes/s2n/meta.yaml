@@ -1,0 +1,69 @@
+{% set name = "s2n" %}
+{% set version = "1.7.7" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/awslabs/{{ name }}/archive/v{{ version }}.tar.gz
+  sha256: a6f77d2e3343b554bfc2cce27e0407b3c758bb105533c8f0a56e233036b7541d
+
+build:
+  number: 0
+  skip: true  # [win]
+  run_exports:
+    - {{ pin_subpackage("s2n", max_pin="x.x.x") }}
+
+outputs:
+  - name: s2n
+    script: |-
+      build-shared.sh  # [unix]
+      bld-shared.bat  # [win]
+    build:
+      activate_in_script: true
+      run_exports:
+        - {{ pin_subpackage("s2n", max_pin="x.x.x") }}
+    requirements:
+      build:
+        - cmake
+        - {{ compiler('c') }}
+        - {{ stdlib("c") }}
+        - ninja
+      host:
+        - openssl
+    test:
+      commands:
+        - test -f $PREFIX/lib/libs2n${SHLIB_EXT}  # [unix]
+        - test ! -f $PREFIX/lib/libs2n.a  # [unix]
+        - test -f $PREFIX/include/s2n.h  # [unix]
+  - name: s2n-static
+    script: |-
+      build-static.sh  # [unix]
+      bld-static.bat  # [win]
+    build:
+      activate_in_script: true
+    requirements:
+      build:
+        - cmake
+        - {{ compiler('c') }}
+        - {{ stdlib("c") }}
+        - ninja
+      host:
+        - libopenssl-static
+        - {{ pin_subpackage("s2n", exact=True) }}
+    test:
+      commands:
+        - test -f $PREFIX/lib/libs2n.a  # [unix]
+
+about:
+  home: https://github.com/awslabs/s2n
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: an implementation of the TLS/SSL protocols
+
+extra:
+  recipe-maintainers:
+    - xhochy
+    - davidbrochart

@@ -1,0 +1,41 @@
+{% set version = "1.15.0" %}
+
+package:
+  name: cov-core
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/cov-core/cov-core-{{ version }}.tar.gz
+  sha256: 4a14c67d520fda9d42b0da6134638578caae1d374b9bb462d8de00587dba764c
+
+build:
+  number: 2
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - coverage >=3.6
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - cov_core_init
+
+about:
+  home: https://github.com/schlamar/cov-core
+  license: MIT
+  license_file: LICENSE.txt
+  license_family: MIT
+  summary: 'plugin core for use by pytest-cov, nose-cov and nose2-cov'
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - ocefpaf

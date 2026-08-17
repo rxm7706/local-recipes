@@ -1,0 +1,49 @@
+{% set name = "uncurl" %}
+{% set version = "0.0.11" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 530c9bbd4d118f4cde6194165ff484cc25b0661cd256f19e9d5fcb53fc077790
+
+build:
+  number: 1
+  noarch: python
+  entry_points:
+    - uncurl = uncurl.bin:main
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - pyperclip
+    - six
+
+test:
+  imports:
+    - uncurl
+  commands:
+    - pip check
+    - echo "curl https://conda-forge.org/" | uncurl --help  # [not win]
+    - echo \"curl https://conda-forge.org/\" | uncurl --help  # [win]
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/spulec/uncurl
+  summary: A library to convert curl requests to python-requests.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - fhoehle

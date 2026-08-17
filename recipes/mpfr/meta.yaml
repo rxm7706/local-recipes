@@ -1,0 +1,60 @@
+{% set version = "4.2.2" %}
+{% if build_platform is undefined %}
+{% set build_platform = "linux-64" %}
+{% endif %}
+{% set posix = "m2-" if build_platform.startswith("win-") else '' %}
+
+package:
+  name: mpfr
+  version: {{ version }}
+
+source:
+  fn: mpfr-{{ version }}.tar.bz2
+  url: http://ftp.gnu.org/gnu/mpfr/mpfr-{{ version }}.tar.gz
+  sha256: 826cbb24610bd193f36fde172233fb8c009f3f5c2ad99f644d0dea2e16a20e42
+
+build:
+  number: 0
+  skip: true  # [win and vc<14]
+  run_exports:
+    - {{ pin_subpackage("mpfr") }}
+
+requirements:
+  build:
+    - libtool         # [unix]
+    - m4              # [unix]
+    - gnuconfig
+    - {{ posix }}make
+    - {{ posix }}base             # [build_platform.startswith("win-")]
+    - {{ posix }}diffutils        # [build_platform.startswith("win-")]
+    - {{ compiler('c') }}         # [unix]
+    - {{ stdlib('c') }}           # [unix]
+    - {{ compiler('m2w64_c') }}   # [win]
+    - {{ stdlib('m2w64_c') }}     # [win]
+  host:
+    - gmp
+
+test:
+  requires:
+    - {{ compiler('c') }}         # [unix]
+    - {{ stdlib('c') }}           # [unix]
+    - {{ compiler('m2w64_c') }}   # [win]
+    - {{ stdlib('m2w64_c') }}     # [win]
+
+  commands:
+    - if not exist %LIBRARY_INC%\\mpfr.h exit 1                # [win]
+    - if not exist %LIBRARY_LIB%\\mpfr.lib exit 1              # [win]
+    - if not exist %LIBRARY_BIN%\\libmpfr-6.dll exit 1         # [win]
+    - test -f ${PREFIX}/lib/libmpfr${SHLIB_EXT}                # [unix]
+
+about:
+  home: http://www.mpfr.org/
+  license: LGPL-3.0-only
+  license_file: COPYING.LESSER
+  summary: The MPFR library is a C library for multiple-precision floating-point computations with correct rounding.
+
+extra:
+  recipe-maintainers:
+    - isuruf
+    - jakirkham
+    - marcelotrevisani

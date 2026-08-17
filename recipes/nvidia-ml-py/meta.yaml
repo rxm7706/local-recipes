@@ -1,0 +1,55 @@
+{% set name = "nvidia-ml-py" %}
+{% set version = "13.610.43" %}
+{% set major_version = version.split(".")[0]|int %}
+{% set sha256 = "65437eb73d68d0c62c931ca4d45038472faff03bd0b8729abba4b899f70d60f2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  script:
+    - rm example.py
+    - {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+  run_constrained:
+    # Packages that conflict with nvidia-ml-py
+    # Both packages install pynvml.py
+    - nvidia-ml ==9999999999
+    - pynvml ~={{ major_version }}.0
+
+test:
+  requires:
+    - python {{ python_min }}
+    - pip
+  imports:
+    - pynvml
+  commands:
+    - pip check
+
+about:
+  home: http://www.nvidia.com
+  summary: Python Bindings for the NVIDIA Management Library
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: README.txt
+  dev_url: https://developer.nvidia.com/nvidia-management-library-nvml
+  doc_url: https://docs.nvidia.com/deploy/nvml-api/index.html
+
+extra:
+  recipe-maintainers:
+    - conda-forge/cuda
+    - XuehaiPan

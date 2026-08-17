@@ -1,0 +1,57 @@
+{% set name = "fastuuid" %}
+{% set version = "0.14.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/fastuuid-{{ version }}.tar.gz
+  sha256: 178947fc2f995b38497a74172adee64fdeb8b7ec18f2a5934d037641ba265d26
+
+build:
+  number: 0
+  skip: true  # [osx and py==310]
+  script_env:
+    - PYO3_USE_ABI3_FORWARD_COMPATIBILITY=1
+  script:
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - {{ compiler('rust') }}
+    - {{ stdlib('c') }}
+    - maturin >=1.0,<2.0
+    - cargo-bundle-licenses
+  host:
+    - python
+    - pip
+    - maturin >=1.0,<2.0
+  run:
+    - python
+
+test:
+  imports:
+    - fastuuid
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python
+
+about:
+  summary: "Python bindings to Rust's UUID library."
+  home: https://github.com/fastuuid/fastuuid
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

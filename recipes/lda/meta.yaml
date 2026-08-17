@@ -1,0 +1,59 @@
+{% set name = "lda" %}
+{% set version = "2.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: d8d7c0bc42208902a9e34261b76793a84f59e6c69cfd7ca12ce982cdaf7c3020
+
+build:
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+  skip: true  # [py>=37]
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+
+
+  host:
+    - pip
+    - python
+    - numpy
+    - pbr
+    - setuptools
+    - cython
+
+  run:
+    - python
+    - {{ pin_compatible('numpy') }}
+    - pbr
+
+test:
+  imports:
+    - lda
+    - lda.datasets
+    - lda.utils
+
+  requires:
+    - pbr
+    - numpy
+
+about:
+  home: https://lda.readthedocs.io/en/latest/
+  license: MPL-2.0
+  license_family: MOZILLA
+  license_file: LICENSE
+  summary: lda implements latent Dirichlet allocation (LDA) using collapsed Gibbs sampling. lda is fast and is tested on Linux, OS X, and Windows.
+  doc_url: https://lda.readthedocs.io/en/latest/
+  dev_url: https://github.com/ariddell/lda/tree/master
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - mwilson8
+    - rluria14
+    - benhuff

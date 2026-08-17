@@ -1,0 +1,74 @@
+{% set version = "0.5" %}
+
+
+package:
+  name: lazy-loader
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/lazy_loader/lazy_loader-{{ version }}.tar.gz
+  sha256: 717f9179a0dbed357012ddad50a5ad3d5e4d9a0b8712680d4e687f5e6e6ed9b3
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - setuptools >=61.2
+    - python {{ python_min }}
+    - packaging
+  run:
+    - python >={{ python_min }}
+    - packaging
+
+test:
+  imports:
+    - lazy_loader
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+outputs:
+  - name: lazy-loader
+    # A conflict was created for older lazy_loader packages
+    # version 0.4.0 build 0 and older
+    # https://github.com/conda-forge/conda-forge-repodata-patches-feedstock/pull/815
+    # so that they cannot be co-installed with lazy-loader
+  - name: lazy_loader
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python {{ python_min }}
+      run:
+        - python >={{ python_min }}
+        - {{ pin_subpackage('lazy-loader', exact=True) }}
+    test:
+      requires:
+        - python {{ python_min }}
+      imports:
+        - lazy_loader
+
+about:
+  home: https://pypi.org/project/lazy-loader/
+  summary: Easily load subpackages and functions on demand
+  license: BSD-3-Clause
+  license_file: LICENSE.md
+  description: |
+    `lazy-loader` makes it easy to load subpackages and functions on demand.
+
+    PyPI: https://pypi.org/project/lazy-loader/
+
+  doc_url: https://github.com/scientific-python/lazy-loader
+  dev_url: https://github.com/scientific-python/lazy-loader
+
+extra:
+  recipe-maintainers:
+    - bsipocz
+    - sugatoray
+    - bmcfee

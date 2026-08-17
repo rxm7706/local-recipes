@@ -1,0 +1,49 @@
+{% set name = "sasl" %}
+{% set version = "0.3.1" %}
+{% set sha256 = "f2c8b3ea340f7ee38b7675ee993a529ed157c8d349949f7891a3420a811eabea" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: v{{ version }}.tar.gz
+  url: https://github.com/cloudera/python-sasl/archive/v{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 2
+  script: python setup.py install --single-version-externally-managed --record record.txt
+  skip: true  # [win]
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+  host:
+    - python
+    - setuptools
+    - cyrus-sasl
+    - cython
+  run:
+    - python
+    - cyrus-sasl
+    - six
+
+test:
+  imports:
+    - sasl
+
+about:
+  home: http://github.com/cloudera/python-sasl
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE.txt
+  summary: Python wrapper for Cyrus SASL
+  dev_url: http://github.com/cloudera/python-sasl
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk
+    - wesm
+    - martindurant

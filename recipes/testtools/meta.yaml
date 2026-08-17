@@ -1,0 +1,50 @@
+{% set name = "testtools" %}
+{% set version = "2.9.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/testtools-{{ version }}.tar.gz
+  sha256: 39ad9eb9e1b935d6838f4b3aee4d6e72db65df5602f6feda998dbb4fe8de0b19
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools >=61
+    - hatchling
+    - hatch-vcs
+  run:
+    - python >={{ python_min }}
+    - typing_extensions
+
+test:
+  imports:
+    - testtools
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/testing-cabal/testtools
+  license_file: LICENSE
+  license: MIT
+  license_family: MIT
+  summary: Extensions to the Python standard library unit testing framework
+  dev_url: https://github.com/testing-cabal/testtools
+  doc_url: https://testtools.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - anguslees
+    - pmlandwehr
+    - BastianZim

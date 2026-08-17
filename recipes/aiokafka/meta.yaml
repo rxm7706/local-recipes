@@ -1,0 +1,57 @@
+{% set name = "aiokafka" %}
+{% set version = "0.14.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 8ffdc945798ba4d3d132b705d4244d0a1f493925efb57c637a2ca88ee82794e1
+
+build:
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython >=3.0.5                         # [build_platform != target_platform]
+    - zlib                                   # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - cython >=3.0.5
+    - python
+    - pip
+    - setuptools
+    - zlib
+  run:
+    - python
+    - async-timeout
+    - packaging
+    - typing-extensions
+
+test:
+  imports:
+    - aiokafka
+  requires:
+    - pip
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/aio-libs/aiokafka
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: asyncio client for Kafka
+
+  description: |
+    AIOKafkaProducer is a high-level, asynchronous message producer.
+  dev_url: https://github.com/aio-libs/aiokafka
+
+extra:
+  recipe-maintainers:
+    - timkpaine

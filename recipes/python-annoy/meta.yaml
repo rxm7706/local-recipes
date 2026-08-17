@@ -1,0 +1,52 @@
+{% set conda_forge_name = "python-annoy" %}
+{% set pypi_name = "annoy" %}
+{% set version = "1.17.3" %}
+{% set bundle_type = "tar.gz" %}
+
+
+package:
+  name: {{ conda_forge_name }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ pypi_name[0] }}/{{ pypi_name }}/{{ pypi_name }}-{{ version }}.{{ bundle_type }}
+  sha256: 9cbfebefe0a5f843eba29c6be4c84d601f4f41ad4ded0486f1b88c3b07739c15
+
+build:
+  number: 3
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ stdlib('c') }}
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+  host:
+    - python
+    - pip
+    - nose >=1.0
+    - setuptools
+  run:
+    - python
+
+test:
+  requires:
+    - pip
+  commands:
+    - pip check
+  imports:
+    - annoy
+
+about:
+  home: https://github.com/spotify/annoy
+  license_file: LICENSE
+  license: Apache-2.0
+  license_family: Apache
+  summary: Approximate Nearest Neighbors in C++/Python optimized for memory usage and loading/saving to disk.
+  dev_url: https://github.com/spotify/annoy
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - xhochy

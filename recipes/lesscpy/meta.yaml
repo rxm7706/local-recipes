@@ -1,0 +1,57 @@
+{% set name = "lesscpy" %}
+{% set version = "0.15.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 4f6b7f34c22c5ce137e7ee280dcb1984ade0d500b6dab591d4a4d84252d18de9
+
+build:
+  noarch: python
+  entry_points:
+    - lesscpy = lesscpy.scripts.compiler:run
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+
+  run:
+    - python >={{ python_min }}
+    - ply
+    - six
+
+test:
+  imports:
+    - lesscpy
+    - lesscpy.lessc
+    - lesscpy.lib
+    - lesscpy.plib
+    - lesscpy.scripts
+
+  commands:
+    - lesscpy --help
+    - pip check
+
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/lesscpy/lesscpy
+  license_file: LICENSE
+  license: MIT
+  license_family: MIT
+  summary: Python LESS compiler
+  dev_url: https://github.com/lesscpy/lesscpy
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - jan-janssen

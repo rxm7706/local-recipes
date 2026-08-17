@@ -1,0 +1,109 @@
+{% set version = "0.18.0" %}
+{% set spacy_model = "en_core_web_sm" %}
+
+package:
+  name: torchtext
+  version: {{ version }}
+
+source:
+  url: https://github.com/pytorch/text/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: fe4eb4b361388ef7840dcad117ae95b32252db5520c4eb2b3bead627468fbdf2
+  patches:
+    # don't build pytorch/text/tree/main/third_party; pull in from conda-forge 
+    - patches/0001-do-not-build-third_party-libs.patch
+    # make sure we install from $PREFIX and into $SP_DIR/torchtext
+    - patches/0002-fix-some-CMake-arguments-for-our-infrastructure.patch
+    # remove spurious run requirements from installation requirements
+    - patches/0003-remove-unnecessary-installation-requirements.patch
+    - patches/0004-don-t-try-to-init-submodules.patch
+    - patches/0005-fix-path-inconsistency-in-test.patch
+    # work around behaviour change in pytorch 2.6
+    - patches/0006-allow-torch.load-to-load-more-than-weights-as-previo.patch
+
+build:
+  number: 4
+  # no pytorch on windows in conda-forge, see
+  # https://github.com/conda-forge/pytorch-cpu-feedstock/issues/32
+  skip: true  # [win]
+  # to ensure we get the right version without extra suffixes, c.f.
+  # https://github.com/pytorch/text/blob/v0.18.0/packaging/pkg_helpers.bash#L114
+  script_env:
+    - BUILD_VERSION={{ version }}
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  rpaths:
+    - lib/
+    - {{ SP_DIR }}/torch/lib
+    - {{ SP_DIR }}/torchtext/lib
+
+requirements:
+  build:
+    - {{ compiler('cxx') }}
+    - {{ stdlib('c') }}
+    - cmake
+    - ninja
+    - pkg-config
+  host:
+    - python
+    - pip
+    - setuptools
+    - numpy
+    - pytorch
+    # from pytorch/text/tree/main/third_party
+    - double-conversion
+    - libsentencepiece
+    - libutf8proc
+    - re2
+  run:
+    - python
+    - nltk
+    - requests
+    - revtok ==0.0.3.1
+    - sacremoses
+    - spacy
+    - tqdm
+  run_constrained:
+    # see https://github.com/pytorch/data/commit/c64801fc6b7e9d3693a0b73621a5d7ac8b4b82e5
+    - torchdata <0.10
+
+test:
+  requires:
+    - pip
+    - pytest
+    - expecttest
+    - parameterized
+    - portalocker >=2
+    - spacy-model-{{ spacy_model }}
+    - torchdata >=0.6
+  source_files:
+    - test/
+  imports:
+    - torchtext
+    - torchtext.datasets
+    - torchtext.data
+    - torchtext.nn
+    - torchtext.vocab
+  commands:
+    - pip check
+    {% set tests_to_skip = "_not_a_real_test" %}
+    # tests with URLs that don't exist anymore, plus some extreme download times (>5min)
+    {% set tests_to_skip = tests_to_skip + " or TestVocab" %}
+
+    # run test suite
+    - pytest test/torchtext_unittest -v -k "not ({{ tests_to_skip }})" --durations=10
+    # don't run "large" integration tests, which might get OOM killed
+    - pytest test/integration_tests -v -k "not large" --durations=10
+
+    # ensure that the package metadata did not mangle in the git hash or other suffixes
+    - test -f $SP_DIR/torchtext-{{ version }}.dist-info/METADATA        # [unix]
+
+about:
+  home: https://pytorch.org/text
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Data loaders and abstractions for text and NLP
+  dev_url: https://github.com/pytorch/text
+
+extra:
+  recipe-maintainers:
+    - h-vetinari
+    - giswqs

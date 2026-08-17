@@ -1,0 +1,144 @@
+{% set version = "26.4.0" %}
+
+package:
+  name: twisted
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/T/Twisted/twisted-{{ version }}.tar.gz
+  sha256: dbfd0fe1ee409d0243fdd7a6a6ff14f4948cec1fd78e0376291f805e1501fae9
+
+build:
+  number: 0
+  noarch: python
+  entry_points:
+    - ckeygen = twisted.conch.scripts.ckeygen:run
+    - cftp = twisted.conch.scripts.cftp:run
+    - conch = twisted.conch.scripts.conch:run
+    - mailmail = twisted.mail.scripts.mailmail:run
+    - pyhtmlizer = twisted.scripts.htmlizer:run
+    - tkconch = twisted.conch.scripts.tkconch:run
+    - trial = twisted.scripts.trial:run
+    - twist = twisted.application.twist._twist:Twist.main
+    - twistd = twisted.scripts.twistd:run
+  script:
+    - {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}.*
+    - pip
+    - cython
+    - hatchling
+    - hatch-fancy-pypi-readme
+    - incremental >=21.3.0
+  run:
+    - python >={{ python_min }}.*
+    - attrs >=22.2.0
+    - automat >=24.8.0
+    - constantly >=15.1
+    - hyperlink >=17.1.1
+    - incremental >=24.7.0
+    - twisted-iocpsupport >=1.0.2  # [win]
+    - typing-extensions >=4.2.0
+    - zope.interface >=5
+    - pywin32  # [win]
+    # conch deps
+    - bcrypt >=3.1.3
+    - cryptography >=3.3
+    - appdirs >=1.4.0
+    # tls deps
+    - idna >=2.4
+    - pyopenssl >=21.0.0
+    - service_identity >=18.1.0
+    - __linux   # [linux]
+    - __win     # [win]
+    - __osx     # [osx]
+  run_constrained:
+    # Moved all the crypto and tls stuff under 'run'
+    - pyserial >=3.0
+    - pyobjc-core  # [osx]
+    - pyobjc-framework-cocoa  # [osx]
+    # - pyobjc-framework-CFNetwork  # [osx]
+    - h2 >=3.0,<5.0
+    - priority >=1.1.0,<2.0
+
+test:
+  imports:
+    - twisted
+    - twisted._threads
+    - twisted.application
+    - twisted.application.runner
+    - twisted.application.twist
+    - twisted.conch
+    - twisted.conch.client
+    - twisted.conch.insults
+    - twisted.conch.openssh_compat
+    - twisted.conch.scripts
+    - twisted.conch.ssh
+    - twisted.conch.ui
+    - twisted.cred
+    - twisted.enterprise
+    - twisted.internet
+    - twisted.internet.iocpreactor  # [win]
+    - twisted.logger
+    - twisted.mail
+    - twisted.mail.scripts
+    - twisted.names
+    - twisted.news  # [py2k]
+    - twisted.pair
+    - twisted.persisted
+    - twisted.plugins
+    - twisted.positioning
+    - twisted.protocols
+    - twisted.protocols.haproxy
+    - twisted.python
+    - twisted.runner
+    - twisted.scripts
+    - twisted.spread
+    - twisted.tap
+    - twisted.trial
+    - twisted.trial._dist
+    - twisted.web
+    - twisted.web._auth
+    - twisted.words
+    - twisted.words.im
+    - twisted.words.protocols
+    - twisted.words.protocols.jabber
+    - twisted.words.xish
+  commands:
+    - ckeygen --help
+    # https://twistedmatrix.com/trac/ticket/1679
+    - cftp --help  # [not win]
+    - conch --help  # [not win]
+    # not sure how to test this one
+    # - mailmail --help
+    - pyhtmlizer --help
+    # Requires $DISPLAY (xvfb-run?)
+    - tkconch --help  # [win]
+    - trial --help
+    - twist --help
+    - twistd --help
+  requires:
+    - pyhamcrest >=1.9.0
+    - pip
+    - python {{ python_min }}.*
+
+about:
+  home: http://twistedmatrix.com/
+  license: MIT
+  license_file: LICENSE
+  license_family: MIT
+  summary: An asynchronous networking framework written in Python
+  description: |
+    Twisted is an event-driven networking engine written in Python.
+    It runs on Python 2 and an ever growing subset also works with Python 3.
+  doc_url: http://twistedmatrix.com/documents/current/
+  doc_source_url: https://github.com/twisted/twisted/blob/trunk/docs/index.rst
+  dev_url: https://github.com/twisted/twisted
+
+extra:
+  recipe-maintainers:
+    - akrherz
+    - nehaljwani
+    - ocefpaf

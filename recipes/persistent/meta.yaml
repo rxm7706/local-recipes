@@ -1,0 +1,48 @@
+{% set name = "persistent" %}
+{% set version = "5.0" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/persistent-{{ version }}.tar.gz
+  sha256: 871e63c52131160795cdc8e9c3dd313f86e0dff34c151c98dcd9123c6d8ce673
+
+build:
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+  host:
+    - cffi
+    - pip
+    - python
+  run:
+    - cffi
+    - python
+    - zope.interface
+
+test:
+  imports:
+    - persistent
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/zopefoundation/persistent/
+  summary: Translucent persistent objects
+  license: ZPL-2.1
+  license_file:
+    - COPYRIGHT.txt
+    - LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - osamples
+    - izahn

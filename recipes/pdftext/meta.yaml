@@ -1,0 +1,51 @@
+{% set name = "pdftext" %}
+{% set version = "0.4.1" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pdftext-{{ version }}.tar.gz
+  sha256: ae06f3c0844e7cc631af86b844f4af06b72da2b67d7450441ead258a64e98660
+
+build:
+  entry_points:
+    - pdftext = extract_text:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - poetry-core
+    - pip
+  run:
+    - onnxruntime >=1.19.2,<2.0.0
+    - python >={{ python_min }},<3.13
+    - pypdfium2 =4.30.0
+    - scikit-learn >=1.4.2,<2.0.0
+    - pydantic >=2.7.1,<3.0.0
+    - pydantic-settings >=2.2.1,<3.0.0
+
+test:
+  imports:
+    - pdftext
+  commands:
+    - pip check
+    - pdftext --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/VikParuchuri/pdftext
+  summary: Extract structured text from pdfs quickly
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

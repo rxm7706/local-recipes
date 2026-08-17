@@ -1,0 +1,53 @@
+{% set name = "sphinxext-opengraph" %}
+{% set version = "0.13.0" %}
+{% set sha256 = "103335d08567ad8468faf1425f575e3b698e9621f9323949a6c8b96d9793e80b" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0]|lower }}/{{ name|lower }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - flit-core >=3.12
+  run:
+    - sphinx >=6
+    # Not in pyproject.toml, but referenced in code (automatically installed by Sphinx)
+    - docutils
+    - python >={{ python_min }}
+    - matplotlib-base >=3
+
+test:
+  imports:
+    - sphinxext.opengraph
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://sphinxext-opengraph.readthedocs.io/
+  license: BSD-3-Clause
+  license_file: LICENCE.rst
+  summary: Sphinx extension to generate Open Graph metadata
+  description: |
+    Sphinx extension to generate Open Graph metadata
+    for each page of your documentation.
+  dev_url: https://github.com/sphinx-doc/sphinxext-opengraph
+  doc_url: https://sphinxext-opengraph.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - CAM-Gerlach
+    - manics

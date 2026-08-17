@@ -1,0 +1,42 @@
+{% set name = "hjson-py" %}
+{% set version = "3.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/hjson/hjson-{{ version }}.tar.gz
+  sha256: 55af475a27cf83a7969c808399d7bccdec8fb836a07ddbd574587593b9cdcf75
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - hjson
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: http://github.com/hjson/hjson-py
+  summary: Hjson, a user interface for JSON.
+  license: Apache-2.0
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - groodt
+    - weiji14

@@ -1,0 +1,52 @@
+{% set name = "wikipedia-api" %}
+{% set version = "0.15.0" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: acc6965ed4b6948c61de5f6d1edcc49654e2fc7f7239f26111ccb4ea5796cc1d
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - hatchling
+  run:
+    - httpx ==0.28.1
+    - tenacity ==9.1.4
+    - click ==8.4.1
+    - python >={{ python_min }}
+    - requests ==2.32.5
+
+test:
+  imports:
+    - wikipediaapi
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/martin-majlis/Wikipedia-API
+  summary: Python Wrapper for Wikipedia
+  description: |
+    Wikipedia-API is easy to use Python wrapper for Wikipedias' API. It supports
+    extracting texts, sections, links, categories, translations, etc from Wikipedia.
+    Documentation provides code snippets for the most common use cases.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - BastianZim
+    - martin-majlis

@@ -1,0 +1,47 @@
+{% set name = "opentelemetry-semantic-conventions-ai" %}
+{% set version = "0.5.2" %}
+{% set upstream_version = "0.62.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/traceloop/openllmetry/archive/refs/tags/v{{ upstream_version }}.tar.gz
+  sha256: dee2e822666df74e84b9e41080b0e9f6702b892a8723d6ae981a22bc4ef8b271
+
+build:
+  noarch: python
+  script: cd packages/opentelemetry-semantic-conventions-ai && {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - opentelemetry-sdk >=1.42.0,<2
+    - opentelemetry-semantic-conventions >=0.63b1
+
+test:
+  imports:
+    - opentelemetry.semconv_ai
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://www.traceloop.com/openllmetry
+  dev_url: https://github.com/traceloop/openllmetry
+  doc_url: https://www.traceloop.com/docs/openllmetry/introduction
+  summary: OpenTelemetry Semantic Conventions Extension for Large Language Models
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - timkpaine

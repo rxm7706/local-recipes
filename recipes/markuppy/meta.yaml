@@ -1,0 +1,52 @@
+{% set name = "MarkupPy" %}
+{% set version = "1.18" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | lower }}-{{ version }}.tar.gz
+  sha256: 540f31b835076260339368890ac4f44eb3971d75fdbd97b49fa1f8b6685513d3
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+    - wheel
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  imports:
+    - MarkupPy.markup
+  commands:
+    - python -m pip check
+    - python -m pip show MarkupPy
+
+about:
+  home: https://github.com/tylerbakke/MarkupPy
+  dev_url: https://github.com/tylerbakke/MarkupPy
+  doc_url: https://tylerbakke.github.io/MarkupPy/
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: An HTML/XML generator
+  description: |
+    This is MarkupPy - a Python module that attempts to make it easier
+    to generate HTML/XML from a Python program in an intuitive,
+    lightweight, customizable and pythonic way.
+    It works with both python 2 and 3.
+
+extra:
+  recipe-maintainers:
+    - duncanmmacleod

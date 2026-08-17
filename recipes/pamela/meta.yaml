@@ -1,0 +1,42 @@
+{% set version = "1.2.0" %}
+
+package:
+  name: pamela
+  version: {{ version }}
+
+source:
+  fn: pamela-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/pamela/pamela-{{ version }}.tar.gz
+  md5: 37d71159f1bc17009ff568fd919c2a4d
+
+build:
+  number: 1
+  noarch: python
+  script: pip install --no-deps .
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+    - pip
+  imports:
+    - pamela
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/minrk/pamela
+  license: MIT
+  license_file: COPYING
+  summary: PAM interface using ctypes
+
+extra:
+  recipe-maintainers:
+    - minrk

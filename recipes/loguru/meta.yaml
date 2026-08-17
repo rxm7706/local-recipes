@@ -1,0 +1,49 @@
+{% set name = "loguru" %}
+{% set version = "0.7.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/loguru-{{ version }}.tar.gz
+  sha256: 19480589e77d47b8d85b2c827ad95d49bf31b0dcde16593892eb51dd18706eb6
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - flit-core >=3,<4
+    - pip
+  run:
+    - python >={{ python_min }}
+    - __unix  # [unix]
+    - __win   # [win]
+    - colorama >=0.3.4        # [win]
+    - win32_setctime >=1.0.0  # [win]
+
+test:
+  imports:
+    - loguru
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/Delgan/loguru
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Python logging made (stupidly) simple
+  dev_url: https://github.com/Delgan/loguru
+
+extra:
+  recipe-maintainers:
+    - davidbrochart
+    - mariusvniekerk

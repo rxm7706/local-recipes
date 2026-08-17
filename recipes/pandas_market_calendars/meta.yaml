@@ -1,0 +1,86 @@
+{% set name = "pandas_market_calendars" %}
+{% set version = "5.4.0" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pandas_market_calendars-{{ version }}.tar.gz
+  sha256: b02f3a0e9bcb4b9e82a5060bf260ef0060ccd398f989b5e6f8208f4352967806
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools >=61
+  run:
+    - exchange-calendars >=3.3
+    - pandas >=1.1
+    - python >={{ python_min }}
+    - python-dateutil
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - pandas_market_calendars
+
+outputs:
+  - name: pandas_market_calendars
+  - name: pandas-market-calendars
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python {{ python_min }}
+      run:
+        - python >={{ python_min }}
+        - {{ pin_subpackage("pandas_market_calendars", exact=True) }}
+
+    test:
+      requires:
+        - python {{ python_min }}
+      imports:
+        - pandas_market_calendars
+
+about:
+  home: https://github.com/rsheftel/pandas_market_calendars
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Market calendars to use with pandas for trading applications.
+  description: |
+    The Pandas package is widely used in finance and specifically for time
+    series analysis. It includes excellent functionality for generating
+    sequences of dates and capabilities for custom holiday calendars, but as
+    an explicit design choice it does not include the actual holiday calendars
+    for specific exchanges or OTC markets.
+
+    The pandas_market_calendars package looks to fill that role with the
+    holiday, late open and early close calendars for specific exchanges and
+    OTC conventions. pandas_market_calendars also adds several functions to
+    manipulate the market calendars and includes a date_range function to
+    create a pandas DatetimeIndex including only the datetimes when the
+    markets are open.
+
+    This package is a fork of the Zipline package from Quantopian and extracts
+    just the relevant parts. All credit for their excellent work to Quantopian.
+  doc_url: https://pandas-market-calendars.readthedocs.io/en/latest/
+  dev_url: https://github.com/rsheftel/pandas_market_calendars
+
+extra:
+  recipe-maintainers:
+    - timkpaine
+    - mathiaseitz
+    - trendelkampschroer
+    - yehoshuadimarsky

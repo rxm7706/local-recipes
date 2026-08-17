@@ -1,0 +1,39 @@
+{% set name = "py-bash-completion" %}
+{% set version = "0.2.6" %}
+{% set sha256 = "a25802fa92177a317a56a0787a583c31c910c3660a7e40d2d85e19c5512e511b" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.io/packages/source/b/bash_completion/bash_completion-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 0
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  build:
+    - python
+    - pip
+  run:
+    - python
+
+test:
+  imports:
+    - bash_completion
+
+about:
+  home: https://github.com/xonsh/py-bash-completion
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: 'A framework for accessing bash completions from Python'
+
+extra:
+  recipe-maintainers:
+    - scopatz

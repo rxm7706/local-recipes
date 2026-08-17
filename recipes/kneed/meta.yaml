@@ -1,0 +1,40 @@
+{% set name = "kneed" %}
+{% set version = "0.8.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 65b22727c623661701f15edf057f2e6c73e2b1ad4e68cd9ca4291675c318b5ef
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - numpy >=1.14.2
+    - scipy >=1.0.0
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - kneed
+about:
+  home: http://github.com/arvkevi/kneed
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Knee point detection using Python
+
+extra:
+  recipe-maintainers:
+    - arvkevi

@@ -1,5 +1,5 @@
 {% set name = "pyobjc-framework-SystemConfiguration" %}
-{% set version = "12.1" %}
+{% set version = "12.2.1" %}
 
 package:
   name: {{ name|lower }}
@@ -7,12 +7,12 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name.replace('-', '_').lower() }}/{{ name.replace('-', '_').lower() }}-{{ version }}.tar.gz
-  sha256: 90fe04aa059876a21626931c71eaff742a27c79798a46347fd053d7008ec496e
+  sha256: 877a90eafe3df72625e50d61fc9c6dbd40e8cdabab7c4101992090107bb71ddb
   #patches:
     #- patches/0001-Remove-werror-from-compile-flags.patch
 
 build:
-  number: 2
+  number: 0
   script:
     # force pyobjc to use conda-forge's chosen SDK
     - export CFLAGS="${CFLAGS} -isysroot ${SDKROOT:-$CONDA_BUILD_SYSROOT}"

@@ -1,0 +1,51 @@
+{% set name = "probablepeople" %}
+{% set version = "0.5.6" %}
+{% set sha256 = "4ae95e77f9fa7dceb116538500ab48c81a91bf68eb652d45207b794b450f4392" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 1003
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools >=42
+    - wheel
+    - parserator
+    - python-crfsuite >=0.7
+    - probableparsing
+    - doublemetaphone
+  run:
+    - python >={{ python_min }}
+    - python-crfsuite >=0.7
+    - probableparsing
+    - doublemetaphone
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - probablepeople
+
+about:
+  home: https://parserator.datamade.us/probablepeople
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  dev_url: https://github.com/datamade/probablepeople/
+  doc_url: https://probablepeople.readthedocs.io/en/latest/
+  summary: 'Parse romanized names & companies using advanced NLP methods'
+
+extra:
+  recipe-maintainers:
+    - proinsias

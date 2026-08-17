@@ -1,0 +1,48 @@
+{% set name = "djangorestframework-filters" %}
+{% set version = "1.0.0.dev2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: ef84527e3427434d54228825b53a35098c8633c1e77b71d06b79597b749ea3f2
+
+build:
+  noarch: python
+  number: 2
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - django-filter >=2.0
+    - djangorestframework
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - rest_framework_filters
+    - rest_framework_filters.templatetags
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: http://github.com/philipn/django-rest-framework-filters
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: "Better filtering for Django REST Framework"
+  dev_url: http://github.com/philipn/django-rest-framework-filters
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - rxm7706

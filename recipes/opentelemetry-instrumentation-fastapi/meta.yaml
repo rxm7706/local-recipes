@@ -1,0 +1,116 @@
+{% set name = "opentelemetry-instrumentation-fastapi" %}
+{% set version = "0.65b0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_fastapi-{{ version }}.tar.gz
+  sha256: 10a3a95486036230413a58fe4fdf4a83fa6bba46918407e527476994bd92bd97
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >={{ python_min }}
+    - opentelemetry-api ~=1.12
+    - opentelemetry-instrumentation-asgi ==0.65b0
+    - opentelemetry-instrumentation ==0.65b0
+    - opentelemetry-semantic-conventions ==0.65b0
+    - opentelemetry-util-http ==0.65b0
+    # - requests ~=2.23
+    # - opentelemetry-test-utils ==0.37b0
+    # - opentelemetry-instrumentation-fastapi 
+    # - httpx ~=0.22
+    # - fastapi <=0.90.1
+    # - requests ~=2.23
+    # - opentelemetry-test-utils ==0.38b0
+    # - opentelemetry-instrumentation-fastapi 
+    # - httpx ~=0.22
+    # - fastapi ~=0.58
+    # - requests ~=2.23
+    # - opentelemetry-test-utils ==0.39b0
+    # - opentelemetry-instrumentation-fastapi 
+    # - httpx ~=0.22
+    # - fastapi ~=0.58
+    # - requests ~=2.23
+    # - opentelemetry-test-utils ==0.40b0
+    # - opentelemetry-instrumentation-fastapi 
+    # - httpx ~=0.22
+    # - fastapi ~=0.58
+    # - requests ~=2.23
+    # - opentelemetry-test-utils ==0.41b0
+    # - opentelemetry-instrumentation-fastapi 
+    # - httpx ~=0.22
+    # - fastapi ~=0.58
+    # - requests ~=2.23
+    # - opentelemetry-test-utils ==0.42b0
+    # - opentelemetry-instrumentation-fastapi 
+    # - httpx ~=0.22
+    # - fastapi ~=0.58
+    # - requests ~=2.23
+    # - opentelemetry-test-utils ==0.43b0
+    # - opentelemetry-instrumentation-fastapi 
+    # - httpx ~=0.22
+    # - fastapi ~=0.58
+    # - requests ~=2.23
+    # - opentelemetry-test-utils ==0.44b0
+    # - opentelemetry-instrumentation-fastapi 
+    # - httpx ~=0.22
+    # - fastapi ~=0.58
+    # - fastapi ~=0.58
+    # - fastapi ~=0.58
+    # - fastapi-slim ~=0.111.0
+    # - fastapi ~=0.58
+    # - fastapi ~=0.58
+    # - fastapi ~=0.58
+    # - fastapi ~=0.58
+    # - fastapi ~=0.58
+    # - fastapi ~=0.58
+    # - fastapi ~=0.58
+    # - fastapi ~=0.58
+    # - fastapi ~=0.58
+    # - fastapi ~=0.58
+    # - fastapi ~=0.58
+    # - fastapi ~=0.58
+    # - fastapi ~=0.92
+    # - fastapi ~=0.92
+    # - fastapi ~=0.92
+    # - fastapi ~=0.92
+    # - fastapi ~=0.92
+    # - fastapi ~=0.92
+    # - fastapi ~=0.92
+    # - fastapi ~=0.92
+    # - fastapi ~=0.92
+    # - fastapi ~=0.92
+    # - fastapi ~=0.92
+    # - fastapi ~=0.92
+    # - fastapi ~=0.92
+
+test:
+  imports:
+    - opentelemetry
+    - opentelemetry.instrumentation
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-fastapi
+  summary: OpenTelemetry FastAPI Instrumentation
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk

@@ -1,0 +1,49 @@
+{% set name = "nbsphinx" %}
+{% set version = "0.9.8" %}
+{% set sha256 = "d0765908399a8ee2b57be7ae881cf2ea58d66db3af7bbf33e6eb48f83bea5495" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python >=3.6
+    - setuptools
+    - pip
+
+  run:
+    - python >=3.6
+    - docutils
+    - jinja2
+    - nbconvert
+    - nbformat
+    - sphinx
+    - traitlets
+
+test:
+  imports:
+    - nbsphinx
+
+about:
+  home: http://nbsphinx.rtfd.org/
+  license: MIT
+  summary: Jupyter Notebook Tools for Sphinx
+  license_family: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - ericmjl
+    - kmuehlbauer
+    - SylvainCorlay

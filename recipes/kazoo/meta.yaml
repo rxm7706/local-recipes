@@ -1,0 +1,48 @@
+{% set name = "kazoo" %}
+{% set version = "2.11.0" %}
+{% set sha256 = "57e7e6f69295c8f922511488eeb79680729e14bb8eb382d5cad83aa11345c36c" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - kazoo
+
+about:
+  home: http://github.com/python-zk/kazoo
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: Kazoo is a high-level Python library that makes it easier to use Apache Zookeeper
+
+  description: Kazoo is a high-level Python library that makes it easier to use Apache Zookeeper
+  doc_url: https://kazoo.readthedocs.io/
+  dev_url: https://github.com/python-zk/kazoo
+
+extra:
+  recipe-maintainers:
+    - mrocklin
+    - mrakitin
+    - StephenSorriaux

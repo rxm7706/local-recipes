@@ -16,10 +16,11 @@ build:
 
 requirements:
   host:
-    - python >=3.6,<4.0
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.6,<4.0
+    - python >={{ python_min }},<4.0
     - typer
     - django
     - aiofiles
@@ -32,6 +33,12 @@ requirements:
     - django-extensions
     - click
     - django-ninja >=1.1.0
+    # Not in Metayaml
+    #- asgiref
+    #- psycopg2
+    #- pydantic
+    #- pymapd
+    - sf-hamilton
 
 test:
   imports:
@@ -40,13 +47,15 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/dagworks-inc/hamilton
+  doc_url: https://hamilton.dagworks.io/en/latest/
   summary: Hamilton, the micro-framework for creating dataframes.
   dev_url: https://github.com/dagworks-inc/hamilton
-  license: ''
-  license_file: PLEASE_ADD_LICENSE_FILE
+  license: BSD-3-Clause
+  license_file: LICENSE
 
 extra:
   recipe-maintainers:

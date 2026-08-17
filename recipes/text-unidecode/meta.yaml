@@ -1,0 +1,39 @@
+{% set version = "1.3" %}
+
+package:
+  name: text-unidecode
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/text-unidecode/text-unidecode-{{ version }}.tar.gz
+  sha256: bad6603bb14d279193107714b288be206cac565dfa49aa5b105294dd5c4aab93
+
+build:
+  number: 2
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - text_unidecode
+
+about:
+  home: https://github.com/kmike/text-unidecode/
+  license: Artistic-1.0-Perl
+  license_family: OTHER
+  license_file: LICENSE
+  summary: "The most basic Text::Unidecode port"
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

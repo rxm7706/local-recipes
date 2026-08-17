@@ -1,0 +1,51 @@
+{% set name = "nptyping" %}
+{% set version = "2.5.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/ramonhagenaars/{{ name }}/archive/v{{ version }}.tar.gz
+  sha256: 7f061750bcbda8ce3926fc22c22c372c9cebfdb9b889376c71cb5d911173660d
+
+build:
+  noarch: python
+  number: 2
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - numpy <2.0
+    - typish >=1.5.2
+    - typing_extensions
+
+test:
+  imports:
+    - nptyping
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/ramonhagenaars/nptyping
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Type hints for Numpy
+
+  description: |
+    nptyping.NDArray lets you define the shape and type of your numpy.ndarray.
+  doc_url: https://github.com/ramonhagenaars/nptyping
+  dev_url: https://github.com/ramonhagenaars/nptyping
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

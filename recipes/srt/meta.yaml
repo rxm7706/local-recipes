@@ -1,0 +1,42 @@
+{% set name = "srt" %}
+{% set version = "3.5.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/srt-{{ version }}.tar.gz
+  sha256: 4884315043a4f0740fd1f878ed6caa376ac06d70e135f306a6dc44632eed0cc0
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+  noarch: python
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - srt
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/cdown/srt
+  summary: A tiny library for parsing, modifying, and composing SRT files.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - gauranshkumar

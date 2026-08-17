@@ -1,0 +1,46 @@
+{% set name = "django-oauth-toolkit" %}
+{% set version = "3.4.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: e43bef1568d6322b44175e27eff82ed7d7cf210889a07d10b8a64e4190ff1351
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }}
+    - django >=3.2,!=4.0.0
+    - requests >=2.13.0
+    - oauthlib >=3.1.0
+    - jwcrypto >=0.8.0
+    - pytz >=2024.1
+
+test:
+  imports:
+    - oauth2_provider
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/jazzband/django-oauth-toolkit
+  summary: OAuth2 Provider for Django
+  license: BSD-2-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - abraha2d

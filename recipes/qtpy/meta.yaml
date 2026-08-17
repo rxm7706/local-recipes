@@ -1,0 +1,69 @@
+{% set name = "QtPy" %}
+{% set import = "qtpy" %}
+{% set entrypoint = "qtpy" %}
+{% set version = "2.4.3" %}
+{% set sha256 = "db744f7832e6d3da90568ba6ccbca3ee2b3b4a890c3d6fbbc63142f6e4cdf5bb" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0]|lower }}/{{ name|lower }}/{{ name|lower }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+  entry_points:
+    - {{ entrypoint }} = {{ import }}.cli:main
+
+requirements:
+  host:
+    - pip
+    - setuptools >=42
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+    - packaging
+
+test:
+  requires:
+    - pip
+    - pyqt >=5.9
+    - python {{ python_min }}
+  imports:
+    - {{ import }}
+    - {{ import }}.QtCore
+    - {{ import }}.QtGui
+    - {{ import }}.QtWidgets
+  commands:
+    - pip check
+    - {{ entrypoint }}
+    - {{ entrypoint }} --help
+    - {{ entrypoint }} --version
+    - {{ entrypoint }} mypy-args
+
+about:
+  home: https://github.com/spyder-ide/qtpy
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Provides an uniform layer to support PyQt5, PySide2, PyQt6, PySide6 with a single codebase
+  description: |
+    QtPy is a small abstraction layer that lets you write applications using a single API call to either PyQt or PySide.
+
+    It provides support for PyQt5, PyQt6, PySide6, PySide2 (using the Qt5 layout), so you can write your code as if you were using PyQt or PySide directly, but import Qt modules from qtpy instead of PyQt5, PySide2, PyQt6 or PySide6.
+
+    Accordingly, when porting code between different Qt bindings (PyQt vs PySide) or Qt versions (Qt5 vs Qt6), QtPy makes this much more painless, and allows you to easily and incrementally transition between them.
+    QtPy handles incompatibilities and differences between bindings or Qt versions for you while keeping your project running, so you can focus more on your own code and less on keeping track of supporting every Qt version and binding.
+    Furthermore, when you do want to upgrade or support new bindings, it allows you to update your project module by module rather than all at once.
+  dev_url: https://github.com/spyder-ide/qtpy
+  doc_url: https://github.com/spyder-ide/qtpy/blob/master/README.md
+
+extra:
+  recipe-maintainers:
+    - CAM-Gerlach
+    - ccordoba12
+    - astrofrog
+    - dalthviz

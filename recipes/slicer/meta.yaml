@@ -1,0 +1,43 @@
+{% set name = "slicer" %}
+{% set version = "0.0.8" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/slicer-{{ version }}.tar.gz
+  sha256: 2e7553af73f0c0c2d355f4afcc3ecf97c6f2156fcf4593955c3f56cf6c4d6eb7
+  
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - python >=3.6
+
+test:
+  imports:
+    - slicer
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/interpretml/slicer
+  summary: A small package for big slicing.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - slundberg
+    - connortann
+    - paulbkoch

@@ -1,0 +1,49 @@
+{% set name = "yapf" %}
+{% set version = "0.43.0" %}
+{% set sha256 = "1d8ca9d7e1fc429c496e0a046e509e437d5ae766487b0394c45fc1fdf253b5d4" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://github.com/google/{{ name }}/archive/v{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  entry_points:
+    - yapf = yapf:run_main
+  number: 1
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - importlib-metadata >=6.6.0
+    - platformdirs >=3.5.1
+    - python >={{ python_min }}
+    - tomli >=2.0.1
+
+test:
+  commands:
+    - yapf --help
+    - yapf --version
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/google/yapf
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A formatter for Python files
+
+extra:
+  recipe-maintainers:
+    - vamega

@@ -1,0 +1,48 @@
+{% set name = "scooby" %}
+{% set version = "0.11.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 0575c73636ec4c2587bea1f8a038798ddcb249e02067fae897dac3bf4f4e444d
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  entry_points:
+    - scooby=scooby.__main__:main
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools_scm
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - scooby
+
+about:
+  home: https://github.com/banesullivan/scooby/
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A lightweight toolset to easily report your Python environment's package versions and hardware resources.
+  description: |
+    Scooby has HTML formatting for Jupyter notebooks and rich text formatting for just about every other environment. We designed this module to be lightweight such that it could easily be added as a dependency to Python projects for environment reporting when debugging. Simply add scooby to your dependencies and implement a function to have scooby report on the aspects of the environment you care most about.
+  doc_url: https://github.com/banesullivan/scooby/blob/master/README.md
+  dev_url: https://github.com/banesullivan/scooby
+
+extra:
+  recipe-maintainers:
+    - banesullivan
+    - prisae
+    - akaszynski

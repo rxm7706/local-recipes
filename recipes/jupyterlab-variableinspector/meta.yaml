@@ -1,0 +1,49 @@
+{% set name = "lckr_jupyterlab_variableinspector" %}
+{% set version = "3.2.4" %}
+
+package:
+  name: jupyterlab-variableinspector
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 9bad61401ef24cbdd4bc000d882038bbdd9d79550f624bd1930978dd56dddf7b
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - hatch-jupyter-builder >=0.5
+    - hatch-nodejs-version
+    - hatchling >=1.5.0
+    - jupyterlab =4
+    - pip
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+    - jupyterlab >=3.0.0
+
+test:
+  requires:
+    - jupyterlab =4
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+    - jupyter labextension list
+    - jupyter labextension list 2>&1 | grep -ie "@lckr/jupyterlab_variableinspector.*OK.*(python, lckr_jupyterlab_variableinspector)"
+
+about:
+  home: https://github.com/jupyterlab-contrib/jupyterlab-variableInspector
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Variable Inspector extension for Jupyterlab.
+
+extra:
+  recipe-maintainers:
+    - martinRenou
+    - fcollonval

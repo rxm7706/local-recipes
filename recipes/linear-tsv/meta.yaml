@@ -1,0 +1,45 @@
+{% set name = "linear-tsv" %}
+{% set version = "1.1.0" %}
+{% set bundle = "tar.gz" %}
+{% set hash_type = "sha256" %}
+{% set hash = "b504d78f4075615ae75de86a16e5680701a441fc84da2a2cf9f94351ab1ccbf5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.{{ bundle }}
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.{{ bundle }}
+  {{ hash_type }}: {{ hash }}
+
+build:
+  noarch: python
+  number: 1
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  host:
+    - pip
+    - python
+    - setuptools
+
+  run:
+    - python
+    - six
+
+test:
+  imports:
+    - tsv
+
+about:
+  home: https://github.com/solidsnack/tsv
+  license_file: LICENSE.txt
+  license: Apache 2.0
+  license_family: Apache
+  summary: 'Line-oriented, tab-separated value format'
+  dev_url: https://github.com/solidsnack/tsv
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr

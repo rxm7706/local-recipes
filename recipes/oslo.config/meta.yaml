@@ -1,0 +1,61 @@
+{% set name = "oslo.config" %}
+{% set version = "10.7.0" %}
+{% set bundle = "tar.gz" %}
+{% set hash = "4f0fd4ca7ecfe511fbc0e012d3c63fce57009f360199e9e9cc2329ed55ec911e" %}
+{% set python_min = "3.11" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.{{ bundle }}
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/oslo_config-{{ version }}.tar.gz
+  sha256: {{ hash }}
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - pbr >=2.0.0
+
+  run:
+    - python >={{ python_min }}
+    - debtcollector >=1.2.0
+    - netaddr >=0.7.18
+    - stevedore >=1.20.0
+    - oslo.i18n >=3.15.3
+    - rfc3986 >=1.2.0
+    - pyyaml >=5.1
+    - requests >=2.18.0
+
+test:
+  imports:
+    - oslo_config
+    - oslo_config.cfg
+    - oslo_config.types
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+
+about:
+  home: http://docs.openstack.org/developer/oslo.config/
+  license_file: LICENSE
+  license: Apache-2.0
+  license_family: Apache
+  summary: The Oslo configuration API supports parsing command line arguments and .ini style configuration files.
+  doc_url: http://docs.openstack.org/developer/oslo.config/
+  dev_url: http://git.openstack.org/cgit/openstack/oslo.config
+
+extra:
+  recipe-maintainers:
+    - anguslees
+    - tschoonj

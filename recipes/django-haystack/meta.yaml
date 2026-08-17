@@ -1,13 +1,13 @@
 {% set name = "django-haystack" %}
-{% set version = "3.3.0" %}
+{% set version = "3.4.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django_haystack-{{ version }}.tar.gz
-  sha256: e3ceed6b8000625da14d409eb4dac69894905e2ac8ac18f9bfdb59323ca02eab
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 1226a7c9ce13e1e7ead8ac83f6e87bfef4996f146ed24971fde7896115b1c530
 
 build:
   noarch: python
@@ -16,30 +16,31 @@ build:
 
 requirements:
   host:
-    - python
+    - python {{ python_min }}
     - setuptools >=61.2
     - setuptools-scm >=3.4
     - wheel
     - pip
   run:
-    - python
+    - python >={{ python_min }}
     - django >=3.2
     - packaging
 
-test:
-  imports:
-    - django_haystack
-  commands:
-    - pip check
-  requires:
-    - pip
-
 about:
-  summary: Pluggable search for Django.
-  dev_url: https://github.com/django-haystack/django-haystack
+  home: http://haystacksearch.org/
   license: BSD-3-Clause
+  license_family: BSD
   license_file: LICENSE
+  summary: 'Modular search for Django'
+  description: |
+    Haystack provides modular search for Django. It features a unified,
+    familiar API that allows you to plug in different search backends
+    (such as Solr, Elasticsearch, Whoosh, Xapian, etc.) without having
+    to modify your code.
+  doc_url: http://haystacksearch.org/
+  dev_url: https://github.com/django-haystack/django-haystack
 
 extra:
   recipe-maintainers:
     - rxm7706
+    - scopatz

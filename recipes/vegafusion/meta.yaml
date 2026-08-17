@@ -1,0 +1,64 @@
+{% set name = "vegafusion" %}
+{% set version = "2.0.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/vegafusion-{{ version }}.tar.gz
+  sha256: 6fc9a89e0a55f7cd46089568c00520b84c07ba3e097570a3491ed207bd040b5b
+
+build:
+  number: 0
+  overlinking_ignore_patterns:
+    - "*"
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - {{ compiler('rust') }}
+    - python                              # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}  # [build_platform != target_platform]
+    - crossenv                            # [build_platform != target_platform]
+    - maturin                             # [build_platform != target_platform]
+    - libprotobuf
+    - cargo-bundle-licenses
+  host:
+    - python
+    - pip
+    - maturin
+  run:
+    - python
+    - arro3-core >=0.4.2
+    - narwhals >=1.13.5
+    - packaging
+
+test:
+  imports:
+    - vegafusion
+  requires:
+    - pip
+  commands:
+    - pip check
+
+about:
+  home: https://vegafusion.io
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file:
+    - vegafusion-python/LICENSE
+    - THIRDPARTY.yml
+
+  summary: Server-side acceleration for the Vega visualization grammar
+  description: |
+    VegaFusion provides serverside acceleration for the Vega visualization grammar. The vegafusion
+    package is generally used as a dependency of higher-level, pure-Python, packages like altair.
+  doc_url: https://vegafusion.io
+  dev_url: https://github.com/vega/vegafusion
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - jonmmease

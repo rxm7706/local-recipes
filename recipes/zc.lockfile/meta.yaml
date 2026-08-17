@@ -1,0 +1,44 @@
+{% set name = "zc.lockfile" %}
+{% set version = "4.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/zc_lockfile-{{ version }}.tar.gz
+  sha256: d3ab0f53974296a806db3219b9191ba0e6d5cbbd1daa2e0d17208cb9b29d2102
+
+build:
+  preserve_egg_dir: true
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - setuptools
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - zc
+    - zc.lockfile
+
+about:
+  home: https://github.com/zopefoundation/zc.lockfile
+  license: ZPL-2.1
+  license_file: LICENSE.txt
+  license_family: Other
+  summary: Basic inter-process locks
+  dev_url: https://github.com/zopefoundation/zc.lockfile
+
+extra:
+  recipe-maintainers:
+    - carlodri

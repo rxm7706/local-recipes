@@ -1,0 +1,48 @@
+{% set name = "domdf-python-tools" %}
+{% set version = "3.10.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/domdf_python_tools-{{ version }}.tar.gz
+  sha256: 2ae308d2f4f1e9145f5f4ba57f840fbfd1c2983ee26e4824347789649d3ae298
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - hatchling
+    - hatch-requirements-txt
+    - pip
+    - python {{ python_min }}
+  run:
+    - importlib-metadata >=3.6.0
+    - importlib-resources >=3.0.0
+    - natsort >=7.0.1
+    - python >={{ python_min }}
+    - typing-extensions >=3.7.4.1
+
+test:
+  imports:
+    - domdf_python_tools
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/domdfcoding/domdf_python_tools
+  summary: Helpful functions for Python 🐍 🛠️
+  license: MIT
+  license_file: LICENSE
+  doc_url: https://domdf-python-tools.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - domdfcoding

@@ -1,0 +1,68 @@
+{% set version = "6.7.1" %}
+
+package:
+  name: multidict
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/multidict/multidict-{{ version }}.tar.gz
+  sha256: ec6652a1bee61c53a3e5776b6049172c53b6aaba34f18c9ad04f82712bac623d
+
+build:
+  number: 0
+  noarch: python  # [use_noarch]
+  track_features:
+    - multidict_no_compile  # [use_noarch]
+  script:
+    - export MULTIDICT_NO_EXTENSIONS=1   # [use_noarch]
+    - {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - python                                 # [not use_noarch and  build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [not use_noarch and  build_platform != target_platform]
+    - cython                                 # [not use_noarch and  build_platform != target_platform]
+    - {{ compiler('c') }}                    # [not use_noarch]
+    - {{ stdlib("c") }}                      # [not use_noarch]
+  host:
+    - cython
+    - python {{ python_min }}  # [use_noarch]
+    - python                   # [not use_noarch]
+    - pip
+    - setuptools >=40
+  run:
+    - python >={{ python_min }}  # [use_noarch]
+    - python                     # [not use_noarch]
+    - typing-extensions >=4.1.0  # [py<311 or use_noarch]
+
+test:
+  source_files:
+    - tests
+  requires:
+    - pytest
+    - pytest-codspeed
+    - objgraph
+    - pip
+    - psutil
+    - python {{ python_min }}  # [use_noarch]
+  commands:
+    - py.test tests --no-c-extensions  # [use_noarch]
+    - py.test tests --c-extensions     # [not use_noarch]
+    - pip check
+
+about:
+  home: http://github.com/aio-libs/multidict
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: multidict implementation
+
+  description: |
+    Multidicts are useful for working with HTTP headers, URL query args etc.
+  doc_url: http://multidict.readthedocs.io/
+  dev_url: http://github.com/aio-libs/multidict
+
+extra:
+  recipe-maintainers:
+    - sodre
+    - kszucs
+    - xhochy

@@ -1,0 +1,52 @@
+{% set name = "notifiers" %}
+{% set version = "1.3.6" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/notifiers-{{ version }}.tar.gz
+  sha256: 070d69dc34892b0675bdbca8529fb13d542f0c84052c6fef48fe2ab1d98d661f
+
+build:
+  entry_points:
+    - notifiers = notifiers_cli.core:entry_point
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - hatchling
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }},<4.0
+    - click >=8.0.3
+    - jsonschema >=4.4.0
+    - requests >=2.27.1,<3.0.0
+    - importlib-metadata >=3.6
+
+test:
+  imports:
+    - notifiers
+    - notifiers_cli
+  commands:
+    - pip check
+    - notifiers --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/notifiers/notifiers
+  summary: The easy way to send notifications
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - conda-forge/rpaframework-core
+    - thewchan

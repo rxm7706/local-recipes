@@ -1,0 +1,44 @@
+{% set name = "click-didyoumean" %}
+{% set version = "0.3.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 4f82fdff0dbe64ef8ab2279bd6aa3f6a99c3b28c05aa09cbfc07c9d7fbb5a463
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - poetry-core >=1.0.0
+    - python {{ python_min }}
+  run:
+    - click >=7
+    - python >={{ python_min }},<4.0.0
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  imports:
+    - click_didyoumean
+  commands:
+    - python -m pip check
+
+about:
+  home: https://github.com/click-contrib/click-didyoumean
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Enable git-like did-you-mean feature in click.
+
+extra:
+  recipe-maintainers:
+    - duncanmmacleod

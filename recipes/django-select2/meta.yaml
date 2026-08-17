@@ -1,0 +1,51 @@
+{% set name = "django-select2" %}
+{% set version = "8.4.8" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 592e52effff2b5850cb7c98b265715b6704fb784699c4aedddfdd8ae1ffa1e81
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+    - setuptools_scm
+    - flit >=3.2
+    - flit-scm
+    - wheel
+    - django >=4.2
+    - django-appconf >=0.6.0
+  run:
+    - python >={{ python_min }}
+    - django >=4.2
+    - django-appconf >=0.6.0
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - django_select2
+
+about:
+  home: https://pypi.org/project/django-select2/
+  summary: django-select2, select2 driven Django Widgets.
+  license: MIT
+  license_file: LICENSE
+  dev_url: https://github.com/codingjoe/django-select2
+  doc_url: https://django-select2.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - swainn
+    - gagelarsen

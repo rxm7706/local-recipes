@@ -1,0 +1,81 @@
+{% set name = "streamlit" %}
+{% set version = "1.61.1" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/streamlit-{{ version }}.tar.gz
+  sha256: 68acf1ff1b6005b19205c2777d832deea0c1edd6fbbf7f43f091b96220e5e35f
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  entry_points:
+    - streamlit = streamlit.web.cli:main
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - anyio >=4.0.0,<5
+    - httptools >=0.6.3,<1
+    - itsdangerous >=2.1.2,<3
+    - python-multipart >=0.0.10,<1
+    - starlette >=0.46.0,<1.4.0
+    - uvicorn >=0.30.0,<1
+    - websockets >=12.0.0,<17
+    - altair >=5.0.0,<7,!=5.4.0,!=5.4.1
+    - blinker >=1.5.0,<2
+    - cachetools >=5.5,<8
+    - click >=7.0,<9
+    - gitpython >=3.0.7,<4,!=3.1.19
+    - numpy >=1.23,<3
+    - packaging >=20
+    - pandas >=1.4.0,<4
+    - pillow >=7.1.0,<13
+    - protobuf >=5.26.1,<8
+    - pyarrow >=7.0,<25
+    - pydeck >=0.8.0b4,<1
+    - python >={{ python_min }}
+    - requests >=2.27,<3
+    - tenacity >=8.1.0,<10
+    - toml >=0.10.1,<2
+    - tornado >=6.0.3,<7,!=6.5.0
+    - typing_extensions >=4.10.0,<5
+    - watchdog >=2.1.5,<7
+
+test:
+  imports:
+    - streamlit
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://streamlit.io
+  dev_url: https://github.com/streamlit/streamlit
+  summary: A faster way to build and share data apps
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - vdonato
+    - raybellwaves
+    - kmcgrady
+    - jroes
+    - xhochy
+    - lukasmasuch
+    - mayagbarnes
+    - raethlein
+    - sfc-gh-bnisco
+    - sfc-gh-lwilby
+    - sfc-gh-nbellante

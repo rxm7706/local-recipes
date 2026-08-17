@@ -1,0 +1,50 @@
+{% set name = "vine" %}
+{% set version = "5.1.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/vine-{{ version }}.tar.gz
+  sha256: 8b62e981d35c41049211cf62a0a1242d8c1ee9bd15bb196ce38aefd6799e61e0
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - vine
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://pypi.org/project/vine/
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Python promises
+  description: |
+    This is a special implementation of promises in that it can be used both
+    for promise of a value and lazy evaluation. The biggest upside for this
+    is that everything in a promise can also be a promise, e.g. filters,
+    callbacks and errbacks can all be promises.
+  doc_url: https://vine.readthedocs.io/
+  dev_url: https://github.com/celery/vine
+
+extra:
+  recipe-maintainers:
+    - anthchirp
+    - frol

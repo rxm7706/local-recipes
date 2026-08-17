@@ -1,0 +1,50 @@
+{% set name = "HeapDict" %}
+{% set version = "1.0.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/HeapDict-{{ version }}.tar.gz
+  sha256: 8495f57b3e03d8e46d5f1b2cc62ca881aca392fd5cc048dc0aa2e1a6d23ecdb6
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 2
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - heapdict
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+    home: http://stutzbachenterprises.com/
+    license: BSD-3-Clause
+    summary: 'A Heap MutableMapping'
+    license_file: LICENSE
+    summary: A heap with decrease-key and increase-key operations
+    description: |
+        heapdict implements the MutableMapping ABC, meaning it works pretty much
+        like a regular Python dict. It's designed to be used as a priority queue.
+    doc_url: https://pypi.python.org/pypi/HeapDict
+    doc_source_url: https://github.com/DanielStutzbach/heapdict/blob/master/README.rst
+    dev_url: https://github.com/DanielStutzbach/heapdict
+
+extra:
+  recipe-maintainers:
+    - mrocklin
+    - ocefpaf

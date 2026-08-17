@@ -1,0 +1,46 @@
+{% set name = "ollama" %}
+{% set version = "0.6.2" %}
+{% set python_min = "3.9" %}
+
+package:
+  name: {{ name|lower }}-python
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/ollama-{{ version }}.tar.gz
+  sha256: 936d55daa684f474364c098611c933626f8d6c7d67065c5b7ae0c477b508b07f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - httpx >=0.27
+    - pydantic >=2.9
+
+test:
+  imports:
+    - ollama
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/ollama/ollama-python
+  summary: The official Python client for Ollama.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - apmorton
+    - asmeurer

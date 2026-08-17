@@ -1,13 +1,14 @@
 {% set name = "kfp-server-api" %}
-{% set version = "1.8.5" %}
+{% set version = "2.17.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/kfp-server-api-{{ version }}.tar.gz
-  sha256: 482d71765ba57c003164dbb980a8cb1a18d234b578d064dc88dbeb3e4c7ab6de
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 12adfe269ca4758f01c687898f4471e786183e720fe5fa5aa4ad4fb0f3737d4f
+
 
 build:
   noarch: python
@@ -16,10 +17,11 @@ build:
 
 requirements:
   host:
-    - python >=3.7
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.7
+    - python >={{ python_min }}
     - urllib3 >=1.15
     - six >=1.10
     - certifi
@@ -28,6 +30,11 @@ requirements:
 test:
   imports:
     - kfp_server_api
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/kubeflow/pipelines/tree/master/backend/api/python_http_client
@@ -39,7 +46,8 @@ about:
 
 extra:
   recipe-maintainers:
-    - nicolas-geniteau
+    - alanhdu
+    - "nicolas-geniteau"
     - maximerihouey
     - ncolomer
     - tanguycdls

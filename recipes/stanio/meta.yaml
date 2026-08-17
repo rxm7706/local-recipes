@@ -1,0 +1,45 @@
+{% set name = "stanio" %}
+{% set version = "0.5.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/stanio-{{ version }}.tar.gz
+  sha256: 348d52f947dec431e118f4b601c4c5296929b86401d4d4dd5aa9373b0d4ae4ac
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - numpy
+
+test:
+  imports:
+    - stanio
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/WardBrian/stanio
+  dev_url: https://github.com/WardBrian/stanio
+  summary: |
+    Preparing inputs to and reading outputs from Stan.
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - WardBrian

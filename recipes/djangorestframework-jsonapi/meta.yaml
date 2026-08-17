@@ -1,13 +1,13 @@
 {% set name = "djangorestframework-jsonapi" %}
-{% set version = "6.1.0" %}
+{% set version = "8.1.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/djangorestframework-jsonapi-{{ version }}.tar.gz
-  sha256: 237a6ed3780f0b6571c838c33fde57286152166213ad2986cb1d0f45cff45425
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: d02defa331c240cef136dc522f670e5535a2f1fad182dc04bd4abf4c4a747340
 
 build:
   noarch: python
@@ -16,13 +16,15 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.8
+    - django-filter
+    - python >={{ python_min }}
     - inflection >=0.5.0
-    - djangorestframework >=3.13
-    - django >=3.2
+    - djangorestframework >=3.15
+    - django >=4.2
 
 test:
   imports:
@@ -31,6 +33,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/django-json-api/django-rest-framework-json-api
@@ -41,3 +44,4 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - cshaley

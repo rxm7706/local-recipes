@@ -10,16 +10,17 @@ source:
   sha256: 5730ac8bcffda5cbe6698da5eb2ef191422f99a167c4aac718b116430d20cee1
 
 build:
-  skip: true  # [py<37]
+  noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python
+    - python {{ python_min }}
     - pip
+    - setuptools    
   run:
-    - python
+    - python >={{ python_min }}
     - dice-ml >=0.11,<0.12
     - econml >=0.14.1
     - statsmodels <0.14.0
@@ -35,7 +36,8 @@ requirements:
     - semver >=2.13.0,<2.14.dev0
     - ml-wrappers
     - networkx <=2.5
-    - ipykernel <=6.8.0  # [py<=37]
+    - ipykernel >=6.22.0
+    #- markupsafe <=2.1.2
     - raiutils >=0.4.2
 
 test:
@@ -45,6 +47,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/microsoft/responsible-ai-toolbox

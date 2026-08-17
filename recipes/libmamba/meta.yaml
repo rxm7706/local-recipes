@@ -1,0 +1,55 @@
+{% set name = "libmamba" %}
+{% set version = "0.15.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/mamba-org/mamba/archive/{{ version }}.tar.gz
+  sha256: f2ad92625954cd029b84725bc33f658020a589cefda0b18adb1b7825ab7d4a1f
+
+build:
+  number: 1
+  run_exports:
+    - {{ pin_subpackage(name, max_pin='x.x') }}
+requirements:
+  build:
+    - cmake
+    - ninja
+    - {{ compiler('cxx') }}
+  host:
+    - libsolv >=0.7.18
+    - libcurl
+    - openssl
+    - libarchive
+    - nlohmann_json
+    - cpp-filesystem >=1.5.8
+    - yaml-cpp
+    - reproc-cpp >=14.2.1
+
+test:
+  commands:
+    - test -f $PREFIX/lib/libmamba${SHLIB_EXT}  # [unix]
+    - test -f $PREFIX/include/mamba/core/context.hpp  # [unix]
+    - test -f $PREFIX/include/mamba/core/channel.hpp  # [unix]
+    - if not exist %LIBRARY_INC%\mamba\core\channel.hpp (exit 1)  # [win]
+    - if not exist %LIBRARY_INC%\mamba\core\context.hpp (exit 1)  # [win]
+    - if not exist %LIBRARY_LIB%\libmamba.lib (exit 1)  # [win]
+    - if not exist %LIBRARY_BIN%\libmamba.dll (exit 1)  # [win]
+
+about:
+  home: https://github.com/mamba-org/mamba
+  license: BSD-3-Clause
+  license_file: LICENSE
+  license_family: BSD
+  summary: A library that exposes the internals of mamba, a fast drop-in alternative to conda
+  description: A fast drop-in alternative to conda, using libsolv for dependency resolution
+  dev_url: https://github.com/mamba-org/mamba
+
+extra:
+  recipe-maintainers:
+    - SylvainCorlay
+    - JohanMabille
+    - wolfv
+    - adriendelsalle

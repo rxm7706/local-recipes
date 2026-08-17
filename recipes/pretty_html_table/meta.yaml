@@ -1,0 +1,42 @@
+{% set name = "pretty_html_table" %}
+{% set version = "0.9.16" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: c0de765ca9fd59cafc6912425eff3a4eff34607b96dddf9edf419718b77f9ae3
+
+build:
+  number: 1
+  noarch: python
+  script: '{{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv '
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - pandas
+    - python >=3.6
+
+test:
+  imports:
+    - pretty_html_table
+
+about:
+  home: https://github.com/sbi-rviot/ph_table
+  license: MIT
+  license_family: MIT
+  # check to see if PR: https://github.com/sbi-rviot/ph_table/pull/5 has been merged
+  # so we can drop the local license in recipe
+  license_file: LICENSE.txt
+  summary: Make pandas dataframe looking pretty again
+  doc_url: ''
+  dev_url: https://github.com/sbi-rviot/ph_table
+
+extra:
+  recipe-maintainers:
+    - Maarten-vd-Sande

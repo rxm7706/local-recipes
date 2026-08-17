@@ -1,0 +1,51 @@
+{% set name = "pip-system-certs" %}
+{% set version = "5.3" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pip_system_certs-{{ version }}.tar.gz
+  sha256: 19c8bf9957bcce7d69c4dbc2d0b2ef13de1984d53f50a59012e6dbbad0af67c6
+  patches:
+    - static-version.patch
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - wheel
+    - setuptools >=61
+  run:
+    - python >={{ python_min }}
+    - pip >=24.2
+    - truststore >=0.10.0
+
+test:
+  requires:
+    - python {{ python_min }}
+
+about:
+  home: https://gitlab.com/alelec/pip-system-certs
+  summary: Live patches pip and requests to use system certs by default
+  description: |
+    pip-system-certs patches pip and requests at runtime to use certificates
+    from the default system store (rather than the bundled certs ca).
+
+    This will allow pip to verify tls/ssl connections to servers whose cert is
+    trusted by your system install.
+  license: BSD-2-Clause
+  license_family: BSD
+  license_file: LICENSE
+  dev_url: https://gitlab.com/alelec/pip-system-certs
+
+extra:
+  recipe-maintainers:
+    - adament

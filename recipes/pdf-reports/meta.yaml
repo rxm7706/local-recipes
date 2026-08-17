@@ -1,0 +1,61 @@
+{% set name = "pdf-reports" %}
+{% set version = "0.3.9" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/Edinburgh-Genome-Foundry/pdf_reports/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: 37fa3f70418b9953f49ecd7df9dec0b0ce65a31a5da275c67de5f260689e7b66
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  run_exports: 
+    - {{ pin_subpackage('pdf-reports', max_pin="x.x") }}
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - pypugjs
+    - jinja2 <3.1.0
+    - weasyprint
+    - beautifulsoup4
+    - pandas
+    - markdown
+    - backports.functools_lru_cache 
+
+test:
+  source_files: 
+    - tests/
+  imports:
+    - pdf_reports
+  requires:
+    - python {{ python_min }}
+    - libsass
+    - matplotlib-base
+    - pypdf 
+    - pytest
+    - pytest-cov
+    - pytest-mock
+  commands:
+    - pytest tests/
+
+
+about:
+  home: https://github.com/Edinburgh-Genome-Foundry/pdf_reports
+  summary: "pdf_reports developed by EGF to create nice-looking PDF reports from HTML or Pug templates."
+  license: MIT
+  license_file: LICENSE
+
+
+extra:
+  recipe-maintainers:
+    - breakthewall
+    - ramez17khaled

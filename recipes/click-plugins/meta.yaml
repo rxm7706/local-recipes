@@ -1,0 +1,42 @@
+{% set version = "1.1.1.2" %}
+
+package:
+  name: click-plugins
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/click-plugins/click_plugins-{{ version }}.tar.gz
+  sha256: d7af3984a99d243c131aa1a828331e7630f4a88a9741fd05c927b204bcf92261
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - click >=4.0
+
+test:
+  imports:
+    - click_plugins
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/click-contrib/click-plugins
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: 'An extension module for click to enable registering CLI commands via setuptools entry-points'
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

@@ -1,32 +1,40 @@
 {% set name = "sphinx-external-toc" %}
-{% set version = "1.0.0" %}
+{% set version = "1.1.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/sphinx_external_toc-{{ version }}.tar.gz
-  sha256: f7dd095ff3ab0fb74a310d410b0a3618fc1ddc6f2ce435897d659acaa4a3eb24
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: f81833865006f6b4a9b2550a2474a6e3d7e7f2cb23ba23309260577ea65552f6
 
 build:
-  entry_points:
-    - sphinx-etoc = sphinx_external_toc.cli:main
+  number: 0
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  entry_points:
+    - sphinx-etoc = sphinx_external_toc.cli:main
 
 requirements:
   host:
-    - python >=3.9
+    - python {{ python_min }}
     - flit-core >=3.4,<4
     - pip
   run:
-    - python >=3.9
+    - sphinx-multitoc-numbering >=0.1.3
+    - python >={{ python_min }}
     - click >=7.1
     - pyyaml
     - sphinx >=5
-
+    # - sphinx-multitoc-numbering >=0.1.3
+    # - sphinx-book-theme >=1.0.0
+    # - pytest-regressions 
+    # - pytest-cov 
+    # - pytest >=7.1
+    # - pre-commit >=2.12
+    # - myst-parser >=1.0.0
+    # - coverage 
 test:
   imports:
     - sphinx_external_toc
@@ -35,12 +43,18 @@ test:
     - sphinx-etoc --help
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
-  summary: A sphinx extension that allows the site-map to be defined in a single YAML file.
+  home: https://github.com/executablebooks/sphinx-external-toc
   license: MIT
+  license_family: MIT
   license_file: LICENSE
+  summary: A sphinx extension that allows the site-map to be defined in a single YAML file.
+  doc_url: https://sphinx-external-toc.readthedocs.io
+  dev_url: https://github.com/executablebooks/sphinx-external-toc
 
 extra:
   recipe-maintainers:
+    - choldgraf
     - rxm7706

@@ -1,0 +1,42 @@
+{% set version = "1.8" %}
+{% set name = "libntlm" %}
+
+package:
+  name: {{ name }}
+  version: "{{ version }}"
+
+source:
+  url: https://download.savannah.nongnu.org/releases/libntlm/libntlm-{{ version }}.tar.gz
+  sha256: ce6569a47a21173ba69c990965f73eb82d9a093eb871f935ab64ee13df47fda1
+
+build:
+  number: 0
+  # This package is a dependency of libhdfs3, which is primarily used with HDFS on Linux.
+  skip: True  # [win]
+  run_exports:
+    - {{ pin_subpackage("libntlm", max_pin="x") }}
+
+requirements:
+  build:
+    - gnuconfig  # [unix]
+    - {{ compiler('c') }}
+    - {{ stdlib('c') }}
+    - make
+
+test:
+  commands:
+    - test -f $PREFIX/include/ntlm.h
+    - test -f $PREFIX/lib/libntlm.a
+    - test -f $PREFIX/lib/libntlm{{ SHLIB_EXT }}
+    - test -f $PREFIX/lib/pkgconfig/libntlm.pc
+
+about:
+  home: http://www.nongnu.org/libntlm/
+  license: LGPL-2.1-or-later
+  license_file: COPYING
+  summary: Improved implementation of Microsoft's NTLM authentication
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk
+    - martindurant

@@ -1,0 +1,58 @@
+{% set name = "kornia" %}
+{% set version = "0.8.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/kornia-{{ version }}.tar.gz
+  sha256: 5411b2ce0dd909d1608016308cd68faeef90f88c47f47e8ecd40553fd4d8b937
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - pytest-runner
+  run:
+    - python >={{ python_min }}
+    - pytorch >=1.10
+    - packaging
+    - kornia-rs
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - kornia
+    - kornia.augmentation
+    - kornia.color
+    - kornia.contrib
+    - kornia.feature
+    - kornia.filters
+    - kornia.geometry
+    - kornia.losses
+    - kornia.utils
+
+about:
+  home: https://github.com/kornia/kornia
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: Kornia is a differentiable computer vision library for PyTorch.
+  doc_url: https://pypi.org/project/kornia/
+  dev_url: https://github.com/kornia/kornia
+
+extra:
+  recipe-maintainers:
+    - edgarriba
+    - mxr-conda
+    - dsangillo
+    - benjaminrwilson
+    - bubblyorca
+    - mukhery

@@ -1,0 +1,67 @@
+{% set name = "sendgrid" %}
+{% set version = "6.12.5" %}
+
+package:
+  name: '{{ name|lower }}'
+  version: '{{ version }}'
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 'ea9aae30cd55c332e266bccd11185159482edfc07c149b6cd15cf08869fabdb7'
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    # Note: the upstream requirements are a mess.  Some are in setup.py and some
+    #       in requirements.txt, but the latter has exact version pins that are
+    #       problematic for conda-forge and seem unnecessary.  They have other
+    #       bounds that are inaccurately loose.  Details below.
+    # consistent between setup.py and requirements.txt
+    - cryptography >=45.0.6
+    # need more recent version than in requirements.txt to support FullLoader
+    - pyyaml >=5.1
+    # consistent between setup.py and requirements.txt    
+    - python_http_client >=3.2.1
+    # missing from setup.py not usisng exact pin from requirements.txt but lowerbound is to support iteritems
+    - six >=1.10
+    # Using the most restrictive constraints for python >=3.12 here to stay noarch: python
+    - werkzeug >=2.3.5
+    # Note: flask is not needed as a runtime requirement and is only used for testing (but
+    #       not on conda-forge)
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+  imports:
+    - sendgrid
+    - sendgrid.helpers
+    - sendgrid.helpers.inbound
+    - sendgrid.helpers.mail
+
+about:
+  home: https://github.com/sendgrid/sendgrid-python/
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: SendGrid library for Python
+  description: "SendGrid Python library. This library allows you to quickly and easily use the SendGrid Web API v3 via Python"
+  doc_url: 'https://github.com/sendgrid/sendgrid-python'
+  dev_url: 'https://github.com/sendgrid/sendgrid-python'
+
+extra:
+  recipe-maintainers:
+    - RohitK89
+    - mariusvniekerk
+    - xylar

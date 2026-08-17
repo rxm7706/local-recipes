@@ -1,0 +1,44 @@
+{% set name = "pybindgen" %}
+{% set version = "0.22.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/PyBindGen-{{ version }}.tar.gz
+  sha256: 8c7f22391a49a84518f5a2ad06e3a5b1e839d10e34da7631519c8a28fcba3764
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools-scm
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - pybindgen
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/gjcarneiro/pybindgen
+  summary: Python Bindings Generator
+  doc_url: https://pythonhosted.org/PyBindGen/
+  license: LGPL-2.1-or-later
+  license_file: COPYING
+
+extra:
+  recipe-maintainers:
+    - rxm7706

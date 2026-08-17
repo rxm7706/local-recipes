@@ -1,0 +1,80 @@
+{% set tests_to_skip = "_not_a_real_test" %}
+{% set version = "2.37.0" %}
+
+package:
+  name: imageio
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/i/imageio/imageio-{{ version }}.tar.gz
+  sha256: 71b57b3669666272c818497aebba2b4c5f20d5b37c81720e5e1a56d59c492996
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps --ignore-installed -vvv
+  entry_points:
+    - imageio_download_bin = imageio.__main__:download_bin_main
+    - imageio_remove_bin = imageio.__main__:remove_bin_main
+
+requirements:
+  host:
+    - pip
+    - setuptools
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+    - numpy
+    - pillow >=8.3.2
+
+test:
+  requires:
+    - python {{ python_min }}
+    - git
+    - pytest
+    - psutil
+    - tifffile
+    - gdal
+    - astropy-base
+    - freeimage
+    - fsspec
+    - requests
+    - av
+    #- opencv
+    - imageio-ffmpeg
+  imports:
+    - imageio
+  source_files:
+    - tests/
+  commands:
+    - imageio_download_bin -h
+    - imageio_remove_bin -h
+    {% set tests_to_skip = "_not_a_real_test" %}
+    # https://github.com/imageio/imageio/issues/890
+    {% set tests_to_skip = tests_to_skip + " or test_findlib2" %}
+    # https://github.com/imageio/imageio/issues/910
+    {% set tests_to_skip = tests_to_skip + " or test_format_hint" %}
+    # https://github.com/imageio/imageio/issues/911
+    {% set tests_to_skip = tests_to_skip + " or test_writer_pixelformat_size_verbose" %}
+        # https://github.com/imageio/imageio/issues/1056
+    {% set tests_to_skip = tests_to_skip + " or test_exr_write" %}
+    {% set tests_to_skip = tests_to_skip + " or test_heif_remote" %}
+    {% set tests_to_skip = tests_to_skip + " or test_avif_remote" %}
+    # hmaarrfk -- not sure why this one is lagging, but seems CI related to me
+    {% set tests_to_skip = tests_to_skip + " or test_lagging_video_stream" %}
+    - pytest -sv tests/ -k "not  ({{ tests_to_skip }})"
+
+about:
+  home: https://imageio.github.io
+  doc_url: https://imageio.readthedocs.io
+  dev_url: https://github.com/imageio/imageio
+  summary: A Python library for reading and writing image data
+  license: BSD-2-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - anjos
+    - almarklein
+    - blink1073
+    - jni

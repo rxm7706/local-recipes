@@ -12,18 +12,18 @@ source:
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - python-build
     - setuptools >=67.7.2
     - setuptools-scm >=7.1
     - wheel >=0.40.0
     - pip
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - django
     - django-handyhelpers >=0.3.10
     - pandas
@@ -31,15 +31,24 @@ requirements:
 
 test:
   imports:
-    - djangoaddicts
-  commands:
-    - pip check
+    - djangoaddicts.pygwalker
+  #commands:
+    #- pip check
+  # + pip check Errors to be resolved upstream 
+  # https://github.com/conda-forge/pygwalker-feedstock/blob/main/recipe/meta.yaml
+  # Requires wasmtime (python-wasmtime) for gw-dsl-parser, segment-analytics-python ==2.2.3 is called analytics-python,  quickjs is called python-quickjs 1.19.4
+  # pygwalker 0.4.9.15 requires anywidget, which is not installed.
+  # pygwalker 0.4.9.15 requires gw-dsl-parser, which is not installed.
+  # pygwalker 0.4.9.15 requires quickjs, which is not installed.
+  # pygwalker 0.4.9.15 has requirement segment-analytics-python==2.2.3, but you have segment-analytics-python 2.2.2.
   requires:
+    - python {{ python_min }}
     - pip
 
 about:
   summary: PyGWalker views for Django projects
-  license: GPL-3.0
+  home: https://github.com/djangoaddicts/django-pygwalker
+  license: GPL-3.0-or-later
   license_file: LICENSE
 
 extra:

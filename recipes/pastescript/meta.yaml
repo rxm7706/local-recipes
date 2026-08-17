@@ -1,0 +1,49 @@
+{% set name = "pastescript" %}
+{% set version = "3.7.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 536f028dfb6e5329c67b32299e1c9303f91264e49793cc6916eb0a73eb4a2521
+
+build:
+  entry_points:
+    - paster = paste.script.command:run
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - paste >=3.0
+    - pastedeploy
+    - six
+    - setuptools
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - paste
+    - paste.script
+    - paste.script.util
+  commands:
+    - paster -h
+
+about:
+  home: http://pythonpaste.org/script/
+  license: MIT
+  summary: A pluggable command-line frontend, including commands to setup package file layouts
+  license_file: docs/license.txt
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

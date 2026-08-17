@@ -1,0 +1,45 @@
+{% set name = "aiohttp-jinja2" %}
+{% set version = "1.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: a3a7ff5264e5bca52e8ae547bbfd0761b72495230d438d05b6c0915be619b0e2
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 2
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+  run:
+    - python >={{ python_min }}
+    - aiohttp >=3.9.0
+    - jinja2 >=3.0.0
+
+test:
+  imports:
+    - aiohttp_jinja2
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/aio-libs/aiohttp-jinja2/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: jinja2 template renderer for aiohttp.web (http server for asyncio)
+  doc_url: http://aiohttp-jinja2.readthedocs.org/
+
+extra:
+  recipe-maintainers:
+    - apmorton
+    - epruesse

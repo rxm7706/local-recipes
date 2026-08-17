@@ -1,0 +1,71 @@
+{% set name = "pytesseract" %}
+{% set version = "0.3.13" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+
+source:
+  url: https://github.com/madmaze/{{ name }}/archive/v{{ version }}.tar.gz
+  sha256: 454ca16dc7fa59aa9c8ba42500992531773fbdc04caef1b39611755cae9f34bf
+
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  entry_points:
+    - pytesseract = pytesseract.pytesseract:main
+
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+
+  run:
+    - python >={{ python_min }}
+    - pillow
+    - packaging
+
+
+test:
+  requires:
+    - flake8
+    - pep8-naming
+    - flake8-quotes
+    - pytest
+    - python {{ python_min }}
+
+  imports:
+    - PIL
+    - PIL.Image
+    - pytesseract
+
+
+about:
+  home: https://github.com/madmaze/pytesseract
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: Python-tesseract is an optical character recognition (OCR) tool for python.
+
+  description: |
+    Python-tesseract is a wrapper for Google's Tesseract-OCR Engine.
+    It is also useful as a stand-alone invocation script to tesseract,
+    as it can read all image types supported by the Pillow and Leptonica
+    imaging libraries, including jpeg, png, gif, bmp, tiff, and others.
+    Additionally, if used as a script, Python-tesseract will print the
+    recognized text instead of writing it to a file
+
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - adbedada
+    - agcopenhaver
+    - int3l
+    - oblute
+    - rluria14

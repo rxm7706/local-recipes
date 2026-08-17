@@ -1,0 +1,49 @@
+{% set name = "whatthepatch" %}
+{% set version = "1.0.7" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 9eefb4ebea5200408e02d413d2b4bc28daea6b78bb4b4d53431af7245f7d7edf
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools >=65.0.0
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - whatthepatch
+  requires:
+    - python {{ python_min }}
+    - pip
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/cscorley/whatthepatch
+  summary: What The Patch!? is a library for both parsing and applying patch files
+  description: What The Patch!? is a library for both parsing and applying patch files
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  doc_url: https://github.com/cscorley/whatthepatch
+  dev_url: https://github.com/cscorley/whatthepatch
+
+extra:
+  recipe-maintainers:
+    - ccordoba12
+    - andfoy
+    - steff456
+    - dalthviz

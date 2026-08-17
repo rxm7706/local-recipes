@@ -1,0 +1,43 @@
+{% set name = "cleanco" %}
+{% set version = "2.2" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/cleanco-{{ version }}.tar.gz
+  sha256: f16717234c1936866233283efc1387702dada7103fee8a6e712ca7caee2d182d
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - pytest-runner
+    - python >=3.7
+  run:
+    - python >=3.7
+
+test:
+  imports:
+    - cleanco
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/psolin/cleanco
+  summary: Python library to process company names
+  license: MIT
+  # License file manually packaged. See https://github.com/psolin/cleanco/pull/74
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - izahn

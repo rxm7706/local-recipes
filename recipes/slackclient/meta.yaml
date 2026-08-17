@@ -1,0 +1,47 @@
+{% set name = "slackclient" %}
+{% set version = "2.9.3" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/slackclient-{{ version }}.tar.gz
+  sha256: 07ec8fa76f6aa64852210ae235ff9e637ba78124e06c0b07a7eeea4abb955965
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - aiohttp >3.5.2,<4.0.0
+
+test:
+  imports:
+    - slack
+    - slack.rtm
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/slackhq/python-slackclient
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Python client for Slack.com
+  doc_url: https://slackapi.github.io/python-slackclient/
+  dev_url: https://github.com/slackhq/python-slackclient
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - CurtLH

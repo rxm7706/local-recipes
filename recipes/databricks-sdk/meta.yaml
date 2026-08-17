@@ -1,44 +1,52 @@
 {% set name = "databricks-sdk" %}
-{% set version = "0.27.1" %}
+{% set version = "0.130.0" %}
+{% set sha256 = "1ea962d1fd10a0e8eb3b405d6f9023cdb7ef1942b34eaeb02ecf14c84131d4e8" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/databricks-sdk-{{ version }}.tar.gz
-  sha256: 76e5069747317e1e0d2bd0bed9577aa15fd18cd1056a4883d96af71abb1b338a
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
 
 build:
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: {{ PYTHON }} -m pip install . -vv
   number: 0
 
 requirements:
   host:
-    - python >=3.7
+    - python {{ python_min }}
     - pip
+    - setuptools
+    - protobuf
   run:
-    - python >=3.7
+    - python >={{ python_min }}
     - requests >=2.28.1,<3
-    - google-auth >=2.0,<3.dev0
+    - google-auth >=2.0,<3
+    - protobuf >=4.25.8,!=5.26.*,!=5.27.*,!=5.28.*,!=5.29.0,!=5.29.1,!=5.29.2,!=5.29.3,!=5.29.4,!=6.30.0,!=6.30.1,!=6.31.0,<7.0
 
 test:
   imports:
     - databricks
+    - databricks.sdk
   commands:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
-  home: https://databricks-sdk-py.readthedocs.io
-  summary: Databricks SDK for Python (Beta)
-  license: MIT AND Apache-2.0
+  home: https://github.com/databricks/databricks-sdk-py
+  summary: Databricks SDK for Python (Experimental)
+  license: Apache-2.0
   license_file:
     - LICENSE
     - NOTICE
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - jasongrout-db
+    - nfx
+    - monaldoj

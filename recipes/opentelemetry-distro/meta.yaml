@@ -1,13 +1,13 @@
 {% set name = "opentelemetry-distro" %}
-{% set version = "0.42b0" %}
+{% set version = "0.65b0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_distro-{{ version }}.tar.gz
-  sha256: dfdf30ec33d32d3f82afd59b43a7d34ace35591e8a7959cb2579440ec644bd28
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_distro-{{ version }}.tar.gz
+  sha256: e2fef26fdf72978ab172530c13338aff367edae41ae8d90b7f6133efedde10ab
 
 build:
   noarch: python
@@ -16,28 +16,53 @@ build:
 
 requirements:
   host:
-    - python >=3.7
-    - hatchling
+    - python {{ python_min }}
     - pip
+    - hatchling
   run:
-    - python >=3.7
-    - opentelemetry-api >=1.12,<2.dev0
-    - opentelemetry-instrumentation ==0.42b0
-    - opentelemetry-sdk >=1.13,<2.dev0
+    - python >={{ python_min }}
+    - opentelemetry-api ~=1.12
+    - opentelemetry-instrumentation ==0.65b0
+    - opentelemetry-sdk ~=1.13
+    # - opentelemetry-exporter-otlp ==1.30.0
+    # - opentelemetry-exporter-otlp ==1.31.0
+    # - opentelemetry-exporter-otlp ==1.31.1
+    # - opentelemetry-exporter-otlp ==1.32.0
+    # - opentelemetry-exporter-otlp ==1.32.1
+    # - opentelemetry-exporter-otlp ==1.33.0
+    # - opentelemetry-exporter-otlp ==1.33.1
+    # - opentelemetry-exporter-otlp ==1.34.0
+    # - opentelemetry-exporter-otlp ==1.34.1
+    # - opentelemetry-exporter-otlp ==1.35.0
+    # - opentelemetry-exporter-otlp ==1.36.0
+    # - opentelemetry-exporter-otlp ==1.37.0
+    # - opentelemetry-exporter-otlp ==1.38.0
+    # - opentelemetry-exporter-otlp ==1.39.0
+    # - opentelemetry-exporter-otlp ==1.39.1
+    # - opentelemetry-exporter-otlp ==1.40.0
+    # - opentelemetry-exporter-otlp ==1.41.0
+    # - opentelemetry-exporter-otlp ==1.41.1
+    # - opentelemetry-exporter-otlp ==1.42.0
+    # - opentelemetry-exporter-otlp ==1.42.1
+    # - opentelemetry-exporter-otlp ==1.43.0
+    # - opentelemetry-exporter-otlp ==1.44.0
 
 test:
   imports:
-    - opentelemetry_distro
+    - opentelemetry.distro
   commands:
     - pip check
   requires:
+    - python {{ python_min }}
     - pip
 
 about:
+  home: https://pypi.org/project/opentelemetry-distro/
   summary: OpenTelemetry Python Distro
-  license: Apache-2.0
-  license_file: PLEASE_ADD_LICENSE_FILE
+  license: 'Apache-2.0'
+  license_file: LICENSE
 
 extra:
   recipe-maintainers:
     - rxm7706
+    - goatmale

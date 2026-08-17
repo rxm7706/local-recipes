@@ -1,0 +1,49 @@
+{% set name = "asgi-csrf" %}
+{% set version = "0.11" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: e19a4f87d5af3feabde04c57921ee15510c3bfb0565627df9cb20bcb303282c2
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - itsdangerous
+    - python >={{ python_min }}
+    - python-multipart
+
+test:
+  imports:
+    - asgi_csrf
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/simonw/asgi-csrf
+  license: Apache-2.0
+  license_family: Apache
+  license_file: LICENSE
+  summary: ASGI middleware for protecting against CSRF attacks
+  description: |
+    This middleware implements the Double Submit Cookie pattern, where a cookie
+     is set that is then compared to a csrftoken hidden form field or a
+     x-csrftoken HTTP header.
+
+extra:
+  recipe-maintainers:
+    - thewchan

@@ -1,46 +1,66 @@
-{% set name = "pyct" %}
-{% set version = "0.5.0" %}
+{% set version = "0.6.0" %}
+{% set python_min = "3.8" %}
 
 package:
-  name: {{ name|lower }}
+  name: pyct
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/pyct-{{ version }}.tar.gz
-  sha256: dd9f4ac5cbd8e37c352c04036062d3c5f67efec76d404761ef16b0cbf26aa6a0
+  url: https://pypi.org/packages/source/p/pyct/pyct-{{ version }}.tar.gz
+  sha256: d4e513b2cf35b6165605ae5fce5f2a49985bc67473c579de85134b8c71d374a8
 
 build:
   entry_points:
     - pyct=pyct.__main__:main
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: {{ PYTHON }} -m pip install . -vv --no-deps
   number: 0
 
 requirements:
   host:
-    - python >=3.7
-    - param >=1.7.0
-    - setuptools >=61.0
+    - python {{ python_min }}
     - pip
+    - hatchling
+    - hatch-vcs
   run:
-    - python >=3.7
+    - python >={{ python_min }}
     - param >=1.7.0
+    # cli
+    - pyyaml
+    - requests
+  run_constrained:
+    - pyct-core <0
 
 test:
+  requires:
+    - pytest
+    - pip
+    - python {{ python_min }}
+  source_files:
+    - pyproject.toml
   imports:
     - pyct
+    - pyct.cmd
   commands:
     - pip check
+    - pytest -v --pyargs pyct
     - pyct --help
-  requires:
-    - pip
+    - pyct --version
+    - pyct report --help
+    - pyct report pyct python
 
 about:
-  home: https://github.com/pyviz-dev/pyct
-  summary: Python package common tasks for users (e.g. copy examples, fetch data, ...)
+  home: https://github.com/holoviz-dev/pyct
   license: BSD-3-Clause
+  license_family: BSD
   license_file: LICENSE.txt
+  summary: Python package common tasks for users (e.g. copy examples, fetch data, ...)
+  doc_url: https://github.com/holoviz-dev/pyct#pyctbuild
+  dev_url: https://github.com/holoviz-dev/pyct
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - hoxbro
+    - maximlt
+    - ocefpaf
+    - apmorton

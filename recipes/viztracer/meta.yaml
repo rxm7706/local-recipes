@@ -1,0 +1,56 @@
+{% set name = "viztracer" %}
+{% set version = "1.1.1" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/viztracer-{{ version }}.tar.gz
+  sha256: dcd4b5ddcc3a40ee79a584406d984cb4d40bc3301a6c9015d8949d4445fe9346
+
+build:
+  number: 0
+
+  skip: true  # [py2k]
+  entry_points:
+    - viztracer = viztracer.main:main
+    - vizviewer = viztracer.viewer:viewer_main
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+    - orjson
+    - objprint >=0.3.0
+
+test:
+  imports:
+    - viztracer
+  commands:
+    - pip check
+    - viztracer --help
+    - vizviewer --help
+  requires:
+    - pip
+
+about:
+  home: https://github.com/gaogaotiantian/viztracer
+  summary: A debugging and profiling tool that can trace and visualize python code execution
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - gaogaotiantian
+    - gforsyth

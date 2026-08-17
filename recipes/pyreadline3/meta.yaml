@@ -1,0 +1,48 @@
+{% set name = "pyreadline3" %}
+{% set version = "3.5.6" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pyreadline3-{{ version }}.tar.gz
+  sha256: 61e53218b99656091ddb077df9e71f25850e72e030b6183b39c9b7e6e4f4a9bf
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  skip: true  # [not win]
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+  host:
+    - pip
+    - python
+    - sphinx
+    - setuptools
+    - setuptools-git-versioning
+    - setuptools-scm
+  run:
+    - python
+
+test:
+  imports:
+    - pyreadline3
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://pypi.python.org/pypi/pyreadline3/
+  summary: A python implementation of GNU readline.
+  license: BSD-3-Clause
+  license_file: doc/COPYING
+
+extra:
+  recipe-maintainers:
+    - tschoonj

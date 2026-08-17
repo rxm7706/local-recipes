@@ -1,0 +1,45 @@
+{% set name = "sphinx-inline-tabs" %}
+{% set version = "2025.12.21.14" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/sphinx_inline_tabs-{{ version }}.tar.gz
+  sha256: c71a75800326e613fb4e410eed92a0934214741326aca9897c18018b9f968cb6
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - flit-core >=2,<4
+  run:
+    - python >={{ python_min }}
+    - beautifulsoup4
+    - sphinx >3
+
+test:
+  imports:
+    - sphinx_inline_tabs
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/pradyunsg/sphinx-inline-tabs
+  summary: Add inline tabbed content to your Sphinx documentation.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - gforsyth

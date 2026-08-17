@@ -1,0 +1,44 @@
+{% set version = "7.1.0" %}
+
+package:
+  name: traits
+  version: {{ version }}
+
+source:
+  fn: traits-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/t/traits/traits-{{ version }}.tar.gz
+  sha256: af4775747e11e05ffe13d3ba463d92f67f1f3d1a9e4f46ba33a44ea22b0c9644
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+  run_constrained:
+    - traitsui >=7.0
+
+test:
+  imports:
+    - traits
+
+about:
+  home: https://docs.enthought.com/traits
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: traits - explicitly typed attributes for Python
+
+extra:
+  recipe-maintainers:
+    - grlee77
+    - ericpre

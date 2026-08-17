@@ -1,0 +1,48 @@
+{% set name = "stdlib-list" %}
+{% set version = "0.12.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/stdlib_list-{{ version }}.tar.gz
+  sha256: 517824f27ee89e591d8ae7c1dd9ff34f672eae50ee886ea31bb8816d77535675
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - stdlib_list
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: http://github.com/jackmaney/python-stdlib-list
+  summary: A list of Python Standard Libraries (2.7 through 3.12).
+  dev_url: https://github.com/pypi/stdlib-list
+  doc_url: https://jackmaney.github.io/python-stdlib-list
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - ericdill
+    - parente
+    - marshall245
+    - jackmaney
+    - xhochy

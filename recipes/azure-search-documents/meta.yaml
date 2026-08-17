@@ -1,0 +1,47 @@
+{% set name = "azure-search-documents" %}
+{% set version = "12.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 8e6d73ec0ed1623083435b757e34324db65d72d4e09cca061a59fc7e90c8ddbc
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - typing_extensions >=4.6.0
+    - typing-extensions >=4.6.0
+    - python >={{ python_min }}
+    - azure-core >=1.28.0
+    - azure-common >=1.1
+    - isodate >=0.6.0
+
+test:
+  imports:
+    - azure.search.documents
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/search/azure-search-documents
+  summary: Microsoft Azure Cognitive Search Client Library for Python
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

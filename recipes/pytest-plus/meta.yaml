@@ -1,0 +1,48 @@
+{% set name = "pytest-plus" %}
+{% set version = "0.8.1" %}
+# minimum supported python version is 3.10
+{% set python_min = "3.10" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name | replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 02dfb28f1a914e8df3b6e3525df7e94feabc0681ecea626912e8028e9355f02c
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  noarch: python
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+    - setuptools_scm >=1.15.0
+    - setuptools_scm_git_archive >=1.0
+  run:
+    - pytest >=3.50
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - pytest_plus
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/pycontribs/pytest-plus
+  summary: 'PyTest Plus Plugin :: extends pytest functionality'
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - tschoonj

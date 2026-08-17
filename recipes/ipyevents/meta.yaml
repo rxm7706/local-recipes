@@ -1,0 +1,50 @@
+{% set name = "ipyevents" %}
+{% set version = "2.0.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: bd8c66a9ff26f481494cda1ec1d979722ca9eba19f8ef52538c7cc2db2a1a139
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - jupyterlab ==4.*
+    - hatchling
+    - hatch-jupyter-builder >=0.8.3
+    - nodejs
+  run:
+    - python >={{ python_min }}
+    - ipywidgets >=7.6
+
+test:
+  requires:
+    - jupyter
+    - notebook
+    - python {{ python_min }}
+  imports:
+    - ipyevents
+
+about:
+  home: https://github.com/mwcraig/ipyevents
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.md
+  summary: A custom widget for returning mouse and keyboard events to Python
+  description: A custom widget for returning mouse and keyboard events to Python
+  dev_url: https://github/com/mwcraig/ipyevents
+
+extra:
+  recipe-maintainers:
+    - mwcraig
+    - astrofrog

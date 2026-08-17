@@ -1,0 +1,48 @@
+{% set name = "mdv" %}
+{% set version = "1.7.5" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/mdv-{{ version }}.tar.gz
+  sha256: eb84ed52a2b68d2e083e007cb485d14fac1deb755fd8f35011eff8f2889df6e9
+
+build:
+  number: 1
+  noarch: python
+  entry_points:
+    - mdv = mdv:run
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+    - markdown
+    - pygments
+
+test:
+  imports:
+    - mdv
+  commands:
+    - pip check
+    - set PYTHONUTF8=1
+    - mdv --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: http://github.com/axiros/terminal_markdown_viewer
+  summary: Terminal Markdown Viewer
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - thewchan

@@ -1,0 +1,67 @@
+{% set name = "pycryptodome" %}
+{% set version = "3.23.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 447700a657182d60338bab09fdb27518f8856aecd80ae4c6bdddb67ff5da44ef
+
+build:
+  number: 2
+  script: '{{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv '
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - pip
+    - python
+    - setuptools
+    - gmp   # [not win]
+  run:
+    - python
+    - gmp   # [not win]
+
+test:
+  imports:
+    - Crypto
+    - Crypto.Cipher
+    - Crypto.Hash
+    - Crypto.IO
+    - Crypto.Math
+    - Crypto.Protocol
+    - Crypto.PublicKey
+    - Crypto.Random
+    - Crypto.SelfTest
+    - Crypto.SelfTest.Cipher
+    - Crypto.SelfTest.Hash
+    - Crypto.SelfTest.IO
+    - Crypto.SelfTest.Math
+    - Crypto.SelfTest.Protocol
+    - Crypto.SelfTest.PublicKey
+    - Crypto.SelfTest.Random
+    - Crypto.SelfTest.Signature
+    - Crypto.SelfTest.Util
+    - Crypto.Signature
+    - Crypto.Util
+
+about:
+  home: http://www.pycryptodome.org
+  license: BSD-2-Clause
+  license_family: BSD
+  license_file: LICENSE.rst
+  summary: Cryptographic library for Python
+  doc_url: https://www.pycryptodome.org/en/latest/
+  dev_url: https://github.com/Legrandin/pycryptodome
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk
+    - benhuff
+    - nehaljwani

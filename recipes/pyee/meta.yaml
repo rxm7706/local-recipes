@@ -1,0 +1,48 @@
+{% set name = "pyee" %}
+{% set version = "13.0.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 0b931f7c14535667ed4c7e0d531716368715e860b988770fc7eb8578d1f67fc8
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools-scm
+    - wheel
+  run:
+    - python >={{ python_min }}
+    - typing_extensions
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  imports:
+    - pyee
+  commands:
+    - python -m pip check
+
+about:
+  home: https://github.com/jfhbrook/pyee
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A port of node.js's EventEmitter to python.
+  doc_url: https://pyee.readthedocs.io/
+  dev_url: https://github.com/jfhbrook/pyee
+
+extra:
+  recipe-maintainers:
+    - mxschmitt
+    - kiwi0fruit

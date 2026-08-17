@@ -1,0 +1,47 @@
+{% set name = "pytest-alembic" %}
+{% set version = "0.12.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 4e2b477d93464d0cfe80487fdf63922bfd22f29153ca980c1bccf1dbf833cf12
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - poetry >=0.12
+  run:
+    - alembic
+    - pytest >=7.0
+    - python >={{ python_min }}
+    - sqlalchemy
+
+test:
+  imports:
+    - pytest_alembic
+    - pytest_alembic.plugin
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/schireson/pytest-alembic
+  summary: A pytest plugin for verifying alembic migrations.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - igortg
+    - nicoddemus

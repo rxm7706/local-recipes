@@ -1,5 +1,5 @@
 {% set name = "python-ulid" %}
-{% set version = "3.1.0" %}
+{% set version = "4.0.1" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/python_ulid-{{ version }}.tar.gz
-  sha256: ff0410a598bc5f6b01b602851a3296ede6f91389f913a5d5f8c496003836f636
+  sha256: bbeec02556190bb9dc3401faa7268696acbfbe7b6db9908c155dc3548629f20c
 
 build:
   entry_points:

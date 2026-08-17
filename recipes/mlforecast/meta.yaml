@@ -1,0 +1,55 @@
+{% set name = "mlforecast" %}
+{% set version = "1.1.0" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/mlforecast-{{ version }}.tar.gz
+  sha256: 5f0baf178a4017785475db86d56d628a48cf267d5b8ea6ebef798d9ddf396bd8
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - cloudpickle
+    - coreforecast >=0.0.15
+    - fsspec
+    - numpy
+    - optuna
+    - pandas
+    - python >={{ python_min }}
+    - scikit-learn
+    - utilsforecast >=0.2.9
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - mlforecast
+
+about:
+  home: https://github.com/Nixtla/mlforecast
+  dev_url: https://github.com/Nixtla/mlforecast
+  doc_url: https://nixtla.github.io/mlforecast/
+  license: Apache-2.0
+  license_file: LICENSE
+  license_family: APACHE
+  summary: Scalable machine learning based time series forecasting
+
+extra:
+  recipe-maintainers:
+    - jmoralez
+    - nasaul
+    - marcopeix
+    - JQGoh
+    - elephaint

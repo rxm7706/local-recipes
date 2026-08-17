@@ -1,0 +1,72 @@
+{% set version = "2025.1.0" %}
+# CI failed in
+# https://github.com/conda-forge/dask-ml-feedstock/pull/41
+# when python_min was not set, when pytohn 3.9 was requested
+# but dask-core required python>=3.10
+{% set python_min = "3.10" %}
+
+package:
+  name: dask-ml
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/dask-ml/dask_ml-{{ version }}.tar.gz
+  sha256: b31caeb5f603f9537ffa34bd247e0e1fcefda7c007631260f8abdee49f89b1e1
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+    - hatch-vcs
+  run:
+    - dask >=2025.1.0
+    - dask-glm >=0.2.0
+    - distributed >=2025.1.0
+    - multipledispatch >=0.4.9
+    - numba >=0.51.0
+    - numpy >=1.24.0
+    - packaging
+    - pandas >=0.24.2
+    - python >={{ python_min }}
+    - scikit-learn >=1.6.1
+    - scipy
+
+test:
+  imports:
+    - dask_ml
+    - dask_ml.cluster
+    - dask_ml.decomposition
+    - dask_ml.feature_extraction
+    - dask_ml.linear_model
+    - dask_ml.metrics
+    - dask_ml.model_selection
+    - dask_ml.preprocessing
+    - dask_ml.utils
+    - dask_ml.wrappers
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/dask/dask-ml
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: Distributed and parallel machine learning using dask.
+  description: |
+    Distributed and parallel machine learning using dask.
+  doc_url: https://ml.dask.org
+  dev_url: https://github.com/dask/dask-ml
+
+extra:
+  recipe-maintainers:
+    - TomAugspurger
+    - jrbourbeau

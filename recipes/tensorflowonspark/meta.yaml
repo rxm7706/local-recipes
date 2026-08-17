@@ -1,0 +1,46 @@
+{% set name = "tensorflowonspark" %}
+{% set version = "2.2.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 589c56f2faee45200d5dad7cf0cc110f950287b4f2c53cbdcae5fd5504e91fdd
+  patches:
+    - 0001-fix-version-check.patch
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  noarch: python
+
+requirements:
+  build:
+    - setuptools >=41.0.0
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - packaging
+    - pyspark
+    - python >=3.6
+    - six
+    - tensorflow
+
+test:
+  imports:
+    - tensorflowonspark
+
+about:
+  home: https://github.com/yahoo/TensorFlowOnSpark
+  license: Apache-2.0
+  license_family: APACHE
+  license_file: LICENSE
+  summary: Deep learning with TensorFlow on Apache Spark clusters
+  doc_url: https://yahoo.github.io/TensorFlowOnSpark
+
+extra:
+  recipe-maintainers:
+    - afloren

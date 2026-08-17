@@ -1,0 +1,44 @@
+{% set name = "scrapy-playwright" %}
+{% set version = "0.0.48" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/scrapy_playwright-{{ version }}.tar.gz
+  sha256: 626779aa8bcacd61eebc3e21e362c62cbb5ae75f168a254885f1f7ca9b68d9d2
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - scrapy >=2.0,!=2.4.0
+    - playwright-python >=1.15
+
+test:
+  imports:
+    - scrapy_playwright
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/scrapy-plugins/scrapy-playwright
+  summary: Playwright integration for Scrapy
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - luftuq

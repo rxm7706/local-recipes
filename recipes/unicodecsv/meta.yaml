@@ -1,0 +1,48 @@
+{% set name = "unicodecsv" %}
+{% set version = "0.14.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/unicodecsv-{{ version }}.tar.gz
+  sha256: 018c08037d48649a0412063ff4eda26eaa81eff1546dbffa51fa5293276ff7fc
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 3
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - unicodecsv
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/jdunck/python-unicodecsv
+  license: BSD-2-Clause
+  # https://github.com/jdunck/python-unicodecsv/issues/80
+  license_file: LICENSE
+  summary: "Drop-in replacement for csv module which supports unicode strings"
+  description: |
+    The unicodecsv is a drop-in replacement for Python 2.7's csv module which
+    supports unicode strings without a hassle. Supported versions are python
+    2.6, 2.7, 3.3, 3.4, 3.5, and pypy 2.4.0.
+  dev_url: https://github.com/jdunck/python-unicodecsv
+
+extra:
+  recipe-maintainers:
+    - nehaljwani

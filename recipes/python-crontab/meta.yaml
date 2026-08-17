@@ -1,0 +1,46 @@
+{% set name = "python-crontab" %}
+{% set version = "3.3.0" %}
+{% set sha256 = "007c8aee68dddf3e04ec4dce0fac124b93bd68be7470fc95d2a9617a15de291b" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - python-dateutil
+
+test:
+  requires:
+    - python {{ python_min }}
+    - pip
+  imports:
+    - crontab
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/doctormo/python-crontab
+  license: LGPL-3.0
+  license_family: LGPL
+  license_file: COPYING
+  summary: Crontab module for reading and writing crontab files and accessing the system cron automatically and simply using a direct API.
+
+extra:
+  recipe-maintainers:
+    - scopatz
+    - jan-janssen

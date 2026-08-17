@@ -1,0 +1,49 @@
+{% set name = "ebcdic" %}
+{% set version = "2.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/roskakori/CodecMapper/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: bc70216a1b8d49fb3ccc6d374b0a50a9f1f9ee40e83380fbec2ffa3da068e6a5
+
+build:
+  noarch: python
+  number: 0
+  script: "cd {{ name }}; {{ PYTHON }} -m pip install . -vv"
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - flit-core
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - ebcdic
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/roskakori/CodecMapper
+  license: BSD-2-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: 'Build mapping files derived from Java Charsets which can be processed by Pythons gencodec.py.'
+  description: |
+    Build mapping files derived from Java Charsets which can be processed 
+    by Python's gencodec.py.
+  doc_url: https://github.com/roskakori/CodecMapper
+  dev_url: https://github.com/roskakori/CodecMapper
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

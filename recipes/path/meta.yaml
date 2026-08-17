@@ -1,0 +1,47 @@
+{% set version = "17.1.1" %}
+
+package:
+  name: path
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/path/path-{{ version }}.tar.gz
+  sha256: 2dfcbfec8b4d960f3469c52acf133113c2a8bf12ac7b98d629fa91af87248d42
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools >=61.2
+    - setuptools_scm >=3.4.1
+    - toml
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - path
+  requires:
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/jaraco/path
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A module wrapper for os.path
+  description: |
+    path implements a path objects as first-class entities, allowing common
+    operations on files to be invoked on those path objects directly.
+  doc_url: https://path.readthedocs.io/en/latest/
+  doc_source_url: https://github.com/jaraco/path/blob/master/docs/index.rst
+  dev_url: https://github.com/jaraco/path
+
+extra:
+  recipe-maintainers:
+    - nehaljwani

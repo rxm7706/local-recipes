@@ -1,0 +1,41 @@
+{% set name = "schedule" %}
+{% set version = "1.2.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 15fe9c75fe5fd9b9627f3f19cc0ef1420508f9f9a46f45cd0769ef75ede5f0b7
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - schedule
+
+about:
+  home: https://github.com/dbader/schedule
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt
+  summary: Job scheduling for humans.
+  doc_url: https://schedule.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - tschoonj

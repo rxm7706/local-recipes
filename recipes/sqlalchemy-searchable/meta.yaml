@@ -1,0 +1,46 @@
+{% set name = "sqlalchemy-searchable" %}
+{% set version = "3.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/sqlalchemy_searchable-{{ version }}.tar.gz
+  sha256: 6bed911f2cb6c9b90383a082446c7245d4b9df0dbb9f8b25c2325f717b85505b
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - sqlalchemy-utils >=0.40.0
+    - sqlalchemy >=2.0
+
+test:
+  imports:
+    - sqlalchemy_searchable
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: Provides fulltext search capabilities for declarative SQLAlchemy models.
+  home: https://github.com/falcony-io/sqlalchemy-searchable
+  doc_url: https://sqlalchemy-searchable.readthedocs.io/en/latest/
+  dev_url: https://github.com/falcony-io/sqlalchemy-searchable
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - ChrisBarker-NOAA

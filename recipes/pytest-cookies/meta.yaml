@@ -1,0 +1,46 @@
+{% set name = "pytest-cookies" %}
+{% set version = "0.7.0" %}
+{% set sha256 = "1aaa6b4def8238d0d1709d3d773b423351bfb671c1e3438664d824e0859d6308" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  preserve_egg_dir: true
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+
+  run:
+    - cookiecutter >=2.1.0
+    - pytest >=3.9.0
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - pytest_cookies
+
+about:
+  home: https://github.com/hackebrot/pytest-cookies
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A Pytest plugin for your Cookiecutter templates
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - ccordoba12

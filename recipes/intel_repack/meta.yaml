@@ -1,0 +1,1230 @@
+{% set tbb_version = "2023.1.0" %}
+# this variable defines oneMKL specific version
+{% set mkl_version = "2026.1.0" %}
+# this variable defines oneMKL specific buildnum
+{% set mkl_buildnum = "" %}
+{% set mkl_buildnum = "236" %}  # [linux]
+{% set mkl_buildnum = "226" %}  # [win]
+# this variable defines oneDAL specific version
+{% set dal_version = "2026.1.0" %}
+# this variable defines oneDAL specific buildnum
+{% set dal_buildnum = "" %}
+{% set dal_buildnum = "7" %}  # [linux]
+{% set dal_buildnum = "6" %}  # [win]
+# this variable defines openmp specific version
+{% set openmp_version = "2026.1.0" %}
+# this variable defines openmp specific buildnum
+{% set openmp_buildnum = "" %}
+{% set openmp_buildnum = "235" %}  # [linux]
+{% set openmp_buildnum = "239" %}  # [win]
+
+# this variable defines impi specific version
+{% set impi_version = "2021.18.0" %}
+# this variable defines impi specific buildnum
+{% set impi_buildnum = "0" %}
+{% set impi_buildnum = "745" %}  # [linux]
+{% set impi_buildnum = "740" %}  # [win]
+
+# this variable defines onedpl specific version
+{% set onedpl_version = "2022.13.0" %}
+# this variable defines onedpl specific buildnum
+{% set onedpl_buildnum = "107" %}  # [linux]
+{% set onedpl_buildnum = "108" %}  # [win]
+
+
+{% set my_channel_targets = channel_targets if channel_targets is defined else ['conda-forge', 'defaults'] %}
+
+{% set intel_ch = "https://software.repos.intel.com/python/conda" %}
+# use this if our build script changes and we need to increment beyond intel's version
+{% set dstbuildnum = '8' %}
+
+
+# More info about OpenMP mutex could be found on conda-forge wiki:
+# https://conda-forge.org/docs/maintainer/knowledge_base/#openmp
+{% set openmp_pkg = "llvm-openmp" %}
+{% set openmp_mutex = "- _openmp_mutex * *_llvm" %}
+{% if win or 'conda-forge' not in my_channel_targets %}
+{% set openmp_mutex = "" %}
+{% endif %}
+
+package:
+  name: intel_repack
+  # Use oneDAL as overall repack package version
+  version: {{ dal_version }}
+
+source:
+  - url: {{ intel_ch }}/{{ target_platform }}/mkl-{{ mkl_version }}-intel_{{ mkl_buildnum }}.conda
+    folder: mkl
+    no_hoist: true
+  - url: {{ intel_ch }}/{{ target_platform }}/mkl-devel-{{ mkl_version }}-intel_{{ mkl_buildnum }}.conda
+    folder: mkl-devel
+    no_hoist: true
+  - url: {{ intel_ch }}/{{ target_platform }}/mkl-include-{{ mkl_version }}-intel_{{ mkl_buildnum }}.conda
+    folder: mkl-include
+    no_hoist: true
+  - url: {{ intel_ch }}/{{ target_platform }}/mkl-static-{{ mkl_version }}-intel_{{ mkl_buildnum }}.conda
+    folder: mkl-static
+    no_hoist: true
+  - url: {{ intel_ch }}/{{ target_platform }}/onemkl-sycl-blas-{{ mkl_version }}-intel_{{ mkl_buildnum }}.conda
+    folder: onemkl-sycl-blas
+    no_hoist: true
+  - url: {{ intel_ch }}/{{ target_platform }}/onemkl-sycl-datafitting-{{ mkl_version }}-intel_{{ mkl_buildnum }}.conda
+    folder: onemkl-sycl-datafitting
+    no_hoist: true
+  - url: {{ intel_ch }}/{{ target_platform }}/onemkl-sycl-dft-{{ mkl_version }}-intel_{{ mkl_buildnum }}.conda
+    folder: onemkl-sycl-dft
+    no_hoist: true
+  - url: {{ intel_ch }}/{{ target_platform }}/onemkl-sycl-lapack-{{ mkl_version }}-intel_{{ mkl_buildnum }}.conda
+    folder: onemkl-sycl-lapack
+    no_hoist: true
+  - url: {{ intel_ch }}/{{ target_platform }}/onemkl-sycl-rng-{{ mkl_version }}-intel_{{ mkl_buildnum }}.conda
+    folder: onemkl-sycl-rng
+    no_hoist: true
+  - url: {{ intel_ch }}/{{ target_platform }}/onemkl-sycl-sparse-{{ mkl_version }}-intel_{{ mkl_buildnum }}.conda
+    folder: onemkl-sycl-sparse
+    no_hoist: true
+  - url: {{ intel_ch }}/{{ target_platform }}/onemkl-sycl-stats-{{ mkl_version }}-intel_{{ mkl_buildnum }}.conda
+    folder: onemkl-sycl-stats
+    no_hoist: true
+  - url: {{ intel_ch }}/{{ target_platform }}/onemkl-sycl-vm-{{ mkl_version }}-intel_{{ mkl_buildnum }}.conda
+    folder: onemkl-sycl-vm
+    no_hoist: true
+  - url: {{ intel_ch }}/{{ target_platform }}/onemkl-sycl-include-{{ mkl_version }}-intel_{{ mkl_buildnum }}.conda
+    folder: onemkl-sycl-include
+    no_hoist: true
+  - url: {{ intel_ch }}/{{ target_platform }}/mkl-devel-dpcpp-{{ mkl_version }}-intel_{{ mkl_buildnum }}.conda
+    folder: mkl-devel-dpcpp
+    no_hoist: true
+  - url: {{ intel_ch }}/{{ target_platform }}/mkl-dpcpp-{{ mkl_version }}-intel_{{ mkl_buildnum }}.conda
+    folder: mkl-dpcpp
+    no_hoist: true
+  {% if win or 'conda-forge' not in my_channel_targets %}
+  - url: {{ intel_ch }}/{{ target_platform }}/intel-openmp-{{ openmp_version }}-intel_{{ openmp_buildnum }}.conda
+    folder: intel-openmp
+    no_hoist: true
+  {% endif %}
+  - url: {{ intel_ch }}/{{ target_platform }}/dal-{{ dal_version }}-intel_{{ dal_buildnum }}.conda
+    folder: dal
+    no_hoist: true
+  - url: {{ intel_ch }}/{{ target_platform }}/dal-gpu-{{ dal_version }}-intel_{{ dal_buildnum }}.conda
+    folder: dal-gpu
+    no_hoist: true
+  - url: {{ intel_ch }}/{{ target_platform }}/dal-include-{{ dal_version }}-intel_{{ dal_buildnum }}.conda
+    folder: dal-include
+    no_hoist: true
+  - url: {{ intel_ch }}/{{ target_platform }}/dal-static-{{ dal_version }}-intel_{{ dal_buildnum }}.conda
+    folder: dal-static
+    no_hoist: true
+  - url: {{ intel_ch }}/{{ target_platform }}/dal-devel-{{ dal_version }}-intel_{{ dal_buildnum }}.conda
+    folder: dal-devel
+    no_hoist: true
+  - url: {{ intel_ch }}/{{ target_platform }}/impi_rt-{{ impi_version }}-intel_{{ impi_buildnum }}.conda
+    folder: impi_rt
+    no_hoist: true
+  - url: {{ intel_ch }}/{{ target_platform }}/impi-devel-{{ impi_version }}-intel_{{ impi_buildnum }}.conda
+    folder: impi-devel
+    no_hoist: true
+  - url: {{ intel_ch }}/{{ target_platform }}/onedpl-devel-{{ onedpl_version }}-intel_{{ onedpl_buildnum }}.conda
+    folder: onedpl-devel
+    no_hoist: true
+build:
+  number: {{ dal_buildnum|int + dstbuildnum|int }}
+  binary_relocation: false
+  detect_binary_files_with_prefix: false
+  skip: True                                  # [not (linux64 or win)]
+
+outputs:
+  - name: mkl
+    version: {{ mkl_version }}
+    script: repack.sh   # [linux]
+    script: repack.bat  # [win]
+    number: {{ mkl_buildnum|int + dstbuildnum|int }}
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ compiler('cxx') }}
+        - {{ stdlib('c') }}
+        - {{ openmp_pkg }}
+        {{ openmp_mutex }}
+      host:
+        - tbb-devel {{ tbb_version.split('.')[0] }}.*
+    about:
+      home: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - mkl/info/licenses/license.txt
+         - mkl/info/licenses/tpp.txt
+      summary: Intel® oneAPI Math Kernel Library runtime libraries
+      description: |
+        Intel® oneAPI Math Kernel Library is Intel®-Optimized Math Library for Numerical Computing on CPUs & GPUs.<br/>
+        This package is a repackaged set of binaries obtained directly from Intel's conda channel.<br/>
+        Using oneMKL in the Python Ecosystem: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-in-the-python-ecosystem.html <br/>
+        Integrating oneMKL with R: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-with-r.html
+      doc_url: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+    test:
+      commands:
+        - ls -A $PREFIX/lib/*  # [linux]
+        - test -f $PREFIX/lib/libmkl_core.so.3  # [linux]
+        - if not exist %LIBRARY_BIN%\\mkl_core.3.dll exit 1  # [win]
+
+  - name: mkl-include
+    version: {{ mkl_version }}
+    script: repack.sh   # [linux]
+    script: repack.bat  # [win]
+    number: {{ mkl_buildnum|int + dstbuildnum|int }}
+    about:
+      home: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - mkl-include/info/licenses/license.txt
+         - mkl-include/info/licenses/tpp.txt
+      summary: Headers for building against Intel® oneMKL libraries
+      description: |
+        Intel® oneAPI Math Kernel Library headers for developing software that uses oneMKL.<br/>
+        This package is a repackaged set of binaries obtained directly from Intel's conda channel.<br/>
+        Using oneMKL in the Python Ecosystem: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-in-the-python-ecosystem.html <br/>
+        Integrating oneMKL with R: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-with-r.html
+      doc_url: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+    test:
+      commands:
+        - ls -A $PREFIX/include/*  # [linux]
+        - test -f $PREFIX/include/mkl.h  # [linux]
+        - if not exist %LIBRARY_INC%\\mkl.h exit 1  # [win]
+
+  - name: onemkl-sycl-blas
+    version: {{ mkl_version }}
+    script: repack.sh   # [linux]
+    script: repack.bat  # [win]
+    build:
+      ignore_run_exports_from:
+        {{ openmp_mutex }}
+    number: {{ mkl_buildnum|int + dstbuildnum|int }}
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ c_stdlib }}_{{ target_platform }} {{ c_stdlib_sycl_version }}  # [linux]
+        - {{ stdlib('c') }}  # [not linux]
+        {{ openmp_mutex }}
+      host:
+        - intel-sycl-rt {{ mkl_version.split('.')[0] }}.*
+        # cpu runtime
+        - intel-opencl-rt {{ mkl_version.split('.')[0] }}.*
+        {{ openmp_mutex }}
+        - ocl-icd  # [linux]
+        - khronos-opencl-icd-loader  # [win]
+        # We need mkl because onemkl-sycl-* packages uses symbols from mkl, but
+        # not linked directly so you can chose different implementations.
+        # More information could be found at:
+        # https://www.intel.com/content/www/us/en/docs/onemkl/developer-guide-linux/2025-0/layered-model-concept.html
+        - {{ pin_subpackage('mkl', exact=True) }}
+      run:
+        # We need mkl because onemkl-sycl-* packages uses symbols from mkl, but
+        # not linked directly so you can chose different implementations.
+        # More information could be found at:
+        # https://www.intel.com/content/www/us/en/docs/onemkl/developer-guide-linux/2025-0/layered-model-concept.html
+        - {{ pin_subpackage('mkl', exact=True) }}
+    about:
+      home: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - onemkl-sycl-blas/info/licenses/license.txt
+         - onemkl-sycl-blas/info/licenses/tpp.txt
+      summary: Intel® oneAPI Math Kernel Library runtime libraries
+      description: |
+        Intel® oneAPI Math Kernel Library is Intel®-Optimized Math Library for Numerical Computing on CPUs & GPUs.<br/>
+        This package is a repackaged set of binaries obtained directly from Intel's conda channel.<br/>
+        Using oneMKL in the Python Ecosystem: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-in-the-python-ecosystem.html <br/>
+        Integrating oneMKL with R: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-with-r.html
+      doc_url: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+    test:
+      commands:
+          - ls -A $PREFIX/lib/*  # [linux]
+          - test -f $PREFIX/lib/libmkl_sycl_blas.so.6  # [linux]
+          - if not exist %LIBRARY_BIN%\\mkl_sycl_blas.6.dll exit 1  # [win]
+
+  - name: onemkl-sycl-datafitting
+    version: {{ mkl_version }}
+    script: repack.sh   # [linux]
+    script: repack.bat  # [win]
+    build:
+      ignore_run_exports_from:
+        {{ openmp_mutex }}
+    number: {{ mkl_buildnum|int + dstbuildnum|int }}
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ c_stdlib }}_{{ target_platform }} {{ c_stdlib_sycl_version }}  # [linux]
+        - {{ stdlib('c') }}  # [not linux]
+        {{ openmp_mutex }}
+      host:
+        - intel-sycl-rt {{ mkl_version.split('.')[0] }}.*
+        # cpu runtime
+        - intel-opencl-rt {{ mkl_version.split('.')[0] }}.*
+        {{ openmp_mutex }}
+        - ocl-icd  # [linux]
+        - khronos-opencl-icd-loader  # [win]
+        # We need mkl because onemkl-sycl-* packages uses symbols from mkl, but
+        # not linked directly so you can chose different implementations.
+        # More information could be found at:
+        # https://www.intel.com/content/www/us/en/docs/onemkl/developer-guide-linux/2025-0/layered-model-concept.html
+        - {{ pin_subpackage('mkl', exact=True) }}
+      run:
+        # We need mkl because onemkl-sycl-* packages uses symbols from mkl, but
+        # not linked directly so you can chose different implementations.
+        # More information could be found at:
+        # https://www.intel.com/content/www/us/en/docs/onemkl/developer-guide-linux/2025-0/layered-model-concept.html
+        - {{ pin_subpackage('mkl', exact=True) }}
+    about:
+      home: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - onemkl-sycl-datafitting/info/licenses/license.txt
+         - onemkl-sycl-datafitting/info/licenses/tpp.txt
+      summary: Intel® oneAPI Math Kernel Library runtime libraries
+      description: |
+        Intel® oneAPI Math Kernel Library is Intel®-Optimized Math Library for Numerical Computing on CPUs & GPUs.<br/>
+        This package is a repackaged set of binaries obtained directly from Intel's conda channel.<br/>
+        Using oneMKL in the Python Ecosystem: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-in-the-python-ecosystem.html <br/>
+        Integrating oneMKL with R: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-with-r.html
+      doc_url: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+    test:
+      commands:
+          - ls -A $PREFIX/lib/*  # [linux]
+          - test -f $PREFIX/lib/libmkl_sycl_data_fitting.so.6  # [linux]
+          - if not exist %LIBRARY_BIN%\\mkl_sycl_data_fitting.6.dll exit 1  # [win]
+
+  - name: onemkl-sycl-dft
+    version: {{ mkl_version }}
+    script: repack.sh   # [linux]
+    script: repack.bat  # [win]
+    build:
+      ignore_run_exports_from:
+        {{ openmp_mutex }}
+    number: {{ mkl_buildnum|int + dstbuildnum|int }}
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ c_stdlib }}_{{ target_platform }} {{ c_stdlib_sycl_version }}  # [linux]
+        - {{ stdlib('c') }}  # [not linux]
+        {{ openmp_mutex }}
+      host:
+        - intel-sycl-rt {{ mkl_version.split('.')[0] }}.*
+        # cpu runtime
+        - intel-opencl-rt {{ mkl_version.split('.')[0] }}.*
+        {{ openmp_mutex }}
+        - ocl-icd  # [linux]
+        - khronos-opencl-icd-loader  # [win]
+        # We need mkl because onemkl-sycl-* packages uses symbols from mkl, but
+        # not linked directly so you can chose different implementations.
+        # More information could be found at:
+        # https://www.intel.com/content/www/us/en/docs/onemkl/developer-guide-linux/2025-0/layered-model-concept.html
+        - {{ pin_subpackage('mkl', exact=True) }}
+      run:
+        # We need mkl because onemkl-sycl-* packages uses symbols from mkl, but
+        # not linked directly so you can chose different implementations.
+        # More information could be found at:
+        # https://www.intel.com/content/www/us/en/docs/onemkl/developer-guide-linux/2025-0/layered-model-concept.html
+        - {{ pin_subpackage('mkl', exact=True) }}
+    about:
+      home: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - onemkl-sycl-dft/info/licenses/license.txt
+         - onemkl-sycl-dft/info/licenses/tpp.txt
+      summary: Intel® oneAPI Math Kernel Library runtime libraries
+      description: |
+        Intel® oneAPI Math Kernel Library is Intel®-Optimized Math Library for Numerical Computing on CPUs & GPUs.<br/>
+        This package is a repackaged set of binaries obtained directly from Intel's conda channel.<br/>
+        Using oneMKL in the Python Ecosystem: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-in-the-python-ecosystem.html <br/>
+        Integrating oneMKL with R: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-with-r.html
+      doc_url: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+    test:
+      commands:
+          - ls -A $PREFIX/lib/*  # [linux]
+          - test -f $PREFIX/lib/libmkl_sycl_dft.so.6  # [linux]
+          - if not exist %LIBRARY_BIN%\\mkl_sycl_dft.6.dll exit 1  # [win]
+
+  - name: onemkl-sycl-lapack
+    version: {{ mkl_version }}
+    script: repack.sh   # [linux]
+    script: repack.bat  # [win]
+    build:
+      ignore_run_exports_from:
+        {{ openmp_mutex }}
+    number: {{ mkl_buildnum|int + dstbuildnum|int }}
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ c_stdlib }}_{{ target_platform }} {{ c_stdlib_sycl_version }}  # [linux]
+        - {{ stdlib('c') }}  # [not linux]
+        {{ openmp_mutex }}
+      host:
+        - intel-sycl-rt {{ mkl_version.split('.')[0] }}.*
+        # cpu runtime
+        - intel-opencl-rt {{ mkl_version.split('.')[0] }}.*
+        {{ openmp_mutex }}
+        - ocl-icd  # [linux]
+        - khronos-opencl-icd-loader  # [win]
+        # We need mkl because onemkl-sycl-* packages uses symbols from mkl, but
+        # not linked directly so you can chose different implementations.
+        # More information could be found at:
+        # https://www.intel.com/content/www/us/en/docs/onemkl/developer-guide-linux/2025-0/layered-model-concept.html
+        - {{ pin_subpackage('mkl', exact=True) }}
+        - {{ pin_subpackage('onemkl-sycl-blas', exact=True) }}
+      run:
+        # We need mkl because onemkl-sycl-* packages uses symbols from mkl, but
+        # not linked directly so you can chose different implementations.
+        # More information could be found at:
+        # https://www.intel.com/content/www/us/en/docs/onemkl/developer-guide-linux/2025-0/layered-model-concept.html
+        - {{ pin_subpackage('mkl', exact=True) }}
+        - {{ pin_subpackage('onemkl-sycl-blas', exact=True) }}
+    about:
+      home: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - onemkl-sycl-lapack/info/licenses/license.txt
+         - onemkl-sycl-lapack/info/licenses/tpp.txt
+      summary: Intel® oneAPI Math Kernel Library runtime libraries
+      description: |
+        Intel® oneAPI Math Kernel Library is Intel®-Optimized Math Library for Numerical Computing on CPUs & GPUs.<br/>
+        This package is a repackaged set of binaries obtained directly from Intel's conda channel.<br/>
+        Using oneMKL in the Python Ecosystem: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-in-the-python-ecosystem.html <br/>
+        Integrating oneMKL with R: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-with-r.html
+      doc_url: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+    test:
+      commands:
+          - ls -A $PREFIX/lib/*  # [linux]
+          - test -f $PREFIX/lib/libmkl_sycl_lapack.so.6  # [linux]
+          - if not exist %LIBRARY_BIN%\\mkl_sycl_lapack.6.dll exit 1  # [win]
+
+  - name: onemkl-sycl-rng
+    version: {{ mkl_version }}
+    script: repack.sh   # [linux]
+    script: repack.bat  # [win]
+    build:
+      ignore_run_exports_from:
+        {{ openmp_mutex }}
+    number: {{ mkl_buildnum|int + dstbuildnum|int }}
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ c_stdlib }}_{{ target_platform }} {{ c_stdlib_sycl_version }}  # [linux]
+        - {{ stdlib('c') }}  # [not linux]
+        {{ openmp_mutex }}
+      host:
+        - intel-sycl-rt {{ mkl_version.split('.')[0] }}.*
+        # cpu runtime
+        - intel-opencl-rt {{ mkl_version.split('.')[0] }}.*
+        {{ openmp_mutex }}
+        - ocl-icd  # [linux]
+        - khronos-opencl-icd-loader  # [win]
+        # We need mkl because onemkl-sycl-* packages uses symbols from mkl, but
+        # not linked directly so you can chose different implementations.
+        # More information could be found at:
+        # https://www.intel.com/content/www/us/en/docs/onemkl/developer-guide-linux/2025-0/layered-model-concept.html
+        - {{ pin_subpackage('mkl', exact=True) }}
+      run:
+        # We need mkl because onemkl-sycl-* packages uses symbols from mkl, but
+        # not linked directly so you can chose different implementations.
+        # More information could be found at:
+        # https://www.intel.com/content/www/us/en/docs/onemkl/developer-guide-linux/2025-0/layered-model-concept.html
+        - {{ pin_subpackage('mkl', exact=True) }}
+    about:
+      home: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - onemkl-sycl-rng/info/licenses/license.txt
+         - onemkl-sycl-rng/info/licenses/tpp.txt
+      summary: Intel® oneAPI Math Kernel Library runtime libraries
+      description: |
+        Intel® oneAPI Math Kernel Library is Intel®-Optimized Math Library for Numerical Computing on CPUs & GPUs.<br/>
+        This package is a repackaged set of binaries obtained directly from Intel's conda channel.<br/>
+        Using oneMKL in the Python Ecosystem: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-in-the-python-ecosystem.html <br/>
+        Integrating oneMKL with R: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-with-r.html
+      doc_url: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+    test:
+      commands:
+          - ls -A $PREFIX/lib/*  # [linux]
+          - test -f $PREFIX/lib/libmkl_sycl_rng.so.6  # [linux]
+          - if not exist %LIBRARY_BIN%\\mkl_sycl_rng.6.dll exit 1  # [win]
+
+  - name: onemkl-sycl-sparse
+    version: {{ mkl_version }}
+    script: repack.sh   # [linux]
+    script: repack.bat  # [win]
+    build:
+      ignore_run_exports_from:
+        {{ openmp_mutex }}
+    number: {{ mkl_buildnum|int + dstbuildnum|int }}
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ c_stdlib }}_{{ target_platform }} {{ c_stdlib_sycl_version }}  # [linux]
+        - {{ stdlib('c') }}  # [not linux]
+        {{ openmp_mutex }}
+      host:
+        - intel-sycl-rt {{ mkl_version.split('.')[0] }}.*
+        # cpu runtime
+        - intel-opencl-rt {{ mkl_version.split('.')[0] }}.*
+        {{ openmp_mutex }}
+        - ocl-icd  # [linux]
+        - khronos-opencl-icd-loader  # [win]
+        - {{ pin_subpackage('onemkl-sycl-blas', exact=True) }}
+        # We need mkl because onemkl-sycl-* packages uses symbols from mkl, but
+        # not linked directly so you can chose different implementations.
+        # More information could be found at:
+        # https://www.intel.com/content/www/us/en/docs/onemkl/developer-guide-linux/2025-0/layered-model-concept.html
+        - {{ pin_subpackage('mkl', exact=True) }}
+      run:
+        - {{ pin_subpackage('onemkl-sycl-blas', exact=True) }}
+        # We need mkl because onemkl-sycl-* packages uses symbols from mkl, but
+        # not linked directly so you can chose different implementations.
+        # More information could be found at:
+        # https://www.intel.com/content/www/us/en/docs/onemkl/developer-guide-linux/2025-0/layered-model-concept.html
+        - {{ pin_subpackage('mkl', exact=True) }}
+    about:
+      home: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - onemkl-sycl-sparse/info/licenses/license.txt
+         - onemkl-sycl-sparse/info/licenses/tpp.txt
+      summary: Intel® oneAPI Math Kernel Library runtime libraries
+      description: |
+        Intel® oneAPI Math Kernel Library is Intel®-Optimized Math Library for Numerical Computing on CPUs & GPUs.<br/>
+        This package is a repackaged set of binaries obtained directly from Intel's conda channel.<br/>
+        Using oneMKL in the Python Ecosystem: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-in-the-python-ecosystem.html <br/>
+        Integrating oneMKL with R: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-with-r.html
+      doc_url: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+    test:
+      commands:
+          - ls -A $PREFIX/lib/*  # [linux]
+          - test -f $PREFIX/lib/libmkl_sycl_sparse.so.6  # [linux]
+          - if not exist %LIBRARY_BIN%\\mkl_sycl_sparse.6.dll exit 1  # [win]
+
+  - name: onemkl-sycl-stats
+    version: {{ mkl_version }}
+    script: repack.sh   # [linux]
+    script: repack.bat  # [win]
+    build:
+      ignore_run_exports_from:
+        {{ openmp_mutex }}
+    number: {{ mkl_buildnum|int + dstbuildnum|int }}
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ c_stdlib }}_{{ target_platform }} {{ c_stdlib_sycl_version }}  # [linux]
+        - {{ stdlib('c') }}  # [not linux]
+        {{ openmp_mutex }}
+      host:
+        - intel-sycl-rt {{ mkl_version.split('.')[0] }}.*
+        # cpu runtime
+        - intel-opencl-rt {{ mkl_version.split('.')[0] }}.*
+        {{ openmp_mutex }}
+        - ocl-icd  # [linux]
+        - khronos-opencl-icd-loader  # [win]
+        # We need mkl because onemkl-sycl-* packages uses symbols from mkl, but
+        # not linked directly so you can chose different implementations.
+        # More information could be found at:
+        # https://www.intel.com/content/www/us/en/docs/onemkl/developer-guide-linux/2025-0/layered-model-concept.html
+        - {{ pin_subpackage('mkl', exact=True) }}
+      run:
+        # We need mkl because onemkl-sycl-* packages uses symbols from mkl, but
+        # not linked directly so you can chose different implementations.
+        # More information could be found at:
+        # https://www.intel.com/content/www/us/en/docs/onemkl/developer-guide-linux/2025-0/layered-model-concept.html
+        - {{ pin_subpackage('mkl', exact=True) }}
+    about:
+      home: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - onemkl-sycl-stats/info/licenses/license.txt
+         - onemkl-sycl-stats/info/licenses/tpp.txt
+      summary: Intel® oneAPI Math Kernel Library runtime libraries
+      description: |
+        Intel® oneAPI Math Kernel Library is Intel®-Optimized Math Library for Numerical Computing on CPUs & GPUs.<br/>
+        This package is a repackaged set of binaries obtained directly from Intel's conda channel.<br/>
+        Using oneMKL in the Python Ecosystem: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-in-the-python-ecosystem.html <br/>
+        Integrating oneMKL with R: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-with-r.html
+      doc_url: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+    test:
+      commands:
+          - ls -A $PREFIX/lib/*  # [linux]
+          - test -f $PREFIX/lib/libmkl_sycl_stats.so.6  # [linux]
+          - if not exist %LIBRARY_BIN%\\mkl_sycl_stats.6.dll exit 1  # [win]
+
+  - name: onemkl-sycl-vm
+    version: {{ mkl_version }}
+    script: repack.sh   # [linux]
+    script: repack.bat  # [win]
+    build:
+      ignore_run_exports_from:
+        {{ openmp_mutex }}
+    number: {{ mkl_buildnum|int + dstbuildnum|int }}
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ c_stdlib }}_{{ target_platform }} {{ c_stdlib_sycl_version }}  # [linux]
+        - {{ stdlib('c') }}  # [not linux]
+        {{ openmp_mutex }}
+      host:
+        - intel-sycl-rt {{ mkl_version.split('.')[0] }}.*
+        # cpu runtime
+        - intel-opencl-rt {{ mkl_version.split('.')[0] }}.*
+        {{ openmp_mutex }}
+        - ocl-icd  # [linux]
+        - khronos-opencl-icd-loader  # [win]
+        # We need mkl because onemkl-sycl-* packages uses symbols from mkl, but
+        # not linked directly so you can chose different implementations.
+        # More information could be found at:
+        # https://www.intel.com/content/www/us/en/docs/onemkl/developer-guide-linux/2025-0/layered-model-concept.html
+        - {{ pin_subpackage('mkl', exact=True) }}
+      run:
+        # We need mkl because onemkl-sycl-* packages uses symbols from mkl, but
+        # not linked directly so you can chose different implementations.
+        # More information could be found at:
+        # https://www.intel.com/content/www/us/en/docs/onemkl/developer-guide-linux/2025-0/layered-model-concept.html
+        - {{ pin_subpackage('mkl', exact=True) }}
+    about:
+      home: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - onemkl-sycl-vm/info/licenses/license.txt
+         - onemkl-sycl-vm/info/licenses/tpp.txt
+      summary: Intel® oneAPI Math Kernel Library runtime libraries
+      description: |
+        Intel® oneAPI Math Kernel Library is Intel®-Optimized Math Library for Numerical Computing on CPUs & GPUs.<br/>
+        This package is a repackaged set of binaries obtained directly from Intel's conda channel.<br/>
+        Using oneMKL in the Python Ecosystem: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-in-the-python-ecosystem.html <br/>
+        Integrating oneMKL with R: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-with-r.html
+      doc_url: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+    test:
+      commands:
+          - ls -A $PREFIX/lib/*  # [linux]
+          - test -f $PREFIX/lib/libmkl_sycl_vm.so.6  # [linux]
+          - if not exist %LIBRARY_BIN%\\mkl_sycl_vm.6.dll exit 1  # [win]
+
+  - name: onemkl-sycl-include
+    version: {{ mkl_version }}
+    script: repack.sh   # [linux]
+    script: repack.bat  # [win]
+    number: {{ mkl_buildnum|int + dstbuildnum|int }}
+    about:
+      home: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - onemkl-sycl-include/info/licenses/license.txt
+         - onemkl-sycl-include/info/licenses/tpp.txt
+      summary: Headers for building against Intel® oneMKL oneAPI interface libraries
+      description: |
+        Intel® oneAPI Math Kernel Library oneAPI interface headers for developing software that uses oneMKL.<br/>
+        This package is a repackaged set of binaries obtained directly from Intel's conda channel.<br/>
+        Using oneMKL in the Python Ecosystem: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-in-the-python-ecosystem.html <br/>
+        Integrating oneMKL with R: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-with-r.html
+      doc_url: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+    test:
+      commands:
+        - ls -A $PREFIX/include/*  # [linux]
+        - test -f $PREFIX/include/oneapi/mkl.hpp  # [linux]
+        - if not exist %LIBRARY_INC%\\oneapi\\mkl.hpp exit 1  # [win]
+
+  - name: mkl-dpcpp
+    version: {{ mkl_version }}
+    script: repack.sh   # [linux]
+    script: repack.bat  # [win]
+    number: {{ mkl_buildnum|int + dstbuildnum|int }}
+    requirements:
+      run:
+        - {{ pin_subpackage('mkl', exact=True) }}
+        - dpcpp-cpp-rt {{ mkl_version.split('.')[0] }}.*
+        - intel-opencl-rt {{ mkl_version.split('.')[0] }}.*
+        - {{ pin_subpackage('onemkl-sycl-blas', exact=True) }}
+        - {{ pin_subpackage('onemkl-sycl-datafitting', exact=True) }}
+        - {{ pin_subpackage('onemkl-sycl-dft', exact=True) }}
+        - {{ pin_subpackage('onemkl-sycl-lapack', exact=True) }}
+        - {{ pin_subpackage('onemkl-sycl-rng', exact=True) }}
+        - {{ pin_subpackage('onemkl-sycl-sparse', exact=True) }}
+        - {{ pin_subpackage('onemkl-sycl-stats', exact=True) }}
+        - {{ pin_subpackage('onemkl-sycl-vm', exact=True) }}
+      run_constrained:
+        # If libblas/liblapack are present in the environment they must be backed
+        # by MKL, otherwise BLAS/LAPACK symbol collisions can occur at runtime
+        # (e.g. between MKL and OpenBLAS loaded into the same process).
+        - libblas =*=*mkl
+        - libcblas =*=*mkl
+        - liblapack =*=*mkl
+        - liblapacke =*=*mkl
+    about:
+      home: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - mkl-dpcpp/info/licenses/license.txt
+         - mkl-dpcpp/info/licenses/tpp.txt
+      summary: Intel® oneAPI Math Kernel Library SYCL libraries
+      description: |
+        Intel® oneAPI Math Kernel Library is Intel®-Optimized Math Library for Numerical Computing on CPUs & GPUs.<br/>
+        This package is a repackaged set of binaries obtained directly from Intel's conda channel.<br/>
+        Using oneMKL in the Python Ecosystem: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-in-the-python-ecosystem.html <br/>
+        Integrating oneMKL with R: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-with-r.html
+      doc_url: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+    test:
+      commands:
+          - ls -A $PREFIX/lib/*  # [linux]
+
+  - name: mkl-devel-dpcpp
+    version: {{ mkl_version }}
+    number: {{ mkl_buildnum|int + dstbuildnum|int + 1|int }}
+    build:
+      script:
+        - cp -f $SRC_DIR/mkl/info/licenses/license.txt $SRC_DIR  # [linux]
+        - chmod 664 $SRC_DIR/license.txt  # [linux]
+        - cp -rv $SRC_DIR/$PKG_NAME/* $PREFIX  # [linux]
+        - rm -rf $PREFIX/info  # [linux]
+        - set "src=%SRC_DIR%\%PKG_NAME%"  # [win]
+        - COPY "%src%\info\LICENSE.txt" "%SRC_DIR%"  # [win]
+        - robocopy /E "%src%" "%PREFIX%"  # [win]
+        - if %ERRORLEVEL% GEQ 8 exit 1  # [win]
+        - rd /s /q %PREFIX%\info  # [win]
+      run_exports:
+        - {{ pin_subpackage('mkl-dpcpp') }}
+    requirements:
+      run:
+        - {{ pin_subpackage('mkl-devel', exact=True) }}
+        - {{ pin_subpackage('mkl-dpcpp', exact=True) }}
+        - {{ pin_subpackage('onemkl-sycl-include', exact=True) }}
+    about:
+      home: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+      summary: Devel package for building against Intel® oneMKL SYCL libraries
+      description: |
+        Intel® oneAPI Math Kernel Library SYCL libraries for developing software that uses oneMKL with SYCL.<br/>
+        This package is a repackaged set of binaries obtained directly from Intel's conda channel.<br/>
+        Using oneMKL in the Python Ecosystem: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-in-the-python-ecosystem.html <br/>
+        Integrating oneMKL with R: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-with-r.html
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - mkl-devel-dpcpp/info/licenses/license.txt
+         - mkl-devel-dpcpp/info/licenses/tpp.txt
+    test:
+      commands:
+        - ls -A $PREFIX/lib/*  # [linux]
+        - ls -A $PREFIX/include/*  # [linux]
+        - test -f $PREFIX/lib/libmkl_sycl.so  # [linux]
+        - if not exist %LIBRARY_LIB%\\mkl_sycl_dll.lib exit 1  # [win]
+
+  {% if win or 'conda-forge' not in my_channel_targets %}
+  - name: intel-openmp
+    script: repack.sh   # [linux]
+    script: repack.bat  # [win]
+    number: {{ openmp_buildnum|int + dstbuildnum|int }}
+    version: {{ openmp_version }}
+    build:
+      host:
+        - intel-cmplr-lib-ur {{ openmp_version.split('.')[0] }}.*
+      run_constrained:
+        # prevent clobbering if user tries to install llvm's implementation
+        # TODO: use intel mutex or build windows torch in conda-froge
+        # https://github.com/conda-forge/intel-graphics-compiler-feedstock/pull/59
+        - llvm-openmp <0a0
+    about:
+      home: https://www.intel.com/content/www/us/en/developer/tools/overview.html
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - intel-openmp/info/licenses/license.txt
+         - intel-openmp/info/licenses/tpp.txt
+      summary: Intel® oneAPI Compiler OpenMP runtime
+      description: |
+        Intel® oneAPI Compiler OpenMP runtime implementation
+        This package is a repackaged set of binaries obtained directly from Intel's conda channel.
+      doc_url: https://www.intel.com/content/www/us/en/developer/tools/overview.html
+    test:
+      commands:
+        - ls -A $PREFIX/lib/*  # [linux]
+        - test -f $PREFIX/lib/libomp5.so  # [linux]
+        - if not exist %LIBRARY_BIN%\\omptarget.dll exit 1  # [win]
+
+  {% endif %}
+
+  {% if 'conda-forge' not in my_channel_targets %}
+  # mutex package to keep only one blas implementation in a given env
+  - name: blas
+    version: 1.0
+    build:
+      string: mkl
+    test:
+      commands:
+        - echo 'works!'
+    about:
+      home: https://github.com/conda-forge/intel_repack-feedstock
+      license: BSD-3-Clause
+      license_file: ANACONDA_LICENSE
+      summary: 'BLAS mutex for MKL'
+  {% endif %}
+
+  - name: mkl-devel
+    version: {{ mkl_version }}
+    script: install-devel.sh   # [linux]
+    script: install-devel.bat  # [win]
+    number: {{ mkl_buildnum|int + dstbuildnum|int }}
+    build:
+      run_exports:
+        - {{ pin_subpackage('mkl') }}
+        {% if 'conda-forge' not in my_channel_targets %}
+        - {{ pin_subpackage('blas', exact=True) }}
+        {% endif %}
+    requirements:
+      run:
+        - {{ pin_subpackage('mkl', exact=True) }}
+        - {{ pin_subpackage('mkl-include', exact=True) }}
+        {% if 'conda-forge' not in my_channel_targets %}
+        - blas * mkl
+        {% endif %}
+    about:
+      home: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+      summary: Devel package for building against Intel® oneMKL libraries
+      description: |
+        Intel® oneAPI Math Kernel Library headers and libraries for developing software that uses oneMKL.<br/>
+        This package is a repackaged set of binaries obtained directly from Intel's conda channel.<br/>
+        Using oneMKL in the Python Ecosystem: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-in-the-python-ecosystem.html <br/>
+        Integrating oneMKL with R: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-with-r.html
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - mkl-devel/info/licenses/license.txt
+         - mkl-devel/info/licenses/tpp.txt
+    test:
+      requires:
+        # cmake also needs a compiler to run package detection, see
+        # https://discourse.cmake.org/t/questions-about-find-package-cli-msvc/6194
+        - {{ compiler('c') }}
+        - {{ compiler('cxx') }}
+        - cmake
+        - ninja
+        - pkg-config
+      files:
+        - cmake_test/
+      commands:
+        - ls -A $PREFIX/lib/*  # [linux]
+        - ls -A $PREFIX/include/*  # [linux]
+        - ls -A $PREFIX/lib/pkgconfig/*  # [linux]
+        - test -f $PREFIX/lib/pkgconfig/mkl-sdl.pc  # [linux]
+        - if not exist %LIBRARY_LIB%\\pkgconfig\\mkl-sdl.pc exit 1  # [win]
+
+        # test integrity of CMake metadata
+        - cd cmake_test
+        - cmake -GNinja $CMAKE_ARGS .   # [unix]
+        - cmake -GNinja %CMAKE_ARGS% .  # [win]
+
+  - name: mkl-static
+    version: {{ mkl_version }}
+    script: repack.sh   # [linux]
+    script: repack.bat  # [win]
+    number: {{ mkl_buildnum|int + dstbuildnum|int }}
+    requirements:
+      run:
+        - {{ pin_subpackage('mkl-include', exact=True) }}
+        - tbb {{ tbb_version.split('.')[0] }}.*
+        {% if 'conda-forge' not in my_channel_targets %}
+        - blas * mkl
+        {% endif %}
+    about:
+      home: https://www.intel.com/content/www/us/en/developer/tools/oneapi/onemkl.html
+      summary: Static libraries for Intel® oneMKL libraries
+      description: |
+        Intel® oneAPI Math Kernel Library static libraries for developing software that uses oneMKL.<br/>
+        This package is a repackaged set of binaries obtained directly from Intel's conda channel.<br/>
+        Using oneMKL in the Python Ecosystem: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-in-the-python-ecosystem.html <br/>
+        Integrating oneMKL with R: https://www.intel.com/content/www/us/en/developer/articles/technical/using-onemkl-with-r.html
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - mkl-static/info/licenses/license.txt
+         - mkl-static/info/licenses/tpp.txt
+    test:
+      commands:
+        - ls -A $PREFIX/lib/*  # [linux]
+        - test -f $PREFIX/lib/libmkl_core.a  # [linux]
+        - if not exist %LIBRARY_LIB%\\mkl_core.lib exit 1  # [win]
+
+  - name: dal
+    version: {{ dal_version }}
+    script: repack.sh   # [linux]
+    script: repack.bat  # [win]
+    number: {{ dal_buildnum|int + dstbuildnum|int }}
+    build:
+      binary_relocation: false
+      detect_binary_files_with_prefix: false
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ compiler('cxx') }}
+        - {{ stdlib('c') }}
+      host:
+        - tbb-devel {{ tbb_version.split('.')[0] }}.*
+
+    about:
+      home: https://github.com/uxlfoundation/oneDAL
+      summary: Intel® oneDAL runtime libraries
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - dal/info/licenses/license.txt
+         - dal/info/licenses/tpp.txt
+      description: |
+        OneAPI Data Analytics Library (oneDAL) is a C++ and DPC++ library (powering the
+        <a href="https://uxlfoundation.github.io/scikit-learn-intelex" target="_blank">Extension for Scikit-learn in Python</a>)
+        which implements accelerated machine learning routines for tabular data (e.g. linear regression, K-means clustering,
+        random forests, etc.) for CPUs, GPUs, and multi-node distributed setups.
+        <br/><br/>
+        Acceleration on CPUs is achieved by leveraging SIMD instructions and exploiting cache structures of modern hardware,
+        while GPU acceleration leverages the SYCL framework and the oneMKL library.
+        <br/><br/>
+        OneDAL is part of the <a href="http://www.uxlfoundation.org" target="_blank">UXL Foundation</a>
+        and is an implementation of the <a href="https://oneapi-spec.uxlfoundation.org" target="_blank">oneAPI specification</a>
+        for the oneDAL component.
+      doc_url: http://uxlfoundation.github.io/oneDAL
+    test:
+      commands:
+        - test -f $PREFIX/lib/libonedal.so.4  # [linux]
+        - if not exist %LIBRARY_BIN%\\onedal.4.dll exit 1  # [win]
+
+  - name: dal-gpu
+    version: {{ dal_version }}
+    script: repack.sh   # [linux]
+    script: repack.bat  # [win]
+    number: {{ dal_buildnum|int + dstbuildnum|int }}
+    build:
+      binary_relocation: false
+      detect_binary_files_with_prefix: false
+      ignore_run_exports_from:
+        - intel-sycl-rt
+        - intel-cmplr-lib-rt
+        - ocl-icd  # [linux]
+        - khronos-opencl-icd-loader  # [win]
+        - intel-opencl-rt
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ compiler('cxx') }}
+        - {{ stdlib('c') }}
+      host:
+        - mkl-dpcpp {{ dal_version.split('.')[0] }}.*
+        - intel-sycl-rt {{ dal_version.split('.')[0] }}.*
+        - intel-cmplr-lib-rt {{ dal_version.split('.')[0] }}.*
+        - ocl-icd  # [linux]
+        - khronos-opencl-icd-loader  # [win]
+        # cpu runtime
+        - intel-opencl-rt {{ dal_version.split('.')[0] }}.*
+        {{ openmp_mutex }}
+      run:
+        - {{ pin_subpackage('dal', exact=True) }}
+        - mkl-dpcpp {{ dal_version.split('.')[0] }}.*
+      run_constrained:
+        - {{ pin_compatible('intel-sycl-rt') }}
+        - {{ pin_compatible('intel-cmplr-lib-rt') }}
+        - {{ pin_compatible('ocl-icd') }}  # [linux]
+        - {{ pin_compatible('khronos-opencl-icd-loader') }}  # [win]
+        - {{ pin_compatible('intel-opencl-rt') }}
+
+    about:
+      home: https://github.com/uxlfoundation/oneDAL
+      summary: Intel® oneDAL runtime libraries
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - dal-gpu/info/licenses/license.txt
+         - dal-gpu/info/licenses/tpp.txt
+      description: |
+        OneAPI Data Analytics Library (oneDAL) is a C++ and DPC++ library (powering the
+        <a href="https://uxlfoundation.github.io/scikit-learn-intelex" target="_blank">Extension for Scikit-learn in Python</a>)
+        which implements accelerated machine learning routines for tabular data (e.g. linear regression, K-means clustering,
+        random forests, etc.) for CPUs, GPUs, and multi-node distributed setups.
+        <br/><br/>
+        Acceleration on CPUs is achieved by leveraging SIMD instructions and exploiting cache structures of modern hardware,
+        while GPU acceleration leverages the SYCL framework and the oneMKL library.
+        <br/><br/>
+        OneDAL is part of the <a href="http://www.uxlfoundation.org" target="_blank">UXL Foundation</a>
+        and is an implementation of the <a href="https://oneapi-spec.uxlfoundation.org" target="_blank">oneAPI specification</a>
+        for the oneDAL component.
+      doc_url: http://uxlfoundation.github.io/oneDAL
+    test:
+      commands:
+        - test -f $PREFIX/lib/libonedal_dpc.so.4  # [linux]
+        - if not exist %LIBRARY_BIN%\\onedal_dpc.4.dll exit 1  # [win]
+
+  - name: dal-include
+    version: {{ dal_version }}
+    script: repack.sh   # [linux]
+    script: repack.bat  # [win]
+    number: {{ dal_buildnum|int + dstbuildnum|int }}
+    about:
+      home: https://github.com/uxlfoundation/oneDAL
+      summary: Headers for building against Intel® oneDAL libraries
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - dal-include/info/licenses/license.txt
+         - dal-include/info/licenses/tpp.txt
+      description: |
+        OneAPI Data Analytics Library (oneDAL) is a C++ and DPC++ library (powering the
+        <a href="https://uxlfoundation.github.io/scikit-learn-intelex" target="_blank">Extension for Scikit-learn in Python</a>)
+        which implements accelerated machine learning routines for tabular data (e.g. linear regression, K-means clustering,
+        random forests, etc.) for CPUs, GPUs, and multi-node distributed setups.
+        <br/><br/>
+        Acceleration on CPUs is achieved by leveraging SIMD instructions and exploiting cache structures of modern hardware,
+        while GPU acceleration leverages the SYCL framework and the oneMKL library.
+        <br/><br/>
+        OneDAL is part of the <a href="http://www.uxlfoundation.org" target="_blank">UXL Foundation</a>
+        and is an implementation of the <a href="https://oneapi-spec.uxlfoundation.org" target="_blank">oneAPI specification</a>
+        for the oneDAL component.
+      doc_url: http://uxlfoundation.github.io/oneDAL
+    test:
+      commands:
+        - ls -A $PREFIX/include/*  # [linux]
+        - test -f $PREFIX/include/daal.h  # [linux]
+
+  - name: dal-static
+    version: {{ dal_version }}
+    script: repack.sh   # [linux]
+    script: repack.bat  # [win]
+    number: {{ dal_buildnum|int + dstbuildnum|int }}
+    requirements:
+      host:
+        - tbb-devel {{ tbb_version.split('.')[0] }}.*
+      run:
+        - {{ pin_subpackage('dal-include', exact=True) }}
+    about:
+      home: https://github.com/uxlfoundation/oneDAL
+      summary: Static libraries for Intel® oneDAL
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - dal-static/info/licenses/license.txt
+         - dal-static/info/licenses/tpp.txt
+      description: |
+        OneAPI Data Analytics Library (oneDAL) is a C++ and DPC++ library (powering the
+        <a href="https://uxlfoundation.github.io/scikit-learn-intelex" target="_blank">Extension for Scikit-learn in Python</a>)
+        which implements accelerated machine learning routines for tabular data (e.g. linear regression, K-means clustering,
+        random forests, etc.) for CPUs, GPUs, and multi-node distributed setups.
+        <br/><br/>
+        Acceleration on CPUs is achieved by leveraging SIMD instructions and exploiting cache structures of modern hardware,
+        while GPU acceleration leverages the SYCL framework and the oneMKL library.
+        <br/><br/>
+        OneDAL is part of the <a href="http://www.uxlfoundation.org" target="_blank">UXL Foundation</a>
+        and is an implementation of the <a href="https://oneapi-spec.uxlfoundation.org" target="_blank">oneAPI specification</a>
+        for the oneDAL component.
+      doc_url: http://uxlfoundation.github.io/oneDAL
+    test:
+      commands:
+        - ls -A $PREFIX/lib/*  # [linux]
+        - test -f $PREFIX/lib/libonedal.a  # [linux]
+        - test -f $PREFIX/lib/libonedal_core.a  # [linux]
+        - if not exist %LIBRARY_LIB%\\onedal.lib exit 1  # [win]
+        - if not exist %LIBRARY_LIB%\\onedal_core.lib exit 1  # [win]
+
+  - name: dal-devel
+    version: {{ dal_version }}
+    script: repack.sh   # [linux]
+    script: repack.bat  # [win]
+    number: {{ dal_buildnum|int + dstbuildnum|int }}
+    build:
+      run_exports:
+        - {{ pin_subpackage('dal') }}
+      ignore_run_exports_from:
+        - intel-sycl-rt
+        - intel-cmplr-lib-rt
+        - ocl-icd  # [linux]
+        - khronos-opencl-icd-loader  # [win]
+        - intel-opencl-rt
+    requirements:
+      host:
+        - intel-sycl-rt {{ dal_version.split('.')[0] }}.*
+        - intel-cmplr-lib-rt {{ dal_version.split('.')[0] }}.*
+        - ocl-icd  # [linux]
+        - khronos-opencl-icd-loader  # [win]
+        # cpu runtime
+        - intel-opencl-rt {{ dal_version.split('.')[0] }}.*
+      run:
+        - {{ pin_subpackage('dal-include', exact=True) }}
+        - {{ pin_subpackage('dal', exact=True) }}
+        - {{ pin_subpackage('dal-gpu', exact=True) }}
+      run_constrained:
+        - {{ pin_compatible('intel-sycl-rt', exact=True) }}
+        - {{ pin_compatible('intel-cmplr-lib-rt', exact=True) }}
+        - {{ pin_compatible('ocl-icd') }}  # [linux]
+        - {{ pin_compatible('khronos-opencl-icd-loader') }}  # [win]
+        - {{ pin_compatible('intel-opencl-rt') }}
+    about:
+      home: https://github.com/uxlfoundation/oneDAL
+      summary: Devel package for building against Intel® oneDAL shared libraries
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - dal-devel/info/licenses/license.txt
+         - dal-devel/info/licenses/tpp.txt
+      description: |
+        OneAPI Data Analytics Library (oneDAL) is a C++ and DPC++ library (powering the
+        <a href="https://uxlfoundation.github.io/scikit-learn-intelex" target="_blank">Extension for Scikit-learn in Python</a>)
+        which implements accelerated machine learning routines for tabular data (e.g. linear regression, K-means clustering,
+        random forests, etc.) for CPUs, GPUs, and multi-node distributed setups.
+        <br/><br/>
+        Acceleration on CPUs is achieved by leveraging SIMD instructions and exploiting cache structures of modern hardware,
+        while GPU acceleration leverages the SYCL framework and the oneMKL library.
+        <br/><br/>
+        OneDAL is part of the <a href="http://www.uxlfoundation.org" target="_blank">UXL Foundation</a>
+        and is an implementation of the <a href="https://oneapi-spec.uxlfoundation.org" target="_blank">oneAPI specification</a>
+        for the oneDAL component.
+      doc_url: http://uxlfoundation.github.io/oneDAL
+    test:
+      commands:
+        - ls -A $PREFIX/lib/*  # [linux]
+        - if not exist %LIBRARY_LIB%\\onedal_dpc_dll.lib exit 1  # [win]
+        - if not exist %LIBRARY_LIB%\\onedal_dll.lib exit 1  # [win]
+        - if not exist %LIBRARY_LIB%\\onedal_core_dll.lib exit 1  # [win]
+
+  - name: impi_rt
+    version: {{ impi_version }}
+    script: repack.sh   # [linux]
+    script: repack.bat  # [win]
+    number: {{ impi_buildnum|int + dstbuildnum|int }}  # [linux or win]
+    build:
+      detect_binary_files_with_prefix: false
+    requirements:
+      build:
+        - {{ compiler('c') }}
+        - {{ compiler('cxx') }}
+        - {{ stdlib('c') }}
+        - {{ openmp_pkg }}
+      run:
+        - mpi 1.0 impi
+    about:
+      home: https://www.intel.com/content/www/us/en/developer/tools/oneapi/mpi-library.html
+      summary: Intel® MPI Library
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - impi_rt/info/licenses/license.txt
+         - impi_rt/info/licenses/tpp.txt
+      description: |
+        Intel® MPI Library is a multifabric message-passing library that implements the open 
+        source MPICH specification. Use the library to create, maintain, and test advanced, 
+        complex applications that perform better on HPC clusters based on Intel® and 
+        compatible processors.
+        This package is a repackaged set of binaries obtained directly from Intel's conda channel.
+      doc_url: https://www.intel.com/content/www/us/en/developer/tools/oneapi/mpi-library.html
+    test:
+      commands:
+        - ls -A $PREFIX/bin/*  # [linux]
+        - ls -A $PREFIX/lib/*  # [linux]
+        - test -f $PREFIX/bin/mpiexec  # [linux]
+        - test -f $PREFIX/bin/impi_info  # [linux]
+        - test -f $PREFIX/lib/libmpi.so  # [linux]
+        - if not exist %LIBRARY_BIN%\\mpiexec.exe exit 1  # [win]
+        - if not exist %LIBRARY_BIN%\\impi_info.exe exit 1  # [win]
+        - if not exist %LIBRARY_BIN%\\impi.dll exit 1  # [win]
+
+  - name: impi-devel
+    version: {{ impi_version }}
+    script: repack.sh   # [linux]
+    script: repack.bat  # [win]
+    number: {{ impi_buildnum|int + dstbuildnum|int }}  # [linux or win]
+    build:
+      detect_binary_files_with_prefix: false
+      run_exports:
+        - {{ pin_subpackage('impi_rt', min_pin="x.x.x", max_pin="x.x.x") }}
+    requirements:
+      run:
+        - {{ pin_subpackage('impi_rt', exact=True) }}
+    about:
+      home: https://www.intel.com/content/www/us/en/developer/tools/oneapi/mpi-library.html
+      summary: Devel package for building against Intel® MPI libraries
+      license: LicenseRef-IntelSimplifiedSoftwareOct2022
+      license_family: Proprietary
+      license_file:
+         - impi-devel/info/licenses/license.txt
+         - impi-devel/info/licenses/tpp.txt
+      description: |
+        Intel® MPI Library is a multifabric message-passing library that implements the open 
+        source MPICH specification. Use the library to create, maintain, and test advanced, 
+        complex applications that perform better on HPC clusters based on Intel® and 
+        compatible processors.
+        This package is a repackaged set of binaries obtained directly from Intel's conda channel.
+      doc_url: https://www.intel.com/content/www/us/en/developer/tools/oneapi/mpi-library.html
+    test:
+      commands:
+        - ls -A $PREFIX/bin/*  # [linux]
+        - test -f $PREFIX/bin/mpicc  # [linux]
+        - test -f $PREFIX/bin/mpifc  # [linux]
+        - test -f $PREFIX/bin/mpicxx  # [linux]
+        - test -f $PREFIX/include/mpi.h  # [linux]
+        - if not exist %LIBRARY_BIN%\\mpicc.bat exit 1  # [win]
+        - if not exist %LIBRARY_BIN%\\mpicl.bat exit 1  # [win]
+        - if not exist %LIBRARY_BIN%\\mpifc.bat exit 1  # [win]
+        - if not exist %LIBRARY_BIN%\\mpicxx.bat exit 1  # [win]
+        - if not exist %LIBRARY_INC%\\mpi.h exit 1  # [win]
+        - if not exist %LIBRARY_LIB%\\impi.lib exit 1  # [win]
+        # Test for Fortran support files  # [win]
+        - if not exist %LIBRARY_INC%\\mpif.h exit 1  # [win]
+        - if not exist %LIBRARY_INC%\\mpiof.h exit 1  # [win]
+        - if not exist %LIBRARY_INC%\\mpi\\mpi.mod exit 1  # [win]
+        - if not exist %LIBRARY_INC%\\mpi\\mpi_f08.mod exit 1  # [win]
+
+  - name: onedpl-devel
+    version: {{ onedpl_version }}
+    script: repack.sh   # [linux]
+    script: repack.bat  # [win]
+    number: {{ onedpl_buildnum|int + dstbuildnum|int }}  # [linux or win]
+    about:
+      home: https://software.intel.com/content/www/us/en/develop/tools/oneapi/components/dpc-library.html
+      summary: Intel® oneAPI DPC++ Library
+      license: Apache-2.0
+      license_file: clang/LICENSE.TXT
+      license_file:
+         - onedpl-devel/share/licensing/dpl/license.txt
+         - onedpl-devel/share/licensing/dpl/third-party-programs.txt
+      description: |
+        The Intel® oneAPI DPC++ Library (oneDPL) is a companion to the
+        Intel® oneAPI DPC++/C++ Compiler and provides an alternative for C++ 
+        developers who create heterogeneous applications and solutions. Its APIs
+        are based on familiar standards—C++ STL, Parallel STL (PSTL),
+        Boost.Compute, and SYCL*—to maximize productivity and performance across
+        CPUs, GPUs, and FPGAs.
+        This package is a repackaged set of binaries obtained directly from Intel's conda channel.
+      doc_url: https://software.intel.com/content/www/us/en/develop/tools/oneapi/components/dpc-library.html
+    test:
+      commands:
+        - ls -A $PREFIX/include/oneapi/*  # [linux]
+        - test -f $PREFIX/include/oneapi/dpl/cmath  # [linux]
+        - test -f $PREFIX/lib/cmake/oneDPL/oneDPLConfig.cmake  # [linux]
+        - test -f $PREFIX/lib/pkgconfig/dpl.pc  # [linux]
+        - if not exist %LIBRARY_INC%\\oneapi\\dpl\\cmath exit 1  # [win]
+        - if not exist %LIBRARY_LIB%\\cmake\\oneDPL\\oneDPLConfig.cmake exit 1  # [win]
+        - if not exist %LIBRARY_LIB%\\pkgconfig\\dpl.pc exit 1  # [win]
+# please the linter
+about:
+  home: https://github.com/conda-forge/intel_repack-feedstock
+  license: LicenseRef-IntelSimplifiedSoftwareOct2022
+  summary: 'Repackaged Intel libraries'
+
+extra:
+  recipe-maintainers:
+    - isuruf
+    - ekomarova
+    - beckermr
+    - napetrov
+    - xaleryb
+    - jharlow-intel
+    - david-cortes-intel
+    - ZzEeKkAa

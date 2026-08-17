@@ -1,0 +1,42 @@
+{% set name = "cfgv" %}
+{% set version = "3.5.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: d5b1034354820651caa73ede66a6294d6e95c1b00acc5e9b098e917404669132
+
+build:
+  number: 0
+  script: pip install . --no-deps --ignore-installed
+  noarch: python
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - cfgv
+
+about:
+  home: https://github.com/asottile/cfgv
+  license: MIT
+  license_file: LICENSE
+  license_family: MIT
+  summary: Validate configuration and produce human readable error messages.
+  description: Validate configuration and produce human readable error messages.
+
+extra:
+  recipe-maintainers:
+    - nicoddemus

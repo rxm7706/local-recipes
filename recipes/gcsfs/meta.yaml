@@ -1,0 +1,56 @@
+{% set name = "gcsfs" %}
+{% set version = "2026.8.0" %}
+{% set sha256 = "c2a7c0ffee2d0837243b4f838efaa185c152a4eb4cc529e41b3569bf00b9781e" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatch-vcs
+
+  run:
+    - python >={{ python_min }}
+    - google-auth >=1.2
+    - google-auth-oauthlib
+    - google-cloud-storage >=3.9.0
+    - google-cloud-storage-control
+    - requests
+    - decorator >4.1.2
+    - fsspec >=2026.7.0,<2026.7.1
+    - aiohttp >=3.9.0
+
+test:
+  imports:
+    - gcsfs
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/dask/gcsfs
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Pythonic file-system interface for Google Cloud Storage
+  doc_url: http://gcsfs.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - martindurant
+    - jcrist
+    - tomaugspurger

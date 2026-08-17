@@ -1,5 +1,5 @@
 {% set name = "docstring_parser_fork" %}
-{% set version = "0.0.14" %}
+{% set version = "0.0.16" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/docstring_parser_fork-{{ version }}.tar.gz
-  sha256: a2743a63d8d36c09650594f7b4ab5b2758fee8629dcf794d1b221b23179baa5c
+  sha256: 9ecf861ceab8b87d1297a71001c15a1956ad02e87434ee6473643a5988094f7c
 
 build:
   noarch: python

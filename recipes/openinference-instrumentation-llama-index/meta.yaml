@@ -1,0 +1,50 @@
+{% set name = "openinference-instrumentation-llama-index" %}
+{% set version = "4.4.5" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/openinference_instrumentation_llama_index-{{ version }}.tar.gz
+  sha256: 7b516901345dda3607cff91d31ca6320093f3f13f181a3501302b05c17969690
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }},<3.12
+    - opentelemetry-api
+    - opentelemetry-instrumentation
+    - opentelemetry-semantic-conventions
+    - openinference-instrumentation >=0.1.12
+    - openinference-semantic-conventions >=0.1.9
+    - typing-extensions
+    - wrapt
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - openinference.instrumentation.llama_index
+
+about:
+  summary: OpenInference LlamaIndex Instrumentation
+  home: https://github.com/Arize-ai/openinference
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - michaelschiff
+    - mikeldking
+    - RogerHYang
+    - axiomofjoy
+    - anticorrelator

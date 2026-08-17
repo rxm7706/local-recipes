@@ -1,0 +1,59 @@
+{% set name = "oslo.serialization" %}
+{% set version = "5.11.0" %}
+{% set sha256 = "8326e85a80856c1068007423fcf6fe29dd2fe57a32f5d87fff0120b555b4b67c" %}
+{% set python_min = "3.11" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/oslo_serialization-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 0
+  script: '{{ PYTHON }} -m pip install . -vv '
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - pbr
+
+  run:
+    - pbr
+    - python >={{ python_min }}
+    - msgpack-python
+    - oslo.utils
+    - pytz
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - oslo_serialization
+    - oslo_serialization.base64
+    - oslo_serialization.jsonutils
+    - oslo_serialization.msgpackutils
+    - oslo_serialization.serializer.base_serializer
+    - oslo_serialization.serializer.json_serializer
+    - oslo_serialization.serializer.msgpack_serializer
+
+about:
+  home: https://docs.openstack.org/oslo.serialization/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Oslo Serialization library
+  description: |
+    The oslo serialization library provides support for representing objects 
+    in transmittable and storable formats, such as JSON and MessagePack. 
+
+extra:
+  recipe-maintainers:
+    - brainstorm
+    - tschoonj

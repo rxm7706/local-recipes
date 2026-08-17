@@ -1,0 +1,78 @@
+{% set name = "param" %}
+{% set python_min = "3.10" %}
+{% set version = "2.4.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+
+source:
+  fn: param-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/param/param-{{ version }}.tar.gz
+  sha256: 364a33bd8a968b053d8a49d319af78dc31b3ccb9661ecb95c29a3ea509d7e443
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+    - hatch-vcs
+  run:
+    - python >={{ python_min }}
+
+test:
+  source_files:
+    - tests
+    - pyproject.toml
+  requires:
+    - python {{ python_min }}
+    - pip
+    - pytest
+    - pytest-asyncio
+    - numpy
+    - pandas
+    - ipython
+    - jsonschema
+    - cloudpickle
+  imports:
+    - param
+    - numbergen
+  commands:
+    - pip check
+    - pytest -v tests
+
+about:
+  home: https://param.holoviz.org/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+  summary: Declarative parameters for robust Python classes and a rich API for reactive programming
+  description: |
+    Param is a zero-dependency library for declaring rich
+    attributes - Parameters - with extended metadata used for
+    various purposes such as runtime type and range validation,
+    default values or factories, nullability, docstrings, etc.
+    It also supplies a suite of reactive APIs (watch, depends,
+    bind, and reactive expressions), enabling automatic updates
+    on attribute changes and declaring complex reactive
+    dependencies and expressions that can be introspected by other
+    frameworks to implement their own reactive workflows.
+    These capabilities power HoloViz projects like Panel and HoloViews,
+    making Param a solid foundation for building validated,
+    introspectable, and responsive libraries and applications.
+  doc_url: https://param.holoviz.org/
+  dev_url: https://github.com/holoviz/param
+
+extra:
+  recipe-maintainers:
+    - hoxbro
+    - basnijholt
+    - jlstevens
+    - philippjfr
+    - maximlt

@@ -1,0 +1,55 @@
+{% set version = "1.7.1" %}
+
+package:
+  name: contextily
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/contextily/contextily-{{ version }}.tar.gz
+  sha256: e00372357a93a9028f75ea7343d867893bd8d4b89833de17b18438725929c885
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools >=61.0
+    - setuptools-scm >=6.2
+  run:
+    - python >={{ python_min }}
+    - geopy
+    - joblib
+    - matplotlib-base
+    - mercantile
+    - pillow
+    - rasterio
+    - requests
+    - xyzservices
+
+test:
+  imports:
+    - contextily
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/geopandas/contextily
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Context geo-tiles in Python
+  license_family: BSD
+
+extra:
+  recipe-maintainers:
+    - darribas
+    - ocefpaf
+    - jorisvandenbossche
+    - ljwolf
+    - martinfleis

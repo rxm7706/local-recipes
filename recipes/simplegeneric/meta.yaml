@@ -1,0 +1,41 @@
+{% set version = "0.8.1" %}
+
+package:
+  name: simplegeneric
+  version: {{ version }}
+
+source:
+  fn: simplegeneric-{{ version }}.zip
+  url: https://pypi.python.org/packages/source/s/simplegeneric/simplegeneric-{{ version }}.zip
+  md5: f9c1fab00fd981be588fc32759f474e3
+
+build:
+  noarch: python
+  number: 2
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - simplegeneric
+
+about:
+  home: http://cheeseshop.python.org/pypi/simplegeneric
+  license: ZPL-2.1
+  summary: "Simple generic functions (similar to Python's own len(), pickle.dump(), etc.)"
+
+extra:
+  recipe-maintainers:
+    - minrk
+    - msarahan
+    - pelson

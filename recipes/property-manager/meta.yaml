@@ -1,0 +1,42 @@
+{% set name = "property-manager" %}
+{% set version = "3.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 93e76da9ae7af13cccc2cd1e3b47219950c56c125cd962aaed693894af267c54
+
+build:
+  number: 0
+  noarch: python
+  script: '{{ PYTHON }} -m pip install . -vv '
+
+requirements:
+  host:
+    - pip
+    - python
+
+  run:
+    - humanfriendly >=4.12
+    - python
+    - verboselogs >=1.1
+
+test:
+  imports:
+    - property_manager
+
+about:
+  home: https://property-manager.readthedocs.org
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt
+  summary: Useful property variants for Python programming (required properties, writable properties, cached properties, etc)
+  doc_url: https://property-manager.readthedocs.io/en/latest/
+  dev_url: https://github.com/xolox/python-property-manager
+
+extra:
+  recipe-maintainers:
+    - rpetit3

@@ -1,0 +1,95 @@
+{% set name = "traceloop-sdk" %}
+{% set version = "0.61.0" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/traceloop_sdk-{{ version }}.tar.gz
+  sha256: ca96fdfcbf36e5e9770b960a223be62237096f68f887fe2b1b83f15412e05d05
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - opentelemetry-api >=1.38.0,<2.0.0
+    - opentelemetry-sdk >=1.38.0,<2.0.0
+    - opentelemetry-exporter-otlp-proto-http >=1.38.0,<2.0.0
+    - opentelemetry-exporter-otlp-proto-grpc >=1.38.0,<2.0.0
+    - opentelemetry-instrumentation-logging >=0.59b0
+    - opentelemetry-instrumentation-requests >=0.59b0
+    - opentelemetry-instrumentation-sqlalchemy >=0.59b0
+    - opentelemetry-instrumentation-urllib3 >=0.59b0
+    - opentelemetry-instrumentation-threading >=0.59b0
+    - opentelemetry-instrumentation-redis >=0.59b0
+    - opentelemetry-semantic-conventions-ai >=0.5.1,<0.6.0
+    - opentelemetry-instrumentation-agno {{ version }}
+    - opentelemetry-instrumentation-mistralai {{ version }}
+    - opentelemetry-instrumentation-openai {{ version }}
+    - opentelemetry-instrumentation-openai-agents {{ version }}
+    - opentelemetry-instrumentation-ollama {{ version }}
+    - opentelemetry-instrumentation-anthropic {{ version }}
+    - opentelemetry-instrumentation-cohere {{ version }}
+    - opentelemetry-instrumentation-crewai {{ version }}
+    - opentelemetry-instrumentation-google-generativeai {{ version }}
+    - opentelemetry-instrumentation-pinecone {{ version }}
+    - opentelemetry-instrumentation-qdrant {{ version }}
+    - opentelemetry-instrumentation-langchain {{ version }}
+    - opentelemetry-instrumentation-lancedb {{ version }}
+    - opentelemetry-instrumentation-chromadb {{ version }}
+    - opentelemetry-instrumentation-transformers {{ version }}
+    - opentelemetry-instrumentation-together {{ version }}
+    - opentelemetry-instrumentation-llamaindex {{ version }}
+    - opentelemetry-instrumentation-milvus {{ version }}
+    - opentelemetry-instrumentation-haystack {{ version }}
+    - opentelemetry-instrumentation-bedrock {{ version }}
+    - opentelemetry-instrumentation-sagemaker {{ version }}
+    - opentelemetry-instrumentation-replicate {{ version }}
+    - opentelemetry-instrumentation-vertexai {{ version }}
+    - opentelemetry-instrumentation-watsonx {{ version }}
+    - opentelemetry-instrumentation-weaviate {{ version }}
+    - opentelemetry-instrumentation-alephalpha {{ version }}
+    - opentelemetry-instrumentation-marqo {{ version }}
+    - opentelemetry-instrumentation-groq {{ version }}
+    - opentelemetry-instrumentation-mcp {{ version }}
+    - opentelemetry-instrumentation-writer {{ version }}
+    - opentelemetry-instrumentation-voyageai {{ version }}
+    - colorama >=0.4.6,<0.5.0
+    - tenacity >=8.2.3,<10
+    - pydantic >=1
+    - jinja2 >=3.1.5,<4.0.0
+    - deprecated >=1.2.14,<2.0.0
+    - posthog >3.0.2,<4
+    - aiohttp >=3.11.11,<4.0.0
+    - cuid >=0.4,<1
+
+test:
+  imports:
+    - traceloop.sdk
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://www.traceloop.com/openllmetry
+  dev_url: https://github.com/traceloop/openllmetry
+  doc_url: https://www.traceloop.com/docs/openllmetry/introduction
+  summary: Traceloop Software Development Kit (SDK) for Python
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - timkpaine

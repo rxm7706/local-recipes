@@ -20,7 +20,7 @@ requirements:
     - hatchling
     - pip
   run:
-    - python >={{ python_min }},<4.0
+    - python >={{ python_min }}
     - opentelemetry-sdk >=1.21,<2.dev0
 
 test:
@@ -45,4 +45,3 @@ extra:
   recipe-maintainers:
     - rxm7706
     - conda-forge/opentelemetry-api
-    - conda-forge/opentelemetry-sdk

@@ -1,0 +1,47 @@
+{% set name = "enlighten" %}
+{% set version = "1.14.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 85c35412a9a4f3886b3337d41f813441fab9a30d9f5b5f0c015bd078a4411473
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - blessed >=1.17.7
+    - prefixed >=0.3.2
+
+test:
+  imports:
+    - enlighten
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+
+about:
+  home: https://python-enlighten.readthedocs.io/en/stable/
+  license: MPL-2.0
+  license_family: MOZILLA
+  license_file: LICENSE
+  summary: Enlighten Progress Bar
+  doc_url: https://python-enlighten.readthedocs.io/en/stable/
+  dev_url: https://github.com/Rockhopper-Technologies/enlighten
+
+extra:
+  recipe-maintainers:
+    - fcollonval

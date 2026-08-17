@@ -1,0 +1,42 @@
+{% set version = "12.0.1" %}
+{% set python_min = "3.11.0" %}
+package:
+  name: testfixtures
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/testfixtures/testfixtures-{{ version }}.tar.gz
+  sha256: aad7ba894d0093ea41b5b14bbb4c12fef727e50c9fb086facf5d9a972174171a
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - testfixtures
+
+about:
+  home: https://testfixtures.readthedocs.io
+  license: MIT
+  license_file: LICENSE.txt
+  summary: A collection of helpers and mock objects for unit tests and doc tests.
+  doc_url: https://testfixtures.readthedocs.io
+  dev_url: https://github.com/Simplistix/testfixtures
+
+extra:
+  recipe-maintainers:
+    - ChrisBarker-NOAA
+    - JamesMakela-NOAA
+    - cjw296

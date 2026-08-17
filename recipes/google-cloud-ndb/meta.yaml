@@ -1,5 +1,5 @@
 {% set name = "google-cloud-ndb" %}
-{% set version = "2.5.0" %}
+{% set version = "2.5.1" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/google_cloud_ndb-{{ version }}.tar.gz
-  sha256: d7a9baa912a9d3c4d76d5084d1ef34dc91613beee1412d5ebdb688f9834d5b69
+  sha256: 2d3000904ac13af715cc8192b0bcb8c7b66f68027a9c64717a4587498c0b739b
 
 build:
   noarch: python
@@ -23,12 +23,12 @@ requirements:
     - grpcio
     - requests
     - python >={{ python_min }}
-    - google-api-core <3.0.0,>=2.11.0
-    - google-cloud-datastore !=2.20.2,<3.0.0,>=2.16.0
-    - protobuf <8.0.0,>=4.25.8
-    - pymemcache <5.0.0,>=2.1.0
+    - google-api-core >=2.28.0,<3.0.0
+    - google-cloud-datastore >=2.21.0,<3.0.0
+    - protobuf >=6.33.5,<8.0.0
+    - pymemcache >=2.1.0,<5.0.0
     - pytz >=2022.1
-    - redis-py <8.0.0,>=3.0.0
+    - redis-py >=3.0.0,<8.0.0
 
 test:
   imports:

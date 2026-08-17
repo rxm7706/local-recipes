@@ -1,13 +1,13 @@
 {% set name = "django-filer" %}
-{% set version = "3.1.1" %}
+{% set version = "3.4.4" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/django-filer-{{ version }}.tar.gz
-  sha256: c58628155ace4bb9f10f6ea9cdf92049b5961bd2ef82c5a3b76f09091f8af50d
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 465eec9fe63310a5b718267beebe7c348ee44afd16c6b5056a7bab49ee483412
 
 build:
   noarch: python
@@ -16,13 +16,18 @@ build:
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.8
-    - django >=3.2,<5.1
-    - django_polymorphic
+    - python >={{ python_min }}
+    - django >=3.2
+    - django_polymorphic <5.0
     - easy-thumbnails
+    # https://github.com/django-cms/django-filer/blob/master/setup.py#L10C1-L10C28 
+    # pip requirement is easy-thumbnails[svg] requiring svglib and reportlab
+    # https://github.com/SmileyChris/easy-thumbnails/blob/master/setup.py#L39
+    - svglib >=1.5.1,<1.6.dev0
 
 test:
   imports:
@@ -31,13 +36,21 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
-  home: https://github.com/django-cms/django-filer
-  summary: A file management application for django that makes handling of files and images a breeze.
+  home: https://github.com/divio/django-filer
   license: BSD-3-Clause
+  license_family: BSD
   license_file: LICENSE
+  summary: 'File and Image Management Application for django'
+  description: A file management application for django that makes handling of files and images a breeze.
+  doc_url: https://django-filer.readthedocs.io/
+  dev_url: https://github.com/divio/django-filer
 
 extra:
   recipe-maintainers:
+    - darynwhite
+    - cshaley
+    - sannykr
     - rxm7706

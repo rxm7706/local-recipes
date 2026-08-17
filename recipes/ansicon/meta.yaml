@@ -1,0 +1,45 @@
+{% set name = "ansicon" %}
+{% set version = "1.89.0" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: e4d039def5768a47e4afec8e89e83ec3ae5a26bf00ad851f914d1240b444d2b1
+
+build:
+  number: 9
+  skip: True  # [not win]
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+test:
+  imports:
+    - ansicon
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://pypi.org/project/ansicon/
+  summary: Python wrapper for loading Jason Hood's ANSICON
+  license: MPL-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - holymonson

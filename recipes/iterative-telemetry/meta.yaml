@@ -1,0 +1,49 @@
+{% set name = "iterative-telemetry" %}
+{% set version = "0.0.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 7fde6111de6fa4acf5a95a6190cc9cc5d17d835a815f0a18ece201f6031f4ed6
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools_scm >=6.3.1
+  run:
+    - python >={{ python_min }}
+    - requests
+    - appdirs
+    - filelock
+    - distro
+
+test:
+  imports:
+    - iterative_telemetry
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/iterative/telemetry-python
+  summary: Common library to send usage telemetry
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - pmrowla
+    - shcheklein
+    - casperdcl
+    - mike0sv

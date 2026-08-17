@@ -1,0 +1,42 @@
+{% set version = "1.1.0" %}
+
+package:
+  name: escapism
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/e/escapism/escapism-{{ version }}.tar.gz
+  sha256: add130e48a85bb1aaea3e74fb031f5033c7055aedb39a3265f923d5f40c3f974
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - escapism
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/minrk/escapism
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Simple, generic API for escaping strings
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

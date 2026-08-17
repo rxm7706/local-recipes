@@ -1,0 +1,48 @@
+{% set name = "fastapi-azure-auth" %}
+{% set version = "5.3.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 096934a99110509f47f55d59c2b8bfa3d9ee496bb341abc27eaae801afa9570f
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - cryptography >=48.0.1
+    - fastapi >=0.111.1
+    - hatchling
+    - httpx2 >=2.0.0
+    - pip
+    - pyjwt >=2.8.0
+    - python
+
+  run:
+    - cryptography >=48.0.1
+    - fastapi >=0.111.1
+    - httpx2 >=2.0.0
+    - pyjwt >=2.8.0
+    - python
+
+test:
+  imports:
+    - fastapi_azure_auth
+
+about:
+  home: https://github.com/intility/fastapi-azure-auth
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Easy and secure implementation of Azure AD for your FastAPI APIs
+  doc_url: https://github.com/intility/fastapi-azure-auth
+  dev_url: https://github.com/intility/fastapi-azure-auth
+
+extra:
+  recipe-maintainers:
+    - rars

@@ -1,0 +1,71 @@
+{% set name = "elastic" %}
+{% set version = "5.2.5.3" %}
+{% set sha256 = "961329d58f78e84ffa174d257c690c1f8e06761be78d93f88bf27e418f1c6fa9" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  entry_points:
+    - elastic = elastic.cli.elastic:cli
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+    - future
+    - setuptools_scm
+    - sphinx
+  run:
+    - python >={{ python_min }}
+    - ase
+    - numpy
+    - scipy
+    - spglib
+    - future
+    - click
+
+test:
+  source_files:
+    - test
+    - tests
+  requires:
+    - hypothesis
+    - python {{ python_min }}
+  imports:
+    - elastic
+  commands:
+    - python -m unittest discover -s test -b
+    - elastic --version
+    - elastic -v --cij proc tests/data/calc-cij_*/vasprun.xml
+
+about:
+  home: http://jochym.github.io/Elastic/
+  license: GPL-3.0-or-later
+  license_family: GPL3
+  license_file: LICENSE
+  summary: 'Elastic is a set of python routines for calculation of elastic properties of crystals'
+
+  description: |
+    Elastic is a set of python routines for calculation of elastic properties 
+    of crystals (elastic constants, equation of state, sound velocities, etc.). 
+    It is a third version of the code implemented as a extension to the ASE system. 
+    The code was a basis for some of my publications and was described briefly 
+    in these papers. The code was available to anyone, presented at the Workshop 
+    on ab initio Calculations in Geosciences and used by some of my co-workers. 
+  doc_url: http://elastic.readthedocs.io/
+  dev_url: https://github.com/jochym/elastic
+
+extra:
+  recipe-maintainers:
+    - jochym

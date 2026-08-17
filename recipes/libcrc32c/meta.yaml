@@ -1,0 +1,45 @@
+{% set name = "crc32c" %}
+{% set version = "1.1.2" %}
+
+package:
+  name: lib{{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/google/{{ name }}/archive/{{ version }}.tar.gz
+  sha256: ac07840513072b7fcebda6e821068aa04889018f24e10e46181068fb214d7e56
+
+build:
+  number: 0
+  run_exports:
+    - {{ pin_subpackage("libcrc32c", max_pin="x.x") }}
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - cmake
+    - ninja
+  host:
+  run:
+
+test:
+  commands:
+    - test -f $PREFIX/lib/libcrc32c${SHLIB_EXT}  # [unix]
+    - test -f $PREFIX/include/crc32c/crc32c.h  # [unix]
+    - test -f $PREFIX/lib/cmake/Crc32c/Crc32cTargets.cmake  # [unix]
+    - if not exist %PREFIX%\\Library\\bin\\crc32c.dll exit 1  # [win]
+    - if not exist %PREFIX%\\Library\\lib\\crc32c.lib exit 1  # [win]
+    - if not exist %PREFIX%\\Library\\include\\crc32c\\crc32c.h exit 1  # [win]
+
+about:
+  home: https://github.com/google/crc32c
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: CRC32C implementation with support for CPU-specific acceleration instructions
+
+extra:
+  recipe-maintainers:
+    - xhochy
+    - tswast

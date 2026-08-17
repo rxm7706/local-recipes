@@ -1,0 +1,41 @@
+{% set name = "eerepr" %}
+{% set version = "0.1.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/eerepr-{{ version }}.tar.gz
+  sha256: 304dc23c365d6fa7cc3b07bc09cf77b565c19af86733e5deed804fdce16fb51f
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - hatchling
+    - setuptools-scm
+  run:
+    - python >={{ python_min }}
+    - earthengine-api
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - eerepr
+
+about:
+  home: https://github.com/aazuspan/eerepr
+  summary: Code Editor-style reprs for Earth Engine data in a Jupyter notebook.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - aazuspan

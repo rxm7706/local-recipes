@@ -1,0 +1,46 @@
+{% set name = "latex2mathml" %}
+{% set version = "3.77.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/latex2mathml-{{ version }}.tar.gz
+  sha256: e2f501d1878f2e489c3f6f12786bef74c62f712d2770f7f3c837eb20a55d0a1e
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+  entry_points:
+    - latex2mathml = latex2mathml.converter:main
+    - l2m = latex2mathml.converter:main
+
+requirements:
+  host:
+    - python >=3.8,<4.0
+    - poetry-core
+    - pip
+  run:
+    - python >=3.8,<4.0
+
+test:
+  imports:
+    - latex2mathml
+  commands:
+    - pip check
+    - latex2mathml -V
+    - l2m -V
+  requires:
+    - pip
+
+about:
+  home: https://github.com/roniemartinez/latex2mathml
+  summary: Pure Python library for LaTeX to MathML conversion
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - '0xbe7a'

@@ -1,0 +1,47 @@
+{% set name = "saspy" %}
+{% set version = "5.108.6" %}
+{% set hash_val = "9e949888f66d8227e27e53e1e5ddb4f65d434e2e3cbc04a2d38609d73a3af349" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('_', '-') }}-{{ version }}.tar.gz
+  sha256: {{ hash_val }}
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - ipython >=4
+    - pygments
+    - pandas
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - saspy
+
+about:
+  home: https://github.com/sassoftware/saspy
+  license: Apache-2.0
+  license_family: Apache
+  license_file: {{ environ["RECIPE_DIR"] }}/LICENSE
+  summary: A Python interface module to the SAS System
+
+extra:
+  recipe-maintainers:
+    - tomweber-sas
+    - DMcGee-SAS
+    - pecarmon-sas

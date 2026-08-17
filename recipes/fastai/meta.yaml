@@ -1,0 +1,64 @@
+{% set name = "fastai" %}
+{% set version = "2.8.7" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/fastai-{{ version }}.tar.gz
+  sha256: 93be109daab077a73279bb2aba27fa72a206bbf055b0f1921475afde69b7705f
+
+build:
+  entry_points:
+    - configure_accelerate=fastai.distributed:configure_accelerate
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - pip
+    - packaging
+    - fastdownload >=0.0.5,<2
+    - fastcore >=1.8.0
+    - fasttransform >=0.0.2
+    - torchvision >=0.11
+    - matplotlib-base
+    - pandas
+    - requests
+    - pyyaml
+    - fastprogress >=0.2.4
+    - pillow >=9.0.0
+    - scikit-learn
+    - scipy
+    - spacy <4
+    - plum-dispatch
+    - cloudpickle
+    - pytorch >=1.10,<3
+
+test:
+  imports:
+    - fastai
+  # commands:
+  #   - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/fastai/fastai
+  summary: fastai simplifies training fast and accurate neural nets using modern best practices
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - tonyhoo
+    - giswqs

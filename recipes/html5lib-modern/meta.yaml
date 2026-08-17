@@ -32,12 +32,17 @@ test:
     - pip
 
 about:
-  home: https://github.com/html5lib/html5lib-python
-  summary: HTML parser based on the WHATWG HTML specification
+  home: https://github.com/ashleysommer/html5lib-modern
+  summary: Python 3 version of html5lib-python HTML parser based on the WHATWG HTML specification
   license: MIT
   license_file:
     - LICENSE
     - html5lib/tests/testdata/LICENSE
+  description: |
+    Python 3 version of the standards-compliant library for parsing and serializing HTML documents and fragments in Python.
+    This is a fork of the html5lib project https://github.com/html5lib/html5lib-python
+    with the intention to make this new release available for users without the overhead of python2.7 support, or the dependency on the six library.
+    This release is a snapshot of the v1.2-dev codebase plus the addition of the "remove python 2.7" work and the "remove six" work. This version of html5lib works only on Python 3.8 and newer.
 
 extra:
   recipe-maintainers:

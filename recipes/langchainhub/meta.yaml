@@ -1,0 +1,46 @@
+{% set name = "langchainhub" %}
+{% set version = "0.1.21" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/langchainhub-{{ version }}.tar.gz
+  sha256: 723383b3964a47dbaea6ad5d0ef728accefbc9d2c07480e800bdec43510a8c10
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - poetry-core
+    - pip
+  run:
+    - packaging >=23.2,<25
+    - python >={{ python_min }},<4.0
+    - requests >=2.0.0,<3.0.0
+    - types-requests >=2.31.0,<3.0.0
+    - typing-extensions
+
+test:
+  imports:
+    - langchainhub
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  summary: The LangChain Hub API client
+  home: https://github.com/hwchase17/langchain-hub
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

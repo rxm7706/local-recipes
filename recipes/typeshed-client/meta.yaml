@@ -1,0 +1,46 @@
+{% set name = "typeshed-client" %}
+{% set version = "2.13.0" %}
+{% set python_min = "3.9" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/typeshed_client-{{ version }}.tar.gz
+  sha256: 85ce73be98a5e3a51cafb2e2921653e3759ce7e9d1530adcca935dec201152f2
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=42
+    - wheel
+    - pip
+  run:
+    - python >={{ python_min }}
+    - importlib-resources >=1.4.0
+    - typing-extensions >=4.5.0
+
+test:
+  imports:
+    - typeshed_client
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/JelleZijlstra/typeshed_client
+  summary: A library for accessing stubs in typeshed.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - JelleZijlstra

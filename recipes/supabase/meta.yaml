@@ -1,0 +1,60 @@
+{% set name = "supabase" %}
+{% set version = "2.31.0" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 3467b09d00482b9a0138235bdbde7a350426f93cf2a1342372eaddfc669f1206
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - poetry-core >=1.0.0
+    - pip
+    - uv-build
+  run:
+    - yarl >=1.22.0
+    - supabase-auth ==2.31.0
+    - supabase-functions ==2.31.0
+    - typing_extensions >=4.12.2,<5.0.0
+    - typing-extensions >=4.12.2,<5.0.0
+    - python >={{ python_min }},<4.0.0
+    - postgrest ==2.31.0
+    - realtime ==2.31.0
+    - gotrue >=2.11.0,<3.0.0
+    - httpx >=0.26,<0.29
+    - storage3 ==2.31.0
+    - supafunc >=0.9,<0.11
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+  imports:
+    - supabase
+
+about:
+  home: https://github.com/supabase/supabase-py
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Python Client for Supabase
+  description: |
+    Python Client for Supabase
+
+extra:
+  recipe-maintainers:
+    - timkpaine
+    - J0
+    - anand2312

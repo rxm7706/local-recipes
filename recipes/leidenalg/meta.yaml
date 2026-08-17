@@ -1,0 +1,67 @@
+{% set name = "leidenalg" %}
+{% set version = "0.12.0" %}
+{% set sha256 = "c81a45a2fb874fe71e903d43a869d0efeb7f907af70476c03f6945ef0e8f44c5" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 0
+  skip: true  # [win and vc<14]
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - {{ compiler('cxx') }}
+
+  host:
+    - libleidenalg >=0.13
+    - python
+    - setuptools
+    - setuptools_scm
+    - pip
+  run:
+    - python-igraph
+    - python
+    - pip
+
+test:
+  requires:
+    - ddt
+  source_files:
+    - tests
+  imports:
+    - leidenalg
+  commands:
+    - python -m unittest -v --locals
+
+about:
+  home: https://github.com/vtraag/leidenalg
+  license: GPL-3.0-or-later
+  license_family: GPL
+  license_file: LICENSE
+  summary: Implementation of the Leiden algorithm for various methods for use with igraph in python.
+  description: |
+    This package implements the Leiden algorithm in C++ and
+    exposes it to python. It relies on (python-)igraph for it to
+    function. Besides the relative flexibility of the
+    implementation, it also scales well, and can be run on graphs
+    of millions of nodes (as long as they can fit in memory).
+    The core function is find_partition which is able to optimize a
+    variety of quality functions using the Leiden algorithm.
+  doc_url: http://leidenalg.readthedocs.io/
+  dev_url: https://github.com/vtraag/leidenalg
+
+extra:
+  recipe-maintainers:
+    - vtraag

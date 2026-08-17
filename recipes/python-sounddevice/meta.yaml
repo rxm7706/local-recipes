@@ -1,0 +1,54 @@
+{% set name = "python-sounddevice" %}
+{% set pypi_name = "sounddevice" %}
+{% set version = "0.5.5" %}
+{% set sha256 = "22487b65198cb5bf2208755105b524f78ad173e5ab6b445bdab1c989f6698df3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ pypi_name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ pypi_name[0] }}/{{ pypi_name }}/{{ pypi_name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - cffi                                   # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - python                                 # [build_platform != target_platform]
+    - setuptools
+  host:
+    - cffi
+    - pip
+    - python
+    - setuptools
+  run:
+    - cffi
+    - portaudio
+    - numpy
+    - python
+
+test:
+  requires:
+    - python
+  imports:
+    - sounddevice
+
+about:
+  home: https://python-sounddevice.readthedocs.io/
+  license: MIT
+  license_family: MIT
+  license_file: {{ environ["RECIPE_DIR"] }}/LICENSE
+  summary: Play and Record Sound with Python
+  dev_url: https://github.com/spatialaudio/python-sounddevice/
+
+extra:
+  recipe-maintainers:
+    - MementoRC
+    - tyrius02
+    - scopatz

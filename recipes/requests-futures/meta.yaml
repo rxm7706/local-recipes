@@ -1,0 +1,45 @@
+{% set python_min = "3.7" %}
+{% set name = "requests-futures" %}
+{% set version = "1.0.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 6b7eb57940336e800faebc3dab506360edec9478f7b22dc570858ad3aa7458da
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation 
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=38.6.1
+    - pip
+  run:
+    - python >={{ python_min }}
+    - requests >=1.2.0
+
+test:
+  imports:
+    - requests_futures
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/ross/requests-futures
+  summary: Asynchronous Python HTTP for Humans.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - ocefpaf

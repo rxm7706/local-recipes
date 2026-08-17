@@ -1,0 +1,47 @@
+{% set name = "asyncstdlib" %}
+{% set version = "3.14.0" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/asyncstdlib-{{ version }}.tar.gz
+  sha256: f99396992a3bba7495d8cf6c832bfe8c8727f61213233d3569a5a9cbd1c04385
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  noarch: python
+
+requirements:
+  host:
+    - flit-core
+    - pip
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - asyncstdlib
+  requires:
+    - pip
+    - pytest
+    - python {{ python_min }}
+  source_files:
+    - unittests
+  commands:
+    - pip check
+    - pytest unittests
+
+about:
+  home: https://github.com/maxfischer2781/asyncstdlib
+  summary: The missing async toolbox
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - maxfischer2781

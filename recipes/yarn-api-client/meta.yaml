@@ -1,0 +1,52 @@
+{% set name = "yarn-api-client" %}
+
+{% set version = "1.0.2" %}
+{% set sha256 = "e04a3670fdae5c20d53fc10e125db8b000f4cb085844444eecd82b00f5e18c7a" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 2
+  noarch: python
+  script: "{{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv"
+
+requirements:
+  host:
+    - python
+    - pip
+
+  run:
+    - python
+    - requests >=2.7,<3.0
+    - requests-kerberos
+
+test:
+  imports:
+    - yarn_api_client
+
+  commands:
+    - python -m yarn_api_client --help
+    - python -c "from yarn_api_client import ApplicationMaster, HistoryServer, NodeManager, ResourceManager"
+
+about:
+  home: https://python-client-for-hadoop-yarn-api.readthedocs.io/en/latest/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Python client for Hadoop® YARN API
+  doc_url: https://python-client-for-hadoop-yarn-api.readthedocs.io/en/latest/
+  dev_url: https://github.com/CODAIT/hadoop-yarn-api-python-client.git
+
+extra:
+  recipe-maintainers:
+    - dimon222
+    - kevin-bates
+    - lresende
+    - toidi

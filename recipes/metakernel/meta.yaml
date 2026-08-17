@@ -1,0 +1,55 @@
+{% set version = "1.0.0" %}
+{% set python_min = "3.11" %}
+
+package:
+  name: metakernel
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/metakernel/metakernel-{{ version }}.tar.gz
+  sha256: 76f2b8926cbad5a089deb6f727399c4e34e8915af97896a8bb7968ebe02da21c
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - poetry >=2.3.1
+  run:
+    - ipykernel >5.5.6
+    - jedi >=0.18
+    - jupyter_core >=4.9.2
+    - pexpect >=4.8
+    - python >={{ python_min }}
+    # extras
+    - ipyparallel
+    - portalocker
+
+test:
+  imports:
+    - metakernel
+    - metakernel.magics
+    - metakernel.utils
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/Calysto/metakernel
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Metakernel for Jupyter.
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - ericdill
+    - mariusvniekerk
+    - blink1073
+    - dsblank

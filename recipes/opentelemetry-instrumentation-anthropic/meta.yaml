@@ -1,0 +1,52 @@
+{% set name = "opentelemetry-instrumentation-anthropic" %}
+{% set version = "0.62.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/opentelemetry_instrumentation_anthropic-{{ version }}.tar.gz
+  sha256: 54246ab1208aa33e1dd79d4aff1621e73ebc14cd98762798af029e1fc53c0266
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - opentelemetry-api >=1.38.0,<2.0.0
+    - opentelemetry-instrumentation >=0.59b0
+    - opentelemetry-semantic-conventions >=0.59b0
+    - opentelemetry-semantic-conventions-ai >=0.5.1,<0.6.0
+    - typing_extensions
+  run_constrained:
+    - anthropic >=0.36.0
+
+test:
+  imports:
+    - opentelemetry.instrumentation.anthropic
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+    - anthropic
+
+about:
+  home: https://www.traceloop.com/openllmetry
+  dev_url: https://github.com/traceloop/openllmetry
+  doc_url: https://www.traceloop.com/docs/openllmetry/introduction
+  summary: OpenTelemetry Anthropic instrumentation
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - timkpaine

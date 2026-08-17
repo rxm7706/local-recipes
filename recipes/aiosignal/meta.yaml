@@ -1,0 +1,45 @@
+{% set name = "aiosignal" %}
+{% set version = "1.4.0" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/aiosignal-{{ version }}.tar.gz
+  sha256: f47eecd9468083c2029cc99945502cb7708b082c232f9aca65da147157b251c7
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools >=51.0
+    - pip
+  run:
+    - python >={{ python_min }}
+    - frozenlist >=1.1.0
+    - typing_extensions >=4.2
+
+test:
+  imports:
+    - aiosignal
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/aio-libs/aiosignal
+  summary: 'aiosignal: a list of registered asynchronous callbacks'
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

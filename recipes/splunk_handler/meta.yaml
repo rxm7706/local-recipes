@@ -1,0 +1,53 @@
+{% set name = "splunk_handler" %}
+{% set version = "3.0.0" %}
+{% set sha256 = "a835b0a7161148aceb977301c6dba21bb96e7635279c7e90e0216c78a4bcbb24" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - requests >=2.6.0,<3.0.0
+
+test:
+  requires:
+    - python {{ python_min }}
+    - pip
+  commands:
+    - pip check
+  imports:
+    - splunk_handler
+
+about:
+  home: https://github.com/zach-taylor/splunk_handler
+  doc_url: https://github.com/zach-taylor/splunk_handler
+  dev_url: https://github.com/zach-taylor/splunk_handler
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: 'A Python logging handler that sends your logs to Splunk'
+
+  description: |
+      Splunk Handler is a Python Logger for sending logged events to an installation
+      of Splunk Enterprise. This logger requires the destination Splunk Enterprise 
+      server to have enabled and configured the Splunk HTTP Event Collector.
+
+extra:
+  recipe-maintainers:
+    - sodre
+    - soapy1

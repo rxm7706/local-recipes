@@ -1,0 +1,52 @@
+{% set name = "lime" %}
+{% set version = "0.2.0.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/lime-{{ version }}.tar.gz
+  sha256: 76960e4f055feb53e89b5022383bafc87b63f25bac6265984b0a333d1a57f781
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 2
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - matplotlib-base
+    - numpy
+    - scipy
+    - tqdm
+    - scikit-learn >=0.18
+    - scikit-image >=0.12
+
+test:
+  imports:
+    - lime
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/marcotcr/lime
+  license: BSD-2-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Explaining the predictions of any machine learning classifier
+  doc_url: https://lime-ml.readthedocs.io/
+  dev_url: https://github.com/marcotcr/lime
+
+extra:
+  recipe-maintainers:
+    - proinsias
+    - ocefpaf

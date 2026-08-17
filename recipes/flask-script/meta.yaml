@@ -1,0 +1,46 @@
+{% set name = "Flask-Script" %}
+{% set version = "2.0.6" %}
+{% set bundle = "tar.gz" %}
+{% set hash_type = "sha256" %}
+{% set hash = "6425963d91054cfcc185807141c7314a9c5ad46325911bd24dcb489bd0161c65" %}
+{% set build = 0 %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.{{ bundle }}
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.{{ bundle }}
+  {{ hash_type }}: {{ hash }}
+
+build:
+  noarch: python
+  number: {{ build }}
+  script: python setup.py install --single-version-externally-managed --record=record.txt
+
+requirements:
+  build:
+    - python
+    - setuptools
+
+  run:
+    - python
+    - flask
+
+test:
+  imports:
+    - flask_script
+
+about:
+  home: http://github.com/smurfix/flask-script
+  license: BSD 3-Clause
+  license_file: LICENSE
+  license_family: BSD
+  summary: 'Scripting support for Flask'
+  dev_url: http://github.com/smurfix/flask-script
+  doc_url: https://flask-script.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr

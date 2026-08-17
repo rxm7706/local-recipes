@@ -1,0 +1,43 @@
+{% set name = "pefile" %}
+{% set version = "2024.8.26" %}
+{% set hash = "3ff6c5d8b43e8c37bb6e6dd5085658d658a7a0bdcd20b6a07b1fcfc1c4e9d632" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ hash }}
+
+build:
+  noarch: python
+  number: 1
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - pefile
+    - peutils
+    - ordlookup
+
+about:
+  home: https://github.com/erocarrera/pefile
+  license: MIT
+  license_file: LICENSE
+  summary: pefile is a Python module to read and work with PE (Portable Executable) files
+
+extra:
+  recipe-maintainers:
+    - nicoddemus

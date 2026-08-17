@@ -1,5 +1,5 @@
 {% set name = "azure-core-tracing-opentelemetry" %}
-{% set version = "1.0.0b12" %}
+{% set version = "1.0.0b13" %}
 
 package:
   name: {{ name|lower }}
@@ -7,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/azure_core_tracing_opentelemetry-{{ version }}.tar.gz
-  sha256: bb454142440bae11fd9d68c7c1d67ae38a1756ce808c5e4d736730a7b4b04144
+  sha256: 6cb2f8dfd5dee6c11843db0205fc92e2434e1a272c169c953afe92483aafc7eb
 
 build:
   noarch: python
@@ -20,7 +20,7 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >={{ python_min }},<4.0
+    - python >={{ python_min }}
     - opentelemetry-api <2.0.0,>=1.12.0
     - azure-core <2.0.0,>=1.24.0
 
@@ -44,4 +44,3 @@ extra:
   recipe-maintainers:
     - rxm7706
     - conda-forge/opentelemetry-api
-    - conda-forge/opentelemetry-sdk

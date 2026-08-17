@@ -1,0 +1,85 @@
+{% set name = "msgspec" %}
+{% set version = "0.21.1" %}
+
+package:
+  name: {{ name|lower }}-split
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 2313508e394b0d208f8f56892ca9b2799e2561329de9763b19619595a6c0f72c
+
+build:
+  number: 0
+
+outputs:
+  - name: msgspec
+    version: {{ version }}
+    build:
+      skip: true  # [py<38]
+      script: python -m pip install . -vv
+    requirements:
+      build:
+        - python                                 # [build_platform != target_platform]
+        - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+        - {{ compiler('c') }}
+        - {{ stdlib("c") }}
+      host:
+        - python
+        - setuptools >=80
+        - setuptools-scm >=8
+        - pip
+      run:
+        - python
+    test:
+      requires:
+        - pip
+        - python
+      imports:
+        - msgspec
+      commands:
+        - pip check
+        - python -c "from importlib.metadata import version; print(version('{{ name }}'))"
+        - python -c "from importlib.metadata import version; assert '{{ version }}' == version('{{ name }}')"
+
+  - name: msgspec-yaml
+    version: {{ version }}
+    requirements:
+      run:
+        - {{ pin_subpackage(name) }}
+        - pyyaml
+    test:
+      imports:
+        - msgspec
+
+  - name: msgspec-toml
+    version: {{ version }}
+    requirements:
+      run:
+        - {{ pin_subpackage(name) }}
+        - tomli    # [py<311]
+        - tomli-w
+    test:
+      imports:
+        - msgspec
+
+about:
+  home: https://jcristharif.com/msgspec/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: |
+    A fast serialization and validation library, with builtin support for JSON,
+    MessagePack, YAML, and TOML.
+  description: |
+    `msgspec` is a fast serialization and validation library for Python,
+    supporting JSON, MessagePack, YAML, and TOML. It integrates well with
+    Python's type annotations, providing ergonomic (and performant!) schema
+    validation.
+  doc_url: https://jcristharif.com/msgspec/
+  dev_url: https://github.com/jcrist/msgspec
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - jcrist

@@ -1,0 +1,49 @@
+{% set name = "cachy" %}
+{% set version = "0.3.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/cachy-{{ version }}.tar.gz
+  sha256: 186581f4ceb42a0bbe040c407da73c14092379b1e4c0e327fdb72ae4a9b269b1
+  patches:
+    # Do not package tests as a module.
+    - remove_tests.patch
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 2
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - cachy
+    - cachy.contracts
+    - cachy.serializers
+    - cachy.stores
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/sdispater/cachy
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Cachy provides a simple yet effective caching library
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

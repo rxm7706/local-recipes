@@ -1,0 +1,44 @@
+{% set name = "cma" %}
+{% set version = "4.0.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: fd28ce56983bf2fca0e614189d60134ebb80bf604f070d1ea095ea4e856f13a5
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  noarch: python
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+    - numpy
+  run:
+    - python >=3.6
+    - numpy
+
+test:
+  imports:
+    - cma
+    - cma.utilities
+
+about:
+  home: https://github.com/CMA-ES/pycma
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: CMA-ES, Covariance Matrix Adaptation Evolution Strategy for non-linear numerical optimization in Python
+  doc_url: http://cma.gforge.inria.fr/apidocs-pycma/
+  description: |
+    The Covariance Matrix Adaptation Evolution Strategy (CMA-ES) is a stochastic derivative-free numerical 
+    optimization algorithm for difficult (non-convex, ill-conditioned, multi-modal, rugged, noisy) optimization
+    problems in continuous search spaces.
+extra:
+  recipe-maintainers:
+    - rpanai

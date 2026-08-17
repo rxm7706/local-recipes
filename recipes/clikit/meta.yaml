@@ -1,0 +1,51 @@
+{% set name = "clikit" %}
+{% set version = "0.6.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/clikit-{{ version }}.tar.gz
+  sha256: 442ee5db9a14120635c5990bcdbfe7c03ada5898291f0c802f77be71569ded59
+  patches:
+    - 0000-no-extras.patch
+
+build:
+  noarch: python
+  script: 
+    - {{ PYTHON }} -c "__import__('pathlib').Path('pyproject.toml').unlink()"
+    - {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 3
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - pastel >=0.2.0,<0.3.0
+    - pylev >=1.3,<2.0
+
+test:
+  imports:
+    - clikit
+    - clikit.adapter
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/sdispater/clikit
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: CliKit is a group of utilities to build beautiful and testable command line interfaces.
+
+extra:
+  recipe-maintainers:
+    - roccqqck
+    - ocefpaf

@@ -1,0 +1,65 @@
+{% set name = "jupyter-sphinx" %}
+{% set package = "jupyter_sphinx" %}
+{% set version = "0.5.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ package }}-{{ version }}.tar.gz
+  sha256: 2e23699a3a1cf5db31b10981da5aa32606ee730f6b73a844d1e76d800756af56
+
+build:
+  number: 5
+
+outputs:
+  - name: {{ name }}
+    build:
+      script: python -m pip install . -vv --no-deps --ignore-installed
+      noarch: python
+    requirements:
+      host:
+        - pip
+        - python {{ python_min }}
+        - hatchling
+      run:
+        - python >={{ python_min }}
+        - ipykernel >=4.5.1
+        - ipython
+        - ipywidgets >=7.0.0
+        - nbconvert >=5.5
+        - nbformat
+        - sphinx >=7
+    test:
+      requires:
+        - python {{ python_min }}
+      imports:
+        - jupyter_sphinx
+
+  # alias to deprecate the jupyter_sphinx feedstock
+  - name: jupyter_sphinx
+    build:
+      noarch: python
+    requirements:
+      run:
+        - {{ pin_subpackage(name, exact=True) }}
+    test:
+      requires:
+        - python {{ python_min }}
+      imports:
+        - jupyter_sphinx
+
+about:
+  home: https://github.com/jupyter/jupyter-sphinx/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Sphinx extension for rendering of Jupyter interactive widgets.
+  doc_url: https://jupyter-sphinx.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - akhmerov
+    - chrisjsewell
+    - 12rambau

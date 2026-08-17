@@ -1,42 +1,49 @@
 {% set name = "questionary" %}
-{% set version = "2.0.1" %}
+{% set version = "2.1.1" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/questionary-{{ version }}.tar.gz
-  sha256: bcce898bf3dbb446ff62830c86c5c6fb9a22a54146f0f5597d3da43b10d8fc8b
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 3d7e980292bb0107abaa79c68dd3eee3c561b83a0f89ae482860b181c8bd412d
 
 build:
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
+  script: {{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python >=3.8
-    - poetry-core
+    - python {{ python_min }}
     - pip
+    - poetry >=1.0.5
   run:
-    - python >=3.8
-    - prompt_toolkit >=2.0,<=3.0.36
+    - python >={{ python_min }}
+    - prompt_toolkit >=2.0,<4.0
 
 test:
   imports:
     - questionary
-  commands:
-    - pip check
+    - questionary.prompts
   requires:
     - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
 
 about:
   home: https://github.com/tmbo/questionary
-  summary: Python library to build pretty command line user prompts ⭐️
   license: MIT
+  license_family: MIT
   license_file: LICENSE
+  summary: Python library to build pretty command line prompts.
+  description: Easy to use multi-select lists, confirmations, free text prompts...
+  doc_url: https://github.com/tmbo/questionary#documentation
+  dev_url: https://github.com/tmbo/questionary
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - apeltzer
+    - ewels

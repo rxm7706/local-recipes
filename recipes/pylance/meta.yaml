@@ -1,44 +1,56 @@
 {% set name = "pylance" %}
-{% set version = "0.8.18" %}
+{% set version = "10.0.0" %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://github.com/lancedb/lance/archive/v{{ version }}.tar.gz
-  sha256: 81decad26f1c0f57082fc1562d398852bd2232c6222976a82eec1aa77f5ce5cc
+  url: https://github.com/lancedb/lance/archive/refs/tags/v{{ version }}.tar.gz
+  sha256: 21dd573c29e0a0b35f6662a7c27bd1e13ef3e5e295f9425056be67de3d81d882
 
 build:
-  noarch: python
-  script: {{ PYTHON }} -m pip install ./python -vv --no-deps --no-build-isolation
   number: 0
+  skip: true  # [py<39]
 
 requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - maturin <2                             # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - {{ compiler('rust') }}
+    - cargo-bundle-licenses
+    - libprotobuf
   host:
-    - python >=3.8
-    - maturin >=0.14,<0.15
+    - python
     - pip
+    - maturin <2
+    - openssl
   run:
-    - python >=3.8
-    - pyarrow >=10
+    - python
     - numpy >=1.22
+    - pyarrow >=14
+    - lance-namespace >=0.8.5,<0.9
 
 test:
   imports:
-    - pylance
+    - lance
   commands:
     - pip check
   requires:
     - pip
 
 about:
+  home: https://github.com/lancedb/lance
   summary: python wrapper for Lance columnar format
   license: Apache-2.0
   license_file:
     - LICENSE
     - python/LICENSE
+    - THIRDPARTY.yml
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - yhori991

@@ -1,0 +1,46 @@
+{% set name = "lml" %}
+{% set version = "0.2.0" %}
+{% set sha256 = "8dd5afb4367a593d1cdb2144a05874cd9938f5266bebb0c9e1413200423c0d74" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 0
+  script: python -m pip install . --no-deps --ignore-installed
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - lml
+
+about:
+  home: https://github.com/chfw/lml.git
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: {{ environ["RECIPE_DIR"] }}/LICENSE
+  summary: Load me later. A lazy loading plugin management system.
+  doc_url: http://lml.readthedocs.io/en/latest/
+  dev_url: https://github.com/chfw/lml.git
+
+extra:
+  recipe-maintainers:
+    - williamjamir
+    - nicoddemus

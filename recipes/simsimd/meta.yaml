@@ -1,0 +1,67 @@
+{% set name = "numkong" %}
+{% set version = "7.7.0" %}
+
+package:
+  name: numkong-with-alias
+  version: {{ version }}
+
+source:
+  url: https://github.com/ashvardanian/NumKong/archive/v{{ version }}.tar.gz
+  sha256: 5a93b73d1aa551dff05bb5ba3520977fba64ac2ce10036d525db831cedd26bf2
+
+build:
+  number: 0
+
+outputs:
+  - name: numkong
+    build:
+      script: python -m pip install . -vv --no-deps --no-build-isolation
+    requirements:
+      build:
+        - python                                 # [build_platform != target_platform]
+        - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+        - {{ compiler('c') }}
+        - {{ stdlib("c") }}
+        - llvm-openmp                    # [osx]
+        - libgomp                        # [linux]
+      host:
+        - python
+        - setuptools
+        - wheel
+        - pip
+        - llvm-openmp                    # [osx]
+        - libgomp                        # [linux]
+      run:
+        - python
+        - _openmp_mutex
+
+    test:
+      requires:
+        - pip
+      imports:
+        - numkong
+      commands:
+        - pip check
+
+  - name: simsimd
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - {{ pin_subpackage(name, exact=True) }}
+    test:
+      requires:
+        - python
+      imports:
+        - numkong
+
+about:
+  home: https://github.com/ashvardanian/NumKong
+  summary: Portable mixed-precision BLAS-like vector math library for x86 and ARM
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - mukhery

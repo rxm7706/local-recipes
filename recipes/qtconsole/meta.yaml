@@ -1,0 +1,89 @@
+{% set version = "5.7.2" %}
+{% set python_min = "3.10" %}
+
+package:
+  name: qtconsole-base
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/q/qtconsole/qtconsole-{{ version }}.tar.gz
+  sha256: 27b485b9161925924c1d8e78e66bb342e6e3bc49bf675d0a67b49bad9c291521
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  entry_points:
+    - jupyter-qtconsole = qtconsole.qtconsoleapp:main
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - traitlets
+    - jupyter_core
+    - jupyter_client >=4.1
+    - pygments
+    - ipykernel >=4.1  # not a real dependency, but require the reference kernel
+    - ipython_pygments_lexers
+    - qtpy >=2.4.0
+    - packaging
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - qtconsole
+    - qtconsole.tests
+
+outputs:
+  - name: qtconsole-base
+  - name: qtconsole
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python {{ python_min }}
+        - {{ pin_subpackage('qtconsole-base', max_pin='x.x.x') }}
+      run:
+        - python >={{ python_min }}
+        - {{ pin_subpackage('qtconsole-base', max_pin='x.x.x') }}
+        - pyqt
+    test:
+      requires:
+        - python {{ python_min }}
+      commands:
+        - DISPLAY=localhost:1.0 xvfb-run -a bash -c 'jupyter qtconsole --help'
+
+about:
+  home: http://jupyter.org
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Jupyter Qt console
+  description: |
+    A rich Qt-based console for working with Jupyter kernels, supporting rich
+    media output, session export, and more. The Qt console is a very
+    lightweight application that largely feels like a terminal, but provides
+    a number of enhancements only possible in a GUI, such as inline figures,
+    proper multiline editing with syntax highlighting, graphical calltips, and
+    more.
+  doc_url: https://qtconsole.readthedocs.org/en/stable/
+  dev_url: https://github.com/jupyter/qtconsole
+  doc_source_url: https://github.com/jupyter/qtconsole/tree/master/docs
+
+extra:
+  recipe-maintainers:
+    - dalthviz
+    - Carreau
+    - ccordoba12
+    - jakirkham
+    - minrk
+    - takluyver
+    - ocefpaf
+  feedstock-name: qtconsole

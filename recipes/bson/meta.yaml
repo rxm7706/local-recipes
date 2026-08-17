@@ -1,0 +1,44 @@
+{% set name = "bson" %}
+{% set version = "0.5.10" %}
+{% set sha256 = "d6511b2ab051139a9123c184de1a04227262173ad593429d21e443d6462d6590" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - six
+    - python-dateutil >=2.4.0
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - bson
+
+about:
+  summary: Independent BSON codec for Python that doesn't depend on MongoDB.
+  home: https://github.com/py-bson/bson
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - ChrisBarker-NOAA

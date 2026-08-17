@@ -1,27 +1,29 @@
 {% set name = "json5" %}
-{% set version = "0.9.14" %}
+{% set version = "0.15.0" %}
+{% set python_min = python_min|default("3.8") %}
 
 package:
   name: {{ name|lower }}
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/json5-{{ version }}.tar.gz
-  sha256: 9ed66c3a6ca3510a976a9ef9b8c0787de24802724ab1860bc0153c7fdd589b02
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/json5-{{ version }}.tar.gz
+  sha256: 7424d1f1eb1d56da6e3d70643f53619862b4ce81440bdb8ecfd6f875e5ba4a71
 
 build:
   entry_points:
     - pyjson5=json5.tool:main
   noarch: python
-  script: {{ PYTHON }} -m pip install . -vv
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
 
 requirements:
   host:
-    - python >=3.7,<4.0
+    - python {{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=3.7,<4.0
+    - python >={{ python_min }}
 
 test:
   imports:
@@ -30,6 +32,7 @@ test:
     - pip check
     - pyjson5 --help
   requires:
+    - python {{ python_min }}
     - pip
 
 about:
@@ -40,5 +43,5 @@ about:
 
 extra:
   recipe-maintainers:
-    - ian-r-rose
     - rxm7706
+    - ian-r-rose

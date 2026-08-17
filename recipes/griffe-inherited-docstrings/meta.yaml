@@ -1,0 +1,44 @@
+{% set name = "griffe-inherited-docstrings" %}
+{% set version = "1.1.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/griffe_inherited_docstrings-{{ version }}.tar.gz
+  sha256: cd1f937ec9336a790e5425e7f9b92f5a5ab17f292ba86917f1c681c0704cb64e
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pdm-backend
+    - pip
+  run:
+    - python >={{ python_min }}
+    - griffe >=0.49
+
+test:
+  imports:
+    - griffe_inherited_docstrings
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/mkdocstrings/griffe-inherited-docstrings
+  summary: Griffe extension for inheriting docstrings.
+  license: ISC
+  license_file: LICENSE
+  doc_url: https://mkdocstrings.github.io/griffe-inherited-docstrings/
+
+extra:
+  recipe-maintainers:
+    - thomasmarwitz

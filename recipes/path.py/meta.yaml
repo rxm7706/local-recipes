@@ -1,0 +1,43 @@
+{% set name = "path.py" %}
+{% set version = "12.5.0" %}
+{% set checksum = "8d885e8b2497aed005703d94e0fd97943401f035e42a136810308bff034529a8" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  # path.py is a metapackage which depends on path, source is retained here
+  # to allow to update bot to bump the version
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ checksum }}
+
+build:
+  noarch: true
+  number: 0
+
+requirements:
+  run:
+    - python >=3.5
+    - path
+
+test:
+  imports:
+    - path
+
+about:
+  home: https://github.com/jaraco/path.py
+  license: MIT
+  license_file: LICENSE
+  summary: A module wrapper for os.path
+  description: |
+    path.py implements a path objects as first-class entities, allowing common
+    operations on files to be invoked on those path objects directly.
+  doc_url: https://pathpy.readthedocs.io/en/latest/
+  doc_source_url: https://github.com/jaraco/path.py/blob/master/docs/index.rst
+  dev_url: https://github.com/jaraco/path.py
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - nehaljwani

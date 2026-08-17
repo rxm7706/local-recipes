@@ -1,43 +1,58 @@
-{% set name = "pyicu" %}
-{% set version = "2.13.1" %}
+{% set version = "2.16.2" %}
 
 package:
-  name: {{ name|lower }}
+  name: pyicu
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/PyICU-{{ version }}.tar.gz
-  sha256: d4919085eaa07da12bade8ee721e7bbf7ade0151ca0f82946a26c8f4b98cdceb
+  url: https://pypi.org/packages/source/P/PyICU/pyicu-{{ version }}.tar.gz
+  sha256: 006d51e24b5ec76df6ec2130f3dde269c51db8b8cfebb7d45a427dde0d10aa52
 
 build:
-  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  skip: true  # [win]
 
 requirements:
   build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
     - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - {{ compiler('cxx') }}
+    # Also pin icu here so that the version is consistent with host.
+    # otherwise, finding the correct icu seems to fail on OSX-64
+    - icu
   host:
     - python
-    - setuptools
-    - wheel
     - pip
+    - setuptools
+    - icu
   run:
     - python
 
 test:
-  imports:
-    - icu
-  commands:
-    - pip check
   requires:
     - pip
+  commands:
+    - python -c "from icu import Locale;locale = Locale('pt_BR')"
+    - pip check
 
 about:
-  home: https://gitlab.pyicu.org/main/pyicu
-  summary: Python extension wrapping the ICU C++ API
+  home: https://github.com/ovalhub/pyicu
   license: MIT
   license_file: LICENSE
+  summary: Welcome to PyICU, a Python extension wrapping the ICU C++ libraries.
+
+  description: |
+    Welcome to PyICU, a Python extension wrapping the ICU C++ libraries.
+    ICU stands for "International Components for Unicode". These are the i18n
+    libraries of the Unicode Consortium. They implement much of the Unicode Standard,
+    many of its companion Unicode Technical Standards, and much of Unicode CLDR.
+  doc_url: https://gitlab.pyicu.org/main/pyicu
+  dev_url: https://gitlab.pyicu.org/main/pyicu
 
 extra:
   recipe-maintainers:
     - rxm7706
+    - cu8blank

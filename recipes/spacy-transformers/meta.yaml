@@ -1,0 +1,66 @@
+{% set version = "1.4.0" %}
+
+package:
+  name: spacy-transformers
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/spacy-transformers/spacy_transformers-{{ version }}.tar.gz
+  sha256: 73831fc941ce11e661d452099053c138a764da49c16d32231bd5d4ea679f55ef
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+  # pytorch on windows not yet in conda-forge
+  skip: true  # [win]
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython                                 # [build_platform != target_platform]
+    - numpy                                  # [build_platform != target_platform]
+    - {{ compiler("cxx") }}
+    - {{ stdlib("c") }}
+  host:
+    - cython >=0.25
+    - numpy
+    - pip
+    - python
+    - setuptools
+    - wheel
+  run:
+    - python
+    - pytorch >=1.8.0
+    - spacy >=3.5.0,<4.1.0
+    - spacy-alignments >=0.7.2,<1.0.0
+    - sentencepiece
+    - srsly >=2.4.0,<3.0.0
+    - transformers >=3.4.0,<4.53.3
+
+test:
+  requires:
+    - pytest
+    - pip
+  imports:
+    - spacy_transformers
+  commands:
+    - pip check
+    - python -m pytest -vv --color=yes --tb=native --pyargs spacy_transformers
+
+about:
+  home: https://spacy.io
+  license: MIT
+  license_file: LICENSE
+  summary: Use pretrained transformers like BERT, XLNet and GPT-2 in spaCy
+  description: |
+    This package provides spaCy components and architectures to use transformer
+    models via Hugging Face's transformers in spaCy. The result is convenient
+    access to state-of-the-art transformer architectures, such as BERT, GPT-2,
+    XLNet, etc.
+  doc_url: https://spacy.io/usage/embeddings-transformers
+  dev_url: https://github.com/explosion/spacy-transformers
+
+extra:
+  recipe-maintainers:
+    - conda-forge/spacy

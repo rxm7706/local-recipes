@@ -1,0 +1,50 @@
+{% set name = "google-apitools" %}
+{% set version = "0.5.35" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 911bc3698686c74187414c610ae30bd6e3c0a7404178fc6479ead6c420d2dd94
+
+build:
+  number: 0
+  noarch: python
+  entry_points:
+    - gen_client = apitools.gen.gen_client:main
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - setuptools
+  run:
+    - fasteners >=0.14
+    - httplib2 >=0.8
+    - oauth2client >=1.4.12
+    - python >={{ python_min }}
+    - six >=1.12.0
+
+test:
+  imports:
+    - apitools
+  commands:
+    - pip check
+    - gen_client --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://pypi.org/project/google-apitools/
+  summary: client libraries for humans
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - xhochy

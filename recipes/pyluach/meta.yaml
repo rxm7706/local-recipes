@@ -1,0 +1,40 @@
+{% set name = "pyluach" %}
+{% set version = "2.3.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: ec6e30669d1df50c9ca160486da44a8195bb4c7a5d3d533990d0c5b03accd281
+
+build:
+  noarch: python
+  number: 0
+  script: '{{ PYTHON }} -m pip install . -vv '
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+    - flit-core
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - pyluach
+
+about:
+  home: https://github.com/simlist/pyluach
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt
+  summary: Pyluach is a Python package for manipulating Hebrew dates, Gregorian-Hebrew calendar conversions, and other Jewish calendar related calculations.
+
+extra:
+  recipe-maintainers:
+    - Matt-BF

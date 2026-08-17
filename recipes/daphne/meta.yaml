@@ -1,0 +1,55 @@
+{% set name = "daphne" %}
+{% set version = "4.2.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 1c458f81926b37301cadc8ec1b6316d9a5db53fba061fc4826610395fe5d5c81
+
+build:
+  number: 0
+  entry_points:
+    - daphne = daphne.cli:CommandLineInterface.entrypoint
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+  noarch: python
+
+requirements:
+  host:
+    - pip
+    - setuptools
+    - python {{ python_min }}
+    - pytest-runner
+  run:
+    - asgiref >=3.5.2,<4
+    - autobahn >=22.4.2
+    - python >={{ python_min }}
+    - twisted >=22.4
+    # twisted[tls] extra dependencies
+    - pyopenssl >=16
+    - service_identity >=18.1
+    - idna >=2.4
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - daphne
+    - twisted.plugins
+  commands:
+    - daphne --help
+
+about:
+  home: https://github.com/django/daphne
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: Django ASGI (HTTP/WebSocket) server
+  dev_url: https://github.com/django/daphne
+
+extra:
+  recipe-maintainers:
+    - chrisbarber
+    - swainn

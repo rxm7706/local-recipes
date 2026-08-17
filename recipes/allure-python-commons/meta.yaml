@@ -1,0 +1,42 @@
+{% set name = "allure-python-commons" %}
+{% set version = "2.13.2" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 8a03681330231b1deadd86b97ff68841c6591320114ae638570f1ed60d7a2033
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+    - setuptools
+    - setuptools_scm
+  run:
+    - attrs >=16.0.0
+    - pluggy >=0.4.0
+    - python >=3.6
+
+test:
+  imports:
+    - allure
+    - allure_commons
+
+about:
+  home: https://github.com/allure-framework/allure-python
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Common module for integrate allure with python-based frameworks
+
+extra:
+  recipe-maintainers:
+    - nsoranzo

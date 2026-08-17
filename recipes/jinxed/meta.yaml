@@ -1,0 +1,48 @@
+{% set name = "jinxed" %}
+{% set version = "2.0.4" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: a92ac48923433c0a88577bb0479191788813fd5055ef17ff2b04a701a1b83f19
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+  noarch: python
+
+requirements:
+  host:
+    - pip
+    - python >=3.8
+    - setuptools
+    - wheel
+  run:
+    - __{{ target_os }}
+    {% if target_os == 'win' %}
+    - ansicon
+    {% endif %}
+    - python >=3.8
+
+test:
+  imports:
+    - jinxed
+    - jinxed.terminfo
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://pypi.org/project/jinxed/
+  summary: Jinxed Terminal Library
+  license: MPL-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - mattip

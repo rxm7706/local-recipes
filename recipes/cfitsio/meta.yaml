@@ -1,0 +1,63 @@
+{% set name = "cfitsio" %}
+{% set version = "4.7.0" %}
+{% set sha256 = "ce573bbea8e75b429f8c3d3e86498741ba3dc9628a1530d2f65268397ad059e8" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  url: https://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 0
+  run_exports:
+    - {{ pin_subpackage('cfitsio', max_pin='x.x.x') }}
+  ignore_run_exports_from:
+    - {{ compiler("cxx") }}  # CMake needs this, but CFITSIO itself does not
+
+requirements:
+  build:
+    - {{ compiler("c") }}
+    - {{ compiler("cxx") }}
+    - {{ stdlib("c") }}
+    - cmake <4
+    - ninja
+  host:
+    - libcurl
+    - bzip2  # [not win]
+    - zlib
+
+test:
+  commands:
+    - test -f ${PREFIX}/lib/libcfitsio{{ SHLIB_EXT }}  # [not win]
+    - if not exist %LIBRARY_LIB%\cfitsio.lib exit 1  # [win]
+    - if not exist %LIBRARY_BIN%\cfitsio.dll exit 1  # [win]
+  # Downstream tests are not possible due to cfitsio being pinned to a specific
+  # major.minor.patch version in conda-forge-pinning. E.g. gdal is currently
+  # build pinned against cfitsio 4.0.0, which means we cannot test a new version
+  # of cfitsio (4.1.0 say) in a downstream test of gdal.
+  # Downstream tests could be enabled again if there are no foreseeable new versions
+  # cfitsio.
+  # downstreams:
+  #   - gdal  # [x86_64]
+
+about:
+  home: http://heasarc.gsfc.nasa.gov/fitsio/fitsio.html
+  license: LicenseRef-fitsio
+  license_file: licenses/License.txt
+  summary: A library for reading and writing FITS files
+
+  description: |
+    CFITSIO is a library of C and Fortran subroutines for reading and writing
+    data files in FITS (Flexible Image Transport System) data format. CFITSIO
+    provides simple high-level routines for reading and writing FITS files that
+    insulate the programmer from the internal complexities of the FITS format.
+    CFITSIO also provides many advanced features for manipulating and filtering
+    the information in FITS files.
+  doc_url: https://heasarc.gsfc.nasa.gov/docs/software/fitsio/quick/quick.html
+
+extra:
+  recipe-maintainers:
+    - pkgw

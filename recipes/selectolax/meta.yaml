@@ -1,0 +1,53 @@
+{% set version = "0.4.11" %}
+
+package:
+  name: selectolax
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/selectolax/selectolax-{{ version }}.tar.gz
+  sha256: 2b565ddabce6c9a7b73fa28a39acf8f411a084fa2f169234ec2470f552d4421d
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  build:
+    - {{ compiler("c") }}
+    - {{ stdlib("c") }}
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - cython                                 # [build_platform != target_platform]
+    - python                                 # [build_platform != target_platform]
+  host:
+    - cython
+    - pip
+    - python
+    - setuptools
+  run:
+    - cython ==3.0.11
+    - python
+
+test:
+  imports:
+    - selectolax
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/rushter/selectolax
+  summary: Fast HTML5 parser with CSS selectors.
+  license: Apache-2.0 AND LGPL-2.1-only AND MIT
+  license_file:
+    - LICENSE
+    - lexbor/LICENSE
+    - lexbor/NOTICE
+    - modest/LICENSE
+  doc_url: https://selectolax.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - soapy1

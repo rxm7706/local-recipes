@@ -1,0 +1,45 @@
+{% set name = "pydivert" %}
+{% set version = "3.1.3" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/pydivert-{{ version }}.tar.gz
+  sha256: e5cba087f3f17eb66cf50965cf9670c55691c580f81dcad20549a0ef49af8e06
+
+build:
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+  skip: true  # [not win]
+
+requirements:
+  host:
+    - pip
+    - hatchling
+    - python
+  run:
+    - python
+
+test:
+  imports:
+    - pydivert
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/ffalcinelli/pydivert
+  summary: Python binding to windivert driver
+  doc_url: https://pythonhosted.org/pydivert/
+  license: LGPL-3.0-or-later
+  license_file:
+    - LICENSE
+
+extra:
+  recipe-maintainers:
+    - jonashaag
+    - AdrianFreundQC
+    - freundTech

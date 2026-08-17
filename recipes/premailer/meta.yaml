@@ -1,0 +1,47 @@
+{% set name = "premailer" %}
+{% set version = "3.10.0" %}
+{% set sha256 = "d1875a8411f5dc92b53ef9f193db6c0f879dc378d618e0ad292723e388bfe4c2" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+
+  run:
+    - python >={{ python_min }}
+    - lxml
+    - cssselect
+    - cssutils
+    - requests
+    - cachetools
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - premailer
+
+about:
+  home: http://github.com/peterbe/premailer
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Turns CSS blocks into style attributes
+
+extra:
+  recipe-maintainers:
+    - vamega

@@ -1,0 +1,51 @@
+{% set version = "2.2.1" %}
+
+package:
+  name: mgwr
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mgwr/mgwr-{{ version }}.tar.gz
+  sha256: 8b00ba992fd85c9528327eae88e104e072939d0d5203b72c513ef29d5c400ff7
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools >=61.0
+    - setuptools-scm >=6.2
+  run:
+    - python >={{ python_min }}
+    - libpysal >=4.0.0
+    - numpy >=1.3
+    - scipy >=0.11
+    - spglm >=1.0.6
+    - spreg
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - mgwr
+
+about:
+  home: https://github.com/pysal/mgwr
+  license: BSD-3-Clause
+  license_file: LICENSE
+  # https://github.com/pysal/mgwr/issues/25
+  # license_file: 
+  summary: Multiscale geographically weighted regression
+  doc_url: https://mgwr.readthedocs.io
+  dev_url: http://github.com/pysal/mgwr
+
+extra:
+  recipe-maintainers:
+    - jGaboardi
+    - knaaptime
+    - martinfleis
+    - ocefpaf

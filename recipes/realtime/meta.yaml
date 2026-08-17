@@ -1,0 +1,51 @@
+{% set name = "realtime" %}
+{% set version = "2.31.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 9e641cb4d77ca0fe768515f8cf9f83550c79f49ce1550a95afc2dc0e252be8c9
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - poetry
+  run:
+    - python >={{ python_min }}
+    - websockets >=11,<16
+    - typing-extensions >=4.14.0
+    - pydantic >=2.11.7,<3.0.0
+    # - aiohttp >=3.12.14
+    # - python-dateutil >=2.8.1
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+  imports:
+    - realtime
+
+about:
+  home: https://github.com/supabase/supabase-py/tree/main/src/realtime
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A Python Client for Phoenix Channels
+  description: A Python Client for Phoenix Channels
+
+extra:
+  recipe-maintainers:
+    - timkpaine
+    - J0
+    - anand2312

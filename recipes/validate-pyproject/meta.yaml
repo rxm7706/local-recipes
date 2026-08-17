@@ -25,15 +25,15 @@ requirements:
   run:
     - python >={{ python_min }}
     - python-fastjsonschema <=3,>=2.16.2
-    # - validate-pyproject-schema-store
+    # - validate-pyproject-schema-store 
     # - trove-classifiers >=2021.10.20
     # - tomli >=1.2.1
     # - packaging >=24.2
-    # - validate-pyproject-schema-store
+    # - validate-pyproject-schema-store 
     # - trove-classifiers >=2021.10.20
     # - tomli >=1.2.1
     # - packaging >=24.2
-    # - validate-pyproject-schema-store
+    # - validate-pyproject-schema-store 
     # - trove-classifiers >=2021.10.20
     # - tomli >=1.2.1
     # - packaging >=24.2

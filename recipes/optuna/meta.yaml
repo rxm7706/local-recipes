@@ -1,0 +1,66 @@
+{% set name = "optuna" %}
+{% set version = "4.9.0" %}
+{% set python_min = "3.9" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: b322e5cbdf1655fb84c37646c4a7a1f391de1b47806bbe222e015825d0a82b87
+
+build:
+  number: 0
+  entry_points:
+    - optuna = optuna.cli:main
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+  run:
+    - alembic >=1.5.0
+    - colorlog
+    - numpy
+    - packaging >=20.0
+    - python >={{ python_min }}
+    - sqlalchemy >=1.4.2
+    - tqdm
+    - PyYAML
+
+test:
+  imports:
+    - optuna
+  commands:
+    - optuna --help
+
+about:
+  home: https://optuna.org/
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A hyperparameter optimization framework
+  doc_url: https://optuna.readthedocs.io/
+  dev_url: https://github.com/optuna/optuna
+
+extra:
+  recipe-maintainers:
+    - eukaryo
+    - y0z
+    - nabenabe0928
+    - c-bata
+    - contramundum53
+    - g-votte
+    - himkt
+    - HideakiImamura
+    - hvy
+    - iwiwi
+    - knshnb
+    - not522
+    - sile
+    - smly
+    - toshihikoyanase
+    - ytsmiling

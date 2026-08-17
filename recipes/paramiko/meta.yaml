@@ -1,0 +1,55 @@
+{% set name = "paramiko" %}
+{% set version = "5.0.0" %}
+{% set bundle = "tar.gz" %}
+{% set hash_val = "36763b5b95c2a0dcfdf1abc48e48156ee425b21efe2f0e787c2dd5a95c0e5e79" %}
+
+package:
+  name: {{ name }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.{{ bundle }}
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.{{ bundle }}
+  sha256: {{ hash_val }}
+
+build:
+  number: 0
+  script: {{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  noarch: python
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+    - bcrypt >=3.2
+    - cryptography >=3.3
+    - pynacl >=1.5
+    - invoke >=2.0
+
+test:
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+  imports:
+    - paramiko
+
+about:
+  home: http://www.paramiko.org/
+  license_file: LICENSE
+  license: LGPL-2.1-or-later
+  summary: SSH2 protocol library
+  license_family: LGPL
+  dev_url: https://github.com/paramiko/paramiko/
+  doc_url: http://docs.paramiko.org/
+
+extra:
+  recipe-maintainers:
+    - vamega
+    - jakirkham
+    - tschoonj
+    - jan-janssen

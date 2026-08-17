@@ -1,0 +1,56 @@
+{% set name = "nose" %}
+{% set version = "1.3.7" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/nose-{{ version }}.tar.gz
+  sha256: f1bffef9cbc82628f6e7d7b40d7e255aefaa1adb6a1b1d26c69a8b79e6208a98
+
+build:
+  number: 1006
+  noarch: python
+  entry_points:
+    - nosetests = nose:run_exit
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - python >=3.6
+
+test:
+  imports:
+    - nose
+    - nose.ext
+  commands:
+    - pip check
+    - nosetests --help
+  requires:
+    - pip
+
+about:
+  home: http://readthedocs.org/docs/nose/
+  license: LGPL-2.1-only
+  license_file: lgpl.txt
+  summary: Nose extends unittest to make testing easier
+  description: |
+    NOTE: Nose has been in maintenance mode for the past several years and will
+    likely cease without a new person/team to take over maintainership. New
+    projects should consider using Nose2, py.test, or just plain
+    unittest/unittest2.
+  doc_url: https://nose.readthedocs.org
+  dev_url: https://github.com/nose-devs/nose/
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk
+    - jakirkham
+    - msarahan
+    - scopatz
+    - ocefpaf

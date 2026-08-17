@@ -1,6 +1,5 @@
 {% set name = "flask-limiter" %}
-{% set version = "4.0.0" %}
-{% set python_min = "3.10" %}
+{% set version = "4.1.1" %}
 
 package:
   name: {{ name|lower }}
@@ -8,7 +7,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/flask_limiter-{{ version }}.tar.gz
-  sha256: 536a8df0bb2033f415a2212e19a3b7ddfea38585ac5a2444e1cfa986a697847c
+  sha256: ca11608fc7eec43dcea606964ca07c3bd4ec1ae89043a0f67f717899a4f48106
 
 build:
   noarch: python
@@ -26,7 +25,6 @@ requirements:
     - limits >=3.13
     - flask >=2
     - ordered-set >4,<5
-    - rich >=12,<15
     - typing_extensions >=4.3
 
 test:

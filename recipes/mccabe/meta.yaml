@@ -1,0 +1,43 @@
+{% set version = "0.7.0" %}
+
+package:
+  name: mccabe
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mccabe/mccabe-{{ version }}.tar.gz
+  sha256: 348e0240c33b60bbdf4e523192ef919f28cb2c3d7d5c7794f74009290f236325
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation 
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - mccabe
+
+about:
+  home: https://github.com/PyCQA/mccabe
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: McCabe complexity checker for Python
+  dev_url: https://github.com/PyCQA/mccabe
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - sigmavirus24
+    - ocefpaf
+    - dopplershift

@@ -1,0 +1,52 @@
+{% set name = "beanie" %}
+{% set version = "2.2.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://github.com/roman-right/beanie/archive/refs/tags/{{ version }}.tar.gz
+  sha256: fe689f021551965ee43e091e078bc107c35d128dbe4443a9f721cf0e2ba5a673
+  patches:
+
+build:
+  entry_points:
+    - beanie = beanie.executors.migrate:migrations
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - pip
+    - flit-core
+    - python {{ python_min }}
+  run:
+    - click >=7
+    - motor >=2.5,<4.0
+    - pydantic >=1.10.0,<3
+    - python >={{ python_min }}
+    - tomli
+    - lazy-model >=0.2.0
+
+test:
+  imports:
+    - beanie
+  commands:
+    - pip check
+    - beanie --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://roman-right.github.io/beanie/
+  dev_url: https://github.com/roman-right/beanie
+  summary: Asynchronous Python ODM for MongoDB
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - awvwgk

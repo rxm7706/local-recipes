@@ -1,0 +1,59 @@
+{% set name = "immutables" %}
+{% set version = "0.21" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: b55ffaf0449790242feb4c56ab799ea7af92801a0a43f9e2f4f8af2ab24dfc4a
+
+build:
+  skip: true  # [py<38]
+  number: 2
+  script: python -m pip install . --no-deps --ignore-installed
+
+requirements:
+  build:
+    - python                                 # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}     # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+test:
+  # Since immutables introduced mypy testing, the mypy plugin fails with this error:
+  #   FileNotFoundError: [Errno 2] No such file or directory: '$SRC_DIR/tests/test-data/check-immu.test'
+  # Which is strange given the tests directory is being copied.
+  # Dropping running tests for now until someone takes the time to look into it.
+  # requires:
+  #   - flake8 =3.8.4
+  #   - pycodestyle >=2.6.*
+  #   - mypy >=0.910
+  #   - pytest >=6.2.4
+  # source_files:
+  #   - tests
+  imports:
+    - immutables
+  # commands:
+  #  - pytest tests
+
+about:
+  home: https://github.com/MagicStack/immutables
+  license: Apache-2.0
+  license_family: APACHE
+  license_file: LICENSE
+  summary: Immutable Collections
+  description: An immutable mapping type for Python.
+  dev_url: https://github.com/MagicStack/immutables
+
+extra:
+  recipe-maintainers:
+    - nicoddemus

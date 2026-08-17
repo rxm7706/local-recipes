@@ -1,0 +1,41 @@
+{% set name = "args" %}
+{% set version = "0.1.0" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/args-{{ version }}.tar.gz
+  sha256: a785b8d837625e9b61c39108532d95b85274acd679693b71ebb5156848fcf814
+
+build:
+  number: 1004
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+
+test:
+  imports:
+    - args
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/kennethreitz/args
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: 'Command Arguments for Humans'
+
+extra:
+  recipe-maintainers:
+    - SylvainCorlay

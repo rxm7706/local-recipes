@@ -1,0 +1,41 @@
+{% set version = "3.9.16" %}
+
+package:
+  name: maven
+  version: {{ version }}
+
+source:
+  - fn: apache-maven-{{ version }}-src.tar.gz
+    url: https://dlcdn.apache.org/maven/maven-3/{{ version }}/source/apache-maven-{{ version }}-src.tar.gz
+    sha256: f7031b091ad75a226a06a0c092cbf05860dcfc16d140e6da997e6c6b62dbd03c
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - openjdk
+  run:
+    - openjdk
+
+test:
+  commands:
+    # This test segfaults qemu on ppc64le
+    - mvn -v  # [not ppc64le]
+
+about:
+  home: https://maven.apache.org
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A software project management and comprehension tool.
+  description: |
+    Apache Maven is a software project management and comprehension tool.
+    Based on the concept of a project object model (POM), Maven can manage
+    a project's build, reporting and documentation from a central piece of information.
+
+extra:
+  recipe-maintainers:
+    - johanneskoester
+    - mariusvniekerk
+    - matthiasdiener
+    - mkitti

@@ -1,0 +1,73 @@
+{% set name = "httpie" %}
+{% set version = "3.2.4" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 302ad436c3dc14fd0d1b19d4572ef8d62b146bcd94b505f3c2521f701e2e7a2a
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation 
+  entry_points:
+    - http = httpie.__main__:main
+    - https = httpie.__main__:main
+    - httpie = httpie.manager.__main__:main
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - __{{ target_os }}
+    - python >={{ python_min }}
+    - charset-normalizer >=2.0.0
+    - colorama >=0.2.4  # [win]
+    - defusedxml >=0.6.0
+    - multidict >=4.7.0
+    - pip
+    - pygments >=2.5.2
+    - requests >=2.22.0
+    - requests-toolbelt >=0.9.1
+    - rich >=9.10.0
+    - setuptools
+
+
+test:
+  imports:
+    - httpie
+  commands:
+    - pip check
+    - http --help
+    - https --help
+    - httpie --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://httpie.org/
+  license: BSD-3-Clause
+  license_family: BSD
+  license_file: LICENSE
+  summary: a CLI, cURL-like tool for humans
+  description: |
+    HTTPie (pronounced aitch-tee-tee-pie) is a command line HTTP client. Its
+    goal is to make CLI interaction with web services as human-friendly as
+    possible. It provides a simple http command that allows for sending
+    arbitrary HTTP requests using a simple and natural syntax, and displays
+    colorized output. HTTPie can be used for testing, debugging, and generally
+    interacting with HTTP servers.
+  doc_url: https://httpie.org/doc
+  dev_url: https://github.com/jakubroztocil/httpie
+
+extra:
+  recipe-maintainers:
+    - djsutherland
+    - ocefpaf
+    - honnorat

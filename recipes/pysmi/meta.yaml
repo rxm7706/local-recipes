@@ -1,0 +1,56 @@
+{% set name = "pysmi" %}
+{% set version = "1.6.3" %}
+{% set sha256 = "5d2eeb9e98bc149dee8f9256899d13789206769aab1637e33ac5f0dacaaf51fb" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  fn: {{ name }}-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: {{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - flit-core >=3.9.0
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }},<4.0
+    - ply <4.0,>=3.11
+    - jinja2 <4.0.0,>=3.1.3
+    - requests <3.0.0,>=2.26.0
+
+test:
+  requires:
+    - python {{ python_min }}
+  imports:
+    - pysmi
+    - pysmi.borrower
+    - pysmi.codegen
+    - pysmi.lexer
+    - pysmi.parser
+    - pysmi.reader
+    - pysmi.searcher
+    - pysmi.writer
+
+about:
+  home: http:/pysmi.sf.net
+  license: BSD-2-Clause
+  license_family: BSD
+  license_file: LICENSE.rst
+  summary: SNMP SMI/MIB Parser
+  description: 'A pure-Python implementation of SNMP/SMI MIB parsing and conversion library.'
+  doc_url: http://snmplabs.com/pysmi/#documentation
+  dev_url: https://github.com/etingof/pysmi
+
+extra:
+  recipe-maintainers:
+    - nehaljwani

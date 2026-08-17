@@ -1,0 +1,50 @@
+{% set name = "aioconsole" %}
+{% set version = "0.8.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 25cb5530f58f7ab431e9af84fbb5417178287b6c3300d5b1185e3b129a227cef
+
+build:
+  noarch: python
+  number: 0
+  script: {{ PYTHON }} -m pip install . -vv
+  entry_points:
+    - apython = aioconsole:run_apython
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - aioconsole
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/vxgmichel/aioconsole
+  license: GPL-3.0-only
+  license_family: GPL
+  license_file: LICENSE
+  summary: Asynchronous console and interfaces for asyncio
+  description: |
+    Asynchronous console and interfaces for asyncio
+  doc_url: https://aioconsole.readthedocs.io/
+  dev_url: https://github.com/vxgmichel/aioconsole
+
+extra:
+  recipe-maintainers:
+    - vxgmichel
+    - timkpaine

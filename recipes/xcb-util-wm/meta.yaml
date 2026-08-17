@@ -1,0 +1,43 @@
+{% set name = "xcb-util-wm" %}
+{% set version = "0.4.2" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://xcb.freedesktop.org/dist/xcb-util-wm-{{ version }}.tar.xz
+  sha256: 62c34e21d06264687faea7edbf63632c9f04d55e72114aa4a57bb95e4f888a0b
+
+build:
+  number: 0
+  skip: true  # [not linux]
+  run_exports:
+    - {{ pin_subpackage('xcb-util-wm', max_pin='x.x') }}
+
+requirements:
+  build:
+    - {{ compiler('c') }}
+    - {{ stdlib('c') }}
+    - make
+    - m4
+    - pkg-config
+  host:
+    - libxcb
+    - xorg-xproto
+
+test:
+  commands:
+    - test -f ${PREFIX}/lib/libxcb-icccm.so
+
+about:
+  home: https://xcb.freedesktop.org/
+  license: MIT
+  license_family: MIT
+  license_file: COPYING
+  summary: 'Client and window-manager helpers for EWMH and ICCCM'
+
+extra:
+  recipe-maintainers:
+    - scopatz
+    - hmaarrfk

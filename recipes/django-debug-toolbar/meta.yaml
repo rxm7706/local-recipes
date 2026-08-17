@@ -1,0 +1,44 @@
+{% set name = "django-debug-toolbar" %}
+{% set version = "7.1.1" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/{{ name[0] }}/{{ name }}/{{ name.replace('-', '_') }}-{{ version }}.tar.gz
+  sha256: 2fb4093d95e6f87258606c55f4d2aa45d1847b17a415525a9dceac02e937a836
+
+build:
+  number: 0
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >={{ python_min }}
+    - django >=5.2
+    - sqlparse >=0.2
+
+test:
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/django-debug-toolbar/django-debug-toolbar
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A configurable set of panels that display various debug information about the current request/response
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - kwilcox

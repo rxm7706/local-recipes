@@ -1,0 +1,45 @@
+{% set name = "quart-cors" %}
+{% set version = "0.8.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/quart_cors-{{ version }}.tar.gz
+  sha256: ac32c4931da6fba944e9e2d3f856f2db4fd82e3fb905a09646086780c221a118
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - pdm-backend
+    - pip
+  run:
+    - python >={{ python_min }}
+    - quart >=0.15
+    - typing_extensions *
+
+test:
+  imports:
+    - quart_cors
+  commands:
+    - pip check
+  requires:
+    - python {{ python_min }}
+    - pip
+
+about:
+  home: https://github.com/pgjones/quart-cors/
+  summary: A Quart extension to provide Cross Origin Resource Sharing, access control, support
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - maxyme

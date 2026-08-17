@@ -1,0 +1,44 @@
+{% set name = "desert" %}
+{% set version = "2022.9.22" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/desert-{{ version }}.tar.gz
+  sha256: 0f45e098915e16452a269a1da0bcbbf31df0af2173899f1c097fb2e3b0265d89
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 2
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+    - marshmallow >=3.0
+    - attrs
+    - typing_inspect
+    - dataclasses
+
+test:
+  imports:
+    - desert
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/python-desert/desert
+  summary: Deserialize to objects while staying DRY
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - andrew-mcgrath

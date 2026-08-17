@@ -1,0 +1,69 @@
+{% set version = "4.0" %}
+
+package:
+  name: lame
+  version: "{{ version }}"
+
+source:
+  url: https://downloads.sourceforge.net/sourceforge/lame/lame-{{ version }}.tar.gz
+  sha256: 3df5124d5ad3a98312ffd7ba6a9b36230e4f8a3e66d3ce0f425e336c32d216eb
+  patches:
+    - fixup_windows_build.patch
+    # Make the id3tag ucs2 helper prototypes visible to the frontend and give
+    # the id3v2 utf8 helpers matching pointer types, so lame 3.101 builds with
+    # GCC 14 (which promotes these legacy-C warnings to errors).
+    - fix_id3tag_ucs2_decls.patch
+    - fix_id3tag_utf8_casts.patch
+    - fix_id3v2tag_utf8_frontend.patch
+    # parse.c uses setlocale(LC_CTYPE, ...) under HAVE_LANGINFO_H but only
+    # includes <locale.h> under HAVE_ICONV; include it independently.
+    - fix_missing_locale_include.patch
+
+build:
+  number: 1
+  run_exports:
+    # seems to be minor version compatibility
+    # https://abi-laboratory.pro/tracker/timeline/lame/
+    - {{ pin_subpackage('lame', max_pin='x.x') }}
+
+requirements:
+  build:
+    - gnuconfig  # [unix]
+    - {{ compiler('c') }}
+    - {{ stdlib("c") }}
+    - make  # [unix]
+    - nasm  # [win]
+    - pkg-config  # [unix]
+  host:
+    # lame 3.101 dropped the bundled mpglib decoder and now decodes via
+    # libmpg123 (see configure.ac / Makefile.MSVC).
+    - mpg123
+
+test:
+  commands:
+    - lame --genre-list testcase.mp3
+    - lame --longhelp
+    - test -f $PREFIX/include/lame/lame.h  # [not win]
+    - if not exist %PREFIX%\\Library\\include\\lame\\lame.h exit 1  # [win]
+
+about:
+  home: https://lame.sourceforge.io/
+  license: LGPL-2.0-only
+  license_family: LGPL
+  license_file: COPYING
+  summary: 'High quality MPEG Audio Layer III (MP3) encoder'
+
+  # The remaining entries in this section are optional, but recommended
+  description: |
+    LAME is a high quality MPEG Audio Layer III (MP3) encoder licensed under the LGPL.
+    Today, LAME is considered the best MP3 encoder at mid-high bitrates and at VBR, mostly
+    thanks to the dedicated work of its developers and the open source licensing model
+    that allowed the project to tap into engineering resources from all around the world.
+  doc_url: http://lame.sourceforge.net/using.php
+  dev_url: https://svn.code.sf.net/p/lame/svn/trunk/lame/
+
+extra:
+  recipe-maintainers:
+    - soumith
+    - hmaarrfk
+    - bmcfee

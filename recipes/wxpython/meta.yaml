@@ -1,0 +1,98 @@
+{% set version = "4.3.1" %}
+
+package:
+  name: wxpython
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wxPython/wxpython-{{ version }}.tar.gz
+  sha256: 4e3a95b63175be8e10f0662de506a36d8cc6cb86ecc5b30ae880c8dafb34a0cd
+  patches:
+    - patches/0001-linux-gdk-backend.patch
+    - patches/0002-allow-cross-compilation.patch
+    - patches/0003-Don-t-enable-debug-info-for-all-builds.patch
+    - patches/0004-enable-use-of-no_magic-and-install_wx-on-Windows.patch
+    - patches/0005-MacOS-no-builtin-3rdparty.patch
+
+
+build:
+  number: 0
+  missing_dso_whitelist:   # [osx]
+    - /System/Library/Frameworks/QTKit.framework/Versions/A/QTKit  # [osx]
+
+requirements:
+  build:
+    - python                              # [build_platform != target_platform]
+    - cross-python_{{ target_platform }}  # [build_platform != target_platform]
+    - cython                              # [build_platform != target_platform]
+    - freetype                            # [build_platform != target_platform and linux]
+    - gnuconfig                           # [unix]
+    - make                                # [unix]
+    - pkg-config                          # [not win]
+    - sip                                 # [build_platform != target_platform]
+    - {{ compiler('c') }}
+    - {{ compiler('cxx') }}
+    - {{ stdlib("c") }}
+
+  host:
+    - python
+    - pip
+    - attrdict3
+    - cython
+    - expat               # [linux]
+    - freetype            # [linux]
+    - gtk3                # [linux]
+    - libgl-devel         # [linux]
+    - libglx-devel        # [linux]
+    - requests
+    - setuptools
+    - sip
+    - typing_extensions   # [py < 311]
+    - wxwidgets 3.3.3
+    - xorg-xineramaproto  # [linux]
+    - xorg-libxfixes      # [linux]
+    - xorg-libxext        # [linux]
+    - xorg-libxxf86vm     # [linux]
+    - xorg-libxdamage     # [linux]
+    - xorg-xorgproto      # [linux]
+    - zlib                # [linux]
+    - liblzma-devel       # [linux]
+
+  run:
+    - python
+    - gtk3               # [linux]
+    - numpy
+    - pillow
+    - setuptools
+    - six
+    - typing_extensions  # [py < 311]
+
+
+test:
+  imports:
+    - wx
+
+about:
+  home: https://wxpython.org/
+  license: LGPL-2.0-or-later WITH WxWindows-exception-3.1
+  license_family: LGPL
+  license_file: LICENSE.txt
+  summary: Cross platform GUI toolkit for Python, "Phoenix" version
+  description: |
+    Welcome to wxPython's Project Phoenix! Phoenix is the improved next-generation
+    wxPython, "better, stronger, faster than he was before." This new
+    implementation is focused on improving speed, maintainability and
+    extensibility. Just like "Classic" wxPython, Phoenix wraps the wxWidgets C++
+    toolkit and provides access to the user interface portions of the wxWidgets
+    API, enabling Python applications to have a native GUI on Windows, Macs or
+    not win systems, with a native look and feel and requiring very little (if any)
+    platform specific code.
+  doc_url: https://docs.wxpython.org/
+  dev_url: https://github.com/wxWidgets/Phoenix
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - constantinpape
+    - timsnyder
+    - pauldmccarthy

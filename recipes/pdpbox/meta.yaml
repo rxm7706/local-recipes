@@ -1,0 +1,57 @@
+{% set name = "PDPbox" %}
+{% set version = "0.3.0" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
+  sha256: 86931543e0032803ba38ea4d7486146fa8d715451e40c90ec874b2d2ebb707fe
+
+build:
+  number: 1
+  noarch: python
+  script: '{{ PYTHON }} -m pip install . -vv '
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+    - joblib >=1.1.0
+    - matplotlib-base >=3.6.2
+    - numpy >=1.21.5
+    - pandas >=1.4.4
+    - plotly >=5.9.0
+    - pqdm >=0.2.0
+    - psutil >=5.9.0
+    - pytest
+    - scikit-learn >=1.0.2
+    - setuptools
+    - sphinx >=5.0.2
+    - sphinx_rtd_theme >=1.1.1
+    - tqdm >=4.64.1
+    - numpydoc >=1.4.0
+    - xgboost >=1.7.1
+
+test:
+  imports:
+    - pdpbox
+  requires:
+    - pip
+    - python {{ python_min }}
+  commands:
+    - pip check
+
+about:
+  home: https://github.com/SauceCat/PDPbox
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE.txt
+  summary: Python partial dependence plot toolbox
+
+extra:
+  recipe-maintainers:
+    - xhochy

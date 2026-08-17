@@ -1,0 +1,42 @@
+{% set name = "aioshutil" %}
+{% set version = "1.6" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/aioshutil-{{ version }}.tar.gz
+  sha256: 9eae342b9a4cacc2c2c5877877a2d2f7a2b66c62aa1ab57d7e95c8cfd4ede507
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools-scm
+    - pip
+  run:
+    - python >=3.8
+    - typing-extensions
+
+test:
+  imports:
+    - aioshutil
+  commands:
+    - pip check
+  requires:
+    - pip
+
+about:
+  home: https://github.com/kumaraditya303/aioshutil
+  summary: Asynchronous shutil module.
+  license: BSD-3-Clause
+  license_file: LICENSE.md
+
+extra:
+  recipe-maintainers:
+    - ivergara

@@ -1,0 +1,44 @@
+{% set name = "sql-metadata" %}
+{% set version = "3.0.1" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/sql_metadata-{{ version }}.tar.gz
+  sha256: 4c83a48ddd1c6c4076eec2021347cb1311f0a190f18aabef7c2c6fd64d3afbc2
+
+build:
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - pip
+    - poetry-core >=1.0.0
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }},<4.0
+    - sqlglot >=30.12.0,<31.0.0
+
+test:
+  imports:
+    - sql_metadata
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/macbre/sql-metadata
+  summary: Uses tokenized query returned by python-sqlparse and generates query metadata
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - timkpaine
+    - OstapStefakQC

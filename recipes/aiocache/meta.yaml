@@ -1,0 +1,44 @@
+{% set name = "aiocache" %}
+{% set version = "0.12.3" %}
+
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/aiocache-{{ version }}.tar.gz
+  sha256: f528b27bf4d436b497a1d0d1a8f59a542c153ab1e37c3621713cb376d44c4713
+
+build:
+  number: 1
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python {{ python_min }}
+  run:
+    - python >={{ python_min }}
+
+test:
+  imports:
+    - aiocache
+    - aiocache.backends
+  commands:
+    - pip check
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: https://github.com/aio-libs/aiocache
+  doc_url: https://aiocache.readthedocs.io
+  summary: multi backend asyncio cache
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - owenlamont

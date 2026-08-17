@@ -1,0 +1,56 @@
+{% set name = "xhtml2pdf" %}
+{% set version = "0.2.17" %}
+
+package:
+  name: {{ name|lower }}
+  version: {{ version }}
+
+source:
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/xhtml2pdf-{{ version }}.tar.gz
+  sha256: 09ddbc31aa0e38a16f2f3cb73be89af5f7c968c17a564afdd685d280e39c526d
+
+build:
+  entry_points:
+    - pisa = xhtml2pdf.pisa:command
+    - xhtml2pdf = xhtml2pdf.pisa:command
+  noarch: python
+  script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python {{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >={{ python_min }}
+    - arabic_reshaper >=3.0.0
+    - html5lib >=1.1
+    - pillow >=8.1.1
+    - pyhanko >=0.12.1
+    - pyhanko-certvalidator >=0.19.5
+    - pypdf >=3.1.0
+    - python-bidi >=0.4.2
+    - reportlab >=4.0.4,<5
+    - svglib >=1.2.1
+
+test:
+  imports:
+    - xhtml2pdf
+  commands:
+    - pip check
+    - pisa --help
+    - xhtml2pdf --help
+  requires:
+    - pip
+    - python {{ python_min }}
+
+about:
+  home: http://github.com/xhtml2pdf/xhtml2pdf
+  summary: PDF generator using HTML and CSS
+  license: Apache-2.0
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - mrakitin

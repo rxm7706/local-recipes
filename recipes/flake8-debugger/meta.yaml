@@ -6,21 +6,21 @@ package:
   version: {{ version }}
 
 source:
-  url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/flake8-debugger-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/flake8-debugger-{{ version }}.tar.gz
   sha256: 52b002560941e36d9bf806fca2523dc7fb8560a295d5f1a6e15ac2ded7a73840
 
 build:
   noarch: python
   script: {{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
+  number: 1
 
 requirements:
   host:
-    - python >=3.8
+    - python {{ python_min }}
     - poetry-core >=1.0
     - pip
   run:
-    - python >=3.8
+    - python >={{ python_min }}
     - flake8 >=3.0
     - pycodestyle
 
@@ -31,6 +31,7 @@ test:
     - pip check
   requires:
     - pip
+    - python {{ python_min }}
 
 about:
   home: https://github.com/jbkahn/flake8-debugger
