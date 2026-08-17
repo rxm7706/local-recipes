@@ -2,29 +2,28 @@
 schema_version: 1
 
 context:
-  name: langchain-robocorp
-  version: 0.0.10.post1
+  version: "0.0.10.post1"
 
 package:
-  name: ${{ name|lower }}
+  name: langchain-robocorp
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/langchain_robocorp-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/l/langchain-robocorp/langchain_robocorp-${{ version }}.tar.gz
   sha256: ca7f13902ad60fcae5c4ef149ee3cafbfbd24c6996561cacb54dc08b692efd30
 
 build:
-  number: 2
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - poetry-core >=1.0.0
     - pip
+    - poetry-core >=1.0.0
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - langchain-core >=0.2.24,<0.3
     - requests >=2.31.0,<3.0.0
     - types-requests >=2.31.0,<3.0.0
@@ -34,14 +33,51 @@ tests:
       imports:
         - langchain_robocorp
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: An integration package connecting Robocorp Action Server and LangChain
+  homepage: https://github.com/langchain-ai/langchain
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/langchain-ai/langchain
+  summary: An integration package connecting Robocorp Action Server and LangChain
+  description: |
+    An integration package connecting Robocorp Action Server and LangChain
+  repository: https://github.com/langchain-ai/langchain
 
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langchain-robocorp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langchain-robocorp
+  cfe-purls:
+    - pkg:conda/langchain-robocorp@${{ version }}?channel=conda-forge
+    - pkg:pypi/langchain-robocorp@${{ version }}
+  cfe-upstream-repo: https://github.com/langchain-ai/langchain
+  cfe-upstream-homepage: https://github.com/langchain-ai/langchain
+  cfe-import-names: [langchain_robocorp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/langchain-robocorp-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T01:34:45Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T01:34:45Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T01:34:45Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

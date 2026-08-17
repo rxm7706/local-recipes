@@ -2,27 +2,26 @@
 schema_version: 1
 
 context:
-  name: PyPDF2
-  version: 3.0.1
+  version: "3.0.1"
 
 package:
-  name: ${{ name|lower }}
+  name: pypdf2
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/PyPDF2-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/p/PyPDF2/PyPDF2-${{ version }}.tar.gz
   sha256: a74408f69ba6271f71b9352ef4ed03dc53a31aa404d29b5d31f53bfecfee1440
 
 build:
-  number: 2
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - flit-core >=3.2,<4
     - pip
+    - flit-core >=3.2,<4
   run:
     - python >=${{ python_min }}
     - typing_extensions >=3.10.0.0
@@ -32,17 +31,55 @@ tests:
   - python:
       imports:
         - PyPDF2
-      python_version: ${{ python_min }}.*
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
 about:
-  summary: A pure-python PDF library capable of splitting, merging, cropping, and transforming PDF files
+  homepage: https://pypi.org/project/PyPDF2/
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: http://py-pdf.github.io/PyPDF2/
+  summary: A pure-python PDF library capable of splitting, merging, cropping, and transforming PDF files
+  description: |
+    A pure-python PDF library capable of splitting, merging, cropping, and transforming PDF files
   repository: https://github.com/py-pdf/PyPDF2
-  documentation: https://pypdf2.readthedocs.io/
+  documentation: https://pypdf2.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
     - julian-belina
     - pmlandwehr
     - carlodri
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pypdf2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pypdf2
+  cfe-purls:
+    - pkg:conda/pypdf2@${{ version }}?channel=conda-forge
+    - pkg:pypi/pypdf2@${{ version }}
+  cfe-upstream-repo: https://github.com/py-pdf/PyPDF2
+  cfe-upstream-homepage: https://pypi.org/project/PyPDF2/
+  cfe-import-names: [PyPDF2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pypdf2-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T01:56:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T01:56:26Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T01:56:26Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

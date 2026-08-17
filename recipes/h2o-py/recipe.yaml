@@ -37,8 +37,9 @@ tests:
         - h2o
         - h2o.automl
       pip_check: true
-      python_version: ${{ python_min }}
-
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 about:
   summary: H2O, Fast Scalable Machine Learning, for python
   license: Apache-2.0
@@ -48,3 +49,37 @@ about:
 extra:
   recipe-maintainers:
     - xhochy
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: h2o-py
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: h2o-py
+  cfe-purls:
+    - pkg:conda/h2o-py@${{ version }}?channel=conda-forge
+    - pkg:pypi/h2o-py@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/h2oai/h2o-3
+  cfe-import-names: [h2o, h2o.automl]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/h2o-py-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T01:27:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T01:27:09Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T01:27:09Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

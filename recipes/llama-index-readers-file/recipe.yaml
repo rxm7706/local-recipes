@@ -2,20 +2,15 @@
 schema_version: 1
 
 context:
-  name: llama-index-readers-file
   version: "0.6.0"
-  python_min: "3.10"
 
 package:
-  name: ${{ name|lower }}
+  name: llama-index-readers-file
   version: ${{ version }}
 
 source:
-  - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/llama_index_readers_file-${{ version }}.tar.gz
-    sha256: ff366d6ff5ecb7119275ac859310d8b672d8b6b3261afae02f4084fce9076bd0
-  # https://github.com/run-llama/llama_index/issues/10806
-  - url: https://raw.githubusercontent.com/run-llama/llama_index/main/LICENSE
-    sha256: 24f40b5190fdacabc24ddbb5f76364d15e4f030925220ea300d8a2dd4993c8cb
+  url: https://pypi.org/packages/source/l/llama-index-readers-file/llama_index_readers_file-${{ version }}.tar.gz
+  sha256: ff366d6ff5ecb7119275ac859310d8b672d8b6b3261afae02f4084fce9076bd0
 
 build:
   number: 0
@@ -24,35 +19,71 @@ build:
 
 requirements:
   host:
-    - python 3.10.*
-    - hatchling
+    - python ${{ python_min }}.*
     - pip
+    - hatchling
   run:
+    - python >=${{ python_min }}
+    - beautifulsoup4 <5,>=4.12.3
     - defusedxml >=0.7.1
-    - pandas >=2.0.0,<3
-    - python >=${{ python_min }},<4.0
-    - llama-index-core >=0.13.0,<0.15
-    - beautifulsoup4 >=4.12.3,<5
-    - pypdf >=6.1.3,<7
-    - striprtf >=0.0.26,<0.0.27
-  run_constraints:
-    - pymupdf >=1.23.21,<2.0.0
+    - llama-index-core <0.15,>=0.13.0
+    - pandas <3,>=2.0.0
+    - pypdf <7,>=6.1.3
+    - striprtf <0.0.27,>=0.0.26
 
 tests:
   - python:
       imports:
         - llama_index.readers.file
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: llama-index readers file integration
+  homepage: https://pypi.org/project/llama-index-readers-file/
   license: MIT
   license_file: LICENSE
-  homepage: https://llamaindex.ai
-  repository: https://github.com/run-llama/llama_index/tree/main/llama-index-integrations/readers/llama-index-readers-file
+  summary: llama-index readers file integration
+  description: |
+    llama-index readers file integration
 
 extra:
   recipe-maintainers:
     - jan-janssen
     - pavelzw
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: llama-index-readers-file
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: llama-index-readers-file
+  cfe-purls:
+    - pkg:conda/llama-index-readers-file@${{ version }}?channel=conda-forge
+    - pkg:pypi/llama-index-readers-file@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/llama-index-readers-file/
+  cfe-import-names: [llama_index.readers.file]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/llama-index-readers-file-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.6.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T01:51:39Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T01:51:39Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T01:51:39Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

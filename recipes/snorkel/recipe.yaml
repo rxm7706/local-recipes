@@ -2,58 +2,58 @@
 schema_version: 1
 
 context:
-  name: snorkel
   version: "0.10.0"
+  python_min: "3.11"
 
 package:
-  name: ${{ name|lower }}
+  name: snorkel
   version: ${{ version }}
 
 source:
-  url: https://github.com/snorkel-team/${{ name }}/releases/download/v${{ version }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/snorkel/snorkel-${{ version }}.tar.gz
   sha256: b1f36412430a810124cc0aac432fa29f41960cff2d9804d3816f9d9d0d6d44ed
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python >=3.6
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=40.6.2
+    - wheel >=0.30.0
   run:
-    - python >=3.6
-    - munkres >=1.0.6
-    - numpy >=1.16.5,<1.20.0
-    - scipy >=1.2.0,<2.0.0
-    - pandas >=1.0.0,<2.0.0
-    - tqdm >=4.33.0,<5.0.0
-    - scikit-learn >=0.20.2,<0.25.0
-    - pytorch >=1.2.0,<2.0.0
-    - tensorboard >=1.14.0,<2.0.0
-    - networkx >=2.2,<2.4
+    - python >=${{ python_min }}
+    - munkres
+    - numpy
+    - scipy
+    - pandas
+    - tqdm
+    - scikit-learn
+    - pytorch
+    - tensorboard
+    - protobuf
+    - networkx
 
 tests:
   - python:
       imports:
         - snorkel
-      pip_check: false
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://snorkel.org
   license: Apache-2.0
   license_file: LICENSE
-  summary: Snorkel is a system for programmatically building and managing training datasets to rapidly and flexibly fuel machine learning models.
+  summary: A system for quickly generating training data with weak supervision
   description: |
-    Snorkel is a system for programmatically building and managing training
-    datasets to rapidly and flexibly fuel machine learning models.
-    Users write programmatic operations to label, transform, and structure training
-    datasets for machine learning, without needing to hand label any training data.
-    Snorkel then uses modern, theoretically-grounded modeling techniques to clean and
-    integrate the resulting training data.
-  homepage: https://snorkel.org
-  repository: https://github.com/snorkel-team/snorkel
-  documentation: https://snorkel.readthedocs.io
+    A system for quickly generating training data with weak supervision
+  repository: https://github.com/snorkel-team/snorkel/
 
 extra:
   recipe-maintainers:
@@ -63,3 +63,38 @@ extra:
     - bhancock8
     - oblute
     - rluria14
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: snorkel
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: snorkel
+  cfe-purls:
+    - pkg:conda/snorkel@${{ version }}?channel=conda-forge
+    - pkg:pypi/snorkel@${{ version }}
+  cfe-upstream-repo: https://github.com/snorkel-team/snorkel/
+  cfe-upstream-homepage: https://snorkel.org
+  cfe-import-names: [snorkel]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/snorkel-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.10.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T02:08:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T02:08:34Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T02:08:34Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

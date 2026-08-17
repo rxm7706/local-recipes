@@ -2,104 +2,96 @@
 schema_version: 1
 
 context:
-  name: dspy
-  version: "3.0.2"
+  version: "3.3.0"
 
-recipe:
-  name: dspy-with-alias
+package:
+  name: dspy
   version: ${{ version }}
 
 source:
-  url: https://github.com/stanfordnlp/dspy/archive/refs/tags/${{ version }}.tar.gz
-  sha256: 5da45b05abc6d454395ff2ecf173c6fd31e261baba4c5862c2292261eeabe5c5
+  url: https://pypi.org/packages/source/d/dspy/dspy-${{ version }}.tar.gz
+  sha256: 39aa9531391accda8acd7903b52f3c9d2efe462d4bab0c2256db5352e7392754
 
 build:
   number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-outputs:
-  - package:
-      name: dspy
-    build:
-      noarch: python
-      script: python -m pip install . -vv --no-deps --no-build-isolation
-    requirements:
-      host:
-        - python ${{ python_min }}
-        - setuptools
-        - pip
-      run:
-        - python >=${{ python_min }}
-        - backoff
-        - joblib ~=1.3
-        - openai
-        - pandas
-        - regex
-        - ujson
-        - tqdm
-        - datasets >=2.14.6
-        - requests
-        - optuna
-        - pydantic ~=2.0
-        - structlog
-        - jinja2
-        - magicattr
-        - diskcache
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=77.0.1
+  run:
+    - python >=${{ python_min }}
+    - openai >=1.66.2
+    - regex >=2023.10.3
+    - orjson >=3.9.0
+    - tqdm >=4.66.1
+    - requests >=2.31.0
+    - pydantic >=2.0
+    - litellm >=1.65.8
+    - diskcache >=5.6.0
+    - json-repair >=0.54.2
+    - tenacity >=8.2.3
+    - anyio
+    - cachetools >=5.5.0
+    - cloudpickle >=3.1.2
+    - gepa ==0.1.1
+    - if: win
+      then:
         - litellm
-        - json-repair
-        - tenacity >=8.2.3
-        - anyio
-        - asyncer
-        - cachetools
-        - cloudpickle
-      run_constraints:
-        - anthropic >=0.18.0,<1.0.0
-        - chromadb ~=0.4.14
-        - fastembed >=0.2.0
-        - marqo *
-        - qdrant-client >=1.11.1
-        - pinecone-client ~=2.2.4
-        - weaviate-client ~=4.5.4
-        - pymilvus ~=2.3.7
-        - boto3 ~=1.34.78
-    tests:
-      - python:
-          imports:
-            - dspy
-          pip_check: false
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - python ${{ python_min }}
-  - package:
-      name: dspy-ai
-    build:
-      noarch: python
-    requirements:
-      host:
-        - python ${{ python_min }}
-      run:
-        - python >=${{ python_min }}
-        - ${{ pin_subpackage(name, exact=True) }}
-    tests:
-      - python:
-          imports:
-            - dspy
-          pip_check: false
-          python_version: ${{ python_min }}
-      - requirements:
-          run:
-            - python ${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - dspy
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/stanfordnlp/dspy
+  license: MIT
+  license_file: LICENSE
   summary: DSPy
   description: |
     DSPy: The framework for programming—not prompting—foundation models
-  license: MIT
-  license_file: LICENSE
-  homepage: https://github.com/stanfordnlp/dspy
-  documentation: https://dspy-docs.vercel.app/
 
 extra:
   feedstock-name: dspy
   recipe-maintainers:
     - mukhery
+
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dspy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dspy
+  cfe-purls:
+    - pkg:conda/dspy@${{ version }}?channel=conda-forge
+    - pkg:pypi/dspy@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/stanfordnlp/dspy
+  cfe-import-names: [dspy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dspy-ai-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - version-update-to-3.3.0
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-17T01:18:48Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T01:18:48Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T01:18:48Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####

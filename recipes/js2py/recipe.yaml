@@ -2,31 +2,31 @@
 schema_version: 1
 
 context:
-  name: Js2Py
   version: "0.74"
 
 package:
-  name: ${{ name|lower }}
+  name: js2py
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/j/Js2Py/Js2Py-${{ version }}.tar.gz
   sha256: 39f3a6aa8469180efba3c8677271df27c31332fd1b471df1af2af58b87b8972f
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python >=3.6
+    - setuptools
   run:
-    - python >=3.6
-    - pyjsparser >=2.5.1
-    - six >=1.10
-    - tzlocal >=1.2
+    - python >=${{ python_min }}
+    - tzlocal
+    - six
+    - pyjsparser
 
 tests:
   - python:
@@ -43,12 +43,17 @@ tests:
         - js2py.translators
         - js2py.utils
       pip_check: false
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/PiotrDabkowski/Js2Py
   license: MIT
   license_file: LICENSE
   summary: JavaScript to Python Translator & JavaScript interpreter written in 100% pure Python.
-  homepage: https://github.com/PiotrDabkowski/Js2Py
+  description: |
+    JavaScript to Python Translator & JavaScript interpreter written in 100% pure Python.
   repository: https://github.com/PiotrDabkowski/Js2Py
   documentation: http://piter.io/projects/js2py
 
@@ -56,3 +61,47 @@ extra:
   recipe-maintainers:
     - dschreij
     - smathot
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: js2py
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: js2py
+  cfe-purls:
+    - pkg:conda/js2py@${{ version }}?channel=conda-forge
+    - pkg:pypi/js2py@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/PiotrDabkowski/Js2Py
+  cfe-import-names: [js2py]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/js2py-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.74
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T01:31:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T01:31:53Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T01:31:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+#    # blocker: missing-license-file
+#    # blocker: missing-license-file
+#    # blocker: missing-license-file
+#    # blocker: missing-license-file
+####

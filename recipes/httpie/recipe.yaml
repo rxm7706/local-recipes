@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: httpie
   version: "3.2.4"
 
 package:
-  name: ${{ name|lower }}
+  name: httpie
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/h/httpie/httpie-${{ version }}.tar.gz
   sha256: 302ad436c3dc14fd0d1b19d4572ef8d62b146bcd94b505f3c2521f701e2e7a2a
 
 build:
@@ -25,30 +24,33 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
-    - __${{ target_os }}
     - python >=${{ python_min }}
-    - charset-normalizer >=2.0.0
-    - if: win
-      then: colorama >=0.2.4
-    - defusedxml >=0.6.0
-    - multidict >=4.7.0
     - pip
-    - pygments >=2.5.2
+    - charset-normalizer >=2.0.0
+    - defusedxml >=0.6.0
     - requests >=2.22.0
+    - pygments >=2.5.2
     - requests-toolbelt >=0.9.1
-    - rich >=9.10.0
+    - multidict >=4.7.0
     - setuptools
+    - rich >=9.10.0
+    - importlib-metadata >=1.4.0
+    - if: win
+      then:
+        - colorama
 
 tests:
   - python:
       imports:
         - httpie
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - requirements:
       run:
         - pip
@@ -59,9 +61,10 @@ tests:
       - httpie --help
 
 about:
+  homepage: https://httpie.io/
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: a CLI, cURL-like tool for humans
+  summary: "HTTPie: modern, user-friendly command-line HTTP client for the API era."
   description: |
     HTTPie (pronounced aitch-tee-tee-pie) is a command line HTTP client. Its
     goal is to make CLI interaction with web services as human-friendly as
@@ -69,12 +72,46 @@ about:
     arbitrary HTTP requests using a simple and natural syntax, and displays
     colorized output. HTTPie can be used for testing, debugging, and generally
     interacting with HTTP servers.
-  homepage: https://httpie.org/
-  repository: https://github.com/jakubroztocil/httpie
-  documentation: https://httpie.org/doc
+  repository: https://github.com/httpie/cli
+  documentation: https://httpie.io/docs
 
 extra:
   recipe-maintainers:
     - djsutherland
     - ocefpaf
     - honnorat
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: httpie
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: httpie
+  cfe-purls:
+    - pkg:conda/httpie@${{ version }}?channel=conda-forge
+    - pkg:pypi/httpie@${{ version }}
+  cfe-upstream-repo: https://github.com/httpie/cli
+  cfe-upstream-homepage: https://httpie.io/
+  cfe-import-names: [httpie]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/httpie-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.2.4
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T01:28:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T01:28:17Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T01:28:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

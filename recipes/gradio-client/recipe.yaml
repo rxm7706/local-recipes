@@ -2,53 +2,98 @@
 schema_version: 1
 
 context:
-  name: gradio-client
   version: "2.6.0"
 
 package:
-  name: ${{ name|lower }}
+  name: gradio-client
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/gradio_client-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/gradio-client/gradio_client-${{ version }}.tar.gz
   sha256: e648110efa31347bb8b1abda150a7a975b40a9658fdd8562803e2ad6a300d033
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
     - hatchling
     - hatch-requirements-txt
     - hatch-fancy-pypi-readme >=22.5.0
-    - pip
   run:
     - python >=${{ python_min }}
     - fsspec
     - httpx >=0.24.1
-    - huggingface_hub >=0.19.3
+    - huggingface_hub >=0.19.3,<2.0
     - packaging
     - typing_extensions ~=4.0
-    - websockets >=10.0,<16.0
 
 tests:
   - python:
       imports:
         - gradio_client
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Python library for easily interacting with trained machine learning models
+  homepage: https://github.com/gradio-app/gradio
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://pypi.org/project/gradio-client/
-  repository: https://github.com/gradio-app/gradio
+  summary: Python library for easily interacting with trained machine learning models
+  description: |
+    Python library for easily interacting with trained machine learning models
 
 extra:
   recipe-maintainers:
     - abidlabs
     - Sclare87
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: gradio-client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: gradio-client
+  cfe-purls:
+    - pkg:conda/gradio-client@${{ version }}?channel=conda-forge
+    - pkg:pypi/gradio-client@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/gradio-app/gradio
+  cfe-import-names: [gradio_client]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/gradio-client-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.6.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T01:26:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T01:26:16Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T01:26:16Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+#    # blocker: missing-license-file
+#    # blocker: missing-license-file
+#    # blocker: missing-license-file
+#    # blocker: missing-license-file
+####

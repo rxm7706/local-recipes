@@ -88,6 +88,9 @@ def _save_recipe(path: Path, data: Any) -> None:
     yaml = YAML(typ="rt")
     yaml.preserve_quotes = True
     yaml.indent(mapping=2, sequence=4, offset=2)
+    # Same as recipe_editor.py (v8.11.1): default width=80 folds long source.url
+    # lines and can split `${{ name }}` across a newline.
+    yaml.width = 4096
     with path.open("w") as fh:
         yaml.dump(data, fh)
 

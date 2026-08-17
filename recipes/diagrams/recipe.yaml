@@ -47,8 +47,9 @@ tests:
         - diagrams.oci
         - diagrams.onprem
       pip_check: true
-      python_version: ${{ python_min }}
-
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 about:
   license: MIT
   license_file: LICENSE
@@ -65,3 +66,38 @@ extra:
     - ndmaxar
     - dhirschfeld
     - dbast
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: diagrams
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: diagrams
+  cfe-purls:
+    - pkg:conda/diagrams@${{ version }}?channel=conda-forge
+    - pkg:pypi/diagrams@${{ version }}
+  cfe-upstream-repo: https://github.com/mingrammer/diagrams
+  cfe-upstream-homepage: https://diagrams.mingrammer.com
+  cfe-import-names: [diagrams, diagrams.alibabacloud, diagrams.aws, diagrams.azure, diagrams.base, diagrams.custom, diagrams.gcp, diagrams.k8s, diagrams.oci, diagrams.onprem]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/diagrams-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.25.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T01:17:36Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T01:17:36Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T01:17:36Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

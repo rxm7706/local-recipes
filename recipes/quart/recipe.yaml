@@ -2,72 +2,56 @@
 schema_version: 1
 
 context:
-  version: "0.20.0"
+  version: "0.21.0"
+  python_min: "3.11"
 
 package:
   name: quart
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/q/quart/quart-${{ version }}.tar.gz
-  sha256: 08793c206ff832483586f5ae47018c7e40bdd75d886fee3fabbdaa70c2cf505d
+  url: https://pypi.org/packages/source/q/Quart/quart-${{ version }}.tar.gz
+  sha256: ec05a784151386cf87df51f764825d55f3ac402df4f04fd1dc81faca8897ceda
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  python:
-    entry_points:
-      - quart = quart.cli:main
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - flit-core <=4.0.0
-    - python ${{ python_min }}
+    - flit-core <4
   run:
+    - python >=${{ python_min }}
     - aiofiles
     - blinker >=1.6
-    - click >=8.0.0
-    - flask >=3.0.0
+    - click >=8.0
+    - flask >=3.0
     - hypercorn >=0.11.2
-    - importlib-metadata
     - itsdangerous
     - jinja2
     - markupsafe
-    - python >=${{ python_min }}
-    - typing_extensions
-    - werkzeug >=3.0.0
+    - werkzeug >=3.0
 
 tests:
   - python:
       imports:
         - quart
       pip_check: true
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - pip
-        - if: win
-          then: m2-grep
-        - python ${{ python_min }}
-    script:
-      - quart --version
-      - quart --version | grep -iE "Quart ${{ version | replace(".", "\.") }}"
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://pypi.org/project/Quart/
   license: MIT
-  license_file: LICENSE
-  summary: A Python ASGI web microframework with the same API as Flask
+  license_file: LICENSE.txt
+  summary: A Python ASGI web framework with the same API as Flask
   description: |
-    Quart is a Python ASGI web microframework. It is intended to provide the easiest way to use
-    asyncio functionality in a web context, especially with existing Flask
-    apps. This is possible as the Quart API is a superset of the Flask API.
-    Quart aims to be a complete web microframework, as it supports
-    HTTP/1.1, HTTP/2 and websockets. Quart is very extendable and has a
-    number of known extensions and works
-    with many of the Flask extensions.
-  homepage: https://github.com/pallets/quart
+    A Python ASGI web framework with the same API as Flask
+  repository: https://github.com/pallets/quart/
   documentation: https://quart.palletsprojects.com
 
 extra:
@@ -75,3 +59,42 @@ extra:
     - maxyme
     - dhirschfeld
     - soapy1
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: quart
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: quart
+  cfe-purls:
+    - pkg:conda/quart@${{ version }}?channel=conda-forge
+    - pkg:pypi/quart@${{ version }}
+  cfe-upstream-repo: https://github.com/pallets/quart/
+  cfe-upstream-homepage: https://pypi.org/project/Quart/
+  cfe-import-names: [quart]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/quart-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.21.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T02:00:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T02:00:37Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T02:00:37Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

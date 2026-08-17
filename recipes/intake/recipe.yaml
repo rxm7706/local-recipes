@@ -15,19 +15,19 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
-    - setuptools_scm
+    - setuptools >=64
+    - setuptools-scm >=8
   run:
     - python >=${{ python_min }}
-    - platformdirs
     - fsspec >=2023.0.0
     - pyyaml
+    - platformdirs
     - networkx
 
 tests:
@@ -35,18 +35,57 @@ tests:
       imports:
         - intake
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - files:
       source:
         - intake
 
 about:
-  license: BSD-2-Clause
+  homepage: https://pypi.org/project/intake/
+  license: MIT
   license_file: LICENSE
-  summary: Data load and catalog system
-  homepage: https://github.com/intake/intake
+  summary: Data catalog, search and load
+  description: |
+    Data catalog, search and load
 
 extra:
   recipe-maintainers:
     - ocefpaf
     - martindurant
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: intake
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: intake
+  cfe-purls:
+    - pkg:conda/intake@${{ version }}?channel=conda-forge
+    - pkg:pypi/intake@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/intake/
+  cfe-import-names: [intake]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/intake-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.0.9
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T01:30:18Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T01:30:18Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T01:30:18Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

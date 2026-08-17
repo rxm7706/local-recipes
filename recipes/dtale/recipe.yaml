@@ -2,60 +2,77 @@
 schema_version: 1
 
 context:
-  name: dtale
   version: "3.22.0"
 
 package:
-  name: ${{ name|lower }}
+  name: dtale
   version: ${{ version }}
 
 source:
-  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/dtale/dtale-${{ version }}.tar.gz
   sha256: 01c3ec821327263f730afb1409f0ca7dd56f2363a92d03e7700961e6b276f8d3
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
       - dtale = dtale.cli.script:main
 
 requirements:
   host:
-    - python ==2.7|>=3.6
+    - python ${{ python_min }}.*
     - pip
-    - six
+    - setuptools
   run:
-    - python ==2.7|>=3.6
-    - lz4
-    - beautifulsoup4
-    - dash
-    - dash-bootstrap-components
-    - dash-core-components
-    - dash-html-components
-    - dash_colorscales
-    - dash-daq
-    - Flask-Compress
-    - Flask
-    - future
-    - itsdangerous
+    - python >=${{ python_min }}
+    - lz4 #<=2.2.1
+    - beautifulsoup4 !=4.13.0b2
+    - brotli #<=1.0.9
+    - certifi #<=2021.10.8
+    - cycler #<=0.11.0
+    - dash #<=1.21.0
+    - dash-bootstrap-components #==0.13.1
+    - dash-daq #<=0.5.0
+    - dataclasses #<1
+    - decorator #<=4.4.2
+    - et_xmlfile #<=1.0.1
+    - flask #<=1.1.4
+    - flask-compress #<=1.15
+    - future #>=0.14.0
+    - immutables #<=0.19
+    - itsdangerous #<=1.1.0
+    - joblib #<=1.1.1
+    - kaleido-core #<=0.2.1  # dtale 3.22.0 would require kaleido <=0.2.1, for which no candidates were found.
+    - kiwisolver #<=1.1.0
+    - markupsafe #<=1.1.1
+    - matplotlib-base #<=2.2.5
     - missingno !=0.4.3
-    - networkx
-    - openpyxl
+    - networkx #<=2.2
+    - numpy #<=1.16.6
+    - openpyxl #<=2.6.4
+    - packaging
     - pandas
     - pkginfo
     - plotly >=4.14.3
-    - requests
-    - seaborn
-    - scikit-learn
-    - scipy
-    - six
+    - pyparsing #<=2.4.7
+    - requests #<=2.31.0
+    - scikit-learn #<=0.20.4
+    - scipy #<=1.2.3
+    - seaborn-base #<=0.9.1  # seaborn-base <=0.9.1, for which no candidates were found.
     - squarify
-    - statsmodels
+    - statsmodels #<=0.10.2
     - strsimpy
-    - xarray
+    - six
+    - tenacity #<=7.0.0
+    - threadpoolctl #<=3.1.0
+    - urllib3 #<=2.0.7
+    - werkzeug #<=1.0.1
+    - xarray #<=0.11.3
     - xlrd
+    - zipp #<=3.15.0
+    - zstandard #<=0.20.0
 
 tests:
   - python:
@@ -63,17 +80,61 @@ tests:
         - dtale
         - dtale.cli
       pip_check: false
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
   - script:
       - dtale --help
 
 about:
+  homepage: https://github.com/man-group/dtale
+  description: |
+    Web Client for Visualizing Pandas Objects
   license: LGPL-2.1-only
   license_file: LICENSE
   summary: D-Tale is the combination of a Flask back-end and a React front-end to bring you an easy way to view & analyze Pandas data structures
-  homepage: https://github.com/man-group/dtale/
   repository: https://github.com/man-group/dtale/
   documentation: https://dtale.readthedocs.io
 
 extra:
   recipe-maintainers:
     - aschonfeld
+
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dtale
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dtale
+  cfe-purls:
+    - pkg:conda/dtale@${{ version }}?channel=conda-forge
+    - pkg:pypi/dtale@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/man-group/dtale
+  cfe-import-names: [dtale]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/dtale-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-3.22.0
+
+  cfe-forge-blocker-list:
+    - license-unresolved:REPLACE_LICENSE
+
+  cfe-last-checked: 2026-08-17T01:19:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T01:19:53Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T01:19:53Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+#    # blocker: license-unresolved:REPLACE_LICENSE
+####

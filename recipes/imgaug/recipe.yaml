@@ -17,18 +17,19 @@ source:
     - remove_opencv_dependency_from_pip.patch
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python >=3.4
+    - python ${{ python_min }}.*
     - pip
+    - setuptools <82
   run:
-    - python >=3.4
+    - python >=${{ python_min }}
     - six
-    - numpy >=1.15
+    - numpy >=1.15,<2.0
     - scipy
     - pillow
     - matplotlib-base
@@ -36,12 +37,16 @@ requirements:
     - opencv
     - imageio
     - shapely
+    - imagecodecs <2026.0.0
 
 tests:
   - python:
       imports:
         - imgaug
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   license: MIT
@@ -60,3 +65,38 @@ extra:
     - mdraw
     - aleju
     - hmaarrfk
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: imgaug
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: imgaug
+  cfe-purls:
+    - pkg:conda/imgaug@${{ version }}?channel=conda-forge
+    - pkg:pypi/imgaug@${{ version }}
+  cfe-upstream-repo: https://github.com/aleju/imgaug
+  cfe-upstream-homepage: https://github.com/aleju/imgaug
+  cfe-import-names: [imgaug]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/imgaug-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.4.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T01:29:14Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T01:29:14Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T01:29:14Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

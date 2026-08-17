@@ -2,27 +2,26 @@
 schema_version: 1
 
 context:
-  name: smmap
   version: "5.0.3"
 
 package:
-  name: ${{ name|lower }}
+  name: smmap
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/smmap-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/smmap/smmap-${{ version }}.tar.gz
   sha256: 4d9debb8b99007ae47165abc08670bd74cb74b5227dda7f643eccc4e9eb5642c
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
 
@@ -31,20 +30,53 @@ tests:
       imports:
         - smmap
       pip_check: true
-      python_version: 
-        - ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
         - "*"
 
 about:
-  summary: A pure git implementation of a sliding window memory map manager.
+  homepage: https://github.com/gitpython-developers/smmap
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/gitpython-developers/smmap
+  summary: A pure Python implementation of a sliding window memory map manager
+  description: |
+    A pure Python implementation of a sliding window memory map manager
   repository: https://github.com/gitpython-developers/smmap
   documentation: https://pythonhosted.org/smmap/
-
 extra:
   recipe-maintainers:
     - xylar
     - pelson
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: smmap
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: smmap
+  cfe-purls:
+    - pkg:conda/smmap@${{ version }}?channel=conda-forge
+    - pkg:pypi/smmap@${{ version }}
+  cfe-upstream-repo: https://github.com/gitpython-developers/smmap
+  cfe-upstream-homepage: https://github.com/gitpython-developers/smmap
+  cfe-import-names: [smmap]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/smmap-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T01:09:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T01:09:47Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T01:09:47Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

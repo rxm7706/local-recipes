@@ -2,26 +2,26 @@
 schema_version: 1
 
 context:
-  name: gptcache
   version: "0.1.44"
 
 package:
-  name: ${{ name|lower }}
+  name: gptcache
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/gptcache-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/g/gptcache/gptcache-${{ version }}.tar.gz
   sha256: d3d5e6a75c57594dc58212c2d6c53a7999c23ede30e0be66d213d885c0ad0be9
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
     - openai
@@ -34,14 +34,53 @@ tests:
       imports:
         - gptcache
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: GPTCache, a powerful caching library that can be used to speed up and lower the cost of chat applications that rely on the LLM service. GPTCache works as a memcache for AIGC applications, similar to how Redis works for traditional applications.
+  homepage: https://github.com/zilliztech/GPTCache
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/zilliztech/GPTCache
+  summary: GPTCache, a powerful caching library that can be used to speed up and lower the cost of chat applications that rely on the LLM service. GPTCache works as a memcache for AIGC applications, similar to how Redis works for traditional applications.
+  description: |
+    GPTCache, a powerful caching library that can be used to speed up and lower the cost of chat applications that rely on the LLM service. GPTCache works as a memcache for AIGC applications, similar to how Redis works for traditional applications.
 
 extra:
   recipe-maintainers:
     - YYYasin19
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: gptcache
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: gptcache
+  cfe-purls:
+    - pkg:conda/gptcache@${{ version }}?channel=conda-forge
+    - pkg:pypi/gptcache@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/zilliztech/GPTCache
+  cfe-import-names: [gptcache]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/gptcache-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.1.44
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T01:25:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T01:25:05Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T01:25:05Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

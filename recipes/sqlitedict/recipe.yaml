@@ -2,25 +2,24 @@
 schema_version: 1
 
 context:
-  name: sqlitedict
   version: "2.1.0"
 
 package:
-  name: ${{ name|lower }}
+  name: sqlitedict
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/sqlitedict/sqlitedict-${{ version }}.tar.gz
   sha256: 03d9cfb96d602996f1d4c2db2856f1224b96a9c431bdd16e78032a72940f9e8c
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
     - setuptools
   run:
@@ -30,21 +29,62 @@ tests:
   - python:
       imports:
         - sqlitedict
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: https://github.com/piskvorky/sqlitedict
   license: Apache-2.0
-  license_file: LICENSE.md
+  license_file: LICENSE
   summary: Persistent dict in Python, backed up by sqlite3 and pickle, multithread-safe.
-  homepage: https://github.com/RaRe-Technologies/sqlitedict
-  repository: https://github.com/RaRe-Technologies/sqlitedict
-  documentation: https://github.com/RaRe-Technologies/sqlitedict
+  description: |
+    Persistent dict in Python, backed up by sqlite3 and pickle, multithread-safe.
 
 extra:
   recipe-maintainers:
     - notestaff
     - synapticarbors
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sqlitedict
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sqlitedict
+  cfe-purls:
+    - pkg:conda/sqlitedict@${{ version }}?channel=conda-forge
+    - pkg:pypi/sqlitedict@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/piskvorky/sqlitedict
+  cfe-import-names: [sqlitedict]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/sqlitedict-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.1.0
+
+  cfe-forge-blocker-list:
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+    - missing-license-file
+
+  cfe-last-checked: 2026-08-17T02:09:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T02:09:00Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T02:09:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+#    # license: rattler-build did not copy a license file; recorded, retrying common names
+#    # blocker: missing-license-file
+####

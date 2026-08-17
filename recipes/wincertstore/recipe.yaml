@@ -2,56 +2,83 @@
 schema_version: 1
 
 context:
-  version: "0.2"
-  pip_version: "20.2.3"
-  setuptools_version: "49.6.0"
+  version: "0.2.1"
 
 package:
   name: wincertstore
   version: ${{ version }}
 
 source:
-  - url: https://pypi.org/packages/source/w/wincertstore/wincertstore-${{ version }}.zip
-    sha256: 780bd1557c9185c15d9f4221ea7f905cb20b93f7151ca8ccaed9714dce4b327a
-    target_directory: wincertstore
-  # bootstrap pip and setuptools to avoid circular dependency
-  # but without losing metadata
-  - url: https://pypi.org/packages/py2.py3/p/pip/pip-${{ pip_version }}-py2.py3-none-any.whl
-    sha256: 0f35d63b7245205f4060efe1982f5ea2196aa6e5b26c07669adcf800e2542026
-    target_directory: pip_wheel
-  - url: https://pypi.org/packages/py3/s/setuptools/setuptools-${{ setuptools_version }}-py3-none-any.whl
-    sha256: 4dd5bb0a0a0cff77b46ca5dd3a84857ee48c83e8223886b556613c724994073f
-    target_directory: setuptools_wheel
+  url: https://pypi.org/packages/source/w/wincertstore/wincertstore-0.2.1.zip
+  sha256: ebd681f45f4e156493b4fa54f134b9a171d9c0a8de40ae1a0bc96c3092cb8b12
 
 build:
-  number: 1010
+  number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - __win
 
 tests:
   - python:
       imports:
         - wincertstore
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: PSF-2.0
-  license_file: wincertstore/LICENSE
+  homepage: https://github.com/tiran/wincertstore
+  license: PSFL
+  license_file: LICENSE
   summary: Python module to extract CA and CRL certs from Windows' cert store (ctypes based).
-  homepage: https://pypi.org/project/wincertstore/
+  description: |
+    Python module to extract CA and CRL certs from Windows' cert store (ctypes based).
 
 extra:
   recipe-maintainers:
     - jakirkham
     - patricksnape
     - ocefpaf
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wincertstore
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wincertstore
+  cfe-purls:
+    - pkg:conda/wincertstore@${{ version }}?channel=conda-forge
+    - pkg:pypi/wincertstore@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/tiran/wincertstore
+  cfe-import-names: [wincertstore]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/wincertstore-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.2.1
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T02:09:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T02:09:08Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T02:09:08Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

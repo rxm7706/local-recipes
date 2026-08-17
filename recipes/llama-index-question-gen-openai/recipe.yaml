@@ -2,51 +2,82 @@
 schema_version: 1
 
 context:
-  name: llama-index-question-gen-openai
   version: "0.3.1"
 
 package:
-  name: ${{ name|lower }}
+  name: llama-index-question-gen-openai
   version: ${{ version }}
 
 source:
-  - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/llama_index_question_gen_openai-${{ version }}.tar.gz
-    sha256: 5e9311b433cc2581ff8a531fa19fb3aa21815baff75aaacdef11760ac9522aa9
-  # https://github.com/run-llama/llama_index/issues/10806
-  - url: https://raw.githubusercontent.com/run-llama/llama_index/main/LICENSE
-    sha256: 24f40b5190fdacabc24ddbb5f76364d15e4f030925220ea300d8a2dd4993c8cb
+  url: https://pypi.org/packages/source/l/llama-index-question-gen-openai/llama_index_question_gen_openai-${{ version }}.tar.gz
+  sha256: 5e9311b433cc2581ff8a531fa19fb3aa21815baff75aaacdef11760ac9522aa9
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
     - pip
+    - hatchling
   run:
-    - python >=${{ python_min }},<4.0
-    - llama-index-core >=0.12.0,<0.13
-    - llama-index-program-openai >=0.3.0,<0.4
-    - llama-index-llms-openai >=0.4.0,<0.5
+    - python >=${{ python_min }}
+    - llama-index-core <0.13,>=0.12.0
+    - llama-index-llms-openai <0.5,>=0.4.0
+    - llama-index-program-openai <0.4,>=0.3.0
 
 tests:
   - python:
       imports:
         - llama_index.question_gen.openai
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: llama-index question_gen openai integration
+  homepage: https://pypi.org/project/llama-index-question-gen-openai/
   license: MIT
   license_file: LICENSE
-  homepage: https://llamaindex.ai
-  repository: https://github.com/run-llama/llama_index/tree/main/llama-index-integrations/question_gen/llama-index-question-gen-openai
+  summary: llama-index question_gen openai integration
+  description: |
+    llama-index question_gen openai integration
 
 extra:
   recipe-maintainers:
     - jan-janssen
     - pavelzw
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: llama-index-question-gen-openai
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: llama-index-question-gen-openai
+  cfe-purls:
+    - pkg:conda/llama-index-question-gen-openai@${{ version }}?channel=conda-forge
+    - pkg:pypi/llama-index-question-gen-openai@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/llama-index-question-gen-openai/
+  cfe-import-names: [llama_index.question_gen.openai]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/llama-index-question-gen-openai-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T01:50:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T01:50:21Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T01:50:21Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

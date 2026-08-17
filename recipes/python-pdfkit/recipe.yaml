@@ -46,3 +46,40 @@ extra:
   recipe-maintainers:
     - scopatz
     - jsta
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-pdfkit
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-pdfkit
+  cfe-purls:
+    - pkg:conda/python-pdfkit@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-pdfkit@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/JazzCore/python-pdfkit
+  cfe-import-names: [pdfkit]
+  cfe-source-kind: github-tag
+  cfe-noarch: python
+  cfe-pip-check: "false"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/python-pdfkit-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T01:58:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T01:58:17Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T01:58:17Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+#    # generate failed rc=1: Fetching info for python-pdfkit...
+Error: Failed to fetch PyPI metadata for 'python-pdfkit' from any of 1 source(s); last error: 404 at https://pypi.org/pypi/python-pdfkit/json
+
+####

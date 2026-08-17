@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: lightrag-hku
-  version: "1.0.8"
+  version: "1.5.6"
 
 package:
   name: ${{ name|lower }}
@@ -11,12 +11,12 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/lightrag_hku-${{ version }}.tar.gz
-  sha256: cfc8c023db192e0204b80f82bd0c0cf99d670fbfaaeba7e7d27b20c1d85cf3b7
+  sha256: 1c5afb96db5cd9f0b13b7d8d93ce1daf5a51bf7e2f74fe5ce4fe3eb9be03e77f
   patches:
     - requirements.patch
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -26,24 +26,32 @@ requirements:
     - pip
     - setuptools
   run:
-    - aioboto3
-    - ollama
-    - pyvis
     - python >=${{ python_min }}
     - accelerate
+    - aioboto3
+    - configparser
+    - google-api-core
+    - google-genai
+    - graspologic
+    - hnswlib
+    - json-repair
+    - nano-vectordb
+    - neo4j-python-driver
+    - networkx
+    - ollama
     - ollama-python
     - openai
-    - tiktoken
-    - networkx
-    - graspologic
-    - nano-vectordb
-    - hnswlib
+    - oracledb
+    - pipmaster
+    - pypinyin
+    - python-dotenv
     - python-xxhash
     - pytorch
+    - pyvis
     - tenacity
+    - tiktoken
     - transformers
-    - neo4j-python-driver
-    - oracledb
+    - xlsxwriter
 
 tests:
   - python:
@@ -51,7 +59,9 @@ tests:
         - lightrag
       pip_check: true
 
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 about:
   summary: "LightRAG: Simple and Fast Retrieval-Augmented Generation"
   license: MIT
@@ -61,3 +71,37 @@ about:
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: lightrag-hku
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: lightrag-hku
+  cfe-purls:
+    - pkg:conda/lightrag-hku@${{ version }}?channel=conda-forge
+    - pkg:pypi/lightrag-hku@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/HKUDS/LightRAG
+  cfe-import-names: [lightrag]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/lightrag-hku-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - version-update-to-1.5.6
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T01:35:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T01:35:40Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T01:35:40Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -27,7 +27,7 @@ requirements:
     - setuptools >=61.0
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - fastmcp
     - requests
     - pyyaml
@@ -47,6 +47,7 @@ tests:
       pip_check: true
       python_version:
         - ${{ python_min }}.*
+        - "*"
   - requirements:
       run:
         - pip

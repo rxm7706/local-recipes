@@ -2,31 +2,30 @@
 schema_version: 1
 
 context:
-  name: datasette
   version: "0.65.3"
 
 package:
-  name: ${{ name|lower }}
+  name: datasette
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/datasette-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/d/datasette/datasette-${{ version }}.tar.gz
   sha256: ad283ea3c7f80423cb8ea5741fb9072878b40aedae3e3b63ab9856d92191582d
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
       - datasette = datasette.cli:cli
 
 requirements:
   host:
-    - pip
-    - pytest-runner
     - python ${{ python_min }}.*
+    - pip
     - setuptools
+    - pytest-runner
   run:
     - python >=${{ python_min }}
     - asgiref >=3.2.10
@@ -65,9 +64,10 @@ tests:
       - datasette --help
 
 about:
-  summary: An open source multi-tool for exploring and publishing data
+  homepage: https://datasette.io/
   license: Apache-2.0
   license_file: LICENSE
+  summary: An open source multi-tool for exploring and publishing data
   description: |
     Datasette is a tool for exploring and publishing data. It helps people take
     data of any shape or size and publish that as an interactive,
@@ -77,11 +77,40 @@ about:
     ecosystem of tools and plugins dedicated to making working with structured
     data as productive as possible.
 
-
-  homepage: https://datasette.io/
-  repository: https://github.com/simonw/datasette
   documentation: https://docs.datasette.io/en/stable/
-
+  repository: https://github.com/simonw/datasette
 extra:
   recipe-maintainers:
     - thewchan
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: datasette
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: datasette
+  cfe-purls:
+    - pkg:conda/datasette@${{ version }}?channel=conda-forge
+    - pkg:pypi/datasette@${{ version }}
+  cfe-upstream-repo: https://github.com/simonw/datasette
+  cfe-upstream-homepage: https://datasette.io/
+  cfe-import-names: [datasette]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/datasette-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T01:15:57Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T01:15:57Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T01:15:57Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

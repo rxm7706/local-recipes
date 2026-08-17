@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: pyzipper
-  version: "0.3.6"
+  version: "0.4.0"
 
 package:
-  name: ${{ name|lower }}
+  name: pyzipper
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyzipper-${{ version }}.tar.gz
-  sha256: 0adca90a00c36a93fbe49bfa8c5add452bfe4ef85a1b8e3638739dd1c7b26bfc
+  url: https://pypi.org/packages/source/p/pyzipper/pyzipper-${{ version }}.tar.gz
+  sha256: a4b96afcac04c5589d5abdc6158dd362166374e3cc6810aa441e65f8a17cb9e3
 
 build:
   number: 0
@@ -20,9 +19,9 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - setuptools >=77.0.3
   run:
     - python >=${{ python_min }}
     - pycryptodomex
@@ -32,14 +31,53 @@ tests:
       imports:
         - pyzipper
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: AES encryption for zipfile.
+  homepage: https://github.com/danifus/pyzipper
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/danifus/pyzipper
+  summary: AES encryption for zipfile.
+  description: |
+    AES encryption for zipfile.
 
 extra:
   recipe-maintainers:
     - cml37
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyzipper
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyzipper
+  cfe-purls:
+    - pkg:conda/pyzipper@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyzipper@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://github.com/danifus/pyzipper
+  cfe-import-names: [pyzipper]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/pyzipper-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.4.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T01:59:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T01:59:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T01:59:24Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

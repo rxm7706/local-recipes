@@ -2,15 +2,14 @@
 schema_version: 1
 
 context:
-  name: ragas
   version: "0.4.3"
 
 package:
-  name: ${{ name|lower }}
+  name: ragas
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ragas-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/r/ragas/ragas-${{ version }}.tar.gz
   sha256: 1eb1f61dbc8613ad014fdb8d630cbe9a1caec1ea01664a106993cb756128c001
 
 build:
@@ -20,50 +19,87 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}
-    - setuptools >=45
-    - setuptools-scm >=6.2
+    - python ${{ python_min }}.*
     - pip
+    - setuptools >=64
+    - setuptools-scm >=8
   run:
-    - networkx
-    - scikit-network
-    - gitpython
-    - instructor
-    - pillow >=10.4.0
-    - rich
-    - tqdm
-    - typer
-    - diskcache >=5.6.3
-    - pydantic >=2.0.0
     - python >=${{ python_min }}
-    - numpy >=1.21.0,<3.0.0
+    - numpy <3.0.0,>=1.21.0
     - datasets >=4.0.0
     - tiktoken
+    - pydantic >=2.0.0
+    - nest-asyncio
+    - appdirs
+    - diskcache >=5.6.3
+    - typer
+    - rich
+    - openai >=1.0.0
+    - tqdm
+    - instructor
+    - pillow >=10.4.0
+    - networkx
+    - scikit-network
     - langchain
     - langchain-core
     - langchain-community
     - langchain-openai
-    - openai >=1.0.0
-    - pysbd >=0.3.4
-    - nest-asyncio
-    - appdirs
-    - nltk
-    - llama-index
-    - git
 
 tests:
   - python:
       imports:
         - ragas
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: Evaluation framework for your Retrieval Augmented Generation (RAG) pipelines
+  homepage: https://github.com/vibrantlabsai/ragas
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/explodinggradients/ragas/
+  summary: Evaluation framework for RAG and LLM applications
+  description: |
+    Evaluation framework for RAG and LLM applications
+  repository: https://github.com/vibrantlabsai/ragas
+  documentation: https://docs.ragas.io
 
 extra:
   recipe-maintainers:
     - jan-janssen
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ragas
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ragas
+  cfe-purls:
+    - pkg:conda/ragas@${{ version }}?channel=conda-forge
+    - pkg:pypi/ragas@${{ version }}
+  cfe-upstream-repo: https://github.com/vibrantlabsai/ragas
+  cfe-upstream-homepage: https://github.com/vibrantlabsai/ragas
+  cfe-import-names: [ragas]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ragas-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.4.3
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T02:03:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T02:03:23Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T02:03:23Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+#    # added run deps from import test: ['langchain-community']
+####

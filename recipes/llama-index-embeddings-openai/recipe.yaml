@@ -2,50 +2,81 @@
 schema_version: 1
 
 context:
-  name: llama-index-embeddings-openai
   version: "0.6.0"
 
 package:
-  name: ${{ name|lower }}
+  name: llama-index-embeddings-openai
   version: ${{ version }}
 
 source:
-  - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/llama_index_embeddings_openai-${{ version }}.tar.gz
-    sha256: eb3e6606be81cb89125073e23c97c0a6119dabb4827adbd14697c2029ad73f29
-  # https://github.com/run-llama/llama_index/issues/10806
-  - url: https://raw.githubusercontent.com/run-llama/llama_index/main/LICENSE
-    sha256: 24f40b5190fdacabc24ddbb5f76364d15e4f030925220ea300d8a2dd4993c8cb
+  url: https://pypi.org/packages/source/l/llama-index-embeddings-openai/llama_index_embeddings_openai-${{ version }}.tar.gz
+  sha256: eb3e6606be81cb89125073e23c97c0a6119dabb4827adbd14697c2029ad73f29
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
     - pip
+    - hatchling
   run:
+    - python >=${{ python_min }}
+    - llama-index-core <0.15,>=0.13.0
     - openai >=1.1.0
-    - python >=${{ python_min }},<4.0
-    - llama-index-core >=0.13.0,<0.15
 
 tests:
   - python:
       imports:
         - llama_index.embeddings.openai
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: llama-index embeddings openai integration
+  homepage: https://pypi.org/project/llama-index-embeddings-openai/
   license: MIT
   license_file: LICENSE
-  homepage: https://llamaindex.ai
-  repository: https://github.com/run-llama/llama_index/tree/main/llama-index-integrations/embeddings/llama-index-embeddings-openai
+  summary: llama-index embeddings openai integration
+  description: |
+    llama-index embeddings openai integration
 
 extra:
   recipe-maintainers:
     - jan-janssen
     - pavelzw
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: llama-index-embeddings-openai
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: llama-index-embeddings-openai
+  cfe-purls:
+    - pkg:conda/llama-index-embeddings-openai@${{ version }}?channel=conda-forge
+    - pkg:pypi/llama-index-embeddings-openai@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/llama-index-embeddings-openai/
+  cfe-import-names: [llama_index.embeddings.openai]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/llama-index-embeddings-openai-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T01:38:55Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T01:38:55Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T01:38:55Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,45 +1,29 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-#
-# See the guidelines for updating this recipe for new releases:
-# https://github.com/scrapy/scrapy/wiki/Scrapy-release-procedure#conda-packages
-#
-# The requirements below shall match the requirements from the target package
-# version (check setup.py for changes).
 schema_version: 1
 
 context:
-  name: Scrapy
   version: "2.17.0"
-  sha256: b536d14166b05e2183b19ae105a7af849cd14d4c1f70d3009d9b1828c0ab3d92
 
 package:
-  name: ${{ name|lower }}
+  name: scrapy
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | lower }}-${{ version }}.tar.gz
-  sha256: ${{ sha256 }}
-  file_name: ${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/s/Scrapy/scrapy-${{ version }}.tar.gz
+  sha256: b536d14166b05e2183b19ae105a7af849cd14d4c1f70d3009d9b1828c0ab3d92
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . --no-deps -vv
-  python:
-    entry_points:
-      - scrapy = scrapy.cmdline:execute
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}
+    - python ${{ python_min }}.*
     - pip
-    - hatchling
+    - hatchling >=1.27.0
   run:
     - python >=${{ python_min }}
-    # pywin32 exists for unix as a noop package
-    - pywin32
-    # Same order as setup.py:
-    - twisted >=21.7.0
     - cryptography >=37.0.0
     - cssselect >=0.9.1
     - defusedxml >=0.7.1
@@ -49,58 +33,34 @@ requirements:
     - packaging
     - parsel >=1.5.0
     - protego >=0.1.15
-    - pyOpenSSL >=22.0.0
-    - queuelib >=1.4.2
-    - service_identity >=23.1.0
-    - tldextract
-    - w3lib >=1.17.0
-    - zope.interface >=5.1.0
     - pydispatcher >=2.0.5
+    - pyopenssl >=22.0.0
+    - pypydispatcher >=2.1.0
+    - queuelib >=1.4.2
+    - service-identity >=23.1.0
+    - tldextract
+    - twisted >=21.7.0
+    - w3lib >=1.17.0
+    - zope-interface >=5.1.0
 
 tests:
-  - files:
-      source:
-        - conftest.py
-        - pyproject.toml
+  - python:
+      imports:
         - scrapy
-        - tests
-    requirements:
-      run:
-        - python ${{ python_min }}
-        - attrs
-        - botocore
-        - brotli >=1.2.0
-        - if: not win
-          then: bpython
-        - httpx
-        - ipython
-        - google-cloud-storage
-        - pip
-        - jmespath
-        - pexpect
-        - pillow
-        - pyftpdlib
-        - pytest >=8.4.1
-        - pytest-twisted
-        - testfixtures
-        - priority >=1.1.0,<2.0
-        - sybil
-        - setuptools-scm
-    script:
-      - scrapy version -v
-      - mv scrapy _scrapy
-      - pytest _scrapy tests
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  license: BSD-3-Clause-Clear
-  license_file: LICENSE
-  summary: A high-level Python Screen Scraping framework
-  description: |
-    Scrapy is an open source and collaborative framework for extracting the
-    data you need from websites in a fast, simple, yet extensible way.
   homepage: https://scrapy.org/
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A high-level Web Crawling and Web Scraping framework
+  description: |
+    A high-level Web Crawling and Web Scraping framework
   repository: https://github.com/scrapy/scrapy
-  documentation: https://docs.scrapy.org
+  documentation: https://docs.scrapy.org/
 
 extra:
   recipe-maintainers:
@@ -109,3 +69,38 @@ extra:
     - Gallaecio
     - wRAR
     - dangra
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: scrapy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: scrapy
+  cfe-purls:
+    - pkg:conda/scrapy@${{ version }}?channel=conda-forge
+    - pkg:pypi/scrapy@${{ version }}
+  cfe-upstream-repo: https://github.com/scrapy/scrapy
+  cfe-upstream-homepage: https://scrapy.org/
+  cfe-import-names: [scrapy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/scrapy-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-2.17.0
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T02:05:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T02:05:54Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T02:05:54Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

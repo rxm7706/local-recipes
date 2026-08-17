@@ -2,51 +2,83 @@
 schema_version: 1
 
 context:
-  name: llama-index-agent-openai
   version: "0.4.12"
 
 package:
-  name: ${{ name|lower }}
+  name: llama-index-agent-openai
   version: ${{ version }}
 
 source:
-  - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/llama_index_agent_openai-${{ version }}.tar.gz
-    sha256: d2fe53feb69cfe45752edb7328bf0d25f6a9071b3c056787e661b93e5b748a28
-  # https://github.com/run-llama/llama_index/issues/10806
-  - url: https://raw.githubusercontent.com/run-llama/llama_index/main/LICENSE
-    sha256: 24f40b5190fdacabc24ddbb5f76364d15e4f030925220ea300d8a2dd4993c8cb
+  url: https://pypi.org/packages/source/l/llama-index-agent-openai/llama_index_agent_openai-${{ version }}.tar.gz
+  sha256: d2fe53feb69cfe45752edb7328bf0d25f6a9071b3c056787e661b93e5b748a28
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
     - pip
+    - hatchling
   run:
-    - openai >=1.14.0
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - llama-index-core >=0.12.41,<0.13
     - llama-index-llms-openai >=0.4.0,<0.5
+    - openai >=1.14.0
 
 tests:
   - python:
       imports:
         - llama_index.agent.openai
       pip_check: true
-      python_version: ${{ python_min }}
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
-  summary: llama-index agent openai integration
+  homepage: https://pypi.org/project/llama-index-agent-openai/
   license: MIT
   license_file: LICENSE
-  homepage: https://llamaindex.ai
+  summary: llama-index agent openai integration
+  description: |
+    llama-index agent openai integration
   repository: https://github.com/run-llama/llama_index/tree/main/llama-index-integrations/agent/llama-index-agent-openai
 
 extra:
   recipe-maintainers:
     - jan-janssen
     - pavelzw
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: llama-index-agent-openai
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: llama-index-agent-openai
+  cfe-purls:
+    - pkg:conda/llama-index-agent-openai@${{ version }}?channel=conda-forge
+    - pkg:pypi/llama-index-agent-openai@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: https://pypi.org/project/llama-index-agent-openai/
+  cfe-import-names: [llama_index.agent.openai]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/llama-index-agent-openai-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T01:36:39Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T01:36:39Z
+  cfe-local-build-status: build-clean-test-blocked
+  cfe-local-build-datetime: 2026-08-17T01:36:39Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

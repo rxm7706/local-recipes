@@ -2,29 +2,27 @@
 schema_version: 1
 
 context:
-  name: ecdsa
   version: "0.19.2"
 
 package:
-  name: ${{ name|lower }}
+  name: ecdsa
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/e/ecdsa/ecdsa-${{ version }}.tar.gz
   sha256: 62635b0ac1ca2e027f82122b5b81cb706edc38cd91c63dda28e4f3455a2bf930
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
+    - python ${{ python_min }}.*
     - pip
-    - python ${{ python_min }}
     - setuptools
   run:
-    - gmpy2
     - python >=${{ python_min }}
     - six >=1.9.0
 
@@ -32,19 +30,55 @@ tests:
   - python:
       imports:
         - ecdsa
-      pip_check: false
-      python_version: ${{ python_min }}
-  - requirements:
-      run:
-        - python ${{ python_min }}
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  homepage: http://github.com/tlsfuzzer/python-ecdsa
   license: MIT
   license_file: LICENSE
   summary: ECDSA cryptographic signature library (pure python)
-  homepage: http://github.com/warner/python-ecdsa
+  description: |
+    ECDSA cryptographic signature library (pure python)
 
 extra:
   recipe-maintainers:
     - mariusvniekerk
     - m-rossi
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ecdsa
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ecdsa
+  cfe-purls:
+    - pkg:conda/ecdsa@${{ version }}?channel=conda-forge
+    - pkg:pypi/ecdsa@${{ version }}
+  cfe-upstream-repo: none
+  cfe-upstream-homepage: http://github.com/tlsfuzzer/python-ecdsa
+  cfe-import-names: [ecdsa]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/ecdsa-feedstock
+  cfe-forge-recipe-updates-needed: 
+    - meta-yaml-to-recipe-yaml
+    - version-update-to-0.19.2
+
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T01:23:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T01:23:05Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-17T01:23:05Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -79,3 +79,35 @@ extra:
     - pmlandwehr
     - ocefpaf
     - bollwyvl
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: selenium
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: selenium
+  cfe-purls:
+    - pkg:conda/selenium@${{ version }}?channel=conda-forge
+    - pkg:pypi/selenium@${{ version }}
+  cfe-upstream-repo: https://github.com/SeleniumHQ/selenium
+  cfe-upstream-homepage: https://www.selenium.dev
+  cfe-import-names: [selenium, selenium.common, selenium.webdriver.common, selenium.webdriver.chrome, selenium.webdriver.chromium, selenium.webdriver.edge, selenium.webdriver.firefox, selenium.webdriver.remote, selenium.webdriver.support]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: confirmed-on-conda-forge
+  cfe-on-conda-forge-feedstock: https://github.com/conda-forge/selenium-feedstock
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T02:07:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T02:07:04Z
+  cfe-local-build-status: failed
+  cfe-local-build-datetime: 2026-08-17T02:07:04Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####
