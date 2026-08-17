@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: shortid
+  version: "0.1.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/shortid-${{ version }}.tar.gz
+  sha256: adaa0c51269d9b5b635eedc408672b08697d404099370ea0857d108a48eef6ac
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - shortid
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Short id generator
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/corpix/shortid
+
+extra:
+  recipe-maintainers:
+    - rxm7706

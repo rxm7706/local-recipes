@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pysmb
+  version: "1.2.7"
+  sha256: 298605b8f467ce15b412caaf9af331c135e88fa2172333af14b1b2916361cb6b
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('_', '-') }}-${{ version }}.zip
+  sha256: ${{ sha256 }}
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pyasn1
+
+tests:
+  - python:
+      imports:
+        - smb
+        - nmb
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Zlib
+  license_file: LICENSE
+  summary: pysmb is an experimental SMB/CIFS library written in Python to support file sharing between Windows and Linux machine
+  homepage: https://github.com/miketeo/pysmb
+  repository: https://github.com/miketeo/pysmb
+  documentation: https://github.com/miketeo/pysmb
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - rzillman

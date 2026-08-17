@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: composio-client
+  version: "1.43.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/composio_client-${{ version }}.tar.gz
+  sha256: bb96700da0c2aabc394cebc954be0ebf419557cc42b40f5d148aac52a5aff6f9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling ==1.26.3
+    - hatch-fancy-pypi-readme
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - httpx >=0.23.0,<1
+    - pydantic >=1.9.0,<3
+    - typing_extensions >=4.14,<5
+    - anyio >=3.5.0,<5
+    - distro >=1.7.0,<2
+    - sniffio
+
+tests:
+  - python:
+      imports:
+        - composio_client
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: The official Python library for the composio API
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/ComposioHQ/composio-base-py
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

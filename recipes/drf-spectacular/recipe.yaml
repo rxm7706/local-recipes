@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: drf-spectacular
+  version: "0.30.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/drf_spectacular-${{ version }}.tar.gz
+  sha256: 53e79e7ba00e240441b63c32273754a5368e4c2ab44a19f2595277cc1cd559c9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=2.2
+    - djangorestframework >=3.10.3
+    - uritemplate >=2.0.0
+    - pyyaml >=5.1
+    - jsonschema >=2.6.0
+    - inflection >=0.3.1
+    - typing-extensions
+
+tests:
+  - python:
+      imports:
+        - drf_spectacular
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Sane and flexible OpenAPI 3 schema generation for Django REST framework
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/tfranzel/drf-spectacular
+  repository: https://github.com/tfranzel/drf-spectacular
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - MichelML

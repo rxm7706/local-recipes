@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jupyter_http_over_ws
+  version: "0.0.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: b0aa1e7902d3808a698d4853f6dfe12fd02a0d9cb3851db3bf59703106d44a80
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python
+  run:
+    - notebook >=5.0
+    - python
+    - six >=1.6.0
+    - tornado >=4.5
+
+tests:
+  - python:
+      imports:
+        - jupyter_http_over_ws
+      pip_check: true
+
+about:
+  summary: Jupyter support for HTTP-over-ws
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/googlecolab/jupyter_http_over_ws
+
+extra:
+  recipe-maintainers:
+    - step21

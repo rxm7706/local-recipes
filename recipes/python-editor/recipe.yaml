@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-editor
+  version: "1.0.4"
+  compress_type: tar.gz
+  hash_val: 51fda6bcc5ddbbb7063b2af7509e43bd84bfc32a4ff71349ec7847713882327b
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ compress_type }}
+  sha256: ${{ hash_val }}
+  file_name: ${{ name }}-${{ version }}.${{ compress_type }}
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python >=2.6,<3.12
+    - pip
+  run:
+    - python >=2.6,<3.12
+
+tests:
+  - python:
+      imports:
+        - editor
+      pip_check: false
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Programmatically open an editor, capture the result.
+  homepage: https://github.com/fmoo/python-editor
+  repository: https://github.com/fmoo/python-editor
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr

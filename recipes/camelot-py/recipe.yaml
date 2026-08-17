@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: camelot-py
+  version: "2.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/camelot_py-${{ version }}.tar.gz
+  sha256: e96891d30707b3e2f1c08cb7ae15eea67abe72485ca92c7025b6308ba37bd3cd
+
+build:
+  number: 0
+  skip: match(python, "<3.9") or win
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - camelot = camelot.__main__:main
+
+requirements:
+  host:
+    - python ${{ python }}
+    - setuptools
+    - pip
+  run:
+    - python ${{ python }}
+    - click >=8.0.1
+    - pillow >=10.4.0
+    - numpy >=1.26.1
+    - openpyxl >=3.1.0
+    - pandas >=2.2.2
+    - tabulate >=0.9.0
+    - if: match(python, "<3.11")
+      then: typing_extensions >=4.12.2
+    - opencv >=4.7.0.68
+    - pypdfium2 >=4
+    - playa-pdf >=0.8.1
+
+tests:
+  - python:
+      imports:
+        - camelot
+      pip_check: false
+  - requirements:
+      run:
+        - pip
+    script:
+      - camelot --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: PDF Table Extraction for Humans.
+  homepage: http://camelot-py.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - vinayak-mehta
+    - bosd
+    - izahn
+    - AaronOpfer

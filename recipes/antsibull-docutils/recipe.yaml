@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4.0"
+
+package:
+  name: antsibull-docutils
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/antsibull-docutils/antsibull_docutils-${{ version }}.tar.gz
+  sha256: be0d66ca40b8a8828f4ea45a142fc0e7e5af9e6a0c54082056e4999da402bb0d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - docutils
+
+tests:
+  - python:
+      imports:
+        - antsibull_docutils
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/antsibull-docutils/
+  license: GPL-3.0-or-later
+  license_file: LICENSE
+  summary: Antsibull docutils helpers
+  description: |
+    Antsibull docutils helpers
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: antsibull-docutils
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: antsibull-docutils
+  cfe-purls:
+    - pkg:conda/antsibull-docutils@${{ version }}?channel=conda-forge
+    - pkg:pypi/antsibull-docutils@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/antsibull-docutils/
+  cfe-upstream-homepage: https://pypi.org/project/antsibull-docutils/
+  cfe-import-names: [antsibull_docutils]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:22Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

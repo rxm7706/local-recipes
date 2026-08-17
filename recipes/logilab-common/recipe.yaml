@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: logilab-common
+  version: "1.7.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/logilab-common-${{ version }}.tar.gz
+  sha256: ac08bd39f76b8e4834a2c2d32919472297550f12da59eed332124a74dfb0a40b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - mypy_extensions
+    - setuptools
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - logilab
+        - logilab.common
+      pip_check: true
+
+about:
+  summary: collection of low-level Python packages and modules used by Logilab projects
+  license: GPL-2.0-or-later
+  license_file: COPYING
+  homepage: http://www.logilab.org/project/logilab-common
+
+extra:
+  recipe-maintainers:
+    - jakirkham

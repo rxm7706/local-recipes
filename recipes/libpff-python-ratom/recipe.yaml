@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "20220304"
+
+package:
+  name: libpff-python-ratom
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/libpff-python-ratom/libpff-python-ratom-${{ version }}.tar.gz
+  sha256: 76aecf5caba03be36aada7f9ae6c75a2f1f3cee066703f8561f0d7303e8fc7b3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - libpff_python_ratom
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/libyal/libpff/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Python bindings module for libpff
+  description: |
+    Python bindings module for libpff
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: libpff-python-ratom
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: libpff-python-ratom
+  cfe-purls:
+    - pkg:conda/libpff-python-ratom@${{ version }}?channel=conda-forge
+    - pkg:pypi/libpff-python-ratom@${{ version }}
+  cfe-upstream-repo: https://github.com/libyal/libpff/
+  cfe-upstream-homepage: https://github.com/libyal/libpff/
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:36:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:36:50Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

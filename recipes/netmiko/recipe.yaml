@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.7.0"
+
+package:
+  name: netmiko
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/netmiko/netmiko-${{ version }}.tar.gz
+  sha256: 94cf7bfe5daed1d058444ce1637e10177df22f903683a53d1fbee47553488c65
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=1.0.0
+  run:
+    - python >=${{ python_min }}
+    - ntc-templates >=3.1.0
+    - paramiko <5.0,>=3.5.0
+    - pyserial >=3.3
+    - pyyaml >=6.0.2
+    - rich >=13.8
+    - ruamel.yaml >=0.17
+    - scp >=0.13.6
+    - textfsm >=1.1.3
+
+tests:
+  - python:
+      imports:
+        - netmiko
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/ktbyers/netmiko
+  license: MIT
+  license_file: LICENSE
+  summary: Multi-vendor library to simplify legacy CLI connections to network devices
+  description: |
+    Multi-vendor library to simplify legacy CLI connections to network devices
+  repository: https://github.com/ktbyers/netmiko
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: netmiko
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: netmiko
+  cfe-purls:
+    - pkg:conda/netmiko@${{ version }}?channel=conda-forge
+    - pkg:pypi/netmiko@${{ version }}
+  cfe-upstream-repo: https://github.com/ktbyers/netmiko
+  cfe-upstream-homepage: https://github.com/ktbyers/netmiko
+  cfe-import-names: [netmiko]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:51:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:51:53Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

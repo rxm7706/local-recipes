@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: texttable
+  version: "1.7.0"
+  sha256: 2d2068fb55115807d3ac77a4ca68fa48803e84ebb0ee2340f858107a36522638
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: python -m pip install . --no-deps --ignore-installed
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - texttable
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: LGPL-3.0-only
+  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE
+  summary: Python module for creating simple ASCII tables
+  description: texttable is a module to generate a formatted text table, using ASCII characters.
+  homepage: https://github.com/foutaise/texttable/
+  repository: https://github.com/foutaise/texttable/
+  documentation: https://github.com/foutaise/texttable#documentation
+
+extra:
+  recipe-maintainers:
+    - williamjamir
+    - nicoddemus
+    - micknudsen

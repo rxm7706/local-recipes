@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: argon2-cffi-bindings
+  version: "25.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: b957f3e6ea4d55d820e40ff76f450952807013d361a65d7f28acc0acbf29229d
+
+build:
+  number: 2
+  script:
+    content:
+      - if: unix
+        then: ln -sf $RANLIB $BUILD_PREFIX/bin/ranlib
+      - ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: match(python, "<3.14") and build_platform != target_platform
+      then: cffi >=1.0.1
+    - if: match(python, ">=3.14") and build_platform != target_platform
+      then: cffi >=2.0.0b1
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - if: match(python, "<3.14")
+      then: cffi >=1.0.1
+    - if: match(python, ">=3.14")
+      then: cffi >=2.0.0b1
+    - setuptools >=45
+    - setuptools_scm >=6.2
+    - wheel
+  run:
+    - python
+    - if: match(python, "<3.14")
+      then: cffi >=1.0.1
+    - if: match(python, ">=3.14")
+      then: cffi >=2.0.0b1
+
+tests:
+  - python:
+      imports:
+        - _argon2_cffi_bindings
+      pip_check: true
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Low-level Python CFFI Bindings for Argon2
+  description: |
+    argon2-cffi-bindings provides low-level CFFI bindings to the Argon2
+    password hashing algorithm including a vendored version of them.
+  homepage: https://github.com/hynek/argon2-cffi-bindings
+  repository: https://github.com/hynek/argon2-cffi-bindings
+  documentation: https://github.com/hynek/argon2-cffi-bindings
+
+extra:
+  recipe-maintainers:
+    - stuertz

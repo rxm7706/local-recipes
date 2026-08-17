@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.4"
+
+package:
+  name: cryptidy
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/cryptidy/cryptidy-${{ version }}.tar.gz
+  sha256: dd2984d09c920211a862e5718dc87ea2db8fdc597f5faec961a4d4b30f7fe923
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pycryptodomex >=3.6.0
+
+tests:
+  - python:
+      imports:
+        - cryptidy
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/netinvent/cryptidy
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Python high level library for symmetric & asymmetric encryption
+  description: |
+    Python high level library for symmetric & asymmetric encryption
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cryptidy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cryptidy
+  cfe-purls:
+    - pkg:conda/cryptidy@${{ version }}?channel=conda-forge
+    - pkg:pypi/cryptidy@${{ version }}
+  cfe-upstream-repo: https://github.com/netinvent/cryptidy
+  cfe-upstream-homepage: https://github.com/netinvent/cryptidy
+  cfe-import-names: [cryptidy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:51:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:51:41Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

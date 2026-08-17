@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "12.7.0"
+
+package:
+  name: spire-pdf
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/s/spire-pdf/spire_pdf-12.7.0-py3-none-macosx_10_7_universal.whl
+  sha256: 9af1134b0d895a65c49b4111f180b35ac035a07338f1ae44ee42ed1c41173957
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - plum-dispatch ==1.7.4
+
+tests:
+  - python:
+      imports:
+        - spire_pdf
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://www.e-iceblue.com
+  license: MIT
+  license_file: LICENSE
+  summary: A 100% standalone Pdf Python API for Processing Pdf Files
+  description: |
+    A 100% standalone Pdf Python API for Processing Pdf Files
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: spire-pdf
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: spire-pdf
+  cfe-purls:
+    - pkg:conda/spire-pdf@${{ version }}?channel=conda-forge
+    - pkg:pypi/spire-pdf@${{ version }}
+  cfe-upstream-repo: https://www.e-iceblue.com
+  cfe-upstream-homepage: https://www.e-iceblue.com
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:06:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:06:40Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

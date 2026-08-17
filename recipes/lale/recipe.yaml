@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: lale
+  version: "0.9.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/lale-${{ version }}.tar.gz
+  sha256: 821c1dc514537974300d60e097ff9ec582c8d424fea84abed939dc5fcefdabcc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - numpy
+    - setuptools >=61.0,<82.0
+    - black >=22.1.0
+    - python-graphviz
+    - hyperopt >=0.2,<=0.2.5
+    - jsonschema <=4.20.0
+    - jsonsubschema >=0.0.6
+    - scikit-learn >=1.0.0,<1.5.0
+    - scipy
+    - pandas
+    - packaging
+    - decorator
+    - astunparse
+    - typing-extensions
+
+tests:
+  - python:
+      imports:
+        - lale
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Library for Semi-Automated Data Science
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  homepage: https://github.com/IBM/lale
+
+extra:
+  recipe-maintainers:
+    - josk0

@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-language-server
+  version: "0.36.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 9984c84a67ee2c5102c8e703215f407fcfa5e62b0ae86c9572d0ada8c4b417b0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - pyls = pyls.__main__:main
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - jedi >=0.17.2,<0.18.0a0
+    - python-jsonrpc-server >=0.4.0
+    - pycodestyle >=2.6.0,<2.7.0
+    - pydocstyle >=2.0.0
+    - pyflakes >=2.2.0,<2.3.0
+    - pylint >=2.5.0
+    - python >=3.6
+    - yapf
+    - pluggy
+    - autopep8
+    - mccabe >=0.6.0,<0.7.0
+    - setuptools
+    - rope >=0.10.5
+    - flake8 >=3.8.0
+    - ujson >=3.0
+
+tests:
+  - requirements:
+      run:
+        - pip
+    script:
+      - python -m pip check
+      - pyls --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: An implementation of the Language Server Protocol for Python
+  description: |
+    A Python 2.7 and 3.4+ implementation of the Language Server Protocol
+    making use of Jedi, pycodestyle, Pyflakes and YAPF.
+  homepage: https://github.com/palantir/python-language-server
+  repository: https://github.com/palantir/python-language-server
+
+extra:
+  recipe-maintainers:
+    - goanpeca
+    - ccordoba12
+    - rlaverde
+    - andfoy

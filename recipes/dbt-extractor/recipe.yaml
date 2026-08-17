@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dbt-extractor
+  version: "0.6.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dbt_extractor-${{ version }}.tar.gz
+  sha256: d6cf08ec793b8bc2bd6e260ef818230ae68a4f71436fa489f08d7db1a52e2ffe
+
+build:
+  number: 2
+  skip: match(python, "<3.6")
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('rust') }}
+    - maturin
+  host:
+    - maturin
+    - pip
+    - python
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - dbt_extractor
+      pip_check: true
+
+about:
+  # Check with upstream to package license file
+  license_file: LICENSE
+  license: Apache-2.0
+  summary: Jinja value templates for dbt model files
+  homepage: https://pypi.org/project/dbt-extractor/
+  repository: https://github.com/dbt-labs/dbt-extractor
+
+extra:
+  recipe-maintainers:
+    - maresb
+    - thewchan

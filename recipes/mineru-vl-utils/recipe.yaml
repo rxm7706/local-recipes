@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.1"
+
+package:
+  name: mineru-vl-utils
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/m/mineru-vl-utils/mineru_vl_utils-1.2.1-py3-none-any.whl
+  sha256: 9129b987c7b942af4c38b555a1cf41fa660f4efae222acd602e61f9a94ce27df
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - httpx
+    - httpx-retries
+    - aiofiles
+    - pillow
+    - pydantic
+    - loguru
+    - tqdm
+
+tests:
+  - python:
+      imports:
+        - mineru_vl_utils
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/opendatalab/mineru-vl-utils
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Utilities for MinerU Vision-Language models
+  description: |
+    Utilities for MinerU Vision-Language models
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mineru-vl-utils
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mineru-vl-utils
+  cfe-purls:
+    - pkg:conda/mineru-vl-utils@${{ version }}?channel=conda-forge
+    - pkg:pypi/mineru-vl-utils@${{ version }}
+  cfe-upstream-repo: https://github.com/opendatalab/mineru-vl-utils
+  cfe-upstream-homepage: https://github.com/opendatalab/mineru-vl-utils
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:39:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:39:30Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

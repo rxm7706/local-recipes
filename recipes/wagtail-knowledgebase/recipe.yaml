@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: wagtail-knowledgebase
+  version: "1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail-knowledgebase-${{ version }}.tar.gz
+  sha256: d27f7ed855f43bd8c1272da22b12465a945486c7a68e0d36abedb11a2bdcbbb4
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - wagtail >=5.0.0
+
+tests:
+  - python:
+      imports:
+        - wtknowledgebase
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Knowledgebase pages with bootstrap compatible StreamFields configured
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/skruger/wagtail-knowledgebase
+
+extra:
+  recipe-maintainers:
+    - rxm7706

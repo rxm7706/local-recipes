@@ -1,0 +1,124 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.3"
+  lib_version: 1.0.0
+
+package:
+  name: osqp
+  version: ${{ version }}
+
+source:
+  url: https://github.com/osqp/osqp-python/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: f23bd72d2102d08fd6a819ed3676978afab4c65bde14de24f01303a500fe7fa9
+  patches:
+    - patches/0001-Link-against-shared-osqp-library.patch
+    # remove pytorch imports in tests; this reduces reliance on pytorch being available
+    # on conda-forge. (for eg: pytorch takes a while to get new python version
+    # support available)
+    - patches/0002-Remove-pytorch-related-imports.patch
+    - patches/0003-disable-codegen-ABI-is-not-compatible.patch
+
+build:
+  number: 1
+  script:
+    - if: unix
+      then:
+        - export SETUPTOOLS_SCM_PRETEND_VERSION=${{ version }}
+        - export CMAKE_GENERATOR=Ninja
+        - export CMAKE_INCLUDE_PATH=$PREFIX/include
+    - if: win
+      then:
+        - set "SETUPTOOLS_SCM_PRETEND_VERSION=${{ version }}"
+        # on Windows, we cannot set CMAKE_GENERATOR directly due to the issue
+        # https://github.com/scikit-build/scikit-build-core/issues/1089
+        - set "SKBUILD_CMAKE_ARGS=-G Ninja"
+        - set "CMAKE_INCLUDE_PATH=%LIBRARY_INC%"
+    # CMP0190=NEW + an emulator lets cmake 4.4 FindPython query the target interpreter
+    # when cross-compiling, otherwise cross-compiling free-threaded Python fails.
+    # See https://gitlab.kitware.com/cmake/cmake/-/work_items/28029
+    - if: build_platform != target_platform
+      then: |
+        ${{ PYTHON }} -m pip install . --no-deps -vv \
+          -Ccmake.define.CMAKE_POLICY_DEFAULT_CMP0190=NEW \
+          -Ccmake.define.CMAKE_CROSSCOMPILING_EMULATOR=/usr/bin/env
+      else: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - numpy
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - pybind11 >=3.0.0
+  host:
+    - python
+    - scikit-build-core
+    - setuptools_scm
+    - pip
+    - numpy
+    - libosqp =${{ lib_version }}
+    - setuptools
+    - pybind11 >=3.0.0
+  run:
+    - python
+    - qdldl-python
+    - jinja2
+    - joblib
+    - scipy
+  run_constraints:
+    - if: win
+      then: mkl >=2022.0
+
+tests:
+  - python:
+      imports:
+        - osqp
+        - osqp.codegen
+  - requirements:
+      run:
+        - if: x86_64
+          then: blas * mkl
+        - pytest
+    script:
+      interpreter: python
+      content:
+        - import pytest
+        # codegen tests are disabled because they require an incompatible ABI, see patches
+        - 'tests_to_skip = "codegen"'
+        # skip test that takes 90%+ of test suite runtime (and is xfailed anyway)
+        - if: aarch64 or ppc64le
+          then:
+            - 'tests_to_skip += " or test_multithread"'
+        - 'args = ["--pyargs", "osqp", "-k", f"not ({tests_to_skip})"]'
+        - 'print(f"running pytest with args: {args}")'
+        - 'pytest.main(args)'
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python interface for OSQP, the Operator Splitting QP Solver
+  description: |
+    Python interface for OSQP, the Operator Splitting QP Solver.
+
+    To use the `codegen` interface, install `cmake` and an appropriate
+    compiler version. (We don't install this by default.)
+  homepage: https://osqp.org/
+  repository: http://github.com/osqp/osqp-python
+  documentation: https://osqp.org/
+
+extra:
+  recipe-maintainers:
+    - sebp
+    - djsutherland
+    - h-vetinari
+    - bstellato
+    - gbanjac
+    - jayfurmanek

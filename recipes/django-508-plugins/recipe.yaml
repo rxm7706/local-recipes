@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.0.2"
+
+package:
+  name: django-508-plugins
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-508-plugins/django_508_plugins-${{ version }}.tar.gz
+  sha256: 86722e16c01933f5651e623829783363d86194537fc0a114afb0f44937685e94
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - plugins
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/imsweb/django-508-plugins
+  license: MIT
+  license_file: LICENSE
+  summary: Installable Django app containing 508-compliant plugins.
+  description: |
+    Installable Django app containing 508-compliant plugins.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-508-plugins
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-508-plugins
+  cfe-purls:
+    - pkg:conda/django-508-plugins@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-508-plugins@${{ version }}
+  cfe-upstream-repo: https://github.com/imsweb/django-508-plugins
+  cfe-upstream-homepage: https://github.com/imsweb/django-508-plugins
+  cfe-import-names: [plugins]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:53:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:53:09Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

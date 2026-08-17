@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: gdown
+  version: "6.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 361c6e04c6ca335df50b9d71f40bcfe9ab70fb26a1b0e890a427267781389553
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - gdown = gdown.__main__:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+    - hatch-fancy-pypi-readme
+    - hatch-vcs
+  run:
+    - python >=${{ python_min }}
+    - filelock
+    - requests
+    - tqdm
+    - beautifulsoup4
+
+tests:
+  - python:
+      imports:
+        - gdown
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - gdown --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Download a large file from Google Drive.
+  description: |
+    Download a large file from Google Drive.
+    If you use curl/wget, it fails with a large file because of the security
+    warning from Google Drive.
+
+
+  homepage: https://github.com/wkentaro/gdown
+
+extra:
+  recipe-maintainers:
+    - hmaarrfk

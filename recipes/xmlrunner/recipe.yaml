@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: xmlrunner
+  version: "1.7.7"
+  sha256: 5a6113d049eca7646111ee657266966e5bbfb0b5ceb2e83ee0772e16d7110f39
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: python setup.py install --single-version-externally-managed --record record.txt
+
+requirements:
+  build:
+    - python
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - xmlrunner
+      pip_check: false
+
+about:
+  license: LGPL-3.0-only
+  # LICENSE possibily can be omitted in the next release
+  # https://github.com/pycontribs/xmlrunner/blob/master/MANIFEST.in#L2
+  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE
+  summary: PyUnit-based test runner with JUnit like XML reporting.
+  description: |
+    unittest-xml-reporting is a unittest test runner that can save test results
+    to XML files that can be consumed by a wide range of tools, such as build
+    systems, IDEs and continuous integration servers.
+  homepage: https://github.com/pycontribs/xmlrunner
+  repository: https://github.com/pycontribs/xmlrunner
+  documentation: https://github.com/pycontribs/xmlrunner
+
+extra:
+  recipe-maintainers:
+    - stolpeo

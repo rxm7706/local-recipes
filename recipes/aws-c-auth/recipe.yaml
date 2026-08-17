@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.10.4"
+
+package:
+  name: aws-c-auth
+  version: ${{ version }}
+
+source:
+  url: https://github.com/awslabs/aws-c-auth/archive/v${{ version }}.tar.gz
+  sha256: 6fb567f496a450d4b6d3f5749d735977a0156957e8ccbca9af7a5ee15d1ffda7
+
+build:
+  number: 2
+
+requirements:
+  build:
+    - cmake
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ninja
+  host:
+    - aws-c-cal
+    - aws-c-common
+    - aws-c-http
+    - aws-c-io
+    - aws-c-sdkutils
+  run_exports:
+    - ${{ pin_subpackage("aws-c-auth", upper_bound="x.x.x") }}
+
+tests:
+  - script:
+      - if: unix
+        then:
+          - test -f $PREFIX/lib/libaws-c-auth${SHLIB_EXT}
+          - test -f $PREFIX/include/aws/auth/auth.h
+      - if: win
+        then:
+          - if not exist %LIBRARY_INC%\\aws\\auth\\auth.h exit 1
+          - if not exist %PREFIX%\\Library\\bin\\aws-c-auth.dll exit 1
+about:
+  homepage: https://github.com/awslabs/aws-c-io
+  repository: https://github.com/awslabs/aws-c-io
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: 'C99 library implementation of AWS client-side authentication: standard credentials providers and signing.'
+
+extra:
+  recipe-maintainers:
+    - tkelman
+    - xhochy
+    - conda-forge/aws-sdk-cpp

@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pydub
+  version: "0.25.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 980a33ce9949cab2a569606b65674d748ecbca4f0796887fd6f46173a7b0d30f
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pydub
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Manipulate audio with a simple and easy high level interface
+  homepage: http://pydub.com
+  repository: https://github.com/jiaaro/pydub
+  documentation: http://pydub.com
+
+extra:
+  recipe-maintainers:
+    - kynan
+    - owenlamont

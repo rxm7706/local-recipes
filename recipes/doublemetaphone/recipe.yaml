@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: DoubleMetaphone
+  version: "1.2"
+  md5: 7c807bacfca8f5168adb28e68299b720
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | lower }}-${{ version }}.tar.gz
+  md5: ${{ md5 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  skip: win and match(python, ">=3,<4")
+  script: python setup.py install --single-version-externally-managed --record record.txt
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+    - setuptools
+    - cython
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - doublemetaphone
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Python wrapper for C++ Double Metaphone
+  homepage: https://github.com/datamade/doublemetaphone
+  repository: https://github.com/datamade/doublemetaphone
+
+extra:
+  recipe-maintainers:
+    - proinsias

@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: vllm-nccl-cu12
+  version: "2.18.1.0.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/vllm_nccl_cu12-${{ version }}.tar.gz
+  sha256: d56535da1b893ac49c1f40be9245f999e543c3fc95b4839642b70dd1d72760c0
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - vllm_nccl
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Manages vllm-nccl dependency.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/vllm-project/vllm-nccl
+
+extra:
+  recipe-maintainers:
+    - rxm7706

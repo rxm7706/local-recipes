@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+## github.com/petl-developers/petl-feedstock
+schema_version: 1
+
+context:
+  name: petl
+  version: "1.7.23"
+  sha256: b5c54f281b761f983ca6a4d8bc54fbd7b8285816a03ac0534552bee873c1e655
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install -vv --no-deps --ignore-installed .
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+    - setuptools
+    - setuptools_scm
+    - pytest <7.0.0
+  run:
+    - python >=3.6
+
+tests:
+  - python:
+      imports:
+        - petl
+      pip_check: false
+  - files:
+      source:
+        - petl/
+    requirements:
+      run:
+        - pytest <7.0.0
+    script:
+      - which pip3 && pip3 check || echo Missing pip3 in the environment
+      - pytest --verbose petl
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: A Python package for extracting, transforming and loading tables of data.
+  homepage: http://github.com/petl-developers/petl
+  repository: https://github.com/petl-developers/petl
+  documentation: http://petl.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - alimanfoo
+    - timbledum
+    - juarezr
+    - arturponinski

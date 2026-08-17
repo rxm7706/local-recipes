@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.3.3"
+
+package:
+  name: cython-blis
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/blis/blis-${{ version }}.tar.gz
+  sha256: 034d4560ff3cc43e8aa37e188451b0440e3261d989bb8a42ceee865607715ecd
+
+build:
+  # if you care about ppc, please debug the failures
+  number: 0
+  skip: ppc64le
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - if: build_platform != target_platform
+      then: numpy
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    # cannot use clang 19+ due to https://github.com/llvm/llvm-project/pull/92883; see #67
+    - if: win
+      then: clangdev <19
+  host:
+    - python
+    - pip
+    - cython
+    - setuptools
+    - numpy
+    - wheel
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - blis
+        - blis.py
+        - blis.cy
+      pip_check: false
+  - requirements:
+      run:
+        - pytest
+        - hypothesis
+    script:
+      - pytest --tb=native --pyargs blis
+
+about:
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE
+    - blis/LICENSE
+  summary: Fast matrix-multiplication as a self-contained Python library – no system dependencies!
+  homepage: http://github.com/explosion/cython-blis
+  repository: https://github.com/explosion/cython-blis
+  documentation: https://github.com/explosion/cython-blis
+
+extra:
+  recipe-maintainers:
+    - conda-forge/spacy

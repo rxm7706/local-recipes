@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3.1"
+
+package:
+  name: agg
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/agg/agg-${{ version }}.tar.gz
+  sha256: 26968c11c67595da007ec717f7fb10d49462bf251ad7943d7be606d5f4f3370a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - userprovided
+
+tests:
+  - python:
+      imports:
+        - agg
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/RuedigerVoigt/agg
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Aggregate CSV files
+  description: |
+    Aggregate CSV files
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: agg
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: agg
+  cfe-purls:
+    - pkg:conda/agg@${{ version }}?channel=conda-forge
+    - pkg:pypi/agg@${{ version }}
+  cfe-upstream-repo: https://github.com/RuedigerVoigt/agg
+  cfe-upstream-homepage: https://github.com/RuedigerVoigt/agg
+  cfe-import-names: [agg]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

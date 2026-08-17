@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: simple-salesforce
+  version: "1.10.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/simple-salesforce-${{ version }}.tar.gz
+  sha256: 20fd66cf40da732b9cdcb2f7160dde7bb298ef0c31702d1fdd767d1fc68cfe1b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.5
+  run:
+    - authlib
+    - python >=3.5
+    - requests >=2.22.0
+
+tests:
+  - python:
+      imports:
+        - simple_salesforce
+      pip_check: true
+
+about:
+  description: A very simple Salesforce.com REST API client for Python
+  summary: Simple Salesforce is a basic Salesforce.com REST API client. The goal is to provide a very low-level interface to the API, returning an ordered dictionary of the API JSON response.
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  homepage: https://github.com/simple-salesforce/simple-salesforce
+  repository: https://github.com/simple-salesforce/simple-salesforce
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk

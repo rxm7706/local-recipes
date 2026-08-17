@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-codemirror6
+  version: "1.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django-codemirror6-${{ version }}.tar.gz
+  sha256: 47881f7dfaf0e082780c3fd5ee957d173bd37616c63332041605e9618a11216b
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - django
+
+tests:
+  - python:
+      imports:
+        - django_codemirror6
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  summary: Django CodeMirror 6
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/grantjenks/django-codemirror6
+  repository: https://github.com/grantjenks/django-codemirror6
+
+extra:
+  recipe-maintainers:
+    - rxm7706

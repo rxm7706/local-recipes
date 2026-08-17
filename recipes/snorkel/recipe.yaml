@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: snorkel
+  version: "0.10.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/snorkel-team/${{ name }}/releases/download/v${{ version }}/${{ name }}-${{ version }}.tar.gz
+  sha256: b1f36412430a810124cc0aac432fa29f41960cff2d9804d3816f9d9d0d6d44ed
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - munkres >=1.0.6
+    - numpy >=1.16.5,<1.20.0
+    - scipy >=1.2.0,<2.0.0
+    - pandas >=1.0.0,<2.0.0
+    - tqdm >=4.33.0,<5.0.0
+    - scikit-learn >=0.20.2,<0.25.0
+    - pytorch >=1.2.0,<2.0.0
+    - tensorboard >=1.14.0,<2.0.0
+    - networkx >=2.2,<2.4
+
+tests:
+  - python:
+      imports:
+        - snorkel
+      pip_check: false
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Snorkel is a system for programmatically building and managing training datasets to rapidly and flexibly fuel machine learning models.
+  description: |
+    Snorkel is a system for programmatically building and managing training
+    datasets to rapidly and flexibly fuel machine learning models.
+    Users write programmatic operations to label, transform, and structure training
+    datasets for machine learning, without needing to hand label any training data.
+    Snorkel then uses modern, theoretically-grounded modeling techniques to clean and
+    integrate the resulting training data.
+  homepage: https://snorkel.org
+  repository: https://github.com/snorkel-team/snorkel
+  documentation: https://snorkel.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - henryre
+    - vincentschen
+    - bhancock8
+    - oblute
+    - rluria14

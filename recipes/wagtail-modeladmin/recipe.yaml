@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: wagtail-modeladmin
   version: "2.4.0"
 
 package:
-  name: wagtail-modeladmin
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/w/wagtail-modeladmin/wagtail_modeladmin-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail_modeladmin-${{ version }}.tar.gz
   sha256: 11b051e4595242cec5f71b9e30acf1ca6b08809d27e3fa148d7f8e77cf60d9fe
 
 build:
@@ -19,32 +20,55 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - flit-core >=3.2,<4
     - pip
   run:
     - python >=${{ python_min }}
-    - wagtail >=7.0
+    - wagtail >=5.0
+    # - sphinxcontrib-spelling <9.0,>=8.0
+    # - sphinx_copybutton >=0.5
+    # - sphinx-wagtail-theme ==6.3.0
+    # - sphinx-autobuild >=0.6.0
+    # - pyenchant <4,>=3.1.1
+    # - pre-commit <3.0
+    # - myst_parser <1.0,>=0.18.1
+    # - dj-database-url >=2.0.0
+    # - Wagtail >=5.2
+    # - Sphinx >=6.0
+    # - sphinxcontrib-spelling <9.0,>=8.0
+    # - sphinx_copybutton >=0.5
+    # - sphinx-wagtail-theme ==6.3.0
+    # - sphinx-autobuild >=0.6.0
+    # - pyenchant <4,>=3.1.1
+    # - pre-commit <3.0
+    # - myst_parser <1.0,>=0.18.1
+    # - dj-database-url >=2.0.0
+    # - Wagtail >=7.0
+    # - Sphinx >=6.0
+    # - sphinxcontrib-spelling <9.0,>=8.0
+    # - sphinx_copybutton >=0.5
+    # - sphinx-wagtail-theme ==6.3.0
+    # - sphinx-autobuild >=0.6.0
+    # - pyenchant <4,>=3.1.1
+    # - pre-commit <3.0
+    # - myst_parser <1.0,>=0.18.1
+    # - dj-database-url >=2.0.0
+    # - Wagtail >=7.0
+    # - Sphinx >=6.0
 
 tests:
   - python:
       imports:
         - wagtail_modeladmin
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Add any model in your project to the Wagtail admin. Formerly wagtail.contrib.modeladmin.
   license: BSD-3-Clause
   license_file: LICENSE
   homepage: https://github.com/wagtail-nest/wagtail-modeladmin
-  repository: https://github.com/wagtail-nest/wagtail-modeladmin
-  description: |
-    Add any model in your project to the Wagtail admin. A reusable Django app
-    that re-packages the former wagtail.contrib.modeladmin module so models can
-    be administered through the Wagtail admin interface.
 
 extra:
   recipe-maintainers:

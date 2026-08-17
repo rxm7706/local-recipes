@@ -1,0 +1,114 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: arize-phoenix
+  version: "17.8.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/arize_phoenix-${{ version }}.tar.gz
+  sha256: e943615a6f8f23a41ffcbca245cbdc59e1352c00eb616f709b47a99a781ad363
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - hatch-jupyter-builder
+    - pip
+  run:
+    - python >=${{ python_min }},<3.13
+    - aioitertools
+    - aiosqlite
+    - alembic >=1.3.0, <2
+    - arize-phoenix-client
+    - arize-phoenix-evals
+    - arize-phoenix-otel
+    - authlib
+    - cachetools
+    - email-validator
+    - fast_hdbscan >=0.2.0
+    - fastapi
+    - greenlet !=0.4.17
+    - grpc-interceptor
+    - grpcio
+    - httpx
+    - jinja2
+    - jmespath
+    - joserfc
+    - jsonpath-ng
+    - jsonschema
+    - ldap3
+    - mcp
+    - numba >=0.60.0
+    - numpy
+    - openinference-instrumentation >=0.1.44
+    - openinference-instrumentation-openai >=0.1.41
+    - openinference-semantic-conventions >=0.1.26
+    - opentelemetry-exporter-otlp
+    - opentelemetry-proto >=1.12.0
+    - opentelemetry-sdk
+    - opentelemetry-semantic-conventions
+    - orjson
+    - pandas >=1.0
+    - prometheus_client
+    - protobuf >=3.20, <5.0
+    - psutil
+    - pyarrow
+    - pydantic >=2.1.0,<3
+    - pydantic-ai-slim >=1.95.0
+    - anthropic
+    - boto3
+    - aioboto3
+    - openai
+    - tiktoken
+    - pystache
+    - python-dateutil
+    - python-multipart
+    - pyyaml
+    - scikit-learn
+    - scipy
+    - sqlalchemy >=2.0.46, <3
+    - sqlean.py >=3.45.1
+    - starlette
+    - strawberry-graphql >=0.314.3
+    - tqdm
+    - typing-extensions >=4.6
+    - umap-learn
+    - uvicorn
+    - websockets
+    - wrapt >=1.17.2
+
+tests:
+  - python:
+      imports:
+        - phoenix
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  summary: ML Observability in your notebook
+  license: Elastic-2.0
+  license_file: LICENSE
+  homepage: https://github.com/Arize-ai/phoenix
+  documentation: https://docs.arize.com/phoenix
+
+extra:
+  recipe-maintainers:
+    - anticorrelator
+    - mikeldking
+    - rogerhyang
+    - michaelschiff
+    - fjcasti1
+    - axiomofjoy

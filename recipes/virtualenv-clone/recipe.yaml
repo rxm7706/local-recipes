@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: virtualenv-clone
+  version: "0.5.7"
+  sha256: 418ee935c36152f8f153c79824bb93eaf6f0f7984bae31d3f48f350b9183501a
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - virtualenv-clone=clonevirtualenv:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - virtualenv-clone --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: script to clone virtualenvs.
+  description: |
+    A script for cloning a non-relocatable virtualenv.
+  homepage: https://github.com/edwardgeorge/virtualenv-clone/
+  repository: https://github.com/edwardgeorge/virtualenv-clone/
+  documentation: https://github.com/edwardgeorge/virtualenv-clone/
+
+extra:
+  recipe-maintainers:
+    - holgern

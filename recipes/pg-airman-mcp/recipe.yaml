@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.1"
+  python_min: "3.12"
+
+package:
+  name: pg-airman-mcp
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pg-airman-mcp/pg_airman_mcp-${{ version }}.tar.gz
+  sha256: 9cb873157efc4a8d04f71cbcd8af20f47a87fe42552ff6674f2f77a2ac5f8ec3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - attrs >=25.3.0
+    - humanize >=4.8.0
+    - instructor >=1.7.9
+    - mcp >=1.9.2
+    - pglast ==7.2.0
+    - psycopg-pool >=3.2.6
+    - psycopg >=3.2.8
+    - pyjwt >=2.12.1
+    - pytest-cov >=7.0.0
+
+tests:
+  - python:
+      imports:
+        - pg_airman_mcp
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/pg-airman-mcp/
+  license: MIT
+  license_file: LICENSE
+  summary: PostgreSQL Tuning and Analysis Tool
+  description: |
+    PostgreSQL Tuning and Analysis Tool
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pg-airman-mcp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pg-airman-mcp
+  cfe-purls:
+    - pkg:conda/pg-airman-mcp@${{ version }}?channel=conda-forge
+    - pkg:pypi/pg-airman-mcp@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/pg-airman-mcp/
+  cfe-upstream-homepage: https://pypi.org/project/pg-airman-mcp/
+  cfe-import-names: [pg_airman_mcp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:30:38Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:30:38Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

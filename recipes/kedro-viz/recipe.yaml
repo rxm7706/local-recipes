@@ -15,7 +15,13 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    env:
+      WARNINGS: "ignore::kedro.KedroPythonVersionWarning"
+      PYTHONWARNINGS: "ignore::UserWarning"
+    content:
+      - "${{ PYTHON }} -m pip install -vv --use-pep517 --no-deps --no-build-isolation ."
+
 
 requirements:
   host:
@@ -32,7 +38,7 @@ requirements:
     - ipython >=7.0.0,<9.0
     - kedro >=1.0.0
     - kedro-telemetry >=0.6.0
-    - networkx >=2.5
+    - networkx >=2.4
     - orjson >=3.9,<4.0
     - packaging >=23.0
     - pandas >=1.3
@@ -45,13 +51,25 @@ requirements:
     - werkzeug >=3.0.0
 
 tests:
-  - python:
-      imports:
-        - kedro_viz
-      pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+#  - python:
+#      imports:
+#        - kedro_viz
+#      pip_check: true
+#      python_version:
+#        - ${{ python_min }}.*
+#        - "*"
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      env:
+        WARNINGS: "ignore::kedro.KedroPythonVersionWarning"
+        PYTHONWARNINGS: "ignore::UserWarning"
+      interpreter: python
+      content: |
+        import kedro_viz
+
 
 about:
   homepage: https://kedro.org
@@ -66,6 +84,10 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - cshaley
+    - millsks
+    - zaigner
+    - elanqo
 
 #### CFE metadata AND comments
 # CFE metadata

@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pystache
+  version: "0.6.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pystache-${{ version }}.tar.gz
+  sha256: 3707518e6a4d26dd189b07c10c669b1fc17df72684617c327bd3550e7075c72c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - pystache=pystache.commands.render:main
+      - pystache-test=pystache.commands.test:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=61
+    - setuptools-scm >=6.2
+    - pip
+  run:
+    - python >=${{ python_min }}
+    # only required for py<310 but want to stay noarch: python
+    - importlib-metadata >=4.6
+
+tests:
+  - python:
+      imports:
+        - pystache
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pip show pystache
+      - pip show __RECIPE_MANAGER_SUBSTITUTION_MARKER__ | grep -Fx 'Version: ${{ name }}'
+      - pystache --help
+      - pystache-test --help
+
+about:
+  summary: Mustache for Python
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/PennyDreadfulMTG/pystache
+  repository: https://github.com/PennyDreadfulMTG/pystache
+  documentation: https://github.com/PennyDreadfulMTG/pystache/blob/master/README.rst
+
+extra:
+  recipe-maintainers:
+    - xylar
+    - kwilcox
+    - jan-janssen

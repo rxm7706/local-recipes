@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: datasette-secrets
+  version: "0.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/datasette_secrets-${{ version }}.tar.gz
+  sha256: 5727ecb4be6e385ad44ba7c1b30f80e8fc3036fbcc184518c6b3e0a830c53b91
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - datasette
+    - cryptography
+
+tests:
+  - python:
+      imports:
+        - datasette_secrets
+      pip_check: true
+
+about:
+  summary: Manage secrets such as API keys for use with other Datasette plugins
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/datasette/datasette-secrets
+
+extra:
+  recipe-maintainers:
+    - rxm7706

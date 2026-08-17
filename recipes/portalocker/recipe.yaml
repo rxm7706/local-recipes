@@ -2,51 +2,62 @@
 schema_version: 1
 
 context:
+  name: portalocker
   version: "3.2.0"
 
 package:
-  name: portalocker
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/p/portalocker/portalocker-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
   sha256: 1f3002956a54a8c3730586c5c77bf18fae4149e07eaf1c29fc3faf4d5a3f89ac
+  file_name: ${{ name }}-${{ version }}.tar.gz
 
 build:
-  number: 0
-  noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
 
 requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
   host:
-    - python ${{ python_min }}.*
+    - python
     - pip
-    - setuptools
+    - pytest-runner
   run:
-    - python >=${{ python_min }}
+    - python
     - if: win
-      then: pywin32 >=226
+      then: pywin32
 
 tests:
   - python:
       imports:
         - portalocker
-      pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      pip_check: false
+  - files:
+      source:
+        - portalocker_tests
+    requirements:
+      run:
+        - pytest >=3.4.0
+        - pytest-cache >=1.0
+        - pytest-cov >=2.5.1
+        - pytest-flakes >=2.0.0
+        - pytest-pep8 >=1.0.6
 
 about:
-  homepage: https://github.com/WoLpH/portalocker
-  license: BSD-3-Clause
-  license_family: BSD
+  license: PSF-2.0
   license_file: LICENSE
   summary: Portalocker is a library to provide an easy API to file locking.
-  documentation: http://portalocker.readthedocs.org
+  homepage: https://github.com/WoLpH/portalocker
   repository: https://github.com/WoLpH/portalocker
+  documentation: http://portalocker.readthedocs.org
 
 extra:
   recipe-maintainers:
     - tyrius02
     - sodre
-    - rxm7706

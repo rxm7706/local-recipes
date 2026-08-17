@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.22"
+
+package:
+  name: django-sslserver
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/d/django-sslserver/django_sslserver-0.22-py3-none-any.whl
+  sha256: c598a363d2ccdc2421c08ddb3d8b0973f80e8e47a3a5b74e4a2896f21c2947c5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django
+
+tests:
+  - python:
+      imports:
+        - django_sslserver
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/teddziuba/django-sslserver
+  license: MIT
+  license_file: LICENSE
+  summary: An SSL-enabled development server for Django
+  description: |
+    An SSL-enabled development server for Django
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-sslserver
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-sslserver
+  cfe-purls:
+    - pkg:conda/django-sslserver@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-sslserver@${{ version }}
+  cfe-upstream-repo: https://github.com/teddziuba/django-sslserver
+  cfe-upstream-homepage: https://github.com/teddziuba/django-sslserver
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:54:01Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:54:01Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

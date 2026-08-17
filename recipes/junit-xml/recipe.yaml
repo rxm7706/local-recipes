@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: junit-xml
+  version: "1.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+    sha256: de16a051990d4e25a3982b2dd9e89d671067548718866416faec14d9de56db9f
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install --no-deps --ignore-installed --no-cache-dir -vvv .
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - six
+
+tests:
+  - python:
+      imports:
+        - junit_xml
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file:
+    - LICENSE.txt
+  summary: Creates JUnit XML test result documents that can be read by tools such as Jenkins
+  homepage: https://github.com/kyrus/python-junit-xml
+
+extra:
+  recipe-maintainers:
+    - chapmanb
+    - dfornika
+    - mariusvniekerk

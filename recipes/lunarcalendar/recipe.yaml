@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: LunarCalendar
+  version: "0.0.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 681142f22fc353c3abca4b25699e3d1aa7083ad1c268dce36ba297eca04bed5a
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - lunar-find = lunarcalendar.command:find
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+    - python-dateutil >=2.8.0
+    - ephem >=3.7.5.3
+    - pytz
+  run:
+    - python >=${{ python_min }}
+    - python-dateutil >=2.8.0
+    - ephem >=3.7.5.3
+    - pytz
+
+tests:
+  - python:
+      imports:
+        - lunarcalendar
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A lunar calendar converter, including a number of lunar and solar holidays, mainly from China.
+  homepage: https://github.com/wolfhong/LunarCalendar
+
+extra:
+  recipe-maintainers:
+    - bletham

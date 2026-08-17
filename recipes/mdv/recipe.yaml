@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mdv
+  version: "1.7.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/mdv-${{ version }}.tar.gz
+  sha256: eb84ed52a2b68d2e083e007cb485d14fac1deb755fd8f35011eff8f2889df6e9
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - mdv = mdv:run
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+    - markdown
+    - pygments
+
+tests:
+  - python:
+      imports:
+        - mdv
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - set PYTHONUTF8=1
+      - mdv --help
+
+about:
+  summary: Terminal Markdown Viewer
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: http://github.com/axiros/terminal_markdown_viewer
+
+extra:
+  recipe-maintainers:
+    - thewchan

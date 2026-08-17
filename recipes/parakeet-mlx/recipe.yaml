@@ -29,39 +29,25 @@ requirements:
   run:
     - python >=${{ python_min }}
     - dacite >=1.9.2
-    # conda-forge spells this with an underscore (G10)
     - huggingface_hub >=0.30.2
     - librosa >=0.11.0
     - mlx >=0.22.1
     - numpy >=2.2.5
     - typer >=0.15.3
 
-# mlx is available on linux-64, linux-aarch64 and osx-arm64 only -- Intel Macs
-# were dropped upstream (conda-forge osx-64 mlx tops out at 0.7.0, below this
-# recipe's >=0.22.1 floor) and there is no Windows build at all. staged-recipes
-# builds osx-64 and win-64, so an ungated test env cannot solve there:
-#   "mlx >=0.22.1, for which no candidates were found"
-# A platform-conditional TEST block is lint-clean on a noarch:python recipe
-# (unlike a platform-conditional run dep, G12/G76), so the tests run only where
-# the dependency exists. The package itself stays noarch and simply will not
-# solve where mlx is absent, which is correct.
 tests:
-  - if: linux
-    then:
-      python:
-        imports:
-          - parakeet_mlx
-        pip_check: true
-        python_version:
-          - ${{ python_min }}.*
-          - "*"
-  - if: linux
-    then:
-      requirements:
-        run:
-          - python ${{ python_min }}.*
-      script:
-        - parakeet-mlx --help
+  - python:
+      imports:
+        - parakeet_mlx
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - '*'
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - parakeet-mlx --help
 
 about:
   homepage: https://github.com/senstella/parakeet-mlx

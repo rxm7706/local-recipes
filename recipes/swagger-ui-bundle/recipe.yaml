@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: swagger-ui-bundle
+  version: "1.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/spec-first/swagger_ui_bundle/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 9bedc35baaffa8d902da4224621f053edf730ca8b8bb8414d3a7f3650fe3a255
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  host:
+    - jinja2 >=3.0.0
+    - python ${{ python_min }}
+    - poetry-core >=1.2.0
+    - pip
+  run:
+    - jinja2 >=3.0.0
+    - python >=${{ python_min }},<4.0
+
+tests:
+  - python:
+      imports:
+        - swagger_ui_bundle
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: swagger_ui_bundle - Swagger UI bundled for usage with Python
+  homepage: https://github.com/spec-first/swagger_ui_bundle
+  repository: https://github.com/spec-first/swagger_ui_bundle
+
+extra:
+  recipe-maintainers:
+    - kordian2k
+    - msarahan

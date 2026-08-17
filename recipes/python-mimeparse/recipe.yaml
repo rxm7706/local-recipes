@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-mimeparse
+  version: "2.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/python-mimeparse/python_mimeparse-${{ version }}.tar.gz
+  sha256: 5b9a9dcf7aa82465e31bd667f5cb7000604811dce83554f1c8a43693a32cb303
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - mimeparse
+      pip_check: true
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - mimeparse_test.py
+        - testdata.json
+    requirements:
+      run:
+        - pip
+        - pytest
+        - python ${{ python_min }}
+    script:
+      - pytest mimeparse_test.py
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A module provides basic functions for parsing mime-type names and matching them against a list of media-ranges.
+  homepage: https://github.com/dbtsai/python-mimeparse
+  repository: https://github.com/dbtsai/python-mimeparse
+  documentation: https://github.com/dbtsai/python-mimeparse
+
+extra:
+  recipe-maintainers:
+    - MementoRC
+    - anguslees
+    - pmlandwehr

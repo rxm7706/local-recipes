@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "8.45"
+
+package:
+  name: pcre
+  version: ${{ version }}
+
+source:
+  url: https://ftp.pcre.org/pub/pcre/pcre-${{ version }}.tar.gz
+  sha256: 4e6ce03e0336e8b4a3d6c2b70b1c5e18590a5673a98186da90d4f33c23defc09
+  patches:
+    - 0001-Define-snprintf-for-old-VS.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - if: unix
+      then: libtool
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - if: win
+      then: cmake
+    - if: not win
+      then: pkg-config
+    - if: not win
+      then: libtool
+    - if: unix
+      then: make
+  run_exports:
+    - ${{ pin_subpackage('pcre', upper_bound='x') }}
+
+tests:
+  - script:
+      - if: not win
+        then: pcre-config --version
+      - pcregrep --help
+      - pcretest --help
+      - if: not win
+        then: test -f "${PREFIX}/include/pcre.h"
+      - if: not win
+        then: test -f "${PREFIX}/include/pcre_scanner.h"
+      - if: not win
+        then: test -f "${PREFIX}/include/pcre_stringpiece.h"
+      - if: not win
+        then: test -f "${PREFIX}/include/pcrecpp.h"
+      - if: not win
+        then: test -f "${PREFIX}/include/pcrecpparg.h"
+      - if: not win
+        then: test -f "${PREFIX}/include/pcreposix.h"
+      - if: win
+        then: if not exist %LIBRARY_INC%\pcre.h exit 1
+      - if: win
+        then: if not exist %LIBRARY_INC%\pcre_scanner.h exit 1
+      - if: win
+        then: if not exist %LIBRARY_INC%\pcre_stringpiece.h exit 1
+      - if: win
+        then: if not exist %LIBRARY_INC%\pcrecpp.h exit 1
+      - if: win
+        then: if not exist %LIBRARY_INC%\pcrecpparg.h exit 1
+      - if: win
+        then: if not exist %LIBRARY_INC%\pcreposix.h exit 1
+      - if: not win
+        then: test -f "${PREFIX}/lib/libpcre.a"
+      - if: not win
+        then: test -f "${PREFIX}/lib/libpcre${SHLIB_EXT}"
+      - if: not win
+        then: test -f "${PREFIX}/lib/libpcrecpp.a"
+      - if: not win
+        then: test -f "${PREFIX}/lib/libpcrecpp${SHLIB_EXT}"
+      - if: not win
+        then: test -f "${PREFIX}/lib/libpcreposix.a"
+      - if: not win
+        then: test -f "${PREFIX}/lib/libpcreposix${SHLIB_EXT}"
+      - if: win
+        then: if not exist %LIBRARY_LIB%\pcre.lib exit 1
+      - if: win
+        then: if not exist %LIBRARY_BIN%\pcre.dll exit 1
+      - if: win
+        then: if not exist %LIBRARY_LIB%\pcreposix.lib exit 1
+      - if: win
+        then: if not exist %LIBRARY_BIN%\pcreposix.dll exit 1
+      - if: win
+        then: if not exist %LIBRARY_LIB%\pcrecpp.lib exit 1
+      - if: win
+        then: if not exist %LIBRARY_BIN%\pcrecpp.dll exit 1
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENCE
+  summary: Regular expression pattern matching using the same syntax and semantics as Perl 5.
+  homepage: http://www.pcre.org/
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - scopatz
+    - sebastian-luna-valero
+    - saraedum
+    - ocefpaf

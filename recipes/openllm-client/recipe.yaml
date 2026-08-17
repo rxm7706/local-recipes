@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: openllm-client
+  version: "0.5.7"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/openllm_client-${{ version }}.tar.gz
+  sha256: 5fa9ab4b5d65a149dce91328bf734123846b8e48af3cdc16ee183e809db61b00
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling ==1.18.0
+    - hatch-vcs ==0.3.0
+    - hatch-fancy-pypi-readme ==23.1.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - openllm-core
+    - httpx
+    - distro
+    - anyio
+
+tests:
+  - python:
+      imports:
+        - openllm_client
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: "OpenLLM Client: Interacting with OpenLLM HTTP/gRPC server, or any BentoML server."
+  license: Apache-2.0
+  license_file: LICENSE.md
+  homepage: https://github.com/bentoml/OpenLLM
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - conda-forge/openllm-core

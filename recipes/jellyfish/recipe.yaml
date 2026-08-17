@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jellyfish
+  version: "1.2.1"
+  bundle: tar.gz
+  hash: 72d2fda61b23babe862018729be73c8b0dc12e3e6601f36f6e65d905e249f4db
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
+  sha256: ${{ hash }}
+  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+
+build:
+  # Also skip for when ppc64le AND python<3.10 due to Maturin no support for now
+  number: 1
+  skip: match(python, "<3.7") or (match(python, "<3.10") and ppc64le)
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('rust') }}
+    - if: build_platform != target_platform
+      then: maturin >=0.14,<2
+  host:
+    - maturin >=0.14,<2
+    - pip
+    - python
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - jellyfish
+      pip_check: true
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: A library for doing approximate and phonetic matching of strings.
+  homepage: https://github.com/jamesturk/jellyfish
+  repository: https://github.com/jamesturk/jellyfish
+  documentation: https://jamesturk.github.io/jellyfish/
+
+extra:
+  recipe-maintainers:
+    - blabalme
+    - anthchirp
+    - thewchan

@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: hatch
+  version: 1.17.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/hatch-${{ version }}.tar.gz
+  sha256: e5f2f389ececd7e86cd86863e3f921a9024cd04ce6ef6b36d07cd9a6dc37c9cd
+
+build:
+  number: 0
+  noarch: python
+  script: sed -i '/"uv/d' ./pyproject.toml && python -m pip install . -v
+  python:
+    entry_points:
+      - hatch = hatch.cli:main
+
+requirements:
+  host:
+    - pip
+    - python  ${{ python_min }}.*
+    - hatchling >=1.21.0
+    - hatch-vcs >=0.4.0
+  run:
+    - backports.zstd >=1.0.0
+    - click >=8.0.6
+    - distro >=1.0.0
+    - hatchling >=1.27.0
+    - httpx2 >=0.22.0
+    - hyperlink >=21.0.0
+    - keyring >=23.5.0
+    - packaging >=24.2
+    - pexpect >=4.8,<5.dev0
+    - platformdirs >=2.5.0
+    - pyproject_hooks
+    - python >=${{ python_min }}
+    - python-discovery >=1.1
+    - rich >=11.2.0
+    - shellingham >=1.4.0
+    - tomli-w >=1.0
+    - tomlkit >=0.11.1
+    - userpath >=1.7,<2.dev0
+    - uv >=0.5.23
+    - virtualenv >=21
+tests:
+  - python:
+      imports:
+        - hatch
+  - files:
+      source:
+        - tests
+        - pyproject.toml
+        - hatch.toml
+    requirements:
+      run:
+        - flit-core
+        - pip
+        - packaging >=26 # Minor spacing change confuses tests
+        - pytest
+        - pytest-mock
+        - pytest-xdist
+        - python ${{ python_min }}.*
+        - pyfakefs
+        - git
+        - rust
+    script:
+      - hatch --help
+      - pip check
+      - pytest --ignore tests/backend -ra -k "not test_already_installed_update_flag and not test_already_installed_update_prompt and not test_installation and not test_all and not test_pypirc"
+
+about:
+  summary: Modern, extensible Python project management
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://hatch.pypa.io/latest/
+  repository: https://github.com/pypa/hatch
+
+extra:
+  recipe-maintainers:
+    - carlodri
+    - ofek
+    - henryiii

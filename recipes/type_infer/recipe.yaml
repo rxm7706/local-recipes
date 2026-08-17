@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.26"
+
+package:
+  name: type_infer
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/type_infer/type_infer-${{ version }}.tar.gz
+  sha256: 93fda7fd31065b81b53983b48f2d43759b8b822e2bb1e5b31292771acec414c2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - python-dateutil <3.0,>=2.1
+    - scipy <2,>=1
+    - numpy <3,>=2
+    - pandas <3,>=2
+    - dataclasses-json <0.7.0,>=0.6.3
+    - colorlog <7.0.0,>=6.5.0
+    - psutil <8.0,>=7.0
+    - toml <0.11.0,>=0.10.2
+    - standard-imghdr <4.0,>=3.13
+    - standard-sndhdr <4.0,>=3.13
+    - py3langid <0.3,>=0.2.2
+    - nltk <4.0,>=3.9
+
+tests:
+  - python:
+      imports:
+        - type_infer
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/type_infer/
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: Automated type inference for Machine Learning pipelines.
+  description: |
+    Automated type inference for Machine Learning pipelines.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: type_infer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: type_infer
+  cfe-purls:
+    - pkg:conda/type_infer@${{ version }}?channel=conda-forge
+    - pkg:pypi/type-infer@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/type_infer/
+  cfe-upstream-homepage: https://pypi.org/project/type_infer/
+  cfe-import-names: [type_infer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:53:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:53:05Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

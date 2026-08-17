@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.32.0"
+
+package:
+  name: mlx-metal
+  version: ${{ version }}
+
+source:
+  url: https://github.com/ml-explore/mlx/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 8e74a0eb613861ce50c09402dd99dbc42b65a762e7fdd291caa39f611db978ec
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=42
+    - cmake >=3.25
+    - mlx >=0.18.0
+    - nanobind ==2.13.0
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - python.mlx.nn
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/ml-explore/mlx
+  license: MIT
+  license_file: LICENSE
+  summary: A framework for machine learning on Apple silicon.
+  description: |
+    A framework for machine learning on Apple silicon.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mlx-metal
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mlx-metal
+  cfe-purls:
+    - pkg:conda/mlx-metal@${{ version }}?channel=conda-forge
+    - pkg:pypi/mlx-metal@${{ version }}
+  cfe-upstream-repo: https://github.com/ml-explore/mlx
+  cfe-upstream-homepage: https://github.com/ml-explore/mlx
+  cfe-import-names: [python.mlx.nn]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:54:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:54:21Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

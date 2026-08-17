@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "0.24.0"
+
+package:
+  name: jupyterlab-chat
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/j/jupyterlab-chat/jupyterlab_chat-${{ version }}.tar.gz
+    sha256: b4c2dcda27ba2f0e6e74ebb12ecc3f66fafa594d9007ad41ba5c22e45dcd11c1
+
+build:
+  script: ${{ PYTHON }} -m pip install .  --no-deps -vv --no-build-isolation --ignore-installed --no-index
+  noarch: python
+  number: 0
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling >=1.5.0
+    - hatch-jupyter-builder >=0.5
+    - jupyterlab >=4.0.0,<5
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - jupyter-collaboration >=4,<6
+    - jupyter_server >=2.0.1,<3
+    - jupyter_ydoc >=3.0.0,<5.0.0
+    - pycrdt >=0.12.48,<0.15.0
+
+tests:
+  - python:
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+      pip_check: true
+      imports: jupyterlab_chat
+  - script:
+      - jupyter labextension list 2>&1 | rg -ie "jupyterlab-chat-extension.*OK"
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+        - jupyterlab >=4.0,<5
+        - ripgrep
+
+about:
+  summary: A chat extension based on shared documents
+  homepage: https://github.com/jupyterlab/jupyter-chat/
+  repository: https://github.com/jupyterlab/jupyter-chat/
+  documentation: https://jupyter-chat.readthedocs.io/
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - dlqqq
+    - brichet
+    - jtpio

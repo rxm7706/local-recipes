@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4.4"
+
+package:
+  name: argos-translate-files
+  version: ${{ version }}
+
+source:
+  url: https://github.com/LibreTranslate/argos-translate-files/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 211c8f4f11ad950cc889b0de11d24762450f5fe6af4afc43fe487ca639a9d908
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - beautifulsoup4 ==4.9.3
+    - lxml >=4.9.2
+    - argos-translate-lt >=1.12.1
+    - pysrt >=1.1.2
+    - pymupdf >=1.24.11
+
+tests:
+  - python:
+      imports:
+        - argostranslatefiles
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/LibreTranslate/argos-translate-files
+  license: MIT
+  license_file: LICENSE
+  summary: Translate files with Argos Translate
+  description: |
+    Translate files with Argos Translate
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: argos-translate-files
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: argos-translate-files
+  cfe-purls:
+    - pkg:conda/argos-translate-files@${{ version }}?channel=conda-forge
+    - pkg:pypi/argos-translate-files@${{ version }}
+  cfe-upstream-repo: https://github.com/LibreTranslate/argos-translate-files
+  cfe-upstream-homepage: https://github.com/LibreTranslate/argos-translate-files
+  cfe-import-names: [argostranslatefiles]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:42:55Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:42:55Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

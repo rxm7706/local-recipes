@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: quixstreams
+  version: "3.11.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/quixio/quix-streams/archive/v${{ version }}.tar.gz
+  sha256: dc8803fe2e96de20542b3daed7f6739d63c8c63362bfc5ef21685c2929af5b76
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - python-confluent-kafka >=2.4,<2.5
+    - requests >=2.32
+    - rocksdict >=0.3,<0.4
+    - typing_extensions >=4.8
+    - orjson >=3.9,<4
+    - pydantic >=2.7,<2.11
+    - pydantic-settings >=2.3,<2.7
+    - jsonschema >=4.3.0
+    - jsonlines >=4,<5
+    - rich >=13,<14
+
+tests:
+  - python:
+      imports:
+        - quixstreams
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Python library for building stream processing applications with Apache Kafka
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+  homepage: https://github.com/quixio/quix-streams
+  documentation: https://docs.quix.io/
+
+extra:
+  recipe-maintainers:
+    - thewchan

@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: captum
+  version: "0.9.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/captum-${{ version }}.tar.gz
+  sha256: e4868e22b68224f1a5355d2b7966803c021cf9fe5d893f51f587b4002a666b54
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - matplotlib-base
+    - numpy
+    - pytorch >=1.6
+    - tqdm
+
+tests:
+  - python:
+      imports:
+        - captum
+        - captum._utils
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Model interpretability for PyTorch
+  license: BSD-3-Clause
+  license_file: LICENSE
+  description: |
+    Captum is a model interpretability and understanding library for PyTorch.
+    Captum means comprehension in Latin and contains general purpose
+    implementations of integrated gradients, saliency maps, smoothgrad,
+    vargrad and others for PyTorch models. It has quick integration for models
+    built with domain-specific libraries such as torchvision, torchtext, and others.
+
+    *Captum is currently in beta and under active development!*
+
+    PyPI: [https://pypi.org/project/captum/](https://pypi.org/project/captum/)
+
+  homepage: https://captum.ai
+  repository: https://github.com/pytorch/captum
+  documentation: https://captum.ai/
+
+extra:
+  recipe-maintainers:
+    - sugatoray
+    # Maintainers from package repo
+    - NarineK
+    - aobo-y
+    - vivekmig

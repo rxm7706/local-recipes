@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: nameparser
+  version: "1.0.5"
+  sha256: 34a43750188be4e92943d7ebee5f72506efe7e12076b3463ca9dfc68a9a3e36f
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/derek73/python-${{ name }}/archive/v${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - nameparser
+      pip_check: false
+
+about:
+  license: LGPL-2.1-or-later
+  license_file: LICENSE
+  summary: A simple Python (3.2+ & 2.6+) module for parsing human names into their individual components.
+  homepage: http://github.com/derek73/python-nameparser
+
+extra:
+  recipe-maintainers:
+    - CJ-Wright

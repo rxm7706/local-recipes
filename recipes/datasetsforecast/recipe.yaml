@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.1"
+
+package:
+  name: datasetsforecast
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/datasetsforecast/datasetsforecast-${{ version }}.tar.gz
+  sha256: 193d0f61fd45bbe20c744735c6d3db609bc34010e167f48b991467c1c52450a5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - uv-build >=0.7.19,<1.0.0
+  run:
+    - python >=${{ python_min }}
+    - aiohttp
+    - numpy
+    - scikit-learn
+    - pandas <3.0.0
+    - requests
+    - tqdm
+    - utilsforecast >=0.0.8
+    - xlrd >=1.0.0
+
+tests:
+  - python:
+      imports:
+        - datasetsforecast
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/Nixtla/datasetsforecast
+  license: MIT
+  license_file: LICENSE
+  summary: Datasets for Time series forecasting
+  description: |
+    Datasets for Time series forecasting
+  repository: https://github.com/Nixtla/datasetsforecast
+  documentation: https://nixtlaverse.nixtla.io/datasetsforecast/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: datasetsforecast
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: datasetsforecast
+  cfe-purls:
+    - pkg:conda/datasetsforecast@${{ version }}?channel=conda-forge
+    - pkg:pypi/datasetsforecast@${{ version }}
+  cfe-upstream-repo: https://github.com/Nixtla/datasetsforecast
+  cfe-upstream-homepage: https://github.com/Nixtla/datasetsforecast
+  cfe-import-names: [datasetsforecast]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:52:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:52:25Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

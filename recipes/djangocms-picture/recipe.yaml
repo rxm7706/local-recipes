@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: djangocms-picture
+  version: "4.1.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/djangocms-picture-${{ version }}.tar.gz
+  sha256: 29ffadc514bfa306ec1f2ebb145391b9b860c12ba001e2475dffb5fe1be5cac2
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django-cms >=3.7
+    - django-filer >=1.7
+    - djangocms-attributes-field >=1
+    - easy-thumbnails
+
+tests:
+  - python:
+      imports:
+        - djangocms_picture
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Adds an image plugin to django CMS
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/django-cms/djangocms-picture
+
+extra:
+  recipe-maintainers:
+    - rxm7706

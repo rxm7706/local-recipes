@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-sequences
+  version: "2.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 91f4b222ac8fc102ae76abef76ff1291684b4dec0d38d97f189b64b26c2a1b56
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6.2
+    - poetry
+  run:
+    - django >=3.2
+    - python >=3.6.2
+
+tests:
+  - python:
+      imports:
+        - sequences
+        - sequences.migrations
+      pip_check: true
+
+about:
+  summary: Generate gapless sequences of integer values.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/aaugustin/django-sequences
+
+extra:
+  recipe-maintainers:
+    - MichelML

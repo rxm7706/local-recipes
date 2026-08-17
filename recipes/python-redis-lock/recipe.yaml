@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.0.1"
+
+package:
+  name: python-redis-lock
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/python-redis-lock/python_redis_lock-${{ version }}.tar.gz
+  sha256: 57995e13dce196301138d710d4f132d667c200cd814718e081bf299d6cf11d70
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - redis-py >=2.10.0
+
+tests:
+  - python:
+      imports:
+        - redis_lock
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/python-redis-lock/
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Lock context manager implemented via redis SETNX/BLPOP.
+  description: |
+    Lock context manager implemented via redis SETNX/BLPOP.
+  documentation: https://python-redis-lock.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-redis-lock
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-redis-lock
+  cfe-purls:
+    - pkg:conda/python-redis-lock@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-redis-lock@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/python-redis-lock/
+  cfe-upstream-homepage: https://pypi.org/project/python-redis-lock/
+  cfe-import-names: [redis_lock]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:40:38Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:40:38Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P5 Create-recipe local-only. python-redis-lock.
+####

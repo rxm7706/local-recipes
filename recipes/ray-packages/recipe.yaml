@@ -1,0 +1,421 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Need these up here for conda-smithy to handle them properly.
+schema_version: 1
+
+context:
+  version: "2.55.1"
+
+recipe:
+  name: ray-packages
+  version: ${{ version }}
+
+source:
+  url: https://github.com/ray-project/ray/archive/ray-${{ version }}.tar.gz
+  sha256: 1a486e45e0cd81e3e3cf1cce6022015b1bcb545bede840434819c97b2c74912a
+  patches:
+    - patches/0001-Disable-making-entry-scripts.patch
+    - patches/0002-Ignore-warnings-in-event.cc-and-logging.cc.patch
+    - patches/0003-fake-python-3.10-with-python-3.12.patch
+    # See https://github.com/conda-forge/ray-packages-feedstock/issues/136
+    # Keep in sync with current or active migration of libgrpc to avoid
+    # ABI breakage
+    - patches/0004-Vendor-grpc-1.67.1.patch
+    - patches/0005-remove-stdlib-libc-from-.bazelrc.patch
+    # Patch around non-const NAN on windows in protobuf 27.5
+    - patches/0006-patch-protobuf-use-of-nan-on-windows.patch
+    - patches/0007-patch-zlib-in-prometheus-cpp-and-boost.patch
+    # Turns off --incompatible_strict_action_env
+    - patches/0008-bazel-disable-strict-env.patch
+
+build:
+  number: 3
+  skip:
+    - match(python, "<3.11")
+
+outputs:
+  - package:
+      name: ray-all
+    build:
+      skip:
+        # ray-rllib depends on gymnasium, which is not migrated to Python 3.14 yet.
+        - match(python, ">=3.14")
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - if: not osx
+          then: ${{ pin_subpackage('ray-adag', exact=True) }}
+        - ${{ pin_subpackage('ray-air', exact=True) }}
+        - ${{ pin_subpackage('ray-default', exact=True) }}
+        - if: not osx
+          then: ${{ pin_subpackage('ray-cgraph', exact=True) }}
+        - ${{ pin_subpackage('ray-client', exact=True) }}
+        - ${{ pin_subpackage('ray-data', exact=True) }}
+        - ${{ pin_subpackage('ray-rllib', exact=True) }}
+        - ${{ pin_subpackage('ray-serve', exact=True) }}
+        - ${{ pin_subpackage('ray-train', exact=True) }}
+        - ${{ pin_subpackage('ray-tune', exact=True) }}
+    tests:
+      - python:
+          imports:
+            - ray
+
+  - package:
+      name: ray-core
+    build:
+      script: build-core
+      python:
+        entry_points:
+          - ray = ray.scripts.scripts:main
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
+        - ${{ compiler('cxx') }}
+        - bazel =7.5
+        - if: not win
+          then: bazel-toolchain =0.5
+        - if: linux
+          then: patchelf
+        - colorama
+        - curl
+        - cython >=0.29.32
+        - if: win
+          then: git =2.33
+        - make
+        - if: win
+          then: m2-bash
+        - psutil
+        - python
+        - setproctitle >=1.2.2,<1.4
+        - if: not win
+          then: unzip
+          else: m2-unzip
+        - if: build_platform != target_platform
+          then: cross-python_${{ target_platform }}
+      host:
+        - python
+        - pip
+        - packaging
+        - libgrpc
+        - openjdk =11
+        - setuptools
+        - cython >=3.0.12
+      run:
+        - python
+        - aiohttp >=3.7
+        - click >=7.0,<8.3.0
+        - colorama
+        - filelock
+        - jsonschema
+        - msgpack-python >=1.0.0,<2.0.0
+        - packaging
+        - protobuf >=3.20.3
+        - psutil
+        - pyyaml
+        - requests
+    tests:
+      - python:
+          imports:
+            - ray
+            - ray._raylet
+            - ray.actor
+            - ray.runtime_context
+            - ray._private.state
+            - ray._private.worker
+      - script:
+          - python -c "import ray; ray.init(include_dashboard=False)"
+          - ray stop
+          - ray --help
+
+  # the various ray[extra] installs, alphabetically
+  - package:
+      name: ray-air
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - ${{ pin_subpackage('ray-data', exact=True) }}
+        - ${{ pin_subpackage('ray-serve', exact=True) }}
+        - ${{ pin_subpackage('ray-train', exact=True) }}
+        - ${{ pin_subpackage('ray-tune', exact=True) }}
+    tests:
+      - python:
+          imports:
+            - ray.air
+
+  - package:
+      name: ray-data
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - ${{ pin_subpackage('ray-core', exact=True) }}
+        - pandas >=1.3
+        - numpy >=1.20
+        - pyarrow >=9.0.0
+        - fsspec
+    tests:
+      - python:
+          imports:
+            - ray.data
+
+  - package:
+      name: ray-default
+    build:
+      script:
+        - cd python/ray/dashboard/client
+        - npm install
+        - npm ci
+        - npm run build
+        # not sure why this seems to get copied on windows but not linux...
+        - if: not win
+          then:
+            - mkdir -p $SP_DIR/ray/dashboard/client
+            - cp -R ./build $SP_DIR/ray/dashboard/client/build
+    requirements:
+      build:
+        - nodejs >=20
+      host:
+        - python
+      run:
+        - python
+        - ${{ pin_subpackage('ray-core', exact=True) }}
+        - aiohttp-cors
+        - colorful
+        - grpcio
+        - opencensus
+        - opentelemetry-sdk >=1.30.0
+        # upstream doesn't have a lowerbound, but old versions on conda-forge
+        # are missing some constraints that result in a weird solve and break
+        - opentelemetry-exporter-prometheus >=0.51b0
+        - opentelemetry-proto
+        - prometheus_client >=0.7.1
+        - if: match(python, "<3.12")
+          then: py-spy >=0.2.0
+        - if: match(python, ">=3.12")
+          then: py-spy >=0.4.0
+        - pydantic !=2.0.*,!=2.1.*,!=2.2.*,!=2.3.*,!=2.4.*,<3
+        - requests
+        - smart_open
+        - virtualenv >=20.0.24,!=20.21.1
+    tests:
+      - python:
+          imports:
+            - ray
+            - ray.dashboard
+      - script:
+          - python -c "import ray; ray.init(include_dashboard=True)"
+          - ray stop
+          # TODO: https://github.com/ray-project/ray/issues/61452
+          # ray stop on Windows fails to kill dashboard and runtime_env agents;
+          # force-kill remaining ray python processes and wait for handles to release
+          - if: win
+            then:
+              - wmic process where "name='python.exe' and commandline like '%%ray%%'" delete || ver >nul
+              - powershell -c "Start-Sleep 15"
+  - package:
+      name: ray-client
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - ${{ pin_subpackage('ray-core', exact=True) }}
+        - grpcio
+    tests:
+      - python:
+          imports:
+            - ray
+      - script:
+          - ray start --head
+          - python -c "import ray; ray.init('ray://127.0.0.1:10001')"
+          - ray stop
+          # TODO: https://github.com/ray-project/ray/issues/61452
+          # ray stop on Windows fails to kill dashboard and runtime_env agents;
+          # force-kill remaining ray python processes and wait for handles to release
+          - if: win
+            then:
+              - wmic process where "name='python.exe' and commandline like '%%ray%%'" delete || ver >nul
+              - powershell -c "Start-Sleep 15"
+  - package:
+      name: ray-rllib
+    build:
+      skip:
+        # gymnasium is not migrated to Python 3.14 yet.
+        - match(python, ">=3.14")
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - ${{ pin_subpackage('ray-tune', exact=True) }}
+        - dm-tree
+        - gymnasium ==1.1.1
+        - lz4
+        - ormsgpack ==1.7.0
+        - pyyaml
+        - scipy
+    tests:
+      - python:
+          imports:
+            - ray.rllib
+
+  - package:
+      name: ray-serve
+    build:
+      python:
+        entry_points:
+          - serve = ray.serve.scripts:cli
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - ${{ pin_subpackage('ray-default', exact=True) }}
+        - fastapi
+        - requests
+        - starlette
+        - uvicorn
+        - watchfiles
+        - pyOpenSSL
+    tests:
+      - python:
+          imports:
+            - ray.serve
+
+  - package:
+      name: ray-tune
+    build:
+      python:
+        entry_points:
+          - tune = ray.tune.scripts:cli
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - ${{ pin_subpackage('ray-default', exact=True) }}
+        - fsspec
+        - pandas
+        - pyarrow
+        - requests
+        - tensorboardX >=1.9
+    tests:
+      - python:
+          imports:
+            - ray.tune
+
+  - package:
+      name: ray-train
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - ${{ pin_subpackage('ray-tune', exact=True) }}
+        - pydantic !=2.0.*,!=2.1.*,!=2.2.*,!=2.3.*,!=2.4.*,<3
+    tests:
+      - python:
+          imports:
+            - ray.train
+
+  - package:
+      name: ray-observability
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - ${{ pin_subpackage('ray-default', exact=True) }}
+        - if: not win
+          then: memray
+    tests:
+      - script:
+          - echo "no tests for ray-observability, it is a convenience bundle"
+
+  - package:
+      name: ray-adag
+    build:
+      skip:
+        - osx
+        # see https://github.com/conda-forge/conda-smithy/issues/2447
+        - match(python, "<3.11")
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - ${{ pin_subpackage('ray-default', exact=True) }}
+        - cupy
+    tests:
+      - script:
+          - echo "no tests for ray-adag, it is a convenience bundle"
+
+  - package:
+      name: ray-cgraph
+    build:
+      skip:
+        - osx
+        # see https://github.com/conda-forge/conda-smithy/issues/2447
+        - match(python, "<3.11")
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - ${{ pin_subpackage('ray-default', exact=True) }}
+        - cupy
+    tests:
+      - script:
+          - echo "no tests for ray-cgraph, it is a convenience bundle"
+
+about:
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - licenses/abseil-LICENSE.txt
+    - licenses/antirez-redis-COPYING.txt
+    - licenses/arrow-LICENSE.txt
+    - licenses/boost-LICENSE_1_0.txt
+    - licenses/boringssl-LICENSE.txt
+    - licenses/deckarep-golang-set-LICENSE.txt
+    - licenses/flatbuffers-LICENSE.txt
+    - licenses/gabime-spdlog-LICENSE.txt
+    - licenses/gflags-COPYING.txt
+    - licenses/glog-COPYING.txt
+    - licenses/go-logr-LICENSE.txt
+    - licenses/googletest-LICENSE.txt
+    - licenses/grpc-LICENSE.txt
+    - licenses/msgpack-COPYING.txt
+    - licenses/onsi-ginkgo-LICENSE.txt
+    - licenses/onsi-gomega-LICENSE.txt
+    - licenses/opencensus-LICENSE.txt
+    - licenses/opencensus-proto-LICENSE.txt
+    - licenses/prometheus-LICENSE.txt
+    - licenses/redis-hiredis-COPYING.txt
+    - licenses/tporadowski-redis-license.txt
+    - licenses/zlib-LICENSE.txt
+  summary: Ray is a fast and simple framework for building and running distributed applications.
+  description: |
+    Ray is a fast and simple framework for building and running
+    distributed applications. It is split into ray-core, ray-default,
+    ray-serve, ray-rllib, ray-client, ray-data, ray-tune,
+    ray-train, ray-observability, ray-adag, ray-cgraph, ray-llm and
+    ray-all packages.
+  homepage: https://ray.io/
+  repository: https://github.com/ray-project/ray
+  documentation: https://docs.ray.io/
+
+extra:
+  recipe-maintainers:
+    - sai-miduthuri
+    - elliot-barn
+    - aslonnie
+    - timkpaine
+    - dHannasch
+    - h-vetinari
+    - vnlitvinov

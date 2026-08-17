@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.12.0"
+
+package:
+  name: ogrep
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/ogrep/ogrep-${{ version }}.tar.gz
+  sha256: 136960c30657db214591010fd9900aa42db1998a31a01a509bc32353e2ab6973
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - httpx
+    - openai >=1.0.0
+    - python-dotenv >=1.0.0
+    - tqdm >=4.0.0
+
+tests:
+  - python:
+      imports:
+        - ogrep
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/gplv2/ogrep-marketplace
+  license: MIT
+  license_file: LICENSE
+  summary: Semantic code search for AI agents and humans - hybrid fulltext/vector search, MCP-native, SQLite-backed, local or cloud embeddings
+  description: |
+    Semantic code search for AI agents and humans - hybrid fulltext/vector search, MCP-native, SQLite-backed, local or cloud embeddings
+  repository: https://github.com/gplv2/ogrep-marketplace
+  documentation: https://github.com/gplv2/ogrep-marketplace#readme
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ogrep
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ogrep
+  cfe-purls:
+    - pkg:conda/ogrep@${{ version }}?channel=conda-forge
+    - pkg:pypi/ogrep@${{ version }}
+  cfe-upstream-repo: https://github.com/gplv2/ogrep-marketplace
+  cfe-upstream-homepage: https://github.com/gplv2/ogrep-marketplace
+  cfe-import-names: [ogrep]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:34:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:34:04Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -2,18 +2,19 @@
 schema_version: 1
 
 context:
+  name: django-excel-tools
   version: "1.1.1"
 
 package:
-  name: django-excel-tools
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-excel-tools/django_excel_tools-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_excel_tools-${{ version }}.tar.gz
   sha256: 9695cc25f0582256ff83434b18864823ca526423c44fa6009353eb6e35fdb6b0
 
 build:
-  number: 0
+  number: 2
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -24,7 +25,7 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
     - django >=3.1
     - openpyxl >=3.0.4
 
@@ -32,17 +33,14 @@ tests:
   - python:
       imports:
         - django_excel_tools
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
   summary: Common function when working with excel.
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/NorakGithub/django-excel-tools
-  repository: https://github.com/NorakGithub/django-excel-tools
 
 extra:
   recipe-maintainers:

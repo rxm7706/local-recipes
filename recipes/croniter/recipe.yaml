@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.2.4"
+  python_check_max: "3.14"
+
+package:
+  name: croniter
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/croniter/croniter-${{ version }}.tar.gz
+  sha256: fc124f751b1b04805c2a04b061898b436b45ab2320b045e1e052ea895de65189
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - hatchling >=1.29.0
+    - packaging >=26.0
+    - pathspec >=1.0.4
+    - pip
+    - pluggy >=1.6.0
+    - python ${{ python_min }}.*
+    - trove-classifiers >=2026.1.14.14
+  run:
+    - python >=${{ python_min }}
+    - python-dateutil
+    # undeclared and lazily imported
+    - pytz
+
+tests:
+  - python:
+      imports: croniter
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - requirements:
+      run:
+        - pytest-cov
+        - python ${{ python_min }}.*
+    script:
+      - coverage run --source=croniter --branch -m pytest -vv --tb=long --color=yes --pyargs croniter
+      - coverage report --show-missing --skip-covered --fail-under=92
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: croniter provides iteration for datetime object with cron like format
+  homepage: https://pypi.org/project/croniter
+  repository: https://github.com/pallets-eco/croniter
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk
+    - bollwyvl

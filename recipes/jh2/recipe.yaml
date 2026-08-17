@@ -2,40 +2,37 @@
 schema_version: 1
 
 context:
+  name: jh2
   version: "5.0.13"
 
 package:
-  name: jh2
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/j/jh2/jh2-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jh2-${{ version }}.tar.gz
   sha256: f8c78cffb3a35c4410513c3eb7989de36028c84277c04f07c97909dd94c23a75
 
 build:
-  number: 0
+  number: 1
   script:
-    env:
-      PYTHONUTF8: "1"
-      CARGO_PROFILE_RELEASE_STRIP: symbols
-    content:
-      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
 
 requirements:
   build:
     - if: build_platform != target_platform
-      then:
-        - python
-        - cross-python_${{ target_platform }}
-    - ${{ compiler("rust") }}
-    - ${{ compiler("c") }}
-    - ${{ stdlib("c") }}
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('rust') }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
     - maturin
     - cargo-bundle-licenses
   host:
     - python
-    - maturin >=1.7,<2.0
+    - maturin >=1.2,<2.0
     - pip
   run:
     - python

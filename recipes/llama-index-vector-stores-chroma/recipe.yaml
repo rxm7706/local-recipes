@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.5"
+
+package:
+  name: llama-index-vector-stores-chroma
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/llama-index-vector-stores-chroma/llama_index_vector_stores_chroma-${{ version }}.tar.gz
+  sha256: 823865069bcea4d9de91510271ae03cd6ea8eb0106a5b5ea43ffcec03ec2a708
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - chromadb >=0.5.17
+    - llama-index-core <0.15,>=0.13.0
+
+tests:
+  - python:
+      imports:
+        - llama_index.vector_stores.chroma
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/llama-index-vector-stores-chroma/
+  license: MIT
+  license_file: LICENSE
+  summary: llama-index vector_stores chroma integration
+  description: |
+    llama-index vector_stores chroma integration
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: llama-index-vector-stores-chroma
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: llama-index-vector-stores-chroma
+  cfe-purls:
+    - pkg:conda/llama-index-vector-stores-chroma@${{ version }}?channel=conda-forge
+    - pkg:pypi/llama-index-vector-stores-chroma@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/llama-index-vector-stores-chroma/
+  cfe-upstream-homepage: https://pypi.org/project/llama-index-vector-stores-chroma/
+  cfe-import-names: [llama_index.vector_stores.chroma]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:37:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:37:30Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

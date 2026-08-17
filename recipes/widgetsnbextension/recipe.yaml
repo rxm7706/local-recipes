@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.0.15"
+
+package:
+  name: widgetsnbextension
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/widgetsnbextension/widgetsnbextension-${{ version }}.tar.gz
+  sha256: de8610639996f1567952d763a5a41af8af37f2575a41f9852a38f947eb82a3b9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - jupyter-packaging
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - widgetsnbextension
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Jupyter interactive widgets for Jupyter Notebook
+  description: Interactive Jupyter widgets for the classic Jupyter Notebook application.
+  homepage: http://jupyter.org
+  repository: https://github.com/jupyter-widgets/ipywidgets/tree/master/python/widgetsnbextension
+  documentation: https://ipywidgets.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - martinRenou
+    - jasongrout
+    - jakirkham
+    - minrk
+    - pelson
+    - SylvainCorlay
+    - willingc
+    - pbugnion
+    - ocefpaf
+    - bollwyvl

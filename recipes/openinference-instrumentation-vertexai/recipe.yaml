@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: openinference-instrumentation-vertexai
+  version: "0.1.18"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/openinference_instrumentation_vertexai-${{ version }}.tar.gz
+  sha256: da6d5f8b60a3d42a65252ecffd389efbc4c2be1186d46d6974da2a9d986b253c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<3.13
+    - opentelemetry-api
+    - opentelemetry-instrumentation
+    - opentelemetry-semantic-conventions
+    - openinference-instrumentation >=0.1.7
+    - openinference-semantic-conventions
+    - wrapt
+
+tests:
+  - python:
+      imports:
+        - openinference.instrumentation.vertexai
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: OpenInference VertexAI Instrumentation
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/Arize-ai/openinference
+
+extra:
+  recipe-maintainers:
+    - RogerHYang

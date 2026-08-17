@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jupyter_highlight_selected_word
+  version: "0.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/jupyter_highlight_selected_word-${{ version }}.tar.gz
+  sha256: 9fa740424859a807950ca08d2bfd28a35154cd32dd6d50ac4e0950022adc0e7b
+
+build:
+  number: 1006
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+    - setuptools
+    - jupyter_contrib_core >=0.3
+    - notebook >=4.0,<7
+
+tests:
+  - python:
+      imports:
+        - jupyter_highlight_selected_word
+      pip_check: true
+
+about:
+  summary: |
+    Jupyter notebook extension that enables highlighting of all instances of
+    the currently-selected or cursor-adjecent word in either the current cell's
+    editor, or in the whole notebook.
+    Based on the  CodeMirror addon
+    https://codemirror.net/demo/matchhighlighter.html
+    extended to work across multiple editors.
+  license_file: LICENSE.txt
+  license: BSD-3-Clause
+  homepage: https://github.com/jcb91/jupyter_highlight_selected_word
+
+extra:
+  recipe-maintainers:
+    - jcb91
+    - ocefpaf
+    - xhochy

@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ahlive
+  version: "1.0.4.post1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ahlive-${{ version }}.tar.gz
+  sha256: b553dd479601045696685ba6e6e331ec91ada36226b439265218d05ff9845761
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools-scm
+    - setuptools >=30.3.0
+    - setuptools_scm_git_archive
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - param <2.0.0
+    - numpy
+    - pandas
+    - bottleneck
+    - xarray >=0.16.1
+    - matplotlib-base >=3.3
+    - imageio
+
+tests:
+  - python:
+      imports:
+        - ahlive
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  summary: animate your data to life
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/ahuang11/ahlive
+
+extra:
+  recipe-maintainers:
+    - rxm7706

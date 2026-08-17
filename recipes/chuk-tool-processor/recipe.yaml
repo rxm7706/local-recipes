@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.26.1"
+  python_min: "3.11"
+
+package:
+  name: chuk-tool-processor
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/chuk-tool-processor/chuk_tool_processor-${{ version }}.tar.gz
+  sha256: 8e028daa75cde8dfc48cf5d6f643df40dd03c80e807b40bcb4563df1be5bceeb
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.0
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - chuk-mcp <0.10,>=0.9
+    - python-dotenv >=1.0.0
+    - psutil >=7.0.0
+    - pydantic >=2.11.3
+    - if: win
+      then:
+        - pywin32
+
+tests:
+  - python:
+      imports:
+        - chuk_tool_processor
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/chuk-tool-processor/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Async-native framework for registering, discovering, and executing tools referenced in LLM responses
+  description: |
+    Async-native framework for registering, discovering, and executing tools referenced in LLM responses
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: chuk-tool-processor
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: chuk-tool-processor
+  cfe-purls:
+    - pkg:conda/chuk-tool-processor@${{ version }}?channel=conda-forge
+    - pkg:pypi/chuk-tool-processor@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/chuk-tool-processor/
+  cfe-upstream-homepage: https://pypi.org/project/chuk-tool-processor/
+  cfe-import-names: [chuk_tool_processor]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:50:28Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:50:28Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

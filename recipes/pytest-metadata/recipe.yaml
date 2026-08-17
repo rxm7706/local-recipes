@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytest-metadata
+  version: "3.1.1"
+  hash: d2a29b0355fbc03f168aa96d41ff88b1a3b44a3b02acbe491801c98a048017c8
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytest_metadata-${{ version }}.tar.gz
+  sha256: ${{ hash }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - hatch-vcs >=0.3
+    - hatchling >=1.13
+  run:
+    - python >=${{ python_min }}
+    - pytest >=7.0.0
+
+tests:
+  - python:
+      imports:
+        - pytest_metadata
+        - pytest_metadata.ci
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MPL-2.0
+  license_file: LICENSE
+  summary: pytest plugin for test session metadata
+  homepage: https://github.com/pytest-dev/pytest-metadata
+
+extra:
+  recipe-maintainers:
+    - birdsarah
+    - davehunt
+    - nicoddemus

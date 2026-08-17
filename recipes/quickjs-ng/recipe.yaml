@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.16.0.1"
+
+package:
+  name: quickjs-ng
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/q/quickjs-ng/quickjs_ng-${{ version }}.tar.gz
+  sha256: 4bb3859577d1eea78ecfd76a745b6d788a0764c3f64679668268e8300ff73da4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - quickjs
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/genotrance/quickjs-ng
+  license: MIT
+  license_file: LICENSE
+  summary: Thin Python wrapper of quickjs-ng
+  description: |
+    Thin Python wrapper of quickjs-ng
+  repository: https://github.com/genotrance/quickjs-ng
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: quickjs-ng
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: quickjs-ng
+  cfe-purls:
+    - pkg:conda/quickjs-ng@${{ version }}?channel=conda-forge
+    - pkg:pypi/quickjs-ng@${{ version }}
+  cfe-upstream-repo: https://github.com/genotrance/quickjs-ng
+  cfe-upstream-homepage: https://github.com/genotrance/quickjs-ng
+  cfe-import-names: [quickjs]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:21:06Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:21:06Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

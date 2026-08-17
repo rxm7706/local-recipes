@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: flower
+  version: "2.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/flower-${{ version }}.tar.gz
+  sha256: 5ab717b979530770c16afb48b50d2a98d23c3e9fe39851dcf6bc4d01845a02a0
+
+build:
+  number: 2
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - flower = flower.__main__:main
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+    - setuptools
+    - celery >=5.0.5
+    - humanize
+    - prometheus_client >=0.8.0
+    - pytz
+    - tornado >=5.0.0,<7.0.0
+
+tests:
+  - python:
+      imports:
+        - flower
+        - flower.api
+      pip_check: false
+  - script:
+      - flower --help
+
+about:
+  license: BSD-3-Clause
+  summary: Celery Flower
+  license_file: LICENSE
+  homepage: https://github.com/mher/flower
+
+extra:
+  recipe-maintainers:
+    - kwilcox
+    - thebestnom

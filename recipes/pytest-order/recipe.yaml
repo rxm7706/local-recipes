@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: pytest-order
+  version: 1.5.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 96acd7587b5a2855dcaa4a898288103d202894a61afd813adbc9b77aab04d90d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - pytest >=6.2.4
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pytest >=6.2.4
+
+tests:
+  - python:
+      imports:
+        - pytest_order
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  summary: pytest plugin that allows to customize the test execution order
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/pytest-dev/pytest-order
+  documentation: https://pytest-order.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - hadim
+    - mrbean-bremen

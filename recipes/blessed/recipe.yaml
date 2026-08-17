@@ -3,12 +3,8 @@ schema_version: 1
 
 context:
   name: blessed
-  version: "1.22.0"
-  python_check_max: 3.13
-  noarch_dep: |-
-    ${{ "python" if noarch_platform == "linux" }}
-    ${{ "python" if noarch_platform == "osx" }}
-    ${{ "jinxed >=1.1.0" if noarch_platform == "win" }}
+  version: "1.45.0"
+  python_check_max: "3.13"
 
 package:
   name: ${{ name|lower }}
@@ -16,11 +12,11 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/blessed-${{ version }}.tar.gz
-  sha256: 1818efb7c10015478286f21a412fcdd31a3d8b94a18f6d926e733827da7a844b
+  sha256: d12abbbcfb5fdd80bac33ea7e22f1a163ff462f5c05f312159e04c5fee460c72
 
 build:
 
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -28,12 +24,12 @@ requirements:
   host:
     - python ${{ python_min }}.*
     - pip
-    - setuptools
+    - flit-core >=3.11,<4
   run:
     - __${{ noarch_platform }}
     - python >=${{ python_min }}
-    - wcwidth >=0.1.4
-    - ${{ noarch_dep }}
+    - wcwidth >=0.7
+    - jinxed >=2.0,<3
 tests:
   - python:
       pip_check: true
@@ -75,4 +71,3 @@ extra:
   recipe-maintainers:
     - mattip
     - hadim
-    - rxm7706

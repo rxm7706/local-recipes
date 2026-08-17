@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.1"
+
+package:
+  name: webencodings
+  version: ${{ version }}
+
+source:
+  url: https://github.com/gsnedders/python-webencodings/archive/v${{ version }}.tar.gz
+  sha256: 082367f568a7812aa5f6922ffe3d9d027cd83829dc32bcaac4c874eeed618000
+
+build:
+  number: 3
+  noarch: python
+  script: ${{ PYTHON }} -m pip install .
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - webencodings
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Character encoding aliases for legacy web content
+  homepage: https://github.com/gsnedders/python-webencodings
+  repository: https://github.com/gsnedders/python-webencodings
+  documentation: https://pythonhosted.org/webencodings
+
+extra:
+  recipe-maintainers:
+    - jschueller
+    - ocefpaf

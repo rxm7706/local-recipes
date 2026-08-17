@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.6.2"
+
+package:
+  name: openbb-fred
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/openbb-fred/openbb_fred-${{ version }}.tar.gz
+  sha256: 8f3b06cde5d00474d4ca0d6b0b2dab93a2aa4592d63a24daee8211ccfe5d6d2f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - openbb-core <2.0.0,>=1.6.10
+
+tests:
+  - python:
+      imports:
+        - openbb_fred
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/openbb-fred/
+  license: AGPL-3.0-only
+  license_file: LICENSE
+  summary: FRED extension for OpenBB
+  description: |
+    FRED extension for OpenBB
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: openbb-fred
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: openbb-fred
+  cfe-purls:
+    - pkg:conda/openbb-fred@${{ version }}?channel=conda-forge
+    - pkg:pypi/openbb-fred@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/openbb-fred/
+  cfe-upstream-homepage: https://pypi.org/project/openbb-fred/
+  cfe-import-names: [openbb_fred]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:35:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:35:23Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.3.9"
+
+package:
+  name: geventhttpclient
+  version: ${{ version }}
+
+source:
+  # pypi doesn't consistently have `tests``
+  - url: https://pypi.org/packages/source/g/geventhttpclient/geventhttpclient-${{ version }}.tar.gz
+    sha256: 16807578dc4a175e8d97e6e39d65a10b04b5237a8c55f7a5ef39044e869baeb8
+    target_directory: dist
+  - url: https://github.com/geventhttpclient/geventhttpclient/archive/refs/tags/${{ version }}.tar.gz
+    sha256: 0b1791ff8b354c0a39c8369dcc9ed3d7d7fee0a9aa89f52fe4a004692fb47288
+    target_directory: src
+
+build:
+  number: 0
+  script:
+    - cd dist
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - brotli-python
+    - certifi
+    - gevent
+    - python
+    - urllib3
+
+tests:
+  - python:
+      imports: geventhttpclient
+  - files:
+      recipe:
+        - run_test.py
+      source:
+        - src/pyproject.toml
+        - src/tests/
+    requirements:
+      run:
+        - coverage
+        - dpkt
+        - pip
+        - pytest
+        - requests
+    script:
+      - python run_test.py
+
+about:
+  license: MIT
+  license_file:
+    - dist/LICENSE-MIT
+    - dist/llhttp/LICENSE-MIT
+  summary: A high performance, concurrent http client library for python with gevent
+  homepage: https://pypi.org/project/geventhttpclient
+  repository: https://github.com/geventhttpclient/geventhttpclient
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

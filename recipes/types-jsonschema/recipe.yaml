@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.26.0.20260518"
+
+package:
+  name: types-jsonschema
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/t/types-jsonschema/types_jsonschema-${{ version }}.tar.gz
+    sha256: e1dd53dc97a64f5eccdd6fa9839666e09bb500a8ebba2db6fdaf1789faea81a6
+  - url: https://raw.githubusercontent.com/python/typeshed/main/LICENSE
+    sha256: 295f8538c94ae5c3043301cf7cff1c852dab6a786a8ddee471e061b40d5ecabe
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - referencing
+
+tests:
+  - requirements:
+      run:
+        - python ${{ python_min }}
+        - pip
+    script:
+      - pip check
+      - if: unix
+        then: test -f $SP_DIR/jsonschema-stubs/__init__.pyi
+      - if: win
+        then: if not exist %SP_DIR%\\jsonschema-stubs\\__init__.pyi exit 1
+
+about:
+  summary: Typing stubs for jsonschema
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/python/typeshed
+
+extra:
+  recipe-maintainers:
+    - conda-forge/mypy

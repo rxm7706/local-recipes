@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: marshmallow
+  version: "4.3.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/marshmallow-${{ version }}.tar.gz
+  sha256: fb6b8048af08d4ab061610d5b7d3696a7e4c95337dbda880edb9f95812cabc20
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - flit-core >=3.12,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    # for py <3.11 but have it here for all py to stay noarch
+    - backports-datetime-fromisoformat
+    # for py <3.11 but have it here for all py to stay noarch
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - marshmallow
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - files:
+      source:
+        - pyproject.toml
+        - tests/*.py
+    requirements:
+      run:
+        - pytest
+        - simplejson
+        - pytz
+        - python-dateutil
+        - python ${{ python_min }}.*
+    script:
+      - python -m pytest tests
+
+about:
+  license: MIT AND BSD-3-Clause
+  license_file:
+    - LICENSE
+    - NOTICE
+  summary: A lightweight library for converting complex datatypes to and from native Python datatypes.
+  description: |
+    marshmallow is an ORM/ODM/framework-agnostic library for
+    converting complex datatypes, such as objects, to and from
+    native Python datatypes.
+  homepage: https://github.com/marshmallow-code/marshmallow
+  repository: https://github.com/marshmallow-code/marshmallow/
+  documentation: https://marshmallow.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - hajapy
+    - rth
+    - frol
+    - carlodri
+    - mariusvniekerk
+    - xylar

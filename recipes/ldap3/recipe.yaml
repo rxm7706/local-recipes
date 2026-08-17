@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ldap3
+  version: "2.9.1"
+  sha256: f3e7fc4718e3f09dda568b57100095e0ce58633bcabbed8667ce3f8fbaa4229f
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+    - pyasn1 >=0.4.6
+  run:
+    - python >=${{ python_min }}
+    - pyasn1 >=0.4.6
+
+tests:
+  - python:
+      imports:
+        - ldap3
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: LGPL-3.0-or-later
+  license_file:
+    - LICENSE.txt
+    - COPYING.LESSER.txt
+  summary: A strictly RFC 4510 conforming LDAP V3 pure Python client library
+  homepage: https://github.com/cannatag/ldap3
+  repository: https://github.com/cannatag/ldap3
+  documentation: http://ldap3.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - mcs07
+    - adament

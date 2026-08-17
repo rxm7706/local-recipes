@@ -1,0 +1,105 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.9.9.dev202510250044"
+
+package:
+  name: tfds-nightly
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/tfds-nightly/tfds_nightly-${{ version }}.tar.gz
+  sha256: 785f44308caf952f64bd1eae1e810cc61d72f9143d0f6dfaeebd61f6b8610180
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - absl-py
+    - dm-tree
+    - etils >=1.6.0
+    - immutabledict
+    - numpy
+    - promise
+    - protobuf >=3.20
+    - psutil
+    - pyarrow
+    - requests >=2.19.0
+    - simple-parsing
+    - tensorflow-metadata
+    - termcolor
+    - toml
+    - tqdm
+    - wrapt
+    - importlib_resources
+    - if: linux
+      then:
+        - envlogger
+        - envlogger
+        - envlogger
+        - envlogger
+        - envlogger
+        - envlogger
+
+tests:
+  - python:
+      imports:
+        - tensorflow_datasets
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/tensorflow/datasets
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: tensorflow/datasets is a library of datasets ready to use with TensorFlow.
+  description: |
+    tensorflow/datasets is a library of datasets ready to use with TensorFlow.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tfds-nightly
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tfds-nightly
+  cfe-purls:
+    - pkg:conda/tfds-nightly@${{ version }}?channel=conda-forge
+    - pkg:pypi/tfds-nightly@${{ version }}
+  cfe-upstream-repo: https://github.com/tensorflow/datasets
+  cfe-upstream-homepage: https://github.com/tensorflow/datasets
+  cfe-import-names: [tensorflow_datasets]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:09:48Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:09:48Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

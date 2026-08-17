@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mongoengine
+  version: 0.29.3
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/mongoengine-${{ version }}.tar.gz
+  sha256: 4267702aea433012845cb12b6334bff86a0a3084b5d141c1e4553ea20374a9b4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pymongo >=3.4,<5.0
+tests:
+  - python:
+      imports:
+        - mongoengine
+        - mongoengine.base
+        - mongoengine.queryset
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: MongoEngine is a Python Object-Document Mapper for working with MongoDB.
+  homepage: http://mongoengine.org/
+  repository: https://github.com/MongoEngine/mongoengine
+  documentation: https://mongoengine-odm.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - JaRoSchm
+    - dgasmith
+    - lnaden

@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.7.1"
+
+package:
+  name: multidict
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/multidict/multidict-${{ version }}.tar.gz
+  sha256: ec6652a1bee61c53a3e5776b6049172c53b6aaba34f18c9ad04f82712bac623d
+
+build:
+  number: 0
+  noarch: ${{ 'python' if use_noarch else '' }}
+  script:
+    - if: use_noarch
+      then: export MULTIDICT_NO_EXTENSIONS=1
+    - ${{ PYTHON }} -m pip install . --no-deps -vv
+  track_features:
+    - if: use_noarch
+      then: multidict_no_compile
+
+requirements:
+  build:
+    - if: not use_noarch and  build_platform != target_platform
+      then: python
+    - if: not use_noarch and  build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: not use_noarch and  build_platform != target_platform
+      then: cython
+    - if: not use_noarch
+      then: ${{ compiler('c') }}
+    - if: not use_noarch
+      then: ${{ stdlib("c") }}
+  host:
+    - cython
+    - if: use_noarch
+      then: python ${{ python_min }}
+    - if: not use_noarch
+      then: python
+    - pip
+    - setuptools >=40
+  run:
+    - if: use_noarch
+      then: python >=${{ python_min }}
+    - if: not use_noarch
+      then: python
+    - if: match(python, "<3.11") or use_noarch
+      then: typing-extensions >=4.1.0
+
+tests:
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - pytest
+        - pytest-codspeed
+        - objgraph
+        - pip
+        - psutil
+        - if: use_noarch
+          then: python ${{ python_min }}
+    script:
+      - if: use_noarch
+        then: py.test tests --no-c-extensions
+      - if: not use_noarch
+        then: py.test tests --c-extensions
+      - pip check
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: multidict implementation
+  description: |
+    Multidicts are useful for working with HTTP headers, URL query args etc.
+  homepage: http://github.com/aio-libs/multidict
+  repository: http://github.com/aio-libs/multidict
+  documentation: http://multidict.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - sodre
+    - kszucs
+    - xhochy

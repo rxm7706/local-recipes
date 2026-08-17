@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.11.0"
+  python_min: "3.12"
+
+package:
+  name: jax-cuda12-plugin
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/cp312/j/jax-cuda12-plugin/jax_cuda12_plugin-0.11.0-cp312-cp312-manylinux_2_27_aarch64.whl
+  sha256: 3e95cb9deac2988e15226c6d8927e72bffc841505d236231e4843a8b16679f25
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - jax-cuda12-pjrt ==0.11.0
+    - if: linux
+      then:
+        - nvidia-cublas-cu12
+        - nvidia-cuda-cupti-cu12
+        - nvidia-cuda-nvcc-cu12
+        - nvidia-cuda-runtime-cu12
+        - nvidia-cudnn-cu12
+        - nvidia-cufft-cu12
+        - nvidia-cusolver-cu12
+        - nvidia-cusparse-cu12
+        - nvidia-nccl-cu12
+        - nvidia-nvjitlink-cu12
+        - nvidia-cuda-nvrtc-cu12
+        - nvidia-nvshmem-cu12
+
+tests:
+  - python:
+      imports:
+        - jax_cuda12_plugin
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/jax-ml/jax
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: JAX Plugin for NVIDIA GPUs
+  description: |
+    JAX Plugin for NVIDIA GPUs
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jax-cuda12-plugin
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jax-cuda12-plugin
+  cfe-purls:
+    - pkg:conda/jax-cuda12-plugin@${{ version }}?channel=conda-forge
+    - pkg:pypi/jax-cuda12-plugin@${{ version }}
+  cfe-upstream-repo: https://github.com/jax-ml/jax
+  cfe-upstream-homepage: https://github.com/jax-ml/jax
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:01:14Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:01:14Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

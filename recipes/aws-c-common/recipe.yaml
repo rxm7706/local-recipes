@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: aws-c-common
+  version: "0.14.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/awslabs/${{ name }}/archive/v${{ version }}.tar.gz
+  sha256: 103273767fea478545b75a0835c7dc60842baee0a191a112c72f904d22693c84
+  patches:
+    - 0001-Explicitly-remove-Werror.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - cmake !=3.19.0,!=3.19.1
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ninja
+  run_exports:
+    - ${{ pin_subpackage("aws-c-common", upper_bound="x.x.x") }}
+
+tests:
+  - script:
+      - if: unix
+        then: test -f $PREFIX/lib/libaws-c-common${SHLIB_EXT}
+      - if: unix
+        then: test -f $PREFIX/include/aws/common/config.h
+      - if: unix
+        then: test -f $PREFIX/lib/cmake/aws-c-common/modules/AwsCFlags.cmake
+      - if: unix
+        then: "! grep Werror $PREFIX/lib/cmake/AwsCFlags.cmake"
+      - if: win
+        then: if not exist %PREFIX%\\Library\\bin\\aws-c-common.dll exit 1
+      - if: win
+        then: if not exist %PREFIX%\\Library\\include\\aws\\common\\config.h exit 1
+      - if: win
+        then: if not exist %PREFIX%\\Library\\lib\\cmake\\aws-c-common\\modules\\AwsCFlags.cmake exit 1
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Core c99 package for AWS SDK for C. Includes cross-platform primitives, configuration, data structures, and error handling.
+  homepage: https://github.com/awslabs/aws-c-common
+  repository: https://github.com/awslabs/aws-c-common
+
+extra:
+  recipe-maintainers:
+    - xhochy
+    - conda-forge/aws-sdk-cpp

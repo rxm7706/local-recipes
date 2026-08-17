@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: heroicons
   version: "2.14.0"
 
 package:
-  name: heroicons
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/h/heroicons/heroicons-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/heroicons-${{ version }}.tar.gz
   sha256: e55ecc0a839cf872f55977d2dd04a1855bfdf080bed1d13db5264b0060e65a96
 
 build:
@@ -19,9 +20,9 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - pip
+    - python ${{ python_min }}
     - setuptools
+    - pip
   run:
     - python >=${{ python_min }}
 
@@ -30,21 +31,13 @@ tests:
       imports:
         - heroicons
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Use heroicons in your Django and Jinja templates.
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/adamchainz/heroicons
-  repository: https://github.com/adamchainz/heroicons
-  documentation: https://github.com/adamchainz/heroicons#readme
-  description: |
-    heroicons provides a set of free MIT-licensed high-quality SVG icons
-    for use in your web projects, wired up for use in Django and Jinja
-    templates via template tags.
 
 extra:
   recipe-maintainers:

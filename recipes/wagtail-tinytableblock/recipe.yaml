@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.0"
+  python_min: "3.12"
+
+package:
+  name: wagtail-tinytableblock
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wagtail-tinytableblock/wagtail_tinytableblock-${{ version }}.tar.gz
+  sha256: 8718142f2e6b01fb7a9f9619a5e420681e03f97ad774eae5c987ae5244da0239
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.12.*
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - wagtail >=6.3
+    - nh3 >=0.3,<1
+
+tests:
+  - python:
+      imports:
+        - wagtail_tinytableblock
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A Wagtail StreamField block powered by TinyMCE and its table plugin
+  license: GPL-3.0-only AND GPL-3.0-or-later
+  license_file:
+    - LICENSE
+    - src/wagtail_tinytableblock/static/wagtail_tinytableblock/js/vendor/tinymce/license.md
+  homepage: https://pypi.org/project/wagtail-tinytableblock/
+  repository: https://github.com/torchbox/wagtail-tinytableblock
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - rxm7706

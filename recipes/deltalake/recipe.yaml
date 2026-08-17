@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: deltalake
+  version: "1.5.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/deltalake-${{ version }}.tar.gz
+  sha256: cdea832ebcadd9f6ccedfcf023f244f2830152fd82b2f78b42e701989dd73b2d
+
+build:
+  # build failures on ppc64le
+  number: 0
+  skip: ppc64le or (is_abi3 and not is_python_min)
+  python:
+    version_independent: ${{ true if is_abi3 }}
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - maturin >=1,<2
+    - make
+    - cargo-bundle-licenses
+    - ${{ compiler('rust') }}
+    - if: linux
+      then: ${{ compiler('c') }}
+    - if: linux
+      then: ${{ stdlib("c") }}
+    - if: win
+      then: m2-sed
+    - if: not win
+      then: sed
+    # see https://aws.github.io/aws-lc-rs/requirements/linux.html
+    - if: linux and not (x86_64 or aarch64)
+      then: cmake
+    - if: linux and not (x86_64 or aarch64)
+      then: clang
+    - if: linux and not (x86_64 or aarch64)
+      then: libclang
+  host:
+    - if: is_abi3
+      then: python-abi3
+    - python
+    - maturin >=1,<2
+    - pip
+    - if: linux
+      then: liblzma-devel
+  run:
+    - arro3-core >=0.5.0
+    - deprecated >=1.2.18
+    - python
+  run_constraints:
+    - pyarrow >=16
+
+tests:
+  - requirements:
+      run:
+        - pip <=24.1
+        - if: is_abi3
+          then: abi3audit
+    script:
+      - pip check
+      - if: unix and is_abi3
+        then: abi3audit $SP_DIR/deltalake/_internal.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
+      - if: win and is_abi3
+        then: abi3audit %SP_DIR%/deltalake/_internal.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
+
+about:
+  summary: Native Delta Lake Python binding based on delta-rs with Pandas integration
+  license: Apache-2.0
+  license_file:
+    - python/LICENSE.txt
+    - python/THIRDPARTY.yml
+  homepage: https://github.com/delta-io/delta-rs
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - charlesbluca

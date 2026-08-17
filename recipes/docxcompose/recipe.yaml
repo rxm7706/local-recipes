@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: docxcompose
+  version: "2.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/docxcompose-${{ version }}.tar.gz
+  sha256: e2c69703a2fefad4471aad82861a1c5d7b3f4a669510de504bb36f41f66f6d3e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+  python:
+    entry_points:
+      - docxcompose = docxcompose.command:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - poetry-core >=2.0.0,<3.0.0
+  run:
+    - python >=${{ python_min }}
+    - babel >=2.10.0
+    - lxml
+    - python-docx >=1.0.0
+
+tests:
+  - python:
+      imports:
+        - docxcompose
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - docxcompose --help
+
+about:
+  summary: Compose .docx documents
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/4teamwork/docxcompose
+
+extra:
+  recipe-maintainers:
+    - synapticarbors

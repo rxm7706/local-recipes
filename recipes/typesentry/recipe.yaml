@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.7"
+
+package:
+  name: typesentry
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py2.py3/t/typesentry/typesentry-0.2.7-py2.py3-none-any.whl
+  sha256: fcf3b928bfac3009785d9043e55ee303ae00f26d0abf1fc781cd8ea9784eb8c9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - colorama
+    - typesentry
+
+tests:
+  - python:
+      imports:
+        - typesentry
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/h2oai/typesentry.git
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Run-time type checking of arguments passed to functions
+  description: |
+    Run-time type checking of arguments passed to functions
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: typesentry
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: typesentry
+  cfe-purls:
+    - pkg:conda/typesentry@${{ version }}?channel=conda-forge
+    - pkg:pypi/typesentry@${{ version }}
+  cfe-upstream-repo: https://github.com/h2oai/typesentry.git
+  cfe-upstream-homepage: https://github.com/h2oai/typesentry.git
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:10:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:10:08Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sql-metadata
+  version: "3.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sql_metadata-${{ version }}.tar.gz
+  sha256: 4c83a48ddd1c6c4076eec2021347cb1311f0a190f18aabef7c2c6fd64d3afbc2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - poetry-core >=1.0.0
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }},<4.0
+    - sqlglot >=30.12.0,<31.0.0
+
+tests:
+  - python:
+      imports:
+        - sql_metadata
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Uses tokenized query returned by python-sqlparse and generates query metadata
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/macbre/sql-metadata
+
+extra:
+  recipe-maintainers:
+    - timkpaine
+    - OstapStefakQC

@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.8.1"
+
+package:
+  name: pytest-factoryboy
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pytest-factoryboy/pytest_factoryboy-${{ version }}.tar.gz
+  sha256: 2221d48b31b8b8ccaa739c6a162fb50a43a4de6dff6043f249d2807a3462548d
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - poetry-core
+    - python ${{ python_min }}.*
+  run:
+    - factory_boy >=2.10.0
+    - inflection
+    - packaging
+    - pytest >=7.0
+    - python >=${{ python_min }}
+    - typing_extensions
+
+tests:
+  - python:
+      imports: pytest_factoryboy
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - 3.13.*
+
+about:
+  summary: Factory Boy support for pytest.
+  license: MIT
+  license_file: LICENSE.md
+  homepage: https://pytest-factoryboy.readthedocs.io
+  repository: https://github.com/pytest-dev/pytest-factoryboy
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - bollwyvl

@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3.1"
+  python_check_max: "3.14"
+
+package:
+  name: lia-web
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/l/lia-web/lia_web-${{ version }}.tar.gz
+    sha256: 7f551269eddd729f1437e9341ad21622a849eb0c0975d9232ccbbaadbdc74c06
+  # last-known-good license
+  - url: https://raw.githubusercontent.com/patrick91/lia/refs/tags/0.2.3/LICENSE
+    sha256: 6bef4db73118d0c62c24bae130a47b1d0b2a99f4e3631fc0d4cc3a7705deaf5f
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - cross-web >=0.3.0
+
+tests:
+  - python:
+      imports: lia
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+
+about:
+  summary: A library for working with web frameworks
+  homepage: https://pypi.org/project/lia-web
+  repository: https://github.com/patrick91/lia
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

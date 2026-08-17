@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cfitsio
+  version: "4.7.0"
+  sha256: ce573bbea8e75b429f8c3d3e86498741ba3dc9628a1530d2f65268397ad059e8
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://heasarc.gsfc.nasa.gov/FTP/software/fitsio/c/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - ${{ stdlib("c") }}
+    - cmake <4
+    - ninja
+  host:
+    - libcurl
+    - if: not win
+      then: bzip2
+    - zlib
+  run_exports:
+    - ${{ pin_subpackage('cfitsio', upper_bound='x.x.x') }}
+  ignore_run_exports:
+    from_package:
+      - ${{ compiler("cxx") }}
+
+tests:
+  - script:
+      - if: not win
+        then: test -f ${PREFIX}/lib/libcfitsio${{ SHLIB_EXT }}
+      - if: win
+        then: if not exist %LIBRARY_LIB%\cfitsio.lib exit 1
+      - if: win
+        then: if not exist %LIBRARY_BIN%\cfitsio.dll exit 1
+
+about:
+  license: LicenseRef-fitsio
+  license_file: licenses/License.txt
+  summary: A library for reading and writing FITS files
+  description: |
+    CFITSIO is a library of C and Fortran subroutines for reading and writing
+    data files in FITS (Flexible Image Transport System) data format. CFITSIO
+    provides simple high-level routines for reading and writing FITS files that
+    insulate the programmer from the internal complexities of the FITS format.
+    CFITSIO also provides many advanced features for manipulating and filtering
+    the information in FITS files.
+  homepage: http://heasarc.gsfc.nasa.gov/fitsio/fitsio.html
+  documentation: https://heasarc.gsfc.nasa.gov/docs/software/fitsio/quick/quick.html
+
+extra:
+  recipe-maintainers:
+    - pkgw

@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.8.2"
+
+package:
+  name: jq
+  version: ${{ version }}
+
+source:
+  url: https://github.com/jqlang/jq/releases/download/jq-${{ version }}/jq-${{ version }}.tar.gz
+  sha256: 71b8d6e8f5fe81f6c6d0d110e3892251f6ce76ed095abd315e26e6e1193af3af
+
+build:
+  number: 1
+  skip: win
+
+requirements:
+  build:
+    - if: unix
+      then: gnuconfig
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - make
+  host:
+    - oniguruma 6.9.*
+  run:
+    - oniguruma 6.9.*
+
+tests:
+  - script:
+      - if: not win
+        then: jq --help
+
+about:
+  license: MIT
+  license_file: COPYING
+  summary: A command-line JSON processor.
+  homepage: https://jqlang.github.io/jq/
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - "0xbe7a"

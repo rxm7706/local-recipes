@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-classy-tags
+  version: "4.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django-classy-tags-${{ version }}.tar.gz
+  sha256: c8d9d1aa2fa6e71c4d866df4dd11d23a69b8d25bbb750b2490a17b161774ee59
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - django >=3.2
+
+tests:
+  - python:
+      imports:
+        - classytags
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  summary: Class based template tags for Django
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/django-cms/django-classy-tags
+
+extra:
+  recipe-maintainers:
+    - rxm7706

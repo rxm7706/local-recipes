@@ -1,0 +1,93 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.5.9"
+
+package:
+  name: chromadb-client
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/chromadb-client/chromadb_client-${{ version }}.tar.gz
+  sha256: 5e481d51ce6634fe54230b0411bf1ff257607ace222fc64c669e27874c12175b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.0
+  run:
+    - python >=${{ python_min }}
+    - numpy >=1.22.5
+    - opentelemetry-api >=1.2.0
+    - opentelemetry-exporter-otlp-proto-grpc >=1.2.0
+    - opentelemetry-sdk >=1.2.0
+    - overrides >=7.3.1
+    - pydantic >=2.0
+    - pydantic-settings >=2.0
+    - typing_extensions >=4.5.0
+    - tenacity >=8.2.3
+    - pyyaml >=6.0.0
+    - orjson >=3.9.12
+    - httpx >=0.27.0
+    - jsonschema >=4.19.0
+    - pybase64 >=1.4.1
+
+tests:
+  - python:
+      imports:
+        - chromadb
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/chroma-core/chroma
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Chroma Client.
+  description: |
+    Chroma Client.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: chromadb-client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: chromadb-client
+  cfe-purls:
+    - pkg:conda/chromadb-client@${{ version }}?channel=conda-forge
+    - pkg:pypi/chromadb-client@${{ version }}
+  cfe-upstream-repo: https://github.com/chroma-core/chroma
+  cfe-upstream-homepage: https://github.com/chroma-core/chroma
+  cfe-import-names: [chromadb]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:01:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:01:15Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.21.0"
+
+package:
+  name: tensorflow-transform
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/tensorflow-transform/tensorflow_transform-${{ version }}.tar.gz
+  sha256: 6f0ad1efc985ab8138c1f84f3f625ecc5e989a39e5a881afcbb3a2348fbc14b1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - absl-py <2.0.0,>=0.9
+    - apache-beam <3,>=2.53
+    - numpy >=1.22.0
+    - protobuf <7.0.0,>=6.0.0
+    - pyarrow >14
+    - pydot <2,>=1.2
+    - tensorflow <2.22,>=2.21
+    - tensorflow-metadata <1.22.0,>=1.21.0
+    - tf-keras >=2
+    - tfx-bsl <1.22.0,>=1.21.0
+
+tests:
+  - python:
+      imports:
+        - tensorflow_transform
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://www.tensorflow.org/tfx/transform/get_started
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A library for data preprocessing with TensorFlow
+  description: |
+    A library for data preprocessing with TensorFlow
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tensorflow-transform
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tensorflow-transform
+  cfe-purls:
+    - pkg:conda/tensorflow-transform@${{ version }}?channel=conda-forge
+    - pkg:pypi/tensorflow-transform@${{ version }}
+  cfe-upstream-repo: https://www.tensorflow.org/tfx/transform/get_started
+  cfe-upstream-homepage: https://www.tensorflow.org/tfx/transform/get_started
+  cfe-import-names: [tensorflow_transform]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:06:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:06:32Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

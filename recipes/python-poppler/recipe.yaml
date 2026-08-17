@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-poppler
+  version: "0.4.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/python_poppler-${{ version }}.tar.gz
+  sha256: e6ca5c23ec02350bf2cef85a6bf9f1b261796436db478176f9d24fb14eeecc6a
+  patches:
+    - 96.patch
+
+build:
+  number: 13
+  script: ${{ PYTHON }} -m pip install --no-deps --ignore-installed if win else '' }}
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: meson-python
+    - if: not win and build_platform != target_platform
+      then: pkg-config
+    - if: not win
+      then: ${{ compiler('c') }}
+    - if: not win
+      then: ${{ stdlib("c") }}
+    - if: not win
+      then: ${{ compiler('cxx') }}
+    - if: win
+      then: ${{ compiler('clang') }}
+  host:
+    - python-build
+    - meson-python
+    - pkg-config
+    - python
+    - wheel
+    - pip
+    - poppler
+  run:
+    - python
+    - poppler  # poppler does not have a run-export yet
+
+tests:
+  - python:
+      imports:
+        - poppler
+      pip_check: true
+
+about:
+  summary: A Python binding to poppler-cpp
+  license: GPL-2.0-only
+  license_file: LICENSE.txt
+  homepage: https://github.com/cbrunet/python-poppler
+  documentation: https://cbrunet.net/python-poppler/
+
+extra:
+  recipe-maintainers:
+    - 48762

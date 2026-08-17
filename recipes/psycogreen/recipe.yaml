@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: psycogreen
+  version: "1.0.1"
+  sha256: 86fe2a066d99526b3cff74ca45fd265b5b412a570195488603e298266e91be17
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  build:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - psycogreen
+      pip_check: false
+
+about:
+  license: BSD-3-Clause
+  license_file: COPYING
+  summary: psycopg2 integration with coroutine libraries
+  description: |
+    The psycogreen package enables psycopg2 to work with coroutine libraries, using asynchronous
+    calls internally but offering a blocking interface so that regular code can run unmodified.
+  homepage: https://bitbucket.org/dvarrazzo/psycogreen
+  repository: https://bitbucket.org/dvarrazzo/psycogreen
+  documentation: https://bitbucket.org/dvarrazzo/psycogreen
+
+extra:
+  recipe-maintainers:
+    - petercable

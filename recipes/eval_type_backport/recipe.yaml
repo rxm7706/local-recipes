@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: eval_type_backport
+  version: "0.4.0"
+
+recipe:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/eval_type_backport-${{ version }}.tar.gz
+  sha256: 8397d25e6524c2e67b9576bb0636be27dea2192017711220c534ec2de921e9b0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - wheel
+    - setuptools-scm
+    - pip
+  run:
+    - python >=${{ python_min }}
+  run_constraints:
+    - ${{ pin_subpackage("eval-type-backport", upper_bound="x.x.x") }}
+
+outputs:
+  - package:
+      name: eval_type_backport
+  - package:
+      name: eval-type-backport
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python ${{ python_min }}
+      run:
+        - ${{ pin_subpackage("eval_type_backport", upper_bound="x.x.x") }}
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports:
+            - eval_type_backport
+          pip_check: true
+          python_version: ${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - eval_type_backport
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Like `typing._eval_type`, but lets older Python versions use newer typing features.
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/alexmojaki/eval_type_backport
+
+extra:
+  recipe-maintainers:
+    - tasansal
+    - alexmojaki

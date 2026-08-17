@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: patchy
+  version: 2.10.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/patchy-${{ version }}.tar.gz
+  sha256: e7dc3610d20b8ce30af2ddbfa4a1ed67f066269fa6b10094f16dc798b80119da
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools >=77
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - patchy
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Patch the inner source of python functions at runtime.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/adamchainz/patchy
+
+extra:
+  recipe-maintainers:
+    - thewchan

@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-bootstrap-form
+  version: "3.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django-bootstrap-form-${{ version }}.tar.gz
+  sha256: de3f7893e515352834d446c441c0cb861637f92cebbe59d8229469c6cd3dc640
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - django >=1.5
+    - setuptools
+
+tests:
+  - python:
+      imports:
+        - bootstrapform
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  summary: django-bootstrap-form
+  license: MIT
+  license_file: LICENSE
+  homepage: http://github.com/tzangms/django-bootstrap-form
+
+extra:
+  recipe-maintainers:
+    - rxm7706

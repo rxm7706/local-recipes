@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: stomp.py
+  version: "8.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/stomp_py-${{ version }}.tar.gz
+  sha256: 9908689361e263bf198e6acfb3c4386759fb7df7d141f4384d7414771c68d7fc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - stomp = stomp.__main__:main
+
+requirements:
+  host:
+    - pip
+    - poetry
+    - python >=3.6,<4.0
+  run:
+    - docopt >=0.6.2,<0.7.0
+    - python >=3.6,<4.0
+    - websocket-client
+
+tests:
+  - python:
+      imports:
+        - stomp
+        - stomp.adapter
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - stomp --help
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python STOMP client, supporting versions 1.0, 1.1 and 1.2 of the protocol
+  description: |
+    "stomp.py" is a Python client library for accessing messaging servers
+    (such as ActiveMQ, Artemis or RabbitMQ) using the STOMP protocol
+    (STOMP v1.0, STOMP v1.1 and STOMP v1.2).
+    It can also be run as a standalone, command-line client for testing.
+  homepage: https://github.com/jasonrbriggs/stomp.py
+  repository: https://github.com/jasonrbriggs/stomp.py
+  documentation: https://jasonrbriggs.github.io/stomp.py/
+
+extra:
+  recipe-maintainers:
+    - anthchirp
+    - deepsworld

@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0"
+
+package:
+  name: sparknlp
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sparknlp/sparknlp-${{ version }}.tar.gz
+  sha256: f19cfd70d2eebb2bef47a72895da4d4390d4e0f1b34ab1842252c64672e2fe65
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - spark-nlp
+    - numpy
+
+tests:
+  - python:
+      imports:
+        - sparknlp
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://nlp.johnsnowlabs.com
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: John Snow Labs Spark NLP is a natural language processing library built on top of Apache Spark ML. It provides simple, performant & accurate NLP annotations for machine learning pipelines, that scale easily in a distributed environment.
+  description: |
+    John Snow Labs Spark NLP is a natural language processing library built on top of Apache Spark ML. It provides simple, performant & accurate NLP annotations for machine learning pipelines, that scale easily in a distributed environment.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sparknlp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sparknlp
+  cfe-purls:
+    - pkg:conda/sparknlp@${{ version }}?channel=conda-forge
+    - pkg:pypi/sparknlp@${{ version }}
+  cfe-upstream-repo: http://nlp.johnsnowlabs.com
+  cfe-upstream-homepage: http://nlp.johnsnowlabs.com
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:08:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:08:50Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

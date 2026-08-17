@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "2.14.3"
+  version: "2.16.2"
 
 recipe:
   name: ibm-cos-suite
@@ -10,13 +10,13 @@ recipe:
 
 source:
   - url: https://pypi.org/packages/source/i/ibm-cos-sdk-core/ibm_cos_sdk_core-${{ version }}.tar.gz
-    sha256: 85dee7790c92e8db69bf39dae4c02cac211e3c1d81bb86e64fa2d1e929674623
+    sha256: b975bc53ae8fdac8356851d8f66e4d286eaa8d8de3322d6f1734b76a6867f695
     target_directory: core_src
   - url: https://pypi.org/packages/source/i/ibm-cos-sdk-s3transfer/ibm_cos_sdk_s3transfer-${{ version }}.tar.gz
-    sha256: 2251ebfc4a46144401e431f4a5d9f04c262a0d6f95c88a8e71071da056e55f72
+    sha256: c07e5d244c3f9e67f9da0186f8434ee60f34ce1f842378c8f4cf885670928788
     target_directory: s3transfer_src
   - url: https://pypi.org/packages/source/i/ibm-cos-sdk/ibm_cos_sdk-${{ version }}.tar.gz
-    sha256: 643b6f2aa1683adad7f432df23407d11ae5adb9d9ad01214115bee77dc64364a
+    sha256: b9ec5a390606b29a179736b34b90e829988b281eaa66fe5002bd9dac09adea3a
     target_directory: sdk_src
 
 build:

@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2026.6.3"
+  python_min: "3.11"
+
+package:
+  name: rpds-py
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/rpds-py/rpds_py-${{ version }}.tar.gz
+  sha256: 1cebd1337c242e4ec2293e541f712b2da849b29f48f0c293684b71c0632625d4
+
+build:
+  number: 0
+  skip: match(python, "<" ~ python_min)
+  script:
+    env:
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+      CARGO: cargo-auditable-wrapper${{ ".bat" if win }}
+      PYTHONIOENCODING: utf-8
+      PYTHONLEGACYTEXTENCODING: utf-8
+    content:
+      - if: win
+        then:
+          # for `path too long` errors
+          - set CARGO_HOME=c:\.cg
+          - md %CARGO_HOME%
+          - copy "%RECIPE_DIR%\cargo-auditable-wrapper.bat" "%BUILD_PREFIX%\Library\bin\cargo-auditable-wrapper.bat"
+        else:
+          - cp "${RECIPE_DIR}/cargo-auditable-wrapper.sh" "${BUILD_PREFIX}/bin/cargo-auditable-wrapper"
+          - chmod 755 "${BUILD_PREFIX}/bin/cargo-auditable-wrapper"
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("rust") }}
+    - ${{ stdlib("c") }}
+    - cargo-bundle-licenses
+    - cargo-auditable
+  host:
+    - maturin >=1.9,<2.0
+    - pip
+    - python
+  run:
+    - python
+
+tests:
+  - python:
+      pip_check: true
+      imports: rpds
+  - files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - coverage
+        - pytest
+    script:
+      - coverage run --source=rpds --branch -m pytest -vv --tb=long --color=yes
+      - coverage report --show-missing --skip-covered --fail-under=83
+
+about:
+  summary: Python bindings to Rust's persistent data structures (rpds)
+  license: MIT
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  homepage: https://pypi.org/project/rpds-py
+  repository: https://github.com/crate-py/rpds
+  documentation: https://rpds.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

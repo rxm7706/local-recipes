@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: googledrivedownloader
+  version: "1.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 100920eb4e9069b48bc2f0445edf2ebc52814bc8d410385d0b2c902cad64cc9b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - requests
+
+tests:
+  - python:
+      imports:
+        - googledrivedownloader
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Minimal class to download shared files from Google Drive.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/googledrivedownloader/
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - rluria14
+    - ndmaxar
+    - oblute
+    - davide-f

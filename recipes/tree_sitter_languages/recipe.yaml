@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: tree_sitter_languages
+  version: "1.10.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/grantjenks/py-tree-sitter-languages/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: cdd03196ebaf8f486db004acd07a5b39679562894b47af6b20d28e4aed1a6ab5
+
+build:
+  number: 2
+  skip: match(python, "<3.6")
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - cython
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+    - tree_sitter
+
+tests:
+  - python:
+      imports:
+        - tree_sitter_languages
+      pip_check: true
+
+about:
+  summary: Python Bindings for Tree Sitter with All Languages
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/grantjenks/py-tree-sitter-languages
+
+extra:
+  recipe-maintainers:
+    - thewchan
+    - davidbrochart

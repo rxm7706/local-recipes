@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: uncurl
+  version: "0.0.11"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 530c9bbd4d118f4cde6194165ff484cc25b0661cd256f19e9d5fcb53fc077790
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - uncurl = uncurl.bin:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pyperclip
+    - six
+
+tests:
+  - python:
+      imports:
+        - uncurl
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - if: not win
+        then: echo "curl https://conda-forge.org/" | uncurl --help
+      - if: win
+        then: echo \"curl https://conda-forge.org/\" | uncurl --help
+
+about:
+  summary: A library to convert curl requests to python-requests.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/spulec/uncurl
+
+extra:
+  recipe-maintainers:
+    - fhoehle

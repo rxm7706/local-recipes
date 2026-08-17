@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.5.0"
+  python_min: "3.11"
+
+package:
+  name: django-tailwind
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-tailwind/django_tailwind-${{ version }}.tar.gz
+  sha256: c4b40820663ac3932f6951b82b91e3773361a46d9bde972bc8a338eee3c5d045
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2.20
+    - pytailwindcss >=0.3.0
+
+tests:
+  - python:
+      imports:
+        - tailwind
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/timonweb/django-tailwind
+  license: MIT
+  license_file: LICENSE
+  summary: Tailwind CSS Framework for Django projects
+  description: |
+    Tailwind CSS Framework for Django projects
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-tailwind
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-tailwind
+  cfe-purls:
+    - pkg:conda/django-tailwind@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-tailwind@${{ version }}
+  cfe-upstream-repo: https://github.com/timonweb/django-tailwind
+  cfe-upstream-homepage: https://github.com/timonweb/django-tailwind
+  cfe-import-names: [tailwind]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:54:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:54:03Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

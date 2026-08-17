@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: spacy-loggers
+  modulename: spacy_loggers
+  version: "1.0.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: d60b0bdbf915a60e516cc2e653baeff946f0cfc461b452d11a4d5458c6fe5f24
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+
+tests:
+  - python:
+      imports:
+        - ${{ modulename }}
+      pip_check: false
+  - requirements:
+      run:
+        - pytest
+        - spacy >=3.1
+    script:
+      - python -m pytest --tb=native --pyargs ${{ modulename }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Alternate loggers for spaCy pipeline training
+  description: Enables alternatives to spaCy's built-in console logger
+  homepage: https://github.com/explosion/spacy-loggers
+  repository: https://github.com/explosion/spacy-loggers
+  documentation: https://github.com/explosion/spacy-loggers
+
+extra:
+  recipe-maintainers:
+    - conda-forge/spacy

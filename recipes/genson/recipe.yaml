@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: genson
+  version: "1.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: bc7f1c1bae87a21ca44d81149aec95a3f4468d676de9b8b08caa064f3c50b3da
+
+build:
+  number: 0
+  noarch: python
+  script: 
+    - python -m pip install . -vv --no-deps --no-build-isolation
+
+  python:
+    entry_points:
+      - genson = genson.__main__:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=44
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - genson
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - genson --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: GenSON is a powerful, user-friendly JSON Schema generator.
+  homepage: https://github.com/wolverdude/genson/
+  repository: https://github.com/wolverdude/genson/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - fhoehle

@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.1"
+
+package:
+  name: leather
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/leather/leather-${{ version }}.tar.gz
+  sha256: 67119c2aee93be821f077193bd8534e296c05b38bd174d9c5a80c4aa31d1a4d3
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - six >=1.6.1
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - six >=1.6.1
+
+tests:
+  - python:
+      imports:
+        - leather
+        - leather.scales
+        - leather.series
+        - leather.shapes
+        - leather.ticks
+      pip_check: false
+      python_version: ${{ python_min }}
+about:
+  license: MIT
+  license_file: COPYING
+  # license_file: COPYING - no MANIFEST - see https://docs.python.org/2/distutils/sourcedist.html#manifest-related-options
+  summary: Python charting for 80% of humans.
+  homepage: https://leather.rtfd.io
+  repository: https://github.com/wireservice/leather
+  documentation: https://leather.rtfd.io
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - jan-janssen

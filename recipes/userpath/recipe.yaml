@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: userpath
+  version: "1.9.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 6c52288dab069257cc831846d15d48133522455d4677ee69a9781f11dbefd815
+
+build:
+  number: 0
+  noarch: python
+  script: |
+    ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+  python:
+    entry_points:
+      - userpath = userpath.cli:userpath
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - hatchling
+  run:
+    - click
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - userpath
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - userpath --help
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Cross-platform tool for adding locations to the user PATH, no elevated privileges required!
+  homepage: https://github.com/ofek/userpath
+  repository: https://github.com/ofek/userpath
+
+extra:
+  recipe-maintainers:
+    - ofek
+    - mariusvniekerk

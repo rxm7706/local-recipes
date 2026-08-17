@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: textual
+  version: 8.2.8
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/textual-${{ version }}.tar.gz
+  sha256: 3f106a9fbc73e39dd266c9712432087de78a6d644084c7c241d6a25c3169115b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core >=1.2.0
+    - pip
+  run:
+    - pygments >=2.19.2,<3.0.0
+    - typing_extensions >=4.4.0,<5.0.0
+    - platformdirs >=3.6.0,<5
+    - python >=${{ python_min }},<4.0.0
+    - markdown-it-py >=2.1.0
+    - linkify-it-py >=1,<3
+    - mdit-py-plugins
+    - rich >=14.2.0
+  run_constraints:
+    - tree_sitter >=0.25.0
+    - tree_sitter_languages =1.10.2
+
+tests:
+  - python:
+      imports:
+        - textual
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Modern Text User Interface framework
+  homepage: https://github.com/Textualize/textual
+  repository: https://github.com/Textualize/textual
+  documentation: https://textual.textualize.io
+
+extra:
+  recipe-maintainers:
+    - davidbrochart
+    - carlodri
+    - xhochy

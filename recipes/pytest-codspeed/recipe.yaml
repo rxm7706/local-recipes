@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytest-codspeed
+  version: "5.0.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytest_codspeed-${{ version }}.tar.gz
+  sha256: 91afef90e6a96b013495e4702ef5d6358614a449e71008cdc194ef668778b92f
+
+build:
+  number: 0
+  script:
+    - if: linux
+      then:
+        - export PYTEST_CODSPEED_FORCE_EXTENSION_BUILD=1
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - numpy
+    - if: linux
+      then:
+        - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+  host:
+    - python
+    - setuptools >=61
+    - pip
+    - if: linux
+      then:
+        - valgrind >=3.21
+  run:
+    - python
+    - pytest >=3.8
+    - rich >=13.8.1
+    - importlib-metadata >=8.5.0
+
+tests:
+  - python:
+      pip_check: true
+      imports:
+        - pytest_codspeed
+        - if: linux
+          then:
+            - pytest_codspeed.instruments.hooks.dist_instrument_hooks
+
+about:
+  summary: Pytest plugin to create CodSpeed benchmarks
+  license: MIT
+  license_file: LICENSE
+  homepage: https://codspeed.io/
+  repository: https://github.com/CodSpeedHQ/pytest-codspeed
+  documentation: https://docs.codspeed.io/
+
+extra:
+  recipe-maintainers:
+    - xhochy
+    - kenodegard

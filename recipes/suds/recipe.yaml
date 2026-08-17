@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: suds
+  version: "1.1.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/suds-${{ version }}.tar.gz
+  sha256: 1d5cfa74117193b244a4233f246c483d9f41198b448c5f14a8bad11c4f649f2b
+
+build:
+  # Default package name is suds-community and needs to be overridden with an environment variable
+  # https://github.com/suds-community/suds/blob/a616d96b070ca119a532ff395d4a2a2ba42b257c/setup.py#L648
+  # This will change in in the 2.0.0 release
+  # https://github.com/suds-community/suds/blob/a616d96b070ca119a532ff395d4a2a2ba42b257c/README.md#overview
+  number: 1
+  noarch: python
+  script: SUDS_PACKAGE=suds ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - python >=3.6
+
+tests:
+  - python:
+      imports:
+        - suds
+        - suds.bindings
+      pip_check: true
+
+about:
+  summary: Lightweight SOAP client (community fork)
+  license: LGPL-3.0-only
+  license_file:
+    - LICENSE.txt
+  homepage: https://github.com/suds-community/suds
+
+extra:
+  recipe-maintainers:
+    - chrisburr

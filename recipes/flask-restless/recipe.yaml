@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: Flask-Restless
+  version: 1.0.0b1
+  compress_type: tar.gz
+  hash_val: aa66c97adae9d27fa74e9de785aac416479aa59687a8ea3b39993e449847406f
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ compress_type }}
+  sha256: ${{ hash_val }}
+  file_name: ${{ name }}-${{ version }}.${{ compress_type }}
+
+build:
+  number: 1
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - flask >=0.10
+    - sqlalchemy >=0.8
+    - python-dateutil >2.2
+    - mimerender >=0.5.2
+
+tests:
+  - python:
+      imports:
+        - flask_restless
+        - flask_restless.views
+      pip_check: false
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.BSD
+  summary: A Flask extension for easy ReSTful API generation
+  homepage: https://github.com/jfinkels/flask-restless
+  repository: https://github.com/jfinkels/flask-restless
+  documentation: https://flask-restless.readthedocs.io/en/stable/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr

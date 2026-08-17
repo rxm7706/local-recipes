@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: crochet
+  version: "2.1.1"
+  sha256: 7ece69de1ce8e63ffc0af8e2331ec4eb898d91ed4271aafa4ccc398523b81cf9
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+    - twisted >=15.0
+    - wrapt
+
+tests:
+  - python:
+      imports:
+        - crochet
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Use Twisted anywhere!
+  description: |
+    Crochet is an MIT-licensed library that makes it easier to use Twisted from
+    regular blocking code. Some use cases include:
+
+    * Easily use Twisted from a blocking framework like Django or Flask.
+
+    * Write a library that provides a blocking API, but uses Twisted for its
+    implementation.
+
+    * Port blocking code to Twisted more easily, by keeping a backwards
+    compatibility layer.
+
+    * Allow normal Twisted programs that use threads to interact with Twisted
+    more cleanly from their threaded parts. For example, this can be useful
+    when using Twisted as a WSGI container.
+  homepage: https://github.com/itamarst/crochet
+  repository: https://github.com/itamarst/crochet/
+  documentation: https://crochet.readthedocs.org/
+
+extra:
+  recipe-maintainers:
+    - stuertz
+    - itamarst

@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.26225"
+
+package:
+  name: tableauhyperapi
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/t/tableauhyperapi/tableauhyperapi-0.0.26225-py3-none-macosx_10_11_x86_64.whl
+  sha256: b738ce9c48b69921420945a4cd095e8ef9d5e9639ddcee2832631777d259508d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - cffi !=1.14.3,>=1.12.2
+
+tests:
+  - python:
+      imports:
+        - tableauhyperapi
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://tableau.github.io/hyper-db
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Hyper API for Python
+  description: |
+    Hyper API for Python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tableauhyperapi
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tableauhyperapi
+  cfe-purls:
+    - pkg:conda/tableauhyperapi@${{ version }}?channel=conda-forge
+    - pkg:pypi/tableauhyperapi@${{ version }}
+  cfe-upstream-repo: https://tableau.github.io/hyper-db
+  cfe-upstream-homepage: https://tableau.github.io/hyper-db
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:09:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:09:29Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.9"
+
+package:
+  name: xmlformatter
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/x/xmlformatter/xmlformatter-${{ version }}.tar.gz
+  sha256: 22266ce398950d7848df66d5edc1bee57ead6d1b2404184c335ac4d0892d2760
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - xmlformat=xmlformatter:cli
+
+requirements:
+  host:
+    - pip
+    - python =${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - xmlformatter
+  - requirements:
+      run:
+        - pip
+        - python =${{ python_min }}
+    script:
+      - pip check
+      - 'xmlformat --help 2>&1 | grep -q "Usage: xmlformat"'
+
+about:
+  summary: Format and compress XML documents
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: http://pamoller.com/xmlformatter.html
+
+extra:
+  recipe-maintainers:
+    - danielnachun

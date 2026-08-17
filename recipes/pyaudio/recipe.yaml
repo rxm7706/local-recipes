@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.14"
+
+package:
+  name: pyaudio
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/P/PyAudio/PyAudio-${{ version }}.tar.gz
+  sha256: 78dfff3879b4994d1f4fc6485646a57755c6ee3c19647a491f790a0895bd2f87
+
+build:
+  number: 3
+  skip: win or osx
+  script:
+    - if: not win
+      then: export PORTAUDIO_PATH=$PREFIX
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - if: not win
+      then: portaudio
+    - if: linux
+      then: jack
+  run:
+    - python
+    - setuptools
+    - if: not win
+      then: portaudio
+    - if: linux
+      then: jack
+
+tests:
+  - python:
+      imports:
+        - pyaudio
+      pip_check: false
+    script:
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: PortAudio Python Bindings.
+  homepage: http://people.csail.mit.edu/hubert/pyaudio/
+
+extra:
+  recipe-maintainers:
+    - chiranthsiddappa
+    - ocefpaf
+    - scopatz

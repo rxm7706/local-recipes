@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.9.6"
+
+package:
+  name: wordcloud
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wordcloud/wordcloud-${{ version }}.tar.gz
+  sha256: df17c468ff903bd0aba4f87c6540745d13a4931220dd4937cb363ad85a4771b9
+
+build:
+  number: 1
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - wordcloud_cli = wordcloud.__main__:main
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - setuptools
+    - setuptools-scm
+    - toml
+    - pip
+    - cython >=0.29.33
+  run:
+    - python
+    - numpy >=1.19.3
+    - pillow
+    - matplotlib-base
+
+tests:
+  - python:
+      imports:
+        - wordcloud
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - wordcloud_cli -h
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A little word cloud generator in Python
+  homepage: https://github.com/amueller/word_cloud
+
+extra:
+  recipe-maintainers:
+    - amueller
+    - ericdill
+    - ocefpaf

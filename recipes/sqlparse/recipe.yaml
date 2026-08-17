@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sqlparse
+  version: "0.5.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sqlparse-${{ version }}.tar.gz
+  sha256: e20d4a9b0b8585fdf63b10d30066c7c94c5d7a7ec47c889a2d83a3caa93ff28e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - sqlformat = sqlparse.__main__:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - sqlparse
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - sqlformat --help
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A non-validating SQL parser module for Python.
+  description: |
+    sqlparse is a non-validating SQL parser for Python. It provides support
+    for parsing, splitting and formatting SQL statements.
+  homepage: https://github.com/andialbrecht/sqlparse
+  repository: https://github.com/andialbrecht/sqlparse
+  documentation: https://sqlparse.readthedocs.org
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - thewchan

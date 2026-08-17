@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.9.6"
+
+package:
+  name: llama-index-llms-google-genai
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/llama-index-llms-google-genai/llama_index_llms_google_genai-${{ version }}.tar.gz
+  sha256: 34b1ca3260bde505d07ca0812df7b4aee6c86fc6877fc212aac0bf2652947ab1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - google-genai <3,>=1.52.0
+    - llama-index-core <0.15,>=0.14.5
+    - pillow >=10.2.0
+
+tests:
+  - python:
+      imports:
+        - llama_index.llms.google_genai
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/llama-index-llms-google-genai/
+  license: MIT
+  license_file: LICENSE
+  summary: llama-index llms google genai integration
+  description: |
+    llama-index llms google genai integration
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: llama-index-llms-google-genai
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: llama-index-llms-google-genai
+  cfe-purls:
+    - pkg:conda/llama-index-llms-google-genai@${{ version }}?channel=conda-forge
+    - pkg:pypi/llama-index-llms-google-genai@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/llama-index-llms-google-genai/
+  cfe-upstream-homepage: https://pypi.org/project/llama-index-llms-google-genai/
+  cfe-import-names: [llama_index.llms.google_genai]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:27:01Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:27:01Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

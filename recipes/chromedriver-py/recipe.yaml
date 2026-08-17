@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "151.0.7922.76"
+
+package:
+  name: chromedriver-py
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/chromedriver-py/chromedriver_py-${{ version }}.tar.gz
+  sha256: 196484093fc290b3a089c63916c602963866ea80f3828df61f5867799e586ab8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - chromedriver_py
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://github.com/breuerfelix/chromedriver-py
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: chromedriver binaries for all platforms
+  description: |
+    chromedriver binaries for all platforms
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: chromedriver-py
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: chromedriver-py
+  cfe-purls:
+    - pkg:conda/chromedriver-py@${{ version }}?channel=conda-forge
+    - pkg:pypi/chromedriver-py@${{ version }}
+  cfe-upstream-repo: http://github.com/breuerfelix/chromedriver-py
+  cfe-upstream-homepage: http://github.com/breuerfelix/chromedriver-py
+  cfe-import-names: [chromedriver_py]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:49:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:49:08Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

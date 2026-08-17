@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.6.1"
+  version: 0.6.2
 
 package:
   name: markdown-to-confluence
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/m/markdown-to-confluence/markdown_to_confluence-${{ version }}.tar.gz
-  sha256: 2f5cc303310285a3089be0009a7688a5d2386fecb13542b9ae22d22a5ef60e45
+  sha256: 15f44e940d5f2894c3e52afce51fc12f8e9d3c9ba341ed971af1bd9de363d8c8
 
 build:
   number: 0
@@ -31,11 +31,12 @@ requirements:
     - lxml >=6.1
     - markdown >=3.10
     - orjson >=3.11
-    - pymdown-extensions >=10.21
+    - pymdown-extensions >=11.0
     - pyyaml >=6.0
-    - requests >=2.33
+    - requests >=2.34
     - truststore >=0.10
-    - typing_extensions >=4.15
+    - typing_extensions >=4.16
+    - pathspec >=1.1
   run_constraints:
     - matplotlib >=3.10
 
@@ -46,7 +47,7 @@ tests:
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - "*"
+        - '*'
   - requirements:
       run:
         - python ${{ python_min }}.*

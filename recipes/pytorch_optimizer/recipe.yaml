@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.10.1"
+
+package:
+  name: pytorch_optimizer
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pytorch_optimizer/pytorch_optimizer-${{ version }}.tar.gz
+  sha256: c262319cc3ae7be9f591e8728f1883d3096b9d7e15bea358b4ca20dd848c6d2a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - numpy <=1.24.4
+    - pytorch <2.5,>=1.10
+
+tests:
+  - python:
+      imports:
+        - pytorch_optimizer
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/pytorch_optimizer/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: optimizer & lr scheduler & objective function collections in PyTorch
+  description: |
+    optimizer & lr scheduler & objective function collections in PyTorch
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytorch_optimizer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytorch_optimizer
+  cfe-purls:
+    - pkg:conda/pytorch_optimizer@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytorch-optimizer@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/pytorch_optimizer/
+  cfe-upstream-homepage: https://pypi.org/project/pytorch_optimizer/
+  cfe-import-names: [pytorch_optimizer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:21:18Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:21:18Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

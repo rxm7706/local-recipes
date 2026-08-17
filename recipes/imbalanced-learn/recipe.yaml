@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: imbalanced-learn
+  version: "0.14.2"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/imbalanced_learn-${{ version }}.tar.gz
+  sha256: f80ce7eafbcece8686e32571bd12978546c729c3f277215bead61a906ce9afe4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.10.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - numpy >=1.25.2,<3
+    - scipy >=1.11.4,<2
+    - scikit-learn >=1.4.2,<2
+    - sklearn-compat >=0.1.6,<0.2
+    - joblib >=1.2.0,<2
+    - threadpoolctl >=2.0.0,<4
+
+tests:
+  - python:
+      imports:
+        - imblearn
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+        - pip
+        - pytest >=7.2.2
+        - pytest-timeout
+    script:
+      - pytest --timeout 300 --verbose --pyargs imblearn
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Python module to balance data set using under- and over-sampling
+  description: |
+    imbalanced-learn is a python package offering a number of re-sampling
+    techniques commonly used in datasets showing strong between-class imbalance.
+    It is compatible with scikit-learn and is part of scikit-learn-contrib
+    projects.
+  homepage: https://github.com/scikit-learn-contrib/imbalanced-learn
+  repository: https://github.com/scikit-learn-contrib/imbalanced-learn
+  documentation: http://imbalanced-learn.org/en/stable/
+
+extra:
+  recipe-maintainers:
+    - glemaitre

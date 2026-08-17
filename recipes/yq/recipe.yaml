@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: yq
+  version: "4.1.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: a8f148930f8beb3170f451d67f29cbe0b3ac713cd2fc91ecf51d43b4879e6b4c
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - yq=yq:cli
+      - xq=yq:xq_cli
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - hatchling
+    - hatch-vcs
+  run:
+    - tomlkit >=0.11.6
+    - argcomplete >=1.8.1
+    - python >=${{ python_min }}
+    - pyyaml >=5.3.1
+    - xmltodict >=0.11.0
+    - jq >=1.8
+tests:
+  - python:
+      python_version:
+        - ${{ python_min }}.*
+        - '*'
+      imports:
+        - yq
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+      - echo '- 1' | yq '.'
+      - yq --help
+      - xq --help
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Command-line YAML/XML processor - jq wrapper for YAML/XML documents
+  homepage: https://github.com/kislyuk/yq
+  repository: https://github.com/kislyuk/yq
+  documentation: https://yq.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - sodre
+    - xhochy

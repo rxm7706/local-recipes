@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: rich-argparse
+  version: "1.8.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/rich_argparse-${{ version }}.tar.gz
+  sha256: 679df3d832fa94ad6e4bdb07ded088cd7ea2dddc58ae9b2b46346a40b06cbc0c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling >=1.11.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - rich >=11.0.0
+
+tests:
+  - python:
+      imports:
+        - rich_argparse
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Rich help formatters for argparse and optparse
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/hamdanal/rich-argparse
+  repository: https://github.com/hamdanal/rich-argparse
+
+extra:
+  recipe-maintainers:
+    - xylar

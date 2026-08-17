@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: 0.8.0
+
+package:
+  name: lunr
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/lunr/lunr-${{ version }}.tar.gz
+  sha256: b46cf5059578d277a14bfc901bb3d5666d013bf73c035331ac0222fdac358228
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - hatch-fancy-pypi-readme >=22.8.0
+    - hatchling
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - typing-extensions
+    - importlib-metadata
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      pip_check: true
+      python_version: ${{ python_min }}.*
+      imports: lunr
+  - files:
+      recipe:
+        - run_test.py
+      source:
+        - tests/
+    requirements:
+      run:
+        - nltk
+        - nodejs 22.*
+        - pytest-cov
+        - pytest-timeout
+        - python ${{ python_min }}.*
+    script:
+      - python run_test.py
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A Python implementation of Lunr.js
+  description: |-
+    This Python version of Lunr.js aims to bring the simple and powerful full
+    text search capabilities into Python guaranteeing results as close as the
+    original implementation as possible.
+
+
+  homepage: https://github.com/yeraydiazdiaz/lunr.py
+  documentation: https://lunr.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

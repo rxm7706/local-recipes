@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.13.1"
+
+package:
+  name: anaconda-project
+  version: ${{ version }}
+
+source:
+  url: https://github.com/Anaconda-Platform/anaconda-project/archive/v${{ version }}.tar.gz
+  sha256: 78cc2e33c577322d7be7bf322c7976c7a939ddffa2beb668e486aa91ca858462
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps
+  python:
+    entry_points:
+      - anaconda-project = anaconda_project.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - anaconda-client
+    - conda-pack
+    - entrypoints
+    - python >=${{ python_min }}
+    - requests
+    - ruamel.yaml >=0.15
+    - tornado >=4.2
+    - jinja2
+    - tqdm
+
+tests:
+  - python:
+      imports:
+        - anaconda_project
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - echo "First of test commands"
+      - anaconda-project --help
+      - anaconda-project --version
+      - echo "Last of test commands"
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Tool for encapsulating, running, and reproducing data science projects
+  description: |
+    By adding an anaconda-project.yml to a project directory, a single
+    anaconda-project runcommand will be able to set up all dependencies
+    and then launch the project.
+  homepage: https://github.com/Anaconda-Platform/anaconda-project
+  repository: https://github.com/Anaconda-Platform/anaconda-project
+  documentation: http://anaconda-project.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - fpliger
+    - goanpeca
+    - mingwandroid
+    - bollwyvl
+    - albertdefusco
+    - mcg1969

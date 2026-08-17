@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: enum_tools
+  version: "0.13.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/enum_tools-${{ version }}.tar.gz
+  sha256: 0d13335e361d300dc0f8fd82c8cf9951417246f9676144f5ee1761eb690228eb
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+    - whey >=0.0.20
+  run:
+    - pygments >=2.6.1
+    - python >=${{ python_min }}
+    - typing-extensions >=3.7.4.3
+  run_constraints:
+    - sphinx >=3.4.0
+    - sphinx-toolbox >=2.16.0
+
+tests:
+  - python:
+      imports:
+        - enum_tools
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Tools to expand Python's enum module.
+  license: LGPL-3.0-or-later
+  license_file: LICENSE
+  homepage: https://github.com/domdfcoding/enum_tools
+  documentation: https://enum_tools.readthedocs.io/en/latest
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - domdfcoding

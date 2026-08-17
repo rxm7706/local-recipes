@@ -1,0 +1,113 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: opencv-python-headless
+  version: "4.11.0.86"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opencv-python-headless-${{ version }}.tar.gz
+  sha256: 996eb282ca4b43ec6a3972414de0e2331f5d9cda2b41091a49739c19fb843798
+
+build:
+  number: 1
+  skip: win
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  dynamic_linking:
+    missing_dso_allowlist:
+      - if: linux
+        then: /lib64/ld-linux-x86-64.so.2
+      - if: linux
+        then: /lib64/libc.so.6
+      - if: linux
+        then: /lib64/libdl.so.2
+      - if: linux
+        then: /lib64/libm.so.6
+      - if: linux
+        then: /lib64/libpthread.so.0
+
+requirements:
+  build:
+    - if: not win
+      then: ${{ compiler('c') }}
+    - if: not win
+      then: ${{ compiler('cxx') }}
+    - if: not win
+      then: ${{ stdlib('c') }}
+    - cmake
+    - if: unix
+      then: make
+  host:
+    - python
+    - if: linux
+      then: sysroot_linux-64
+    - if: linux
+      then: libgcc-ng
+    - if: match(python, "==3.6")
+      then: numpy ==1.13.3
+    - if: match(python, "==3.7")
+      then: numpy ==1.17.0
+    - if: match(python, "==3.8")
+      then: numpy ==1.17.5
+    - if: match(python, "<3.9") and linux
+      then: numpy ==1.19.3
+    - if: match(python, "<3.9") and darwin
+      then: numpy ==1.21.0
+    - if: match(python, ">=3.9")
+      then: numpy >=2.0.0
+    - packaging
+    - pip
+    - scikit-build >=0.14.0
+    - if: match(python, "<3.12")
+      then: setuptools >=59.2.0
+    - if: match(python, ">=3.12")
+      then: setuptools <70.0.0
+  run:
+    - cmake
+    - python
+    - if: linux
+      then: sysroot_linux-64
+    - if: linux
+      then: libgcc-ng
+    - if: match(python, "<3.7")
+      then: numpy >=1.13.3
+    - if: match(python, "<=3.9") and osx
+      then: numpy >=1.21.0
+    - if: match(python, ">=3.10")
+      then: numpy >=1.21.2
+    - if: match(python, ">=3.10") and osx
+      then: numpy >=1.21.4
+    - if: match(python, ">=3.11")
+      then: numpy >=1.23.5
+    - if: match(python, ">=3.12")
+      then: numpy >=1.26.0
+    - if: match(python, ">=3.6") and linux
+      then: numpy >=1.19.3
+    - if: match(python, ">=3.7")
+      then: numpy >=1.17.0
+    - if: match(python, ">=3.8")
+      then: numpy >=1.17.3
+    - if: match(python, ">=3.9")
+      then: numpy >=1.19.3
+
+tests:
+  - python:
+      imports:
+        - cv2
+      pip_check: true
+
+about:
+  summary: Wrapper package for OpenCV python bindings.
+  license: MIT AND Apache-2.0
+  license_file:
+    - LICENSE-3RD-PARTY.txt
+    - LICENSE.txt
+  homepage: https://github.com/opencv/opencv-python
+
+extra:
+  recipe-maintainers:
+    - nilchia

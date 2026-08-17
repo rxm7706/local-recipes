@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dict_hash
+  version: "1.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/dict_hash-${{ version }}.tar.gz
+  sha256: 15ca35be7448485d742451cfaea6db51cf9bfbf4ea70ca41da99bc4f54d5f59b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - deflate_dict >=1.0.8
+    - support_developer >=1.0.4
+
+tests:
+  - python:
+      imports:
+        - dict_hash
+      pip_check: true
+
+about:
+  summary: Simple python tool to hash dictionaries using both default hash and sha256.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/LucaCappelletti94/dict_hash
+
+extra:
+  recipe-maintainers:
+    - isuruf
+    - dillonroach

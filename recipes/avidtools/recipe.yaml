@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3.2"
+  python_min: "3.12"
+
+package:
+  name: avidtools
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/avidtools/avidtools-${{ version }}.tar.gz
+  sha256: b31fa0df2049e3bf02f0bd8884ed62608cee6ec3fa913036b02b6cde7c05db71
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=2.0.0,<3.0.0
+  run:
+    - python >=${{ python_min }}
+    - beautifulsoup4 <5.0.0,>=4.12.0
+    - lxml <6.0.0,>=5.0.0
+    - openai <2.0.0,>=1.0.0
+    - pydantic <3.0.0,>=2.11.5
+    - requests <3.0.0,>=2.31.0
+    - typing_extensions <5.0.0,>=4.13.2
+    - urllib3 <3.0.0,>=2.6.3
+
+tests:
+  - python:
+      imports:
+        - avidtools
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/avidml/avidtools
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Developer tools for AVID
+  description: |
+    Developer tools for AVID
+  repository: https://github.com/avidml/avidtools
+  documentation: https://github.com/avidml/avidtools
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: avidtools
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: avidtools
+  cfe-purls:
+    - pkg:conda/avidtools@${{ version }}?channel=conda-forge
+    - pkg:pypi/avidtools@${{ version }}
+  cfe-upstream-repo: https://github.com/avidml/avidtools
+  cfe-upstream-homepage: https://github.com/avidml/avidtools
+  cfe-import-names: [avidtools]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:05:20Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:05:20Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

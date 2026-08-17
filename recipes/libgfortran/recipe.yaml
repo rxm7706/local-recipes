@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  libgfortran_version:
+    - 3
+    - 0
+    - 0
+  libquadmath_version:
+    - 0
+    - 0
+    - 0
+  libgcc_s_version:
+    - 1
+    - 0
+    - 0
+
+package:
+  name: libgfortran
+  # This is hacked to match the higher version on defaults to make conda-forge
+  # more compatible with defaults.
+  # The actual libs are the same.
+  version: "3.0.1"
+
+build:
+  number: 0
+  skip: not osx
+  always_include_files:
+    - if: osx
+      then: lib/libgfortran.dylib
+    - if: osx
+      then: lib/libgfortran.${{ libgfortran_version[0] }}.dylib
+    - if: osx
+      then: lib/libgomp.dylib
+    - if: osx
+      then: lib/libgomp.${{ libgcc_s_version[0] }}.dylib
+    # Including libquadmath for the time
+    # being. This will need to be broken
+    # out in the long term.
+    - if: osx
+      then: lib/libquadmath.dylib
+    - if: osx
+      then: lib/libquadmath.${{ libquadmath_version[0] }}.dylib
+    # Including libgcc_s for the time
+    # being. This will need to be broken
+    # out in the long term.
+    - if: osx
+      then: lib/libgcc_s.${{ libgcc_s_version[0] }}.dylib
+    - if: osx
+      then: lib/libgcc_s_ppc64.${{ libgcc_s_version[0] }}.dylib
+    - if: osx
+      then: lib/libgcc_s_x86_64.${{ libgcc_s_version[0] }}.dylib
+
+requirements:
+  build:
+    - gcc 4.8.5.*
+
+tests:
+  - script:
+      - if: osx
+        then: test -f "${PREFIX}/lib/libgfortran.dylib"
+      - if: osx
+        then: test -f "${PREFIX}/lib/libgfortran.${{ libgfortran_version[0] }}.dylib"
+      - if: osx
+        then: test -f "${PREFIX}/lib/libgomp.dylib"
+      - if: osx
+        then: test -f "${PREFIX}/lib/libgomp.${{ libgcc_s_version[0] }}.dylib"
+      - if: osx
+        then: test -f "${PREFIX}/lib/libquadmath.dylib"
+      - if: osx
+        then: test -f "${PREFIX}/lib/libquadmath.${{ libquadmath_version[0] }}.dylib"
+      - if: osx
+        then: test -f "${PREFIX}/lib/libgcc_s.${{ libgcc_s_version[0] }}.dylib"
+      - if: osx
+        then: test -f "${PREFIX}/lib/libgcc_s_ppc64.${{ libgcc_s_version[0] }}.dylib"
+      - if: osx
+        then: test -f "${PREFIX}/lib/libgcc_s_x86_64.${{ libgcc_s_version[0] }}.dylib"
+
+about:
+  summary: Fortran libraries from the GNU Compiler Collection
+  license: GPL 3 (with GCC Runtime Library Exception 3.1)
+  homepage: http://gcc.gnu.org/
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - msarahan
+    - pelson

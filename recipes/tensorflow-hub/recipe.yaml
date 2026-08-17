@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.16.1"
+
+package:
+  name: tensorflow-hub
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py2.py3/t/tensorflow-hub/tensorflow_hub-${{ version }}-py2.py3-none-any.whl
+  sha256: e10c184b3d08daeafada11ffea2dd46781725b6bef01fad1f74d6634ad05311f
+
+build:
+  number: 3
+  noarch: python
+  script: ${{ PYTHON }} -m pip install -vv --no-deps --no-build-isolation tensorflow_hub-${{ version }}-py2.py3-none-any.whl
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - numpy >=1.12.0
+    - protobuf >=3.19.6
+    - tf-keras >=2.14.1
+
+tests:
+  - python:
+      imports:
+        - tensorflow_hub
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A library for transfer learning by reusing parts of TensorFlow models.
+  homepage: https://pypi.org/project/tensorflow-hub/
+  repository: https://github.com/tensorflow/hub
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - ehfd

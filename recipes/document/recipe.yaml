@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0"
+
+package:
+  name: document
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/document/document-${{ version }}.tar.gz
+  sha256: 6f6381266d3c7ca3d9cd0a835b9721648346af7bd2d66a2452f8eb08c01bc4a5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - document
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://bitbucket.org/brankovukelic/document/
+  license: MIT
+  license_file: LICENSE
+  summary: Wraps dicts in an object for convenient document management
+  description: |
+    Wraps dicts in an object for convenient document management
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: document
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: document
+  cfe-purls:
+    - pkg:conda/document@${{ version }}?channel=conda-forge
+    - pkg:pypi/document@${{ version }}
+  cfe-upstream-repo: https://bitbucket.org/brankovukelic/document/
+  cfe-upstream-homepage: https://bitbucket.org/brankovukelic/document/
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:55:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:55:17Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

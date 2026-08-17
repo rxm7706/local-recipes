@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: anytree
+  version: 2.13.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/anytree-${{ version }}.tar.gz
+  sha256: c9d3aa6825fdd06af7ebb05b4ef291d2db63e62bb1f9b7d9b71354be9d362714
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pdm-backend
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - six
+
+tests:
+  - python:
+      imports:
+        - anytree
+        - anytree.node
+        - anytree.iterators
+        - anytree.importer
+        - anytree.exporter
+        - anytree.util
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python tree data library
+  description: |
+    'Python tree data library'
+  homepage: https://github.com/c0fec0de/anytree
+  repository: https://github.com/c0fec0de/anytree
+  documentation: https://anytree.readthedocs.io/en/2.8.0
+
+extra:
+  recipe-maintainers:
+    - tlestang
+    - jan-janssen

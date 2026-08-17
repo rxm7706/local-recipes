@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.36.0"
+
+package:
+  name: azure-storage
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/a/azure-storage/azure-storage-${{ version }}.tar.gz
+  sha256: fb6212dcbed91b49d9637aa5e8888eafdfcd523b7e560c8044d2d838bbd3ca5f
+
+build:
+  number: 1004
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - azure-common >=1.1.5
+    - python-dateutil
+    - requests
+    - if: match(python, ">=2,<3")
+      then: futures
+
+tests:
+  - python:
+      imports:
+        - azure
+        - azure.storage
+        - azure.storage._http
+        - azure.storage.blob
+        - azure.storage.file
+        - azure.storage.queue
+        - azure.storage.table
+      pip_check: false
+  - requirements:
+      run:
+        - vcrpy
+    script:
+      - python -m unittest discover -p "test_*.py"
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  summary: Microsoft Azure Storage Client Library for Python
+  homepage: https://github.com/Azure/azure-storage-python
+
+extra:
+  recipe-maintainers:
+    - Maxyme

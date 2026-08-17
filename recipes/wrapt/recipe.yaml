@@ -2,25 +2,29 @@
 schema_version: 1
 
 context:
-  name: wrapt
-  version: 1.17.3
+  version: "2.3.0"
 
 package:
-  name: ${{ name|lower }}
+  name: wrapt
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wrapt-${{ version }}.tar.gz
-  sha256: f66eb08feaa410fe4eebd17f2a2c8e2e46d3476e9f8c783daa8e09e0faa666d0
+  url: https://pypi.org/packages/source/w/wrapt/wrapt-${{ version }}.tar.gz
+  sha256: 681a2d0eefd721998f90642762b8e75c2159ec531b20ad5e437245ea7b06a107
 
 build:
   number: 0
-  skip: match(python, "<3.8")
+  skip: match(python, "<3.7")
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
     - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
   host:
     - python
     - setuptools >=38.3.0
@@ -32,18 +36,22 @@ tests:
   - python:
       imports:
         - wrapt
-  - requirements:
-      run:
-        - pip
-    script:
-      - pip check
+      pip_check: true
 
 about:
-  summary: Module for decorators, wrappers and monkey patching.
   license: BSD-2-Clause
   license_file: LICENSE
+  summary: Module for decorators, wrappers and monkey patching
+  description: |
+    The aim of the wrapt module is to provide a transparent object proxy for
+    Python, which can be used as the basis for the construction of function
+    wrappers and decorator functions.
   homepage: https://github.com/GrahamDumpleton/wrapt
+  repository: https://github.com/GrahamDumpleton/wrapt
+  documentation: http://wrapt.readthedocs.org/en/latest/
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - jakirkham
+    - nehaljwani
+    - ocefpaf

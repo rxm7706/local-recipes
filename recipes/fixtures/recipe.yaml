@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.3.2"
+
+package:
+  name: fixtures
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/fixtures/fixtures-${{ version }}.tar.gz
+  sha256: b7db64014732513f23d12b0c49ae527ba0c0c1f2667ec97d9136d67157ebce5d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - hatch-vcs
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - fixtures
+        - fixtures.callmany
+        - fixtures.fixture
+        - fixtures.testcase
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Fixtures, reusable state for writing clean tests and more.
+  license: Apache-2.0
+  license_file: COPYING
+  homepage: https://github.com/testing-cabal/fixtures
+  repository: https://github.com/testing-cabal/fixtures
+
+extra:
+  recipe-maintainers:
+    - anguslees
+    - pmlandwehr
+    - wshanks

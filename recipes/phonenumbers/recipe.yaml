@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: phonenumbers
+  version: "9.0.37"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 8923ab413c575b27da2815c9bef48290181aab565398b5e7e23cc7ace212a293
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - phonenumbers
+        - phonenumbers.carrierdata
+        - phonenumbers.data
+        - phonenumbers.geodata
+        - phonenumbers.shortdata
+        - phonenumbers.tzdata
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  # license_file: No LICENSE in MANIFEST, local copy below
+  license_file: LICENSE
+  license: Apache-2.0
+  summary: Python version of Google's common library for parsing, formatting, storing and validating international phone numbers.
+  homepage: https://github.com/daviddrysdale/python-phonenumbers
+  repository: https://github.com/daviddrysdale/python-phonenumbers
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

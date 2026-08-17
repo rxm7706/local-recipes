@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: shodan
+  version: "1.31.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/shodan-${{ version }}.tar.gz
+  sha256: c73275386ea02390e196c35c660706a28dd4d537c5a21eb387ab6236fac251f6
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - shodan=shodan.__main__:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - certifi
+    - python >=${{ python_min }}
+    - click
+    - click-plugins
+    - xlsxwriter
+    - requests >=2.2.1
+    - colorama
+    - tldextract
+
+tests:
+  - python:
+      imports:
+        - shodan
+      pip_check: true
+  - files:
+      source:
+        - tests
+    script:
+      - shodan --help
+
+about:
+  summary: Python library and command-line utility for Shodan, a search engine for Internet-connected devices.
+  license: MIT
+  license_file:
+    - LICENSE
+  homepage: https://github.com/achillean/shodan-python
+
+extra:
+  recipe-maintainers:
+    - thewchan
+
+<conda_recipe_manager.types.SentinelType object at 0x70b19d84dbe0>:  #     - pytest -vvv --capture=tee-sys tests
+  requires:
+    - pip
+    - pytest
+    - python ${{ python_min }}

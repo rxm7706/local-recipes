@@ -1,0 +1,147 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.26.0"
+  python_check_max: "3.13"
+
+recipe:
+  name: jsonschema
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/jsonschema/jsonschema-${{ version }}.tar.gz
+  sha256: 0c26707e2efad8aa1bfc5b7ce170f3fccc2e4918ff85989ba9ffa9facb2be326
+
+build:
+  number: 0
+  noarch: python
+
+outputs:
+  - package:
+      name: jsonschema
+    build:
+      noarch: python
+      script:
+        - ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
+      python:
+        entry_points:
+          - jsonschema = jsonschema.cli:main
+    requirements:
+      host:
+        - hatch-fancy-pypi-readme
+        - hatch-vcs
+        - hatchling
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - attrs >=22.2.0
+        - jsonschema-specifications >=2023.03.6
+        - python >=${{ python_min }}
+        - referencing >=0.28.4
+        - rpds-py >=0.25.0
+    tests:
+      - python:
+          imports: jsonschema
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+      - requirements:
+          run:
+            - pip
+            - python ${{ python_min }}.*
+        script:
+          - jsonschema --version
+          - jsonschema --help
+          - jsonschema --version | python -c "import sys; v = sys.stdin.read().strip(); assert v == '${{ version }}', v"
+
+  - package:
+      name: jsonschema-with-format
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('jsonschema', upper_bound='x.x.x') }}
+        - fqdn
+        - idna
+        - isoduration
+        - jsonpointer >1.13
+        - rfc3339-validator
+        - rfc3987
+        - uri-template
+        - webcolors >=24.6.0
+    tests:
+      - python:
+          imports: jsonschema
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+
+  - package:
+      name: jsonschema-with-format-nongpl
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('jsonschema', upper_bound='x.x.x') }}
+        - fqdn
+        - idna
+        - isoduration
+        - jsonpointer >1.13
+        - rfc3339-validator
+        - rfc3986-validator >0.1.0
+        - rfc3987-syntax >=1.1.0
+        - uri-template
+        - webcolors >=24.6.0
+    tests:
+      - python:
+          imports: jsonschema
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+
+  - package:
+      name: jsonschema-with-all
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('jsonschema-with-format-nongpl', upper_bound='x.x.x') }}
+        - ${{ pin_subpackage('jsonschema-with-format', upper_bound='x.x.x') }}
+    tests:
+      - python:
+          imports: jsonschema
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+      - files:
+          recipe:
+            - start_test.py
+          source:
+            - json
+        requirements:
+          run:
+            - jsonpath-ng
+            - pytest-cov
+            - python ${{ python_min }}.*
+        script:
+          - python start_test.py --cov-fail-under=94 -k "not WrappedReferencingError_hashability"
+
+about:
+  license: MIT
+  license_file: COPYING
+  summary: An implementation of JSON Schema validation for Python
+  homepage: https://github.com/python-jsonschema/jsonschema
+  documentation: https://python-jsonschema.readthedocs.org
+
+extra:
+  feedstock-name: jsonschema
+  recipe-maintainers:
+    - minrk
+    - ocefpaf
+    - nehaljwani
+    - bollwyvl

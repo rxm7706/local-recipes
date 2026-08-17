@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: lazy-imports
   version: "1.2.0"
 
 package:
-  name: lazy-imports
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/l/lazy-imports/lazy_imports-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/lazy_imports-${{ version }}.tar.gz
   sha256: 3c546b3c1e7c4bf62a07f897f6179d9feda6118e71ef6ecc47a339cab3d2e2d9
 
 build:
@@ -19,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
@@ -30,21 +31,13 @@ tests:
       imports:
         - lazy_imports
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Tool to support lazy imports
   license: Apache-2.0
   license_file: LICENSE
   homepage: https://github.com/bachorp/lazy-imports
-  repository: https://github.com/bachorp/lazy-imports
-  description: |
-    Tool to support lazy imports. Provides helpers (try_import, LazyImporter,
-    LazyModule) to defer importing optional or heavy dependencies until they
-    are actually used, raising a helpful error only when the missing import
-    is accessed.
 
 extra:
   recipe-maintainers:

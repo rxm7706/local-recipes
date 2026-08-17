@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pylint-django
+  version: "2.8.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/pylint-dev/pylint-django/archive/v${{ version }}.tar.gz
+  sha256: 91764a088cefc7bbe85279652d21123ecde2e7b19b85ecae396b3d6412cf5613
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - pylint-plugin-utils >=0.8
+    - pylint >=3.0,<5
+  run_constraints:
+    - django >=2.2
+
+tests:
+  - python:
+      imports:
+        - pylint_django
+        - pylint_django.augmentations
+        - pylint_django.checkers
+        - pylint_django.transforms
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+        - pip
+        - django >=2.2
+    script:
+      - pylint --version
+
+about:
+  summary: A Pylint plugin to help Pylint understand the Django web framework
+  license: GPL-2.0-only
+  license_file: LICENSE
+  homepage: https://github.com/PyCQA/pylint-django
+
+extra:
+  recipe-maintainers:
+    - anthchirp
+    - rxm7706
+    - jakirkham

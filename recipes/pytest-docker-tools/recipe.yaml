@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytest-docker-tools
+  version: "3.1.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytest_docker_tools-${{ version }}.tar.gz
+  sha256: fd499f13244d68735c3bb819030876ffa2807fb558003e66033a4f66d84e3552
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - docker-py >=4.3.1
+    - pytest >=6.0.1
+    - python >=${{ python_min }},<4.0.0
+
+tests:
+  - python:
+      imports:
+        - pytest_docker_tools
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - pytest tests
+
+about:
+  description: README.md
+  homepage: https://github.com/Jc2k/pytest-docker-tools
+  license: Apache-2.0
+  license_file: LICENSE
+  repository: https://github.com/Jc2k/pytest-docker-tools
+  summary: Docker integration tests for pytest
+
+extra:
+  recipe-maintainers:
+    - bouweandela

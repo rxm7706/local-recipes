@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.9.0"
+
+package:
+  name: durabletask.azuremanaged
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/durabletask.azuremanaged/durabletask_azuremanaged-${{ version }}.tar.gz
+  sha256: 69cb7df157d9a600228fe85b265f6752c3872f3e5cc358cb13ec1846921ab607
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - durabletask >=1.9.0
+    - azure-identity >=1.19.0
+
+tests:
+  - python:
+      imports:
+        - durabletask.azuremanaged
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/durabletask.azuremanaged/
+  license: MIT
+  license_file: LICENSE
+  summary: Durable Task Python SDK provider implementation for the Azure Durable Task Scheduler
+  description: |
+    Durable Task Python SDK provider implementation for the Azure Durable Task Scheduler
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: durabletask.azuremanaged
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: durabletask.azuremanaged
+  cfe-purls:
+    - pkg:conda/durabletask.azuremanaged@${{ version }}?channel=conda-forge
+    - pkg:pypi/durabletask.azuremanaged@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/durabletask.azuremanaged/
+  cfe-upstream-homepage: https://pypi.org/project/durabletask.azuremanaged/
+  cfe-import-names: [durabletask.azuremanaged]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:52:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:52:53Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

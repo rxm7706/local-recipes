@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2"
+
+package:
+  name: pymining
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pymining/pymining-${{ version }}.tar.gz
+  sha256: 70f0b7fdce7a3057c208e5605f4960c6928c96989e7c073ed3443901f0094b9e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pymining
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/bartdag/pymining
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Small collection of data mining algorithms
+  description: |
+    Small collection of data mining algorithms
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pymining
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pymining
+  cfe-purls:
+    - pkg:conda/pymining@${{ version }}?channel=conda-forge
+    - pkg:pypi/pymining@${{ version }}
+  cfe-upstream-repo: https://github.com/bartdag/pymining
+  cfe-upstream-homepage: https://github.com/bartdag/pymining
+  cfe-import-names: [pymining]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:49:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:49:16Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

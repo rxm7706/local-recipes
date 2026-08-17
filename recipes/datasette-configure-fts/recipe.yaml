@@ -2,18 +2,19 @@
 schema_version: 1
 
 context:
+  name: datasette-configure-fts
   version: "1.1.4"
 
 package:
-  name: datasette-configure-fts
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/datasette-configure-fts/datasette_configure_fts-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: 097ac91f03dc516de882193924662b2f24297fc94175ad7a61be05ae9c7a77a7
 
 build:
-  number: 0
+  number: 2
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -23,7 +24,7 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
     - datasette >=0.51
     - sqlite-utils >=2.10
 
@@ -31,20 +32,14 @@ tests:
   - python:
       imports:
         - datasette_configure_fts
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
   summary: Datasette plugin for enabling full-text search against selected table columns
   license: Apache-2.0
   license_file: LICENSE
   homepage: https://github.com/simonw/datasette-configure-fts
-  repository: https://github.com/simonw/datasette-configure-fts
-  description: |
-    Datasette plugin that provides a UI for configuring SQLite full-text
-    search (FTS) against selected columns of tables in a Datasette instance.
 
 extra:
   recipe-maintainers:

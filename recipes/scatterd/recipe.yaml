@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4.2"
+
+package:
+  name: scatterd
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/scatterd/scatterd-${{ version }}.tar.gz
+  sha256: d168230f82f424434a1a343138dcb9479f2041732d48611c910e96a7a7d5705a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python =${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - matplotlib-base
+    - numpy
+    - colourmap >=1.1.16
+    - seaborn
+    - datazets
+
+tests:
+  - python:
+      imports:
+        - scatterd
+  - requirements:
+      run:
+        - pip
+        - python =${{ python_min }}
+    script:
+      - pip check
+
+about:
+  summary: scatterd is an easy and fast way of creating scatter plots.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://erdogant.github.io/scatterd
+
+extra:
+  recipe-maintainers:
+    - danielnachun

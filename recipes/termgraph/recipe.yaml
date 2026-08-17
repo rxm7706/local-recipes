@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "0.7.6"
+
+package:
+  name: termgraph
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/t/termgraph/termgraph-${{ version }}.tar.gz
+    sha256: 0a86f6033cec461785ca4ffae19b394c788820fa9beab17f9d2eb83068e1fe60
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  python:
+    entry_points:
+      - termgraph = termgraph.termgraph:main
+  noarch: python
+  number: 0
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - colorama >=0.4.6
+
+tests:
+  - python:
+      imports:
+        - termgraph
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - script:
+      - termgraph --help
+
+about:
+  homepage: https://github.com/mkaz/termgraph
+  license: MIT
+  license_file: LICENSE.txt
+  summary: A python command-line tool which draws basic graphs in the terminal
+
+extra:
+  recipe-maintainers:
+    - xhochy
+    - claudiushaag

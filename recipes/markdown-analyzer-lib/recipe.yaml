@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.0"
+
+package:
+  name: markdown-analyzer-lib
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/markdown-analyzer-lib/markdown_analyzer_lib-${{ version }}.tar.gz
+  sha256: ef5aeb9731d4689f4597755b749768d4beeaca01c9d68ba32200d8e74a778029
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.0
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - requests
+    - beautifulsoup4
+    - markdownify
+
+tests:
+  - python:
+      imports:
+        - markdown_analyzer_lib
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/rafiqul0396/markdown_extractor
+  license: MIT
+  license_file: LICENSE
+  summary: A Python library for parsing, analyzing, and converting Markdown and MDX documents, and converting websites to Markdown.
+  description: |
+    A Python library for parsing, analyzing, and converting Markdown and MDX documents, and converting websites to Markdown.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: markdown-analyzer-lib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: markdown-analyzer-lib
+  cfe-purls:
+    - pkg:conda/markdown-analyzer-lib@${{ version }}?channel=conda-forge
+    - pkg:pypi/markdown-analyzer-lib@${{ version }}
+  cfe-upstream-repo: https://github.com/rafiqul0396/markdown_extractor
+  cfe-upstream-homepage: https://github.com/rafiqul0396/markdown_extractor
+  cfe-import-names: [markdown_analyzer_lib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:31:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:31:32Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: queuelib
+  version: 1.9.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: b12fea79fd8c1dd23e212b1f3db58003b773949801d4f4e6f34d882467d4a192
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - queuelib
+        - queuelib.tests
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - files:
+      source:
+        - queuelib
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pytest
+    script:
+      - pytest queuelib
+
+about:
+  summary: Collection of persistent (disk-based) queues
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/scrapy/queuelib
+
+extra:
+  recipe-maintainers:
+    - synapticarbors
+    - Gallaecio
+    - kmike
+    - wRAR

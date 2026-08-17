@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.0"
+
+package:
+  name: pure-transport
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pure-transport/pure-transport-${{ version }}.tar.gz
+  sha256: 78f76851ead7395fc725e5f5052f404aa4146374ba98e9d289b575097c49958d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - thrift
+    - pure-sasl
+    - thrift_sasl
+
+tests:
+  - python:
+      imports:
+        - puretransport
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/devinstevenson/pure-transport
+  license: GPLv3+
+  license_file: LICENSE
+  summary: Pure Sasl Based Thrift Transport for PyHive
+  description: |
+    Pure Sasl Based Thrift Transport for PyHive
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pure-transport
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pure-transport
+  cfe-purls:
+    - pkg:conda/pure-transport@${{ version }}?channel=conda-forge
+    - pkg:pypi/pure-transport@${{ version }}
+  cfe-upstream-repo: https://github.com/devinstevenson/pure-transport
+  cfe-upstream-homepage: https://github.com/devinstevenson/pure-transport
+  cfe-import-names: [puretransport]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:22:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:22:50Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: expiringdict
+  version: "1.2.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 300fb92a7e98f15b05cf9a856c1415b3bc4f2e132be07daa326da6414c23ee09
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vvv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - python >=3.6
+
+tests:
+  - python:
+      imports:
+        - expiringdict
+      pip_check: false
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Dictionary with auto-expiring values for caching purposes
+  homepage: https://github.com/mailgun/expiringdict
+
+extra:
+  recipe-maintainers:
+    - nehaljwani

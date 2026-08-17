@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: passlib
+  version: "1.7.4"
+  bundle: tar.gz
+  hash: defd50f72b65c5402ab2c573830a6978e5f202ad0d984793c8dde2c4152ebe04
+  build: 2
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
+  sha256: ${{ hash }}
+  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+
+build:
+  number: ${{ build }}
+  noarch: python
+  script: ${{ PYTHON }} setup.py install --single-version-externally-managed --record=record.txt
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - argon2-cffi >=19.2.0
+    - bcrypt >=3.1.0
+    - cryptography
+
+tests:
+  - python:
+      imports:
+        - passlib
+        - passlib._setup
+        - passlib.crypto
+        - passlib.crypto._blowfish
+        - passlib.crypto.scrypt
+        - passlib.ext
+        - passlib.ext.django
+        - passlib.handlers
+        - passlib.tests
+        - passlib.utils
+        - passlib.utils.compat
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license_file: LICENSE
+  license: BSD-3-Clause
+  summary: comprehensive password hashing framework supporting over 30 schemes
+  homepage: https://bitbucket.org/ecollins/passlib
+  repository: https://bitbucket.org/ecollins/passlib/src
+  documentation: https://bitbucket.org/ecollins/passlib/wiki/Home
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - xhochy

@@ -1,0 +1,93 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: tree-sitter-language-pack
+  version: "1.14.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/xberg-io/tree-sitter-language-pack/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 4955f1adae50884376b9e836b3abe69a692a3c2a33ca2424c6ca1a340a613225
+
+build:
+  script:
+    - mkdir parsers
+    - cd packages/python
+    - cargo-bundle-licenses --format yaml --output ../../THIRDPARTY.yml
+    - maturin build --release --interpreter ${{ PYTHON }} --out ${{ "${SRC_DIR}/dist" if unix else "%SRC_DIR%\dist" }}
+    - cd ../..
+    - ${{ PYTHON }} -m pip install --find-links=dist tree_sitter_language_pack
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("rust") }}
+    - ${{ stdlib("c") }}
+    - cargo-bundle-licenses
+    - if: build_platform != target_platform
+      then:
+        - cross-python_${{ target_platform }}
+        - crossenv
+        - maturin
+        - python
+  host:
+    - maturin
+    - pip
+    - python
+  run:
+    - python
+    - tree_sitter >=0.23.2
+    - tree-sitter-c-sharp >=0.23.1
+    - tree-sitter-embedded-template >=0.23.2
+    - tree-sitter-yaml >=0.7.2
+
+tests:
+  - python:
+      imports:
+        - tree_sitter_language_pack
+      pip_check: true
+  - script:
+      - if: unix
+        then:
+          - pytest e2e/python/tests
+              --deselect tests/test_smoke.py::test_smoke_avro
+              --deselect tests/test_smoke.py::test_smoke_tsql
+        else:
+          # Filed: https://github.com/xberg-io/tree-sitter-language-pack/issues/176 (request honour TSLP_CACHE_DIR)
+          - pytest e2e/python/tests
+              --deselect tests/test_smoke.py::test_smoke_avro
+              --deselect tests/test_smoke.py::test_smoke_tsql
+              --deselect tests/test_download.py::test_download_cache_dir
+              --deselect tests/test_download.py::test_download_clean_cache
+              --ignore e2e\python\tests\test_data_extraction.py
+              --ignore e2e\python\tests\test_capsule_passthrough.py
+    requirements:
+      run:
+        - pytest
+        - pytest-asyncio
+        - pytest-timeout
+        - python
+    files:
+      source:
+        - e2e/python/
+
+about:
+  homepage: https://github.com/xberg-io/tree-sitter-language-pack
+  summary: 'Comprehensive tree-sitter grammar compilation with polyglot bindings'
+  description: |
+    Comprehensive tree-sitter grammar compilation with polyglot bindings —
+    Rust, Python, Node.js, Go, Java, Ruby, Elixir, PHP, C#, WASM, Dart,
+    Kotlin-Android, Swift, Zig, and CLI. 371 languages.
+  license: MIT
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  repository: https://github.com/xberg-io/tree-sitter-language-pack
+
+extra:
+  recipe-maintainers:
+    - MementoRC
+    - pavelzw

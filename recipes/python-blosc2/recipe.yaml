@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.11.0"
+
+package:
+  name: python-blosc2
+  version: ${{ version }}
+
+source:
+  url: https://github.com/Blosc/python-blosc2/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 7878e4b78e7fee1e33a68ba556ef5e202ee0713ec24405b043d7e9c33bb71f4a
+
+build:
+  number: 0
+  skip: match(python, "<3.11")
+  script:
+    env:
+      USE_SYSTEM_BLOSC2: 1
+    content:
+      - if: win
+        then: set CC=clang-cl
+      - if: win
+        then: set CXX=clang-cl
+      - if: win
+        then: set CMAKE_GENERATOR_TOOLSET=ClangCL
+      - ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake 4.3.*
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - if: build_platform != target_platform
+      then: numpy
+    - if: unix
+      then: make
+    - ninja
+    - pkg-config
+  host:
+    - c-blosc2
+    - cython
+    - numpy
+    - python
+    - python-build
+    - pip
+    - scikit-build-core
+  run:
+    - python
+    - msgpack-python
+    - ndindex
+    - numexpr >=2.14.1
+    - numpy >=1.26.0
+    - pydantic
+    - threadpoolctl
+    - textual
+    - textual-plotext
+    - rich
+    - httpx
+
+tests:
+  - python:
+      imports:
+        - blosc2
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - pip list
+      - python -c "import blosc2; blosc2.print_versions()"
+
+about:
+  summary: A fast & compressed ndarray library with a flexible computational engine.
+  description: |
+    Blosc2 is a high-performance compressor optimized for binary and n-dimensional data.
+    It adds a flexible computational engine, making it ideal for scientific computing
+    and other data-intensive applications.
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE.txt
+  homepage: https://github.com/Blosc/python-blosc2
+  repository: https://github.com/Blosc/python-blosc2
+  documentation: https://www.blosc.org/python-blosc2
+
+extra:
+  recipe-maintainers:
+    - hmaarrfk
+    - FrancescAlted
+    - goanpeca
+    - martaiborra

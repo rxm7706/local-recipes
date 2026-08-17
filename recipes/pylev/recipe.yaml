@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pylev
+  version: "1.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 9e77e941042ad3a4cc305dcdf2b2dec1aec2fbe3dd9015d2698ad02b173006d1
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python >=3.3
+    - pip
+  run:
+    - python >=3.3
+
+tests:
+  - python:
+      imports:
+        - pylev
+      pip_check: false
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A pure Python Levenshtein implementation that's not freaking GPL'd.
+  description: A pure Python Levenshtein implementation that's not freaking GPL'd. Based off the Wikipedia code samples at http://en.wikipedia.org/wiki/Levenshtein_distance.
+  homepage: http://github.com/toastdriven/pylev
+  repository: https://github.com/toastdriven/pylev
+  documentation: https://pypi.org/project/pylev/
+
+extra:
+  recipe-maintainers:
+    - nick-youngblut

@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: vcrpy
+  version: "8.3.0"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 46d64e77e8d95e5c76c7d9a94ff05d8b38b2ae4e1d4869eb0235024b6fcb5212
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.10.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pyyaml
+    - wrapt
+
+tests:
+  - python:
+      imports:
+        - vcr
+        - vcr.persisters
+        - vcr.serializers
+        - vcr.stubs
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Automatically mock your HTTP interactions to simplify and speed up testing
+  homepage: https://github.com/kevin1024/vcrpy
+  repository: https://github.com/kevin1024/vcrpy
+  documentation: https://vcrpy.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - dopplershift

@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mlx-lm
+  version: "0.31.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+    sha256: 61eb0e3ba09444f77f874aff295401d7ccd20b39495cbbce0c782a15474ce733
+  # As there is no tag in the mlx-examples repo, we need to reference a commit here.
+  - url: https://raw.githubusercontent.com/ml-explore/mlx-examples/a932012c1291b675e74f899d671883b7c41eb0db/LICENSE
+    sha256: ccfab7ccb2ea306f71531c8ca77bb55507606cd90768b1e32b8b52ab5b48cf01
+    file_name: LICENSE
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - sentencepiece
+    - jinja2
+    - pyyaml
+    - python >=${{ python_min }}
+    - mlx >=0.31.2
+    - numpy
+    - transformers >=5.0.0
+    - protobuf
+
+tests:
+  - python:
+      imports:
+        - mlx_lm
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: LLMs on Apple silicon with MLX and the Hugging Face Hub
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/ml-explore/mlx-examples
+
+extra:
+  recipe-maintainers:
+    - conda-forge/mlx
+    - sugatoray

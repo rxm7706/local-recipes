@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: 0.10.2
+
+package:
+  name: aioice
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/aioice/aioice-${{ version }}.tar.gz
+  sha256: bf236c6829ee33c8e540535d31cd5a066b531cb56de2be94c46be76d68b1a806
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python =${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - dnspython >=2.0.0
+    - ifaddr >=0.2.0
+
+tests:
+  - python:
+      imports:
+        - aioice
+  - requirements:
+      run:
+        - pip
+        - python =${{ python_min }}
+    script:
+      - pip check
+
+about:
+  summary: An implementation of Interactive Connectivity Establishment (RFC 5245)
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/aiortc/aioice
+
+extra:
+  recipe-maintainers:
+    - danielnachun

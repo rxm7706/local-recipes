@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: PyMySQL
+  version: "1.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/PyMySQL/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: d462aab8d92cf9d4111c05720fa5c19ff8e5d89368449a8ae0e8b98c236303cd
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=77
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pymysql
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Pure Python MySQL Driver
+  description: |
+    This package contains a pure-Python MySQL client library. The goal of
+    PyMySQL is to be a drop-in replacement for MySQLdb and work on CPython,
+    PyPy and IronPython.
+  homepage: http://github.com/PyMySQL/PyMySQL
+  repository: https://github.com/PyMySQL/PyMySQL
+  documentation: http://pymysql.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - djsutherland
+    - synapticarbors
+    - thewchan

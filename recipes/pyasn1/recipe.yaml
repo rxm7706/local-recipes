@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyasn1
+  version: "0.6.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyasn1-${{ version }}.tar.gz
+  sha256: 9c447d8431c947fe4c8febc4ed9e760bc29011a5b01e5c74b67025bd9fb8ce81
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      python_version: ${{ python_min }}.*
+      pip_check: true
+      imports:
+        - pyasn1
+
+about:
+  summary: Pure-Python implementation of ASN.1 types and DER/BER/CER codecs (X.208)
+  license: BSD-2-Clause
+  license_file: LICENSE.rst
+  homepage: https://github.com/pyasn1/pyasn1
+  repository: https://github.com/pyasn1/pyasn1
+
+extra:
+  recipe-maintainers:
+    - xhochy

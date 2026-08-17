@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "10.2.1"
+
+recipe:
+  name: setuptools_scm
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/setuptools_scm/setuptools_scm-${{ version }}.tar.gz
+  sha256: 4fa7dd82cf8c800df59c9a288c90299b1657ff1ecfc3f5cc00287c5dbf5e27a9
+
+build:
+  number: 0
+  noarch: python
+
+outputs:
+  - package:
+      name: setuptools-scm
+    build:
+      script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - setuptools >=77.0.3
+        - vcs_versioning >=2.0.0.dev0
+        - tomli >=1
+        - typing_extensions
+        - pip
+      run:
+        - python >=${{ python_min }}
+        - vcs_versioning >=2.0.0.dev0
+        - packaging >=20
+        - setuptools
+        - tomli >=1
+        - typing_extensions
+
+    tests:
+      - python:
+          imports:
+            - setuptools_scm
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - "*"
+    about:
+      summary: the blessed package to manage your versions by scm tags
+
+  - package:
+      name: setuptools_scm
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("setuptools-scm", exact=True) }}
+    tests:
+      - python:
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - "*"
+    about:
+      summary: the blessed package to manage your versions by scm tags
+
+about:
+  summary: the blessed package to manage your versions by scm tags
+  license: MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/setuptools-scm/
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - kwilcox
+    - astaric

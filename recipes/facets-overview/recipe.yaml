@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.1"
+
+package:
+  name: facets-overview
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py2.py3/f/facets-overview/facets_overview-1.1.1-py2.py3-none-any.whl
+  sha256: ee1feafcb0b486a598937246ac86ffb84d5fed2c32ddcaceeed01df792c26b73
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - numpy
+    - pandas
+    - protobuf
+
+tests:
+  - python:
+      imports:
+        - facets_overview
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://github.com/pair-code/facets
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python code to support the Facets Overview visualization
+  description: |
+    Python code to support the Facets Overview visualization
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: facets-overview
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: facets-overview
+  cfe-purls:
+    - pkg:conda/facets-overview@${{ version }}?channel=conda-forge
+    - pkg:pypi/facets-overview@${{ version }}
+  cfe-upstream-repo: http://github.com/pair-code/facets
+  cfe-upstream-homepage: http://github.com/pair-code/facets
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:19:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:19:24Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.22.0"
+
+package:
+  name: google-cloud-pipeline-components
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/g/google-cloud-pipeline-components/google_cloud_pipeline_components-2.22.0-py3-none-any.whl
+  sha256: aea2d526b3d562246beb7a4ca983e48983448c7b8b04a4f7053374f08a927104
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - google-api-core !=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0,<3.0.0dev,>=1.31.5
+    - kfp <3.0.0,>=2.6.0
+    - google-cloud-aiplatform <2,>=1.14.0
+    - jinja2 <4,>=3.1.2
+
+tests:
+  - python:
+      imports:
+        - google_cloud_pipeline_components
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/kubeflow/pipelines/tree/master/components/google-cloud
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: This SDK enables a set of First Party (Google owned) pipeline components that allow users to take their experience from Vertex AI SDK and other Google Cloud services and create a corresponding pipeline using KFP or Managed Pipelines.
+  description: |
+    This SDK enables a set of First Party (Google owned) pipeline components that allow users to take their experience from Vertex AI SDK and other Google Cloud services and create a corresponding pipeline using KFP or Managed Pipelines.
+  repository: https://github.com/kubeflow/pipelines/tree/master/components/google-cloud
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-cloud-pipeline-components
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-cloud-pipeline-components
+  cfe-purls:
+    - pkg:conda/google-cloud-pipeline-components@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-cloud-pipeline-components@${{ version }}
+  cfe-upstream-repo: https://github.com/kubeflow/pipelines/tree/master/components/google-cloud
+  cfe-upstream-homepage: https://github.com/kubeflow/pipelines/tree/master/components/google-cloud
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:37:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:37:04Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

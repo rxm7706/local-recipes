@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: fastcache
+  version: 1.1.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 6de1b16e70335b7bde266707eb401a3aaec220fb66c5d13b02abf0eab8be782b
+
+build:
+  number: 8
+  script: python -m pip install . --no-deps --no-build-isolation -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: 
+      - python
+      - cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - fastcache
+        - fastcache._lrucache
+      pip_check: true
+  - requirements:
+      run:
+        - pytest
+    script:
+      - python -c "import fastcache; fastcache.test()"
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: C implementation of Python 3 lru_cache
+  homepage: https://github.com/pbrady/fastcache
+  repository: https://github.com/pbrady/fastcache
+
+extra:
+  recipe-maintainers:
+    - synapticarbors

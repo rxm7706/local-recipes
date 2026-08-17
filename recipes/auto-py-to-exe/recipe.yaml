@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.50.1"
+
+package:
+  name: auto-py-to-exe
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/auto-py-to-exe/auto_py_to_exe-${{ version }}.tar.gz
+  sha256: 13dc388cfde0e00d265a3c71cfb54fd949d79fbf6195d8561462c364583fa559
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - eel !=0.18.0,>=0.11.0
+    - pyinstaller >=5.8.0
+    - requests
+
+tests:
+  - python:
+      imports:
+        - auto_py_to_exe
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/brentvollebregt/auto-py-to-exe
+  license: MIT
+  license_file: LICENSE
+  summary: Converts .py to .exe using a simple graphical interface.
+  description: |
+    Converts .py to .exe using a simple graphical interface.
+  repository: https://github.com/brentvollebregt/auto-py-to-exe
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: auto-py-to-exe
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: auto-py-to-exe
+  cfe-purls:
+    - pkg:conda/auto-py-to-exe@${{ version }}?channel=conda-forge
+    - pkg:pypi/auto-py-to-exe@${{ version }}
+  cfe-upstream-repo: https://github.com/brentvollebregt/auto-py-to-exe
+  cfe-upstream-homepage: https://github.com/brentvollebregt/auto-py-to-exe
+  cfe-import-names: [auto_py_to_exe]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:38Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:38Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

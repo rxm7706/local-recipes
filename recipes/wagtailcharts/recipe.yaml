@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: wagtailcharts
   version: "0.6.3"
 
 package:
-  name: wagtailcharts
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/w/wagtailcharts/wagtailcharts-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtailcharts-${{ version }}.tar.gz
   sha256: 9ceb7deb7af7fba851bcb1092ca4915343715615060f713c4a937d352a269a80
 
 build:
@@ -19,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
@@ -31,20 +32,13 @@ tests:
       imports:
         - wagtailcharts
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Chart.js charts for Wagtail
   license: MIT
   license_file: LICENSE.txt
   homepage: https://github.com/overcastsoftware/wagtailcharts/
-  repository: https://github.com/overcastsoftware/wagtailcharts/
-  description: |
-    WagtailCharts lets you build beautiful interactive Chart.js charts
-    directly from the Wagtail StreamField editor, with configurable chart
-    types, colors, and data tables.
 
 extra:
   recipe-maintainers:

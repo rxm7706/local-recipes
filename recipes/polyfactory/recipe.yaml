@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: polyfactory
+  version: "3.3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/polyfactory-${{ version }}.tar.gz
+  sha256: 237258b6ff43edf362ffd1f68086bb796466f786adfa002b0ac256dbf2246e9a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - faker
+    - typing-extensions
+
+tests:
+  - python:
+      imports:
+        - polyfactory
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Mock data generation factories
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/litestar-org/polyfactory
+
+extra:
+  recipe-maintainers:
+    - ivergara

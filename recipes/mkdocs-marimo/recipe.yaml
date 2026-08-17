@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: mkdocs-marimo
+  version: "0.2.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/mkdocs_marimo-${{ version }}.tar.gz
+    sha256: 9e4cf8005b79856beb3e9db48e7c8fa7f94a5d00c05aa6877f44a173c0ec9bb0
+
+build:
+  script: python -m pip install . -vv
+  number: 0
+  noarch: python
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - htmlmin2 >=0.1.13,<0.2
+    - marimo >=0.8.15
+    - mkdocs >=1.5.2,<2
+
+tests:
+  - python:
+      imports:
+        - mkdocs_marimo
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  homepage: https://github.com/marimo-team/mkdocs-marimo
+  summary: MkDocs marimo plugin
+  license: Apache-2.0
+  license_file: LICENSE
+  repository: https://github.com/marimo-team/mkdocs-marimo
+  documentation: https://marimo-team.github.io/mkdocs-marimo
+
+extra:
+  recipe-maintainers:
+    - pavelzw

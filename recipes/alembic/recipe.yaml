@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: alembic
+  version: "1.19.1"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/alembic-${{ version }}.tar.gz
+  sha256: e0fca0518118c78acc493e31bcb5402f190057aaf6df8b5b95ce94c4789cf648
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+  python:
+    entry_points:
+      - alembic = alembic.config:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=77.0.3
+  run:
+    - python >=${{ python_min }}
+    - sqlalchemy >=1.4.23
+    - mako
+    - typing_extensions >=4.12
+    # for python <3.11 but adding it for all since we're noarch: python
+    - tomli
+
+tests:
+  - python:
+      imports:
+        - alembic
+        - alembic.autogenerate
+        - alembic.ddl
+        - alembic.operations
+        - alembic.runtime
+        - alembic.script
+        - alembic.util
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+      pip_check: true
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - alembic --help
+
+about:
+  license_file: LICENSE
+  license: MIT
+  summary: A database migration tool for SQLAlchemy.
+  homepage: https://alembic.sqlalchemy.org/
+  repository: https://github.com/sqlalchemy/alembic
+  documentation: http://alembic.zzzcomputing.com/en/latest/
+
+extra:
+  recipe-maintainers:
+    - anguslees
+    - xylar

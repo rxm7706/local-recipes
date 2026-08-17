@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: py
+  version: "1.11.0"
+  hash: 51c75c4126074b472f746a24399ad32f6053d1b34b68d2fa41e558e6f4a98719
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/py/py-${{ version }}.tar.gz
+  sha256: ${{ hash }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: python -m pip install . --no-deps --ignore-installed
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools_scm
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - py
+        - py.code
+        - py.io
+        - py.log
+        - py.path
+        - py.process
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: library with cross-python path, ini-parsing, io, code, log facilities
+  homepage: https://github.com/pytest-dev/py
+
+extra:
+  recipe-maintainers:
+    - nicoddemus
+    - jakirkham

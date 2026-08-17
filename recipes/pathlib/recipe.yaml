@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pathlib
+  version: "1.0.1"
+  sha256: 6940718dfc3eff4258203ad5021090933e5c04707d5ca8cc9e73c94a7894ea9f
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 7
+  script: ${{ PYTHON }} --versi if match(python, ">=3.4") else PYTHON }} -m pip install . - if match(python, "==2.7") else '' }}
+
+requirements:
+  host:
+    - pip
+    - python
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - pathlib
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Object-oriented filesystem paths
+  homepage: https://pathlib.readthedocs.org/
+  repository: https://bitbucket.org/pitrou/pathlib
+  documentation: https://pathlib.readthedocs.org/
+
+extra:
+  recipe-maintainers:
+    - proinsias

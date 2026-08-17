@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: llguidance
+  version: "1.8.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 18d1579eabb040e65c870d50c6df19a7bef140c5260d12ad35b7f0dc446312e0
+
+build:
+  number: 0
+  skip: is_abi3 and not is_python_min
+  python:
+    version_independent: ${{ true if is_abi3 }}
+
+requirements:
+  build:
+    - ${{ compiler('rust') }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - cargo-bundle-licenses
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: maturin >=1.0,<2.0
+  host:
+    - if: is_abi3
+      then: python-abi3
+    - python
+    - maturin >=1.0,<2.0
+    - pip
+  run:
+    - python
+  ignore_run_exports:
+    by_name:
+      from_package:
+        - if: build_platform != target_platform
+          then: cross-python_${{ target_platform }}
+
+tests:
+  - python:
+      imports:
+        - llguidance
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+        - if: is_abi3
+          then: abi3audit
+    script:
+      - if: unix and is_abi3
+        then: abi3audit $SP_DIR/llguidance/_lib.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
+      - if: win and is_abi3
+        then: abi3audit %SP_DIR%/llguidance/_lib.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
+
+about:
+  summary: Bindings for the Low-level Guidance (llguidance) Rust library for use within Guidance
+  license: MIT
+  license_file:
+    - LICENSE
+    - parser/LICENSE
+    - toktrie_hf_tokenizers/LICENSE
+    - toktrie_hf_downloader/LICENSE
+    - toktrie/LICENSE
+    - THIRDPARTY.yml
+  homepage: https://github.com/guidance-ai/llguidance
+
+extra:
+  recipe-maintainers:
+    - shermansiu

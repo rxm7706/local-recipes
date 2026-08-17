@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: rfc5424-logging-handler
+  version: "1.4.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+    sha256: 9ae14073ef6d76d0c730ad6b6e3aeece841a6d413672d282876c0506dc097257
+  - url: https://raw.githubusercontent.com/jobec/rfc5424-logging-handler/master/LICENSE
+    sha256: 661332fc08c9c3fbb38071d8edde002cf1e6f5d7533c5d18771a47c1a26ef1ab
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - pip
+    - python
+    - pytz
+    - setuptools
+    - tzlocal
+  run:
+    - python
+    - pytz
+    - tzlocal
+
+tests:
+  - python:
+      imports:
+        - rfc5424logging
+      pip_check: false
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: An up-to-date, RFC5424-Compliant syslog handler for the Python logging framework
+  homepage: https://github.com/jobec/rfc5424-logging-handler
+  documentation: https://rfc5424-logging-handler.readthedocs.org/
+
+extra:
+  recipe-maintainers:
+    - tschoonj

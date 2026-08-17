@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: tabulate
+  version: "0.10.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: e2cfde8f79420f6deeffdeda9aaec3b6bc5abce947655d17ac662b126e48a60d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+  python:
+    entry_points:
+      - tabulate = tabulate:_main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - setuptools_scm
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - tabulate
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - tabulate --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Pretty-print tabular data in Python, a library and a command-line utility.
+  homepage: https://github.com/astanin/python-tabulate
+  repository: https://github.com/astanin/python-tabulate
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - synapticarbors

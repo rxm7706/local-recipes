@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.4"
+
+package:
+  name: datashape
+  version: ${{ version }}
+
+source:
+  url: https://github.com/blaze/datashape/archive/${{ version }}.tar.gz
+  sha256: c266c5803dde48b9fa8d8ee51b5b5979ef77443060e32db2d225b72648c638a5
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - numpy >=1.7
+    - multipledispatch >=0.4.7
+    - python-dateutil
+
+tests:
+  - python:
+      imports:
+        - datashape
+        - datashape.tests
+        - datashape.util
+      pip_check: false
+  - requirements:
+      run:
+        - pytest 3.10.1
+        - mock
+        - numpy 1.11
+    script:
+      - pytest -vx --doctest-modules --pyargs datashape
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: A data description language
+  description: |
+    Datashape is a data layout language for array programming.
+    It is designed to describe in-situ structured data without requiring
+    transformation into a canonical form.
+  homepage: http://datashape.pydata.org
+  repository: https://github.com/blaze/datashape
+  documentation: http://datashape.readthedocs.org/en/latest
+
+extra:
+  recipe-maintainers:
+    - nehaljwani
+    - ocefpaf

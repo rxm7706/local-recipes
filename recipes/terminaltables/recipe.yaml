@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: terminaltables
+  version: "3.1.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/terminaltables-${{ version }}.tar.gz
+  sha256: ba6eca5cb5ba02bba4c9f4f985af80c54ec3dccf94cfcd190154386255e47543
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - poetry
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - terminaltables
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Generate simple tables in terminals from a nested list of strings.
+  homepage: https://robpol86.github.io/terminaltables
+  repository: https://github.com/Robpol86/terminaltables
+  documentation: https://robpol86.github.io/terminaltables
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk

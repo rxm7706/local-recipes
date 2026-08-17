@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: optax
+  version: "0.2.8"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/optax-${{ version }}.tar.gz
+  sha256: 5b225b35066fc3eebaa4d798f1b4173b4d57d1a480610908981f8343b50af0b0
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.10.*
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - absl-py >=0.7.1
+    - chex >=0.1.86
+    - jax >=0.5.3
+    - jaxlib >=0.5.3
+    - numpy >=1.18.0
+    - typing_extensions >=3.10
+    - etils
+
+tests:
+  - python:
+      imports:
+        - optax
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A gradient processing and optimisation library in JAX.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/deepmind/optax
+
+extra:
+  recipe-maintainers:
+    - flferretti
+    - PhilipVinc
+    - hbq1

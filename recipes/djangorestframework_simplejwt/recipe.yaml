@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: djangorestframework_simplejwt
+  version: 5.5.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/djangorestframework_simplejwt-${{ version }}.tar.gz
+  sha256: e72c5572f51d7803021288e2057afcbd03f17fe11d484096f40a460abc76e87f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools-scm
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - djangorestframework >=3.14
+    - pyjwt >=1.7.1
+
+tests:
+  - python:
+      imports:
+        - rest_framework_simplejwt
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: A minimal JSON Web Token authentication plugin for Django REST Framework
+  license: MIT AND BSD-2-Clause
+  license_file:
+    - LICENSE.txt
+    - licenses/LICENSE-django-rest-framework.md
+    - licenses/LICENSE-django-rest-framework-jwt
+  homepage: https://github.com/jazzband/djangorestframework-simplejwt
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - sannykr
+    - riggggo
+    - janjagusch

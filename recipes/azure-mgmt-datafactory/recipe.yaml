@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: azure-mgmt-datafactory
+  version: 10.0.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: c83eeb2b092c1f1e5bb2499ffbba6fd7809a1274739930f9db1e336273405587
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - isodate >=0.6.1
+    - azure-mgmt-core >=1.6.0
+    - typing_extensions >=4.6.0
+tests:
+  - python:
+      imports:
+        - azure.mgmt.datafactory
+        - azure.mgmt.datafactory.aio
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Microsoft Azure Data Factory Management Client Library for Python
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  homepage: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/datafactory/azure-mgmt-datafactory
+  repository: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/datafactory/azure-mgmt-datafactory
+
+extra:
+  recipe-maintainers:
+    - xylar

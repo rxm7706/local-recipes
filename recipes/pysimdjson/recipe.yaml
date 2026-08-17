@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pysimdjson
+  version: "7.0.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 44cf276e48912a3b9c7ca362c14da8420a7ac15a9f1a16ec95becff86db3904a
+
+build:
+  number: 1
+  skip: match(python, "<3.9")
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - cython
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+  host:
+    - pip
+    - python
+    - cython
+    - setuptools >=74.1
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - simdjson
+      pip_check: true
+
+about:
+  summary: simdjson bindings for python
+  license_file: LICENSE
+  license: Apache-2.0 AND MIT
+  homepage: http://github.com/TkTech/pysimdjson
+
+extra:
+  recipe-maintainers:
+    - CJ-Wright
+    - synapticarbors

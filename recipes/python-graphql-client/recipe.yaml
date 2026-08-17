@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.3"
+
+package:
+  name: python-graphql-client
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/python-graphql-client/python_graphql_client-${{ version }}.tar.gz
+  sha256: fdbd03115dde8776db02e60414b83b018d7d95e5752d6d5fabf21c99265f5b9d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - aiohttp
+    - requests
+    - websockets
+
+tests:
+  - python:
+      imports:
+        - python_graphql_client
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/prodigyeducation/python-graphql-client
+  license: MIT
+  license_file: LICENSE
+  summary: Python GraphQL Client
+  description: |
+    Python GraphQL Client
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-graphql-client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-graphql-client
+  cfe-purls:
+    - pkg:conda/python-graphql-client@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-graphql-client@${{ version }}
+  cfe-upstream-repo: https://github.com/prodigyeducation/python-graphql-client
+  cfe-upstream-homepage: https://github.com/prodigyeducation/python-graphql-client
+  cfe-import-names: [python_graphql_client]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:30:56Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:30:56Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

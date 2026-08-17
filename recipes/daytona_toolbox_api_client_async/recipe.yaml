@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.204.0"
+
+package:
+  name: daytona_toolbox_api_client_async
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/daytona_toolbox_api_client_async/daytona_toolbox_api_client_async-${{ version }}.tar.gz
+  sha256: 67813d0accc9de5659994f153a0c7448cac4c8c304e60126253117231b2dc805
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - python-dateutil >=2.9.0.post0
+    - aiohttp >=3.14.3
+    - aiohttp-retry >=2.9.1
+    - pydantic >=2.13.4
+    - typing_extensions >=4.16.0
+
+tests:
+  - python:
+      imports:
+        - daytona_toolbox_api_client_async
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/daytona_toolbox_api_client_async/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Daytona Toolbox API
+  description: |
+    Daytona Toolbox API
+  repository: https://github.com/daytona/clients
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: daytona_toolbox_api_client_async
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: daytona_toolbox_api_client_async
+  cfe-purls:
+    - pkg:conda/daytona_toolbox_api_client_async@${{ version }}?channel=conda-forge
+    - pkg:pypi/daytona-toolbox-api-client-async@${{ version }}
+  cfe-upstream-repo: https://github.com/daytona/clients
+  cfe-upstream-homepage: https://pypi.org/project/daytona_toolbox_api_client_async/
+  cfe-import-names: [daytona_toolbox_api_client_async]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:52:36Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:52:36Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

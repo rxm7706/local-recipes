@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: secure
+  version: "2.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/secure-${{ version }}.tar.gz
+  sha256: bb492b9ca2ae66d04f4718675a18de1d1a29217aaded3d6cb5bd8b4ba2e2a645
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools >=77
+    - wheel
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - secure
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A lightweight package that adds security headers for Python web frameworks.
+  license: MIT
+  license_file:
+    - LICENSE
+  homepage: https://github.com/TypeError/secure
+  documentation: https://secure.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - thewchan

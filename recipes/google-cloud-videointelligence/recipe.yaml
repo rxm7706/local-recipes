@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: google-cloud-videointelligence
+  version: "2.20.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/google_cloud_videointelligence-${{ version }}.tar.gz
+  sha256: e4492d333843f040191b4730ff58a0a4aea1008350053879bc4058ddf62da8a0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - google-api-core >=2.17.1,<3.0.0
+    - google-api-core-grpc
+    - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
+    # more restrictive constraint for python >=3.14
+    - grpcio >=1.75.1,<2.0.0
+    # more restrictive constraint for python >=3.13
+    - proto-plus >=1.25.0,<2.0.0
+    - protobuf >=4.25.8,<8.0.0
+
+tests:
+  - python:
+      imports:
+        - grpc
+        - google.cloud.videointelligence
+        - google.cloud.videointelligence_v1
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+      pip_check: true
+
+about:
+  summary: Google Cloud Videointelligence API client library
+  license: Apache-2.0
+  license_file: LICENSE
+  description: "Google Cloud Video Intelligence API is a Google Cloud service that makes videos searchable, and discoverable, by extracting metadata with an easy to use API. You can now search every moment of every video file in your catalog and find every occurrence as well as its significance. It quickly annotates videos::
+    - stored in Google Cloud Storage, and helps you identify key nouns entities of your video, and when they occur within the video. Separate signal from noise, by retrieving relevant information at the video, shot or per frame.\nSee the [quick start guide](https://googleapis.dev/python/videointelligence/latest/index.html#quick-start)."
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-videointelligence
+  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-videointelligence
+  documentation: https://googleapis.dev/python/videointelligence/latest/index.html
+
+extra:
+  recipe-maintainers:
+    - xylar
+    - parthea

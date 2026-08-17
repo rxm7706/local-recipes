@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: git-fame
+  version: "4.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 752d30e80eb452c6a3ef32b00a97e8da019706e6ae7a99436f24a7200707423b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - git-fame = gitfame:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+    - setuptools_scm >=3.4
+    - toml
+  run:
+    - python >=${{ python_min }}
+    - argopt >=0.3.5
+    - pyyaml
+    - shtab
+    - tabulate
+    - tqdm >=4.44.0
+
+tests:
+  - python:
+      imports:
+        - gitfame
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - git-fame -v
+      - git-fame -h
+
+about:
+  license: MPL-2.0
+  license_file: LICENCE
+  summary: Pretty-print git repository collaborators sorted by contributions
+  homepage: https://github.com/casperdcl/git-fame
+
+extra:
+  recipe-maintainers:
+    - casperdcl

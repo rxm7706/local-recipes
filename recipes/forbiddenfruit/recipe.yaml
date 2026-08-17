@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: forbiddenfruit
+  version: "0.1.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/forbiddenfruit-${{ version }}.tar.gz
+  sha256: e3f7e66561a29ae129aac139a85d610dbf3dd896128187ed5454b6421f624253
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+
+tests:
+  - python:
+      imports:
+        - forbiddenfruit
+      pip_check: true
+
+about:
+  summary: Patch python built-in objects
+  license: LGPL-3.0-only
+  license_file:
+    - COPYING
+    - COPYING.mit
+  homepage: https://github.com/clarete/forbiddenfruit
+
+extra:
+  recipe-maintainers:
+    - aymondebroglie

@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "8.0"
+
+package:
+  name: zope.testbrowser
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/z/zope.testbrowser/zope_testbrowser-${{ version }}.tar.gz
+  sha256: 35175e97be098cc4f8357ef83fbb5f3280e0e2400e8ea30b0e7e8533dd3d150d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - setuptools
+    - zope.interface
+    - zope.schema
+    - zope.cachedescriptors
+    - pytz
+    - webtest >=2.0.30
+    - beautifulsoup4
+    - soupsieve >=1.9.0
+    - wsgiproxy2
+    - legacy-cgi
+
+tests:
+  - python:
+      imports:
+        - zope.testbrowser
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/zopefoundation/zope.testbrowser
+  license: ZPL-2.1
+  license_file: LICENSE.rst
+  summary: Programmable browser for functional black-box tests
+  description: |
+    Programmable browser for functional black-box tests
+  documentation: https://zopetestbrowser.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: zope.testbrowser
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: zope.testbrowser
+  cfe-purls:
+    - pkg:conda/zope.testbrowser@${{ version }}?channel=conda-forge
+    - pkg:pypi/zope.testbrowser@${{ version }}
+  cfe-upstream-repo: https://github.com/zopefoundation/zope.testbrowser
+  cfe-upstream-homepage: https://github.com/zopefoundation/zope.testbrowser
+  cfe-import-names: [zope.testbrowser]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:34:20Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:34:20Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4 Create-recipe local-only. zope.testbrowser.
+####

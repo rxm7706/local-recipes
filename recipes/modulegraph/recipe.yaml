@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: modulegraph
+  version: "0.19.7"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 9ad8a81148ba1d90ade66617a153786f7d7cf6a88de83ee28e251183122c2a57
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - modulegraph = modulegraph.__main__:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - altgraph >=0.15
+    - python >=${{ python_min }}
+    - setuptools
+
+tests:
+  - python:
+      imports:
+        - modulegraph
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - modulegraph --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: |
+    modulegraph determines a dependency graph between Python modules primarily
+    by bytecode analysis for import statements. modulegraph uses similar methods
+    to modulefinder from the standard library, but uses a more flexible internal
+    representation, has more extensive knowledge of special cases, and is extensible.
+  homepage: https://pypi.org/project/modulegraph
+  repository: https://github.com/ronaldoussoren/modulegraph
+  documentation: https://modulegraph.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - bkpoon

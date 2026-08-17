@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: typish
+  version: "1.9.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/ramonhagenaars/${{ name }}/archive/v${{ version }}.tar.gz
+  sha256: 16f8ff022b7009a91529e363d0484465be57797b9cc34a193ca7e3c4c597e4bc
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - typish
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: For more control over your types.
+  description: |
+    For more control over your types.
+  homepage: https://github.com/ramonhagenaars/typish
+  repository: https://github.com/ramonhagenaars/typish
+  documentation: https://github.com/ramonhagenaars/typish
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0"
+
+package:
+  name: azure-ai-contentsafety
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/azure-ai-contentsafety/azure-ai-contentsafety-${{ version }}.tar.gz
+  sha256: 052731bd1419a720fa00910f46bf3428c4e5bd05280da7393d0c8106d46cc6d7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - isodate <1.0.0,>=0.6.1
+    - azure-core <2.0.0,>=1.28.0
+    - typing_extensions >=4.3.0
+
+tests:
+  - python:
+      imports:
+        - azure
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk
+  license: MIT
+  license_file: LICENSE
+  summary: Microsoft Azure AI Content Safety Client Library for Python
+  description: |
+    Microsoft Azure AI Content Safety Client Library for Python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: azure-ai-contentsafety
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: azure-ai-contentsafety
+  cfe-purls:
+    - pkg:conda/azure-ai-contentsafety@${{ version }}?channel=conda-forge
+    - pkg:pypi/azure-ai-contentsafety@${{ version }}
+  cfe-upstream-repo: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk
+  cfe-upstream-homepage: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk
+  cfe-import-names: [azure]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:43Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

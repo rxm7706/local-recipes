@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.3.5"
+
+package:
+  name: pip-install
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pip-install/pip-install-${{ version }}.tar.gz
+  sha256: 89761b5b74c3e31a4593759d1a93f65e6c3dc5ad9f9e8402e7585ed9ccf681f7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - install
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/eugenekolo/pip-install
+  license: MIT
+  license_file: LICENSE
+  summary: Install packages from within code
+  description: |
+    Install packages from within code
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pip-install
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pip-install
+  cfe-purls:
+    - pkg:conda/pip-install@${{ version }}?channel=conda-forge
+    - pkg:pypi/pip-install@${{ version }}
+  cfe-upstream-repo: https://github.com/eugenekolo/pip-install
+  cfe-upstream-homepage: https://github.com/eugenekolo/pip-install
+  cfe-import-names: [install]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:05:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:05:03Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

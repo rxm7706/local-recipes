@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.2.24"
+
+package:
+  name: kurigram
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/k/Kurigram/kurigram-${{ version }}.tar.gz
+  sha256: 535644dcb23696ae7d838a2f8c14675a5b3fa50906d51dc1434a29620d62813b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - pyaes <=1.6.1
+    - python-socks <=2.8.1
+    - if: osx
+      then:
+        - uvloop
+
+tests:
+  - python:
+      imports:
+        - compiler
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://kurigram.icu
+  license: LGPL-3.0-or-later
+  license_file: LICENSE
+  summary: Elegant, modern and asynchronous Telegram MTProto API framework in Python for users and bots
+  description: |
+    Elegant, modern and asynchronous Telegram MTProto API framework in Python for users and bots
+  repository: https://github.com/KurimuzonAkuma/pyrogram
+  documentation: https://docs.kurigram.icu
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kurigram
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: Kurigram
+  cfe-purls:
+    - pkg:conda/kurigram@${{ version }}?channel=conda-forge
+    - pkg:pypi/kurigram@${{ version }}
+  cfe-upstream-repo: https://github.com/KurimuzonAkuma/pyrogram
+  cfe-upstream-homepage: https://kurigram.icu
+  cfe-import-names: [compiler]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:41:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:41:54Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

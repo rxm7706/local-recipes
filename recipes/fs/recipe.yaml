@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: fs
+  version: "2.4.16"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ae97c7d51213f4b70b6a958292530289090de3a7e15841e108fbe144f069d313
+
+build:
+  number: 0
+  noarch: python
+  script: pip install -vv .
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - setuptools
+    - appdirs >=1.4.3,<2
+    - six >=1.10.0,<2
+
+tests:
+  - python:
+      imports:
+        - fs
+        - fs.opener
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE
+  summary: Filesystem abstraction layer for Python
+  description: pyfilesystem2 lets you work with diverse filesystems through a common API.
+  homepage: https://www.pyfilesystem.org/
+  repository: https://github.com/PyFilesystem/pyfilesystem2
+  documentation: https://docs.pyfilesystem.org/en/v${{ version }}
+
+extra:
+  recipe-maintainers:
+    - notestaff
+    - willmcgugan
+    - ReimarBauer

@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.1"
+
+package:
+  name: django-fake-database-backends
+  version: ${{ version }}
+
+source:
+  url: https://github.com/David-Wobrock/django-fake-database-backends/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: aa0f799a3509be1bb28fae3422b04ecd3f0316f23d39112632d11810564fe604
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django
+
+tests:
+  - python:
+      imports:
+        - django_fake_database_backends
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/David-Wobrock/django-fake-database-backends
+  license: MIT
+  license_file: LICENSE
+  summary: Fake django database backends to generate sql without a real database
+  description: |
+    Fake django database backends to generate sql without a real database
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-fake-database-backends
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-fake-database-backends
+  cfe-purls:
+    - pkg:conda/django-fake-database-backends@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-fake-database-backends@${{ version }}
+  cfe-upstream-repo: https://github.com/David-Wobrock/django-fake-database-backends
+  cfe-upstream-homepage: https://github.com/David-Wobrock/django-fake-database-backends
+  cfe-import-names: [django_fake_database_backends]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:00:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:00:24Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

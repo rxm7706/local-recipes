@@ -2,16 +2,17 @@
 schema_version: 1
 
 context:
-  version: "6.0.3"
+  name: django-mongodb-backend
+  version: "6.0.4"
   python_min: "3.12"
 
 package:
-  name: django-mongodb-backend
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-mongodb-backend/django_mongodb_backend-${{ version }}.tar.gz
-  sha256: d5bbe460c4f1d6366242993c8894d03752a789737ef9dcd09b496bb9135d360f
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_mongodb_backend-${{ version }}.tar.gz
+  sha256: 5733952f6dc14bc0d2162ab37c524405d2e4253eaaeaa67b0cd43932c34bc68e
 
 build:
   number: 0
@@ -20,35 +21,43 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python 3.12.*
     - hatchling
     - hatch-requirements-txt >=0.4.1
     - pip
   run:
     - python >=${{ python_min }}
-    - django >=6.0,<6.1
-    - pymongo >=4.7,<5.0
+    - django <6.1,>=6.0
+    - pymongo
+    # - sphinx-copybutton
+    # - sphinx >=7
+    # - furo >=2025.7.19
+    # - sphinx-copybutton
+    # - sphinx >=7
+    # - furo >=2025.7.19
+    # - sphinx-copybutton
+    # - sphinx >=7
+    # - furo >=2025.7.19
+    # - sphinx-copybutton
+    # - sphinx >=7
+    # - furo >=2025.7.19
+    # - sphinx-copybutton
+    # - sphinx >=7
+    # - furo >=2025.7.19
 
 tests:
   - python:
       imports:
         - django_mongodb_backend
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Django MongoDB Backend
   license: Apache-2.0
   license_file: LICENSE
   homepage: https://www.mongodb.com/docs/languages/python/django-mongodb/current/
-  repository: https://github.com/mongodb/django-mongodb-backend
-  documentation: https://django-mongodb-backend.readthedocs.io
-  description: |
-    Django MongoDB Backend is a database backend that lets you use MongoDB
-    as the data store for Django applications, providing a Django ORM
-    interface backed by MongoDB collections.
+  repository: https://github.com/mongodb-labs/django-mongodb-backend
 
 extra:
   recipe-maintainers:

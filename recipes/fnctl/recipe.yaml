@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.2"
+
+package:
+  name: fnctl
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/fnctl/fnctl-${{ version }}.tar.gz
+  sha256: 0a3291ff4ecbbdf14e26662cd8beb3a1699d7db3b481307959c95c207f47765b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - fnctl
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/fnctl/
+  license: MIT
+  license_file: LICENSE
+  summary: Self-hosted functions (Lambda-like) runtime and CLI
+  description: |
+    Self-hosted functions (Lambda-like) runtime and CLI
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: fnctl
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: fnctl
+  cfe-purls:
+    - pkg:conda/fnctl@${{ version }}?channel=conda-forge
+    - pkg:pypi/fnctl@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/fnctl/
+  cfe-upstream-homepage: https://pypi.org/project/fnctl/
+  cfe-import-names: [fnctl]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:50:35Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:50:35Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

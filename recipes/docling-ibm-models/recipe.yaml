@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: docling-ibm-models
+  version: "3.14.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/docling_ibm_models-${{ version }}.tar.gz
+  sha256: def964e3d524f66c7321ef9d48d4021278f14319f01d3f78058cd2324f641e22
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pytorch >=2.2.2,<3.0.0
+    - torchvision >=0,<1
+    - jsonlines >=3.1.0,<5.0.0
+    - pillow >=10.0.0,<13.0.0
+    - tqdm >=4.64.0,<5.0.0
+    - huggingface_hub >=0.23,<2
+    - safetensors >=0.4.3,<1
+    - pydantic >=2.0.0,<3.0.0
+    - docling-core >=2.19.0,<3.0.0
+    - transformers >=4.42.0,<6.0.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*
+    - numpy >=1.24.4,<3.0.0
+    - rtree >=1.0.0
+    - accelerate >=1.2.1,<2.0.0
+tests:
+  - python:
+      imports:
+        - docling_ibm_models
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: This package contains the AI models used by the Docling PDF conversion package
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/DS4SD/docling-ibm-models
+
+extra:
+  recipe-maintainers:
+    - hadim

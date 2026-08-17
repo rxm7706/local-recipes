@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-filer
+  version: "3.4.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 465eec9fe63310a5b718267beebe7c348ee44afd16c6b5056a7bab49ee483412
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=3.2
+    - django_polymorphic <5.0
+    - easy-thumbnails
+    # https://github.com/django-cms/django-filer/blob/master/setup.py#L10C1-L10C28
+    # pip requirement is easy-thumbnails[svg] requiring svglib and reportlab
+    # https://github.com/SmileyChris/easy-thumbnails/blob/master/setup.py#L39
+    - svglib >=1.5.1,<1.6.dev0
+
+tests:
+  - python:
+      imports:
+        - filer
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: File and Image Management Application for django
+  description: A file management application for django that makes handling of files and images a breeze.
+  homepage: https://github.com/divio/django-filer
+  repository: https://github.com/divio/django-filer
+  documentation: https://django-filer.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - darynwhite
+    - cshaley
+    - sannykr
+    - rxm7706

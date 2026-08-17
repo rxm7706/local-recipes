@@ -2,16 +2,16 @@
 schema_version: 1
 
 context:
-  version: "15.0"
+  name: django-anymail
+  version: "15.1"
 
 package:
-  name: django-anymail
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-anymail/django_anymail-${{ 
-    version }}.tar.gz
-  sha256: 23d8ab6589afe8cc1ae7665c26879814ad192f4c3ed837a2a1868b0a056869e0
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_anymail-${{ version }}.tar.gz
+  sha256: 299fb12a21ac4101e9706c2ade461d18deacbb6bc3750cfa6ca08aeea1fc9442
 
 build:
   number: 0
@@ -20,15 +20,13 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - pip
+    - python ${{ python_min }}
     - hatchling
+    - pip
   run:
     - python >=${{ python_min }}
-    - django >=5.0
-    - idna
+    - django >=2.0
     - requests >=2.4.3
-    - typing_extensions >=4.12
     - urllib3 >=1.25.0
 
 tests:
@@ -36,36 +34,26 @@ tests:
       imports:
         - anymail
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
-  homepage: https://github.com/anymail/django-anymail
   license: BSD-3-Clause
   license_file: LICENSE
-  summary: Django email backends and webhooks for Amazon SES, Brevo,  
-    MailerSend, Mailgun, Mailjet, Mailtrap, Mandrill, Postal, Postmark, Resend,  
-    Scaleway TEM, SendGrid, SparkPost, and Unisender Go  (EmailBackend, 
-    transactional email tracking and inbound email signals)
-  description: "Anymail integrates several transactional email service providers (ESPs)
-    into Django, with a consistent API that lets you use ESP-added features without
-    locking your code to a particular ESP.\nIt currently fully supports Mailgun, Mailjet,
-    Postmark, SendGrid, and SparkPost, and has limited support for Mandrill.\n"
+  summary: Django email backends and webhooks for Mailgun, Mailjet, Postmark, SendGrid, SparkPost and more
+  description: |
+    Anymail integrates several transactional email service providers (ESPs) into Django, with a consistent API that lets you use ESP-added features without locking your code to a particular ESP.
+    It currently fully supports Mailgun, Mailjet, Postmark, SendGrid, and SparkPost, and has limited support for Mandrill.
+  homepage: https://github.com/anymail/django-anymail
   repository: https://github.com/anymail/django-anymail
-  documentation: https://anymail.dev/en/stable/
+  documentation: https://anymail.readthedocs.io/en/stable/
+
 extra:
   recipe-maintainers:
-    - rxm7706
     - cshaley
     - elanqo
     - zaigner
     - millsks
-####
-# CFE comments
-# Header:
-#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
-####
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata

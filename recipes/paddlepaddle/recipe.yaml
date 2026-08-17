@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.3.1"
+
+package:
+  name: paddlepaddle
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/cp310/p/paddlepaddle/paddlepaddle-3.3.1-cp310-cp310-macosx_11_0_arm64.whl
+  sha256: 44e3fd30a9052556569e5dfa1f947a30b78bcd8e9302f1cf47629f9f54ff084e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - httpx
+    - numpy >=1.21
+    - protobuf >=3.20.2
+    - pillow
+    - opt-einsum ==3.3.0
+    - networkx
+    - typing_extensions
+    - safetensors >=0.6.0
+    - setuptools
+
+tests:
+  - python:
+      imports:
+        - paddlepaddle
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://www.paddlepaddle.org.cn/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Parallel Distributed Deep Learning
+  description: |
+    Parallel Distributed Deep Learning
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: paddlepaddle
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: paddlepaddle
+  cfe-purls:
+    - pkg:conda/paddlepaddle@${{ version }}?channel=conda-forge
+    - pkg:pypi/paddlepaddle@${{ version }}
+  cfe-upstream-repo: https://www.paddlepaddle.org.cn/
+  cfe-upstream-homepage: https://www.paddlepaddle.org.cn/
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:42:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:42:22Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

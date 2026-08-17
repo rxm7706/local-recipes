@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: blaze
+  version: "0.11.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/blaze/blaze/archive/${{ version }}.tar.gz
+  sha256: 9c3725759d20ecf164b38c125a0417c2d294f0fa657367c92748bcd312c3af1c
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  script: python setup.py install --single-version-externally-managed --record record.txt
+  python:
+    entry_points:
+      - blaze-server = blaze.server.spider:_main
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - if: match(python, ">=2,<3")
+      then: contextlib2
+    - dask
+    - flask >=0.10.1
+    - flask-cors
+    - odo >=0.5.0
+    - datashape >=0.5.3
+    - psutil
+    - sqlalchemy >=0.8.0
+    - toolz
+  run:
+    - python
+    - if: match(python, ">=2,<3")
+      then: contextlib2
+    - cytoolz
+    - dask
+    - flask >=0.10.1
+    - flask-cors
+    - h5py
+    - numba
+    - odo >=0.5.0
+    - datashape >=0.5.3
+    - psutil
+    - pytables >=3.0.0
+    - pyyaml
+    - requests
+    - sqlalchemy >=0.8.0
+
+tests:
+  - python:
+      imports:
+        - blaze
+        - blaze.compute
+        - blaze.expr
+        - blaze.tests
+      pip_check: false
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: NumPy and Pandas interface to big data
+  description: |
+    Blaze Ecosystem provides Python users high-level access to efficient
+    computation on inconveniently large data.  Blaze can refer to both a particular
+    library as well as an ecosystem of related projects that have spun off of Blaze
+    development.
+  homepage: http://blaze.pydata.org
+  repository: https://github.com/blaze/blaze
+  documentation: http://blaze.readthedocs.io/en/latest/index.html
+
+extra:
+  recipe-maintainers:
+    - nehaljwani

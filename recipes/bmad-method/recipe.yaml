@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: bmad-method
-  version: "6.10.0"
+  version: "6.11.0"
 
 package:
   name: ${{ name }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/bmad-code-org/BMAD-METHOD/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 7a3e8c9fcb8cd528881622c9e80d832f062a0ce37c57d71c4813f7aac516af7d
+  sha256: 7da9e7d6a6d3b09c535e2262a00fd097ca7a9f35d90ff87dea3e557e0f58e707
 
 build:
   number: 0

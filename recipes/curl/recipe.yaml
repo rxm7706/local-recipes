@@ -1,0 +1,199 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "8.21.0"
+
+recipe:
+  name: curl_split_recipe
+  version: ${{ version }}
+
+source:
+  url: http://curl.haxx.se/download/curl-${{ version }}.tar.bz2
+  sha256: ad6f2f94934b38e31e48272833c99b891d045b4565fe942a53fbd27bd3910e16
+
+build:
+  number: 4
+
+requirements:
+  build:
+    - if: unix
+      then: libtool
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - if: unix
+      then: make
+    - if: win
+      then: cmake-no-system
+    # perl is required to run the tests on UNIX.
+    - if: unix
+      then: perl
+    - if: unix
+      then: pkg-config
+  host:
+    - krb5
+    - libssh2
+    - if: unix
+      then: openssl
+    - if: unix
+      then: libnghttp2
+    - zlib
+    - if: unix
+      then: zstd
+    - if: not (win and arm64)
+      then: libpsl
+    # Needed so the Windows static libcurl build can link libpsl.a with PSL_STATIC.
+    - if: not (win and arm64)
+      then: libpsl-static
+
+outputs:
+  - package:
+      name: libcurl
+    files:
+      - if: unix
+        then: include/curl
+      - if: linux
+        then: lib/libcurl.so*
+      - if: osx
+        then: lib/libcurl*.dylib
+      - if: unix
+        then: lib/pkgconfig/libcurl*
+      - if: unix
+        then: bin/curl-config
+      - if: win
+        then: Library/bin/libcurl.dll
+      - if: win
+        then: Library/include/curl
+      - if: win
+        then: Library/lib/libcurl.lib
+      - if: win
+        then: Library/lib/pkgconfig/libcurl.pc
+    build:
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+      host:
+        - if: unix
+          then: openssl
+        - if: unix
+          then: libnghttp2
+        - zlib
+        - if: unix
+          then: zstd
+        - libssh2
+        - krb5
+        - if: not (win and arm64)
+          then: libpsl
+      run:
+        - libssh2
+        - if: unix
+          then: libnghttp2
+      run_exports:
+        - ${{ pin_subpackage('libcurl') }}
+    tests:
+      - script:
+          - if: not win
+            then: curl-config --features
+          - if: not win
+            then: curl-config --protocols
+          - if: not win
+            then: test -f ${PREFIX}/lib/pkgconfig/libcurl.pc
+          - if: not win
+            then: test -f ${PREFIX}/lib/libcurl${SHLIB_EXT}
+          - if: not win
+            then: test ! -f ${PREFIX}/lib/libcurl.a
+          - if: win
+            then: if exist %LIBRARY_BIN%\curl.exe exit 1
+          - if: win
+            then: if exist %LIBRARY_LIB%\libcurl_a.lib exit 1
+          - if: win
+            then: if not exist %LIBRARY_BIN%\libcurl.dll exit 1
+          - if: win
+            then: if not exist %LIBRARY_LIB%\pkgconfig\libcurl.pc exit 1
+          - if: unix
+            then: CURL_SSL_BACKENDS=$(curl-config --ssl-backends)
+          - if: unix
+            then: if ! echo $CURL_SSL_BACKENDS | grep -q "OpenSSL"; then exit 1; fi
+  - package:
+      name: libcurl-static
+    files:
+      - if: unix
+        then: lib/libcurl.a*
+      - if: win
+        then: Library/lib/libcurl_a.lib
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+      host:
+        - if: unix
+          then: openssl
+        - zlib
+        - if: unix
+          then: zstd
+        - libssh2
+        - krb5
+        - if: not (win and arm64)
+          then: libpsl-static
+        - ${{ pin_subpackage('libcurl', exact=True) }}
+      run:
+        - ${{ pin_subpackage('libcurl', exact=True) }}
+    tests:
+      - script:
+          - if: not win
+            then: test -f $PREFIX/lib/libcurl.a
+          - if: win
+            then: if not exist %LIBRARY_LIB%\libcurl_a.lib exit 1
+  - package:
+      name: curl
+    files:
+      - if: unix
+        then: bin/curl
+      - if: win
+        then: Library/bin/curl.exe*
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+      host:
+        - ${{ pin_subpackage('libcurl', exact=True) }}
+        # OpenSSL is needed here to prevent conda-build from getting confused while
+        # both OpenSSL 1.1.1 and 3.0.0 and being supported
+        - if: unix
+          then: openssl
+        - zlib
+        - if: unix
+          then: zstd
+        - libssh2
+        - krb5
+        - if: not (win and arm64)
+          then: libpsl
+      run:
+        - ${{ pin_subpackage('libcurl', exact=True) }}
+        - libssh2
+    tests:
+      - script:
+          - curl --help
+          - curl https://raw.githubusercontent.com/conda-forge/curl-feedstock/master/LICENSE.txt
+          - if: win
+            then: if not exist %LIBRARY_BIN%\curl.exe exit 1
+
+about:
+  license: curl
+  license_file: COPYING
+  summary: tool and library for transferring data with URL syntax
+  description: |
+    Curl is an open source command line tool and library for transferring data
+    with URL syntax. It is used in command lines or scripts to transfer data.
+  homepage: http://curl.haxx.se/
+  repository: https://github.com/curl/curl
+  documentation: https://curl.haxx.se/docs/
+
+extra:
+  recipe-maintainers:
+    - msarahan
+    - jakirkham
+    - ocefpaf
+    - mingwandroid
+    - h-vetinari

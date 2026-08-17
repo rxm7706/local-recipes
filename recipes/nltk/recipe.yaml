@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.10.3"
+
+package:
+  name: nltk
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/nltk/nltk-${{ version }}.tar.gz
+  sha256: bb9327a461c3811c2fa4900e03840401f2126adfb30c0072827c433bd2444ea4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+  python:
+    entry_points:
+      - nltk = nltk.cli:cli
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - click
+    - joblib
+    - regex >=2021.8.3
+    - tqdm
+    - defusedxml
+
+tests:
+  - python:
+      imports:
+        - nltk
+        - nltk.app
+        - nltk.ccg
+        - nltk.chat
+        - nltk.chunk
+        - nltk.classify
+        - nltk.cluster
+        - nltk.corpus
+        - nltk.corpus.reader
+        - nltk.draw
+        - nltk.inference
+        - nltk.lm
+        - nltk.metrics
+        - nltk.misc
+        - nltk.parse
+        - nltk.sem
+        - nltk.sentiment
+        - nltk.stem
+        - nltk.tag
+        - nltk.tbl
+        - nltk.test
+        - nltk.test.unit
+        - nltk.test.unit.translate
+        - nltk.tokenize
+        - nltk.translate
+        - nltk.twitter
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - nltk --help
+
+about:
+  license_file: LICENSE.txt
+  license: Apache-2.0
+  summary: Natural Language Toolkit
+  homepage: http://nltk.org/
+  repository: https://github.com/nltk/nltk
+  documentation: http://www.nltk.org/
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - quartox
+    - synapticarbors

@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.1"
+  python_min: python_min|default("3.9")
+
+package:
+  name: curated-transformers
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/curated-transformers/curated-transformers-${{ version }}.tar.gz
+  sha256: 4671f03314df30efda2ec2b59bc7692ea34fcea44cb65382342c16684e8a2119
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pytorch
+
+tests:
+  - python:
+      imports:
+        - curated_transformers
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: 🤖 A PyTorch library of curated Transformer models and their composable components
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/explosion/curated-transformers
+  repository: https://github.com/explosion/curated-transformers
+
+extra:
+  recipe-maintainers:
+    - h-vetinari
+    - conda-forge/spacy

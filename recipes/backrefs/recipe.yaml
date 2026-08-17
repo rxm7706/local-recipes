@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: backrefs
+  version: "8.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/backrefs-${{ version }}.tar.gz
+  sha256: b556cd7d36c3a3a2f256b89590b176b8eddfb73bcfaee3a3ddd84ea66d21ce50
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - hatchling >=0.21.1
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - backrefs
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A wrapper around re and regex that adds additional back references.
+  license: MIT
+  license_file: LICENSE.md
+  homepage: https://github.com/facelessuser/backrefs
+
+extra:
+  recipe-maintainers:
+    - asford
+    - thewchan

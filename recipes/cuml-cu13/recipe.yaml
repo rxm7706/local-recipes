@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.8.0"
+  python_min: "3.11"
+
+package:
+  name: cuml-cu13
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/cp311/c/cuml-cu13/cuml_cu13-26.8.0-cp311-abi3-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl
+  sha256: 9ab34f02d9c52ca6d08a06436553d355cf78121384f31ae613f72d22b8f1ea37
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - cuda-bindings <14.0,>=13.0.1
+    - cuda-toolkit ==13.*
+    - cudf-cu13 ==26.8.*
+    - cupy-cuda13x !=14.1.0,>=14.0.1
+    - joblib >=0.11
+    - libcuml-cu13 ==26.8.*
+    - numba-cuda >=0.22.2
+    - numba <0.65.0,>=0.60.0
+    - numpy <3.0,>=2.0
+    - nvforest-cu13 ==26.8.*
+    - nvidia-nvjitlink <14,>=13.3
+    - packaging
+    - pylibraft-cu13 ==26.8.*
+    - rich
+    - rmm-cu13 ==26.8.*
+    - scikit-learn >=1.6
+    - scipy >=1.14.0
+    - treelite <5.0.0,>=4.7.0
+
+tests:
+  - python:
+      imports:
+        - cuml_cu13
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/rapidsai/cuml
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: cuML - RAPIDS ML Algorithms
+  description: |
+    cuML - RAPIDS ML Algorithms
+  documentation: https://docs.rapids.ai/api/cuml/stable/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cuml-cu13
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cuml-cu13
+  cfe-purls:
+    - pkg:conda/cuml-cu13@${{ version }}?channel=conda-forge
+    - pkg:pypi/cuml-cu13@${{ version }}
+  cfe-upstream-repo: https://github.com/rapidsai/cuml
+  cfe-upstream-homepage: https://github.com/rapidsai/cuml
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:51:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:51:54Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

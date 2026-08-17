@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mockito
+  version: "1.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/kaste/mockito-python/archive/${{ version }}.tar.gz
+  sha256: fe0614d07bf0f762f9b0e7b7183788e80941950315f58dfa2d405415afc9e65a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.5
+  run:
+    - python >=3.5
+
+tests:
+  - python:
+      imports:
+        - mockito
+      pip_check: true
+  - files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - pip
+        - pytest
+        - numpy
+    script:
+      - pytest tests
+
+about:
+  summary: Spying framework
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/kaste/mockito-python
+
+extra:
+  recipe-maintainers:
+    - vnlitvinov

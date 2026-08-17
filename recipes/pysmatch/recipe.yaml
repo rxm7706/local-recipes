@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.1.2"
+
+package:
+  name: pysmatch
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pysmatch/pysmatch-${{ version }}.tar.gz
+  sha256: 68c4299dda7d7ab60042536e2f39432b47b7fdc3f96c2744e89abfe0a5b0408e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.0
+    - setuptools-scm
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - matplotlib-base >=3.7.1
+    - numpy >=1.26.4
+    - pandas >=2.1.4
+    - scipy >=1.13.1
+    - seaborn-base >=0.12.2
+    - statsmodels >=0.14.3
+    - scikit-learn >=1.5.2
+    - imbalanced-learn >=0.12.3
+
+tests:
+  - python:
+      imports:
+        - pysmatch
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/miaohancheng/pysmatch
+  license: MIT
+  license_file: LICENSE
+  summary: Propensity Score Matching (PSM) on Python
+  description: |
+    Propensity Score Matching (PSM) on Python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pysmatch
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pysmatch
+  cfe-purls:
+    - pkg:conda/pysmatch@${{ version }}?channel=conda-forge
+    - pkg:pypi/pysmatch@${{ version }}
+  cfe-upstream-repo: https://github.com/miaohancheng/pysmatch
+  cfe-upstream-homepage: https://github.com/miaohancheng/pysmatch
+  cfe-import-names: [pysmatch]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:29:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:29:34Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

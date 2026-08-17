@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: injector
+  version: "0.24.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/injector-${{ version }}.tar.gz
+  sha256: e85a75d1516cff2f03170f3fd1219f56acb25c9a05e307819ae0dcde3dad3d3f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - pypandoc
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - typing_extensions >=3.7.4
+
+tests:
+  - python:
+      imports:
+        - injector
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Injector - Python dependency injection framework, inspired by Guice
+  license: BSD-3-Clause
+  # License file manually packaged: See: https://github.com/alecthomas/injector/pull/160
+  license_file: COPYING
+  homepage: https://github.com/alecthomas/injector
+
+extra:
+  recipe-maintainers:
+    - fuglede

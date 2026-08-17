@@ -2,15 +2,16 @@
 schema_version: 1
 
 context:
-  version: "1.5.0"
+  name: django-nyt
+  version: 1.6.0
 
 package:
-  name: django-nyt
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-nyt/django_nyt-${{ version }}.tar.gz
-  sha256: 4b35117b65219dafa849b0b994118f65590b3f6340ede573cdbf51dcd6a59f74
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_nyt-${{ version }}.tar.gz
+  sha256: 8e3ca3d4bf6d91d6adfe10df6b0dc37b48e24cacd790fa93583c01c714cf931b
 
 build:
   number: 0
@@ -23,17 +24,15 @@ requirements:
     - hatchling
     - pip
   run:
-    - python >=${{ python_min }}
-    - django >=2.2,<5.3
-
+    - python >=${{ python_min }},<4.0
+    - django >=4.2,<6.1
+    - channels
 tests:
   - python:
       imports:
         - django_nyt
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
   summary: A pluggable notification system written for the Django framework.
@@ -41,7 +40,6 @@ about:
   license_file: LICENSE
   homepage: https://github.com/django-wiki/django-nyt
   repository: https://github.com/django-wiki/django-nyt
-  documentation: https://django-nyt.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:

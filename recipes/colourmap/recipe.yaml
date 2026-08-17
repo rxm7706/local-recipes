@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Not set upstream but need this to be compatible with matplotlib >=3.10
+schema_version: 1
+
+context:
+  name: colourmap
+  version: "1.2.1"
+  python_min: 3.10
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/colourmap-${{ version }}.tar.gz
+  sha256: 86b614f458b301145e52f5aaf6f270911021eeb6170a42ce3354b2c5b70e3cf1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+    - wheel
+  run:
+    - matplotlib-base
+    - numpy
+    - scipy
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - colourmap
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Python package colourmap generates an N unique colors from the specified input colormap.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://erdogant.github.io/colourmap
+  repository: https://github.com/erdogant/colourmap/
+
+extra:
+  recipe-maintainers:
+    - thewchan

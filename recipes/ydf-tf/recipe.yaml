@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.21.0.post1"
+
+package:
+  name: ydf-tf
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/cp310/y/ydf-tf/ydf_tf-2.21.0.post1-cp310-cp310-macosx_26_0_arm64.whl
+  sha256: c317817166723aae5038362523a5f3c497970f09a9a998677b8f5e8f7e7ca6a3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - tensorflow ==2.21.0
+    - ydf
+
+tests:
+  - python:
+      imports:
+        - ydf_tf
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/google/yggdrasil-decision-forests
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: The custom op to export and serve YDF models in TensorFlow.
+  description: |
+    The custom op to export and serve YDF models in TensorFlow.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ydf-tf
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ydf-tf
+  cfe-purls:
+    - pkg:conda/ydf-tf@${{ version }}?channel=conda-forge
+    - pkg:pypi/ydf-tf@${{ version }}
+  cfe-upstream-repo: https://github.com/google/yggdrasil-decision-forests
+  cfe-upstream-homepage: https://github.com/google/yggdrasil-decision-forests
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:11:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:11:15Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

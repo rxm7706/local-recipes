@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: libsass
+  version: 0.23.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace("-", "_") }}-${{ version }}.tar.gz
+  sha256: 6f209955ede26684e76912caf329f4ccb57e4a043fd77fe0e7348dd9574f1880
+  patches:
+    - 472.patch
+
+build:
+  number: 3
+  script:
+    - ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - pysassc = pysassc:main
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - sass
+  - script:
+      - pysassc --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A straightforward binding of libsass for Python. Compile Sass/SCSS in Python with no Ruby stack at all!
+  description: |
+    This package provides a simple Python extension module sass which is binding
+    Libsass (written in C/C++ by Hampton Catlin and Aaron Leung). It's very
+    straightforward and there isn't any headache related Python distribution/deployment.
+  homepage: https://github.com/dahlia/libsass-python
+  repository: https://github.com/dahlia/libsass-python
+  documentation: https://hongminhee.org/libsass-python/
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - sannykr
+    - isuruf
+    - marcelotrevisani
+    - xhochy

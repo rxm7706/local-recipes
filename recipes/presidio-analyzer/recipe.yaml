@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: presidio-analyzer
+  version: "2.2.360"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/microsoft/presidio/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 47542f1bf1ff6a6fb0cc4786d4e6001573b35da7bf92d872d863dc912d7428d2
+
+build:
+  number: 0
+  noarch: python
+  script: cd ${{ name }} && ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }},<4
+    - spacy >=3.4.4,<4.0.0,!=3.7.0
+    - regex
+    - tldextract
+    - pyyaml
+    - phonenumbers >=8.12,<9.0.0
+  run_constraints:
+    - flask >=1.1
+    - spacy_huggingface_pipelines
+    - stanza
+    - spacy_stanza
+    - azure-ai-textanalytics
+    - azure-core
+    - gliner >=0.2.13,<1.0.0
+    - transformers
+    - huggingface_hub
+    - gunicorn
+    - onnxruntime-gpu >=1.19
+
+tests:
+  - python:
+      imports:
+        - presidio_analyzer
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+        - pip
+    script:
+      - pip list
+
+about:
+  summary: Presidio Analyzer package
+  description: |
+    Presidio Analyzer package.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/microsoft/presidio
+  repository: https://github.com/microsoft/presidio
+  documentation: https://microsoft.github.io/presidio
+
+extra:
+  recipe-maintainers:
+    - phemps
+    - gulyasi
+    - julcsii
+    - geoHeil
+    - heckert

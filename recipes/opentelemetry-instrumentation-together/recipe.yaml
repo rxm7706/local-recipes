@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: opentelemetry-instrumentation-together
+  version: "0.62.3"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_together-${{ version }}.tar.gz
+  sha256: 371218bd0eb0324c5b2d86de4c71fa32edd053575d8a88c2a35897db6eca692f
+  patches:
+    - 0001-remove-runtime-together-dependency.patch
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.10.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - opentelemetry-api >=1.38.0,<2.0.0
+    - opentelemetry-instrumentation >=0.59b0
+    - opentelemetry-semantic-conventions >=0.59b0
+    - opentelemetry-semantic-conventions-ai >=0.5.1,<0.6.0
+
+tests:
+  - python:
+      imports:
+        - opentelemetry.instrumentation.together
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: OpenTelemetry Together AI instrumentation
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://www.traceloop.com/openllmetry
+  repository: https://github.com/traceloop/openllmetry
+  documentation: https://www.traceloop.com/docs/openllmetry/introduction
+
+extra:
+  recipe-maintainers:
+    - timkpaine

@@ -2,36 +2,36 @@
 schema_version: 1
 
 context:
-  name: tree-sitter-luau
   version: "1.2.0"
 
 package:
-  name: ${{ name }}
+  name: tree-sitter-luau
   version: ${{ version }}
 
-# Upstream PyPI sdist for v1+ strips src/tree_sitter/*.h headers needed for the
-# C build, so source from the GitHub tag which ships the full source tree.
 source:
-  url: https://github.com/tree-sitter-grammars/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
+  # The PyPI sdist is missing the vendored tree_sitter/{parser,alloc,array}.h
+  # headers, so build from the GitHub tag tarball instead.
+  url: https://github.com/tree-sitter-grammars/tree-sitter-luau/archive/refs/tags/v${{ version }}.tar.gz
   sha256: 43c9f7b3380b60ca7a8092f54fc03a0e6749d3e3aca7a695796034c8472884e1
 
 build:
   number: 0
+  # abi3 packages build once at python_min and ship one artifact per platform.
+  skip: is_abi3 and not is_python_min
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    version_independent: ${{ is_abi3 }}
 
 requirements:
   build:
-    - if: build_platform != host_platform
-      then:
-        - python
-        - cross-python_${{ target_platform }}
-    - ${{ compiler('c') }}
-    - ${{ stdlib('c') }}
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
   host:
+    - if: is_abi3
+      then: python-abi3
     - python
-    - setuptools >=42
-    - wheel
     - pip
+    - setuptools >=42
   run:
     - python
 
@@ -39,14 +39,29 @@ tests:
   - python:
       imports:
         - tree_sitter_luau
-      pip_check: true
+      # Verify the abi3 wheel works on the build-time Python AND the latest.
+      python_version:
+        - if: is_abi3
+          then: ${{ python_min }}.*
+        - "*"
+  - if: is_abi3
+    then:
+      requirements:
+        run:
+          - abi3audit
+      script:
+        - if: unix
+          then: abi3audit $SP_DIR/tree_sitter_luau/_binding.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
+          else: abi3audit %SP_DIR%/tree_sitter_luau/_binding.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
 
 about:
+  homepage: https://github.com/tree-sitter-grammars/tree-sitter-luau
   summary: Luau grammar for tree-sitter
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/tree-sitter-grammars/tree-sitter-luau
+  repository: https://github.com/tree-sitter-grammars/tree-sitter-luau
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - killua156
+    - mgorny

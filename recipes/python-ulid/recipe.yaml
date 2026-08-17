@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: python-ulid
-  version: 3.1.0
+  version: "4.0.1"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/python_ulid-${{ version }}.tar.gz
-  sha256: ff0410a598bc5f6b01b602851a3296ede6f91389f913a5d5f8c496003836f636
+  sha256: bbeec02556190bb9dc3401faa7268696acbfbe7b6db9908c155dc3548629f20c
 
 build:
   number: 0
@@ -23,22 +23,25 @@ build:
 
 requirements:
   host:
-    - python >=3.10
+    - python ${{ python_min }}
     - hatchling
     - hatch-vcs
     - hatch-fancy-pypi-readme
     - pip
   run:
-    - python >=3.10
+    - python >=${{ python_min }}
+    - typing_extensions
 
 tests:
   - python:
       imports:
-        - python_ulid
+        - ulid
       pip_check: true
+      python_version: ${{ python_min }}
   - requirements:
       run:
         - pip
+        - python ${{ python_min }}
     script:
       - ulid --help
 
@@ -46,6 +49,7 @@ about:
   summary: Universally unique lexicographically sortable identifier
   license: MIT
   license_file: LICENSE
+  homepage: https://github.com/mdomke/python-ulid
 
 extra:
   recipe-maintainers:

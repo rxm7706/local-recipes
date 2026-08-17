@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.24.4"
+
+package:
+  name: toml-sort
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/toml-sort/toml_sort-${{ version }}.tar.gz
+  sha256: 429b69f5b98b7047a11380c80ecf0838556bdea1a8902d0be564961c48841423
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - tomlkit >=0.13.2
+
+tests:
+  - python:
+      imports:
+        - toml_sort
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/pappasam/toml-sort
+  license: MIT
+  license_file: LICENSE
+  summary: Toml sorting library
+  description: |
+    Toml sorting library
+  repository: https://github.com/pappasam/toml-sort
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: toml-sort
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: toml-sort
+  cfe-purls:
+    - pkg:conda/toml-sort@${{ version }}?channel=conda-forge
+    - pkg:pypi/toml-sort@${{ version }}
+  cfe-upstream-repo: https://github.com/pappasam/toml-sort
+  cfe-upstream-homepage: https://github.com/pappasam/toml-sort
+  cfe-import-names: [toml_sort]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:39:57Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:39:57Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -2,16 +2,17 @@
 schema_version: 1
 
 context:
-  version: "3.1.0"
+  name: wagtail-ai
+  version: "3.1.1"
   python_min: "3.11"
 
 package:
-  name: wagtail-ai
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/w/wagtail-ai/wagtail_ai-${{ version }}.tar.gz
-  sha256: 377a8a179c5272a31b8b9ea26a2b5c792a3a5ffecc4b364b5df2ea472582958d
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail_ai-${{ version }}.tar.gz
+  sha256: 00154266beb4434d8173a648b1b0fcdecf57df47b2262fece1bb406d27977551
 
 build:
   number: 0
@@ -20,7 +21,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python 3.11.*
     - flit-core >=3.2,<4
     - pip
   run:
@@ -35,16 +36,13 @@ tests:
       imports:
         - wagtail_ai
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Get a hand writing your content with AI super powers!
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/wagtail/wagtail-ai
-  repository: https://github.com/wagtail/wagtail-ai
 
 extra:
   recipe-maintainers:

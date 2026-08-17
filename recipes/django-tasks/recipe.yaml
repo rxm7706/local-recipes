@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: django-tasks
-  version: "0.11.0"
+  version: "0.12.0"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_tasks-${{ version }}.tar.gz
-  sha256: 923bf4ac444daee5d879393daf09c7cdf4575c8b0e12726c9d9fceafdea5187f
+  sha256: 58be66c1e487da32a3ce7320bd1949d0d1dc381b9004819f92591eb37fb2c1b8
 
 build:
   number: 0
@@ -50,4 +50,3 @@ about:
 extra:
   recipe-maintainers:
     - darynwhite
-    - rxm7706

@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.30.3"
+  version: "1.30.7"
 
 package:
   name: mailpit
@@ -10,10 +10,10 @@ package:
 
 source:
   url: https://github.com/axllent/mailpit/archive/v${{ version }}.tar.gz
-  sha256: 1e6a94e92b5e6ebbdaed7ec2dd280b7d200185697d723044c5a9fc239fcdb6d8
+  sha256: 19366f9b6fb3c8dd8f9c97b2e894133c6fbac2c2fee9657975874a0deab71777
 
 build:
-  number: 1
+  number: 0
   script:
     - if: unix
       then: build.sh

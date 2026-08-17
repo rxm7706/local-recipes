@@ -1,0 +1,142 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# recipe-lint fails if mpi is undefined
+# prioritize nompi via build number
+# add build string so packages can depend on
+# mpi or nompi variants
+# dependencies:
+# `hdf5 * mpi_mvapich_*` for mvapich
+# `hdf5 * mpi_mpich_*` for mpich
+# `hdf5 * mpi_*` for any mpi
+# `hdf5 * nompi_*` for no mpi
+# mpi builds require the right mpi
+# non-mpi builds *do not* appear to require non-mpi builds
+# at least not always
+schema_version: 1
+
+context:
+  version: "2.2.0"
+  maj_min_patch_ver: ${{ "_".join(version | split(".")) }}
+  maj_min_ver: ${{ "_".join(version | split(".")[:2]) }}
+  mpi: mpi or 'nompi'
+  hdf5_libs:
+    - hdf5
+    - hdf5_cpp
+    - hdf5_hl
+    - hdf5_hl_cpp
+
+package:
+  name: hdf5
+  version: ${{ version }}
+
+source:
+  url: https://github.com/HDFGroup/hdf5/releases/download/${{ version }}/hdf5-${{ version }}.tar.gz
+  sha256: 1a1ab8209b35586fbc1aa279ba76d102130b95badcb20ca329587219112d8c16
+  patches:
+    # Still open upstream as of 2.2.0; rebased onto the reworked filter
+    # handling from https://github.com/HDFGroup/hdf5/pull/6287.
+    # This matters more in 2.2.0 than it did in 2.1.0: HDF5_USE_GNU_DIRS now
+    # defaults to ON on non-Windows, so hdf5-config.cmake lands in
+    # $PREFIX/lib/cmake/hdf5 where CMake actually looks for it, which means
+    # the find_dependency() calls now really do run for downstream consumers.
+    # https://github.com/HDFGroup/hdf5/issues/6347
+    - 6347-static-find-dependency.patch
+
+build:
+  number: ${{ build }}
+  string: ${{ mpi_prefix }}_h${{ PKG_HASH }}_${{ build }}
+  script: {}
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('fortran') }}
+    - cmake
+    - ninja
+    - if: build_platform != target_platform and mpi != 'nompi' or build_platform != target_platform and mpi != 'nompi'
+      then: mpi or 'nompi'.*
+    # Keep both versions of openssl in sync
+    - openssl
+    - if: linux
+      then: diffutils
+    - pkg-config
+  host:
+    - if: mpi != 'nompi' and mpi != 'impi' or mpi != 'nompi' and mpi != 'impi'
+      then: mpi or 'nompi'.*
+    - if: mpi == 'impi'
+      then: impi-devel
+    - zlib
+    - libaec
+    - if: linux
+      then: libacl
+    - libcurl
+    - openssl
+    - aws-c-io
+    - aws-c-s3
+    - aws-c-auth
+    - aws-c-http
+    - aws-c-common
+    - aws-c-sdkutils
+  run_exports:
+    - ${{ pin_subpackage('hdf5', upper_bound='x') }} ${{ build_pin }}
+  ignore_run_exports:
+    by_name:
+      - libacl
+
+tests:
+  - files:
+      recipe:
+        - test
+    requirements:
+      run:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - if: not win
+          then: ${{ compiler('fortran') }}
+        - if: not win
+          then: pkg-config
+        - if: not win
+          then: cmake
+        - if: not win
+          then: make
+        - if: not win
+          then: libgfortran5 >=13.3.0
+    script:
+      - if: not win
+        then: command -v ${{ each_hdf5_unix_cmd }}
+      - if: not win
+        then: command -v ${{ each_hdf5_cmd }}
+      - if: win
+        then: where ${{ each_hdf5_cmd }}
+      - if: not win
+        then: test -f $PREFIX/lib/lib${{ each_hdf5_lib }}${SHLIB_EXT}
+      - if: win
+        then: if not exist %PREFIX%\\Library\\lib\\${{ each_hdf5_lib }}.lib exit 1
+      - if: win
+        then: if not exist %PREFIX%\\Library\\bin\\${{ each_hdf5_lib }}.dll exit 1
+      - if: unix
+        then: AWS_REGION=us-east-2 h5dump --filedriver=ros3 "https://s3.amazonaws.com/hdfgroup/data/hdf5demo/tall.h5" | grep '^HDF5'
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: HDF5 is a data model, library, and file format for storing and managing data
+  homepage: https://www.hdfgroup.org/solutions/hdf5/
+  repository: https://github.com/HDFGroup/hdf5
+  documentation: https://support.hdfgroup.org/documentation/hdf5/latest/
+
+extra:
+  recipe-maintainers:
+    - hmaarrfk
+    - jakirkham
+    - gillins
+    - groutr
+    - ocefpaf
+    - astrofrog
+    - marcelotrevisani
+    - scopatz
+    - davidbrochart
+    - SylvainCorlay
+    - varlackc
+    - zklaus

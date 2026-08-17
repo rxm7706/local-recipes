@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: demjson3
+  version: "3.0.6"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 37c83b0c6eb08d25defc88df0a2a4875d58a7809a9650bd6eee7afd8053cdbac
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - jsonlint=jsonlint:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - demjson3
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - jsonlint --help
+
+about:
+  summary: encoder, decoder, and lint/validator for JSON (JavaScript Object Notation) compliant with RFC 7159.
+  license: LGPL-3.0-or-later
+  license_file: LICENSE.txt
+  homepage: https://nielstron.github.io/demjson3/
+  repository: https://github.com/nielstron/demjson3
+
+extra:
+  recipe-maintainers:
+    - marcobonifacio

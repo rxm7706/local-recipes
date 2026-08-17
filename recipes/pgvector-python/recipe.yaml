@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.0"
+
+package:
+  name: pgvector-python
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pgvector/pgvector-${{ version }}.tar.gz
+  sha256: 07a9dcf735696879406983afc6eba9a787cef7c0cf6c367ca1a5779f036dee74
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - numpy
+
+tests:
+  - python:
+      imports:
+        - pgvector
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: pgvector support for Python
+  description: |
+    pgvector support for Python.
+    Great for online recommendations.
+    Supports Django, SQLAlchemy, Psycopg 3, Psycopg 2, asyncpg, pg8000, and Peewee.
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/pgvector/pgvector-python
+  repository: https://github.com/pgvector/pgvector-python
+  documentation: https://pypi.org/project/pgvector/
+
+extra:
+  recipe-maintainers:
+    - mmcauliffe
+    - moritzwilksch

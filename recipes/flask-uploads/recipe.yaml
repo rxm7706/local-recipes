@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: Flask-Uploads
+  version: "0.2.1"
+  compress_type: tar.gz
+  hash_val: 53ecbd6033667d50ae02b63adebbaa33c7fc56c09e5293025810cf9d841ecb02
+  build_num: 0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ compress_type }}
+  sha256: ${{ hash_val }}
+  file_name: ${{ name }}-${{ version }}.${{ compress_type }}
+
+build:
+  number: ${{ build_num }}
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+    - flask >=0.8.0
+
+tests:
+  - python:
+      imports:
+        - flask_uploads
+      pip_check: false
+
+about:
+  license: MIT
+  # license_file: No LICENSE in MANIFEST.in - see https://github.com/maxcountryman/flask-uploads/pull/8
+  summary: Flexible and efficient upload handling for Flask
+  homepage: https://github.com/maxcountryman/flask-uploads
+  repository: https://github.com/maxcountryman/flask-uploads
+  documentation: https://flask-uploads.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr

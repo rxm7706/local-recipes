@@ -3,18 +3,19 @@ schema_version: 1
 
 context:
   name: ydata-quality
-  version: "0.1.2"
+  version: "0.1.0"
+  python_min: '3.7'
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ydata_quality-${{ version }}.tar.gz
-  sha256: a0e7d9816b3cd07167c7d2cb0c24cd88477fef49549540d6a94a96c8dad497bf
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ydata-quality-${{ version }}.tar.gz
+  sha256: e32bd5074a490d27606b42004d4d7cfbaaeeac21a403d9e40955ac8fb92c12c8
 
 build:
-  number: 0
+  number: 2
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -22,6 +23,7 @@ requirements:
   host:
     - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }},<3.9
     - dython ==0.6.7

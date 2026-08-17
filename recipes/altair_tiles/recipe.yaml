@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: altair_tiles
+  version: "0.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/altair_tiles-${{ version }}.tar.gz
+  sha256: c262a00baad4f37966be9490fc014db0dd7c15c6e98c7cf3cfa5492abb867961
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - altair
+    - xyzservices
+    - mercantile
+
+tests:
+  - python:
+      imports:
+        - altair_tiles
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: You can use altair_tiles to add tiles from any xyz tile provider such as OpenStreetMap to your Altair chart.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/altair-viz/altair_tiles
+  repository: https://github.com/altair-viz/altair_tiles
+
+extra:
+  recipe-maintainers:
+    - binste

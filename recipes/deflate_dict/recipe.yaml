@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: deflate_dict
+  version: "1.2.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/deflate_dict-${{ version }}.tar.gz
+  sha256: a51f72562a2056118c6b0915b4ac46a483cc329b43d13d759307e4c027ea20ea
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+    - setuptools
+  run:
+    - python >=3.8
+    - support_developer >=1.0.2
+
+tests:
+  - python:
+      imports:
+        - deflate_dict
+      pip_check: true
+
+about:
+  summary: Python package to deflate and re-inflate dictionaries.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/LucaCappelletti94/deflate_dict
+
+extra:
+  recipe-maintainers:
+    - isuruf
+    - dillonroach

@@ -1,0 +1,117 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.22.2"
+
+recipe:
+  name: krb5
+  version: ${{ version }}
+
+source:
+  url: https://github.com/krb5/krb5/archive/krb5-${{ version }}-final.tar.gz
+  sha256: 289f5bb81d1f2f8d5eecebe56a056aeed95d35fd9bb4a7071c5dd7ad4b3fe888
+  patches:
+    # see https://github.com/krb5/krb5/pull/1528
+    - if: win
+      then: patches/0001-fix-windows-arm64-cross-build.patch
+
+build:
+  number: 2
+  dynamic_linking:
+    missing_dso_allowlist:
+      - if: osx
+        then: /usr/lib/libresolv.9.dylib
+
+requirements:
+  build:
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - if: unix
+      then: autoconf
+    - if: unix
+      then: bison
+    - if: unix
+      then: make
+    - if: unix
+      then: libtool
+    - if: unix
+      then: pkg-config
+    - if: unix
+      then: python *
+    - if: win
+      then: posix
+    - if: win
+      then: perl
+    - gettext
+  host:
+    - if: unix
+      then: libedit
+    - openssl
+    - if: linux
+      then: keyutils
+  run:
+    - if: unix
+      then: ${{ pin_compatible('libedit') }}
+  run_exports:
+    - ${{ pin_subpackage('krb5', upper_bound='x.x') }}
+
+outputs:
+  - package:
+      name: krb5
+  - package:
+      name: krb5-static
+    build:
+      skip: win
+      script:
+        file: build_static.sh
+    requirements:
+      build:
+        - ${{ stdlib('c') }}
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - if: unix
+          then: autoconf
+        - if: unix
+          then: bison
+        - if: unix
+          then: make
+        - if: unix
+          then: pkg-config
+        - python ${{ python_min }}
+        - gettext
+      host:
+        - if: unix
+          then: libedit
+        - openssl
+      run:
+        - ${{ pin_subpackage('krb5', exact=True) }}
+        - if: unix
+          then: ${{ pin_compatible('libedit') }}
+    tests:
+      - script:
+          - if: unix
+            then: test -f ${PREFIX}/lib/libk5crypto.a
+
+tests:
+  - script:
+      - if: unix
+        then: test -f ${PREFIX}/lib/libkrb5${SHLIB_EXT}
+      - if: win
+        then: if not exist %LIBRARY_BIN%\krb5_64.dll exit 1
+
+about:
+  license: MIT
+  license_file: doc/notice.rst
+  summary: A network authentication protocol.
+  homepage: http://web.mit.edu/kerberos/
+  repository: https://github.com/krb5/krb5
+
+extra:
+  recipe-maintainers:
+    - pelson
+    - ocefpaf
+    - mariusvniekerk
+    - wolfv
+    - h-vetinari

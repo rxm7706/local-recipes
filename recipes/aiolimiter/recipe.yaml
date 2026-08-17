@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: aiolimiter
+  version: "1.2.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/aiolimiter-${{ version }}.tar.gz
+  sha256: e02a37ea1a855d9e832252a105420ad4d15011505512a1a1d814647451b5cca9
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - aiolimiter
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: asyncio rate limiter, a leaky bucket implementation
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/mjpieters/aiolimiter
+
+extra:
+  recipe-maintainers:
+    - BastianZim

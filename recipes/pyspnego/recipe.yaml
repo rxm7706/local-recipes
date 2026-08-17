@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyspnego
+  version: "0.12.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyspnego-${{ version }}.tar.gz
+  sha256: ff4fb6df38202a012ea2a0f43091ae9680878443f0ea61c9ea0e2e8152a4b810
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools >=61
+  run:
+    - python
+    - cryptography
+    - ruamel.yaml
+    - if: win
+      then: sspilib >=0.3.0
+  run_constraints:
+    - if: not win
+      then: python-gssapi >=1.6.0
+    - if: not win
+      then: pykrb5 >=0.3.0
+
+tests:
+  - python:
+      imports:
+        - spnego
+        - spnego._ntlm_raw
+      pip_check: true
+
+about:
+  summary: Windows Negotiate Authentication Client and Server
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/jborean93/pyspnego
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - krisevans
+    - rzillman

@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  pypi_name: pdfkit
+  name: python-pdfkit
+  version: "1.0.0"
+  sha256: 992f821e1e18fc8a0e701ecae24b51a2d598296a180caee0a24c0af181da02a9
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ pypi_name[0] }}/${{ pypi_name }}/${{ pypi_name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python >=2.7,<3.0|>=3.2
+    - setuptools
+  run:
+    - python >=2.7,<3.0|>=3.2
+    - wkhtmltopdf
+
+tests:
+  - python:
+      imports:
+        - pdfkit
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Wkhtmltopdf python wrapper to convert html to pdf
+  homepage: https://github.com/JazzCore/python-pdfkit
+
+extra:
+  recipe-maintainers:
+    - scopatz
+    - jsta

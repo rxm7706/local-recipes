@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sqlite-utils
+  version: "4.2.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 76114b6a5414714e6c70e5fa5c4781b301b590f6951b5da39c8cc60c21382ba1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - sqlite-utils = sqlite_utils.cli:cli
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools >=77
+  run:
+    - python >=${{ python_min }}
+    - click >=8.3.1
+    - click-default-group >=1.2.3
+    - pluggy
+    - python-dateutil
+    - sqlite-fts4
+    - tabulate
+    - pip
+
+tests:
+  - python:
+      imports:
+        - sqlite_utils
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - cogapp
+        - hypothesis
+        - pytest
+        - python ${{ python_min }}.*
+    script:
+      - pytest -vvv --capture=tee-sys -k 'not commands_are_documented and not recipes_are_documented and not insert_streaming_batch_size_1 and not cli_bulk_batch_size' tests
+
+about:
+  summary: CLI tool and Python utility functions for manipulating SQLite databases
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/simonw/sqlite-utils
+
+extra:
+  recipe-maintainers:
+    - simonw
+    - thewchan

@@ -13,7 +13,7 @@ source:
   sha256: 4f47b8965b0837694ebcec21fb5d0c9b5317572d5a2f0c4d8e7b5caf053f86f9
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -24,10 +24,10 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }}
-    - wagtail >=7.0
-    - numpy >=1.26,<3
-    - scipy >=1.15,<2
+    - wagtail >=6.3
     - user-agents >=2.2,<2.3
+    - numpy >=1.19.4,<2
+    - scipy >=1.5.4,<2
 
 tests:
   - python:
@@ -47,7 +47,7 @@ about:
   description: |
     A/B Testing for Wagtail — split-test traffic between two variants of a
     page and measure conversion against a configured goal. Tracks
-    participants and conversions via the user-agents library and offers an
+    participants + conversions via the user-agents library and offers an
     admin UI for creating, viewing, and concluding tests.
 
 extra:

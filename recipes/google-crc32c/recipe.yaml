@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: google-crc32c
+  version: "1.8.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/google_crc32c-${{ version }}.tar.gz
+  sha256: a428e25fb7691024de47fecfbff7ff957214da51eddded0da0ae0e0f03a2cf79
+
+build:
+  number: 1
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - libcrc32c
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - google_crc32c
+      pip_check: true
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python wrapper for a hardware-based implementation of the CRC32C hashing algorithm
+  description: |
+    google-crc32c wraps the libcrc32c
+    <https://github.com/google/crc32c> package, which is a hardware-based
+    implementation of the CRC32C hashing algorithm.
+  homepage: https://github.com/googleapis/python-crc32c
+  repository: https://github.com/googleapis/python-crc32c
+  documentation: https://github.com/googleapis/python-crc32c
+
+extra:
+  recipe-maintainers:
+    - tswast
+    - xylar

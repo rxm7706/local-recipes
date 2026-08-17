@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyod
+  version: "3.6.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: eef5e0c21c382c4d672fbd1753daabaf26764306d9c0fcf0bc1db1bdbebeb603
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - joblib
+    - matplotlib-base
+    - numba >=0.51
+    - numpy >=1.19
+    - scikit-learn >=0.22.0
+    - scipy >=1.5.1
+
+tests:
+  - python:
+      imports:
+        - pyod
+        - pyod.models
+        - pyod.utils
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: A Python Toolkit for Scalable Outlier Detection (Anomaly Detection)
+  homepage: https://github.com/yzhao062/pyod
+  documentation: https://pyod.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - yzhao062
+    - apcamargo

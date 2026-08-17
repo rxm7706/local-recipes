@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.0.20260518"
+
+package:
+  name: types-cffi
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/t/types-cffi/types_cffi-${{ version }}.tar.gz
+    sha256: f9707e66c13454789a58f8843d1ded4a66f1e9c8b10bd24d5eb5e0f25c0c5472
+  - url: https://raw.githubusercontent.com/python/typeshed/main/LICENSE
+    sha256: 295f8538c94ae5c3043301cf7cff1c852dab6a786a8ddee471e061b40d5ecabe
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - types-setuptools
+
+tests:
+  - files:
+      recipe:
+        - run_test.py
+    requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+      - python run_test.py
+  - requirements:
+      run:
+        - cffi
+        - mypy
+        - pip
+    script:
+      - pip check
+      - mypy -p cffi -p _cffi_backend
+
+about:
+  summary: Typing stubs for cffi
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/python/typeshed
+  repository: https://github.com/python/typeshed/tree/main/stubs/cffi
+
+extra:
+  recipe-maintainers:
+    - bollwyvl
+    - conda-forge/mypy

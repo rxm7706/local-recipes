@@ -5,7 +5,6 @@ context:
   name: django-slick-reporting
   version: 1.4.0
 
-
 package:
   name: ${{ name|lower }}
   version: ${{ version }}

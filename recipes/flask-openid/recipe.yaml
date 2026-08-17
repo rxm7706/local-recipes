@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: Flask-OpenID
+  version: "1.3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 539289ed2d19af61ae38d8fe46aec9e4de2b56f9f8b46da0b98c0d387f1d975a
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - flask >=0.10.1
+    - python3-openid >=2.0
+
+tests:
+  - python:
+      imports:
+        - flask_openid
+      pip_check: false
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: OpenID support for Flask
+  homepage: http://github.com/mitsuhiko/flask-openid/
+  repository: http://github.com/mitsuhiko/flask-openid/
+  documentation: https://pythonhosted.org/Flask-OpenID/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - halldc

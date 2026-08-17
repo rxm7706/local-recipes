@@ -2,34 +2,33 @@
 schema_version: 1
 
 context:
+  name: psycopg2-yugabytedb
   version: "2.9.3.5"
 
 package:
-  name: psycopg2-yugabytedb
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/p/psycopg2-yugabytedb/psycopg2_yugabytedb-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: af41d31a910435377483b0034eba6e0da1f2f8b2b5171e78e9439f8fdd66fdbc
 
 build:
   number: 0
-  skip:
-    - match(python, ">=3.13")
+  skip: match(python, ">=2,<3")
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   build:
     - ${{ compiler('c') }}
-    - ${{ stdlib('c') }}
+    - ${{ stdlib("c") }}
     - if: build_platform != target_platform
-      then:
-        - python
-        - cross-python_${{ target_platform }}
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
   host:
     - python
     - pip
-    - setuptools
     - libpq
   run:
     - python
@@ -38,20 +37,16 @@ requirements:
 
 tests:
   - python:
-      # https://github.com/yugabyte/yugabyte-db/issues/12283
-      # For now, psycopg2-yugabytedb has the same underlying library (psycopg2)
-      # as the upstream driver which when installed together override one
-      # another based on the sequence of installation.
       imports:
-        - psycopg2
       pip_check: true
+  - <conda_recipe_manager.types.SentinelType object at 0x7c4a922fdbe0>:
+      - psycopg2
 
 about:
   summary: Yugabyte Psycopg2 driver is a distributed python driver for YugabyteDB built on the PostgreSQL psycopg2 driver.
   license: MPL-2.0-no-copyleft-exception
   license_file: LICENSE
   homepage: https://github.com/yugabyte/psycopg2
-  repository: https://github.com/yugabyte/psycopg2
 
 extra:
   recipe-maintainers:

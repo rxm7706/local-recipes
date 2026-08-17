@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.0"
+
+package:
+  name: load-dotenv
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/load-dotenv/load-dotenv-${{ version }}.tar.gz
+  sha256: bbe5f40072d4a61eadca66de6c222df5a2d935d6d41b703be1ff75396f635145
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - python-dotenv
+
+tests:
+  - python:
+      imports:
+        - load_dotenv
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/fly/load-dotenv
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Automatically and implicitly load environment variables from .env file
+  description: |
+    Automatically and implicitly load environment variables from .env file
+  repository: https://github.com/fly/load-dotenv
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: load-dotenv
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: load-dotenv
+  cfe-purls:
+    - pkg:conda/load-dotenv@${{ version }}?channel=conda-forge
+    - pkg:pypi/load-dotenv@${{ version }}
+  cfe-upstream-repo: https://github.com/fly/load-dotenv
+  cfe-upstream-homepage: https://github.com/fly/load-dotenv
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:56:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:56:31Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

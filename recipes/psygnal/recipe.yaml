@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: psygnal
+  version: "0.15.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 5534f18e2d1536675e181c6f81cf04f4177b25a9e60fdcf724a25ce5cc195765
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install --no-deps . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - hatchling >=1.8.0
+    - hatch-vcs
+  run:
+    - python >=${{ python_min }}
+    - typing_extensions  # not actually required at runtime
+    - wrapt  # provides 'proxy' extra
+
+tests:
+  - python:
+      imports:
+        - psygnal
+        - psygnal.containers
+        - psygnal.utils
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Pure python implementation of Qt Signals
+  homepage: https://github.com/tlambert03/psygnal
+  repository: https://github.com/tlambert03/psygnal
+  documentation: https://psygnal.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - tlambert03

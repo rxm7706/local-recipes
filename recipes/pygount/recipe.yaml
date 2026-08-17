@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: pygount
   version: "3.2.0"
 
 package:
-  name: pygount
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/p/pygount/pygount-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pygount-${{ version }}.tar.gz
   sha256: 27b03a6c6d791c4920003eec361a3c38ccd815637c51f5536efb9e47db1d452a
 
 build:
@@ -22,7 +23,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - hatchling
     - pip
   run:
@@ -30,18 +31,18 @@ requirements:
     - chardet >=5,<6
     - gitpython >=3.1,<4.0
     - pygments >=2,<3
-    - rich >=14
+    - rich >=9
 
 tests:
   - python:
       imports:
         - pygount
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
   - requirements:
       run:
+        - pip
+        - python ${{ python_min }}
         - git
     script:
       - pygount --help
@@ -51,12 +52,6 @@ about:
   license: BSD-3-Clause
   license_file: LICENSE.txt
   homepage: https://github.com/roskakori/pygount
-  repository: https://github.com/roskakori/pygount
-  documentation: https://pygount.readthedocs.io
-  description: |
-    pygount counts lines of source code (SLOC) using pygments lexers to
-    distinguish code, comments, and empty lines across many programming
-    languages.
 
 extra:
   recipe-maintainers:

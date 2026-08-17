@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.18.0"
+  spacy_model: en_core_web_sm
+
+package:
+  name: torchtext
+  version: ${{ version }}
+
+source:
+  url: https://github.com/pytorch/text/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: fe4eb4b361388ef7840dcad117ae95b32252db5520c4eb2b3bead627468fbdf2
+  patches:
+    # don't build pytorch/text/tree/main/third_party; pull in from conda-forge
+    - patches/0001-do-not-build-third_party-libs.patch
+    # make sure we install from $PREFIX and into $SP_DIR/torchtext
+    - patches/0002-fix-some-CMake-arguments-for-our-infrastructure.patch
+    # remove spurious run requirements from installation requirements
+    - patches/0003-remove-unnecessary-installation-requirements.patch
+    - patches/0004-don-t-try-to-init-submodules.patch
+    - patches/0005-fix-path-inconsistency-in-test.patch
+    # work around behaviour change in pytorch 2.6
+    - patches/0006-allow-torch.load-to-load-more-than-weights-as-previo.patch
+
+build:
+  # no pytorch on windows in conda-forge, see
+  # https://github.com/conda-forge/pytorch-cpu-feedstock/issues/32
+  # to ensure we get the right version without extra suffixes, c.f.
+  # https://github.com/pytorch/text/blob/v0.18.0/packaging/pkg_helpers.bash#L114
+  number: 4
+  skip: win
+  script:
+    env:
+      BUILD_VERSION: ${{ version }}
+    content: ${{ PYTHON }} -m pip install . --no-deps -vv
+  dynamic_linking:
+    rpaths:
+      - lib/
+      - ${{ SP_DIR }}/torch/lib
+      - ${{ SP_DIR }}/torchtext/lib
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib('c') }}
+    - cmake
+    - ninja
+    - pkg-config
+  host:
+    - python
+    - pip
+    - setuptools
+    - numpy
+    - pytorch
+    # from pytorch/text/tree/main/third_party
+    - double-conversion
+    - libsentencepiece
+    - libutf8proc
+    - re2
+  run:
+    - python
+    - nltk
+    - requests
+    - revtok ==0.0.3.1
+    - sacremoses
+    - spacy
+    - tqdm
+  run_constraints:
+    - torchdata <0.10
+
+tests:
+  - python:
+      imports:
+        - torchtext
+        - torchtext.datasets
+        - torchtext.data
+        - torchtext.nn
+        - torchtext.vocab
+      pip_check: true
+  - files:
+      source:
+        - test/
+    requirements:
+      run:
+        - pip
+        - pytest
+        - expecttest
+        - parameterized
+        - portalocker >=2
+        - spacy-model-${{ spacy_model }}
+        - torchdata >=0.6
+    script:
+      - pytest test/torchtext_unittest -v -k "not (${{ tests_to_skip }})" --durations=10
+      - pytest test/integration_tests -v -k "not large" --durations=10
+      - if: unix
+        then: test -f $SP_DIR/torchtext-${{ version }}.dist-info/METADATA
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Data loaders and abstractions for text and NLP
+  homepage: https://pytorch.org/text
+  repository: https://github.com/pytorch/text
+
+extra:
+  recipe-maintainers:
+    - h-vetinari
+    - giswqs

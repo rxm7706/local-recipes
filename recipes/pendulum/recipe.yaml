@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pendulum
+  version: 3.2.0
+
+package:
+  name: pendulum
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pendulum-${{ version }}.tar.gz
+  sha256: e80feda2d10fa3ff8b1526715f7d33dcb7e08494b3088f2c8a3ac92d4a4331ce
+  patches:
+    - 0001-remove-tzdata-dep-for-pip-check.patch
+
+build:
+  number: 2
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - maturin >=1.0,<2.0
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('rust') }}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - maturin >=1.0,<2.0
+    - poetry-core
+    - pip
+  run:
+    - python
+    - python-dateutil >=2.6
+    - tzdata >=2020.1
+    # from test extra
+    - time-machine >=2.6.0,<3.0.0
+
+tests:
+  - python:
+      imports:
+        - pendulum
+      pip_check: true
+  - script:
+      - python -c "from pendulum._pendulum import parse_iso8601"
+      - python -c "from pendulum._helpers import days_in_year"
+
+about:
+  license: MIT
+  license_file:
+    - THIRDPARTY.yml
+    - LICENSE
+  summary: Python datetimes made easy
+  description: |
+    Drop-in replacement for the standard datetime class.
+    It behaves exactly like it but with many improvements.
+  homepage: https://pendulum.eustace.io
+  repository: https://github.com/sdispater/pendulum
+  documentation: https://pendulum.eustace.io/docs/
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - xylar

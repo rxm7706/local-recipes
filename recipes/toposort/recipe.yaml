@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: toposort
+  version: "1.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/toposort-${{ version }}.tar.gz
+  sha256: bfbb479c53d0a696ea7402601f4e693c97b0367837c8898bc6471adfca37a6bd
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - toposort
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  summary: Implements a topological sort algorithm
+  homepage: https://gitlab.com/ericvsmith/toposort
+
+extra:
+  recipe-maintainers:
+    - bgruening
+    - jakirkham
+    - johanneskoester
+    - ocefpaf
+    - dlaehnemann

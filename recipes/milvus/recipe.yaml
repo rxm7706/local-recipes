@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.3.9"
+
+package:
+  name: milvus
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/m/milvus/milvus-2.3.9-py3-none-macosx_12_0_arm64.whl
+  sha256: 2e770b1cb76d8f4ba0e3ce1c2e49bdb9cd38222f8662762db9d794e577dac826
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - milvus
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/milvus-io/milvus-lite
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Embeded Milvus
+  description: |
+    Embeded Milvus
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: milvus
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: milvus
+  cfe-purls:
+    - pkg:conda/milvus@${{ version }}?channel=conda-forge
+    - pkg:pypi/milvus@${{ version }}
+  cfe-upstream-repo: https://github.com/milvus-io/milvus-lite
+  cfe-upstream-homepage: https://github.com/milvus-io/milvus-lite
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:48:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:48:22Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

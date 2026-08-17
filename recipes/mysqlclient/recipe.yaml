@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mysqlclient
+  version: "2.2.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 8ed20c5615a915da451bb308c7d0306648a4fd9a2809ba95c992690006306199
+
+build:
+  number: 1
+  script:
+    - if: unix
+      then:
+        - python -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - pkg-config
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools
+    # provides mysql-libs via a run_export
+    - mysql-devel
+    - if: win
+      then: mariadb-connector-c ==3.4.3
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - MySQLdb
+        - MySQLdb.constants
+        - MySQLdb.cursors
+
+about:
+  license: GPL-2.0-or-later
+  license_file: LICENSE
+  summary: Python interface to MySQL
+  homepage: https://github.com/PyMySQL/mysqlclient-python
+  documentation: https://mysqlclient.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - InterferencePattern
+    - halldc
+    - synapticarbors

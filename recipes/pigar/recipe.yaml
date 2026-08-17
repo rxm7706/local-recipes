@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pigar
+  version: "2.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pigar-${{ version }}.tar.gz
+  sha256: 870f43fc6da703fd9c62ed1a7f4a81ceb4e0336cce60be4c16bd7c3ebfe9f95b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - pigar = pigar.__main__:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=69.0
+    - wheel
+    - pip
+  run:
+    - cryptography
+    - docutils
+    - pyopenssl
+    - sphinx
+    - python >=${{ python_min }}
+    - click >=8.1
+    - nbformat >=5.7
+    - aiohttp >=3.9
+    - colorama
+
+tests:
+  - python:
+      imports:
+        - pigar
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pigar --help
+
+about:
+  summary: A tool to generate requirements.txt for Python project.
+  license: MIT AND BSD-3-Clause
+  license_file:
+    - LICENSE
+    - pigar/_vendor/pip/LICENSE.txt
+  homepage: https://github.com/damnever/pigar
+  repository: https://github.com/damnever/pigar
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - rxm7706

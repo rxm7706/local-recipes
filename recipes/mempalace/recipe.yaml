@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.7.1"
+
+package:
+  name: mempalace
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mempalace/mempalace-${{ version }}.tar.gz
+  sha256: 4e7602fc89b763ad525c7bc71a65a07017f39f5912cfa6496be5109ce992d331
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - chromadb <2,>=1.5.4
+    - huggingface-hub >=0.20
+    - numpy >=1.24
+    - python-dateutil >=2.8
+    - pyyaml <7,>=6.0
+    - tokenizers >=0.15
+    - tomli >=2.0.0
+
+tests:
+  - python:
+      imports:
+        - mempalace
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/MemPalace/mempalace
+  license: MIT
+  license_file: LICENSE
+  summary: Give your AI a memory — mine projects and conversations into a searchable palace. No API key required.
+  description: |
+    Give your AI a memory — mine projects and conversations into a searchable palace. No API key required.
+  repository: https://github.com/MemPalace/mempalace
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mempalace
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mempalace
+  cfe-purls:
+    - pkg:conda/mempalace@${{ version }}?channel=conda-forge
+    - pkg:pypi/mempalace@${{ version }}
+  cfe-upstream-repo: https://github.com/MemPalace/mempalace
+  cfe-upstream-homepage: https://github.com/MemPalace/mempalace
+  cfe-import-names: [mempalace]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:38:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:38:22Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

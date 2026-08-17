@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: tempdir
+  version: "0.7.1"
+  sha256: 689680ed3ba4cc8347a70e67efc25086ce85b53b9d24a1420899c585bbf7ba8e
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - tempdir
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: docs/license.rst
+  summary: generate temporary directories
+  description: |
+    Having to manually manage temporary directories is annoying.
+    So this class encapsulates temporary directories which just disappear after use,
+    including contained directories and files.
+    Temporary directories are created with tempfile.mkdtemp and thus save from race conditions.
+    Cleanup might not work on windows if files are still opened.
+
+
+  homepage: https://pypi.python.org/pypi/tempdir/
+
+extra:
+  recipe-maintainers:
+    - kain88-de

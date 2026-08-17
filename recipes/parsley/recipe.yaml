@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: Parsley
+  version: "1.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 9444278d47161d5f2be76a767809a3cbe6db4db822f46a4fd7481d4057208d41
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - ometa
+        - terml
+        - ometa._generated
+        - terml._generated
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Parsing and pattern matching made easy.
+  description: |
+    Parsley is a pattern matching and parsing tool for Python programmers.
+  homepage: https://github.com/pyga/parsley
+  repository: https://github.com/pyga/parsley
+  documentation: http://parsley.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - danilomendesdias
+    - iamthebot

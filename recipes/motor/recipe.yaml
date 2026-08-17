@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: motor
+  version: "3.7.1"
+  sha256: 27b4d46625c87928f331a6ca9d7c51c2f518ba0e270939d395bc1ddc89d64526
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-cache-dir --no-build-isolation
+
+requirements:
+  host:
+    - pip
+    - aiohttp
+    - hatchling >=1.24
+    - hatch-requirements-txt >=0.4.1
+    - tornado >=6.0
+    - pymongo >=4.9,<5
+    - python ${{ python_min }}
+  run:
+    - aiohttp
+    - tornado >=6.0
+    - pymongo >=4.9,<5
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - motor
+        - motor.aiohttp
+        - motor.frameworks
+        - motor.frameworks.asyncio
+        - motor.frameworks.tornado
+      pip_check: true
+      python_version: ${{ python_min }}
+  - files:
+      recipe:
+        - run_the_tests.sh
+      source:
+        - .
+    requirements:
+      run:
+        - mongodb
+        - setuptools
+        - pytest
+        - mockupdb
+        - pymongo >=4.9,<5
+        - pip
+        - python ${{ python_min }}
+    script:
+      - bash run_the_tests.sh
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Non-blocking MongoDB driver for Tornado or asyncio
+  homepage: https://github.com/mongodb/motor/
+  repository: https://github.com/mongodb/motor
+  documentation: https://motor.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - sleepystick
+    - noahstapp
+    - aclark4life
+    - caseyclements
+    - jibola
+    - hodgsonw
+    - ShaneHarvey
+    - blink1073
+    - hodgsonw

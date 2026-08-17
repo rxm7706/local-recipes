@@ -2,29 +2,30 @@
 schema_version: 1
 
 context:
+  name: wagtail-rangefilter
   version: "0.2.1"
 
 package:
-  name: wagtail-rangefilter
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/w/wagtail-rangefilter/wagtail-rangefilter-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail-rangefilter-${{ version }}.tar.gz
   sha256: 74fde188e13e44766f1e106c91be540ca1cdf032251f233d6b3e4ea7ecd57ace
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - flit-core >=3.2,<4
     - pip
   run:
     - python >=${{ python_min }}
-    - django-admin-rangefilter >=0.12
+    - django-admin-rangefilter
     - django >=3.2
     - wagtail >=4.1
 
@@ -33,19 +34,13 @@ tests:
       imports:
         - wagtail_rangefilter
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Integrates django-admin-rangefilter into Wagtail's ModelAdmin
   license: BSD-3-Clause
   license_file: LICENSE
   homepage: https://github.com/wunderweiss/wagtail-rangefilter
-  repository: https://github.com/wunderweiss/wagtail-rangefilter
-  description: |
-    Integrates django-admin-rangefilter into Wagtail's ModelAdmin, providing
-    date and datetime range filters for the Wagtail admin interface.
 
 extra:
   recipe-maintainers:

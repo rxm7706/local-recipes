@@ -1,0 +1,93 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.1"
+
+package:
+  name: mcp-docs
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mcp-docs/mcp_docs-${{ version }}.tar.gz
+  sha256: a70407a03ba4972dd4ba8cbd63ecacd1c62069e0e47399bf61c628cc752fd64e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=45
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - utils
+    - typer >=0.9.0
+    - chromadb >=0.5.5
+    - openai >=1.28.0
+    - playwright >=1.40.0
+    - beautifulsoup4 >=4.12.3
+    - requests >=2.32.3
+    - python-dotenv >=1.0.0
+    - mcp >=0.1.0
+    - numpy >=1.24.0
+    - lxml >=5.3.0
+    - html2text >=2024.2.26
+    - markdown >=3.6
+
+tests:
+  - python:
+      imports:
+        - utils
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/mcp-docs/
+  license: MIT
+  license_file: LICENSE
+  summary: Turn any documentation site into an MCP server
+  description: |
+    Turn any documentation site into an MCP server
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mcp-docs
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mcp-docs
+  cfe-purls:
+    - pkg:conda/mcp-docs@${{ version }}?channel=conda-forge
+    - pkg:pypi/mcp-docs@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/mcp-docs/
+  cfe-upstream-homepage: https://pypi.org/project/mcp-docs/
+  cfe-import-names: [utils]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:47:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:47:24Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

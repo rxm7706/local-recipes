@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: wagtail-import-export-tool
+  version: "0.9.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail-import-export-tool-${{ version }}.tar.gz
+  sha256: 2b574b1cf40bce45476a6ec08c23fce91a696074e966940168a215bb6bfaa4e9
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - wagtail >=5.0
+
+tests:
+  - python:
+      imports:
+        - wagtailimportexport
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Import/Export tool for Wagtail CMS (built on top of Django), that supports pages, images, documents, and snippets.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/berkalpyakici/wagtail-import-export-tool
+
+extra:
+  recipe-maintainers:
+    - rxm7706

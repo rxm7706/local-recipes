@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2020.1"
+
+package:
+  name: pytzdata
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pytzdata/pytzdata-${{ version }}.tar.gz
+  sha256: 3efa13b335a00a8de1d345ae41ec78dd11c9f8807f522d39850f2dd828681540
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pytzdata
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Official timezone database for Python
+  homepage: https://github.com/sdispater/pytzdata
+
+extra:
+  recipe-maintainers:
+    - mcs07
+    - ocefpaf

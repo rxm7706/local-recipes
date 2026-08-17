@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: empty-files
+  version: "0.0.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/empty-files-${{ version }}.tar.gz
+  sha256: 22e74de327271ef9592a661aaa53bb1d5fa6cfd539dac7315625c8b30b7292ae
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - requests
+
+tests:
+  - python:
+      imports:
+        - empty_files
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Serves empty files of many types
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/approvals/EmptyFiles.Python
+
+extra:
+  recipe-maintainers:
+    - apmorton

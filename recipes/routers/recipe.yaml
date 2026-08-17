@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.3"
+  python_min: "3.14"
+
+package:
+  name: routers
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/routers/routers-${{ version }}.tar.gz
+  sha256: 4c224265148d3393f73c96d755e25677916e356cfb1d8b21e24e775e11c8352e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - cryptography
+    - opn-api >=0.4.0
+    - pyfsense-client >=0.5.0
+    - python-decouple
+    - python-dotenv
+    - redis-py
+
+tests:
+  - python:
+      imports:
+        - routers
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/devinbarry/routers
+  license: MIT
+  license_file: LICENSE
+  summary: A Python client library for both OPNsense and pfSense.
+  description: |
+    A Python client library for both OPNsense and pfSense.
+  documentation: https://github.com/devinbarry/routers
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: routers
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: routers
+  cfe-purls:
+    - pkg:conda/routers@${{ version }}?channel=conda-forge
+    - pkg:pypi/routers@${{ version }}
+  cfe-upstream-repo: https://github.com/devinbarry/routers
+  cfe-upstream-homepage: https://github.com/devinbarry/routers
+  cfe-import-names: [routers]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:16:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:16:17Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

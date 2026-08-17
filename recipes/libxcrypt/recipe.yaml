@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "4.4.38"
+
+recipe:
+  name: libxcrypt-split
+  version: ${{ version }}
+
+source:
+  url: https://github.com/besser82/libxcrypt/releases/download/v${{ version }}/libxcrypt-${{ version }}.tar.xz
+  sha256: 80304b9c306ea799327f01d9a7549bdb28317789182631f1b54f4511b4206dd6
+
+build:
+  number: 0
+  skip: win
+
+outputs:
+  - package:
+      name: libxcrypt
+    build:
+      skip: win
+      script:
+        file: build
+        env:
+          OBSOLETE_API: "no"
+    requirements:
+      build:
+        - ${{ stdlib("c") }}
+        - ${{ compiler("c") }}
+        - make
+        - pkg-config
+        # We get perl from yum to avoid creating a dependency cycle
+        # - perl
+      run_exports:
+        # The ABI is very stable
+        - ${{ pin_subpackage('libxcrypt', upper_bound=None) }}
+    tests:
+      - package_contents:
+          # see below
+          # include: crypt.h
+          # lib: crypt
+          files:
+            exists:
+              # moved here due to https://github.com/prefix-dev/rattler-build/issues/2722
+              - include/crypt.h
+              - if: linux
+                then: lib/libcrypt.so
+                else: lib/libcrypt.dylib
+              # pkgconfig metadata
+              - lib/pkgconfig/libxcrypt.pc
+              # correct SOVER
+              - if: linux
+                then: lib/libcrypt.so.2
+                else: lib/libcrypt.2.dylib
+            not_exists:
+              # incorrect SOVER
+              - if: linux
+                then: lib/libcrypt.so.1
+                else: lib/libcrypt.1.dylib
+
+  # the difference is OBSOLETE_API
+  - package:
+      name: libxcrypt1
+    build:
+      skip: not linux
+      script:
+        file: build
+        env:
+          OBSOLETE_API: "glibc"
+    requirements:
+      build:
+        - ${{ stdlib("c") }}
+        - ${{ compiler("c") }}
+        - make
+        - pkg-config
+        - perl
+    tests:
+      - package_contents:
+          files:
+            exists:
+              - lib/libcrypt.so.1
+            not_exists:
+              # should be in libxcrypt output
+              - include/crypt.h
+              - lib/libcrypt.so
+              - lib/libcrypt.dylib
+              - lib/pkgconfig/libxcrypt.pc
+
+about:
+  homepage: https://github.com/besser82/libxcrypt
+  repository: https://github.com/besser82/libxcrypt
+  license: LGPL-2.1-or-later
+  license_file:
+    - COPYING.LIB
+    - LICENSING
+  summary: Extended crypt library for descrypt, md5crypt, bcrypt, and others
+
+extra:
+  recipe-maintainers:
+    - chrisburr
+    - mbargull
+    - h-vetinari
+  feedstock-name: libxcrypt

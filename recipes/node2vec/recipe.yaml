@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: node2vec
+  version: "0.3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ac54fd882897e61662d3d17251efa86f59d1b2113025f89060aaa4b66986376f
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - networkx
+    - fuzzytm
+    - gensim
+    - numpy
+    - tqdm
+    - joblib
+
+tests:
+  - python:
+      imports:
+        - node2vec
+      pip_check: true
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: The node2vec algorithm learns continuous representations for nodes in any (un)directed, (un)weighted graph.
+  description: |
+    The node2vec algorithm learns continuous representations for nodes in any (un)directed, (un)weighted graph.
+  homepage: https://github.com/eliorc/node2vec
+  repository: https://github.com/eliorc/node2vec
+  documentation: http://snap.stanford.edu/node2vec/
+
+extra:
+  recipe-maintainers:
+    - llperez
+    - cu8blank

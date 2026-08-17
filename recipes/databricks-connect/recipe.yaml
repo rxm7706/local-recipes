@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "19.1"
+
+package:
+  name: databricks-connect
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py2.py3/d/databricks-connect/databricks_connect-19.1-py2.py3-none-any.whl
+  sha256: 3c7c12c2e3916ecb0fcb0b5a5d069c2bfc5945c2dc10c72d579c44520bd36eec
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - py4j <0.10.9.10,>=0.10.9.7
+    - six
+    - pandas <3,>=1.0.5
+    - pyarrow <25,>=11.0.0
+    - grpcio <2,>=1.76.0
+    - grpcio-status <2,>=1.76.0
+    - googleapis-common-protos <2,>=1.71.0
+    - zstandard <1,>=0.23.0
+    - numpy <3,>=1.15
+    - databricks-sdk <1,>=0.122.0
+    - packaging >=23.2
+    - setuptools >=68.0.0
+
+tests:
+  - python:
+      imports:
+        - databricks_connect
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/databricks-connect/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Databricks Connect Client
+  description: |
+    Databricks Connect Client
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: databricks-connect
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: databricks-connect
+  cfe-purls:
+    - pkg:conda/databricks-connect@${{ version }}?channel=conda-forge
+    - pkg:pypi/databricks-connect@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/databricks-connect/
+  cfe-upstream-homepage: https://pypi.org/project/databricks-connect/
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:52:18Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:52:18Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

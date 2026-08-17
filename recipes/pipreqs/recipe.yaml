@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.0"
+  sha256: f33298d235ff76def369cb9a3594d084d9badc70cebba1e8cb271fcd4fdc0183
+
+package:
+  name: pipreqs
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/p/pipreqs/pipreqs-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script:
+    # remove strict dependency pins
+    - sed -i -e '/tool\.poetry\.dependencies/,$s:"\([0-9]\):">=\1:' pyproject.toml
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - pipreqs = pipreqs.pipreqs:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - yarg >=0.1.9
+    - docopt >=0.6.2
+    - nbconvert >=7.11.0,<8
+    - ipython >=8.12.3
+
+tests:
+  - python:
+      imports:
+        - pipreqs
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pipreqs --help
+
+about:
+  summary: Pip requirements.txt generator based on imports in project
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/bndr/pipreqs
+
+extra:
+  recipe-maintainers:
+    - proinsias
+    - ericmjl

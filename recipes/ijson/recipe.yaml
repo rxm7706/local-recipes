@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.5.1"
+
+package:
+  name: ijson
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/i/ijson/ijson-${{ version }}.tar.gz
+  sha256: af40bd1a85f55db0b8b30715c858761306bd92d5590148636f75c3309e6e76bd
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=77.0
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - ijson
+        - ijson.backends
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Ijson is an iterative JSON parser with a standard Python iterator interface.
+  homepage: https://github.com/ICRAR/ijson
+  repository: https://github.com/ICRAR/ijson
+  documentation: https://github.com/ICRAR/ijson
+
+extra:
+  recipe-maintainers:
+    - rmax
+    - synapticarbors

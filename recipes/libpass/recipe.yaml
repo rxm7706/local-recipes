@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: libpass
+  version: "1.9.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/libpass-${{ version }}.tar.gz
+  sha256: 7830b9323d9ba96a841ad698a8dec1d43a2b0b7f1c855c76772e7972c1c6d959
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - passlib
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Fork of passlib, a comprehensive password hashing framework supporting over 30 schemes
+  license: BSD-4-Clause-UC
+  license_file: LICENSE
+  homepage: https://github.com/notypecheck/passlib
+
+extra:
+  recipe-maintainers:
+    - nicoddemus

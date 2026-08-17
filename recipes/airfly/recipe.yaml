@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: airfly
   version: "1.1.0"
 
 package:
-  name: airfly
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/a/airfly/airfly-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/airfly-${{ version }}.tar.gz
   sha256: ac8ee0fa19003b141c536969479915609dc560c5b61c02ef8dda5d15ad08109d
 
 build:
@@ -42,10 +43,8 @@ tests:
   - python:
       imports:
         - airfly
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
   - requirements:
       run:
         - pip

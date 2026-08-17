@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: image
+  version: "1.5.33"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/image-${{ version }}.tar.gz
+  sha256: baa2e09178277daa50f22fd6d1d51ec78f19c12688921cb9ab5808743f097126
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+    - pillow
+    - django
+    - six
+
+tests:
+  - python:
+      imports:
+        - image
+      pip_check: true
+
+about:
+  summary: Django application that provides cropping, resizing, thumbnailing, overlays and masking for images and videos with the ability to set the center of attention,
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/francescortiz/image
+
+extra:
+  recipe-maintainers:
+    - rxm7706

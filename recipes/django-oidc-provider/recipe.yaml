@@ -37,9 +37,14 @@ tests:
 
 about:
   summary: OpenID Connect Provider implementation for Django.
+  homepage: https://github.com/juanifioren/django-oidc-provider
+  description: |
+    OpenID Connect Provider implementation for Django.
+  repository: https://github.com/juanifioren/django-oidc-provider
+  documentation: https://django-oidc-provider.readthedocs.org
   license: MIT
-  license_file: LICENSE
-  homepage: http://github.com/juanifioren/django-oidc-provider
+  license_file:
+    - LICENSE
 
 extra:
   recipe-maintainers:

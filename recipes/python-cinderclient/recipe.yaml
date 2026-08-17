@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-cinderclient
+  version: "9.9.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 697e4d12c249f39b41ecf4fa6fcb8c38cbf2d6b2d84d6f515ed567b82dcd0bd1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - cinder = cinderclient.shell:main
+
+requirements:
+  host:
+    - pbr
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - pbr
+    - prettytable >=0.7.2
+    - keystoneauth1 >=5.0.0
+    - oslo.i18n >=5.0.1
+    - oslo.utils >=4.8.0
+    - python >=${{ python_min }}
+    - requests >=2.25.1
+    - stevedore >=3.3.0
+
+tests:
+  - python:
+      imports:
+        - cinderclient
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: OpenStack Block Storage API Client Library
+  homepage: https://docs.openstack.org/python-cinderclient/latest/
+  repository: https://opendev.org/openstack/python-cinderclient
+  documentation: https://docs.openstack.org/python-cinderclient/latest/
+
+extra:
+  recipe-maintainers:
+    - tschoonj

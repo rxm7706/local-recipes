@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pamqp
+  version: "4.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 9dd13b828e346622793981f14a5df817fce5de998c746209d6c0154eb8403970
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pamqp
+        - pamqp.frame
+        - pamqp.body
+        - pamqp.frame
+        - pamqp.decode
+        - pamqp.encode
+        - pamqp.exceptions
+        - pamqp.heartbeat
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: pamqp is a pure-python AMQP 0-9-1 frame encoder and decoder
+  description: |
+    pamqp is a pure-python AMQP 0-9-1 frame encoder and decoder. The aim is to create a client agnostic python encoder and decoder for general purpose use.
+  homepage: https://github.com/gmr/pamqp
+  repository: https://github.com/gmr/pamqp
+  documentation: https://pamqp.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - akrherz
+    - gregfreeman

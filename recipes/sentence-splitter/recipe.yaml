@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4"
+
+package:
+  name: sentence-splitter
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sentence-splitter/sentence_splitter-${{ version }}.tar.gz
+  sha256: 3d1d773d07cc733ca2955aa87d0fa1c0a7274c6bdeec1daac5c5e92efb512f63
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - regex
+
+tests:
+  - python:
+      imports:
+        - sentence_splitter
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/berkmancenter/mediacloud-sentence-splitter
+  license: LGPL-3.0-only
+  license_file: LICENSE
+  summary: Text to sentence splitter using heuristic algorithm by Philipp Koehn and Josh Schroeder
+  description: |
+    Text to sentence splitter using heuristic algorithm by Philipp Koehn and Josh Schroeder
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sentence-splitter
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sentence-splitter
+  cfe-purls:
+    - pkg:conda/sentence-splitter@${{ version }}?channel=conda-forge
+    - pkg:pypi/sentence-splitter@${{ version }}
+  cfe-upstream-repo: https://github.com/berkmancenter/mediacloud-sentence-splitter
+  cfe-upstream-homepage: https://github.com/berkmancenter/mediacloud-sentence-splitter
+  cfe-import-names: [sentence_splitter]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:59:57Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:59:57Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.14.1"
+
+package:
+  name: geos
+  version: ${{ version }}
+
+source:
+  url: https://download.osgeo.org/geos/geos-${{ version }}.tar.bz2
+  sha256: 3c20919cda9a505db07b5216baa980bacdaa0702da715b43f176fb07eff7e716
+  patches:
+    - patches/0001-unconditional-geos-pc.patch
+
+build:
+  number: 0
+  skip: win and vc<14
+
+requirements:
+  build:
+    - cmake
+    - if: not win
+      then: make
+    - if: win
+      then: ninja
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+  run_exports:
+    - ${{ pin_subpackage('geos', upper_bound='x.x.x') }}
+
+tests:
+  - script:
+      - if: not win
+        then: geos-config --version
+      - geosop --help
+      - geosop -a "POINT (0 0)" buffer 1
+
+about:
+  license: LGPL-2.1-only
+  license_file: COPYING
+  summary: Geometry Engine, Open Source
+  description: |
+    GEOS is a C++ library for performing operations on two-dimensional vector
+    geometries. It is primarily a port of the JTS Topology Suite Java library.
+    It provides many of the algorithms used by PostGIS, the Shapely package
+    for Python, the sf package for R, and others.
+  homepage: https://libgeos.org/
+  repository: https://github.com/libgeos/geos
+  documentation: https://libgeos.org/
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - pelson
+    - gillins
+    - msarahan
+    - mwtoews
+    - xylar

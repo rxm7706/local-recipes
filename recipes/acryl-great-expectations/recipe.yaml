@@ -1,0 +1,109 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.15.50.1"
+
+package:
+  name: acryl-great-expectations
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/acryl-great-expectations/acryl_great_expectations-${{ version }}.tar.gz
+  sha256: 8693a1f7d848867c1eec6122e6e46a87541cd1d537a63cb40782886186df1c1a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - altair <4.2.1,>=4.0.0
+    - click >=7.1.2
+    - colorama >=0.4.3
+    - cryptography >=3.2
+    - importlib-metadata >=1.7.0
+    - ipython >=7.16.3
+    - ipywidgets >=7.5.1
+    - jinja2 >=2.10
+    - jsonpatch >=1.22
+    - jsonschema >=2.5.1
+    - makefun <2,>=1.7.0
+    - marshmallow <4.0.0,>=3.7.1
+    - mistune >=0.8.4
+    - nbformat >=5.0
+    - notebook >=6.4.10
+    - numpy >=1.18.5
+    - packaging
+    - pandas >=1.1.0
+    - pydantic >=1.9.2
+    - pyparsing >=2.4
+    - python-dateutil >=2.8.1
+    - pytz >=2021.3
+    - requests >=2.20
+    - ruamel.yaml <0.17.18,>=0.16
+    - scipy >=0.19.0
+    - tqdm >=4.59.0
+    - typing_extensions >=3.10.0.0
+    - tzlocal >=1.2
+    - urllib3 <1.27,>=1.25.4
+
+tests:
+  - python:
+      imports:
+        - great_expectations
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/great-expectations/great_expectations
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Always know what to expect from your data.
+  description: |
+    Always know what to expect from your data.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: acryl-great-expectations
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: acryl-great-expectations
+  cfe-purls:
+    - pkg:conda/acryl-great-expectations@${{ version }}?channel=conda-forge
+    - pkg:pypi/acryl-great-expectations@${{ version }}
+  cfe-upstream-repo: https://github.com/great-expectations/great_expectations
+  cfe-upstream-homepage: https://github.com/great-expectations/great_expectations
+  cfe-import-names: [great_expectations]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:47:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:47:58Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0"
+
+package:
+  name: pyg
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pyg/pyg-${{ version }}.tar.gz
+  sha256: 836a7ede027326016a2136259133f782aa65a237f17f2979d6643ba1529fb326
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pyg
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://pyg.readthedocs.org/
+  license: MIT
+  license_file: LICENSE
+  summary: Python Package Manager
+  description: |
+    Python Package Manager
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyg
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyg
+  cfe-purls:
+    - pkg:conda/pyg@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyg@${{ version }}
+  cfe-upstream-repo: http://pyg.readthedocs.org/
+  cfe-upstream-homepage: http://pyg.readthedocs.org/
+  cfe-import-names: [pyg]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:05:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:05:54Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

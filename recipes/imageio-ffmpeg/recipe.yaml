@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: imageio-ffmpeg
+  version: "0.6.0"
+  sha256: e2556bed8e005564a9f925bb7afa4002d82770d6b08825078b7697ab88ba1755
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - setuptools
+    - ffmpeg
+
+tests:
+  - python:
+      imports:
+        - imageio_ffmpeg
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  summary: FFMPEG wrapper for Python
+  license: BSD-2-Clause
+  license_file: LICENSE
+  homepage: https://github.com/imageio/imageio-ffmpeg
+  repository: https://github.com/imageio/imageio-ffmpeg
+  documentation: https://github.com/imageio/imageio-ffmpeg
+
+extra:
+  recipe-maintainers:
+    - anjos
+    - almarklein

@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: opentelemetry-instrumentation-pymongo
+  version: 0.65b0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_pymongo-${{ version }}.tar.gz
+  sha256: 8a43f368f7dd101622d2b5929b0c12c4099a0c4a072284b86d18b75dfee10007
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - opentelemetry-api ~=1.12
+    - opentelemetry-instrumentation ==0.65b0
+    - opentelemetry-semantic-conventions ==0.65b0
+    # - pymongo <5.0,>=3.1
+    # - opentelemetry-test-utils ==0.37b0
+    # - opentelemetry-instrumentation-pymongo
+    # - pymongo <5.0,>=3.1
+    # - opentelemetry-test-utils ==0.38b0
+    # - opentelemetry-instrumentation-pymongo
+    # - pymongo <5.0,>=3.1
+    # - opentelemetry-test-utils ==0.39b0
+    # - opentelemetry-instrumentation-pymongo
+    # - pymongo <5.0,>=3.1
+    # - opentelemetry-test-utils ==0.40b0
+    # - opentelemetry-instrumentation-pymongo
+    # - pymongo <5.0,>=3.1
+    # - opentelemetry-test-utils ==0.41b0
+    # - opentelemetry-instrumentation-pymongo
+    # - pymongo <5.0,>=3.1
+    # - opentelemetry-test-utils ==0.42b0
+    # - opentelemetry-instrumentation-pymongo
+    # - pymongo <5.0,>=3.1
+    # - opentelemetry-test-utils ==0.43b0
+    # - opentelemetry-instrumentation-pymongo
+    # - pymongo <5.0,>=3.1
+    # - opentelemetry-test-utils ==0.44b0
+    # - opentelemetry-instrumentation-pymongo
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+    # - pymongo <5.0,>=3.1
+
+tests:
+  - python:
+      imports:
+        - opentelemetry
+        - opentelemetry.instrumentation
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: OpenTelemetry pymongo instrumentation
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-pymongo
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk

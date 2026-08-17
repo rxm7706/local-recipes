@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "8.3.0"
+
+package:
+  name: cx_oracle
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/cx_Oracle/cx_Oracle-${{ version }}.tar.gz
+  sha256: 3b2d215af4441463c97ea469b9cc307460739f89fdfa8ea222ea3518f1a424d9
+  patches:
+    - if: win and vc<14
+      then: 0001-Add-macro-for-isnan-msvc-2008.patch
+
+build:
+  number: 6
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - cx_Oracle
+      pip_check: false
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Python interface to Oracle
+  homepage: https://oracle.github.io/python-cx_Oracle
+  repository: https://github.com/oracle/python-cx_Oracle
+  documentation: https://cx-oracle.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - lincrosenbach
+    - kfasolin
+    - nicoddemus

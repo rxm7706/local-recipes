@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.1"
+
+package:
+  name: python-cron
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/python-cron/python-cron-${{ version }}.tar.gz
+  sha256: 3be6febfb0e13af9fe70ad3f099e82b10778c544f160bbbfa6ab88b0ff7d7a3c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - croniter
+
+tests:
+  - python:
+      imports:
+        - pycron
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/whdev1/pycron
+  license: MIT
+  license_file: LICENSE
+  summary: A simple Python library providing cron functionality via the use of a single decorator.
+  description: |
+    A simple Python library providing cron functionality via the use of a single decorator.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-cron
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-cron
+  cfe-purls:
+    - pkg:conda/python-cron@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-cron@${{ version }}
+  cfe-upstream-repo: https://github.com/whdev1/pycron
+  cfe-upstream-homepage: https://github.com/whdev1/pycron
+  cfe-import-names: [pycron]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:40:55Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:40:55Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P5 Create-recipe local-only. python-cron.
+####

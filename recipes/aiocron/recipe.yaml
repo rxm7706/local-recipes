@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: aiocron
+  version: "2.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/aiocron-${{ version }}.tar.gz
+  sha256: 1bb65a36aee137e8833592783956e0c7dc478bc3e9273fc2841d5d0c6045e4d2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - cronsim >=2.6
+    - python-dateutil >=2.9.0
+    - tzlocal >=5.2
+
+tests:
+  - python:
+      imports:
+        - aiocron
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Crontabs for asyncio
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/gawel/aiocron/
+
+extra:
+  recipe-maintainers:
+    - apmorton

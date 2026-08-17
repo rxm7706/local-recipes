@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: deepface
+  version: "0.0.89"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/deepface-${{ version }}.tar.gz
+  sha256: 92c803fbb234a6601bf2b5540d8e635ba0dfd24aa697e3b0eae52b71285e2050
+
+build:
+  # https://github.com/serengil/deepface/issues/486
+  number: 0
+  skip: win
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - deepface = deepface.DeepFace:cli
+
+requirements:
+  host:
+    - pip
+    - python
+  run:
+    - fire >=0.4.0
+    - flask >=1.1.2
+    - gdown >=3.10.1
+    - keras >=2.2.0
+    - mtcnn >=0.1.0
+    - numpy >=1.14.0
+    - opencv >=4.5.5
+    - pandas >=0.23.4
+    - pillow >=5.2.0
+    - python
+    - retina-face >=0.0.1
+    - tensorflow >=1.9.0
+    - tqdm >=4.30.0
+
+tests:
+  - python:
+      imports:
+        - deepface
+      pip_check: false
+  - script:
+      - deepface --help
+
+about:
+  summary: A Lightweight Face Recognition and Facial Attribute Analysis Framework (Age, Gender, Emotion, Race) for Python
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/serengil/deepface
+
+extra:
+  recipe-maintainers:
+    - serengil
+    - BastianZim

@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.6.2"
+
+package:
+  name: y-py
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/y/y_py/y_py-${{ version }}.tar.gz
+  sha256: 4757a82a50406a0b3a333aa0122019a331bd6f16e49fed67dca423f928b3fd4d
+
+build:
+  number: 1
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: maturin ${{ maturin_version }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('rust') }}
+    - cargo-bundle-licenses
+  host:
+    - maturin ${{ maturin_version }}
+    - pip
+    - python
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - y_py
+      pip_check: true
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - pip
+        - pytest-cov
+    script:
+      - pytest --cov=y_py --cov-branch --cov-report=term-missing:skip-covered --no-cov-on-fail --cov-fail-under=83
+
+about:
+  license: MIT
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  summary: Python bindings for the Rust port of Yjs
+  homepage: https://github.com/y-crdt/ypy
+  repository: https://github.com/y-crdt/ypy
+
+extra:
+  recipe-maintainers:
+    - davidbrochart
+    - Waidhoferj
+    - fcollonval

@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyngo
+  version: "2.5.0"
+  python_min: "3.12"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyngo-${{ version }}.tar.gz
+  sha256: 6743c522744595cdbb88b1ab8597c9ba89a95a5f9b44b6dfe24243d1102126ba
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.12.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - typing_extensions >=4.15.0,<4.18.0
+    - pydantic >=2.12,<2.14.0
+    - django >=3.2.0,<6.2.0
+
+tests:
+  - python:
+      imports:
+        - pyngo
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Pydantic Package for Adding Models into a Django or Django Rest Framework Project
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/yezz123/pyngo
+
+extra:
+  recipe-maintainers:
+    - rxm7706

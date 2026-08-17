@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: webdriver-manager
+  version: "4.1.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/webdriver_manager-${{ version }}.tar.gz
+  sha256: 230515ff4dc4c2feff1add25306ca262421b31016d77ded305e8dd921266445f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools >=69
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - requests
+    - python-dotenv
+    - packaging
+
+tests:
+  - python:
+      imports:
+        - webdriver_manager
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Library provides the way to automatically manage drivers for different browsers
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/SergeyPirogov/webdriver_manager
+
+extra:
+  recipe-maintainers:
+    - thewchan

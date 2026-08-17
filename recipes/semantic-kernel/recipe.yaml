@@ -1,0 +1,108 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.44.1"
+
+package:
+  name: semantic-kernel
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/semantic-kernel/semantic_kernel-${{ version }}.tar.gz
+  sha256: 594b07b348463407fe666e40269564ab0096bebf92bb3c7a7432e8c0036c5a7b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core >=3.9,<4.0
+  run:
+    - python >=${{ python_min }}
+    - azure-ai-projects <2.5,>=1.0
+    - azure-ai-agents >=1.2.0b3
+    - aiohttp ~=3.8
+    - cloudevents <3,>=1
+    - pydantic !=2.10.0,!=2.10.1,!=2.10.2,!=2.10.3,<2.14,>=2.0
+    - pydantic-settings ~=2.0
+    - defusedxml ~=0.7
+    - azure-identity >=1.13
+    - numpy >=1.25.0
+    - openai >=2.0.0
+    - openapi-core <0.20,>=0.18
+    - websockets <16,>=13
+    - aiortc >=1.9.0
+    - opentelemetry-api ~=1.24
+    - opentelemetry-sdk ~=1.24
+    - prance <26.7.20,>=23.6.21
+    - pybars4 ~=0.9
+    - jinja2 ~=3.1
+    - nest-asyncio ~=1.6
+    - scipy >=1.15.1
+    - typing_extensions >=4.13
+    - mcp <2.0,>=1.26.0
+    - if: osx
+      then:
+        - pinecone
+    - if: win
+      then:
+        - pinecone
+
+tests:
+  - python:
+      imports:
+        - semantic_kernel
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://learn.microsoft.com/en-us/semantic-kernel/overview/
+  license: MIT
+  license_file: LICENSE
+  summary: Semantic Kernel Python SDK
+  description: |
+    Semantic Kernel Python SDK
+  repository: https://github.com/microsoft/semantic-kernel/tree/main/python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: semantic-kernel
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: semantic-kernel
+  cfe-purls:
+    - pkg:conda/semantic-kernel@${{ version }}?channel=conda-forge
+    - pkg:pypi/semantic-kernel@${{ version }}
+  cfe-upstream-repo: https://github.com/microsoft/semantic-kernel/tree/main/python
+  cfe-upstream-homepage: https://learn.microsoft.com/en-us/semantic-kernel/overview/
+  cfe-import-names: [semantic_kernel]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:17:28Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:17:28Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

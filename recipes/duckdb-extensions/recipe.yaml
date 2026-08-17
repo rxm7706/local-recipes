@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.5.5"
+
+package:
+  name: duckdb-extensions
+  version: ${{ version }}
+
+source:
+  url: https://github.com/santosh-d3vpl3x/duckdb_extensions/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: dca246c309b2b750d994d5461a3ddf3bb1f2179422e9d9207b0b516f4977b77a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - python-duckdb ==1.5.5
+    - importlib_resources >=3.0.0
+
+tests:
+  - python:
+      imports:
+        - duckdb_extensions
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/duckdb-extensions/
+  license: MIT
+  license_file: LICENSE
+  summary: DuckDB extensions as python package
+  description: |
+    DuckDB extensions as python package
+  repository: https://github.com/santosh-d3vpl3x/duckdb_extensions
+  documentation: https://github.com/santosh-d3vpl3x/duckdb_extensions#readme
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: duckdb-extensions
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: duckdb-extensions
+  cfe-purls:
+    - pkg:conda/duckdb-extensions@${{ version }}?channel=conda-forge
+    - pkg:pypi/duckdb-extensions@${{ version }}
+  cfe-upstream-repo: https://github.com/santosh-d3vpl3x/duckdb_extensions
+  cfe-upstream-homepage: https://pypi.org/project/duckdb-extensions/
+  cfe-import-names: [duckdb_extensions]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:52:20Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:52:20Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

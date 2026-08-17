@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: requests-unixsocket
+  version: "0.2.0"
+  sha256: 9e5c1a20afc3cf786197ae59c79bcdb0e7565f218f27df5f891307ee8817c1ea
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  host:
+    - pip
+    - python
+    - setuptools
+    - pbr >=1.3,<2
+  run:
+    - python
+    - requests >=1.11,<3
+    - urllib3 >=1.8,<2
+
+tests:
+  - python:
+      imports:
+        - requests_unixsocket
+      pip_check: false
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Use requests to talk HTTP via a UNIX domain socket
+  homepage: https://github.com/msabramo/requests-unixsocket
+
+extra:
+  recipe-maintainers:
+    - sodre

@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "42.4"
+
+package:
+  name: pydeephaven
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/p/pydeephaven/pydeephaven-42.4-py3-none-any.whl
+  sha256: 37822b4b81af68b1292eecb77102c070c419216062770bde560b39019583b74c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pyarrow
+    - bitstring
+    - grpcio
+    - protobuf
+    - numpy
+    - pandas
+
+tests:
+  - python:
+      imports:
+        - pydeephaven
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://deephaven.io/
+  license: MIT
+  license_file: LICENSE
+  summary: The Deephaven Python Client
+  description: |
+    The Deephaven Python Client
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pydeephaven
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pydeephaven
+  cfe-purls:
+    - pkg:conda/pydeephaven@${{ version }}?channel=conda-forge
+    - pkg:pypi/pydeephaven@${{ version }}
+  cfe-upstream-repo: https://deephaven.io/
+  cfe-upstream-homepage: https://deephaven.io/
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:57:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:57:41Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

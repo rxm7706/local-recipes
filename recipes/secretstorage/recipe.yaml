@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.5.0"
+
+package:
+  name: secretstorage
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/S/SecretStorage/secretstorage-${{ version }}.tar.gz
+  sha256: f04b8e4689cbce351744d5537bf6b1329c6fc68f91fa666f60a380edddcd11be
+
+build:
+  number: 0
+  skip: win or osx or match(python, "<3.10")
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python
+    - pip
+    - setuptools >=77.0
+  run:
+    - python
+    - jeepney >=0.6
+    - cryptography >=2.0
+    - dbus
+
+tests:
+  - python:
+      imports:
+        - secretstorage
+      pip_check: false
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Provides a way for securely storing passwords and other secrets.
+  description: |
+    This module provides a way for securely storing passwords and other secrets.
+    It uses D-Bus Secret Service API that is supported by GNOME Keyring (since
+    version 2.30) and KSecretsService.
+    The main classes provided are secretstorage.Item, representing a secret item
+    (that has a label, a secret and some attributes) and secretstorage.Collection,
+    a place items are stored in.
+    SecretStorage supports most of the functions provided by Secret Service,
+    including creating and deleting items and collections, editing items, locking
+    and unlocking collections (asynchronous unlocking is also supported).
+  homepage: https://github.com/mitya57/secretstorage
+  repository: https://github.com/mitya57/secretstorage
+  documentation: https://secretstorage.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - CurtLH
+    - ccordoba12

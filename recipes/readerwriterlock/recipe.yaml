@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: readerwriterlock
+  version: "1.0.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/readerwriterlock-${{ version }}.tar.gz
+  sha256: b7c4cc003435d7a8ff15b312b0a62a88d9800ba6164af88991f87f8b748f9bea
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - typing-extensions
+
+tests:
+  - python:
+      imports:
+        - readerwriterlock
+      pip_check: true
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - pip
+        - pytest
+        - python ${{ python_min }}
+    script:
+      - if: win
+        then: set PYTHONUTF8=1
+      - pytest -vvv --capture=tee-sys tests
+
+about:
+  summary: A python implementation of the three Reader-Writer problems.
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/elarivie/pyReaderWriterLock
+
+extra:
+  recipe-maintainers:
+    - thewchan

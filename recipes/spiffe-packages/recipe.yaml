@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3.1"
+  spiffe_tls_version: "0.4.0"
+
+recipe:
+  name: spiffe-packages
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/s/spiffe/spiffe-${{ version }}.tar.gz
+    sha256: 61ce83f4af7d41fed1e68f8c67081f169c963a8640a6abc813a7752f7aabbcaf
+    target_directory: spiffe
+  - url: https://pypi.org/packages/source/s/spiffe-tls/spiffe_tls-${{ spiffe_tls_version }}.tar.gz
+    sha256: 412e94a86b0229e70608ce12d1387c36484fa04c1037aec73dbf88003b95dffd
+    target_directory: spiffe-tls
+
+build:
+  number: 0
+  noarch: python
+
+outputs:
+  - package:
+      name: spiffe
+      version: ${{ version }}
+    build:
+      noarch: python
+      script:
+        - cd spiffe
+        - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --ignore-installed --no-index
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - pip
+        - setuptools
+        - poetry-core >=1.9.0
+      run:
+        - python >=${{ python_min }}
+        - grpcio >=1.80
+        - cryptography >=46,<47
+        - pyjwt >=2
+        - pyasn1
+        - pyasn1-modules
+        - protobuf
+        - pem >=23
+    tests:
+      - python:
+          python_version: ${{ python_min }}.*
+          imports:
+            - spiffe
+
+  - package:
+      name: spiffe-tls
+      version: ${{ spiffe_tls_version }}
+    build:
+      noarch: python
+      script:
+        - cd spiffe-tls
+        - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --ignore-installed --no-index
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - pip
+        - setuptools
+        - poetry-core >=1.9.0
+      run:
+        - python >=${{ python_min }}
+        - pyopenssl >=26,<27
+        - idna
+        - spiffe
+      run_constraints:
+        - spiffe ==${{ version }}
+    tests:
+      - python:
+          python_version: ${{ python_min }}.*
+          imports:
+            - spiffetls
+
+about:
+  homepage: https://github.com/HewlettPackard/py-spiffe
+  repository: https://github.com/HewlettPackard/py-spiffe
+  license: Apache-2.0
+  license_file: spiffe/LICENSE
+  summary: Python library for SPIFFE support
+
+extra:
+  recipe-maintainers:
+    - JohanMabille
+    - martinRenou

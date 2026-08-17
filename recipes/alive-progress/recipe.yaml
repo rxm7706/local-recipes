@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: alive-progress
+  version: "3.3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 457dd2428b48dacd49854022a46448d236a48f1b7277874071c39395307e830c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4
+    - about-time ==4.2.1
+    - graphemeu ==0.7.2
+
+tests:
+  - python:
+      imports:
+        - alive_progress
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A new kind of Progress Bar, with real-time throughput, ETA, and very cool animations!
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/rsalmei/alive-progress
+
+extra:
+  recipe-maintainers:
+    - Brainor
+    - marcelotrevisani

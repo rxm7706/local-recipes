@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cloud-sql-python-connector
+  version: 1.21.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: a5295627caa588c5c4b7b718d1954b8cf43de1dba9749b60b756984a1ea9cb21
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - aiohttp
+    - cryptography >=42.0.0
+    - dnspython >=2.0.0
+    - requests
+    - google-auth >=2.28.0
+    - grpcio
+    - protobuf
+    - googleapis-common-protos
+tests:
+  - python:
+      imports:
+        - google
+        - google.cloud
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  summary: The Cloud SQL Python Connector is a library that can be used alongside a database driver to allow users with sufficient permissions to connect to a Cloud SQL database without having to manually allowlist IPs or manage SSL certificates.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/GoogleCloudPlatform/cloud-sql-python-connector
+
+extra:
+  recipe-maintainers:
+    - janjagusch

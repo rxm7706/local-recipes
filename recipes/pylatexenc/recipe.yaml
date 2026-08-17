@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pylatexenc
+  version: "2.11"
+  sha256: 5f622ef586dbffeb8ccd6ac210431ff0acf41d74275de179696e38006c28b862
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/phfaist/pylatexenc/archive/v${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - latexwalker = pylatexenc.latexwalker.__main__:main
+      - latex2text = pylatexenc.latex2text.__main__:main
+      - latexencode = pylatexenc.latexencode.__main__:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pylatexenc
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - latexwalker --help
+      - latex2text --help
+      - latexencode --help
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Simple LaTeX parser providing latex-to-unicode and unicode-to-latex conversion
+  homepage: https://github.com/phfaist/pylatexenc
+  repository: https://github.com/phfaist/pylatexenc
+  documentation: https://pylatexenc.readthedocs.io/en/latest
+
+extra:
+  recipe-maintainers:
+    - milljm

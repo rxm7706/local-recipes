@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2025.9.1"
+
+package:
+  name: jsonschema-specifications
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/jsonschema-specifications/jsonschema_specifications-${{ version }}.tar.gz
+  sha256: b540987f239e745613c7a9176f3edb72b832a4ac465cf02712288397832b5e8d
+  # src is copied to a temp dir to avoid in-tree build-system issues
+  target_directory: src
+
+build:
+  number: 0
+  noarch: python
+  script:
+    file: builder.py
+    interpreter: python
+
+requirements:
+  host:
+    - hatch-vcs
+    - hatchling
+    - pip
+    - python ${{ python_min }}.*
+    - python-build
+  run:
+    - python >=${{ python_min }}
+    - referencing >=0.31.0
+
+tests:
+  - python:
+      imports: jsonschema_specifications
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - 3.13.*
+  - requirements:
+      run:
+        - pytest
+        - coverage
+        - python ${{ python_min }}.*
+    script:
+      - coverage run --source jsonschema_specifications --branch -m pytest -vv --color=yes --tb=long --pyargs jsonschema_specifications
+      - coverage report --show-missing --skip-covered --fail-under=96
+
+about:
+  summary: The JSON Schema meta-schemas and vocabularies, exposed as a Registry
+  license: MIT
+  license_file: src/COPYING
+  homepage: https://github.com/python-jsonschema/jsonschema-specifications
+  documentation: https://jsonschema-specifications.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

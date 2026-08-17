@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.0"
+
+package:
+  name: msg-parser
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/msg-parser/msg_parser-${{ version }}.tar.gz
+  sha256: 0de858d4fcebb6c8f6f028da83a17a20fe01cdce67c490779cf43b3b0162aa66
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - olefile
+
+tests:
+  - python:
+      imports:
+        - msg_parser
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/vikramarsid/msg_parser
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: This module enables reading, parsing and converting Microsoft Outlook MSG E-Mail files.
+  description: |
+    This module enables reading, parsing and converting Microsoft Outlook MSG E-Mail files.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: msg-parser
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: msg-parser
+  cfe-purls:
+    - pkg:conda/msg-parser@${{ version }}?channel=conda-forge
+    - pkg:pypi/msg-parser@${{ version }}
+  cfe-upstream-repo: https://github.com/vikramarsid/msg_parser
+  cfe-upstream-homepage: https://github.com/vikramarsid/msg_parser
+  cfe-import-names: [msg_parser]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:25:11Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:25:11Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

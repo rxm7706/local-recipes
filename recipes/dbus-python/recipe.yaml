@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4.0"
+
+package:
+  name: dbus-python
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/dbus-python/dbus-python-${{ version }}.tar.gz
+  sha256: 991666e498f60dbf3e49b8b7678f5559b8a65034fdf61aae62cdecdb7d89c770
+
+build:
+  number: 0
+  skip: win
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - make
+    - if: unix
+      then: pkg-config
+    # extras for cross-compilation
+    - if: build_platform != target_platform
+      then:
+        - cross-python_${{ target_platform }}
+        - meson >=0.60.0
+        - python
+  host:
+    - dbus
+    - glib
+    - meson >=0.60.0
+    - meson-python >=0.8.1
+    - pip >=21.3
+    - python
+  run:
+    - dbus
+    - python
+
+tests:
+  - python:
+      imports:
+        - dbus
+      pip_check: true
+
+about:
+  license: MIT
+  license_file: COPYING
+  summary: Python bindings for dbus
+  description: |
+    D-Bus is a message bus, used for sending messages between applications.
+    Conceptually, it fits somewhere in between raw sockets and CORBA in
+    terms of complexity.
+
+    This package provides a Python interface to D-Bus.
+
+    See the dbus description for more information about D-Bus in general.
+  homepage: http://www.freedesktop.org/wiki/Software/DBusBindings/#python
+  repository: https://gitlab.freedesktop.org/dbus/dbus-python
+  documentation: https://dbus.freedesktop.org/doc/dbus-python/
+
+extra:
+  recipe-maintainers:
+    - duncanmmacleod
+    - mgorny

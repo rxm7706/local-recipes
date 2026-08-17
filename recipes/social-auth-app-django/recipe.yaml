@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  python_min: "3.10"
+  name: social-auth-app-django
+  version: "6.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/social_auth_app_django-${{ version }}.tar.gz
+  sha256: 43002de0530e2ad13ef067f54aba7185a05fc8527310006c5328dc0b5e7a4cfd
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.10.*
+    - setuptools >=78.0.2
+    - pip
+  run:
+    - asgiref >=3.8.1
+    - python >=${{ python_min }}
+    - django >=5.2
+    - social-auth-core >=5.0.0,<6.0.0
+
+tests:
+  - python:
+      imports:
+        - social_django
+        - social_django.management
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Python Social Authentication, Django integration.
+  homepage: https://github.com/python-social-auth/social-app-django
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: wagtail-seo
   version: "3.1.1"
 
 package:
-  name: wagtail-seo
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/w/wagtail-seo/wagtail_seo-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail_seo-${{ version }}.tar.gz
   sha256: 8dbd2648f9c5c1a6c185a2253bd505bc50242867b0a3eacfa938332444b80923
 
 build:
@@ -23,7 +24,7 @@ requirements:
     - setuptools >=65.0
     - pip
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
     - wagtail >=4.0,<8.0
 
 tests:
@@ -31,9 +32,7 @@ tests:
       imports:
         - wagtailseo
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}.*
 
 about:
   summary: Search engine and social media optimization for Wagtail.

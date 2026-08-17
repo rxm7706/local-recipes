@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: svgelements
+  version: 1.9.6
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/svgelements-${{ version }}.tar.gz
+  sha256: 7c02ad6404cd3d1771fd50e40fbfc0550b0893933466f86a6eb815f3ba3f37f7
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - svgelements
+      pip_check: true
+      python_version: ${{ python_min }}.*
+about:
+  summary: Svg Elements Parsing
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/meerk40t/svgelements
+
+extra:
+  recipe-maintainers:
+    - pavelzw

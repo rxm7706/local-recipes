@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyflame
+  version: "1.5.2"
+  checksum: d56f3c8a4cff5864126b9349440423027d67ec918c8b134c932a90bbc70cc923
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/uber/pyflame/archive/v${{ version }}.tar.gz
+  sha256: ${{ checksum }}
+
+build:
+  number: 1003
+  skip: match(python, ">3.6")
+  skip: true  # [py>36]
+
+requirements:
+  build:
+    - autoconf
+    - automake
+    - libtool
+    - pkg-config
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+  run:
+    - python
+
+tests:
+  - script:
+      - test -f $PREFIX/bin/pyflame
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Pyflame is a ptracing profiler for Python.
+  homepage: https://pyflame.readthedocs.io/en/latest/
+  repository: https://github.com/uber/pyflame
+
+extra:
+  recipe-maintainers:
+    - eklitzke
+    - xhochy

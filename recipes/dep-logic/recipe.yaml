@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dep-logic
+  version: "0.7.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dep_logic-${{ version }}.tar.gz
+  sha256: 4bf66e3b323e0c30d2ed268c44efd69c179c10cdf499c28ca316c2cb49e95ee2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pdm-backend
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - packaging >=22
+
+tests:
+  - python:
+      imports:
+        - dep_logic
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Python dependency specifications supporting logical operations
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/pdm-project/dep-logic
+
+extra:
+  recipe-maintainers:
+    - xhochy

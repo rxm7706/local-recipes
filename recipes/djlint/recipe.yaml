@@ -2,15 +2,16 @@
 schema_version: 1
 
 context:
-  version: "1.39.2"
+  name: djlint
+  version: "1.44.2"
 
 package:
-  name: djlint
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/djlint/djlint-${{ version }}.tar.gz
-  sha256: dd27ef03bd26d1e0a167da26ec2a6fcb511dddd032b2553abf71a5c31eaa8b34
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/djlint-${{ version }}.tar.gz
+  sha256: 29944d512818b59d9a1c4ab31851143b456edd327f892329bd3ee3cf7d5da4e9
 
 build:
   number: 0
@@ -22,32 +23,36 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - hatchling
     - pip
   run:
     - python >=${{ python_min }}
-    - click >=8.0.1
+    - typing_extensions >=4.3.0
+    - click >=8.2.0
     - colorama >=0.4.4
-    - cssbeautifier >=1.14.4
-    - jsbeautifier >=1.14.4
-    - json5 >=0.9.11
-    - pathspec >=0.12
-    - pyyaml >=6
-    - regex >=2023
+    - cssbeautifier >=1.13.0
+    - html-tag-names >=0.1.2
+    - html-void-elements >=0.1
+    - jsbeautifier >=1.13.0
+    - json5 >=0.10.0
+    - pathspec >=0.9.0
+    - pyyaml >=5.1
+    - regex >=2022.6.2
     - tomli >=2.0.1
     - tqdm >=4.62.2
-    - typing_extensions >=3.7.4
 
 tests:
   - python:
       imports:
         - djlint
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
-  - script:
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+        - pip
+    script:
       - djlint --help
 
 about:
@@ -55,12 +60,6 @@ about:
   license: GPL-3.0-or-later
   license_file: LICENSE
   homepage: https://github.com/djlint/djLint
-  repository: https://github.com/djlint/djLint
-  documentation: https://djlint.com
-  description: |
-    djLint is an HTML template linter and formatter. It supports a range of
-    template languages (Django, Jinja, Nunjucks, Handlebars, GoLang, Angular)
-    and can lint for common formatting issues and reformat templates in place.
 
 extra:
   recipe-maintainers:

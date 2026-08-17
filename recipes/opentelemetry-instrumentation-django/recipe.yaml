@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: opentelemetry-instrumentation-django
+  version: 0.65b0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_django-${{ version }}.tar.gz
+  sha256: f79914e03ccf7f34a4dfd257ea9fa1236a6568cd1756e5f969dc026252fad6e9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - opentelemetry-api ~=1.12
+    - opentelemetry-instrumentation-wsgi ==0.65b0
+    - opentelemetry-instrumentation ==0.65b0
+    - opentelemetry-semantic-conventions ==0.65b0
+    - opentelemetry-util-http ==0.65b0
+    - django >=2.0
+    # - opentelemetry-instrumentation-asgi ==0.58b0
+    # - opentelemetry-instrumentation-asgi ==0.59b0
+    # - opentelemetry-instrumentation-asgi ==0.60b0
+    # - opentelemetry-instrumentation-asgi ==0.60b1
+    # - opentelemetry-instrumentation-asgi ==0.61b0
+    # - opentelemetry-instrumentation-asgi ==0.62b0
+    # - opentelemetry-instrumentation-asgi ==0.63b0
+    # - opentelemetry-instrumentation-asgi ==0.63b1
+    # - opentelemetry-instrumentation-asgi ==0.64b0
+    # - opentelemetry-instrumentation-asgi ==0.65b0
+
+tests:
+  - python:
+      imports:
+        - opentelemetry
+        - opentelemetry.instrumentation
+        - opentelemetry.instrumentation.django
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: OpenTelemetry Instrumentation for Django
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-django
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk
+    - conda-forge/opentelemetry-api

@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.3"
+
+package:
+  name: sqlean
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sqlean/sqlean-${{ version }}.tar.gz
+  sha256: 0bf4f287eb67925a476c56c3528cae22dd1c9cd9a27343a6fd5452ee8de3933c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=1.0.0
+  run:
+    - python >=${{ python_min }}
+    - black
+    - lark
+    - pydantic
+    - rich
+    - tomli
+    - typer
+
+tests:
+  - python:
+      imports:
+        - sqlean
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/oliverxchen/sqlean
+  license: MIT
+  license_file: LICENSE
+  summary: Clean your SQL queries
+  description: |
+    Clean your SQL queries
+  repository: https://github.com/oliverxchen/sqlean
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sqlean
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sqlean
+  cfe-purls:
+    - pkg:conda/sqlean@${{ version }}?channel=conda-forge
+    - pkg:pypi/sqlean@${{ version }}
+  cfe-upstream-repo: https://github.com/oliverxchen/sqlean
+  cfe-upstream-homepage: https://github.com/oliverxchen/sqlean
+  cfe-import-names: [sqlean]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:34:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:34:08Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
-  version: "1.4.0"
+  name: django-colorful
+  version: 1.4.0
 
 package:
-  name: django-colorful
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-colorful/django_colorful-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: f668374b20f6d8135a2de4534ca0d6d8bdb3d46235db8664a8d8532e5af0f66e
 
 build:
@@ -20,28 +21,24 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
+    - colorful
+    - django
     - pip
-    - setuptools >=64
-    - setuptools-scm >=8
+    - setuptools
   run:
-    - python >=${{ python_min }}
-    - django >=4.2
-
+    - python >=${{ python_min }},<4.0
 tests:
   - python:
       imports:
         - colorful
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
   summary: An extension to the Django web framework that provides database and form color fields
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/charettes/django-colorful
-  repository: https://github.com/charettes/django-colorful
 
 extra:
   recipe-maintainers:

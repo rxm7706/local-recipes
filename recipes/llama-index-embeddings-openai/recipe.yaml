@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: llama-index-embeddings-openai
+  version: "0.6.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/llama_index_embeddings_openai-${{ version }}.tar.gz
+    sha256: eb3e6606be81cb89125073e23c97c0a6119dabb4827adbd14697c2029ad73f29
+  # https://github.com/run-llama/llama_index/issues/10806
+  - url: https://raw.githubusercontent.com/run-llama/llama_index/main/LICENSE
+    sha256: 24f40b5190fdacabc24ddbb5f76364d15e4f030925220ea300d8a2dd4993c8cb
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - openai >=1.1.0
+    - python >=${{ python_min }},<4.0
+    - llama-index-core >=0.13.0,<0.15
+
+tests:
+  - python:
+      imports:
+        - llama_index.embeddings.openai
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: llama-index embeddings openai integration
+  license: MIT
+  license_file: LICENSE
+  homepage: https://llamaindex.ai
+  repository: https://github.com/run-llama/llama_index/tree/main/llama-index-integrations/embeddings/llama-index-embeddings-openai
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - pavelzw

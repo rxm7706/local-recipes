@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.0"
+
+package:
+  name: local-gemma
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/local-gemma/local_gemma-${{ version }}.tar.gz
+  sha256: 04ff93fd2bd925a2b0e3d5f59cf4c7107a7bc1c6fa1745b93b64f92595601e9d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - setuptools
+    - pytorch >=2.1.1
+    - accelerate >=0.33.0
+    - transformers >=4.44.0
+
+tests:
+  - python:
+      imports:
+        - local_gemma
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/local-gemma/
+  license: MIT
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+  description: |
+    REPLACE_DESCRIPTION
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: local-gemma
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: local-gemma
+  cfe-purls:
+    - pkg:conda/local-gemma@${{ version }}?channel=conda-forge
+    - pkg:pypi/local-gemma@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/local-gemma/
+  cfe-upstream-homepage: https://pypi.org/project/local-gemma/
+  cfe-import-names: [local_gemma]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:44:28Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:44:28Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

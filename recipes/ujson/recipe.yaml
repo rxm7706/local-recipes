@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ujson
+  version: "5.13.0"
+  sha256: d62e3d7625384c08082abad81a077af587fdef2761bb14c3822f4234b8d07d75
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: d62e3d7625384c08082abad81a077af587fdef2761bb14c3822f4234b8d07d75
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+    - pip
+    - setuptools >=77
+    - setuptools_scm >=3.4
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - ujson
+      pip_check: true
+
+about:
+  summary: Ultra fast JSON decoder and encoder written in C with Python bindings
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  homepage: https://github.com/ultrajson/ultrajson
+  repository: https://github.com/ultrajson/ultrajson
+
+extra:
+  recipe-maintainers:
+    - thewchan
+    - kszucs
+    - synapticarbors

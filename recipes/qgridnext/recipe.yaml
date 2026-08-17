@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: qgridnext
+  version: "2.0.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/qgridnext-${{ version }}.tar.gz
+  sha256: 5312d688f133fb9622ccf819f5bef99d6df86a343122cc193c35801a732a5ccc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pandas >=0.20.0
+    - ipywidgets >=7.0.0
+    - numpy
+    - traitlets
+
+tests:
+  - python:
+      imports:
+        - qgrid
+        - qgridnext
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: An Interactive Grid for Sorting and Filtering DataFrames in Jupyter
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/zhihanyue/qgridnext
+
+extra:
+  recipe-maintainers:
+    - giswqs

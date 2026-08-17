@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+#     - pytest -vvv --capture=tee-sys -k "not TestKeyboard and not TestPyScreezeFunctions and not test__normalizeXYArgs" tests  # [win]
+#     - pytest -vvv --capture=tee-sys -k "not TestKeyboard and not TestPyScreezeFunctions and not test__normalizeXYArgs and not TestMouse and not TestFailSafe" tests  # [linux]
+#     - pytest
+schema_version: 1
+
+context:
+  name: pyautogui
+  version: "0.9.54"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/PyAutoGUI-${{ version }}.tar.gz
+  sha256: dd1d29e8fd118941cb193f74df57e5c6ff8e9253b99c7b04f39cfc69f3ae04b2
+
+build:
+  number: 5
+  skip: match(python, "<3.6")
+  script:
+    - if: not linux
+      then: ${{ PYTHON }} -m pip install . -vv
+    - if: linux
+      then: DISPLAY=localhost:1.0 xvfb-run ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - pip
+    - python
+    - if: linux
+      then: python-xlib
+    - if: osx
+      then: pyobjc-framework-quartz
+    - setuptools
+  run:
+    - mouseinfo
+    - if: not linux
+      then: pygetwindow >=0.0.5
+    - pymsgbox
+    - if: osx
+      then: pyobjc-core
+    - if: osx
+      then: pyobjc-framework-quartz
+    - pyscreeze >=0.1.21
+    - python
+    - pytweening >=1.0.4
+    - if: linux
+      then: python-xlib
+
+tests:
+  - python:
+      imports:
+        - if: not linux
+          then: pyautogui
+      pip_check: false
+  - files:
+      source:
+        - tests
+    script:
+      - if: linux
+        then: export DISPLAY=:99
+      - if: linux
+        then: xvfb-run python -c "import mouseinfo"  &
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: A cross-platform module for GUI automation for human beings. Control the keyboard and mouse from a Python script.
+  homepage: https://github.com/asweigart/pyautogui
+
+extra:
+  recipe-maintainers:
+    - thewchan
+    - jschueller
+
+<conda_recipe_manager.types.SentinelType object at 0x7be944a29be0>:  #     - pytest -vvv --capture=tee-sys -k "not TestKeyboard and not TestPyScreezeFunctions and not test__normalizeXYArgs and not test_pause" tests  # [osx]
+  requires:
+    - pip

@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: taipy-templates
   version: "4.1.1"
 
 package:
-  name: taipy-templates
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/t/taipy-templates/taipy_templates-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: 762e972160ef601a78be08737fcaf6adbf8657d0ac1952431df3cf57e6ba1e13
 
 build:
@@ -19,31 +20,24 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }},<3.13
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - taipy
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: An open-source package holding Taipy application templates.
   license: Apache-2.0
   license_file: LICENSE
   homepage: https://github.com/avaiga/taipy-templates
-  repository: https://github.com/Avaiga/taipy
-  description: |
-    An open-source package holding Taipy application templates. Provides
-    cookiecutter-based scaffolding (default and scenario-data-management
-    templates) for bootstrapping new Taipy applications.
 
 extra:
   recipe-maintainers:

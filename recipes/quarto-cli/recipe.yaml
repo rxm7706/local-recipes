@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.10.18"
+
+package:
+  name: quarto-cli
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/q/quarto-cli/quarto_cli-${{ version }}.tar.gz
+  sha256: 20b8b672384ce9bf8a05fcc9e23f1e1f3ad6b9cb7657a476756da8f427101571
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.0
+  run:
+    - python >=${{ python_min }}
+    - jupyter
+    - nbclient
+    - wheel
+
+tests:
+  - python:
+      imports:
+        - quarto_cli
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://www.quarto.org
+  license: MIT
+  license_file: LICENSE
+  summary: Open-source scientific and technical publishing system built on Pandoc.
+  description: |
+    Open-source scientific and technical publishing system built on Pandoc.
+  repository: https://www.github.com/quarto-dev/quarto-cli
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: quarto-cli
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: quarto-cli
+  cfe-purls:
+    - pkg:conda/quarto-cli@${{ version }}?channel=conda-forge
+    - pkg:pypi/quarto-cli@${{ version }}
+  cfe-upstream-repo: https://www.github.com/quarto-dev/quarto-cli
+  cfe-upstream-homepage: https://www.quarto.org
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:09:39Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:09:39Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

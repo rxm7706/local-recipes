@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Need these up here for conda-smithy to handle them properly.
+schema_version: 1
+
+context:
+  version: "0.1.10"
+
+package:
+  name: dm-tree
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/dm-tree/dm_tree-${{ version }}.tar.gz
+  sha256: 22f37b599e01cc3402a17f79c257a802aebd8d326de05b54657650845956208a
+  patches:
+    - patches/0001-allow-cmake-args-from-env.patch
+
+build:
+  number: 1
+  skip: match(python, "<3.10")
+  script: |
+    export CMAKE_ARGS="-DUSE_SYSTEM_ABSEIL=ON -DCMAKE_CXX_STANDARD=17 -DUSE_SYSTEM_PYBIND11=ON -DFETCHCONTENT_FULLY_DISCONNECTED=ON -DCMAKE_MESSAGE_LOG_LEVEL=DEBUG"  # [not win]
+    set "CMAKE_ARGS=-DUSE_SYSTEM_ABSEIL=ON -DCMAKE_CXX_STANDARD=17 -DUSE_SYSTEM_PYBIND11=ON -DFETCHCONTENT_FULLY_DISCONNECTED=ON -DCMAKE_MESSAGE_LOG_LEVEL=DEBUG"  # [win]
+    ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - python
+    - cmake
+    - make
+    - setuptools
+  host:
+    - pip
+    - python
+    - libabseil
+    - pybind11
+    - setuptools
+  run:
+    - python
+    # https://github.com/google-deepmind/tree/blob/{{ version }}/setup.py
+    - absl-py >=0.6.1
+    - attrs >=18.2.0
+    # The upstream numpy constraint is complicated, but simply mirrors
+    # the available versions on numpy for each python version, so
+    # this is equivalent and simpler.
+    - numpy >=1.21
+    - wrapt >=1.11.2
+
+tests:
+  - python:
+      imports:
+        - tree
+      pip_check: true
+  - requirements:
+      run:
+        - pytest
+        - pip
+    script:
+      - pytest --pyargs tree
+
+about:
+  summary: Tree is a library for working with nested data structures.
+  license: Apache-2.0
+  license_file: LICENSE
+  description: |
+    tree is a library for working with nested data structures.
+    In a way, tree generalizes the builtin map function which only supports flat sequences, and allows to apply a function to each "leaf" preserving the overall structure.
+
+  homepage: https://github.com/deepmind/tree
+  repository: https://github.com/deepmind/tree
+  documentation: https://tree.readthedocs.io/en/stable/
+
+extra:
+  recipe-maintainers:
+    - ngam
+    - vnlitvinov
+    - maresb
+    - h-vetinari

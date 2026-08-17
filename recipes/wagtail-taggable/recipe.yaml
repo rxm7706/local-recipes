@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: wagtail-taggable
+  version: "0.0.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail_taggable-${{ version }}.tar.gz
+  sha256: 0745accca9d2dca9b599e6c6208785ed60e9a227e2a786595b2f948d66425235
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - wagtail >=4.2
+    - wagtail-generic-chooser >=0.4
+
+tests:
+  - python:
+      imports:
+        - wagtail_taggable
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Simple tagging for the Wagtail CMS.
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  homepage: https://github.com/octavenz/wagtail-taggable
+
+extra:
+  recipe-maintainers:
+    - rxm7706

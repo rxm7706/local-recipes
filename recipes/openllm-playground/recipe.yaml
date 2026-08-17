@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: openllm-playground
+  version: "0.4.44"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/openllm/openllm-${{ version }}.tar.gz
+  sha256: b1063f19a41479464102222b31ef240bf1a6c9557c8e0cfa24959b2c4c10bb34
+
+build:
+  number: 1
+  skip: match(python, "<3.8")
+  skip: true  # [py<38]
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - openllm = openllm_cli.entrypoint:cli
+      - openllm-dive-bentos = openllm_cli.extension.dive_bentos:cli
+      - openllm-get-containerfile = openllm_cli.extension.get_containerfile:cli
+      - openllm-get-prompt = openllm_cli.extension.get_prompt:cli
+      - openllm-list-bentos = openllm_cli.extension.list_bentos:cli
+      - openllm-list-models = openllm_cli.extension.list_models:cli
+      - openllm-playground = openllm_cli.extension.playground:cli
+
+requirements:
+  host:
+    - python
+    - hatchling ==1.18.0
+    - hatch-vcs ==0.3.0
+    - hatch-fancy-pypi-readme ==23.1.0
+    - pip
+    - openllm ==${{ version }}
+  run:
+    - python
+    - openllm ==${{ version }}
+    - jupyter
+    - notebook
+    - ipython
+    - jupytext
+    - nbformat
+
+tests:
+  - python:
+      imports:
+        - openllm
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - openllm --help
+      - openllm-dive-bentos --help
+      - openllm-get-containerfile --help
+      - openllm-get-prompt --help
+      - openllm-list-bentos --help
+      - openllm-list-models --help
+      - openllm-playground --help
+
+about:
+  summary: "OpenLLM: Operating LLMs in production - Playground Extension"
+  license: Apache-2.0
+  license_file: LICENSE.md
+  homepage: https://github.com/bentoml/OpenLLM
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - conda-forge/openllm-client
+    - conda-forge/openllm-core
+    - conda-forge/openllm

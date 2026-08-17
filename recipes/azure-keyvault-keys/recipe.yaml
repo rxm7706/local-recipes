@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: azure-keyvault-keys
+  version: 4.11.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 90caa3a7b2c8f6b53c247ec115cf1c1dad7f107cc3aa9f35aff4838bbce7e562
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - azure-core >=1.37.0
+    - cryptography >=44.0.2
+    - isodate >=0.6.1
+    - typing_extensions >=4.6.0
+tests:
+  - python:
+      imports:
+        - azure.keyvault.keys
+        - azure.keyvault.keys.aio
+        - azure.keyvault.keys.crypto
+        - azure.keyvault.keys.crypto.aio
+      python_version: ${{ python_min }}.*
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Azure Key Vault Keys client library for Python
+  homepage: https://docs.microsoft.com/en-au/azure/key-vault/
+  repository: https://github.com/Azure/azure-sdk-for-python/tree/master/sdk/keyvault/azure-keyvault-keys
+  documentation: https://azuresdkdocs.blob.core.windows.net/$web/python/azure-keyvault-keys/latest/azure.keyvault.keys.html
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - janjagusch

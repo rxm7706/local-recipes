@@ -6,11 +6,11 @@ context:
   version: "1.15.0"
 
 package:
-  name: ${{ name | lower }}
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/json-rpc-${{ version }}.tar.gz
   sha256: e6441d56c1dcd54241c937d0a2dcd193bdf0bdc539b5316524713f554b7f85b9
 
 build:
@@ -20,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
@@ -29,15 +29,21 @@ requirements:
 tests:
   - python:
       imports:
-        - json_rpc
+        - jsonrpc
+        - jsonrpc.backend
+        - jsonrpc.tests
+        - jsonrpc.dispatcher
       pip_check: true
+      python_version: ${{ python_min }}
 
 about:
-  homepage: https://github.com/pavlov99/json-rpc
   license: MIT
-  license_file: LICENSE
-  summary: JSON-RPC transport implementation
+  license_file: LICENSE.txt
+  summary: JSON-RPC transport realisation
+  homepage: https://github.com/pavlov99/json-rpc
 
 extra:
   recipe-maintainers:
-    - REPLACE_MAINTAINER
+    - mgorny
+    - dharhas
+    - ccordoba12

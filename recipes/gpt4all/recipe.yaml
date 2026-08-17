@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: gpt4all
+  version: "2.7.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  #folder: gpt4all-bindings/python
+  url: https://github.com/nomic-ai/gpt4all/archive/v${{ version }}.tar.gz
+  sha256: 1c44454812fd276dddbf3ead7d5cdff88de5136b80f0273d8e95386c55c1dd87
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install ./gpt4all-bindings/python -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('c') }}
+    - cmake
+    #- make  # [unix]
+    #- clang  # [win]
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - requests
+    - tqdm
+
+tests:
+  - python:
+      imports:
+        - gpt4all
+      pip_check: true
+
+about:
+  license: MIT AND Apache-2.0
+  license_file:
+    - LICENSE.txt
+    - gpt4all-bindings/python/LICENSE.txt
+    - gpt4all-chat/LICENSE
+    - gpt4all-api/LICENSE
+  homepage: https://pypi.org/project/gpt4all/
+
+extra:
+  recipe-maintainers:
+    - rxm7706

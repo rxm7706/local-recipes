@@ -1,0 +1,107 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.15.2"
+  python_min: "3.12"
+
+package:
+  name: agent-memory-server
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/agent-memory-server/agent_memory_server-${{ version }}.tar.gz
+  sha256: 2a559ae7087f8d891d08d37bf19d4a60dca51dfc9bc19cd555665e76ed1b3386
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - agent-memory-client >=0.14.1
+    - anthropic >=0.15.0
+    - bcrypt >=4.0.0
+    - cachetools <7.0.0,>=6.2.2
+    - click >=8.1.0
+    - cryptography >=3.4.8
+    - fastapi >=0.115.11
+    - httpx >=0.25.0
+    - litellm <=1.82.6,>=1.75.5
+    - mcp >=1.6.0
+    - numpy >=2.1.0
+    - openai >=1.3.7
+    - pydantic-settings >=2.8.1
+    - pydantic >=2.5.2
+    - pydocket >=0.18.2
+    - python-dotenv >=1.0.0
+    - python-jose >=3.3.0
+    - python-ulid >=3.0.0
+    - pyyaml >=6.0
+    - redisvl >=0.6.0
+    - sniffio >=1.3.1
+    - structlog >=25.2.0
+    - tiktoken >=0.5.1
+    - transformers >=4.51.1
+    - uvicorn >=0.24.0
+
+tests:
+  - python:
+      imports:
+        - agent_memory_server
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/redis/agent-memory-server
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A Memory Server for LLM Agents and Applications
+  description: |
+    A Memory Server for LLM Agents and Applications
+  repository: https://github.com/redis/agent-memory-server
+  documentation: https://github.com/redis/agent-memory-server/tree/main/docs
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: agent-memory-server
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: agent-memory-server
+  cfe-purls:
+    - pkg:conda/agent-memory-server@${{ version }}?channel=conda-forge
+    - pkg:pypi/agent-memory-server@${{ version }}
+  cfe-upstream-repo: https://github.com/redis/agent-memory-server
+  cfe-upstream-homepage: https://github.com/redis/agent-memory-server
+  cfe-import-names: [agent_memory_server]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:59:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:59:25Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

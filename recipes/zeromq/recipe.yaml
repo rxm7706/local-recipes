@@ -1,0 +1,134 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: zeromq
+  version: 4.3.5
+  build: 11
+  build_drafts: ${{ drafts == "ON" }}
+  build_prefix: "${{ 'drafts_' if build_drafts else '' }}"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/zeromq/libzmq/releases/download/v${{ version }}/zeromq-${{ version }}.tar.gz
+  sha256: 6653ef5910f17954861fe72332e68b03ca6e4d9c7160eb3a8de5a5a913bfab43
+  patches:
+    - 001-windows-install.patch
+    - pr4663.patch
+    - pr4684.patch
+    - pr4799.patch
+    - pr4845.patch
+    - if: osx
+      then:
+        - 002-osx-test.patch
+    - if: win
+      then:
+        - 003-no-stdc++-on-win.patch
+
+build:
+  number: ${{ build }}
+  string: ${{ build_prefix }}h${{ hash }}_${{ build }}
+  files:
+    exclude:
+      - share/man/
+  dynamic_linking:
+    # this checks for libsodium, krb
+    overdepending_behavior: error
+  script:
+    file: build
+    env:
+      drafts: ${{ drafts }}
+  variant:
+    down_prioritize_variant: ${{ 1 if build_drafts else 0 }}
+
+requirements:
+  build:
+    - if: unix
+      then:
+        - automake
+        - autoconf
+        - make
+        - libtool
+        - pkg-config
+    - if: win
+      then:
+        - cmake
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - ${{ stdlib("c") }}
+  host:
+    - libsodium
+    - krb5
+  run_exports:
+    - if: win or build_drafts
+      then: ${{ pin_subpackage(name, upper_bound='x.x.x') }}
+      else: ${{ pin_subpackage(name, upper_bound='x.x') }}
+    - if: build_drafts
+      then: ${{ name }} * ${{ build_prefix }}*
+
+tests:
+  - package_contents:
+      bin:
+        - curve_keygen
+      lib:
+        - if: unix
+          then:
+            - libzmq
+        - if: win
+          then:
+            - libzmq-mt-${{ version | replace('.', '_') }}
+      files:
+        exists:
+          - if: unix
+            then:
+              - lib/cmake/ZeroMQ/ZeroMQConfig.cmake
+              - lib/cmake/ZeroMQ/ZeroMQConfigVersion.cmake
+          - if: linux
+            then:
+              - lib/libzmq.so.5
+          - if: osx
+            then:
+              - lib/libzmq.5.dylib
+        not_exists:
+          - if: unix
+            then:
+              - lib/libzmq.a
+          - if: win
+            then:
+              - Library/lib/libzmq-mt-s*
+
+
+  - script:
+      content:
+        - curve_keygen
+        - cmake -G Ninja -B _build tests
+        - cmake --build _build  -v
+        - ctest --test-dir _build
+      env:
+        drafts: ${{ drafts }}
+
+    files:
+      recipe:
+        - tests/
+    requirements:
+      run:
+        - ${{ compiler("c") }}
+        - cmake
+        - ninja
+
+about:
+  license: MPL-2.0
+  license_file: LICENSE
+  summary: A high-performance asynchronous messaging library.
+  homepage: http://zeromq.org
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - minrk
+    - SylvainCorlay
+    - JohanMabille
+    - davidbrochart

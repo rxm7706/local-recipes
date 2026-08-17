@@ -2,15 +2,16 @@
 schema_version: 1
 
 context:
-  version: "0.0.14"
+  name: docstring_parser_fork
+  version: "0.0.16"
 
 package:
-  name: docstring_parser_fork
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/docstring_parser_fork/docstring_parser_fork-${{ version }}.tar.gz
-  sha256: a2743a63d8d36c09650594f7b4ab5b2758fee8629dcf794d1b221b23179baa5c
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/docstring_parser_fork-${{ version }}.tar.gz
+  sha256: 9ecf861ceab8b87d1297a71001c15a1956ad02e87434ee6473643a5988094f7c
 
 build:
   number: 0
@@ -19,31 +20,24 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - hatchling
     - pip
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
 
 tests:
   - python:
       imports:
         - docstring_parser
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Parse Python docstrings in reST, Google and Numpydoc format
   license: MIT
   license_file: LICENSE.md
   homepage: https://github.com/jsh9/docstring_parser_fork
-  repository: https://github.com/jsh9/docstring_parser_fork
-  description: |
-    A fork of the docstring_parser library. Parses Python docstrings written
-    in reStructuredText (reST), Google, and Numpydoc formats into a common
-    structured representation.
 
 extra:
   recipe-maintainers:

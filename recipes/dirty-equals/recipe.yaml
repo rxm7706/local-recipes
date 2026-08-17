@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dirty-equals
+  version: "0.11"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: f4ac74ee88f2d11e2fa0f65eb30ee4f07105c5f86f4dc92b09eb1138775027c3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - hatchling
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - dirty_equals
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Doing dirty (but extremely useful) things with equals.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://dirty-equals.helpmanual.io
+  repository: https://github.com/samuelcolvin/dirty-equals
+
+extra:
+  recipe-maintainers:
+    - nicoddemus

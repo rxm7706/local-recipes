@@ -1,0 +1,169 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "2.31.0"
+  python_min: "3.10"
+
+recipe:
+  name: pydantic_ai
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/p/pydantic-ai/pydantic_ai-${{ version }}.tar.gz
+    sha256: 07e32943fab0384fd0957aadbc9ff664cf958ad24ad279b0f7cda3e2f545d861
+    target_directory: pydantic-ai/
+  - url: https://pypi.org/packages/source/p/pydantic-ai-slim/pydantic_ai_slim-${{ version }}.tar.gz
+    sha256: a9310d2464154b028096f1d680f17837f16e5c6cd209b4542e4f60ca5d344789
+    target_directory: pydantic-ai-slim/
+  - url: https://pypi.org/packages/source/p/pydantic-graph/pydantic_graph-${{ version }}.tar.gz
+    sha256: a19919408dfaa5a1b8713618bcce7a5135d83664321862b0d9be1f4216c432ef
+    target_directory: pydantic-graph/
+  - url: https://pypi.org/packages/source/p/pydantic-evals/pydantic_evals-${{ version }}.tar.gz
+    sha256: cbbab6746701abee67cbdbbcffce156a9b2d60b2d1e946515f29db5f7c0f3bb7
+    target_directory: pydantic-evals/
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: pydantic-graph
+      version: ${{ version }}
+
+    build:
+      noarch: python
+      script:
+        - ${{ PYTHON }} -m pip install ./pydantic-graph -vv
+
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - pip
+        - hatchling
+        - uv-dynamic-versioning >=0.7.0
+      run:
+        - python >=${{ python_min }}
+        - httpx >=0.27
+        - logfire-api >=3.14.1
+        - pydantic >=2.12
+        - typing-inspection >=0.4.0
+
+    tests:
+      - python:
+          python_version: ${{ python_min }}.*
+          imports:
+            - pydantic_graph
+          pip_check: true
+
+    about:
+      license_file: pydantic-graph/LICENSE
+
+  - package:
+      name: pydantic-ai-slim
+      version: ${{ version }}
+
+    build:
+      noarch: python
+      script:
+        - ${{ PYTHON }} -m pip install ./pydantic-ai-slim -vv
+
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - pip
+        - hatchling
+        - uv-dynamic-versioning >=0.7.0
+      run:
+        - python >=${{ python_min }}
+        - griffelib >=2.0
+        - httpx >=0.27
+        - pydantic >=2.12
+        - pydantic-graph =${{ version }}
+        - exceptiongroup >=1.2.2
+        - opentelemetry-api >=1.28.0
+        - typing-inspection >=0.4.0
+        - genai-prices >=0.0.62
+
+    tests:
+      - python:
+          python_version: ${{ python_min }}.*
+          imports:
+            - pydantic_ai
+          pip_check: true
+
+    about:
+      license_file: pydantic-ai-slim/LICENSE
+
+  - package:
+      name: pydantic-ai
+      version: ${{ version }}
+
+    build:
+      noarch: python
+      script:
+        - ${{ PYTHON }} -m pip install ./pydantic-ai -vv
+
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - pip
+        - hatchling
+        - uv-dynamic-versioning >=0.7.0
+      run:
+        - python >=${{ python_min }}
+        - pydantic-ai-slim =${{ version }}
+
+    tests:
+      - python:
+          python_version: ${{ python_min }}.*
+          imports:
+            - pydantic_ai
+          pip_check: true
+
+    about:
+      license_file: pydantic-ai/LICENSE
+
+  - package:
+      name: pydantic-evals
+      version: ${{ version }}
+
+    build:
+      noarch: python
+      script:
+        - ${{ PYTHON }} -m pip install ./pydantic-evals -vv
+
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - pip
+        - hatchling
+        - uv-dynamic-versioning >=0.7.0
+      run:
+        - python >=${{ python_min }}
+        - anyio >=0
+        - logfire-api >=3.14.1
+        - pydantic >=2.12
+        - pydantic-ai-slim =${{ version }}
+        - pyyaml >=6.0.2
+        - rich >=13.9.4
+
+    tests:
+      - python:
+          python_version: ${{ python_min }}.*
+          imports:
+            - pydantic_evals
+          pip_check: true
+
+    about:
+      license_file: pydantic-evals/LICENSE
+
+about:
+  homepage: https://ai.pydantic.dev/
+  summary: Agent Framework / shim to use Pydantic with LLMs
+  documentation: https://ai.pydantic.dev
+  license: MIT
+  license_file: pydantic-ai/LICENSE
+
+extra:
+  feedstock-name: pydantic-ai
+  recipe-maintainers:
+    - moritzwilksch

@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: liac-arff
+  version: "2.5.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 3220d0af6487c5aa71b47579be7ad1d94f3849ff1e224af3bf05ad49a0b5c4da
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - arff
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A module for read and write ARFF files in Python.
+  license: MIT
+  license_file: LICENSE
+  description: |
+    The liac-arff module implements functions to read and write ARFF files in
+    Python. It was created in the Connectionist Artificial Intelligence
+    Laboratory (LIAC), which takes place at the Federal University of Rio Grande
+    do Sul (UFRGS), in Brazil.
+
+    ARFF (Attribute-Relation File Format) is an file format specially created
+    for describe datasets which are used commonly for machine learning
+    experiments and softwares. This file format was created to be used in Weka,
+    the best representative software for machine learning automated experiments.
+
+
+  homepage: https://github.com/renatopp/liac-arff
+  repository: https://github.com/renatopp/liac-arff
+  documentation: https://pythonhosted.org/liac-arff/
+
+extra:
+  recipe-maintainers:
+    - BastianZim
+    - mfeurer

@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: parquet-metadata
+  version: "0.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/parquet-metadata-${{ version }}.tar.gz
+  sha256: 9643276066f7d5d8a0984345eecc7e4f2e75e6f31d3a6c7e941450347b5701cf
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - parquet-metadata = parquet_metadata.parquet_metadata:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pyarrow
+
+tests:
+  - python:
+      imports:
+        - parquet_metadata
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A tool to show metadata about a Parquet file
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/cldellow/parquet-metadata
+
+extra:
+  recipe-maintainers:
+    - rxm7706

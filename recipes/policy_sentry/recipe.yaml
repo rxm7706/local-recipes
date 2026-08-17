@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: policy_sentry
+  version: "0.15.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/policy_sentry-${{ version }}.tar.gz
+  sha256: 6e16f059dde400c856815be9368052102993499e66754207f9a9a1cdcf996dd2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - policy_sentry=policy_sentry.bin.cli:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - hatchling
+  run:
+    - beautifulsoup4
+    - click
+    - python >=${{ python_min }}
+    - pyyaml
+    - requests
+    - schema
+    - orjson
+
+tests:
+  - python:
+      imports:
+        - policy_sentry
+        - policy_sentry.analysis
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - policy_sentry --help
+
+about:
+  summary: Generate locked-down AWS IAM Policies
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/salesforce/policy_sentry
+
+extra:
+  recipe-maintainers:
+    - ForgottenProgramme
+    - nick-harmening

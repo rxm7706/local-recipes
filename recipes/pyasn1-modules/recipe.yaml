@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyasn1-modules
+  version: "0.4.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyasn1_modules-${{ version }}.tar.gz
+  sha256: 677091de870a80aae844b1ca6134f54652fa2c8c5a52aa396440ac3106e941e6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - pyasn1 >=0.6.1,<0.7.0
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pyasn1_modules
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A collection of ASN.1-based protocols modules
+  license: BSD-2-Clause
+  license_file: LICENSE.txt
+  homepage: https://github.com/pyasn1/pyasn1-modules
+  repository: https://github.com/pyasn1/pyasn1-modules
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - pmlandwehr
+    - xhochy

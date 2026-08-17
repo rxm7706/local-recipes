@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pymeta3
+  version: "0.5.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/PyMeta3-${{ version }}.tar.gz
+  sha256: 18bda326d9a9bbf587bfc0ee0bc96864964d78b067288bcf55d4d98681d05bcb
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pymeta
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Pattern-matching language based on OMeta
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/wbond/pymeta3
+
+extra:
+  recipe-maintainers:
+    - dbast

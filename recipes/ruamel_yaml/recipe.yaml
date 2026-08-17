@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.15.80"
+
+package:
+  name: ruamel_yaml
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/r/ruamel.yaml/ruamel.yaml-${{ version }}.tar.gz
+  sha256: 4f203351575dba0829c7b1e5d376d08cf5f58e4a2b844e8ce552b3e41cd414e6
+
+build:
+  number: 1009
+  always_copy_files: ${{ '.*\\.(pyd|dll)' if win else '' }}
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - ${{ compiler("c") }}
+    - if: win
+      then: posix
+  host:
+    - python
+    - pip
+    - cython
+    - yaml
+  run:
+    - python
+    - yaml
+
+tests:
+  - python:
+      imports:
+        - ruamel_yaml
+        - ruamel_yaml.ext._ruamel_yaml
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - if: unix
+        then: if pip show ruamel.yaml; then exit 1; fi
+      - if: unix
+        then: $PYTHON -m pip install ruamel.yaml
+      - if: unix
+        then: $PYTHON -c "import ruamel.yaml"
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A patched copy of ruamel.yaml.
+  homepage: https://sourceforge.net/p/ruamel-yaml/code/ci/default/tree
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - mbargull
+    - isuruf

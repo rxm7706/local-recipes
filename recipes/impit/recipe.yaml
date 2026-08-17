@@ -1,8 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-schema_version: 1
-
 context:
-  version: "0.13.0"
+  version: "0.13.2"
 
 package:
   name: impit
@@ -10,10 +8,10 @@ package:
 
 source:
   url: https://pypi.org/packages/source/i/impit/impit-${{ version }}.tar.gz
-  sha256: ec5ff2932c6ccdd3004b0f5e0d0d9bce5c8a6f48df4f226e5ee172bc79952df8
+  sha256: 5d71d0e2b55c9c267f99edf36e0fe6a6dff83f992f06d7abbb80095c342deeb1
 
 build:
-  number: 2
+  number: 0
   script:
     # reqwest's http3 feature (used by impit) is gated behind this cfg flag.
     # Setting it here works on all platforms, unlike an inline `env` prefix.

@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pinecone
+  version: "9.1.0"
+
+package:
+  name: pinecone
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pinecone/pinecone-${{ version }}.tar.gz
+  sha256: d53fe6f4978ab0642eb2d3a0ee3b2576ccfeebaa11e0690b18e67dac4e057047
+
+build:
+  number: 0
+  # we only build 1 package for each target platform
+  python:
+    version_independent: true
+
+  script:
+    env:
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+      PYTHONIOENCODING: utf-8
+    content:
+      - "${{ PYTHON }} -m pip install -vv --no-deps --no-build-isolation ."
+      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+
+requirements:
+  build:
+    - cargo-bundle-licenses
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('rust') }}
+    - maturin >=1.0,<2.0
+    - libprotobuf
+    - if: build_platform != target_platform
+      then:
+        - python ${{ python_min }}.*
+        - cross-python_${{ target_platform }}
+  host:
+    - python ${{ python_min }}.*
+    - maturin >=1.0,<2.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - httpx >=0.27,<1.0
+    # httpx[http2]
+    - h2 >=3,<5
+    - msgspec
+    - orjson
+
+tests:
+  - python:
+      imports:
+        - pinecone
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Pinecone client and SDK
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  homepage: https://www.pinecone.io
+  repository: https://github.com/pinecone-io/python-sdk
+  documentation: https://docs.pinecone.io/guides/get-started/overview
+
+extra:
+  recipe-maintainers:
+    - isuruf
+    - xylar

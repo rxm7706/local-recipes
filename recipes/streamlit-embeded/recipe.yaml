@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.1"
+
+package:
+  name: streamlit-embeded
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/streamlit-embeded/streamlit_embeded-${{ version }}.tar.gz
+  sha256: f95bf0eb27ad14b8423d2219497f7f5b0b23664fa9939d7325cad04694370d46
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - streamlit
+
+tests:
+  - python:
+      imports:
+        - streamlit_embeded
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/mapix/streamlit-embeded
+  license: MIT
+  license_file: LICENSE
+  summary: Common embeded for Streamlit.
+  description: |
+    Common embeded for Streamlit.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: streamlit-embeded
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: streamlit-embeded
+  cfe-purls:
+    - pkg:conda/streamlit-embeded@${{ version }}?channel=conda-forge
+    - pkg:pypi/streamlit-embeded@${{ version }}
+  cfe-upstream-repo: https://github.com/mapix/streamlit-embeded
+  cfe-upstream-homepage: https://github.com/mapix/streamlit-embeded
+  cfe-import-names: [streamlit_embeded]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:12:20Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:12:20Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

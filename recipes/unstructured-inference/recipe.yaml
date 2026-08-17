@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.6.13"
+  python_min: "3.11"
+
+package:
+  name: unstructured-inference
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/u/unstructured-inference/unstructured_inference-${{ version }}.tar.gz
+  sha256: 4efa2f3f517370aa09166c669cdc1addee71531e95bfbec7e6e3be66be90c147
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - accelerate >=1.12.0
+    - huggingface-hub >=0.22.0
+    - matplotlib-base >=3.10.8
+    - numpy >=1.26.0
+    - onnx >=1.20.1
+    - onnxruntime >=1.25.0
+    - opencv >=4.13.0.90
+    - pandas >=1.5.0
+    - pdfminer-six >=20231228
+    - pypdfium2 >=5.0.0
+    - rapidfuzz >=3.14.3
+    - scipy >=1.17.0
+    - timm >=1.0.24
+    - pytorch >=2.10.0
+    - transformers >=4.25.1
+
+tests:
+  - python:
+      imports:
+        - unstructured_inference
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/Unstructured-IO/unstructured-inference
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A library for performing inference using trained models.
+  description: |
+    A library for performing inference using trained models.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: unstructured-inference
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: unstructured-inference
+  cfe-purls:
+    - pkg:conda/unstructured-inference@${{ version }}?channel=conda-forge
+    - pkg:pypi/unstructured-inference@${{ version }}
+  cfe-upstream-repo: https://github.com/Unstructured-IO/unstructured-inference
+  cfe-upstream-homepage: https://github.com/Unstructured-IO/unstructured-inference
+  cfe-import-names: [unstructured_inference]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:25:51Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:25:51Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

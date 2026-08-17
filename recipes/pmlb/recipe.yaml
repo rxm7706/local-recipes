@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pmlb
+  version: 1.0.1.post3
+
+package:
+  name: ${{ name|lower }}
+  version: "1.0.1"
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pmlb-${{ version }}.tar.gz
+  sha256: ff1195abf0b54f2e06ea8f30c95a746e6561c5d5e01ef83950158cb7ff58a315
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pandas >=1.0.5
+    - requests >=2.24.0
+    - pyyaml >=5.3.1
+
+tests:
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pip check
+
+about:
+  summary: A Python wrapper for the Penn Machine Learning Benchmark data repository.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/EpistasisLab/penn-ml-benchmarks
+
+extra:
+  recipe-maintainers:
+    - rxm7706

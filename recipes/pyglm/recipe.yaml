@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyglm
+  version: "2.8.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyglm-${{ version }}.tar.gz
+  sha256: 161781ea4d1267f796b645f85ebff53aeb8ee4f13b4e993c04d64c96d286e534
+
+build:
+  number: 2
+  script: python -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler("cxx") }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then:
+        - cross-python_${{ target_platform }}
+        - pip
+        - python
+        - setuptools
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - glm
+  - script:
+      - pip check
+      - python run_test.py
+    files:
+      recipe:
+        - run_test.py
+    requirements:
+      run:
+        - pip
+        - python
+
+about:
+  homepage: https://github.com/Zuzu-Typ/PyGLM
+  repository: https://github.com/Zuzu-Typ/PyGLM
+  summary: OpenGL Mathematics library for Python
+  license: Zlib
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - jeongseok-meta

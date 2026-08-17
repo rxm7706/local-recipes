@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.0.0"
+
+package:
+  name: gunicorn
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/gunicorn/gunicorn-${{ version }}.tar.gz
+  sha256: ca9346f85e3a4aeeb64d491045c16b9a35647abd37ea15efe53080eb8b090baf
+
+build:
+  number: 0
+  skip: match(python, "<3.8")
+  skip: true  # [py<38]
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - gunicorn=gunicorn.app.wsgiapp:run
+  preserve_egg_dir: true
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+    - setuptools >=3.0
+    - packaging
+
+tests:
+  - python:
+      imports:
+        - gunicorn
+        - gunicorn.app
+        - gunicorn.http
+        - gunicorn.instrument
+        - gunicorn.workers
+      pip_check: false
+  - requirements:
+      run:
+        - paste
+        - pastedeploy
+    script:
+      - gunicorn --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: WSGI HTTP Server for UNIX
+  homepage: http://gunicorn.org
+
+extra:
+  recipe-maintainers:
+    - kwilcox
+    - daf
+    - jakirkham
+    - sodre

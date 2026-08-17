@@ -1,21 +1,21 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-schema_version: 1
-
 context:
+  name: wagtail-draftail-plugins
   version: "0.4.0"
   python_min: "3.11"
 
 package:
-  name: wagtail-draftail-plugins
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/w/wagtail-draftail-plugins/wagtail_draftail_plugins-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: bea3fb4b05d4a09899ac01ced5723d63260005d5843298bac770500efaa869f8
 
 build:
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   number: 0
 
 requirements:
@@ -24,27 +24,30 @@ requirements:
     - pip
     - poetry-core
   run:
-    - python >=${{ python_min }}
-    - wagtail >=6.3
+    - python >=${{ python_min }},<4.0
+    - wagtail >=5.2
 
 tests:
   - python:
       imports:
         - wagtail_draftail_plugins
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script: pip check
 
 about:
   homepage: https://gitlab.com/thelabnyc/wagtail-draftail-plugins
-  license: ISC
+  license: MIT
   license_file: LICENSE
   summary: Commonly used extensions to Wagtail's Draftail editor.
-  repository: https://gitlab.com/thelabnyc/wagtail-draftail-plugins
-  documentation: https://gitlab.com/thelabnyc/wagtail-draftail-plugins/-/blob/master/README.rst
   description: |
     This library includes some commonly used extensions for the Wagtail Draftail editor.
+  documentation: https://gitlab.com/thelabnyc/wagtail-draftail-plugins/-/blob/master/README.rst
+  repository: https://gitlab.com/thelabnyc/wagtail-draftail-plugins
 
 extra:
   recipe-maintainers:

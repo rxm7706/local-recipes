@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: fireworks-ai
+  version: "0.15.13"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fireworks_ai-${{ version }}.tar.gz
+  sha256: 659485e11d47398a4d98a9cbd8e3d6a14c1d4892768f67b7fa1cd6d101f9e62a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=61.0.0
+    - versioneer
+    - pip
+  run:
+    - gitignore-parser
+    - httpx-ws
+    - openapi-spec-validator
+    - prance
+    - pytorch
+    - tabulate
+    - tqdm
+    - python >=${{ python_min }}
+    - httpx
+    - httpx-sse
+    - pydantic
+    - pillow
+
+tests:
+  - python:
+      imports:
+        - fireworks
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Python client library for the Fireworks.ai Generative AI Platform
+  license: MIT
+  license_file: LICENSE
+  homepage: https://fireworks.ai
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

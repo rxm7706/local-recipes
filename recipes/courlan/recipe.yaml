@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "1.4.0"
+
+package:
+  name: courlan
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/c/courlan/courlan-${{ version }}.tar.gz
+    sha256: fbbac7b7fcde2195ea08e707609503c81cf39c891e8d26cdb1fed4585782d63d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install .
+  python:
+    entry_points:
+      - courlan  =  courlan.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - babel >=2.16.0
+    - tld >=0.13
+    - urllib3 <3,>=1.26
+
+tests:
+  - python:
+      imports:
+        - courlan
+      pip_check: true
+  - script:
+      - courlan --help
+
+about:
+  summary: Clean, filter and sample URLs to optimize data collection – includes spam, content type and language filters.
+  homepage: https://github.com/adbar/courlan
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - moritzwilksch

@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.3.17"
+
+package:
+  name: xmlsec
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/x/xmlsec/xmlsec-${{ version }}.tar.gz
+  sha256: f3fac9ae679f66585925cc00c5f6839ae36c1d03157619571dee18acc05b9c01
+
+build:
+  number: 0
+  skip: win
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - libxmlsec1
+    - pkg-config
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - pkgconfig
+    - lxml >=3.8.0,!=4.7.0
+    - libxml2
+    - libxmlsec1
+    - setuptools
+    - setuptools_scm
+  run:
+    - python
+    - lxml >=3.8.0,!=4.7.0
+    # hard-pin libxmlsec1 as we are unsure whether they do proper semver
+    # https://github.com/conda-forge/xmlsec-feedstock/pull/22#issuecomment-2677831048
+    - libxmlsec1 ==1.3.7
+
+tests:
+  - python:
+      imports:
+        - xmlsec
+  - requirements:
+      run:
+        - pip
+    script:
+      # Check that the correct version is reported by pip
+      - "pip list --format json | grep '{\"name\": \"xmlsec\", \"version\": \"${{ version }}\"}'"
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Python bindings for the XML Security Library
+  homepage: https://github.com/mehcode/python-xmlsec
+
+extra:
+  recipe-maintainers:
+    - jaimergp
+    - xhochy

@@ -2,48 +2,44 @@
 schema_version: 1
 
 context:
+  name: taipy-config
   version: "3.1.1"
 
 package:
-  name: taipy-config
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/t/taipy-config/taipy-config-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/taipy-config-${{ version }}.tar.gz
   sha256: 2f01184c73b38413e7fc822cbc5803ca23313d0908775aee59794f709c3f4d92
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - toml >=0.10,<=0.10.2
-    - deepdiff >=6.2.2,<=6.7.1
+    - toml >=0.10,<0.11
+    - deepdiff >=6.2,<6.3
 
 tests:
   - python:
       imports:
         - taipy
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: A Taipy package dedicated to easily configure a Taipy application.
   license: Apache-2.0
   license_file: LICENSE
   homepage: https://github.com/avaiga/taipy-config
-  repository: https://github.com/avaiga/taipy-config
-  description: |
-    A Taipy package dedicated to easily configure a Taipy application.
 
 extra:
   recipe-maintainers:

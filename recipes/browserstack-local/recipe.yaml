@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.16"
+
+package:
+  name: browserstack-local
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/browserstack-local/browserstack_local-${{ version }}.tar.gz
+  sha256: 35742386288ac30b46dae497abaea75f9e76015dd5dbbb05d6f739c60362fa5e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - psutil >=5.6.6
+
+tests:
+  - python:
+      imports:
+        - browserstack
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/browserstack/browserstack-local-python
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Python bindings for Browserstack Local
+  description: |
+    Python bindings for Browserstack Local
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: browserstack-local
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: browserstack-local
+  cfe-purls:
+    - pkg:conda/browserstack-local@${{ version }}?channel=conda-forge
+    - pkg:pypi/browserstack-local@${{ version }}
+  cfe-upstream-repo: https://github.com/browserstack/browserstack-local-python
+  cfe-upstream-homepage: https://github.com/browserstack/browserstack-local-python
+  cfe-import-names: [browserstack]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:49:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:49:47Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

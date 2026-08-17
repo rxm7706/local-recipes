@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: etelemetry
+  version: "0.3.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/sensein/${{ name }}-client/archive/v${{ version }}.tar.gz
+  sha256: 91861fc0e9593e583ad12610a99859d88a45216f59e803c96cfa8b7334f6171f
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - requests
+    - ci-info
+    - packaging
+
+tests:
+  - python:
+      imports:
+        - etelemetry
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A lightweight python client to communicate with the etelemetry server
+  description: |
+    A lightweight python client to communicate with the etelemetry server
+    to provide version checks for Python developers.
+  homepage: https://github.com/sensein/etelemetry-client
+  repository: https://github.com/sensein/etelemetry-client
+
+extra:
+  recipe-maintainers:
+    - mgxd
+    - satra
+    - effigies
+    - yarikoptic

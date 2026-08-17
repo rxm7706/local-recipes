@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sentinels
+  version: "1.1.1"
+  python_min: "3.9"
+  bundle: tar.gz
+  hash_val: 3c2f64f754187c19e0a1a029b148b74cf58dd12ec27b4e19c0e5d6e22b5a9a86
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
+  sha256: ${{ hash_val }}
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python 3.9.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - sentinels
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Various objects to denote special meanings in python
+  homepage: https://github.com/vmalloc/sentinels
+  repository: https://github.com/vmalloc/sentinels
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - pb01ka
+    - killua156
+    - mgorny

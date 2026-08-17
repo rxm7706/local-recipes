@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: waitress
+  version: 3.0.2
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 682aaaf2af0c44ada4abfb70ded36393f0e307f4ab9456a215ce0020baefc31f
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - waitress-serve = waitress.runner:run
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - waitress
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - waitress-serve --help
+
+about:
+  license: ZPL-2.0
+  license_file: LICENSE.txt
+  summary: Production-quality pure-Python WSGI server
+  description: |
+    Waitress is meant to be a production-quality pure-Python WSGI server with
+    very acceptable performance. It has no dependencies except ones which live
+    in the Python standard library. It runs on CPython on Unix and Windows under
+    Python 2.7+ and Python 3.3+. It is also known to run on PyPy 1.6.0+ on UNIX.
+    It supports HTTP/1.0 and HTTP/1.1.
+  homepage: https://github.com/Pylons/waitress
+  repository: https://github.com/Pylons/waitress
+  documentation: http://docs.pylonsproject.org/projects/waitress/en/latest/
+
+extra:
+  recipe-maintainers:
+    - carlodri
+    - xhochy

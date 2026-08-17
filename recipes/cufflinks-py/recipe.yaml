@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cufflinks
+  version: "0.17.3"
+  build_number: 1
+
+recipe:
+  name: python-${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 48c1b3406dc030004121966489eebc5518cea70fd4e3f16379b491328501a644
+
+build:
+  number: ${{ build_number }}
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - chart-studio >=1.0.0
+    - colorlover >=0.2.1
+    - ipython >=5.3.0
+    - ipywidgets >=7.0.0
+    - numpy >=1.9.2
+    - pandas >=0.19.2
+    - plotly >=4.1.1
+    - six >=1.9.0
+
+outputs:
+  - package:
+      name: python-cufflinks
+  - package:
+      name: cufflinks-py
+    build:
+      number: ${{ build_number }}
+      noarch: python
+    requirements:
+      host:
+        - python ${{ python_min }}
+      run:
+        - python >=${{ python_min }}
+        - ${{ pin_subpackage('python-cufflinks', exact=True) }}
+    tests:
+      - python:
+          imports:
+            - cufflinks
+          pip_check: false
+          python_version: ${{ python_min }}
+      - requirements:
+          run:
+            - python ${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - cufflinks
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: license.txt
+  summary: Productivity Tools for Plotly + Pandas
+  homepage: https://github.com/santosjorge/cufflinks
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - timkpaine

@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.2"
+
+package:
+  name: llama-index-finetuning
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/llama-index-finetuning/llama_index_finetuning-${{ version }}.tar.gz
+  sha256: 3aed36f34b55819f49676d24d42e58b28e336d6dcfeab2619add0ac46257f132
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - llama-index-core <0.15,>=0.13.0
+    - llama-index-embeddings-adapter <0.5,>=0.4.0
+    - llama-index-llms-azure-openai <0.5,>=0.4.0
+    - llama-index-llms-mistralai <0.8,>=0.7.0
+    - llama-index-postprocessor-cohere-rerank <0.6,>=0.5.0
+    - mistralai >=1.7.0
+    - sentence-transformers >=2.3.0
+
+tests:
+  - python:
+      imports:
+        - llama_index.finetuning
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/llama-index-finetuning/
+  license: MIT
+  license_file: LICENSE
+  summary: llama-index finetuning
+  description: |
+    llama-index finetuning
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: llama-index-finetuning
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: llama-index-finetuning
+  cfe-purls:
+    - pkg:conda/llama-index-finetuning@${{ version }}?channel=conda-forge
+    - pkg:pypi/llama-index-finetuning@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/llama-index-finetuning/
+  cfe-upstream-homepage: https://pypi.org/project/llama-index-finetuning/
+  cfe-import-names: [llama_index.finetuning]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:07:13Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:07:13Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: osprofiler
+  version: "4.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 6e08df7eef6afc0d2d027813d40e43cb228f0eb3eb3441d61495c2800ebfa320
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - osprofiler = osprofiler.cmd.shell:main
+
+requirements:
+  host:
+    - pbr >=2.0
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - netaddr >=0.7.18
+    - oslo.concurrency >=3.26.0
+    - oslo.serialization >=2.18.0
+    - oslo.utils >=3.33.0
+    - prettytable >=0.7.2
+    - requests >=2.14.2
+    - webob >=1.7.1
+
+tests:
+  - python:
+      imports:
+        - osprofiler
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - osprofiler -h
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: OpenStack Profiler Library
+  homepage: https://docs.openstack.org/osprofiler/latest/
+
+extra:
+  recipe-maintainers:
+    - tschoonj

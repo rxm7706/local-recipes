@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: opentelemetry-instrumentation-grpc
+  version: 0.65b0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_grpc-${{ version }}.tar.gz
+  sha256: b05b3a1f476f350fdb12514ca1ebaed0d596095f91188c2efd26b3e6e2a4cc82
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - opentelemetry-api ~=1.12
+    - opentelemetry-instrumentation ==0.65b0
+    - opentelemetry-sdk ~=1.12
+    - opentelemetry-semantic-conventions ==0.65b0
+    - wrapt <3.0.0,>=1.0.0
+    # - grpcio ~=1.27
+    # - grpcio ~=1.27
+    # - grpcio ~=1.27
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+    # - grpcio >=1.42.0
+
+tests:
+  - python:
+      imports:
+        - opentelemetry
+        - opentelemetry.instrumentation
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: OpenTelemetry gRPC instrumentation
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-grpc
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk

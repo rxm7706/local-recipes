@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: inquirerpy
+  version: "0.3.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/InquirerPy-${{ version }}.tar.gz
+  sha256: 89d2ada0111f337483cb41ae31073108b2ec1e618a49d7110b0d7ade89fc197e
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - poetry
+  run:
+    - python >=${{ python_min }},<4.0
+    - pfzy >=0.3.1,<0.4.0
+    - prompt-toolkit >=3.0.1,<4.0.0
+
+tests:
+  - python:
+      imports:
+        - InquirerPy
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Python port of Inquirer.js (A collection of common interactive command-line user interfaces)
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/kazhala/InquirerPy
+
+extra:
+  recipe-maintainers:
+    - avsthiago

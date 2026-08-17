@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.3.3"
+
+package:
+  name: confection
+  version: ${{ version }}
+
+source:
+  url: https://github.com/explosion/confection/archive/refs/tags/release-v${{ version }}.tar.gz
+  sha256: c977841f277255b0b59acb5b4e8a2d7d266ee4369278308fc2b820ec314fc5d7
+  patches:
+    - patches/0001-make-tests-importable-out-of-tree.patch
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - confection
+      pip_check: true
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - python ${{ python_min }}
+        - pytest
+        - hypothesis
+        - numpy
+        - pip
+        - catalogue >=2.0.3,<2.1.0
+        - pydantic >=1.7.4,<3.0.0
+        - pathy >=0.3.5
+    script:
+      - pytest --tb=native -v tests/
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: The sweetest config system for Python
+  description: |
+    A lightweight library that offers a configuration system letting you
+    conveniently describe arbitrary trees of objects.
+  homepage: https://github.com/explosion/confection
+  repository: https://github.com/explosion/confection
+  documentation: https://github.com/explosion/confection
+
+extra:
+  recipe-maintainers:
+    - conda-forge/spacy
+    - rxm7706

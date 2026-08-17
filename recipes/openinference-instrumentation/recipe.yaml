@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: openinference-instrumentation
+  version: "0.1.57"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/openinference_instrumentation-${{ version }}.tar.gz
+  sha256: 2bd00a1f95ebb8a47d11615c1039128101e4abc0e9722cc4331849afdeb248fc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<3.15
+    - opentelemetry-api
+    - opentelemetry-sdk
+    - openinference-semantic-conventions
+    - typing-extensions
+    - wrapt >=1.14.0,<2
+
+tests:
+  - python:
+      imports:
+        - openinference.instrumentation
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: OpenInference instrumentation utilities
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/Arize-ai/openinference/tree/main/python/openinference-instrumentation
+
+extra:
+  recipe-maintainers:
+    - mikeldking
+    - anticorrelator
+    - RogerHYang
+    - michaelschiff
+    - axiomofjoy

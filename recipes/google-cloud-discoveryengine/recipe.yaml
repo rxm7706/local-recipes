@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "0.20.2"
+
+package:
+  name: google-cloud-discoveryengine
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/g/google-cloud-discoveryengine/google_cloud_discoveryengine-${{ version }}.tar.gz
+    sha256: a020998974324faf1975636e40764b54ef422182329dc48287f94185c6f8edf2
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install .
+  noarch: python
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - google-api-core >=2.25.0, <3.0.0
+    - google-auth >=2.14.1, <3.0.0,!=2.24.0,!=2.25.0
+    - proto-plus >=1.26.1, <2.0.0
+    - protobuf >=6.33.5, <8.0.0
+    - grpcio >=1.75.1, <2.0.0
+    - grpc-google-iam-v1 >=0.14.2, <1.0.0
+
+tests:
+  - python:
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+      imports:
+        - google.cloud.discoveryengine
+        - google.cloud.discoveryengine_v1
+      pip_check: true
+
+about:
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-discoveryengine
+  summary: Google Cloud Discoveryengine API client library
+  description: "Python Client for Discovery Engine API."
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+
+extra:
+  recipe-maintainers:
+    - soapy1

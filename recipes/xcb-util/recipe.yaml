@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: xcb-util
+  version: "0.4.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://xcb.freedesktop.org/dist/xcb-util-${{ version }}.tar.xz
+  sha256: 5abe3bbbd8e54f0fa3ec945291b7e8fa8cfd3cccc43718f8758430f94126e512
+
+build:
+  number: 2
+  skip: not linux
+
+requirements:
+  build:
+    - if: unix
+      then: gnuconfig
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - make
+    - pkg-config
+  host:
+    - libxcb
+    - xorg-xproto
+  run_exports:
+    - ${{ pin_subpackage('xcb-util', upper_bound='x.x') }}
+
+tests:
+  - script:
+      - test -f ${PREFIX}/lib/libxcb-util.so
+
+about:
+  license: MIT
+  license_file: COPYING
+  summary: Standard X key constants and conversion to/from keycodes
+  homepage: https://xcb.freedesktop.org/
+
+extra:
+  recipe-maintainers:
+    - scopatz
+    - hmaarrfk

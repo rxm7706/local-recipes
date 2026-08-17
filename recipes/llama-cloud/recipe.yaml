@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: llama-cloud
+  version: "2.14.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/llama_cloud-${{ version }}.tar.gz
+  sha256: a222cd24867c058b69d35cf8f744bb5b19ae34442a4174d82a5f05094e1f788a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - hatch-fancy-pypi-readme
+    - pip
+  run:
+    - anyio >=3.5.0,<5
+    - distro >=1.7.0,<2
+    - sniffio
+    - typing_extensions >=4.14,<5
+    - python >=${{ python_min }},<4.0
+    - pydantic >=1.9.0,<3
+    - httpx >=0.23.0,<1
+tests:
+  - python:
+      imports:
+        - llama_cloud
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  summary: Turn your enterprise data into production-ready LLM applications
+  license: MIT
+  license_file: LICENSE
+  homepage: https://cloud.llamaindex.ai
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

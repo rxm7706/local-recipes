@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: Flask-Testing
+  version: "0.8.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 0a734d7b68e63a9410b413cd7b1f96456f9a858bd09a6222d465650cc782eb01
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.0
+    - pip
+  run:
+    - python >=3.0
+    - flask
+
+tests:
+  - python:
+      imports:
+        - flask_testing
+      pip_check: true
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Unit testing for Flask
+  homepage: https://github.com/jarus/flask-testing
+  repository: https://github.com/jarus/flask-testing
+  documentation: https://pythonhosted.org/Flask-Testing/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr

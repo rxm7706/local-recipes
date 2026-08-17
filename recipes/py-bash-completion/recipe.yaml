@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: py-bash-completion
+  version: "0.2.6"
+  sha256: a25802fa92177a317a56a0787a583c31c910c3660a7e40d2d85e19c5512e511b
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/b/bash_completion/bash_completion-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  build:
+    - python
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - bash_completion
+      pip_check: false
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A framework for accessing bash completions from Python
+  homepage: https://github.com/xonsh/py-bash-completion
+
+extra:
+  recipe-maintainers:
+    - scopatz

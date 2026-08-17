@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dash-auth
+  version: "2.3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/dash_auth-${{ version }}.tar.gz
+  sha256: 72df43248c15e121f8d5d710981e880deb2df546b564f2951a10ca50d7d92f6d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - python >=3.6
+    - dash >=1.1.1
+    - dash-core-components
+    - dash-html-components
+    - dash-table
+
+tests:
+  - python:
+      imports:
+        - dash_auth
+      pip_check: true
+
+about:
+  summary: Dash Authorization Package.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://plotly.com/dash
+
+extra:
+  recipe-maintainers:
+    - raybellwaves

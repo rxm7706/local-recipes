@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.2.0"
+
+package:
+  name: django-rest-swagger
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/d/django-rest-swagger/django-rest-swagger-${{ version }}.tar.gz
+  sha256: 48f6aded9937e90ae7cbe9e6c932b9744b8af80cc4e010088b3278c700e0685b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python
+  run:
+    - python-coreapi >=2.3.0
+    - djangorestframework >=3.5.4
+    - openapi-codec >=1.3.1
+    - python
+    - simplejson
+
+tests:
+  - python:
+      imports:
+        - rest_framework_swagger
+      pip_check: false
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Swagger UI for Django REST Framework 3.5+
+  homepage: https://github.com/marcgibbons/django-rest-swagger
+  repository: https://github.com/marcgibbons/django-rest-swagger
+  documentation: https://django-rest-swagger.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - lsetiawan

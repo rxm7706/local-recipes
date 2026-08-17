@@ -1,0 +1,332 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: duckdb
+  version: "1.5.5"
+
+recipe:
+  name: ${{ name|lower }}-split
+  version: ${{ version }}
+
+source:
+  # (!!) Please also update the git used for OVERRIDE_GIT_DESCRIBE in the build scripts.
+  - url: https://github.com/duckdb/duckdb/archive/refs/tags/v${{ version }}.tar.gz
+    sha256: f33155ff962e6e1e08fd1e9caffa487d4325aa60999e2eabc76feff534d6558b
+    patches:
+      - patches/0001-Dynamically-link-the-cli.patch
+      - patches/0002-Make-extensions-prefix-free.patch
+      - patches/0006-Install-.h-headers.patch
+
+build:
+  number: 0
+  skip: win
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  host:
+    - icu
+    - openssl
+    - libcurl
+    - croaring
+
+outputs:
+  - package:
+      name: libduckdb
+    build:
+      script:
+        file: install-lib.sh
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+      host:
+        - openssl
+        - icu
+      run_exports:
+        - ${{ pin_subpackage("libduckdb", upper_bound="x.x.x") }}
+    tests:
+      - script:
+          - test -f $PREFIX/lib/libduckdb${SHLIB_EXT}
+  - package:
+      name: libduckdb-devel
+    build:
+      script:
+        file: install-headers.sh
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+      host:
+        - ${{ pin_subpackage("libduckdb", exact=True) }}
+      run:
+        - ${{ pin_subpackage("libduckdb", exact=True) }}
+      run_exports:
+        - ${{ pin_subpackage("libduckdb", upper_bound="x.x.x") }}
+    tests:
+      - script:
+          - test -f $PREFIX/include/duckdb.h
+          - test -f $PREFIX/include/duckdb/common/adbc/adbc.h
+  - package:
+      name: duckdb-cli
+    build:
+      script:
+        file: install-cli.sh
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+      host:
+        - ${{ pin_subpackage("libduckdb", exact=True) }}
+      run:
+        - ${{ pin_subpackage("libduckdb", exact=True) }}
+    tests:
+      - requirements:
+          run:
+            - jq
+        script:
+          - duckdb -version
+          - ${{ RECIPE_DIR }}/test-builtin-extensions.sh
+    # Empty placeholder package as this now built-in
+    # We need to use the same dependencies as in the main build to make it work in cross-compilation
+    package:
+      name: duckdb-extension-json
+    build:
+      script:
+        file: noop.sh
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib("c") }}
+        - cmake
+        - ninja
+        - macholib
+      host:
+        - ${{ pin_subpackage("libduckdb", exact=True) }}
+      run:
+        - ${{ pin_subpackage("libduckdb", exact=True) }}
+    tests:
+      - script:
+          - exit 0
+  - package:
+      name: duckdb-extension-tpcds
+    build:
+      dynamic_linking:
+        binary_relocation: false
+      script:
+        file: install-extension.sh
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib("c") }}
+        - cmake
+        - ninja
+        - python *
+        - macholib
+      host:
+        - ${{ pin_subpackage("libduckdb", exact=True) }}
+      run:
+        - ${{ pin_subpackage("libduckdb", exact=True) }}
+    tests:
+      - requirements:
+          run:
+            - duckdb-cli
+            - jq
+        script:
+          - ${{ RECIPE_DIR }}/test-extension.sh
+    # Empty placeholder package as this now built-in
+    # We need to use the same dependencies as in the main build to make it work in cross-compilation
+    package:
+      name: duckdb-extension-autocomplete
+    build:
+      script:
+        file: noop.sh
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib("c") }}
+        - cmake
+        - ninja
+        - macholib
+      host:
+        - ${{ pin_subpackage("libduckdb", exact=True) }}
+      run:
+        - ${{ pin_subpackage("libduckdb", exact=True) }}
+    tests:
+      - script:
+          - exit 0
+  - package:
+      name: duckdb-extension-tpcds
+    build:
+      dynamic_linking:
+        binary_relocation: false
+      script:
+        file: install-extension.sh
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib("c") }}
+        - cmake
+        - ninja
+        - python *
+        - macholib
+      host:
+        - ${{ pin_subpackage("libduckdb", exact=True) }}
+      run:
+        - ${{ pin_subpackage("libduckdb", exact=True) }}
+    tests:
+      - requirements:
+          run:
+            - duckdb-cli
+            - jq
+        script:
+          - ${{ RECIPE_DIR }}/test-extension.sh
+  - package:
+      name: duckdb-extension-httpfs
+    build:
+      dynamic_linking:
+        binary_relocation: false
+      script:
+        file: install-extension.sh
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib("c") }}
+        - cmake
+        - ninja
+        - python *
+        - macholib
+      host:
+        - ${{ pin_subpackage("libduckdb", exact=True) }}
+        - openssl
+        - libcurl
+      run:
+        - ${{ pin_subpackage("libduckdb", exact=True) }}
+    tests:
+      - requirements:
+          run:
+            - duckdb-cli
+            - jq
+        script:
+          - ${{ RECIPE_DIR }}/test-extension.sh
+  - package:
+      name: duckdb-extension-fts
+    build:
+      dynamic_linking:
+        binary_relocation: false
+      script:
+        file: install-extension.sh
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib("c") }}
+        - cmake
+        - ninja
+        - python *
+        - macholib
+      host:
+        - ${{ pin_subpackage("libduckdb", exact=True) }}
+        - openssl
+      run:
+        - ${{ pin_subpackage("libduckdb", exact=True) }}
+    tests:
+      - requirements:
+          run:
+            - duckdb-cli
+            - jq
+        script:
+          - ${{ RECIPE_DIR }}/test-extension.sh
+  - package:
+      name: duckdb-extension-tpch
+    build:
+      dynamic_linking:
+        binary_relocation: false
+      script:
+        file: install-extension.sh
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib("c") }}
+        - cmake
+        - ninja
+        - python *
+        - macholib
+      host:
+        - ${{ pin_subpackage("libduckdb", exact=True) }}
+      run:
+        - ${{ pin_subpackage("libduckdb", exact=True) }}
+    tests:
+      - requirements:
+          run:
+            - duckdb-cli
+            - jq
+        script:
+          - ${{ RECIPE_DIR }}/test-extension.sh
+  - package:
+      name: duckdb-extension-ducklake
+    build:
+      dynamic_linking:
+        binary_relocation: false
+      script:
+        file: install-extension.sh
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib("c") }}
+        - cmake
+        - ninja
+        - python *
+        - macholib
+      host:
+        - ${{ pin_subpackage("libduckdb", exact=True) }}
+        - croaring
+      run:
+        - ${{ pin_subpackage("libduckdb", exact=True) }}
+        - croaring
+    tests:
+      - requirements:
+          run:
+            - duckdb-cli
+            - jq
+        script:
+          - ${{ RECIPE_DIR }}/test-extension.sh
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: An Embeddable Analytical Database
+  description: |
+    DuckDB is an embedded database designed to execute analytical SQL queries
+    fast while embedded in another process. It is designed to be easy to
+    install and easy to use.
+  homepage: https://www.duckdb.org/
+  repository: https://github.com/duckdb/duckdb
+  documentation: https://duckdb.org/docs/index.html
+
+extra:
+  recipe-maintainers:
+    - xhochy
+    - janjagusch
+    - flaviomartins

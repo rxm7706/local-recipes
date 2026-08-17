@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pycm
+  version: 7.5.8
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: http://software.igwn.org/lscsoft/source/${{ name }}-${{ version }}.tar.gz
+  sha256: 1d0acc7e5f05043a4819964bfc17b67c26f9d22d9eb2b72e9a121cfa34135bce
+  patches:
+    - 0001-Use-IS_WRITABLE-unary-test.patch
+
+build:
+  number: 2
+  skip: not linux
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - cmake >=3.29.0
+    - ctypesgen >=1.0.2
+    - make
+    - pkg-config
+  host:
+    - cm >=10.3.4
+    - ctypesgen >=1.0.2
+    - python
+  run:
+    - cm >=10.3.4
+    - python
+
+tests:
+  - python:
+      imports:
+        - PyCm
+      pip_check: false
+
+about:
+  summary: Python binding for the Cm Library
+  homepage: https://git.ligo.org/virgo/virgoapp/PyCm
+  repository: https://git.ligo.org/virgo/virgoapp/PyCm
+  license: GPL-3.0-or-later
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - duncanmmacleod
+    - erinelizabethseder-virgo
+    - fcarbogn

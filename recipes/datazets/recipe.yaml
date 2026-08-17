@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.4"
+
+package:
+  name: datazets
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/datazets/datazets-${{ version }}.tar.gz
+  sha256: 8c11d3a8d2ee2d49ef6d1f1512bdd33f7c7c592aa48267fe6e44ed7726e16b72
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - pip
+    - python =${{ python_min }}
+    - setuptools
+  run:
+    - numpy
+    - pandas
+    - python >=${{ python_min }}
+    - requests
+
+tests:
+  - python:
+      imports:
+        - datazets
+  - requirements:
+      run:
+        - pip
+        - python =${{ python_min }}
+    script:
+      - pip check
+
+about:
+  summary: Datazets is a python package to import well known example data sets.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/erdogant/datazets
+
+extra:
+  recipe-maintainers:
+    - danielnachun

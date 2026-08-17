@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  python_min: "3.10"
+  name: magicattr
+  version: "0.1.6"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/frmdstryr/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 5e59537cad483712274ab6dbddf7035fbcc01215c398a6a4ecd9e78a21a74c65
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.10.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - magicattr
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: magicattr
+  description: |
+    A getattr and setattr that works on nested objects, lists, dictionaries, and any combination thereof without resorting to eval.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/frmdstryr/magicattr
+
+extra:
+  recipe-maintainers:
+    - mukhery

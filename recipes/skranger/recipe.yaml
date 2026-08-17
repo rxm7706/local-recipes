@@ -2,25 +2,27 @@
 schema_version: 1
 
 context:
+  name: skranger
   version: "0.8.0"
 
 package:
-  name: skranger
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/s/skranger/skranger-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/skranger-${{ version }}.tar.gz
   sha256: c97530f66a0f30b36d8e65b816932e79bda7ed09f7dd0db0694ba4c042e7724d
 
 build:
-  number: 0
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 5
+  skip: py>=400 or match(python, ">=2,<3")
+  script: ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   build:
     - ${{ compiler('cxx') }}
     - ${{ compiler('c') }}
-    - ${{ stdlib('c') }}
+    - ${{ stdlib("c") }}
   host:
     - python
     - pip
@@ -45,13 +47,6 @@ about:
     - LICENSE.txt
     - skranger/ranger/COPYING
   homepage: https://github.com/crflynn/skranger
-  repository: https://github.com/crflynn/skranger
-  documentation: https://github.com/crflynn/skranger
-  description: |
-    Python bindings for C++ ranger random forests. skranger provides
-    scikit-learn compatible estimators (classification, regression,
-    survival, probability) wrapping the ranger C++ random-forest library
-    via a Cython extension.
 
 extra:
   recipe-maintainers:

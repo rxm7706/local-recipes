@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: stack_data
+  version: "0.6.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 836a778de4fec4dcd1dcd89ed8abff8a221f58308462e1c4aa2a3cf30148f0b9
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vvv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools >=44
+    - setuptools_scm >=3.4.3
+  run:
+    - asttokens
+    - executing
+    - pure_eval
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - stack_data
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Extract data from python stack frames and tracebacks for informative displays
+  homepage: http://github.com/alexmojaki/stack_data
+  repository: http://github.com/alexmojaki/stack_data
+  documentation: http://github.com/alexmojaki/stack_data
+
+extra:
+  recipe-maintainers:
+    - alexmojaki

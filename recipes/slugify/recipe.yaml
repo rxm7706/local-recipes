@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: slugify
+  version: "0.0.1"
+  sha256: c5703cc11c1a6947536f3ce8bb306766b8bb5a84a53717f5a703ce0f18235e4c
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 3
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - slugify
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: SAX-PD
+  # license_file: UNLICENSE # When added to MANIFEST.in – zacharyvoase/slugify#4
+  summary: A generic slugifier.
+  homepage: http://github.com/zacharyvoase/slugify
+  repository: http://github.com/zacharyvoase/slugify
+
+extra:
+  recipe-maintainers:
+    - proinsias

@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.14.1"
+
+package:
+  name: anaconda-client
+  version: ${{ version }}
+
+source:
+  url: https://github.com/anaconda/anaconda-client/archive/${{ version }}.tar.gz
+  sha256: 8a87e229021727bc357777a49fdc7b8d9299beb2dbe463dbe2b9092cf95d0684
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - SETUPTOOLS_SCM_PRETEND_VERSION=${{ version }} ${{ PYTHON }} -m pip install . -vv --no-deps --ignore-installed --disable-pip-version-check
+  python:
+    entry_points:
+      - binstar = binstar_client.scripts.cli:main
+      - conda-server = binstar_client.scripts.cli:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - hatchling
+    - hatch-vcs >=0.3
+    - setuptools-scm >=7.1
+    - hatch-requirements-txt
+  run:
+    - anaconda-cli-base >=0.7.0
+    - anaconda-auth >=0.12.3
+    - conda-package-handling >=1.7.3
+    - conda-package-streaming >=0.9.0
+    - defusedxml >=0.7.1
+    - nbformat >=4.4.0
+    - platformdirs >=3.10.0,<5.0
+    - python >=${{ python_min }}
+    - python-dateutil >=2.6.1
+    - pytz >=2021.3
+    - pyyaml >=3.12
+    - requests >=2.20.0
+    - requests-toolbelt >=0.9.1
+    - setuptools >=58.0.4
+    - tqdm >=4.56.0
+    - urllib3 >=1.26.4
+    # Technically an `[extra]`, but fails to upload on any `icon`
+    # https://github.com/conda-forge/anaconda-client-feedstock/issues/57
+    - pillow >=8.2
+    # anaconda-cli-base requires it and doesn't have it declared
+    # without this, pip check isn't passing
+    # https://github.com/conda-forge/anaconda-cli-base-feedstock/issues/19
+    - packaging
+
+tests:
+  - python:
+      python_version: ${{ python_min }}.*
+      pip_check: true
+      imports:
+        - binstar_client
+        - binstar_client.commands
+        - binstar_client.inspect_package
+        - binstar_client.mixins
+        - binstar_client.scripts
+        - binstar_client.utils
+        - binstar_client.utils.notebook
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - binstar --help
+      - conda-server --help
+      - python -c "from binstar_client.utils.notebook.data_uri import DataURIConverter; DataURIConverter(None).check_pillow_installed()"
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.md
+  summary: anaconda.org command line client library
+  homepage: https://github.com/anaconda/anaconda-client
+  repository: https://github.com/anaconda/anaconda-client
+  documentation: https://www.anaconda.com/docs/tools/anaconda-org/commandreference
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - goanpeca
+    - mbargull
+    - mattkram

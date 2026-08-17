@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: trove-classifiers
+  version: "2026.6.1.19"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: c5132b4b61a829d11cfbd2d72e97f20a45ed6edb95e45c5efdeb5e00836b2745
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - trove-classifiers = trove_classifiers.__main__:cli
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - calver
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - trove_classifiers
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - trove-classifiers --help
+
+about:
+  summary: Canonical source for classifiers on PyPI (pypi.org).
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/pypa/trove-classifiers
+
+extra:
+  recipe-maintainers:
+    - xylar

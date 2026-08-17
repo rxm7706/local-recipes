@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: unlzw3
+  version: "0.2.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/unlzw3-${{ version }}.tar.gz
+  sha256: d037a9b6823d1a455d6de1e0258af8c0f5dbf40aba3b19cc514448e78da77062
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+
+tests:
+  - python:
+      imports:
+        - unlzw3
+      pip_check: true
+
+about:
+  summary: Pure Python decompression module for .Z files compressed using Unix compress utility
+  license: Zlib
+  license_file: LICENSE.txt
+  homepage: https://github.com/scivision/unlzw3
+
+extra:
+  recipe-maintainers:
+    - marie59

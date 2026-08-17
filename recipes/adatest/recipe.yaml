@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3.5"
+
+package:
+  name: adatest
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/adatest/adatest-${{ version }}.tar.gz
+  sha256: c12c8633290b1f228b15c0b8a51eb20aea9b191068f3c106800a42782fbfdcc9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - adatest
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/microsoft/adatest.git
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Adaptively test and debug any natural language machine learning model.
+  description: |
+    Adaptively test and debug any natural language machine learning model.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: adatest
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: adatest
+  cfe-purls:
+    - pkg:conda/adatest@${{ version }}?channel=conda-forge
+    - pkg:pypi/adatest@${{ version }}
+  cfe-upstream-repo: https://github.com/microsoft/adatest.git
+  cfe-upstream-homepage: https://github.com/microsoft/adatest.git
+  cfe-import-names: [adatest]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:47:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:47:54Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

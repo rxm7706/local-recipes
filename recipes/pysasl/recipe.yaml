@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.0"
+
+package:
+  name: pysasl
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pysasl/pysasl-${{ version }}.tar.gz
+  sha256: 5141cd8cfa0b3667ec114aded60fb17313496ba10603ffdbd7feeac7146ae7a1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - importlib-metadata
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - pysasl
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/icgood/pysasl/
+  license: MIT
+  license_file: LICENSE
+  summary: Pure Python SASL client and server library.
+  description: |
+    Pure Python SASL client and server library.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pysasl
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pysasl
+  cfe-purls:
+    - pkg:conda/pysasl@${{ version }}?channel=conda-forge
+    - pkg:pypi/pysasl@${{ version }}
+  cfe-upstream-repo: https://github.com/icgood/pysasl/
+  cfe-upstream-homepage: https://github.com/icgood/pysasl/
+  cfe-import-names: [pysasl]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:38:10Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:38:10Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4/P5 Create-recipe local-only. pysasl.
+####

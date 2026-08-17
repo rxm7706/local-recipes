@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: nbval
+  version: "0.11.0"
+  python_min: "3.7"
+  sha256: 77c95797607b0a968babd2597ee3494102d25c3ad37435debbdac0e46e379094
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python 3.7.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pytest >=7
+    - six
+    - nbformat
+    - ipykernel
+    - jupyter_client
+    - coverage
+
+tests:
+  - python:
+      imports:
+        - nbval
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - pytest --nbval | grep nbval-${{ version }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A pytest plugin to validate Jupyter notebooks
+  homepage: https://github.com/computationalmodelling/nbval
+
+extra:
+  recipe-maintainers:
+    - hoxbro
+    - kain88-de
+    - takluyver

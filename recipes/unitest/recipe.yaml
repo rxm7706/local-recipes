@@ -1,0 +1,119 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4.34"
+
+package:
+  name: unitest
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/u/unitest/unitest-${{ version }}.tar.gz
+  sha256: ad89a03b7f703126a89eba21741d31a33fece1e35335ef02298e0948d01fc513
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=42
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - selenium
+    - gevent
+    - geventhttpclient
+    - psycogreen
+    - locust
+    - requests
+    - jsonpath-ng
+    - greenlet
+    - psycopg2
+    - assertpy
+    - pytest
+    - allure-pytest
+    - pytest-json-report
+    - webdriver-manager
+    - faker
+    - exrex
+    - decorator
+    - influxdb-client
+    - prometheus_client
+    - curlify
+    - pyjwt
+    - pytest-xdist
+    - pytest-rerunfailures
+    - fast-map
+    - pytest-order
+    - gunicorn
+    - fastapi-utils
+    - uvicorn
+    - lxml
+    - beautifulsoup4
+    - cryptography
+    - pandas
+    - python-dotenv
+    - pybytebuffer
+    - websocket-client
+    - flake8
+    - black
+    - pylint
+    - pytest-reportportal
+
+tests:
+  - python:
+      imports:
+        - unitest
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://bitbucket.org/zetaengg/unitest_plutus/src/main/
+  license: MIT
+  license_file: LICENSE
+  summary: Utilities required for performance and functional tests
+  description: |
+    Utilities required for performance and functional tests
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: unitest
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: unitest
+  cfe-purls:
+    - pkg:conda/unitest@${{ version }}?channel=conda-forge
+    - pkg:pypi/unitest@${{ version }}
+  cfe-upstream-repo: https://bitbucket.org/zetaengg/unitest_plutus/src/main/
+  cfe-upstream-homepage: https://bitbucket.org/zetaengg/unitest_plutus/src/main/
+  cfe-import-names: [unitest]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:56:49Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:56:49Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

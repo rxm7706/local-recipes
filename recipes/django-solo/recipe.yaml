@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: django-solo
   version: "2.5.1"
 
 package:
-  name: django-solo
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-solo/django_solo-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: ca3b2e44dbb4726446941ca8d765c247123f709f051d07e62eacf97330ffde01
 
 build:
@@ -23,25 +24,21 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }}
-    - django >=4.2
-    - typing_extensions >=4.0.1
+    - python >=${{ python_min }},<4.0
+    - django >=3.2
 
 tests:
   - python:
       imports:
         - solo
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
   summary: Django Solo helps working with singletons
   license: CC-BY-3.0
   license_file: LICENSE
   homepage: https://github.com/lazybird/django-solo/
-  repository: https://github.com/lazybird/django-solo/
 
 extra:
   recipe-maintainers:

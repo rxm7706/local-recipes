@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.0.0"
+
+package:
+  name: prompthub-py
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/prompthub-py/prompthub_py-${{ version }}.tar.gz
+  sha256: d2d145213c86712d1951b840e77b8193b9605de77eb5119ce737ba66a058ca29
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - requests
+    - pyyaml
+
+tests:
+  - python:
+      imports:
+        - prompthub
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/prompthub-py/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+  description: |
+    REPLACE_DESCRIPTION
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: prompthub-py
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: prompthub-py
+  cfe-purls:
+    - pkg:conda/prompthub-py@${{ version }}?channel=conda-forge
+    - pkg:pypi/prompthub-py@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/prompthub-py/
+  cfe-upstream-homepage: https://pypi.org/project/prompthub-py/
+  cfe-import-names: [prompthub]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:28:07Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:28:07Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

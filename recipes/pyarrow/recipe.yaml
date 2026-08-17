@@ -1,0 +1,355 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# fake selector to ensure variable appears as used, so skip below can work
+# [cuda_compiler_version_min]
+schema_version: 1
+
+context:
+  version: "25.0.0"
+  cuda_enabled: cuda_compiler_version != "None"
+  build_ext: '"cuda" if cuda_enabled else "cpu"'
+  llvm_version: 21
+
+recipe:
+  name: apache-arrow
+  version: ${{ version }}
+
+source:
+  - url: https://www.apache.org/dyn/closer.lua/arrow/arrow-${{ version }}/apache-arrow-${{ version }}.tar.gz?action=download
+    sha256: 12afc2dc8137bdd4a68876cec939f664c9d55cfc7b75f55b45163ebb4e344d81
+    file_name: apache-arrow-${{ version }}.tar.gz
+  # testing-submodules not part of release tarball
+  - git: https://github.com/apache/arrow-testing.git
+    rev: d2a13712303498963395318a4eb42872e66aead7
+    target_directory: testing
+  - git: https://github.com/apache/parquet-testing.git
+    rev: 18d17540097fca7c40be3d42c167e6bfad90763c
+    target_directory: cpp/submodules/parquet-testing
+
+build:
+  # for cuda support, building with one version is enough to be compatible with
+  # all later versions, since arrow is only using libcuda, and not libcudart.
+  # something with scikit-build-core; it's ultra-niche, any effort is hard to justify; file a PR to fix if you care
+  number: 0
+  skip: ppc64le and is_freethreading
+  skip: true  # [ppc64le and is_freethreading]
+
+outputs:
+  - package:
+      name: pyarrow-core
+      version: ${{ version }}
+    build:
+      string: py${{ CONDA_PY }}h${{ PKG_HASH }}_${{ PKG_BUILDNUM }}_${{ build_ext }}
+      dynamic_linking:
+        rpaths:
+          - lib/
+          - ${{ SP_DIR }}/pyarrow
+        missing_dso_allowlist:
+          - if: win
+            then: "*/arrow_python.dll"
+          - if: win
+            then: "*/arrow_python_flight.dll"
+          - if: unix
+            then: lib/libarrow_acero.*
+          - if: unix
+            then: lib/libarrow_dataset.*
+          - if: unix
+            then: lib/libarrow_substrait.*
+          - if: unix
+            then: lib/libarrow_flight.*
+          - if: unix
+            then: lib/libparquet.*
+          - if: unix
+            then: lib/libgandiva.*
+          - if: win
+            then: Library/lib/arrow_acero.dll
+          - if: win
+            then: Library/lib/arrow_dataset.dll
+          - if: win
+            then: Library/lib/arrow_substrait.dll
+          - if: win
+            then: Library/lib/arrow_flight.dll
+          - if: win
+            then: Library/lib/parquet.dll
+          - if: win
+            then: Library/lib/gandiva.dll
+      script:
+        file: ${{ 'build-pyarrow.bat' if win else 'build-pyarrow.sh' if unix else '' }}
+    requirements:
+      build:
+        - ${{ compiler("c") }}
+        - ${{ stdlib("c") }}
+        - ${{ compiler("cxx") }}
+        # pyarrow does not require nvcc but it needs to link against libraries in libarrow=*=*cuda
+        - if: cuda_compiler_version != "None"
+          then: ${{ compiler("cuda") }}
+        - if: build_platform != target_platform
+          then: python
+        - if: build_platform != target_platform
+          then: cross-python_${{ target_platform }}
+        - if: build_platform != target_platform
+          then: cython
+        - if: build_platform != target_platform
+          then: numpy
+        - cmake
+        - ninja
+      host:
+        # We add all libarrow package dependencies on host in order
+        # to build pyarrow once with all capabilities.
+        - libarrow-all ${{ version }}.* *${{ build_ext }}
+        - clangdev 21.*
+        - llvmdev 21.*
+        - zlib
+        - cython
+        - libcst
+        - numpy
+        - python
+        - pip
+        - scikit-build-core
+        - setuptools-scm
+      run:
+        # We ignore the run-exports from libarrow-all and restrict to only
+        # libarrow, as we don't want the other libraries to be installed when
+        # running for pyarrow-core, where the aim is a low storage footprint.
+        - libarrow ${{ version }}.* *${{ build_ext }}
+        # compute is necessary even for a basic `import pyarrow`
+        - libarrow-compute ${{ version }}.* *${{ build_ext }}
+        - python
+      ignore_run_exports:
+        from_package:
+          - if: cuda_compiler_version != "None"
+            then: ${{ compiler("cuda") }}
+          - libarrow-all
+          - numpy
+      run_constraints:
+        - apache-arrow-proc * ${{ build_ext }}
+        - numpy >=1.23,<3
+        - if: win
+          then: libprotobuf >=6.33.5
+    tests:
+      - python:
+          imports:
+            - pyarrow
+            - pyarrow.compute
+            - pyarrow.csv
+            - pyarrow.json
+            - pyarrow.fs
+            - pyarrow.orc
+            - pyarrow._azurefs
+            - pyarrow._gcsfs
+            - pyarrow._hdfs
+            - pyarrow._s3fs
+          pip_check: false
+      - requirements:
+          run:
+            - if: cuda_compiler_version != "None" and linux
+              then: cuda-driver-dev
+        script:
+          - if: linux
+            then: test -f ${SP_DIR}/pyarrow/libarrow_python.so
+          - if: linux
+            then: test -f ${SP_DIR}/pyarrow/libarrow_python_flight.so
+          - if: linux
+            then: test -f ${SP_DIR}/pyarrow/libarrow_python_parquet_encryption.so
+          - if: osx
+            then: test -f ${SP_DIR}/pyarrow/libarrow_python.dylib
+          - if: osx
+            then: test -f ${SP_DIR}/pyarrow/libarrow_python_flight.dylib
+          - if: osx
+            then: test -f ${SP_DIR}/pyarrow/libarrow_python_parquet_encryption.dylib
+          - if: win
+            then: if not exist %SP_DIR%\pyarrow\arrow_python.dll exit 1
+          - if: win
+            then: if not exist %SP_DIR%\pyarrow\arrow_python_flight.dll exit 1
+          - if: win
+            then: if not exist %SP_DIR%\pyarrow\arrow_python_parquet_encryption.dll exit 1
+          - if: unix
+            then: test -f ${SP_DIR}/pyarrow/include/arrow/python/pyarrow.h
+          - if: win
+            then: if not exist %SP_DIR%\pyarrow\include\arrow\python\pyarrow.h exit 1
+          - if: unix
+            then: test ! -f ${SP_DIR}/pyarrow/tests/test_array.py
+          - if: win
+            then: if exist %SP_DIR%/pyarrow/tests/test_array.py exit 1
+          - if: win and cuda_compiler_version != "None" and not is_freethreading
+            then: if not exist %SP_DIR%/pyarrow/_cuda.cp%PY_VER:.=%-win_amd64.pyd exit 1
+          - if: unix
+            then: test ! -f $PREFIX/lib/libarrow_acero${SHLIB_EXT}
+          - if: unix
+            then: test ! -f $PREFIX/lib/libarrow_dataset${SHLIB_EXT}
+          - if: unix
+            then: test ! -f $PREFIX/lib/libarrow_flight${SHLIB_EXT}
+          - if: unix
+            then: test ! -f $PREFIX/lib/libgandiva${SHLIB_EXT}
+          - if: unix
+            then: test ! -f $PREFIX/lib/libparquet${SHLIB_EXT}
+          - if: cuda_compiler_version != "None" and linux
+            then: export LD_PRELOAD="$PREFIX/lib/stubs/libcuda.so"
+          - if: cuda_compiler_version != "None" and linux
+            then: python -c "import pyarrow.cuda"
+    about:
+      license: Apache-2.0
+      license_file:
+        - LICENSE.txt
+      summary: Python libraries for Apache Arrow Core
+      homepage: http://github.com/apache/arrow
+  - package:
+      name: pyarrow
+      version: ${{ version }}
+    requirements:
+      host:
+        # only necessary for run-exports
+        - python
+      run:
+        # do not use pin_compatible because pyarrow-core has CUDA/non-CUDA variants
+        - pyarrow-core ${{ version }} *_${{ PKG_BUILDNUM }}_*
+        # Default doesn't contain flight, flight-sql and gandiva
+        - libarrow-acero ${{ version }}.*
+        - libarrow-dataset ${{ version }}.*
+        - libarrow-substrait ${{ version }}.*
+        - libparquet ${{ version }}.*
+        - python
+    tests:
+      - python:
+          imports:
+            - pyarrow.dataset
+            - pyarrow.parquet
+          pip_check: false
+      - files:
+          recipe:
+            - test_read_parquet.py
+        script:
+          - if: unix
+            then: test ! -f $PREFIX/lib/libarrow_flight${SHLIB_EXT}
+          - if: unix
+            then: test ! -f $PREFIX/lib/libgandiva${SHLIB_EXT}
+          - python test_read_parquet.py
+    about:
+      license: Apache-2.0
+      license_file:
+        - LICENSE.txt
+      summary: Python libraries for Apache Arrow with default capabilities
+      homepage: http://github.com/apache/arrow
+  - package:
+      name: pyarrow-all
+      version: ${{ version }}
+    requirements:
+      host:
+        # only necessary for run-exports
+        - python
+      run:
+        - pyarrow ${{ version }} *_${{ PKG_BUILDNUM }}
+        - libarrow-flight ${{ version }}.*
+        - libarrow-flight-sql ${{ version }}.*
+        - libarrow-gandiva ${{ version }}.*
+        - libarrow-substrait ${{ version }}.*
+        - python
+    tests:
+      - python:
+          imports:
+            - pyarrow.flight
+            - pyarrow.gandiva
+            - pyarrow.substrait
+          pip_check: false
+    about:
+      license: Apache-2.0
+      license_file:
+        - LICENSE.txt
+      summary: Python libraries for Apache Arrow with all capabilities
+      homepage: http://github.com/apache/arrow
+  - package:
+      name: pyarrow-tests
+      version: ${{ version }}
+    build:
+      skip: cuda_compiler_version != "None"
+      script:
+        file: ${{ 'build-pyarrow.bat' if win else 'build-pyarrow.sh' if unix else '' }}
+    requirements:
+      build:
+        - ${{ compiler("c") }}
+        - ${{ stdlib("c") }}
+        - ${{ compiler("cxx") }}
+        - if: build_platform != target_platform
+          then: python
+        - if: build_platform != target_platform
+          then: cross-python_${{ target_platform }}
+        - if: build_platform != target_platform
+          then: cython
+        - if: build_platform != target_platform
+          then: numpy
+        - cmake
+        - ninja
+      host:
+        - pyarrow-all ${{ version }} *_${{ PKG_BUILDNUM }}
+        - libarrow-all ${{ version }}.*
+        # only for helping resolver
+        - libarrow ${{ version }}.* *${{ build_ext }}
+        - clangdev 21.*
+        - llvmdev 21.*
+        - zlib
+        - cython
+        - numpy
+        - python
+        - pip
+        - scikit-build-core
+        - setuptools-scm
+      run:
+        - pyarrow-all ${{ version }} *_${{ PKG_BUILDNUM }}
+        - python
+    tests:
+      - files:
+          source:
+            - cpp/submodules/parquet-testing/data
+            - testing/data
+        requirements:
+          run:
+            - if: linux
+              then: ${{ compiler("cxx") }}
+            - pytest
+            - boto3
+            - cffi
+            - cloudpickle
+            - cython
+            - fsspec
+            - hypothesis
+            - minio-server
+            - pandas
+            - pytz
+            - s3fs >=2023
+            - scipy
+            - setuptools
+            - sparse
+        script:
+          - if: unix
+            then: cd ${SP_DIR}
+          - if: win
+            then: cd %SP_DIR%
+          - if: unix
+            then: export ARROW_TEST_DATA="${SRC_DIR}/testing/data"
+          - if: win
+            then: set "ARROW_TEST_DATA=%SRC_DIR%\testing\data"
+          - if: unix
+            then: export PARQUET_TEST_DATA="${SRC_DIR}/cpp/submodules/parquet-testing/data"
+          - if: win
+            then: set "PARQUET_TEST_DATA=%SRC_DIR%\cpp\submodules\parquet-testing\data"
+          - pytest pyarrow/ -rfEs -k "not (${{ tests_to_skip }})"
+    about:
+      license: Apache-2.0
+      license_file:
+        - LICENSE.txt
+      summary: Python test files for Apache Arrow
+      homepage: http://github.com/apache/arrow
+
+about:
+  license: Apache-2.0
+  license_file:
+    - LICENSE.txt
+  summary: Python libraries for Apache Arrow
+  homepage: http://github.com/apache/arrow
+
+extra:
+  recipe-maintainers:
+    - xhochy
+    - h-vetinari
+    - raulcd
+    - conda-forge/arrow-cpp
+  feedstock-name: pyarrow

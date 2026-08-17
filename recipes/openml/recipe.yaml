@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: openml
+  version: "0.15.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/openml-${{ version }}.tar.gz
+  sha256: 58ae3840b6ea736bb6c69bcbb30d587b817f64db070dc691adb9e09b99018816
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - openml=openml.cli:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - liac-arff >=2.4.0
+    - minio
+    - numpy >=1.6.2,<2
+    - pandas >=1.0.0
+    - pyarrow
+    - python >=${{ python_min }}
+    - python-dateutil
+    - requests
+    - scikit-learn >=0.18
+    - scipy >=0.13.3
+    - xmltodict
+    - tqdm
+    - packaging
+
+tests:
+  - python:
+      imports:
+        - openml
+        - openml.datasets
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - openml --help
+
+about:
+  summary: Python API for OpenML
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://openml.org/
+  repository: https://github.com/openml/openml-python
+  documentation: https://openml.github.io/openml-python/
+
+extra:
+  recipe-maintainers:
+    - BastianZim
+    - mfeurer
+    - PGijsbers

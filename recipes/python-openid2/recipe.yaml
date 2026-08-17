@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-openid2
+  version: "3.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/python-openid2-${{ version }}.tar.gz
+  sha256: 1df7c142522199685d5673df9a2ad0d51d4bba83d6b7ef67dac092670f032f22
+
+build:
+  number: 6
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - six
+    - cryptography
+    - lxml
+
+tests:
+  - python:
+      imports:
+        - openid
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Python OpenID library - OpenID support for servers and consumers.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/ziima/python-openid
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - rxm7706

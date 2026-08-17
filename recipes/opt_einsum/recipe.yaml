@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: opt_einsum
+  version: "3.4.0"
+
+recipe:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 96ca72f1b886d148241348783498194c577fa30a8faac108586b14f1ba4473ac
+
+build:
+  number: 1
+  noarch: python
+
+outputs:
+  - package:
+      name: opt_einsum
+    build:
+      script:
+        file: build-base.sh
+    requirements:
+      host:
+        - python ${{ python_min }}
+        - pip
+        - hatchling
+        - hatch-fancy-pypi-readme
+        - hatch-vcs
+      run:
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports:
+            - opt_einsum
+          pip_check: true
+          python_version: ${{ python_min }}
+      - requirements:
+          run:
+            - python ${{ python_min }}
+            - pytest
+            - pip
+        script:
+          - pytest --pyargs opt_einsum
+  - package:
+      name: opt-einsum
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('opt_einsum', upper_bound="x.x.x") }}
+    tests:
+      - python:
+          imports:
+            - opt_einsum
+          pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Optimizing einsum functions in NumPy, Tensorflow, Dask, and more with contraction order optimization.
+  description: >
+    Einsum is a very powerful function for contracting tensors of arbitrary dimension and index. However, it is typically only optimized to contract two terms at a time resulting in non-optimal scaling. This package optimizes the contraction order for arbitrarily large speedups.
+
+    See the docs for more information: dgasmith.github.io/opt_einsum/
+
+  homepage: http://github.com/dgasmith/opt_einsum
+  repository: https://github.com/dgasmith/opt_einsum
+
+extra:
+  recipe-maintainers:
+    - dgasmith
+    - loriab
+    - xhochy
+    - pavelzw

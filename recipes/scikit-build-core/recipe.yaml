@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: scikit-build-core
+  version: 1.0.3
+  python_min: '3.8'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/scikit_build_core-${{ version }}.tar.gz
+  sha256: a4d7a05978ee37975c37743510c8991e2debce7ef83afb0a07c0c576fd4f16e8
+
+build:
+  number: 0
+  noarch: python
+  script:
+    env:
+      HATCH_METADATA_CLASSIFIERS_NO_VERIFY: '1'
+  python:
+    entry_points:
+      - scikit-build = scikit_build_core.__main__:main
+      - scikit-build-core = scikit_build_core.__main__:main
+
+requirements:
+  host:
+    - hatch-vcs
+    - hatchling
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - python >=${{ python_min }}
+    - exceptiongroup >=1.0
+    - importlib-resources >=1.3
+    - packaging >=23.2
+    - pathspec >=0.12.0
+    - tomli >=1.2.2
+    - typing_extensions >=4
+tests:
+  - python:
+      imports:
+        - scikit_build_core
+      python_version: ${{ python_min }}.*
+  - files:
+      source:
+        - tests/
+        - src/
+        - pyproject.toml
+    requirements:
+      run:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - python-build
+        - cattrs >=22.2
+        - cmake
+        - hatch-vcs
+        - hatchling
+        - make
+        - ninja
+        - pip
+        - pybind11
+        - pytest >=7.2,!=9.1.0
+        - pytest-subprocess
+        - rich
+        - setuptools
+        - virtualenv
+        - wheel
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+      - scikit-build --help
+      # test_uv_workspace needs the wheelhouse fixture, which builds scikit-build-core itself (requires git metadata)
+      - pytest -vv -m "not isolated" -k "not sdist_time_hash_set_epoch and not sdist_hash and not test_uv_workspace"
+
+about:
+  summary: Build backend for CMake based projects
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - src/scikit_build_core/resources/find_python/Copyright.txt
+  homepage: https://pypi.org/project/scikit-build-core/
+
+extra:
+  recipe-maintainers:
+    - conda-forge/scikit-build
+    - henryiii
+    - jcfr
+    - thewtex
+    - zklaus

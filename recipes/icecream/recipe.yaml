@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: icecream
+  version: "2.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 9d7f244187f00a13f4ac77d176990e187e9c279d6cac4f7548e338291ad97343
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - colorama >=0.3.9
+    - pygments >=2.2.0
+    - executing >=0.3.1
+    - asttokens >=2.0.1
+
+tests:
+  - python:
+      imports:
+        - ${{ name }}
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: |
+    Never use print() to debug again; inspect variables, expressions,
+    and program execution with a single, simple function call.
+
+  description: |
+    Do you ever use print() or log() to debug your code? Of course you do.
+    IceCream, or ic for short, makes print debugging a little sweeter.
+
+    ic() is like print(), but better:
+
+    1. It prints both expressions/variable names and their values.
+    2. It's 40% faster to type.
+    3. Data structures are pretty printed.
+    4. Output is syntax highlighted.
+    5. It optionally includes program context: filename, line number, and parent function.
+
+
+  homepage: https://github.com/gruns/icecream
+
+extra:
+  recipe-maintainers:
+    - Jakeroid
+    - alexmojaki

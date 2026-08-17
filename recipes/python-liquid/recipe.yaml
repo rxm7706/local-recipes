@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-liquid
+  version: "2.3.1"
+  python_min: "3.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 884586b7884bb804767fa4f03d3eb4dfaa9979a7f445152aa016402d220dd97b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python 3.9.*
+    - hatchling >=1.14
+  run:
+    - python >=${{ python_min }}
+    - python-dateutil >=2.8.1
+    - babel >=2
+    - pytz
+    - markupsafe >=3
+    - importlib-resources >=5.12.0
+
+tests:
+  - python:
+      imports:
+        - liquid
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A Python engine for the Liquid template language.
+  license: MIT
+  license_file:
+    - LICENSE
+  homepage: https://jg-rp.github.io/liquid/
+  repository: https://github.com/jg-rp/liquid/
+
+extra:
+  recipe-maintainers:
+    - jg-rp

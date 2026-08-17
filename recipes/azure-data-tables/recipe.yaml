@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: azure-data-tables
+  version: "12.7.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: b14fc94a3223a2835ff5688e17d8e107b27c7cd7c4114138f2ac81373723705d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+    - azure-core <2.0.0,>=1.24.0
+    - yarl >=1.0,<2.0
+    - isodate >=0.6.0
+    - typing-extensions >=4.3.0
+
+tests:
+  - python:
+      imports:
+        - azure.data.tables
+        - azure.data.tables._generated
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Microsoft Azure Azure Data Tables Client Library for Python
+  license: MIT
+  license_file:
+    - LICENSE
+  homepage: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/table/azure-table
+
+extra:
+  recipe-maintainers:
+    - ngam
+    - TomAugspurger

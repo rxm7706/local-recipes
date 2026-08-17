@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3.0"
+
+package:
+  name: rapids-logger
+  version: ${{ version }}
+
+source:
+  url: https://github.com/rapidsai/rapids-logger/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: a0337f5de85680f82ffd1e2b72a3089c3dafd99a3d4c3bd11a2fbaa6dd1dd81b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - python.rapids-logger.rapids_logger
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/rapidsai/rapids-logger
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Logging framework for RAPIDS built around spdlog
+  description: |
+    Logging framework for RAPIDS built around spdlog
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: rapids-logger
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: rapids-logger
+  cfe-purls:
+    - pkg:conda/rapids-logger@${{ version }}?channel=conda-forge
+    - pkg:pypi/rapids-logger@${{ version }}
+  cfe-upstream-repo: https://github.com/rapidsai/rapids-logger
+  cfe-upstream-homepage: https://github.com/rapidsai/rapids-logger
+  cfe-import-names: [python.rapids-logger.rapids_logger]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:07:48Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:07:48Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

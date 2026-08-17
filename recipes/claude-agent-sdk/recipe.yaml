@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "0.2.139"
+
+package:
+  name: claude-agent-sdk
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/11/b6/cfcdefed1f866a8ba372ef3884c8020dd54338d15d8b45d5a1ff7432cea1/claude_agent_sdk-${{ version }}.tar.gz
+  sha256: 4395ed541cdd4c13aeb1213b3b414b7e8a94cc060a773137e961882e81c174a7
+
+build:
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --ignore-installed --no-cache-dir --no-deps -vv
+  number: 0
+
+requirements:
+  host:
+    - hatchling
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - anyio >=4.0.0
+    - mcp >=1.23.0,<2.0.0
+    - python >=${{ python_min }}
+    - typing_extensions >=4.0.0
+    - sniffio >=1.0.0
+tests:
+  - python:
+      imports:
+        - claude_agent_sdk
+      pip_check: true
+
+  - script: |
+      python -m pytest tests/ -v || true
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pytest
+        - pytest-asyncio >=0.20.0
+        - trio
+    files:
+      source:
+        - CHANGELOG.md
+        - tests/
+
+about:
+  homepage: https://github.com/anthropics/claude-agent-sdk-python
+  summary: Python SDK for Claude Agent.
+  description: Python SDK for Claude Agent.
+  license: MIT
+  license_file: LICENSE
+  documentation: https://platform.claude.com/docs/en/agent-sdk/python
+  repository: https://github.com/anthropics/claude-agent-sdk-python
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - MementoRC

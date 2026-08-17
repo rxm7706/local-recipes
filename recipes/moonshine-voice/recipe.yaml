@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.2"
+
+package:
+  name: moonshine-voice
+  version: ${{ version }}
+
+source:
+  url: https://github.com/moonshine-ai/moonshine/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 0eac05ab136834ac5d01e8f1cc2dde87048bcc9b37d92149042ab70b0c822d18
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.0
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - numpy
+    - python-sounddevice
+    - requests
+    - tqdm
+    - filelock
+    - platformdirs
+    - google-crc32c
+
+tests:
+  - python:
+      imports:
+        - micro.stt-training.stt_training
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/moonshine-ai/moonshine
+  license: MIT
+  license_file: LICENSE
+  summary: Fast, accurate, on-device AI library for building interactive voice applications
+  description: |
+    Fast, accurate, on-device AI library for building interactive voice applications
+  repository: https://github.com/moonshine-ai/moonshine
+  documentation: https://github.com/moonshine-ai/moonshine
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: moonshine-voice
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: moonshine-voice
+  cfe-purls:
+    - pkg:conda/moonshine-voice@${{ version }}?channel=conda-forge
+    - pkg:pypi/moonshine-voice@${{ version }}
+  cfe-upstream-repo: https://github.com/moonshine-ai/moonshine
+  cfe-upstream-homepage: https://github.com/moonshine-ai/moonshine
+  cfe-import-names: [micro.stt-training.stt_training]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:50:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:50:23Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

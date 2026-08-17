@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: textwrap3
+  version: "0.9.2"
+  bundle: zip
+  hash: 5008eeebdb236f6303dcd68f18b856d355f6197511d952ba74bc75e40e0c3414
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
+  sha256: ${{ hash }}
+  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  build:
+    - python
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - textwrap3
+      pip_check: false
+
+about:
+  # license_file: No license provided or described - assuming PSF since a backport; see https://github.com/jonathaneunice/textwrap3/issues/1
+  license: PSF-2.0
+  summary: textwrap3 is a compatibility back-port of Python 3.6’s textwrap module that supports Python 2.6 forward. This makes a few new APIs such as shorten and the max_lines parameter available in a compatible way to all Python versions typically in current use.
+  homepage: https://github.com/jonathaneunice/textwrap3
+  repository: https://github.com/jonathaneunice/textwrap3
+  documentation: https://docs.python.org/3.6/library/textwrap.html
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr

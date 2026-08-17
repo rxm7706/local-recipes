@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: django-entangled
   version: "0.7"
 
 package:
-  name: django-entangled
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-entangled/django_entangled-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_entangled-${{ version }}.tar.gz
   sha256: 40afbdcaf91ec061d5e5365eaf7b978a03879620ad68f97c0615daaa66843cc2
 
 build:
@@ -23,24 +24,21 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
     - django >=2.1
 
 tests:
   - python:
       imports:
         - entangled
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
   summary: Edit JSON field using Django Model Form
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/jrief/django-entangled
-  repository: https://github.com/jrief/django-entangled
 
 extra:
   recipe-maintainers:

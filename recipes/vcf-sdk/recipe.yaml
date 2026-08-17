@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "9.1.0.0"
+
+package:
+  name: vcf-sdk
+  version: ${{ version }}
+
+source:
+  url: https://github.com/vmware/vcf-sdk-python/archive/refs/tags/${{ version }}.tar.gz
+  sha256: df26c514d1dc85da1d28b4aaa2c5a591b39003e47bde2059d9eb779075be2ead
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - vmware-vcenter ==9.1.0.0
+    - pyvmomi ==9.1.0.0
+    - vmware-vsan-data-protection ==9.1.0.0
+    - vcf-installer ==9.1.0.0
+    - vmware-sddc-manager ==9.1.0.0
+    - vcf-fleet-lcm ==9.1.0.0
+    - vcf-log-mgmt ==9.1.0.0
+    - vcf-nsx ==9.1.0.0
+    - vcf-operations ==9.1.0.0
+    - vcf-operations-networks ==9.1.0.0
+    - vcf-sddc-lcm ==9.1.0.0
+    - vcf-vsphere-utils ==9.1.0.0
+
+tests:
+  - python:
+      imports:
+        - vcf_sdk
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/vmware/vcf-sdk-python
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: VCF SDK library is a wrapper package to install client libraries for VMware Cloud Foundation APIs.
+  description: |
+    VCF SDK library is a wrapper package to install client libraries for VMware Cloud Foundation APIs.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: vcf-sdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: vcf-sdk
+  cfe-purls:
+    - pkg:conda/vcf-sdk@${{ version }}?channel=conda-forge
+    - pkg:pypi/vcf-sdk@${{ version }}
+  cfe-upstream-repo: https://github.com/vmware/vcf-sdk-python
+  cfe-upstream-homepage: https://github.com/vmware/vcf-sdk-python
+  cfe-import-names: []
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:57:33Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:57:33Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.6.0"
+
+package:
+  name: pymgclient
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pymgclient/pymgclient-${{ version }}.tar.gz
+  sha256: 9499b865355447c1ffb5a9a0c9e87eb718b9d2e83c743722b7414d17bf47d807
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=77
+    - wheel
+    - cmake >=3.8
+  run:
+    - python >=${{ python_min }}
+    - pyopenssl
+    - networkx
+    - python-tzdata
+
+tests:
+  - python:
+      imports:
+        - python.mgclient
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/pymgclient/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Memgraph database adapter for Python language
+  description: |
+    Memgraph database adapter for Python language
+  repository: https://github.com/memgraph/pymgclient
+  documentation: https://memgraph.github.io/pymgclient
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pymgclient
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pymgclient
+  cfe-purls:
+    - pkg:conda/pymgclient@${{ version }}?channel=conda-forge
+    - pkg:pypi/pymgclient@${{ version }}
+  cfe-upstream-repo: https://github.com/memgraph/pymgclient
+  cfe-upstream-homepage: https://pypi.org/project/pymgclient/
+  cfe-import-names: [python.mgclient]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:20:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:20:53Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

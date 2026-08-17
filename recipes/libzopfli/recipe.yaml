@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: libzopfli
+  version: "1.0.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/google/zopfli/archive/zopfli-${{ version }}.tar.gz
+  sha256: e955a7739f71af37ef3349c4fa141c648e8775bceb2195be07e86f8e638814bd
+  patches:
+    # https://github.com/google/zopfli/pull/164
+    - include_more_headers.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - if: unix
+      then: make
+    - if: win
+      then: ninja
+  run_exports:
+    - ${{ pin_subpackage('libzopfli', upper_bound='x.x') }}
+
+tests:
+  - script:
+      - zopfli -h
+      - zopflipng -h
+      - if: unix
+        then: test -f $PREFIX/lib/libzopfli${SHLIB_EXT}
+      - if: unix
+        then: test -f $PREFIX/lib/libzopflipng${SHLIB_EXT}
+      - if: unix
+        then: test -f $PREFIX/include/zopfli/zopfli.h
+      - if: unix
+        then: test -f $PREFIX/include/zopfli/zopflipng_lib.h
+      - if: unix
+        then: test -f $PREFIX/include/zopfli/zlib_container.h
+      - if: unix
+        then: test -f $PREFIX/include/zopfli/gzip_container.h
+      - if: win
+        then: if not exist %LIBRARY_LIB%\\zopfli.lib exit 1
+      - if: win
+        then: if not exist %LIBRARY_BIN%\\zopfli.dll exit 1
+      - if: win
+        then: if not exist %LIBRARY_LIB%\\zopflipng.lib exit 1
+      - if: win
+        then: if not exist %LIBRARY_BIN%\\zopflipng.dll exit 1
+      - if: win
+        then: if not exist %LIBRARY_INC%\\zopfli\\zopfli.h exit 1
+      - if: win
+        then: if not exist %LIBRARY_INC%\\zopfli\\zopflipng_lib.h exit 1
+      - if: win
+        then: if not exist %LIBRARY_INC%\\zopfli\\zlib_container.h exit 1
+      - if: win
+        then: if not exist %LIBRARY_INC%\\zopfli\\gzip_container.h exit 1
+
+about:
+  license: Apache-2.0
+  license_file: COPYING
+  summary: A compression library programmed in C to perform very good, but slow, deflate or zlib compression.
+  homepage: https://github.com/google/zopfli
+
+extra:
+  recipe-maintainers:
+    - hmaarrfk

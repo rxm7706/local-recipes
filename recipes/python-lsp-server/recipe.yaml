@@ -1,0 +1,116 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-lsp-server
+  version: "1.15.0"
+  python_min: "3.10"
+  build_number: 0
+
+recipe:
+  name: ${{ name|lower }}-meta
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 85fa090262c3d1aef09b759d98811d6cb9ad5bbc58af15d588608ae8c1925801
+
+build:
+  number: ${{ build_number }}
+  noarch: python
+
+requirements:
+  host:
+    - pip
+    - setuptools >=61.2.0
+    - python 3.10.*
+  run:
+    - python >=${{ python_min }}
+
+outputs:
+  - package:
+      name: ${{ name|lower }}-base
+      version: ${{ version }}
+    build:
+      number: ${{ build_number }}
+      noarch: python
+      script: python -m pip install . --no-deps --no-build-isolation -vv
+      python:
+        entry_points:
+          - pylsp = pylsp.__main__:main
+    requirements:
+      host:
+        - python 3.10.*
+        - pip
+        - setuptools >=61.2.0
+        # Needed at build time to produce a package with the correct version for pip
+        # See https://github.com/pypa/setuptools_scm/issues/636#issuecomment-1026435048
+        - setuptools_scm >=3.4.3
+      run:
+        - python >=${{ python_min }}
+        - black
+        - importlib-metadata >=4.8.3
+        - jedi >=0.17.2,<0.21
+        - python-lsp-jsonrpc >=1.1.0,<2.0.0
+        - pluggy >=1.0.0
+        - docstring-to-markdown
+        - ujson >=3.0.0
+    tests:
+      - requirements:
+          run:
+            - pip
+            - python ${{ python_min }}
+        script:
+          - python -m pip check
+          - pylsp --help
+          - pip list | grep -i python-lsp-server | grep ${{ version }}
+  - package:
+      name: ${{ name|lower }}
+      version: ${{ version }}
+    build:
+      number: ${{ build_number }}
+      noarch: python
+    requirements:
+      host:
+        - ${{ pin_subpackage("python-lsp-server-base", exact=True) }}
+        - python 3.10.*
+      run:
+        - ${{ pin_subpackage("python-lsp-server-base", exact=True) }}
+        - python >=${{ python_min }}
+        - autopep8 >=2.0.4,<2.1.0
+        - flake8 >=7.1.0,<8.0.0
+        - mccabe >=0.7.0,<0.8.0
+        - pycodestyle >=2.12.0,<2.13.0
+        - pydocstyle >=6.3.0,<6.4.0
+        - pyflakes >=3.2.0,<3.3.0
+        - pylint >=3.1.0,<4.1.0
+        - rope >=1.11.0
+        - whatthepatch >=1.0.2,<2.0.0
+        - yapf >=0.33.0
+    tests:
+      - requirements:
+          run:
+            - pip
+            - python ${{ python_min }}
+        script:
+          - python -m pip check
+          - pylsp --help
+          - pip list | grep -i python-lsp-server | grep ${{ version }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: An implementation of the Language Server Protocol for Python
+  description: |
+    A Python 3.9+ implementation of the Language Server Protocol
+    making use of Jedi, pycodestyle, Pyflakes and YAPF.
+  homepage: https://github.com/python-lsp/python-lsp-server
+  repository: https://github.com/python-lsp/python-lsp-server
+
+extra:
+  recipe-maintainers:
+    - krassowski
+    - ccordoba12
+    - andfoy
+    - steff456
+    - dalthviz

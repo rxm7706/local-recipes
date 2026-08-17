@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.11"
+
+package:
+  name: calmap
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/calmap/calmap-${{ version }}.tar.gz
+  sha256: 270ddedd9b470d3aef4328887ed60e1e3d3ac4fc8d3335874663d8d178d5b9bc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - matplotlib-base
+    - numpy
+    - pandas
+
+tests:
+  - python:
+      imports:
+        - calmap
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/MarvinT/calmap
+  license: MIT
+  license_file: LICENSE
+  summary: Calendar heatmaps from Pandas time series data
+  description: |
+    Calendar heatmaps from Pandas time series data
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: calmap
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: calmap
+  cfe-purls:
+    - pkg:conda/calmap@${{ version }}?channel=conda-forge
+    - pkg:pypi/calmap@${{ version }}
+  cfe-upstream-repo: https://github.com/MarvinT/calmap
+  cfe-upstream-homepage: https://github.com/MarvinT/calmap
+  cfe-import-names: [calmap]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:49:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:49:59Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

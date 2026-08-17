@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.11.0"
+
+package:
+  name: aws-c-http
+  version: ${{ version }}
+
+source:
+  url: https://github.com/awslabs/aws-c-http/archive/v${{ version }}.tar.gz
+  sha256: 4ccbdd33c798b590288330dec9e93abe2ff6cfb198b7a4db036c9d362f2e6506
+
+build:
+  number: 6
+
+requirements:
+  build:
+    - cmake
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ninja
+  host:
+    - aws-c-cal
+    - aws-c-common
+    - aws-c-compression
+    - aws-c-io
+  run_exports:
+    - ${{ pin_subpackage("aws-c-http", upper_bound="x.x.x") }}
+
+tests:
+  - script:
+      - if: unix
+        then:
+          - test -f $PREFIX/lib/libaws-c-http${SHLIB_EXT}
+          - test -f $PREFIX/include/aws/http/http.h
+      - if: win
+        then:
+          - if not exist %LIBRARY_INC%\\aws\\http\\http.h exit 1
+          - if not exist %PREFIX%\\Library\\bin\\aws-c-http.dll exit 1
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: C99 implementation of the HTTP/1.1 and HTTP/2 specifications
+  homepage: https://github.com/awslabs/aws-c-http
+  repository: https://github.com/awslabs/aws-c-http
+
+extra:
+  recipe-maintainers:
+    - xhochy
+    - conda-forge/aws-sdk-cpp

@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.7.1"
+  name: JPype1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | lower }}-${{ version }}.tar.gz
+  sha256: 3cd88838dc3d2d546f7eaeadaaff864e590010c15f2b6a44b6f37e60796a14b2
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+    - openjdk ==11
+    - ant
+    - cmake
+    - if: win
+      then: ninja
+    - if: not win
+      then: make
+  host:
+    - python
+    - pip
+    - scikit-build-core
+  run:
+    - python
+    - packaging
+
+tests:
+  - python:
+      imports:
+        - jpype
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+        - openjdk
+    script:
+      - python -c "import jpype; jpype.startJVM(); print(jpype.java.lang.String('hi there'));"
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A Python to Java bridge.
+  description: A Python to Java bridge.
+  homepage: https://github.com/jpype-project/jpype
+  documentation: http://jpype.readthedocs.io/en/stable/
+
+extra:
+  recipe-maintainers:
+    - caspervdw
+    - marscher
+    - mariusvniekerk
+    - Thrameos

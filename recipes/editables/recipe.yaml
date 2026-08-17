@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: editables
+  version: "0.6"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/editables-${{ version }}.tar.gz
+  sha256: 1163834902381c4613787951c5914800fdf155ae08848a373b8ea5006780977c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - flit-core >=3.3
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - editables
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Editable installations
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/pfmoore/editables
+  repository: https://github.com/pfmoore/editables
+
+extra:
+  recipe-maintainers:
+    - xylar
+    - ofek

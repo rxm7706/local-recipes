@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: construct
+  version: "2.10.70"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 4d2472f9684731e58cc9c56c463be63baa1447d674e0d66aeb5627b22f512c29
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - python >=3.6
+
+tests:
+  - python:
+      imports:
+        - construct
+        - construct.lib
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A powerful declarative symmetric parser/builder for binary data
+  homepage: http://construct.readthedocs.org
+
+extra:
+  recipe-maintainers:
+    - DominicAntonacci
+    - kevinheavey

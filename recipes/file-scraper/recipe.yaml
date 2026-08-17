@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.7"
+
+package:
+  name: file-scraper
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/file-scraper/file_scraper-${{ version }}.tar.gz
+  sha256: bcef3432e67718dfe63382be4e700903947d2d8ae2ecc3b66f357335c4a0ca86
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=75.3.0
+  run:
+    - python >=${{ python_min }}
+    - alive-progress >=3.1.5
+    - beautifulsoup4 >=4.12.3
+    - colorama >=0.4.6
+    - jsbeautifier >=1.14.11
+    - pyopenssl >=24.0.0
+    - regex >=2023.8.8
+    - termcolor >=2.4.0
+
+tests:
+  - python:
+      imports:
+        - file_scraper
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/ivan-sincek/file-scraper
+  license: MIT
+  license_file: LICENSE
+  summary: Scrape files for sensitive information, and generate an interactive HTML report.
+  description: |
+    Scrape files for sensitive information, and generate an interactive HTML report.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: file-scraper
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: file-scraper
+  cfe-purls:
+    - pkg:conda/file-scraper@${{ version }}?channel=conda-forge
+    - pkg:pypi/file-scraper@${{ version }}
+  cfe-upstream-repo: https://github.com/ivan-sincek/file-scraper
+  cfe-upstream-homepage: https://github.com/ivan-sincek/file-scraper
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:49:56Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:49:56Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

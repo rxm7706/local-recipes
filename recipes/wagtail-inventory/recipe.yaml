@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "3.3"
+  version: '3.4'
   python_min: '3.12'
 
 package:
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/w/wagtail-inventory/wagtail_inventory-${{ version }}.tar.gz
-  sha256: f079afbdb8a7d6f98fbe0d23887867807d980faff9e3b0cbd44c9beb378e1610
+  sha256: d13043c1ca6444cfe5003606a91e26f20f989223373223893e5693794b6225ea
 
 build:
   number: 0
@@ -27,8 +27,7 @@ requirements:
   run:
     - python >=${{ python_min }},<4
     - tqdm >=4.15.0,<5
-    - wagtail >=6.2
-
+    - wagtail >=7.0
 tests:
   - python:
       imports:

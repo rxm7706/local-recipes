@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dtreeviz
+  version: "2.3.2"
+
+recipe:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dtreeviz-${{ version }}.tar.gz
+  sha256: d8413a01373237150fcccb763e469384fbd055a627517d77dbb0190a1403f059
+
+build:
+  number: 0
+  noarch: python
+
+outputs:
+  - package:
+      name: ${{ name }}
+    build:
+      noarch: python
+      script: python -m pip install . -vv
+    requirements:
+      host:
+        - pip
+        - python ${{ python_min }}.*
+        - setuptools
+      run:
+        - python >=${{ python_min }}
+        - colour
+        - python-graphviz >=0.9
+        - matplotlib-base
+        - numpy
+        - pandas
+        - pillow
+        - scikit-learn
+    tests:
+      - python:
+          imports:
+            - dtreeviz
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: ${{ name }}-extended
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage(name, exact=True) }}
+        - pyspark
+        - py-xgboost
+        - lightgbm
+        - langchain-openai
+    tests:
+      - python:
+          imports:
+            - dtreeviz
+            - dtreeviz.models
+          pip_check: true
+          python_version: ${{ python_min }}.*
+
+about:
+  summary: A python library for decision tree visualization and model interpretation
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/parrt/dtreeviz
+
+extra:
+  recipe-maintainers:
+    - raybellwaves
+    - pplonski
+    - m-rossi

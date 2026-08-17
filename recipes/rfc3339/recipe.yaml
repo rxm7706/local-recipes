@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: rfc3339
+  version: "6.2"
+  sha256: d53c3b5eefaef892b7240ba2a91fef012e86faa4d0a0ca782359c490e00ad4d0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - rfc3339
+      pip_check: false
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - rfc3339.py
+    requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - python rfc3339.py
+
+about:
+  license: ISC
+  # License file not included in the source distribution
+  license_file: LICENSE
+  summary: Format dates according to the RFC 3339
+  homepage: http://pypi.python.org/pypi/rfc3339/
+  repository: https://hg.sr.ht/~henryprecheur/rfc3339
+
+extra:
+  recipe-maintainers:
+    - kynan

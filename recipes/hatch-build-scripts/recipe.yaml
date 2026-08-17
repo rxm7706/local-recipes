@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: hatch-build-scripts
   version: "1.0.0"
 
 package:
-  name: hatch-build-scripts
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/h/hatch-build-scripts/hatch_build_scripts-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/hatch_build_scripts-${{ version }}.tar.gz
   sha256: 563735e2f265c9e1b92dece6f762309114505ffaf6e5d51d462eb6a3b4f14640
 
 build:
@@ -19,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - hatchling
     - pip
   run:
@@ -32,9 +33,7 @@ tests:
       imports:
         - hatch_build_scripts
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: A plugin for Hatch for writing build scripts
@@ -42,10 +41,6 @@ about:
   license_file: LICENSE.txt
   homepage: https://github.com/rmorshea/hatch-build-scripts
   repository: https://github.com/rmorshea/hatch-build-scripts
-  description: |
-    A plugin for Hatch that runs user-defined build scripts and copies the
-    resulting artifacts into the built package, configured via the
-    [[tool.hatch.build.hooks.build-scripts]] table in pyproject.toml.
 
 extra:
   recipe-maintainers:

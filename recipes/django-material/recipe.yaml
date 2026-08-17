@@ -4,6 +4,7 @@ schema_version: 1
 context:
   name: django-material
   version: "1.12.0"
+  python_min: "3.9"
 
 package:
   name: ${{ name|lower }}
@@ -20,30 +21,22 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python 3.9.*
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }},<4.0
-    - django >=4.2,<6.0
+    - python >=${{ python_min }},<3.10
+    - django >=4.2,<5.0
     - six
 
 tests:
   - python:
       imports:
         - material
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-        - django >=4.2,<6.0
-        - six
-    script:
-      - pip check
+      pip_check: true
+      python_version: ${{ python_min }}
 
 about:
-  homepage: http://github.com/viewflow/django-material
   summary: Material design for django forms and admin
   license: BSD-3-Clause
   license_file: LICENSE.txt
@@ -52,8 +45,9 @@ about:
     Strong Python/HTML code separation keeps your code DRY and free from underlying
     HTML/CSS rendering details. Field rendering customization happens in a template,
     not in code. Layouts allow setting relative location and size of fields.
-  documentation: http://docs.viewflow.io/material_forms.html
+  homepage: http://github.com/viewflow/django-material
   repository: https://github.com/viewflow/django-material
+  documentation: http://docs.viewflow.io/material_forms.html
 
 extra:
   recipe-maintainers:

@@ -1,0 +1,152 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Full credit goes to https://github.com/conda/conda-recipes for providing this recipe.
+# It has been subsequently adapted for automated building with conda-forge.
+# to avoid creating redundant CI jobs, conda-smithy needs python
+# to be used in all outputs, including the implicit global one.
+schema_version: 1
+
+context:
+  version: "3.11.1"
+
+recipe:
+  name: matplotlib-suite
+  version: ${{ version }}
+
+source:
+  url: https://github.com/matplotlib/matplotlib/archive/v${{ version }}.tar.gz
+  sha256: b8a1eae79e86021624b43484bd07cb318ee83aa5f4ed4c3044dcfdcea63b07fe
+
+build:
+  number: 2
+  skip: match(python, "<3.11")
+
+requirements:
+  host:
+    - python
+
+outputs:
+  - package:
+      name: matplotlib-base
+    build:
+      script:
+        file: ${{ 'build_base.sh' if not win else 'build_base.bat' if win else '' }}
+    requirements:
+      build:
+        - if: build_platform != target_platform
+          then: python
+        - if: build_platform != target_platform
+          then: cross-python_${{ target_platform }}
+        - if: build_platform != target_platform
+          then: numpy
+        - if: build_platform != target_platform
+          then: pybind11 >=2.6
+        - ${{ stdlib('c') }}
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - if: win
+          then: cmake
+        - pkg-config
+        - if: unix
+          then: libtool
+        - ninja
+      host:
+        - python
+        - python-build
+        - pip
+        - meson-python >=0.13.1
+        - certifi >=2020.06.20
+        - pybind11 >=2.13.2,!=2.13.3
+        - freetype
+        - libraqm-devel
+        - qhull
+        - numpy
+        - setuptools >=64
+        - setuptools_scm >=7,<10
+        - setuptools_scm_git_archive
+        - if: linux
+          then: tk
+      run:
+        - python
+        - contourpy >=1.0.1
+        - cycler >=0.10
+        - fonttools >=4.28.2
+        - kiwisolver >=1.3.1
+        - numpy >=1.25
+        - packaging >=20.0
+        - pillow >=9
+        - pyparsing >=3
+        - python-dateutil >=2.7
+        - freetype
+        - if: linux
+          then: tk
+    tests:
+      - python:
+          imports:
+            - matplotlib
+            - matplotlib.pyplot
+            - matplotlib._c_internal_utils
+            - matplotlib._image
+            - matplotlib._path
+            - matplotlib._qhull
+            - matplotlib._tri
+            - matplotlib.backends._backend_agg
+            - matplotlib.ft2font
+            - if: not win
+              then: matplotlib.backends._tkagg
+            - mpl_toolkits
+            - pylab
+          pip_check: false
+      - requirements:
+          run:
+            - if: not win
+              then: xorg-libx11
+  - package:
+      name: matplotlib
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        # osx has its own backend; pyside6 not available on ppc;
+        # pyside6 supports only gil enabled cpython
+        - if: python_impl == "cpython" and (not is_freethreading) and not (osx or ppc64le) and not is_freethreading
+          then: pyside6 >=6.7.2
+        - tornado >=5
+        - ${{ pin_subpackage('matplotlib-base', upper_bound="x.x.x") }}
+    tests:
+      - python:
+          imports:
+            - matplotlib
+          pip_check: false
+
+about:
+  license: PSF-2.0
+  license_file:
+    - LICENSE/LICENSE
+    - LICENSE/LICENSE_AMSFONTS
+    - LICENSE/LICENSE_BAKOMA
+    - LICENSE/LICENSE_COLORBREWER
+    - LICENSE/LICENSE_COURIERTEN
+    - LICENSE/LICENSE_LAST_RESORT_FONT
+    - LICENSE/LICENSE_QT4_EDITOR
+    - LICENSE/LICENSE_SOLARIZED
+    - LICENSE/LICENSE_STIX
+    - LICENSE/LICENSE_YORICK
+  summary: Publication quality figures in Python
+  description: |
+    matplotlib is a python 2D plotting library which produces publication
+    quality figures in a variety of hardcopy formats and interactive
+    environments across platforms. matplotlib can be used in Python scripts,
+    the Python and IPython shell (ala MATLAB or Mathematica), web
+    application servers, and six graphical user interface toolkits.
+  homepage: http://matplotlib.org/
+  repository: https://github.com/matplotlib/matplotlib/
+  documentation: http://matplotlib.org/contents.html
+
+extra:
+  recipe-maintainers:
+    - mdboom
+    - ocefpaf
+    - pelson
+    - tacaswell
+    - dopplershift

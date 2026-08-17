@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.4.4"
+
+package:
+  name: charls
+  version: ${{ version }}
+
+source:
+  url: https://github.com/team-charls/charls/archive/${{ version }}.tar.gz
+  sha256: fbd712903d61306ad00d5fa5029a9882630c7311ca487f48d2d76000956e8ff9
+
+build:
+  number: 0
+  skip: win and vc<14
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - if: not win
+      then: make
+    - if: win
+      then: ninja
+  run_exports:
+    - ${{ pin_subpackage('charls', upper_bound='x.x') }}
+
+tests:
+  - script:
+      - if: unix
+        then: test -f $PREFIX/lib/libcharls${SHLIB_EXT}
+      - if: unix
+        then: test -f $PREFIX/include/charls/charls.h
+      - if: win
+        then: if not exist %LIBRARY_LIB%\\charls-2-x64.lib exit 1
+      - if: win
+        then: if not exist %LIBRARY_BIN%\\charls-2-x64.dll exit 1
+      - if: win
+        then: if not exist %LIBRARY_INC%\\charls\\charls.h exit 1
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.md
+  summary: CharLS is a C++ implementation of the JPEG-LS standard for lossless and near-lossless image compression and decompression. JPEG-LS is a low-complexity image compression standard that matches JPEG 2000 compression ratios.
+  homepage: https://github.com/team-charls/charls
+
+extra:
+  recipe-maintainers:
+    - hmaarrfk

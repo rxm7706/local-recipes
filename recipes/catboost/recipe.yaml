@@ -1,0 +1,141 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.10"
+
+package:
+  name: catboost
+  version: ${{ version }}
+
+source:
+  url: https://github.com/catboost/catboost/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: ccbff5e411a2622c83dbb32281aefb9ac81ad88bdb12d1df83828c182f81af2a
+  patches:
+    - conda.diff
+
+build:
+  # We build from source on Unix and re-package binaries on windows
+  #  Yandex supplies whl files on PyPI for:
+  # - Win-64: Python 3.8, 3.9, 3.10, 3.11, 3.12, 3.13, 3.14
+  # TODO: support Linux on ppc64le: https://github.com/catboost/catboost/issues/2145
+  # Wheels from PyPI have a single version that already contains CUDA support so do not do separate builds on Windows,
+  # just have a single version for now
+  # TODO: build from source on Windows
+  # de-prioritize the CPU variants
+  number: ${{ build_num }}
+  string: ${{ 'cpu_py${{ CONDA_PY }}h${{ PKG_HASH }}_${{ PKG_BUILDNUM }}' if unix and cuda_compiler_version == "None" else "cuda${{ cuda_compiler_version | replace('.', '') }}_py${{ CONDA_PY }}h${{ PKG_HASH }}_${{ PKG_BUILDNUM }}" if unix and cuda_compiler_version != "None" else '' }}
+  skip: win and cuda_compiler_version != "None"
+  skip: true  # [win and cuda_compiler_version != "None"]
+  track_features:  # [cuda_compiler_version == "None"]
+    - if: cuda_compiler_version == "None"
+      then: catboost_cpu
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython ~=3.0.10
+    - if: build_platform != target_platform
+      then: numpy <3.0
+    - if: unix and build_platform != target_platform
+      then: jupyterlab 3.0.6.*
+    - if: unix
+      then: ragel >=6.10
+    - if: unix
+      then: yasm >=1.3.0
+    - if: unix
+      then: swig >=4.0.2
+    - if: unix
+      then: cmake >=3.24
+    - if: unix
+      then: make
+    - if: linux or osx
+      then: ${{ compiler('cxx') }}
+    # clang 14 on conda-forge is non-functional
+    - if: linux and cuda_compiler_version != "None"
+      then: clangxx >=18,<19
+    - if: linux and cuda_compiler_version == "None" and x86_64
+      then: clangxx >=16
+    - if: linux and cuda_compiler_version == "None" and aarch64
+      then: clangxx >=18
+    - if: unix
+      then: ${{ stdlib('c') }}
+    - if: unix and cuda_compiler_version != "None"
+      then: ${{ compiler('cuda') }}
+    - if: unix
+      then: lld >=7
+    - if: unix
+      then: yarn
+  host:
+    - if: unix
+      then: openssl
+    - if: unix
+      then: jupyterlab 3.0.6.*
+    - python
+    - pip
+    - setuptools >=70.1.0,<83.0
+    - cython ~=3.0.10
+    - numpy <3.0
+    - if: cuda_compiler_version != "None"
+      then: cuda-version ${{ cuda_compiler_version }}
+    - if: cuda_compiler_version != "None"
+      then: cuda-driver-dev
+    - if: cuda_compiler_version != "None"
+      then: cuda-cudart-dev
+  run:
+    - python
+    - numpy >=1.16.0,<3.0
+    - pandas >=0.24.0,<4.0
+    - scipy
+    - six
+    - plotly
+    - matplotlib-base
+    - python-graphviz
+  #python-graphviz avoids the pip check error
+  run_constraints:
+    - if: cuda_compiler_version != "None"
+      then: __cuda
+    - if: unix
+      then: ${{ pin_compatible("jupyterlab", upper_bound=None) }}
+
+tests:
+  - python:
+      imports:
+        - catboost
+      pip_check: true
+  - files:
+      source:
+        - catboost/pytest/smoke_tests/classification_tutorial_cpu.py
+    requirements:
+      run:
+        - pip
+        - scikit-learn
+        - traitlets
+        - ipython
+        - ipywidgets >=7.0,<9.0
+    script:
+      - python catboost/pytest/smoke_tests/classification_tutorial_cpu.py
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Gradient boosting on decision trees library
+  description: |
+    General purpose gradient boosting on decision trees library with categorical features support out of the box.
+    It is easy to install, contains fast inference implementation and supports CPU and GPU (even multi-GPU) computation.
+  homepage: http://catboost.ai
+  repository: https://github.com/catboost/catboost
+  documentation: https://catboost.ai/docs/
+
+extra:
+  recipe-maintainers:
+    - sab
+    - kizill
+    - nikitxskv
+    - dbakshee
+    - andrey-khropov
+    - isuruf

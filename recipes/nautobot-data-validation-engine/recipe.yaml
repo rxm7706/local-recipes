@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.4.0"
+
+package:
+  name: nautobot-data-validation-engine
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/nautobot-data-validation-engine/nautobot_data_validation_engine-${{ version }}.tar.gz
+  sha256: ba7ca728c89bbc7462a8959ac9041c8b6bac5710cb68bdf82c741593c9802367
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=2.0.0,<3.0.0
+  run:
+    - python >=${{ python_min }}
+    - nautobot <3.0.0,>=2.4.20
+
+tests:
+  - python:
+      imports:
+        - nautobot_data_validation_engine
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/nautobot/nautobot-app-data-validation-engine
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Provides UI to build custom data validation rules for data in Nautobot
+  description: |
+    Provides UI to build custom data validation rules for data in Nautobot
+  repository: https://github.com/nautobot/nautobot-app-data-validation-engine
+  documentation: https://docs.nautobot.com/projects/data-validation/en/latest/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nautobot-data-validation-engine
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: nautobot-data-validation-engine
+  cfe-purls:
+    - pkg:conda/nautobot-data-validation-engine@${{ version }}?channel=conda-forge
+    - pkg:pypi/nautobot-data-validation-engine@${{ version }}
+  cfe-upstream-repo: https://github.com/nautobot/nautobot-app-data-validation-engine
+  cfe-upstream-homepage: https://github.com/nautobot/nautobot-app-data-validation-engine
+  cfe-import-names: [nautobot_data_validation_engine]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:21:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:21:12Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

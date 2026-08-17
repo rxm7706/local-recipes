@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: voyageai
+  version: 0.5.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/voyageai-${{ version }}.tar.gz
+  sha256: ed2775fe9faeb96cc2b3931edc35d76185d19f34f1523d1f70535f0451126ae9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
+  run:
+    - langchain-text-splitters >=0.3.8
+    - pillow
+    - pydantic >=2.7.4
+    - tokenizers >=0.14.0
+    - python >=${{ python_min }},<3.13
+    - requests
+    - aiohttp
+    - tenacity
+    - numpy
+    - aiolimiter
+tests:
+  - python:
+      imports:
+        - voyageai
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Vectorize your data to gear up your AI stack
+  license: MIT
+  license_file: LICENSE
+  homepage: https://www.voyageai.com
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

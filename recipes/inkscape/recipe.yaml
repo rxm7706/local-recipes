@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.91"
+
+package:
+  name: inkscape
+  version: ${{ version }}
+
+source:  # [win]
+  url: ${{ 'https://inkscape.org/en/gallery/item/3932/Inkscape-0.91-1-win32.7z' if win32 else 'https://inkscape.org/en/gallery/item/3938/Inkscape-${{ version }}-1-win64.7z' if win64 else '' }}
+  file_name: ${{ 'Inkscape-${{ version }}-1.7z' if win else '' }}
+  sha1: ${{ '28250e737449df653a8cc853f1a4d8207183c4a4' if win32 else '724707f66aa48be0a5746d71da5bf328cb2745bf' if win64 else '' }}
+
+build:
+  number: 0
+  skip: not win
+
+requirements:
+  build:
+    - 7za
+
+tests:
+  - script:
+      - inkscape --help
+
+about:
+  license: GPL 2, LGPL 2
+  summary: vector graphics editor (repackaged)
+  homepage: https://inkscape.org
+
+extra:
+  recipe-maintainers:
+    - janschulz
+    - jschueller

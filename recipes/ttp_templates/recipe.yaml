@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.9"
+
+package:
+  name: ttp_templates
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/ttp_templates/ttp_templates-${{ version }}.tar.gz
+  sha256: ea992b91fbc200233524fb70f8a311e901e451f3112294cff7e63e886b8b1026
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=1.0.0
+  run:
+    - python >=${{ python_min }}
+    - ttp >=0.10.0
+    - pydantic >=2.0
+
+tests:
+  - python:
+      imports:
+        - ttp_templates
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/dmulyalin/ttp_templates
+  license: MIT
+  license_file: LICENSE
+  summary: Template Text Parser Templates collections
+  description: |
+    Template Text Parser Templates collections
+  repository: https://github.com/dmulyalin/ttp_templates
+  documentation: https://dmulyalin.github.io/ttp_templates/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ttp_templates
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ttp_templates
+  cfe-purls:
+    - pkg:conda/ttp_templates@${{ version }}?channel=conda-forge
+    - pkg:pypi/ttp-templates@${{ version }}
+  cfe-upstream-repo: https://github.com/dmulyalin/ttp_templates
+  cfe-upstream-homepage: https://github.com/dmulyalin/ttp_templates
+  cfe-import-names: [ttp_templates]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:05:13Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:05:13Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

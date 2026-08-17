@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.8.0"
+
+package:
+  name: librmm-cu13
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/l/librmm-cu13/librmm_cu13-26.8.0-py3-none-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl
+  sha256: 291579acbda638a6588bcd6d3b028ab90fc76c05c939864b5ee21c255946ccd3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - rapids-logger ==0.2.*
+
+tests:
+  - python:
+      imports:
+        - librmm_cu13
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/rapidsai/rmm
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: rmm - RAPIDS Memory Manager
+  description: |
+    rmm - RAPIDS Memory Manager
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: librmm-cu13
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: librmm-cu13
+  cfe-purls:
+    - pkg:conda/librmm-cu13@${{ version }}?channel=conda-forge
+    - pkg:pypi/librmm-cu13@${{ version }}
+  cfe-upstream-repo: https://github.com/rapidsai/rmm
+  cfe-upstream-homepage: https://github.com/rapidsai/rmm
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:02:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:02:29Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

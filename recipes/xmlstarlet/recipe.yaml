@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: 1.6.1
+
+package:
+  name: xmlstarlet
+  version: ${{ version }}
+
+source:
+  url: https://sourceforge.net/projects/xmlstar/files/xmlstarlet/${{ version }}/xmlstarlet-${{ version }}.tar.gz
+  sha256: 15d838c4f3375332fd95554619179b69e4ec91418a3a5296e7c631b7ed19e7ca
+
+build:
+  number: 3
+  skip: win
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - autoconf
+    - automake
+    - pkg-config
+    - make
+  host:
+    - libxslt
+    - libxml2
+
+tests:
+  - script:
+      - xml --version
+
+about:
+  license: MIT
+  license_file: COPYING
+  summary: XMLStarlet Command Line XML Toolkit
+  description: |
+    XMLStarlet is a set of command line utilities (tools) which can be used to transform, query, validate,
+    and edit XML documents and files using simple set of shell commands in similar way it is done for plain text
+    files using UNIX grep, sed, awk, diff, patch, join, etc commands.
+  homepage: http://xmlstar.sourceforge.net
+
+extra:
+  recipe-maintainers:
+    - bgruening
+    - danielnachun

@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.48.0"
+
+package:
+  name: wheel
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/w/wheel/wheel-${{ version }}.tar.gz
+  sha256: 94800765601e9171bf5d58d066e640662842bcedcbab982b2c90787a2c987322
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -c "import flit_core.buildapi; flit_core.buildapi.build_wheel('.')" && ${{ PYTHON }} -m installer --no-compile-bytecode wheel-*.whl
+  python:
+    entry_points:
+      - wheel = wheel._commands:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - flit-core >=3.11,<4
+    - python-installer
+  run:
+    - python >=${{ python_min }}
+    - packaging >=24.0
+
+tests:
+  - python:
+      imports:
+        - wheel
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - wheel --help
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: A built-package format for Python.
+  homepage: https://github.com/pypa/wheel
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - pelson
+    - ocefpaf
+    - mingwandroid

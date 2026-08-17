@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: ml-collections
+  version: 1.0.0
+  python_min: 3.10
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ml_collections-${{ version }}.tar.gz
+  sha256: 00b11a1a339dd6c2d9b7f0daab47ab17e10e29ca1b2a656058605e2b7210897f
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . -vv --no-deps
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - flit-core
+  run:
+    - python >=${{ python_min }}
+    - absl-py
+    - pyyaml
+    - six
+
+tests:
+  - python:
+      imports:
+        - ml_collections
+      pip_check: true
+
+about:
+  summary: ML Collections is a library of Python collections designed for ML usecases.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/google/ml_collections
+
+extra:
+  recipe-maintainers:
+    - hadim

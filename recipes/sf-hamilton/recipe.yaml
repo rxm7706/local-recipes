@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sf-hamilton
+  version: "1.88.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 58fbc5ad1e5b130d7256b11d3e5e6823afd06fe9f4b1d49203a72ff99eaa94cc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools >=72.1
+  run:
+    - numpy
+    - pandas
+    - python >=${{ python_min }}
+    - typing_extensions >4.0.0
+    - typing_inspect
+
+tests:
+  - python:
+      imports:
+        - hamilton
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Hamilton, the micro-framework for creating dataframes.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/DAGWorks-Inc/hamilton
+  documentation: https://hamilton.dagworks.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - thewchan

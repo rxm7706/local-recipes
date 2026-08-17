@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: httpx
+  version: "0.28.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 75e98c5f16b0f35b567856f597f06ff2270a374470a5c2392242528e3e3e42fc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - httpx=httpx:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - hatch-fancy-pypi-readme
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - certifi
+    - httpcore 1.*
+    - idna
+    - anyio
+
+tests:
+  - python:
+      imports:
+        - httpx
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+        - click ==8.*
+        - pip
+        - pygments ==2.*
+        - rich >=10,<13
+    script:
+      - httpx --help
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.md
+  summary: A next-generation HTTP client for Python.
+  homepage: https://github.com/encode/httpx
+  repository: https://github.com/encode/httpx
+  documentation: https://www.encode.io/httpx/
+
+extra:
+  recipe-maintainers:
+    - primozgodec
+    - florimondmanca
+    - thewchan

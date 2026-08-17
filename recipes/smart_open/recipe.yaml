@@ -1,0 +1,285 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "8.0.1"
+  python_check_max: "3.14"
+  summary: Utils for streaming large files (S3, HDFS, GCS, SFTP, Azure Blob Storage, gzip, bz2, zst...)
+  cov_fail_under: "84"
+  test_skips: >
+    http_gz
+    http_gz_query
+    https_seek_forward
+    s3_disable_compression
+    s3_gzip_compress_sanity
+    s3_read_explicit
+    s3_write_explicit
+    s3_write_implicit
+    seek_from_current
+    seek_from_end
+    seek_from_start
+
+recipe:
+  name: smart_open
+  version: ${{ version }}
+
+source:
+  - target_directory: dist
+    url: https://pypi.org/packages/source/s/smart_open/smart_open-${{ version }}.tar.gz
+    sha256: 18b1c4496003c6902be17c15f032b5c319f307c89c6ae9e6b028b508bed8b2cf
+  - target_directory: src
+    url: https://github.com/RaRe-Technologies/smart_open/archive/refs/tags/v${{ version }}.tar.gz
+    sha256: 7e922762fd18aec7f4bec53cbaa943e5627d73882fb3c861612e0c1ce928e43f
+
+build:
+  number: 0
+  noarch: python
+
+outputs:
+  # the actual package
+  - package:
+      name: smart_open
+    build:
+      noarch: python
+      script:
+        env:
+          SETUPTOOLS_SCM_PRETEND_VERSION: ${{ version }}
+        content:
+          - cd dist
+          - ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
+    requirements:
+      host:
+        - pip
+        - python ${{ python_min }}.*
+        - setuptools >=64
+        - setuptools-scm >=8
+        - wheel
+      run:
+        - python >=${{ python_min }}
+        - wrapt
+    tests:
+      - python:
+          imports: smart_open
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+
+  # the kitchen sink with tests
+  - package:
+      name: smart-open-with-all
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("smart_open", exact=True) }}
+        - ${{ pin_subpackage("smart-open-with-azure", exact=True) }}
+        - ${{ pin_subpackage("smart-open-with-gcs", exact=True) }}
+        - ${{ pin_subpackage("smart-open-with-http", exact=True) }}
+        - ${{ pin_subpackage("smart-open-with-lz4", exact=True) }}
+        - ${{ pin_subpackage("smart-open-with-s3", exact=True) }}
+        - ${{ pin_subpackage("smart-open-with-ssh", exact=True) }}
+        - ${{ pin_subpackage("smart-open-with-webhdfs", exact=True) }}
+        - ${{ pin_subpackage("smart-open-with-zst", exact=True) }}
+    tests:
+      - files:
+          source:
+            - src/tests/
+        requirements:
+          run:
+            - coverage
+            - moto
+            - pytest
+            - pytest-benchmark
+            - pytest-rerunfailures
+            - python ${{ python_min }}.*
+            - responses
+        script:
+          - python -c "from importlib.metadata import version; v = version('smart-open'); print(v); assert v == '${{ version }}'"
+          - cd src
+          - coverage run --source=smart_open --branch -m pytest -vv --tb=long --color=yes -k "not ${{ test_skips | split | join(" or ") }}"
+          - coverage report --show-missing --skip-covered --fail-under=${{ cov_fail_under }}
+    about:
+      summary: ${{ summary }} (with [all])
+
+  # the normalized hyphen-convention package
+  - package:
+      name: smart-open
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("smart_open", exact=True) }}
+    tests:
+      - python:
+          imports: smart_open
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+
+  # extras from here on out
+  - package:
+      name: smart-open-with-azure
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("smart_open", exact=True) }}
+        - azure-common
+        - azure-core
+        - azure-storage-blob >=12.7.0
+    tests:
+      - python:
+          imports: smart_open
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: ${{ summary }} (with [azure])
+
+  - package:
+      name: smart-open-with-gcs
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("smart_open", exact=True) }}
+        - google-cloud-storage >=2.6.0
+    tests:
+      - python:
+          imports: smart_open
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: ${{ summary }} (with [gcs])
+
+  - package:
+      name: smart-open-with-http
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("smart_open", exact=True) }}
+        - requests
+    tests:
+      - python:
+          imports: smart_open
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: ${{ summary }} (with [http])
+
+  - package:
+      name: smart-open-with-lz4
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("smart_open", exact=True) }}
+        - lz4
+    tests:
+      - python:
+          imports: smart_open
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: ${{ summary }} (with [lz4])
+
+  - package:
+      name: smart-open-with-s3
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("smart_open", exact=True) }}
+        - boto3 >=1.9.17
+    tests:
+      - python:
+          imports: smart_open
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: ${{ summary }} (with [s3])
+
+  - package:
+      name: smart-open-with-ssh
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("smart_open", exact=True) }}
+        - paramiko
+    tests:
+      - python:
+          imports: smart_open
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: ${{ summary }} (with [ssh])
+
+  - package:
+      name: smart-open-with-webhdfs
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("smart_open", exact=True) }}
+        - requests
+    tests:
+      - python:
+          imports: smart_open
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: ${{ summary }} (with [webhdfs])
+
+  - package:
+      name: smart-open-with-zst
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("smart_open", exact=True) }}
+        - backports.zstd >=1.0.0
+    tests:
+      - python:
+          imports: smart_open
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: ${{ summary }} (with [zst])
+
+about:
+  homepage: https://pypi.org/project/smart-open
+  license: MIT
+  license_file: dist/LICENSE
+  summary: ${{ summary }}
+  repository: https://github.com/RaRe-Technologies/smart_open
+  description: |
+    smart_open is a Python 3 library
+    for efficient streaming of very large files
+    from/to S3, HDFS, WebHDFS or local (compressed) files.
+
+extra:
+  feedstock-name: smart_open
+  recipe-maintainers:
+    - timkpaine
+    - souravsingh
+    - mpenkov
+    - bollwyvl

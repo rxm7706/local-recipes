@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: amundsen-metadata
   version: "3.13.0"
 
 package:
-  name: amundsen-metadata
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/a/amundsen-metadata/amundsen-metadata-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/amundsen-metadata-${{ version }}.tar.gz
   sha256: 6472903a6e994d685703733d89c5056d7c76e001731f317a9446e79291d58c8d
 
 build:
@@ -23,7 +24,7 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
     - neo4j-python-driver >=4.4.5
     - apache-atlas >=0.0.11
     - beaker >=1.10.0
@@ -54,22 +55,14 @@ tests:
       imports:
         - metadata_service
       pip_check: false
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}.*
 
 about:
   summary: Metadata service for Amundsen
   license: Apache-2.0
   license_file:
     - LICENSE
-    - NOTICE
   homepage: https://www.github.com/amundsen-io/amundsen/tree/main/metadata
-  repository: https://github.com/amundsen-io/amundsen
-  description: |
-    Metadata service for Amundsen, a metadata-driven application for
-    improving the productivity of data analysts, data scientists, and
-    engineers when interacting with data.
 
 extra:
   recipe-maintainers:

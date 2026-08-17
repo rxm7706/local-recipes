@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.6.0"
+
+package:
+  name: sphinx-argparse
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sphinx-argparse/sphinx_argparse-${{ version }}.tar.gz
+  sha256: d072bb67dd52b294375f0eedc203cb8e50d0329910dbceb6764e9386bff94e9d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - flit-core >=3.10,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - sphinx >=5.1.0
+    - docutils >=0.19
+
+tests:
+  - python:
+      imports:
+        - sphinxarg
+        - sphinxarg.ext
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A sphinx extension that automatically documents argparse commands and options
+  license: MIT
+  license_file: LICENSE.rst
+  homepage: https://sphinx-argparse.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - conda-forge/sphinx
+    - croth1
+    - dpryan79

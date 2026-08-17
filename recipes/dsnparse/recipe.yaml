@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: dsnparse
-  version: "0.1.15"
+  version: "0.4.0"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dsnparse-${{ version }}.tar.gz
-  sha256: 2ac5705b17cb28e8b115053c2d51cf3321dc2041b1d75e2db6157e05146d0fba
+  sha256: 301a251ef74832dccfb3535650b270749c8c7ef49437847a4cd3ed353b873ff2
 
 build:
   number: 0
@@ -42,3 +42,4 @@ about:
 extra:
   recipe-maintainers:
     - astrojuanlu
+    - rxm7706

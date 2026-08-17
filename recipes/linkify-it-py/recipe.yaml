@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: linkify-it-py
+  version: "2.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 43360231720999c10e9328dc3691160e27a718e280673d444c38d7d3aaa3b98b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - uc-micro-py
+
+tests:
+  - python:
+      imports:
+        - linkify_it
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Links recognition library with FULL unicode support.
+  homepage: https://github.com/tsutsu3/linkify-it-py
+
+extra:
+  recipe-maintainers:
+    - thewchan
+    - tsutsu3
+    - chrisjsewell

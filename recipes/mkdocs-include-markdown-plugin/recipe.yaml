@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mkdocs-include-markdown-plugin
+  version: "7.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/mkdocs_include_markdown_plugin-${{ version }}.tar.gz
+  sha256: 4a67a91ade680dc0e15f608e5b6343bec03372ffa112c40a4254c1bfb10f42f3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - mkdocs >=1.4
+    - wcmatch
+
+tests:
+  - python:
+      imports:
+        - mkdocs_include_markdown_plugin
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Mkdocs Markdown includer plugin.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://pypi.org/project/mkdocs-include-markdown-plugin
+  repository: https://github.com/mondeja/mkdocs-include-markdown-plugin
+
+extra:
+  recipe-maintainers:
+    - maresb

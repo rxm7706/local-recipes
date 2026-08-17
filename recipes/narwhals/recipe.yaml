@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: narwhals
+  version: "2.24.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/narwhals-${{ version }}.tar.gz
+  sha256: b5c0f684ccd9d7475b564111e319a4964abcf2baf79d3cf6b1003d06ac9b828d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - uv-build >=0.11.0,<0.12.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - narwhals
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Extremely lightweight compatibility layer between pandas, Polars, cuDF, and Modin
+  license: MIT
+  license_file: LICENSE.md
+  homepage: https://narwhals-dev.github.io/narwhals/
+  repository: https://github.com/narwhals-dev/narwhals
+
+extra:
+  recipe-maintainers:
+    - MarcoGorelli
+    - thewchan

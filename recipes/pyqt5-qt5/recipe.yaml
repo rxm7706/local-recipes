@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.15.19"
+
+package:
+  name: pyqt5-qt5
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/p/PyQt5-Qt5/pyqt5_qt5-5.15.19-py3-none-macosx_10_13_x86_64.whl
+  sha256: cac6b78e4805848c25979a0622660251070781b6b4f810688a960cb44d1ae5a2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pyqt5_qt5
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://www.riverbankcomputing.com/software/pyqt/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: The subset of a Qt installation needed by PyQt5.
+  description: |
+    The subset of a Qt installation needed by PyQt5.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyqt5-qt5
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: PyQt5-Qt5
+  cfe-purls:
+    - pkg:conda/pyqt5-qt5@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyqt5-qt5@${{ version }}
+  cfe-upstream-repo: https://www.riverbankcomputing.com/software/pyqt/
+  cfe-upstream-homepage: https://www.riverbankcomputing.com/software/pyqt/
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:06:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:06:27Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

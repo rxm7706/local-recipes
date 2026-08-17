@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: epdb
+  version: 0.15.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/epdb-${{ version }}.tar.gz
+  sha256: f59e9d54866faad6fcbd8fcfc634b85e8fde2b045b13d10f2f8d083f6cbd2668
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - epdb = epdb.epdb_client:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - six
+
+tests:
+  - python:
+      imports:
+        - epdb
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Enhanced Python Debugger
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/sassoftware/epdb
+
+extra:
+  recipe-maintainers:
+    - pavelzw

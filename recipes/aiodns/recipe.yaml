@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.0.4"
+
+package:
+  name: aiodns
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/aiodns/aiodns-${{ version }}.tar.gz
+  sha256: cb10e0c0d2591636716ad2fe402e977c16d71bdaf76bb8cb49e8a6633596f736
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pycares >=5.0.0,<6
+
+tests:
+  - python:
+      imports:
+        - aiodns
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      - python -m pytest -vv --asyncio-mode=auto
+    files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pytest
+        - pytest-asyncio
+        - if: unix
+          then: uvloop
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Simple DNS resolver for asyncio
+  description: |
+    aiodns provides a simple way for doing asynchronous DNS resolutions using
+    pycares.
+  homepage: https://github.com/saghul/aiodns
+  repository: https://github.com/saghul/aiodns
+  documentation: https://github.com/saghul/aiodns
+
+extra:
+  recipe-maintainers:
+    - CurtLH
+    - mgorny

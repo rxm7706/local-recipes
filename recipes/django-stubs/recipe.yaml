@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-stubs
+  version: "6.1.0"
+  python_min: "3.11"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: b6aecc5c738a103135f76ba160a6f75e3b27dcf0200c64d7226018cdbc2340dd
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - uv-build >=0.12.0,<0.13.0
+  run:
+    - python >=${{ python_min }}
+    - django
+    - django-stubs-ext >=${{ version }}
+    - tomli
+    - typing_extensions >=4.11.0
+    - types-pyyaml
+
+tests:
+  - python:
+      imports:
+        - django_stubs_ext
+        - mypy_django_plugin
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Mypy stubs for Django
+  license: MIT
+  license_file: LICENSE.md
+  homepage: https://github.com/typeddjango/django-stubs
+
+extra:
+  recipe-maintainers:
+    - thewchan

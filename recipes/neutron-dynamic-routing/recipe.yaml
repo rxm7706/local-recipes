@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "28.0.0"
+
+package:
+  name: neutron-dynamic-routing
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/neutron-dynamic-routing/neutron_dynamic_routing-${{ version }}.tar.gz
+  sha256: a373755444c5b378b176d09a48fdbf4b8e2c24c87fdbb9fb90ff484647d629e9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - pbr >=5.7.0
+    - setuptools >=64.0.0
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - pbr >=6.0.0
+    - httplib2 >=0.9.1
+    - netaddr >=0.7.18
+    - sqlalchemy >=1.3.3
+    - alembic >=0.9.6
+    - neutron-lib >=3.22.0
+    - os-ken >=4.1.1
+    - oslo.config >=9.4.0
+    - oslo.db >=4.44.0
+    - oslo.log >=5.3.0
+    - oslo.messaging >=7.0.0
+    - oslo.serialization >=5.5.0
+    - oslo.service >=4.2.1
+    - oslo.utils >=7.3.0
+    - neutron >=28.0.0.0b2
+
+tests:
+  - python:
+      imports:
+        - neutron_dynamic_routing
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://docs.openstack.org/neutron-dynamic-routing/latest/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Neutron Dynamic Routing
+  description: |
+    Neutron Dynamic Routing
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: neutron-dynamic-routing
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: neutron-dynamic-routing
+  cfe-purls:
+    - pkg:conda/neutron-dynamic-routing@${{ version }}?channel=conda-forge
+    - pkg:pypi/neutron-dynamic-routing@${{ version }}
+  cfe-upstream-repo: https://docs.openstack.org/neutron-dynamic-routing/latest/
+  cfe-upstream-homepage: https://docs.openstack.org/neutron-dynamic-routing/latest/
+  cfe-import-names: [neutron_dynamic_routing]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:32:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:32:58Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

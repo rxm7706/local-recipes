@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.8.0"
+
+package:
+  name: messages
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/messages/messages-${{ version }}.tar.gz
+  sha256: 5290463f41e0ff053078de8ec6d13aba4068081cccfd4460005485ff849512c9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry >=0.12
+  run:
+    - python >=${{ python_min }}
+    - validus
+    - httpx
+    - aiosmtplib
+
+tests:
+  - python:
+      imports:
+        - messages
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/trp07/messages
+  license: MIT
+  license_file: LICENSE
+  summary: Easy and efficient messaging.
+  description: |
+    Easy and efficient messaging.
+  repository: https://github.com/trp07/messages
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: messages
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: messages
+  cfe-purls:
+    - pkg:conda/messages@${{ version }}?channel=conda-forge
+    - pkg:pypi/messages@${{ version }}
+  cfe-upstream-repo: https://github.com/trp07/messages
+  cfe-upstream-homepage: https://github.com/trp07/messages
+  cfe-import-names: [messages]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:38:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:38:53Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

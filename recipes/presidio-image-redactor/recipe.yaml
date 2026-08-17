@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.60"
+
+package:
+  name: presidio-image-redactor
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/presidio-image-redactor/presidio_image_redactor-${{ version }}.tar.gz
+  sha256: d30947ed8711dfcbc18a18fe8d606986543c976806e97e406ac2037e13499393
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - azure-ai-formrecognizer <4.0.0,>=3.3.3
+    - matplotlib-base <4.0.0,>=3.6.0
+    - opencv <5.0.0,>=4.13.0.92
+    - pillow <13.0.0,>=9.0.0
+    - presidio-analyzer <3.0.0,>=2.2.0
+    - pydicom <4.0.0,>=2.3.0
+    - pypng <1.0.0,>=0.20220715.0
+    - pytesseract <0.4,>=0.3.13
+    - python-gdcm <4.0.0,>=3.0.24.1
+    - spacy !=3.8.14,<4.0.0,>=3.8.7
+
+tests:
+  - python:
+      imports:
+        - presidio_image_redactor
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/data-privacy-stack/presidio
+  license: MIT
+  license_file: LICENSE
+  summary: Presidio image redactor package
+  description: |
+    Presidio image redactor package
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: presidio-image-redactor
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: presidio-image-redactor
+  cfe-purls:
+    - pkg:conda/presidio-image-redactor@${{ version }}?channel=conda-forge
+    - pkg:pypi/presidio-image-redactor@${{ version }}
+  cfe-upstream-repo: https://github.com/data-privacy-stack/presidio
+  cfe-upstream-homepage: https://github.com/data-privacy-stack/presidio
+  cfe-import-names: [presidio_image_redactor]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:52:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:52:09Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

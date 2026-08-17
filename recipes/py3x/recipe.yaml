@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.12.1"
+
+package:
+  name: py3x
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/py3x/py3x-${{ version }}.tar.gz
+  sha256: cd65d74badcfd87eb98d14007df754bcbff344ab97fd4b4ed56be9be34308b6c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - py3x
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/uedak/py3x
+  license: MIT
+  license_file: LICENSE
+  summary: python3 extension
+  description: |
+    python3 extension
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: py3x
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: py3x
+  cfe-purls:
+    - pkg:conda/py3x@${{ version }}?channel=conda-forge
+    - pkg:pypi/py3x@${{ version }}
+  cfe-upstream-repo: https://github.com/uedak/py3x
+  cfe-upstream-homepage: https://github.com/uedak/py3x
+  cfe-import-names: [py3x]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:05:35Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:05:35Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

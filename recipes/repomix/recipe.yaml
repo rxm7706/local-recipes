@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.0"
+
+package:
+  name: repomix
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/repomix/repomix-${{ version }}.tar.gz
+  sha256: 1cb24c18e1c882027110b41a0080e6525d287267f949fa200bd674a5dee16120
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - pdm-backend
+  run:
+    - python >=${{ python_min }}
+    - questionary >=2.0.1
+    - chardet >=5.2.0
+    - pyperclip >=1.9.0
+    - tiktoken >=0.8.0
+    - detect-secrets >=1.5.0
+    - mcp >=1.2.0
+    - tree-sitter >=0.20.0
+    - tree-sitter-python >=0.20.0
+    - tree-sitter-javascript >=0.20.0
+
+tests:
+  - python:
+      imports:
+        - repomix
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/repomix/
+  license: MIT
+  license_file: LICENSE
+  summary: A tool for analyzing and summarizing code repositories
+  description: |
+    A tool for analyzing and summarizing code repositories
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: repomix
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: repomix
+  cfe-purls:
+    - pkg:conda/repomix@${{ version }}?channel=conda-forge
+    - pkg:pypi/repomix@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/repomix/
+  cfe-upstream-homepage: https://pypi.org/project/repomix/
+  cfe-import-names: [repomix]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:23:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:23:29Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

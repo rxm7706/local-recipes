@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyro-api
+  version: "0.1.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: a1b900d9580aa1c2fab3b123ab7ff33413744da7c5f440bd4aadc4d40d14d920
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - python >=3.6
+
+tests:
+  - python:
+      imports:
+        - pyroapi
+      pip_check: false
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE.md
+  summary: Generic API for dispatch to Pyro backends.
+  homepage: https://github.com/pyro-ppl/pyro-api
+  repository: https://github.com/pyro-ppl/pyro-api
+  documentation: https://pyro-api.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - jamestwebber

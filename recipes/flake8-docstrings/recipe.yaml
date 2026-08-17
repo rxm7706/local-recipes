@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: flake8-docstrings
+  version: "1.7.0"
+  sha256: 4c8cc748dc16e6869728699e5d0d685da9a10b0ea718e090b1ba088e67a941af
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pydocstyle >=2.1
+    - flake8 >=3
+
+tests:
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - flake8 --version | grep flake8_docstrings
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Extension for flake8 which uses pydocstyle to check docstrings
+  homepage: https://github.com/PyCQA/flake8-docstrings
+  repository: https://github.com/PyCQA/flake8-docstrings
+
+extra:
+  recipe-maintainers:
+    - dopplershift

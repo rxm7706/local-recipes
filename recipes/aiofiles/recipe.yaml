@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: aiofiles
+  version: 25.1.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/aiofiles-${{ version }}.tar.gz
+  sha256: a8d728f0a29de45dc521f18f07297428d56992a742f0cd2701ba86e44d23d5b2
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - aiofiles
+      python_version: ${{ python_min }}.*
+about:
+  summary: File support for asyncio
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+  homepage: https://github.com/Tinche/aiofiles
+
+extra:
+  recipe-maintainers:
+    - xylar
+    - kszucs
+    - carlodri

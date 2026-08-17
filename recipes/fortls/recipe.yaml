@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: fortls
+  version: "3.2.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fortls-${{ version }}.tar.gz
+  sha256: b43b2b8cbd447ae848c63b8f008c2df96fd48c3a967b33f6ed64b3421496883b
+
+build:
+  number: 1
+  skip: match(python, "<3.7")
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - fortls = fortls.__init__:main
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - pip
+    - python
+    - setuptools
+    - setuptools_scm
+    - setuptools_scm_git_archive
+  run:
+    - if: match(python, "<3.8")
+      then: importlib-metadata
+    - python
+    - if: match(python, "<3.8")
+      then: typing-extensions
+    - json5
+    - packaging
+
+tests:
+  - python:
+      imports:
+        - fortls
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - fortls --help
+
+about:
+  summary: fortls - Fortran Language Server
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/fortran-lang/fortls
+
+extra:
+  recipe-maintainers:
+    - gnikit

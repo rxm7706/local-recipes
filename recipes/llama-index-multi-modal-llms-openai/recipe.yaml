@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: llama-index-multi-modal-llms-openai
+  version: "0.6.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/llama_index_multi_modal_llms_openai-${{ version }}.tar.gz
+    sha256: e339e5b6a168762b97913379d5be8fa9d663fd2178df9fd89801f93f87cc9d19
+  # https://github.com/run-llama/llama_index/issues/10806
+  - url: https://raw.githubusercontent.com/run-llama/llama_index/main/LICENSE
+    sha256: 24f40b5190fdacabc24ddbb5f76364d15e4f030925220ea300d8a2dd4993c8cb
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - llama-index-core >=0.14.3,<0.15
+    - llama-index-llms-openai >=0.6.0,<0.7
+
+tests:
+  - python:
+      imports:
+        - llama_index.multi_modal_llms.openai
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: llama-index multi-modal-llms openai integration
+  license: MIT
+  license_file: LICENSE
+  homepage: https://llamaindex.ai
+  repository: https://github.com/run-llama/llama_index/tree/main/llama-index-integrations/multi_modal_llms/llama-index-multi-modal-llms-openai
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - pavelzw

@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.3.1"
+
+package:
+  name: decorator
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/decorator/decorator-${{ version }}.tar.gz
+  sha256: 4cbcdd55a6efadb9dbea26b858f4fb3264567b52d69ca0d25b721b553f60ea82
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - decorator
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE.txt
+  summary: Decorators for Humans
+  homepage: https://github.com/micheles/decorator
+
+extra:
+  recipe-maintainers:
+    - msarahan
+    - pelson
+    - ocefpaf
+    - scopatz

@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: wagtailextraicons
+  version: "3.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtailextraicons-${{ version }}.tar.gz
+  sha256: 3f6754afd9a3cb29b973b5df8cb8503a8589d13225aa41cac1fb1510e07ebc50
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - bs4
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - wagtail >=3.0
+
+tests:
+  - python:
+      imports:
+        - wagtailextraicons
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Add extra icons to your Wagtail project.
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  homepage: https://github.com/octavenz/wagtailextraicons
+
+extra:
+  recipe-maintainers:
+    - rxm7706

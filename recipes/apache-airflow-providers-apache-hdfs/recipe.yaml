@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: apache-airflow-providers-apache-hdfs
+  version: "4.12.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/apache_airflow_providers_apache_hdfs-${{ version }}.tar.gz
+  sha256: 1cd43b4955f70ff2fae71b2ba0d3010967efa8d79f8cc82404114c5053d18087
+
+build:
+  noarch: python
+  script: python -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core ==3.12.0
+  run:
+    - python >=${{ python_min }}
+    - apache-airflow >=2.11.0
+    - apache-airflow-providers-common-compat >=1.12.0
+    # more restrictive for python >=3.12
+    - python-hdfs >=2.7.3
+    # start hdfs[avro,dataframe,kerberos]
+    # end hdfs[avro,dataframe,kerberos]
+    # more restrictive for python >=3.14
+    - fastavro >=1.12.1
+    # more restrictive for python >=3.14
+    - pandas >=2.3.3
+
+tests:
+  - python:
+      imports:
+        - airflow.providers.apache.hdfs
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/apache/airflow/
+  summary: Provider package apache-airflow-providers-apache-hdfs for Apache Airflow
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+  documentation: https://airflow.apache.org/docs/apache-airflow-providers-apache-hdfs/stable/index.html
+  repository: https://github.com/apache/airflow/
+
+extra:
+  recipe-maintainers:
+    - xylar

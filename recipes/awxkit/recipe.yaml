@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: awxkit
+  version: "19.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/awxkit-${{ version }}.tar.gz
+  sha256: 36ea40d34ff484bb861ca55dcf5cf00b12c9c5afd3072657c82b47b4a0834f63
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - akit=awxkit.scripts.basic_session:load_interactive
+      - awx=awxkit.cli:run
+
+requirements:
+  host:
+    - pip
+    - python >=3.8
+  run:
+    - python >=3.8
+    - pyyaml
+    - requests
+
+tests:
+  - python:
+      imports:
+        - awxkit
+        - awxkit.api
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - akit --help
+      - awx --help
+
+about:
+  summary: The official command line interface for Ansible AWX
+  license: Apache-2.0
+  license_file: LICENSE.md
+  homepage: https://github.com/ansible/awx
+  documentation: https://docs.ansible.com/ansible-tower/index.html
+
+extra:
+  recipe-maintainers:

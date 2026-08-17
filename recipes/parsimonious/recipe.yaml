@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: parsimonious
+  version: "0.11.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/parsimonious-${{ version }}.tar.gz
+  sha256: e080377d98957beec053580d38ae54fcdf7c470fb78670ba4bf8b5f9d5cad2a9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - regex
+
+tests:
+  - python:
+      imports:
+        - parsimonious
+      pip_check: false
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - parsimonious/tests
+    requirements:
+      run:
+        - pytest
+        - python ${{ python_min }}
+    script:
+      - pytest parsimonious/tests
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: (Soon to be) the fastest pure-Python PEG parser I could muster
+  description: (Soon to be) the fastest pure-Python PEG parser I could muster
+  homepage: https://github.com/erikrose/parsimonious/
+  repository: https://github.com/erikrose/parsimonious/
+  documentation: https://github.com/erikrose/parsimonious/
+
+extra:
+  recipe-maintainers:
+    - nelson-liu
+    - lucaswiman
+    - enekomartinmartinez

@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.5.0"
+
+package:
+  name: turbogears2
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/TurboGears2/turbogears2-${{ version }}.tar.gz
+  sha256: d21aeab942263423b9bdf4949f5db28d0485c4f6b82a0c241c256aa9d90ab63a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.0
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - webob <1.10.0,>=1.8.9
+    - crank <0.9.0,>=0.8.0
+    - repoze.lru
+    - markupsafe
+
+tests:
+  - python:
+      imports:
+        - tg
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://www.turbogears.org/
+  license: MIT
+  license_file: LICENSE
+  summary: Next generation TurboGears
+  description: |
+    Next generation TurboGears
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: turbogears2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: TurboGears2
+  cfe-purls:
+    - pkg:conda/turbogears2@${{ version }}?channel=conda-forge
+    - pkg:pypi/turbogears2@${{ version }}
+  cfe-upstream-repo: http://www.turbogears.org/
+  cfe-upstream-homepage: http://www.turbogears.org/
+  cfe-import-names: [tg]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:05:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:05:19Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

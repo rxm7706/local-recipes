@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: frozenlist
+  version: "1.8.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 3ede829ed8d842f6cd48fc7081d7a41001a56f1f38603f9d49bf3020d59a31ad
+
+build:
+  number: 0
+  noarch: ${{ 'python' if use_noarch else '' }}
+  script:
+    - if: not use_noarch
+      then: ${{ PYTHON }} -m pip install . --no-deps -vv
+    - if: use_noarch
+      then: ${{ PYTHON }} -m pip install . --no-deps -vv  --config-settings=pure-python=true
+  track_features:  # [use_noarch]
+    - if: use_noarch
+      then: frozenlist_no_compile
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+  host:
+    - if: use_noarch
+      then: python ${{ python_min }}
+    - if: not use_noarch
+      then: python
+    - pip
+    - cython
+    - expandvars
+    - setuptools >=47
+  run:
+    - if: use_noarch
+      then: python >=${{ python_min }}
+    - if: not use_noarch
+      then: python
+
+tests:
+  - python:
+      imports:
+        - frozenlist
+      pip_check: true
+
+about:
+  summary: A list-like structure which implements collections.abc.MutableSequence
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/aio-libs/frozenlist
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

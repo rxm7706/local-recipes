@@ -1,0 +1,117 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cyrus-sasl
+  version: "2.1.28"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  # The source releases are strange.  Lets use the tagged source tarball instead
+  # - url: https://github.com/cyrusimap/cyrus-sasl/releases/download/cyrus-sasl-{{ version }}/cyrus-sasl-{{ version }}.tar.gz
+  #   sha256: 26866b1549b00ffd020f188a43c258017fa1c382b3ddadd8201536f72efb05d5
+  # - url: ftp://ftp.cyrusimap.org/cyrus-sasl/{{ name }}-{{ version }}.tar.gz
+  url: https://github.com/cyrusimap/cyrus-sasl/archive/cyrus-sasl-${{ version }}.tar.gz
+  sha256: 3e38933a30b9ce183a5488b4f6a5937a702549cde0d3287903d80968ad4ec341
+  patches:
+    - if: build_platform != target_platform
+      then: patches/0001-patch-for-osx-arm-migration.patch
+    - if: win
+      then: patches/0002-Include-stddef-in-sasl.h-for-size_t.patch
+    - if: win
+      then: patches/0003-adjust-Makefile.am-files-for-osx.patch
+    - if: win
+      then: patches/0004-windows-fixes.patch
+    - if: win
+      then: patches/0005-win32-Disable-staticopen-stuff.patch
+    - if: win
+      then: patches/0006-win32-Define-GCC_FALLTHROUGH.patch
+
+build:
+  number: 1
+  dynamic_linking:
+    missing_dso_allowlist:
+      - if: osx
+        then: /usr/lib/libresolv.9.dylib
+      - if: osx
+        then: /usr/lib/libpam.2.dylib
+
+requirements:
+  build:
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - if: unix
+      then: libtool
+    - if: unix
+      then: pkg-config
+    - if: unix
+      then: automake
+    - if: unix
+      then: autoconf
+    - if: unix
+      then: make
+    - if: unix
+      then: groff
+    - if: win
+      then: m2-bash
+    - if: win
+      then: m2-patch
+    - if: win
+      then: m2-gcc-libs
+  host:
+    - if: unix
+      then: krb5
+    - openssl
+    - if: linux
+      then: libxcrypt
+    - if: win or win
+      then: libdb ==6.2
+    - if: unix
+      then: libntlm
+    - if: win
+      then: sqlite
+    - if: win
+      then: ldap3
+  run:
+    - krb5
+    - openssl
+    - if: unix
+      then: libntlm
+    - if: win
+      then: libdb
+  run_exports:
+    - ${{ pin_subpackage('cyrus-sasl') }}
+
+tests:
+  - script:
+      - echo "DONE"
+      - if: win
+        then: if not exist %LIBRARY_LIB%\\libsasl.lib exit 1
+
+about:
+  license: BSD-3-Clause-Attribution
+  license_file: COPYING
+  summary: |
+    This is the Cyrus SASL API implementation. It can be used on the client or server side to provide
+    authentication and authorization services. See RFC 4422 for more information.
+  description: |
+    Simple Authentication and Security Layer (SASL) is a specification that describes how
+    authentication mechanisms can be plugged into an application protocol on the wire. Cyrus
+    SASL is an implementation of SASL that makes it easy for application developers to integrate
+    authentication mechanisms into their application in a generic way.
+  homepage: https://www.cyrusimap.org/sasl/
+  repository: https://github.com/cyrusimap/cyrus-sasl
+  documentation: https://www.cyrusimap.org/sasl/
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk
+    - martindurant
+    - mingwandroid
+    - wesm
+    - StephenSmith25
+    - h-vetinari

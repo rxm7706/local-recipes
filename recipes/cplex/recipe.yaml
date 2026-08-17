@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "22.2.0.1"
+
+package:
+  name: cplex
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/cp310/c/cplex/cplex-22.2.0.1-cp310-cp310-macosx_11_0_arm64.whl
+  sha256: 31fecb466566dfea449f096cf0d74de69f316156aab3199115cad17d50fa4e92
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - cplex
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://www.ibm.com/products/ilog-cplex-optimization-studio
+  license: Proprietary
+  license_file: LICENSE
+  summary: A Python interface to the CPLEX Callable Library, Community Edition.
+  description: |
+    A Python interface to the CPLEX Callable Library, Community Edition.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cplex
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cplex
+  cfe-purls:
+    - pkg:conda/cplex@${{ version }}?channel=conda-forge
+    - pkg:pypi/cplex@${{ version }}
+  cfe-upstream-repo: https://www.ibm.com/products/ilog-cplex-optimization-studio
+  cfe-upstream-homepage: https://www.ibm.com/products/ilog-cplex-optimization-studio
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:55:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:55:16Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

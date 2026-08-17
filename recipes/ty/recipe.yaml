@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+
+schema_version: 1
+
+context:
+  name: ty
+  version: "0.0.72"
+
+package:
+  name: "${{ name|lower }}"
+  version: "${{ version }}"
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ec2b8066b618df18cab4cb8e992f8da45d360332acb23fa34df7fa29cd1b9d3a
+
+build:
+  number: 0
+  script:
+    env:
+      JEMALLOC_SYS_WITH_LG_PAGE: ${{ '16' if (aarch64 or ppc64le) else '' }}
+    content:
+      # Tell `pixi global` to not set CONDA_PREFIX during activation
+      # https://pixi.sh/dev/global_tools/introduction/#opt-out-of-conda_prefix
+      - if: win
+        then:
+          - if not exist "%PREFIX%\\etc\\pixi" mkdir "%PREFIX%\\etc\\pixi\\ty"
+          - type nul > "%PREFIX%\\etc\\pixi\\ty\\global-ignore-conda-prefix"
+        else:
+          - mkdir -p "${PREFIX}/etc/pixi/ty"
+          - touch "${PREFIX}/etc/pixi/ty/global-ignore-conda-prefix"
+      - maturin build --release
+      - ${{ PYTHON }} -m pip install --find-links=ruff/target/wheels ty
+      - cd ruff
+      - cargo-bundle-licenses --format yaml --output ../THIRDPARTY.yml
+
+  python:
+    version_independent: true
+
+requirements:
+  build:
+    - cargo-bundle-licenses
+    - ${{ compiler('rust') }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - make
+    - if: build_platform != target_platform
+      then:
+        - python ${{ python_min }}.*
+        - cross-python_${{ target_platform }}
+        - maturin >=1.0,<2
+  host:
+    - python ${{ python_min }}.*
+    - python-abi3
+    - maturin >=1.0,<2
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - ty
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      - ty --help
+
+about:
+  license: MIT
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  summary: An extremely fast Python type checker and language server, written in Rust.
+  homepage: https://github.com/astral-sh/ty
+  repository: https://github.com/astral-sh/ty
+
+extra:
+  recipe-maintainers:
+    - pavelzw

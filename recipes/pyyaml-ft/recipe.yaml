@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: PyYAML-ft
+  version: "8.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyyaml_ft-${{ version }}.tar.gz
+  sha256: 0c947dce03954c7b5d38869ed4878b2e6ff1d44b08a0d84dc83fdad205ae39ab
+  patches:
+    - 0001-Ensure-we-do-not-end-up-wih-CRLF-line-endings-on-tes.patch
+
+build:
+  number: 3
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+  host:
+    - python
+    - setuptools
+    - cython
+    - pip
+    - yaml
+  run:
+    - python
+    - yaml
+
+tests:
+  - python:
+      imports:
+        - yaml_ft
+        - yaml_ft._yaml
+      pip_check: true
+
+about:
+  summary: YAML parser and emitter for Python with support for free-threading
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/Quansight-Labs/pyyaml-ft/
+  repository: https://github.com/Quansight-Labs/pyyaml-ft/
+
+extra:
+  recipe-maintainers:
+    - zklaus
+    - lysnikolaou
+    - rgommers
+    - ngoldbaum

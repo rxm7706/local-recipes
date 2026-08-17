@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: rinohtype
+  version: "0.5.6"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/rinohtype-${{ version }}.tar.gz
+  sha256: e9392bd4e9117f5bef1285b81d6420183df5393aed289b176f7a81b6c9646d15
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - rinoh = rinoh.__main__:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core >=1.0.8
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - appdirs >=1.4.3,<2.0.0
+    - docutils >=0.15
+    - importlib-metadata >=0.21, <8
+    - packaging >=14.0
+    - recommonmark >=0.6.0
+    - sphinx >=2.2.1
+  run_constraints:
+    - sphinx >=2.2.1
+
+tests:
+  - python:
+      imports:
+        - rinoh
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - rinoh --help
+
+about:
+  summary: The Python document processor
+  license: AGPL-3.0-only
+  license_file: LICENSE
+  homepage: https://github.com/brechtm/rinohtype
+
+extra:
+  recipe-maintainers:
+    - mediocretech

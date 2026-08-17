@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: wfastcgi
+  version: 3.0.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: cbce266e7da411d40f98f28a73cb9a55157b274398bd5a8d2b25cfa10a4dd493
+
+build:
+  number: 8
+  skip: not win
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  python:
+    entry_points:
+      - wfastcgi = wfastcgi:main
+      - wfastcgi-enable = wfastcgi:enable
+      - wfastcgi-disable = wfastcgi:disable
+
+requirements:
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - wfastcgi
+      pip_check: true
+
+about:
+  license: Apache-2.0
+  # license_file: text of license is included in the source code file
+  summary: An IIS-Python bridge based on WSGI and FastCGI.
+  description: |
+    wfastcgi.py provides a bridge between IIS and Python using WSGI and FastCGI, similar to
+    what mod_python provides for Apache HTTP Server.
+
+    It can be used with any Python web application or framework that supports WSGI, and provides
+    an efficient way to handle requests and process pools through IIS.
+  homepage: https://github.com/Microsoft/PTVS/tree/master/Python/Product/WFastCgi
+  repository: https://github.com/Microsoft/PTVS/tree/master/Python/Product/WFastCgi
+
+extra:
+  recipe-maintainers:
+    - synapticarbors

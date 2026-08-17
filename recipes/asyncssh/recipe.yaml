@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: asyncssh
+  version: "2.23.0"
+  sha256: 8c54760953c1f2cf282591bcba5c8c70efc48d645bbf26bd2307a9c66a0ed1a7
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - cryptography >=39.0
+    - pyopenssl >=23.0.0
+    - python-gssapi >=1.2.0
+    - typing_extensions >=4.0.0
+
+tests:
+  - python:
+      imports:
+        - asyncssh
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: EPL-1.0
+  summary: "AsyncSSH: Asynchronous SSHv2 client and server library"
+  homepage: https://github.com/ronf/asyncssh
+
+extra:
+  recipe-maintainers:
+    - apmorton
+    - vamega

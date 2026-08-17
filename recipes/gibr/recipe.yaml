@@ -2,18 +2,17 @@
 schema_version: 1
 
 context:
+  name: "gibr"
   python_min: '3.11'
   version: "0.10.2"
 
 package:
-  name: gibr
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/g/gibr/gibr-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/gibr-${{ version }}.tar.gz
   sha256: 2f278040f5fc8c3e48ea78bb8f9ddb3c6ab86106864afc82bb8b9f12849bbb7f
-  patches:
-    - patches/0001-loosen-runtime-pins.patch
 
 build:
   number: 0
@@ -46,9 +45,7 @@ tests:
       imports:
         - gibr
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}.*
   - requirements:
       run:
         - pip
@@ -57,12 +54,11 @@ tests:
       - gibr --help
 
 about:
+  summary: A Git CLI tool for intelligently creating branch names
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/ytreister/gibr
   repository: https://github.com/ytreister/gibr
-  summary: A Git CLI tool for intelligently creating branch names
-  description: A Git CLI tool for intelligently creating branch names
+  homepage: https://github.com/ytreister/gibr
 
 extra:
   recipe-maintainers:

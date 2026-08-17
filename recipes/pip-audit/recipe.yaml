@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pip-audit
+  version: "2.10.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pip_audit-${{ version }}.tar.gz
+  sha256: 1eb4565d19ebe5d48996f4b770b4d2b32887e12cb12cfa637f1a064011b55ffc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - pip-audit = pip_audit._cli:audit
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - tomli >=2.2.1
+    - tomli-w >=1.2.0
+    - platformdirs >=4.2.0
+    - python >=${{ python_min }}
+    - cachecontrol >=0.13.0
+    - cyclonedx-python-lib >=5,<12
+    - html5lib >=1.1
+    - packaging >=23.0.0
+    - pip-api >=0.0.28
+    - pip-requirements-parser >=32.0.0
+    - requests >=2.31.0
+    - rich >=12.4
+    - toml >=0.10
+
+tests:
+  - python:
+      imports:
+        - pip_audit
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pip-audit --help
+
+about:
+  summary: A tool for scanning Python environments for known vulnerabilities
+  license: Apache-2.0
+  license_file: LICENSE
+  description: |
+    `pip-audit` is a tool for scanning Python environments for packages
+    with known vulnerabilities. It uses the Python Packaging Advisory Database
+    (https://github.com/pypa/advisory-db) via the
+    [PyPI JSON API](https://warehouse.pypa.io/api-reference/json.html) as a source
+    of vulnerability reports.
+
+    This project is developed by [Trail of Bits](https://www.trailofbits.com/) with
+    support from Google. This is not an official Google product.
+
+    **Features**
+
+    - Support for auditing local environments and requirements-style files
+    - Support for multiple vulnerability services
+    ([PyPI](https://warehouse.pypa.io/api-reference/json.html#known-vulnerabilities),
+    [OSV](https://osv.dev/docs/))
+    - Support for emitting
+    [SBOMs](https://en.wikipedia.org/wiki/Software_bill_of_materials) in
+    [CycloneDX](https://cyclonedx.org/) XML or JSON
+    - Human and machine-readable output formats (columnar, JSON)
+    - Seamlessly reuses your existing local `pip` caches
+  homepage: https://github.com/trailofbits/pip-audit
+  repository: https://github.com/trailofbits/pip-audit
+  documentation: https://github.com/trailofbits/pip-audit
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - sugatoray

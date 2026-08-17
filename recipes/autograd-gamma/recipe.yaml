@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: autograd-gamma
+  version: "0.5.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: f27abb7b8bb9cffc8badcbf59f3fe44a9db39e124ecacf1992b6d952934ac9c4
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+    - autograd >=1.2.0
+    - scipy >=1.2.0
+
+tests:
+  - python:
+      imports:
+        - autograd_gamma
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Autograd compatible approximations to the gamma family of functions
+  homepage: https://github.com/CamDavidsonPilon/autograd-gamma
+  repository: https://github.com/CamDavidsonPilon/autograd-gamma
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk
+    - CamDavidsonPilon

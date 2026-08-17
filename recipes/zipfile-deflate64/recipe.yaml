@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: zipfile-deflate64
+  version: "0.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 875a3299de102edf1c17f8cafcc528b1ca80b62dc4814b9cb56867ec59fbfd18
+
+build:
+  number: 4
+  skip: match(python, ">=2,<3")
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+  host:
+    - pip
+    - python
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - zipfile_deflate64
+      pip_check: true
+
+about:
+  summary: Extract Deflate64 ZIP archives with Python's zipfile API.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/brianhelba/zipfile-deflate64
+  repository: https://github.com/brianhelba/zipfile-deflate64
+
+extra:
+  recipe-maintainers:
+    - sarthakpati

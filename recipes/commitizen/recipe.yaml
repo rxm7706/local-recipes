@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: commitizen
+  version: "4.17.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/commitizen-${{ version }}.tar.gz
+  sha256: e5bcabed3474029cc8f5a5c62216130bc2999f7bc29a3b9884bcd426d7f35c5a
+
+build:
+  number: 0
+  skip: match(python, "<3.9")
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - cz = commitizen.cli:main
+      - git-cz = commitizen.cli:main
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - uv-build <0.10.0,>=0.9.17
+    - pip
+  host:
+    - python
+    - uv-build <0.10.0,>=0.9.17
+    - pip
+  run:
+    - python
+    - questionary <3.0,>=2.0
+    - prompt-toolkit !=3.0.52
+    - decli <1.0,>=0.6.0
+    - colorama <1.0,>=0.4.1
+    - termcolor <4.0.0,>=1.1.0
+    - packaging >=26
+    - tomlkit <1.0.0,>=0.8.0
+    - jinja2 >=2.10.3
+    - pyyaml >=3.8
+    - argcomplete <3.8,>=1.12.1
+    - if: match(python, "<3.11")
+      then: typing_extensions <5.0.0,>=4.0.1
+    - charset-normalizer <4,>=2.1.0
+    - deprecated <2,>=1.2.13
+    - if: match(python, "<3.10")
+      then: importlib-metadata <8.7.0,>=8.0.0
+
+tests:
+  - python:
+      imports:
+        - commitizen
+      pip_check: true
+  - requirements:
+      run:
+        - python
+        - pip
+    script:
+      - cz --help
+      - git-cz --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Tool to define a standard way of committing
+  homepage: https://github.com/commitizen-tools/commitizen
+  repository: https://github.com/commitizen-tools/commitizen
+
+extra:
+  recipe-maintainers:
+    - kmnhan
+    - cpcloud

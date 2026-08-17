@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: posthog
+  version: "7.39.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 0d184596e35057457fc1094883646fd23de2d6338db8b9c3ea770643fb55d8a2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - requests >=2.7.0,<3.0.0
+    - six >=1.5.0
+    - monotonic >=1.5.0
+    - backoff >=1.10.0
+    - python-dateutil >=2.2.0
+    - distro >=1.5.0  # Required for Linux OS detection in Python 3.9+
+    - typing-extensions >=4.2.0
+
+tests:
+  - python:
+      imports:
+        - posthog
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Integrate PostHog into any python application
+  homepage: https://github.com/PostHog/posthog-python
+
+extra:
+  recipe-maintainers:
+    - Twixes
+    - dmarticus
+    - k11kirky
+    - posthog-bot

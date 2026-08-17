@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: airportsdata
+  version: 20260315
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/airportsdata-${{ version }}.tar.gz
+  sha256: eb67de3b8167bfe810020095188ebba043ed16e934cc52ba3930e2cbd1c2dcb6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - airportsdata
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Extensive database of location and timezone data for nearly every airport and landing strip in the world.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/mborsetti/airportsdata
+
+extra:
+  recipe-maintainers:
+    - maresb

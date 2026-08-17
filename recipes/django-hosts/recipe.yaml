@@ -2,18 +2,19 @@
 schema_version: 1
 
 context:
+  name: django-hosts
   version: "7.0.0"
 
 package:
-  name: django-hosts
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-hosts/django_hosts-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: 08006bc09f5af69638721ced0657f24044835a22a608732ee1004adc9c95fb7c
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -21,20 +22,18 @@ requirements:
   host:
     - python ${{ python_min }}.*
     - setuptools-scm
-    - setuptools
     - pip
+    - setuptools
   run:
-    - python >=${{ python_min }}
-    - django >=4.2
+    - python >=${{ python_min }},<4.0
+    - django >=3.2
 
 tests:
   - python:
       imports:
         - django_hosts
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
   summary: Dynamic and static host resolving for Django. Maps hostnames to URLconfs.
@@ -42,7 +41,6 @@ about:
   license_file: LICENSE
   homepage: https://django-hosts.readthedocs.io/
   repository: https://github.com/jazzband/django-hosts
-  documentation: https://django-hosts.readthedocs.io/
 
 extra:
   recipe-maintainers:

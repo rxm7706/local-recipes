@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: websocket-client
+  version: "1.9.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 9e813624b6eb619999a97dc7958469217c3176312b3a16a4bd1bc7e08a46ec98
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - wsdump=websocket._wsdump:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - websocket
+        - websocket.tests
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - wsdump --help
+
+about:
+  summary: WebSocket client for Python with low level API options
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/websocket-client/websocket-client.git
+  repository: https://github.com/websocket-client/websocket-client/
+  documentation: https://websocket-client.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - scopatz
+    - BastianZim
+    - wshanks

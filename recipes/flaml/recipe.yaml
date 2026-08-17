@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: flaml
+  version: "2.6.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: fee0a8419d8a4862afe8aa817c312c7479f4d137b806430ecf3b3c7033270730
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - numpy >=1.17
+
+tests:
+  - python:
+      imports:
+        - flaml
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - files:
+      source:
+        - test/test_conda_distribution.py
+    requirements:
+      run:
+        - pytest
+        - pandas >=1.1.4
+        - lightgbm >=2.3.1
+        - xgboost >=0.90,<3.0.0
+        - scipy >=1.4.1
+        - scikit-learn >=1.0.0
+        - python ${{ python_min }}.*
+    script:
+      - pytest -m conda
+
+about:
+  summary: A fast and lightweight autoML system
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/microsoft/FLAML
+
+extra:
+  recipe-maintainers:
+    - michalchromcak
+    - skzhang1
+    - thewchan

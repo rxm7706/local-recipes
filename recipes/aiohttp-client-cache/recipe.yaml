@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: aiohttp-client-cache
+  version: "0.14.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/aiohttp_client_cache-${{ version }}.tar.gz
+  sha256: 329f4038c6a8ed0b410023980b6d1a2c484af33e667a89ce245c899d62c1fba1
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling >=1.12
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - aiohttp >=3.8
+    - aiosqlite >=0.20
+    - attrs >=21.2
+    - itsdangerous >=2.0
+    - url-normalize >=2.2
+    - typing-extensions >=4
+
+tests:
+  - python:
+      imports:
+        - aiohttp_client_cache
+        - aiohttp_client_cache.backends
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Persistent cache for aiohttp requests
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/requests-cache/aiohttp-client-cache
+  repository: https://github.com/requests-cache/aiohttp-client-cache
+  documentation: https://aiohttp-client-cache.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - JWCook
+    - cheginit

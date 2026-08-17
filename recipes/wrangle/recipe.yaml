@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.7.6"
+
+package:
+  name: wrangle
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wrangle/wrangle-${{ version }}.tar.gz
+  sha256: c05e0eedba718c78082542c6071c93d606e38ed0196291c52a3eadac685f415d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - numpy
+    - pandas
+    - scikit-learn
+    - scipy
+    - statsmodels >=0.11.0
+    - tensorflow
+
+tests:
+  - python:
+      imports:
+        - wrangle
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://autonom.io
+  license: MIT
+  license_file: LICENSE
+  summary: Wrangle - Data Preparation for Deep Learning
+  description: |
+    Wrangle - Data Preparation for Deep Learning
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: wrangle
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: wrangle
+  cfe-purls:
+    - pkg:conda/wrangle@${{ version }}?channel=conda-forge
+    - pkg:pypi/wrangle@${{ version }}
+  cfe-upstream-repo: http://autonom.io
+  cfe-upstream-homepage: http://autonom.io
+  cfe-import-names: [wrangle]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:59:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:59:05Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

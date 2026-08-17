@@ -1,0 +1,109 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.1.8"
+
+package:
+  name: deepeval
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/deepeval/deepeval-${{ version }}.tar.gz
+  sha256: 509890a9e6d4ece2b3e68ed2441d4dc5a14f5f667027e5da4b9fb5ce45384857
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - aiohttp
+    - click <8.4.0,>=8.0.0
+    - grpcio <2.0.0,>=1.67.1
+    - jinja2
+    - nest-asyncio
+    - openai
+    - opentelemetry-api <2.0.0,>=1.24.0
+    - opentelemetry-sdk <2.0.0,>=1.24.0
+    - portalocker
+    - posthog <7.0.0,>=5.4.0
+    - pydantic <3.0.0,>=2.11.7
+    - pydantic-settings <3.0.0,>=2.10.1
+    - pyfiglet
+    - pytest
+    - pytest-asyncio
+    - pytest-repeat
+    - pytest-rerunfailures
+    - pytest-xdist
+    - python-dotenv <2.0.0,>=1.1.1
+    - questionary <3.0.0,>=2.0.0
+    - requests <3.0.0,>=2.31.0
+    - rich <15.0.0,>=13.6.0
+    - setuptools
+    - tabulate <0.10.0,>=0.9.0
+    - tenacity <=10.0.0,>=8.0.0
+    - tqdm <5.0.0,>=4.66.1
+    - typer <1.0.0,>=0.9
+    - wheel
+
+tests:
+  - python:
+      imports:
+        - deepeval
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/deepeval/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: The LLM Evaluation Framework
+  description: |
+    The LLM Evaluation Framework
+  repository: https://github.com/confident-ai/deepeval
+  documentation: https://deepeval.com
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: deepeval
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: deepeval
+  cfe-purls:
+    - pkg:conda/deepeval@${{ version }}?channel=conda-forge
+    - pkg:pypi/deepeval@${{ version }}
+  cfe-upstream-repo: https://github.com/confident-ai/deepeval
+  cfe-upstream-homepage: https://pypi.org/project/deepeval/
+  cfe-import-names: [deepeval]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:51:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:51:21Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

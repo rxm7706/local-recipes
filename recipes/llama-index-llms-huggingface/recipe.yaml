@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.7.0"
+
+package:
+  name: llama-index-llms-huggingface
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/llama-index-llms-huggingface/llama_index_llms_huggingface-${{ version }}.tar.gz
+  sha256: a5057c0aa44122953d67e8157ad84f277417f8a935ccfe3f5dcdf1ac12e53f51
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - llama-index-core <0.15,>=0.13.0
+    - pytorch <3,>=2.1.2
+    - transformers <5,>=4.37.0
+
+tests:
+  - python:
+      imports:
+        - llama_index.llms.huggingface
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/llama-index-llms-huggingface/
+  license: MIT
+  license_file: LICENSE
+  summary: llama-index llms huggingface integration
+  description: |
+    llama-index llms huggingface integration
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: llama-index-llms-huggingface
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: llama-index-llms-huggingface
+  cfe-purls:
+    - pkg:conda/llama-index-llms-huggingface@${{ version }}?channel=conda-forge
+    - pkg:pypi/llama-index-llms-huggingface@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/llama-index-llms-huggingface/
+  cfe-upstream-homepage: https://pypi.org/project/llama-index-llms-huggingface/
+  cfe-import-names: [llama_index.llms.huggingface]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:17:56Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:17:56Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

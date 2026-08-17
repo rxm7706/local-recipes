@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: compressed-tensors
+  version: "0.17.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 15c20d06bdbcf35b51fc99fd125e7b9be1e1855567c33b7a46dfac26ad6fb126
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - wheel
+    - setuptools-scm ==8.2.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pytorch >=1.7.0
+    - transformers >=4.45.0
+    - pydantic >=2.0
+    - loguru
+    - psutil
+
+tests:
+  - python:
+      imports:
+        - compressed_tensors
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Library for utilization of compressed safetensors of neural network models
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/neuralmagic/compressed-tensors
+
+extra:
+  recipe-maintainers:
+    - timkpaine
+    - maresb

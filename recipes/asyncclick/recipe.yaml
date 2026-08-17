@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: asyncclick
+  version: "8.1.7.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/asyncclick-${{ version }}.tar.gz
+  sha256: 219ea0f29ccdc1bb4ff43bcab7ce0769ac6d48a04f997b43ec6bee99a222daa0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.7
+    - setuptools-scm
+    - pip
+  run:
+    - anyio
+    - python >=3.7
+    - colorama
+    - importlib-metadata
+
+tests:
+  - python:
+      imports:
+        - asyncclick
+      pip_check: true
+
+about:
+  summary: Composable command line interface toolkit, async version
+  license: BSD-3-Clause
+  license_file: LICENSE.rst
+  homepage: https://palletsprojects.com/p/click/
+
+extra:
+  recipe-maintainers:
+    - awvwgk

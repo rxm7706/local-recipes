@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: finance_enums
+  version: "0.6.0"
+  build: 0
+
+recipe:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: a819bd197a82e3037d5672f370cf849af1468fa2bca94c6bd3a427e98ab74956
+
+build:
+  number: ${{ build }}
+
+outputs:
+  - package:
+      name: finance_enums
+    build:
+      number: ${{ build }}
+      python:
+        version_independent: true
+      script:
+        - if: unix
+          then: export PYO3_PYTHON="$PYTHON"
+          else: set "PYO3_PYTHON=%PYTHON%"
+        - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+        - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+      skip: is_abi3 and not is_python_min
+
+    requirements:
+      build:
+        - if: build_platform != target_platform
+          then:
+            - python
+            - cross-python_${{ target_platform }}
+            - crossenv
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
+        - ${{ compiler('rust') }}
+        - cargo-bundle-licenses
+      host:
+        - python
+        - pip
+        - hatchling
+        - hatch-rs >=0.2.0
+        - if: is_abi3
+          then:
+            - python-abi3
+      run:
+        - python >=${{ python_min }}
+      ignore_run_exports:
+        from_package:
+          - cross-python_${{ target_platform }}
+
+    tests:
+      - python:
+          imports:
+            - finance_enums
+          pip_check: true
+          python_version: ${{ python_min }}.*
+
+  - package:
+      name: finance-enums
+    build:
+      noarch: generic
+      number: ${{ build }}
+      skip:
+        - not target_platform == "linux-64"
+    requirements:
+      run:
+        - ${{ pin_subpackage('finance_enums', upper_bound='x.x.x', lower_bound='x.x.x') }}
+    about:
+      license_file: []
+    tests:
+      - python:
+          imports:
+            - finance_enums
+          pip_check: true
+          python_version: ${{ python_min }}.*
+
+about:
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  summary: Standard Financial Enumerations
+  homepage: https://github.com/prettygoodcapital/finance_enums
+  repository: https://github.com/prettygoodcapital/finance_enums
+
+extra:
+  recipe-maintainers:
+    - pgc-dev

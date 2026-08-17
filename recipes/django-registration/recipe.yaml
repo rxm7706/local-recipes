@@ -2,18 +2,19 @@
 schema_version: 1
 
 context:
+  name: django-registration
   version: "5.2.1"
 
 package:
-  name: django-registration
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-registration/django_registration-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_registration-${{ version }}.tar.gz
   sha256: 06864f9da0bc4d7b073fb2da98d95d12428357ab0bc46e33f79c26707ec06bbe
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -23,7 +24,7 @@ requirements:
     - pdm-backend
     - pip
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
     - django >=4.2,!=5.0.*
     - confusable-homoglyphs >=3.0
 
@@ -31,22 +32,14 @@ tests:
   - python:
       imports:
         - django_registration
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
   summary: An extensible user-registration application for Django.
   license: BSD-3-Clause
   license_file: LICENSE
   homepage: https://github.com/ubernostrum/django-registration
-  repository: https://github.com/ubernostrum/django-registration
-  documentation: https://django-registration.readthedocs.io/
-  description: |
-    An extensible user-registration application for Django, providing
-    workflows for registration and account activation backed by Django's
-    auth system.
 
 extra:
   recipe-maintainers:

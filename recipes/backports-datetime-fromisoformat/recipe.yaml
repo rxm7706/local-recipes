@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: backports-datetime-fromisoformat
+  version: "2.0.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: b58edc8f517b66b397abc250ecc737969486703a66eb97e01e6d51291b1a139d
+
+build:
+  number: 1
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolati if match(python, "<=3.11") else '' }}
+
+requirements:
+  build:
+    - if: build_platform != target_platform and match(python, "<=3.11")
+      then: python
+    - if: build_platform != target_platform and match(python, "<=3.11")
+      then: cross-python_${{ target_platform }}
+    - if: match(python, "<=3.11")
+      then: ${{ compiler('c') }}
+    - if: match(python, "<=3.11")
+      then: ${{ stdlib("c") }}
+  host:
+    # so python > 3.11 don't get removed
+    - python
+    - if: match(python, "<=3.11")
+      then: pip
+    - if: match(python, "<=3.11")
+      then: setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - if: match(python, "<=3.11")
+          then: backports.datetime_fromisoformat
+      pip_check: true
+
+about:
+  summary: Backport of Python 3.11's datetime.fromisoformat
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/movermeyer/backports.datetime_fromisoformat
+  repository: https://github.com/movermeyer/backports.datetime_fromisoformat
+  documentation: https://github.com/movermeyer/backports.datetime_fromisoformat/blob/main/README.rst
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - xylar

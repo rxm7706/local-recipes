@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-url-filter
+  version: "0.3.15"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django-url-filter-${{ version }}.tar.gz
+  sha256: 12d66e4ff0150e10fd4efd1ec292a06a2cec6311ec2e4bd1fc99b2fea18e2a7b
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - cached-property
+    - django >=1.8
+    - enum-compat
+    - six
+    - setuptools
+
+tests:
+  - python:
+      imports:
+        - url_filter
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Django URL Filter provides a safe way to filter data via human-friendly URLs.
+  license: MIT
+  license_file: LICENSE.rst
+  homepage: https://github.com/miki725/django-url-filter
+
+extra:
+  recipe-maintainers:
+    - rxm7706

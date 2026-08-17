@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: venv-pack
+  version: "0.2.0"
+  sha256: 33bbed48728bd5d1fee0a89c3082702b5d100c8021b2da9ea384b23ac410d3cd
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+  python:
+    entry_points:
+      - venv-pack = venv_pack.__main__:main
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - venv_pack
+      pip_check: false
+  - script:
+      - venv-pack --help
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Package virtual environments for redistribution
+  description: |
+    ``venv-pack`` is a command-line tool for packaging virtual environments for
+    distribution. This is useful for deploying code in a consistent
+    environment.
+  homepage: https://jcrist.github.io/venv-pack/
+  repository: https://github.com/jcrist/venv-pack
+  documentation: https://jcrist.github.io/venv-pack/
+
+extra:
+  recipe-maintainers:
+    - jcrist

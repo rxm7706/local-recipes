@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "9.4.1.1"
+
+package:
+  name: esxport
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/e/esxport/esxport-${{ version }}.tar.gz
+  sha256: 935dfad7892dba5034c96753de89293a88f65d460fb34012122683d05fc07305
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+    - hatch-requirements-txt
+  run:
+    - python >=${{ python_min }}
+    - certifi >=2026.2.25
+    - click-params ==0.5.0
+    - click ==8.4.1
+    - elasticsearch <10.0.0,>=8.0.0
+    - loguru ==0.7.3
+    - tenacity ==9.1.4
+    - tqdm ==4.68.2
+    - typing_extensions ==4.15.0
+
+tests:
+  - python:
+      imports:
+        - esxport
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/nikhilbadyal/esxport
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: An adept Python CLI utility designed for querying Elasticsearch and exporting result as a CSV file.
+  description: |
+    An adept Python CLI utility designed for querying Elasticsearch and exporting result as a CSV file.
+  repository: https://github.com/nikhilbadyal/esxport.git
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: esxport
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: esxport
+  cfe-purls:
+    - pkg:conda/esxport@${{ version }}?channel=conda-forge
+    - pkg:pypi/esxport@${{ version }}
+  cfe-upstream-repo: https://github.com/nikhilbadyal/esxport.git
+  cfe-upstream-homepage: https://github.com/nikhilbadyal/esxport
+  cfe-import-names: [esxport]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:48:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:48:03Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

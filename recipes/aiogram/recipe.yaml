@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.30.0"
+
+package:
+  name: aiogram
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/aiogram/aiogram-${{ version }}.tar.gz
+  sha256: 04a5c43d0acedaf907ffa9a1b6c651cd5fde35b5bca82f521e57d77a57e63bc6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - aiofiles <26.0,>=23.2.1
+    - aiohttp <3.15,>=3.9.0
+    - certifi >=2023.7.22
+    - magic-filter <1.1,>=1.0.12
+    - pydantic <2.14,>=2.4.1
+    - typing_extensions <=5.0,>=4.7.0
+    - if: osx
+      then:
+        - uvloop
+        - uvloop
+
+tests:
+  - python:
+      imports:
+        - aiogram
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://aiogram.dev/
+  license: MIT
+  license_file: LICENSE
+  summary: Modern and fully asynchronous framework for Telegram Bot API
+  description: |
+    Modern and fully asynchronous framework for Telegram Bot API
+  repository: https://github.com/aiogram/aiogram/
+  documentation: https://docs.aiogram.dev/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: aiogram
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: aiogram
+  cfe-purls:
+    - pkg:conda/aiogram@${{ version }}?channel=conda-forge
+    - pkg:pypi/aiogram@${{ version }}
+  cfe-upstream-repo: https://github.com/aiogram/aiogram/
+  cfe-upstream-homepage: https://aiogram.dev/
+  cfe-import-names: [aiogram]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:02Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: graspologic-native
+  version: "1.2.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/graspologic_native-${{ version }}.tar.gz
+  sha256: 27ea7e01fa44466c0b4cdd678d4561e5d3dc0cb400015683b7ae1386031257a0
+
+build:
+  number: 0
+  script:
+    - cargo bundle-licenses --format yaml --output THIRDPARTY.yml
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - cargo-bundle-licenses
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: maturin >=1.4,<2.0
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+  host:
+    - pip
+    - python
+    - maturin >=1.4,<2.0
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - graspologic_native
+      pip_check: true
+
+about:
+  summary: Python native companion module to the graspologic library
+  license: MIT
+  license_file:
+    - THIRDPARTY.yml
+    - LICENSE.txt
+  homepage: https://github.com/microsoft/graspologic-native
+
+extra:
+  recipe-maintainers:
+    - johandahlberg
+    - fbdtemme
+    - bdpedigo
+    - ambarrio

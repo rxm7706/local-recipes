@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.2"
+
+package:
+  name: tls-parser
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/tls-parser/tls_parser-${{ version }}.tar.gz
+  sha256: fc9c1c4bcb646317bf0f1a9396bad1423346a445fd34a86ccc6c3a7e434ebde3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - tls_parser
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/nabla-c0d3/tls_parser
+  license: MIT
+  license_file: LICENSE
+  summary: Small library to parse TLS records.
+  description: |
+    Small library to parse TLS records.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tls-parser
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tls-parser
+  cfe-purls:
+    - pkg:conda/tls-parser@${{ version }}?channel=conda-forge
+    - pkg:pypi/tls-parser@${{ version }}
+  cfe-upstream-repo: https://github.com/nabla-c0d3/tls_parser
+  cfe-upstream-homepage: https://github.com/nabla-c0d3/tls_parser
+  cfe-import-names: [tls_parser]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:40:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:40:19Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

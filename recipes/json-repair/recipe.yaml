@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: json-repair
+  version: "0.63.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/json_repair-${{ version }}.tar.gz
+  sha256: 8385ca04afbf411eebd9f0ba064155d1afe37442aaad52f693825c65cc314586
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=61.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - json_repair
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A package to repair broken json strings
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/mangiucugna/json_repair/
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

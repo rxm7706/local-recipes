@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: Unidecode
+  version: 1.4.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ce35985008338b676573023acc382d62c264f307c8f7963733405add37ea2b23
+
+build:
+  number: 1
+  noarch: python
+  script: python -m pip install . -vv
+  python:
+    entry_points:
+      - unidecode = unidecode.util:main
+
+requirements:
+  host:
+    - pip
+    - setuptools
+    - python ${{ python_min }}.*
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - unidecode
+      python_version: ${{ python_min }}.*
+  - script:
+      - unidecode --help
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+
+about:
+  license: GPL-2.0-or-later
+  license_file: LICENSE
+  summary: ASCII transliterations of Unicode text
+  homepage: https://pypi.python.org/pypi/Unidecode
+  repository: https://github.com/avian2/unidecode
+
+extra:
+  recipe-maintainers:
+    - synapticarbors
+    - xhochy

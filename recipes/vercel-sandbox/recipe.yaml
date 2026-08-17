@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.0"
+
+package:
+  name: vercel-sandbox
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/v/vercel-sandbox/vercel_sandbox-${{ version }}.tar.gz
+  sha256: e0a58b727cce3712fca8ad90132554b50361e6f68b5d4328a247e42ff78bb481
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling >=1.27.0,<2
+  run:
+    - python >=${{ python_min }}
+    - anyio <5,>=4.0.0
+    - httpx <1,>=0.27.0
+    - pydantic <3,>=2.7.0
+    - vercel-internal-core <0.2.0,>=0.1.2
+    - vercel-oidc >=0.8.0
+
+tests:
+  - python:
+      imports:
+        - vercel.sandbox
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/vercel-sandbox/
+  license: MIT
+  license_file: LICENSE
+  summary: Python SDK for Vercel Sandbox
+  description: |
+    Python SDK for Vercel Sandbox
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: vercel-sandbox
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: vercel-sandbox
+  cfe-purls:
+    - pkg:conda/vercel-sandbox@${{ version }}?channel=conda-forge
+    - pkg:pypi/vercel-sandbox@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/vercel-sandbox/
+  cfe-upstream-homepage: https://pypi.org/project/vercel-sandbox/
+  cfe-import-names: [vercel.sandbox]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:57:49Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:57:49Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

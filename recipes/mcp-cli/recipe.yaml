@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.20.1"
+  python_min: "3.11"
+
+package:
+  name: mcp-cli
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mcp-cli/mcp_cli-${{ version }}.tar.gz
+  sha256: db63013878d4698d3ceecccacbccd15db4b033d8861af0d0d65dda7fb1bae972
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.0
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - asyncio >=3.4.3
+    - chuk-ai-planner >=0.2
+    - chuk-ai-session-manager >=0.11
+    - chuk-llm >=0.17.1
+    - chuk-mcp-client-oauth >=0.3.5
+    - chuk-term >=0.4.2
+    - chuk-tool-processor >=0.22.1
+    - cryptography >=44.0.0
+    - fast-json >=0.3.2
+    - httpx >=0.27.0
+    - jsonschema >=4.25.1
+    - keyring >=25.0.0
+    - orjson >=3.11.4
+    - prompt-toolkit >=3.0.50
+    - python-dotenv >=1.0.1
+    - rich >=13.9.4
+    - typer >=0.15.2
+
+tests:
+  - python:
+      imports:
+        - mcp_cli
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/mcp-cli/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A cli for the Model Context Provider
+  description: |
+    A cli for the Model Context Provider
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mcp-cli
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mcp-cli
+  cfe-purls:
+    - pkg:conda/mcp-cli@${{ version }}?channel=conda-forge
+    - pkg:pypi/mcp-cli@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/mcp-cli/
+  cfe-upstream-homepage: https://pypi.org/project/mcp-cli/
+  cfe-import-names: [mcp_cli]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:47:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:47:19Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

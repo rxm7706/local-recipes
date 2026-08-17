@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytest-html
+  version: "4.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytest_html-${{ version }}.tar.gz
+  sha256: b6a88cba507500d8709959201e2e757d3941e859fd17cfd4ed87b16fc0c67912
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatch-vcs >=0.3
+    - hatchling >=1.13
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pytest >=7.0.0
+    - pytest-metadata >=2.0.0
+    - jinja2 >=3.0.0
+
+tests:
+  - python:
+      imports:
+        - pytest_html
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MPL-2.0
+  license_file: LICENSE
+  summary: pytest plugin for generating HTML reports
+  homepage: https://github.com/pytest-dev/pytest-html
+
+extra:
+  recipe-maintainers:
+    - 48762
+    - birdsarah
+    - davehunt
+    - nicoddemus
+    - dbast

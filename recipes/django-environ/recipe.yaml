@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-environ
+  version: "0.14.0"
+  sha256: b6c48d93b9d2ff8a3ea14099e90c35aa4f101c1b4d5f262dfee0d27b06742ed7
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=1.8
+    # - sphinx-notfound-page
+    # - sphinx >=5.0
+    # - setuptools >=71.0.0
+    # - pytest >=4.6.11
+    # - furo >=2024.8.6
+    # - coverage >=5.0a4
+    # - sphinx-notfound-page
+    # - sphinx >=5.0
+    # - setuptools >=71.0.0
+    # - pytest >=4.6.11
+    # - furo >=2024.8.6
+    # - coverage >=5.0a4
+    # - sphinx-notfound-page
+    # - sphinx-copybutton
+    # - sphinx >=5.0
+    # - setuptools >=71.0.0
+    # - pytest >=4.6.11
+    # - furo >=2024.8.6
+    # - coverage >=5.0a4
+    # - typing_extensions >=3.10.0
+    # - sphinx-notfound-page
+    # - sphinx-copybutton
+    # - sphinx >=5.0
+    # - setuptools >=71.0.0
+    # - pytest >=4.6.11
+    # - furo >=2024.8.6
+    # - coverage >=5.0a4
+
+tests:
+  - python:
+      imports:
+        - environ
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Django-environ allows you to utilize 12factor inspired environment variables to configure your Django application.
+  description: |
+    Django-environ allows you to utilize 12factor inspired environment variables to configure your Django application.
+    This module is a merge of:
+    -envparse
+    -honcho
+    -dj-database-url
+    -dj-search-url
+    -dj-config-url
+    -django-cache-url
+
+    and inspired by:
+    -12factor
+    -12factor-django
+    -Two Scoops of Django
+
+  homepage: https://github.com/joke2k/django-environ
+  repository: https://github.com/joke2k/django-environ
+  documentation: https://django-environ.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - cshaley
+    - rxm7706
+    - millsks
+    - elanqo
+    - zaigner

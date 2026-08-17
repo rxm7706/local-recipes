@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.10"
+
+package:
+  name: cloud-tpu-client
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/c/cloud-tpu-client/cloud_tpu_client-0.10-py3-none-any.whl
+  sha256: e3ee7a0a69c3fdbfc82826d86762f24e43bfcd6096af047185708fe062c7f849
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - google-api-python-client
+    - oauth2client
+
+tests:
+  - python:
+      imports:
+        - cloud_tpu_client
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://cloud.google.com/tpu/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Client for using Cloud TPUs
+  description: |
+    Client for using Cloud TPUs
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cloud-tpu-client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cloud-tpu-client
+  cfe-purls:
+    - pkg:conda/cloud-tpu-client@${{ version }}?channel=conda-forge
+    - pkg:pypi/cloud-tpu-client@${{ version }}
+  cfe-upstream-repo: https://cloud.google.com/tpu/
+  cfe-upstream-homepage: https://cloud.google.com/tpu/
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:36:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:36:43Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

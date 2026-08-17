@@ -2,24 +2,25 @@
 schema_version: 1
 
 context:
+  name: jinja2-simple-tags
   version: "0.6.1"
 
 package:
-  name: jinja2-simple-tags
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/j/jinja2-simple-tags/jinja2-simple-tags-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jinja2-simple-tags-${{ version }}.tar.gz
   sha256: 54abf83883dcd13f8fd2ea2c42feeea8418df3640907bd5251dec5e25a6af0e3
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
@@ -31,20 +32,13 @@ tests:
       imports:
         - jinja2_simple_tags
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Base classes for quick-and-easy template tag development
   license: BSD-3-Clause
   license_file: LICENSE
   homepage: https://github.com/dldevinc/jinja2-simple-tags
-  repository: https://github.com/dldevinc/jinja2-simple-tags
-  description: |
-    Base classes for quick-and-easy Jinja2 template tag development,
-    providing StandaloneTag and ContainerTag helpers that simplify
-    writing custom Jinja2 extensions.
 
 extra:
   recipe-maintainers:

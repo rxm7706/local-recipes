@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-designateclient
+  version: "7.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: d9a1086e7bf81f4034ca0ec7a243cbd8b344bfb6095e2903c553cc3807d2bed2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pbr >=2.0.0
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - cliff !=2.9.0,>=2.8.0
+    - debtcollector >=1.2.0
+    - jsonschema >=3.2.0
+    - keystoneauth1 >=3.4.0
+    - osc-lib >=1.8.0
+    - oslo.serialization !=2.19.1,>=2.18.0
+    - oslo.utils >=3.33.0
+    - pbr !=2.1.0,>=2.0.0
+    - python >=${{ python_min }}
+    - requests >=2.14.2
+    - stevedore >=1.20.0
+
+tests:
+  - python:
+      imports:
+        - designateclient
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: OpenStack DNS-as-a-Service - Client
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://docs.openstack.org/python-designateclient/latest
+
+extra:
+  recipe-maintainers:
+    - tschoonj

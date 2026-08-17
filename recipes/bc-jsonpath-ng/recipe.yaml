@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: bc-jsonpath-ng
+  version: "1.6.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/bc-jsonpath-ng-${{ version }}.tar.gz
+  sha256: 6ea4e379c4400a511d07605b8d981950292dd098a5619d143328af4e841a2320
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - bc_jsonpath_ng=bc_jsonpath_ng.bin.jsonpath:entry_point
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - ply
+    - decorator
+
+tests:
+  - python:
+      imports:
+        - bc_jsonpath_ng
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - bc_jsonpath_ng --help
+
+about:
+  summary: A final implementation of JSONPath for Python that aims to be standard compliant, including arithmetic and binary comparison operators and providing clear AST for metaprogramming.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/bridgecrewio/jsonpath-ng
+
+extra:
+  recipe-maintainers:
+    - nick-harmening
+    - borchero

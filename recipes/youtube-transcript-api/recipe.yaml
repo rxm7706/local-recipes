@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: youtube-transcript-api
+  version: 1.2.4
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/youtube_transcript_api-${{ version }}.tar.gz
+  sha256: b72d0e96a335df599d67cee51d49e143cff4f45b84bcafc202ff51291603ddcd
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - youtube_transcript_api = youtube_transcript_api.__main__:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - requests
+    - defusedxml >=0.7.1,<0.8.0
+tests:
+  - python:
+      imports:
+        - youtube_transcript_api
+        - youtube_transcript_api.test
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+      - youtube_transcript_api --help
+
+about:
+  summary: This is an python API which allows you to get the transcripts/subtitles for a given YouTube video. It also works for automatically generated subtitles, supports translating subtitles and it does not require a headless browser, like other selenium based solutions do!
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/jdepoix/youtube-transcript-api
+
+extra:
+  recipe-maintainers:
+    - janjagusch
+    - moritzwilksch

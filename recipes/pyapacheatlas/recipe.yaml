@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyapacheatlas
+  version: "0.16.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyapacheatlas-${{ version }}.tar.gz
+  sha256: 26990f5d757ce487553f32d0c2355d96032a54fa940763b81c6f961eb81754d4
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - openpyxl >=3.0
+    - requests >=2.0
+
+tests:
+  - python:
+      imports:
+        - pyapacheatlas
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A package to simplify working with the Apache Atlas REST APIs for Atlas and Azure Purview.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/wjohnson/pyapacheatlas
+
+extra:
+  recipe-maintainers:
+    - rxm7706

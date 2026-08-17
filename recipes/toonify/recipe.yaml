@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.6.0"
+
+package:
+  name: toonify
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/toonify/toonify-${{ version }}.tar.gz
+  sha256: 57bf6fbc9d73e463e8773c491123b233b0c79482235e0c27b908b4e58b54ec77
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling ==1.26.3
+  run:
+    - python >=${{ python_min }}
+    - tiktoken >=0.5.0
+
+tests:
+  - python:
+      imports:
+        - toon
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/ScrapeGraphAI/toonify
+  license: MIT
+  license_file: LICENSE
+  summary: TOON (Token-Oriented Object Notation) - A compact, human-readable serialization format for LLMs
+  description: |
+    TOON (Token-Oriented Object Notation) - A compact, human-readable serialization format for LLMs
+  repository: https://github.com/ScrapeGraphAI/toonify
+  documentation: https://github.com/ScrapeGraphAI/toonify#readme
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: toonify
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: toonify
+  cfe-purls:
+    - pkg:conda/toonify@${{ version }}?channel=conda-forge
+    - pkg:pypi/toonify@${{ version }}
+  cfe-upstream-repo: https://github.com/ScrapeGraphAI/toonify
+  cfe-upstream-homepage: https://github.com/ScrapeGraphAI/toonify
+  cfe-import-names: [toon]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:00:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:00:58Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

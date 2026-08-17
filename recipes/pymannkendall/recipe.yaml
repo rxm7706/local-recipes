@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pymannkendall
+  version: "1.4.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: f9e3bbbb583b5285d15082aa0007825e5bea4dde9858d2e7ca81ee6f1e378e82
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  host:
+    - numpy
+    - pip
+    - python >=3
+    - scipy
+  run:
+    - numpy
+    - python >=3
+    - scipy
+
+tests:
+  - python:
+      imports:
+        - pymannkendall
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A python package for non-parametric Mann-Kendall family of trend tests.
+  homepage: https://github.com/mmhs013/pymannkendall
+
+extra:
+  recipe-maintainers:
+    - dpryan79

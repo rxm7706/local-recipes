@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mmh3
+  version: "5.2.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/hajimes/${{ name|lower }}/archive/v${{ version }}.tar.gz
+  sha256: e6c68f17ac8859055940f850228ce0762d25d4ef27da45024d4eb6e2d6d9034a
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - mmh3
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Python wrapper for MurmurHash (MurmurHash3), a set of fast and robust hash functions.
+  homepage: http://packages.python.org/mmh3
+
+extra:
+  recipe-maintainers:
+    - johnlees

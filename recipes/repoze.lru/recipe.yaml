@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: repoze.lru
+  version: "0.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/repoze_lru-${{ version }}.tar.gz
+  sha256: a252408cd93fe670c88d6665b96fe5d42e071dba2507a1f21a1e609ae4fa891a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - repoze
+        - repoze.lru
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause AND 0BSD
+  license_file:
+    - COPYRIGHT.txt
+    - LICENSE.txt
+  summary: A tiny LRU cache implementation and decorator
+  homepage: http://www.repoze.org
+  repository: https://github.com/repoze/repoze.lru
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - nicoddemus

@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: oslash
+  version: "2.0.0"
+  python_min: "3.12"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: c8090331973ccab85a5266bdb125d3547d0e1d27b0990bd3bc2de2e56bef4a8c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - oslash
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Functors, Applicatives, And Monads in Python
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/dbrattli/oslash
+
+extra:
+  recipe-maintainers:
+    - thewchan

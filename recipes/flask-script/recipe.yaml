@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: Flask-Script
+  version: "2.0.6"
+  bundle: tar.gz
+  hash: 6425963d91054cfcc185807141c7314a9c5ad46325911bd24dcb489bd0161c65
+  build: 0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
+  sha256: ${{ hash }}
+  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+
+build:
+  number: ${{ build }}
+  noarch: python
+  script: python setup.py install --single-version-externally-managed --record=record.txt
+
+requirements:
+  build:
+    - python
+    - setuptools
+  run:
+    - python
+    - flask
+
+tests:
+  - python:
+      imports:
+        - flask_script
+      pip_check: false
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Scripting support for Flask
+  homepage: http://github.com/smurfix/flask-script
+  repository: http://github.com/smurfix/flask-script
+  documentation: https://flask-script.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr

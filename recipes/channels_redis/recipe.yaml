@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: channels_redis
+  version: "4.3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/channels_redis-${{ version }}.tar.gz
+  sha256: 740ee7b54f0e28cf2264a940a24453d3f00526a96931f911fcb69228ef245dd2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - redis-py >=4.6
+    - msgpack-python >=1.0,<2.dev0
+    - asgiref >=3.2.10,<4
+    - channels
+    #    - incremental 24.7.2 requires tomli, which is not installed.
+    - tomli
+
+tests:
+  - python:
+      imports:
+        - channels_redis
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Redis-backed ASGI channel layer implementation
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: http://github.com/django/channels_redis/
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - rxm7706

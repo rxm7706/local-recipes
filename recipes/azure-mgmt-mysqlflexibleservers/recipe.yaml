@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: azure-mgmt-mysqlflexibleservers
+  version: 1.0.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/azure_mgmt_mysqlflexibleservers-${{ version }}.tar.gz
+  sha256: d077a656888a5c5977f479a244a64ac4a1d351002e99a7eddaf6a49a82192e56
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - setuptools
+    - python ${{ python_min }}.*
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - typing_extensions >=4.6.0
+    - azure-mgmt-core >=1.6.0
+    - msrest >=0.7.1
+tests:
+  - python:
+      imports:
+        - azure.mgmt.mysqlflexibleservers
+        - azure.mgmt.mysqlflexibleservers.aio
+      pip_check: true
+      python_version: ${{ python_min }}.*
+about:
+  summary: Microsoft Azure Mysqlflexibleservers Management Client Library for Python
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/Azure/azure-sdk-for-python
+
+extra:
+  recipe-maintainers:
+    - janjagusch

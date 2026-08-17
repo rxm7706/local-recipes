@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: websocket
+  version: 0.2.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/websocket-${{ version }}.tar.gz
+  sha256: 42b506fae914ac5ed654e23ba9742e6a342b1a1c3eb92632b6166c65256469a4
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - gevent
+    - greenlet
+
+tests:
+  - python:
+      imports:
+        - websocket
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  summary: Websocket implementation for gevent
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: http://pypi.python.org/pypi/websocket
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: azure-storage-blob
+  version: "12.30.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 2cd74d4d5731e5eb6b8d5c5056ee115a5e88f8fdf22517b739836fda685018be
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - azure-core >=1.37.0
+    - cryptography >=2.1.4
+    - isodate >=0.6.1
+    - typing_extensions >=4.6.0
+
+tests:
+  - python:
+      imports:
+        - azure.storage.blob
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Microsoft Azure Blob Storage Client Library for Python
+  license: MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/azure-storage-blob/
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - xhochy

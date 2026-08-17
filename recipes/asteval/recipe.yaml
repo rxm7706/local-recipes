@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: asteval
+  version: "1.0.9"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 4f7323d63d9fbf89d7e1d5f8bb59b6c093970c15bb5926e6e67d0195858aa230
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=${{ python_min }}
+    - pip
+    - setuptools
+    - setuptools-scm
+  run:
+    - python >=${{ python_min }}
+    - pip
+    - setuptools
+    - setuptools-scm
+    - numpy >=1.22
+
+tests:
+  - python:
+      imports:
+        - asteval
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Simple and robust expressions evaluator for Python
+  # The remaining entries in this section are optional, but recommended
+  description: |
+    asteval is a simple and robust evaluator of
+    Python expressions and statements, using Python's ast module.
+  homepage: https://github.com/lmfit/asteval
+  repository: https://github.com/lmfit/asteval
+  documentation: https://lmfit.github.io/asteval/
+
+extra:
+  recipe-maintainers:
+    - souravsingh
+    - newville

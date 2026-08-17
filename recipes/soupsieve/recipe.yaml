@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.9.2"
+
+package:
+  name: soupsieve
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/soupsieve/soupsieve-${{ version }}.tar.gz
+  sha256: 4a55d8cf158a9c2e587fa4922f1bbb91d68ac829e2d6f25403a85747c71daf74
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - soupsieve
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - beautifulsoup4
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.md
+  summary: A modern CSS selector implementation for BeautifulSoup
+  homepage: http://facelessuser.github.io/soupsieve
+
+extra:
+  recipe-maintainers:
+    - MementoRC
+    - jschueller

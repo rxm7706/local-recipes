@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.86.5"
+
+package:
+  name: flet-web
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/flet-web/flet_web-${{ version }}.tar.gz
+  sha256: 7fd538ece2d8d415347dc338d5a734beae11ec871fded0dab6094c1f54616480
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - flet ==0.86.5
+    - fastapi >=0.115.12
+    - uvicorn >=0.35.0
+
+tests:
+  - python:
+      imports:
+        - flet_web
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://flet.dev
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Flet web client in Flutter.
+  description: |
+    Flet web client in Flutter.
+  repository: https://github.com/flet-dev/flet
+  documentation: https://flet.dev/docs
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flet-web
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flet-web
+  cfe-purls:
+    - pkg:conda/flet-web@${{ version }}?channel=conda-forge
+    - pkg:pypi/flet-web@${{ version }}
+  cfe-upstream-repo: https://github.com/flet-dev/flet
+  cfe-upstream-homepage: https://flet.dev
+  cfe-import-names: [flet_web]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:11:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:11:09Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

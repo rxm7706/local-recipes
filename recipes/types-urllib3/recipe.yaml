@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: types-urllib3
+  version: "1.26.25.14"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/types-urllib3-${{ version }}.tar.gz
+  sha256: 229b7f577c951b8c1b92c1bc2b2fdb0b49847bd2af6d1cc2a2e3dd340f3bda8f
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pip check
+
+about:
+  summary: Typing stubs for urllib3
+  license: Apache-2.0
+  # License need to be packaged from upstream
+  license_file: LICENSE
+  homepage: https://github.com/python/typeshed
+
+extra:
+  recipe-maintainers:
+    - thewchan

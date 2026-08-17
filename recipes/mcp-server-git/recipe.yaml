@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2026.7.10"
+
+package:
+  name: mcp-server-git
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mcp-server-git/mcp_server_git-${{ version }}.tar.gz
+  sha256: 95107b8b2989814e8c230e8e489feef4bfa4d80ca4a7ac1612cea05283ff5ea5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - click >=8.1.7
+    - gitpython >=3.1.50
+    - mcp >=1.0.0
+    - pydantic >=2.0.0
+
+tests:
+  - python:
+      imports:
+        - mcp_server_git
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/mcp-server-git/
+  license: MIT
+  license_file: LICENSE
+  summary: A Model Context Protocol server providing tools to read, search, and manipulate Git repositories programmatically via LLMs
+  description: |
+    A Model Context Protocol server providing tools to read, search, and manipulate Git repositories programmatically via LLMs
+  repository: https://github.com/modelcontextprotocol/servers/tree/main/src/git
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mcp-server-git
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mcp-server-git
+  cfe-purls:
+    - pkg:conda/mcp-server-git@${{ version }}?channel=conda-forge
+    - pkg:pypi/mcp-server-git@${{ version }}
+  cfe-upstream-repo: https://github.com/modelcontextprotocol/servers/tree/main/src/git
+  cfe-upstream-homepage: https://pypi.org/project/mcp-server-git/
+  cfe-import-names: [mcp_server_git]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:29:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:29:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

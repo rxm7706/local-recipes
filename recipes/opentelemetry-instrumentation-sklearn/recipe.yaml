@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: opentelemetry-instrumentation-sklearn
+  version: 0.46b0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_sklearn-${{ version }}.tar.gz
+  sha256: 26068e49b47d762365fe533a2e0d2da99c42005dde3895ed60bd89f40710a762
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - opentelemetry-api ~=1.12
+    - opentelemetry-instrumentation ==0.46b0
+    # - scikit-learn ~=0.24.0
+    # - opentelemetry-test-utils ==0.37b0
+    # - opentelemetry-instrumentation-sklearn
+    # - scikit-learn ~=0.24.0
+    # - opentelemetry-test-utils ==0.38b0
+    # - opentelemetry-instrumentation-sklearn
+    # - scikit-learn ~=0.24.0
+    # - opentelemetry-test-utils ==0.39b0
+    # - opentelemetry-instrumentation-sklearn
+    # - scikit-learn ~=0.24.0
+    # - opentelemetry-test-utils ==0.40b0
+    # - opentelemetry-instrumentation-sklearn
+    # - scikit-learn ~=0.24.0
+    # - opentelemetry-test-utils ==0.41b0
+    # - opentelemetry-instrumentation-sklearn
+    # - scikit-learn ~=0.24.0
+    # - opentelemetry-test-utils ==0.42b0
+    # - opentelemetry-instrumentation-sklearn
+    # - scikit-learn ~=0.24.0
+    # - opentelemetry-test-utils ==0.43b0
+    # - opentelemetry-instrumentation-sklearn
+    # - scikit-learn ~=0.24.0
+    # - opentelemetry-test-utils ==0.44b0
+    # - opentelemetry-instrumentation-sklearn
+    # - scikit-learn ~=0.24.0
+    # - scikit-learn ~=0.24.0
+
+tests:
+  - python:
+      imports:
+        - opentelemetry
+        - opentelemetry.instrumentation
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: OpenTelemetry sklearn instrumentation
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-sklearn
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk

@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: gpustat
+  version: "1.1.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: c18d3ed5518fc16300c42d694debc70aebb3be55cae91f1db64d63b5fa8af9d8
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - gpustat = gpustat:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - pytest-runner
+    - setuptools >=45
+    - setuptools_scm[toml] >=6.2
+  run:
+    - python >=${{ python_min }}
+    - nvidia-ml-py >=11.450.129
+    - psutil >=5.6.0
+    - blessed >=1.17.1
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - gpustat
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pytest >=5.4.1
+        - mockito >=1.2.1
+        - pytest-runner
+        - python ${{ python_min }}
+    script:
+      - gpustat --help
+      - pytest --pyargs gpustat.test_gpustat
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A simple command-line utility for querying and monitoring GPU status
+  homepage: https://github.com/wookayin/gpustat
+  repository: https://github.com/wookayin/gpustat
+  documentation: https://github.com/wookayin/gpustat
+
+extra:
+  recipe-maintainers:
+    - mattip

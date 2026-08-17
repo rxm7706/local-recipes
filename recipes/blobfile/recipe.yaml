@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: blobfile
+  version: "3.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/christopher-hesse/blobfile/archive/v${{ version }}.tar.gz
+  sha256: 0f3404a05aff1f2effa2b328852bff37de90ee49f910148110caace22890949c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools >=64
+  run:
+    - python >=${{ python_min }}
+    - pycryptodomex >=3.8
+    - urllib3 >=2
+    - lxml >=4.9
+    - filelock >=3.0
+
+tests:
+  - python:
+      imports:
+        - blobfile
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Unlicense
+  license_file: LICENSE
+  summary: Read Google Cloud Storage, Azure Blobs, and local paths with the same interface
+  homepage: https://github.com/christopher-hesse/blobfile
+
+extra:
+  recipe-maintainers:
+    - BastianZim

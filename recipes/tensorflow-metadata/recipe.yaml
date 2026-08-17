@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: tensorflow-metadata
+  version: "1.21.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/t/tensorflow-metadata/tensorflow_metadata-${{ version }}-py3-none-any.whl
+  sha256: 0520806bf3bdd9157333203a3aa0e8afde2a97cc619f15ba622603dc6c898d1f
+
+build:
+  number: 0
+  noarch: python
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - absl-py >=0.9,<3.0.0
+    - googleapis-common-protos >=1.56.4,<2
+    - protobuf >=4.25.2,<=6.32
+
+tests:
+  - python:
+      imports:
+        - tensorflow_metadata
+        - tensorflow_metadata.proto
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Utilities for passing TensorFlow-related metadata between tools
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://pypi.org/project/tensorflow-metadata/
+  repository: https://github.com/tensorflow/metadata
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - rluria14
+    - oblute
+    - ndmaxar
+    - ngam
+    - ehfd

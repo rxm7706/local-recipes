@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: xmlschema
+  version: "4.3.2"
+  python_min: "3.10"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: f3b33a21a2b2cdc404ddc3fb599d8bc1dee90b155d547370672e6e684746b8d6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.10.*
+    - pip
+    - setuptools
+    - elementpath <6.0.0,>=5.1.3
+  run:
+    - python >=${{ python_min }}
+    - elementpath <6.0.0,>=5.1.3
+
+tests:
+  - python:
+      imports:
+        - xmlschema
+      pip_check: false
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - python ${{ python_min }}
+        - jinja2
+        - lxml
+        - pip
+        - setuptools
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: An XML Schema validator and decoder
+  description: |
+    This library is an implementation of XML Schema for Python.
+
+    This library arises from the needs of a solid Python layer for processing
+    XML Schema based files for MaX (Materials design at the Exascale) European
+    project. A significant problem is the encoding and the decoding of the XML
+    data files produced by different simulation software. Another important
+    requirement is the XML data validation, in order to put the produced data
+    under control. The lack of a suitable alternative for Python in the
+    schema-based decoding of XML data has led to build this library. Obviously
+    this library can be useful for other cases related to XML Schema based
+    processing, not only for the original scope.
+
+  homepage: https://github.com/sissaschool/xmlschema
+  repository: https://github.com/sissaschool/xmlschema
+
+extra:
+  recipe-maintainers:
+    - ccwang002

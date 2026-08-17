@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.2.1"
+
+package:
+  name: os-ken
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/os-ken/os_ken-${{ version }}.tar.gz
+  sha256: 731f5245069260d464c47ebd544bb5c1c344beb0ff37aaa8d6d888dcda67f1ce
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - pbr >=6.1.1
+  run:
+    - python >=${{ python_min }}
+    - pbr >=2.0.0
+    - eventlet >=0.27.0
+    - msgpack >=1.0.0
+    - ncclient >=0.6.13
+    - netaddr >=0.7.18
+    - oslo.config >=5.1.0
+    - ovs >=2.8.0
+    - packaging >=20.4
+    - routes >=2.3.1
+    - webob >=1.8.2
+
+tests:
+  - python:
+      imports:
+        - os_ken
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/os-ken/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A component-based software defined networking framework for OpenStack
+  description: |
+    A component-based software defined networking framework for OpenStack
+  repository: https://opendev.org/openstack/os-ken
+  documentation: https://docs.openstack.org/os-ken/latest/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: os-ken
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: os-ken
+  cfe-purls:
+    - pkg:conda/os-ken@${{ version }}?channel=conda-forge
+    - pkg:pypi/os-ken@${{ version }}
+  cfe-upstream-repo: https://opendev.org/openstack/os-ken
+  cfe-upstream-homepage: https://pypi.org/project/os-ken/
+  cfe-import-names: [os_ken]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:26:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:26:27Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

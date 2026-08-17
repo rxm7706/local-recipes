@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: soxr
+  version: "1.1.0"
+
+package:
+  name: soxr-python
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/soxr-${{ version }}.tar.gz
+  sha256: 9f228ae21c78fa9359ca98d8a5e8e91f30639e438e574133dace62c5b5309e44
+
+build:
+  number: 0
+  skip: python_impl == "pypy"
+  skip: true  # [python_impl == "pypy"]
+  script: ${{ PYTHON }} -m pip install . -vv -C cmake.define.USE_SYSTEM_LIBSOXR=ON
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - cmake
+    - if: unix
+      then: make
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+  host:
+    - nanobind >=2.0.0
+    - scikit-build-core >=0.9.0
+    - pip
+    - python
+    - setuptools_scm
+    - soxr
+  run:
+    - python
+    - numpy
+
+tests:
+  - python:
+      imports:
+        - soxr
+      pip_check: true
+  - files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - pip
+        - pytest
+    script:
+      - pytest ./tests
+
+about:
+  summary: High quality, one-dimensional sample-rate conversion library
+  license: LGPL-2.1-or-later
+  license_file:
+    - COPYING.LGPL
+    - LICENSE.txt
+  homepage: https://github.com/dofuuz/python-soxr
+  repository: https://github.com/dofuuz/python-soxr
+  documentation: https://python-soxr.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - dofuuz

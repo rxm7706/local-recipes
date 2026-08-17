@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: wagtail-periodic-review
   version: "0.5.0"
 
 package:
-  name: wagtail-periodic-review
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/w/wagtail-periodic-review/wagtail_periodic_review-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail_periodic_review-${{ version }}.tar.gz
   sha256: c56e89abcb475e30255510e0be30228761e5ea6c3d6cbad3916637ff44607164
 
 build:
@@ -19,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - flit-core >=3.2,<4
     - pip
   run:
@@ -32,17 +33,14 @@ tests:
       imports:
         - wagtail_periodic_review
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: A Wagtail package for periodic page content reviews
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/torchbox/wagtail-periodic-review
-  repository: https://github.com/torchbox/wagtail-periodic-review
-  documentation: https://github.com/torchbox/wagtail-periodic-review/blob/main/CHANGELOG.md
+  homepage: https://github.com/zerolab/wagtail-periodic-review
+  repository: https://github.com/zerolab/wagtail-periodic-review/blob/main/CHANGELOG.md
 
 extra:
   recipe-maintainers:

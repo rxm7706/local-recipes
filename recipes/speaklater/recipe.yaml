@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: speaklater
+  version: "1.3"
+  bundle: tar.gz
+  hash: 59fea336d0eed38c1f0bf3181ee1222d0ef45f3a9dd34ebe65e6bfffdd6a65a9
+  build: 3
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
+  sha256: ${{ hash }}
+  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+
+build:
+  number: ${{ build }}
+  noarch: python
+  script: python setup.py install --single-version-externally-managed --record=record.txt
+
+requirements:
+  build:
+    - python
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - speaklater
+      pip_check: false
+
+about:
+  license_file: LICENSE
+  license: BSD-3-Clause
+  summary: Implements a lazy string for python useful for use with gettext
+  homepage: http://github.com/mitsuhiko/speaklater
+  repository: http://github.com/mitsuhiko/speaklater
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - ocefpaf

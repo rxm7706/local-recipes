@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.11.1"
+
+recipe:
+  name: libssh2-split
+  version: ${{ version }}
+
+source:
+  url: https://www.libssh2.org/download/libssh2-${{ version }}.tar.gz
+  sha256: d9ec76cbe34db98eec3539fe2c899d26b0c837cb3eb466a56b0f109cabf658f7
+
+build:
+  number: 1
+
+outputs:
+  - package:
+      name: libssh2
+    build:
+      script:
+        file: ${{ 'bld_shared.bat' if win else 'build_shared.sh' if unix else '' }}
+    requirements:
+      build:
+        # This breals a dependency cycle on unix
+        # curl->libssh2->cmake->curl
+        - cmake-no-system
+        - if: not (osx and arm64)
+          then: ${{ compiler('c') }}
+        - if: not (osx and arm64)
+          then: ${{ stdlib("c") }}
+        - if: osx and arm64
+          then: ${{ compiler('clang_bootstrap') }} 11.*
+        - if: osx and arm64
+          then: cctools_${{ target_platform }}
+        - if: win
+          then: ninja
+        - if: unix
+          then: make
+      host:
+        - openssl
+        - zlib
+      run_exports:
+        - ${{ pin_subpackage('libssh2') }}
+    tests:
+      - script:
+          - if: not win
+            then: test -f $PREFIX/include/libssh2.h
+          - if: not win
+            then: test -f $PREFIX/include/libssh2_publickey.h
+          - if: not win
+            then: test -f $PREFIX/include/libssh2_sftp.h
+          - if: not win
+            then: test ! -f $PREFIX/lib/libssh2.a
+          - if: not win
+            then: test -f $PREFIX/lib/libssh2${SHLIB_EXT}
+          - if: win
+            then: if not exist %LIBRARY_INC%\\libssh2.h           exit 1
+          - if: win
+            then: if not exist %LIBRARY_INC%\\libssh2_publickey.h exit 1
+          - if: win
+            then: if not exist %LIBRARY_INC%\\libssh2_sftp.h      exit 1
+          - if: win
+            then: if not exist %LIBRARY_LIB%\\libssh2.lib         exit 1
+  - package:
+      name: libssh2-static
+    build:
+      script:
+        file: ${{ 'bld_static.bat' if win else 'build_static.sh' if unix else '' }}
+    requirements:
+      build:
+        # This breals a dependency cycle on unix
+        # curl->libssh2->cmake->curl
+        - cmake-no-system
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
+        - if: win
+          then: ninja
+        - if: unix
+          then: make
+      host:
+        - ${{ pin_subpackage("libssh2", exact=True) }}
+        - openssl
+        - zlib
+      run:
+        - ${{ pin_subpackage("libssh2", exact=True) }}
+    tests:
+      - script:
+          - if: not win
+            then: test -f $PREFIX/lib/libssh2.a
+          - if: win
+            then: if not exist %LIBRARY_LIB%\libssh2_static.lib exit 1
+
+about:
+  license: BSD-3-Clause
+  license_file: COPYING
+  summary: the SSH library
+  description: |
+    libssh2 is a library implementing the SSH2 protocol, available under the revised BSD license.
+  homepage: https://www.libssh2.org/
+  repository: https://github.com/libssh2/libssh2
+
+extra:
+  feedstock-name: libssh2
+  recipe-maintainers:
+    - shadowwalkersb
+    - nehaljwani
+    - ocefpaf
+    - xhochy

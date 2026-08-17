@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: tobler
+  version: "0.14.0"
+  python_min: "3.12"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 9d199bee5f14fed64ef392700e15ea72dfb68543f2293b505071ee6d2f62efe9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python 3.12.*
+    - pip
+    - setuptools >=61.0
+    - setuptools-scm >=6.2
+  run:
+    - python >=${{ python_min }}
+    - geopandas >=1.0
+    - joblib >=1.4
+    - libpysal >=4.10
+    - numpy >=2.0
+    - pandas >=2.2
+    - rasterio >=1.4
+    - rasterstats >=0.20
+    - scipy >=1.13
+    - statsmodels >=0.14
+    - tqdm >=4.67
+
+tests:
+  - python:
+      imports:
+        - tobler
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Tobler is a python package for areal interpolation, dasymetric mapping, and change of support.
+  description: |
+    Tobler is a python package for areal interpolation, dasymetric mapping, and change of support.
+  homepage: https://github.com/pysal/tobler
+  repository: https://github.com/pysal/tobler/
+  documentation: https://pysal.org/tobler/
+
+extra:
+  recipe-maintainers:
+    - knaaptime
+    - sjsrey
+    - martinfleis
+    - jGaboardi

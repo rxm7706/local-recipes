@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.2.0"
+
+package:
+  name: alpaca-trade-api
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/alpaca-trade-api/alpaca-trade-api-${{ version }}.tar.gz
+  sha256: ddc92c3992fedcf8316c5b8a761b72f485b754fee14d77bb5bab9878e79acc46
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pandas >=0.18.1
+    - numpy >=1.11.1
+    - requests <3,>2
+    - urllib3 <2,>1.24
+    - websocket-client <2,>=0.56.0
+    - websockets <11,>=9.0
+    - msgpack ==1.0.3
+    - aiohttp <4,>=3.8.3
+    - pyyaml ==6.0.1
+    - deprecation ==2.1.0
+
+tests:
+  - python:
+      imports:
+        - alpaca_trade_api
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/alpacahq/alpaca-trade-api-python
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Alpaca API python client
+  description: |
+    Alpaca API python client
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: alpaca-trade-api
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: alpaca-trade-api
+  cfe-purls:
+    - pkg:conda/alpaca-trade-api@${{ version }}?channel=conda-forge
+    - pkg:pypi/alpaca-trade-api@${{ version }}
+  cfe-upstream-repo: https://github.com/alpacahq/alpaca-trade-api-python
+  cfe-upstream-homepage: https://github.com/alpacahq/alpaca-trade-api-python
+  cfe-import-names: [alpaca_trade_api]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:13Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:13Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

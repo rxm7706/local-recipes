@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cfenv
+  version: "0.5.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/cfenv-${{ version }}.tar.gz
+  sha256: c7a91a4c82431acfc35db664c194d5e6cc7f4df3dcb692d0f836a6ceb0156167
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - furl >=0.4.8
+
+tests:
+  - python:
+      imports:
+        - cfenv
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Python wrapper for Cloud Foundry environments
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/jmcarp/py-cfenv
+
+extra:
+  recipe-maintainers:
+    - sumanth-manchala

@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: icalendar
+  version: "7.2.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/icalendar-${{ version }}.tar.gz
+  sha256: 6cf904a928881e20c89b682e75bca2eb97e8c5ca629782ed44a519abf4cac1cc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+    - hatchling
+    - hatch-vcs
+  run:
+    - python >=${{ python_min }}
+    - python-dateutil
+    - python-tzdata
+    - typing-extensions
+
+tests:
+  - python:
+      imports:
+        - icalendar
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+        - pip
+    script:
+      - icalendar --help
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE.rst
+  summary: iCalendar parser/generator
+  description: |
+    The icalendar package is a parser/generator of iCalendar files for use with
+    Python.
+  homepage: https://github.com/collective/icalendar
+  repository: https://github.com/collective/icalendar
+  documentation: http://icalendar.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - stuertz

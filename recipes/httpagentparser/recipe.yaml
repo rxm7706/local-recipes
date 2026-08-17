@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: httpagentparser
+  version: "1.8.2"
+  sha256: 77e1d03fb40f1c34afa2d210ed7667dddb5b601efa154513cd08713d17a3aa6c
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: python setup.py install --single-version-externally-managed --record record.txt
+
+requirements:
+  build:
+    - python
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - httpagentparser
+      pip_check: false
+
+about:
+  license: MIT
+  summary: Extracts OS Browser etc information from http user agent string
+  # license_file: LICENSE.txt  # https://github.com/shon/httpagentparser/pull/76
+  homepage: http://shon.github.com/httpagentparser
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk

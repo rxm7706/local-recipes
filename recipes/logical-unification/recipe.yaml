@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: logical-unification
+  version: "0.4.7"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 3d73b263a870827b3f52d89c94f3336afd7fcaecf1e0c67fa18e73025399775c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=80.0.0
+    - setuptools-scm
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - toolz
+    - multipledispatch
+
+tests:
+  - python:
+      imports:
+        - unification
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+        - pip
+    script:
+      - python -c "from importlib.metadata import version; print(version('${{ name }}'))"
+      - python -c "from importlib.metadata import version; print(version('${{ name }}'))" | grep ${{ version }}
+
+about:
+  summary: Logical unification in Python
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  homepage: https://github.com/pythological/unification/
+  repository: https://github.com/pythological/unification
+
+extra:
+  recipe-maintainers:
+    - maresb
+    - brandonwillard

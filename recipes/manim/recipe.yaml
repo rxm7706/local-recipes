@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: manim
+  version: 0.20.1
+  python_min: "3.11"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 1e9747fb2fc1bde58ad09bcbd77d141793ce4b61811726a7fce537193d92e16b
+
+build:
+  noarch: python
+  python:
+    entry_points:
+      - manim = manim.__main__:main
+      - manimce = manim.__main__:main
+  script: python -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - av >=15.0
+    - click >=8.0
+    - cloup >=2.0.0
+    - decorator >=4.3.2
+    - isosurfaces >=0.1.1
+    - manimpango >=0.6.1,<1.0.0
+    - mapbox_earcut >=1.0.0
+    - moderngl >=5.7.0,<6.0.0
+    - moderngl-window >=2.0.0
+    - networkx >=2.6
+    - numpy >=2.1
+    - pillow >=11.0
+    - pycairo >=1.14,<2.0.0
+    - pydub >=0.22.0
+    - pygments >=2.17
+    - rich >=12.0.0
+    - scipy >=1.13.0
+    - screeninfo >=0.7.0
+    - skia-pathops >=0.9.0
+    - srt >=3.0.0
+    - svgelements >=1.9.0
+    - tqdm >=4.21.0
+    - beautifulsoup4 >=4.12
+    - watchdog >=2.0.0
+    - audioop-lts >=0.2.1
+    - typing_extensions >=4.12.0
+    - ffmpeg
+tests:
+  - python:
+      pip_check: true
+      imports:
+        - manim
+      python_version: ${{ python_min }}.*
+  - script:
+      - manim --help
+      - manimce --help
+
+about:
+  homepage: https://manim.community
+  summary: Animation engine for explanatory math videos.
+  license: MIT
+  license_file: LICENSE
+  repository: https://github.com/ManimCommunity/manim
+
+extra:
+  recipe-maintainers:
+    - naveen521kk
+    - pavelzw

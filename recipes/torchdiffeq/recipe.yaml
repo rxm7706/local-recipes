@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: torchdiffeq
+  version: "0.2.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 02486c8efb005d5dca99a0bd4905c9d13d945f6e33bc23a99b2b008ccb824fa1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - python >=3.6
+    - pytorch
+    - scipy
+
+tests:
+  - python:
+      imports:
+        - torchdiffeq
+        - torchdiffeq._impl
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: ODE solvers and adjoint sensitivity analysis in PyTorch.
+  homepage: https://github.com/rtqichen/torchdiffeq
+  repository: https://github.com/rtqichen/torchdiffeq
+  documentation: https://pypi.org/project/torchdiffeq/#description
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - ndmaxar
+    - rluria14
+    - oblute

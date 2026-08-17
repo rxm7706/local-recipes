@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sqlitedict
+  version: "2.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 03d9cfb96d602996f1d4c2db2856f1224b96a9c431bdd16e78032a72940f9e8c
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - sqlitedict
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE.md
+  summary: Persistent dict in Python, backed up by sqlite3 and pickle, multithread-safe.
+  homepage: https://github.com/RaRe-Technologies/sqlitedict
+  repository: https://github.com/RaRe-Technologies/sqlitedict
+  documentation: https://github.com/RaRe-Technologies/sqlitedict
+
+extra:
+  recipe-maintainers:
+    - notestaff
+    - synapticarbors

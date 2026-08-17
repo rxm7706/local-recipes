@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: gssapi
+  version: "1.11.1"
+
+package:
+  name: python-gssapi
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 2049ee4b1d0c363163a1344b7282a363f9f4094e51d2c36de0cf01d4735e0ae2
+  patches:
+    - 0001-fix-setup.patch
+
+build:
+  number: 1
+  script:
+    content: ${{ PYTHON }} -m pip install . - if not win else '' }}
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython >=3.0.3,<4.0.0a0
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - cython >=3.0.3,<4.0.0a0
+    - krb5
+    - pip
+    - setuptools >=40.6.0
+  run:
+    - python
+    - decorator
+
+tests:
+  - python:
+      imports:
+        - gssapi
+        - gssapi.raw
+        - gssapi.raw._enum_extensions
+      pip_check: false
+
+about:
+  license: ISC
+  license_file: LICENSE.txt
+  summary: A Python interface to RFC 2743/2744 (plus common extensions)
+  homepage: https://github.com/pythongssapi/python-gssapi
+  repository: https://github.com/pythongssapi/python-gssapi
+  documentation: https://pythongssapi.github.io/python-gssapi/stable/
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - rzillman

@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2026.8.10"
+
+package:
+  name: nox
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/nox/nox-${{ version }}.tar.gz
+  sha256: 13f45e46552eade9f4b60474133e31e1e0bb341234a3cc0c9d6fff17570ce8bb
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - nox = nox.__main__:main
+      - tox-to-nox = nox.tox_to_nox:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - argcomplete >=1.9.4,<4.0
+    - attrs >=24.1
+    - colorlog >=2.6.1,<7.0.0
+    - dependency-groups >=1.1
+    - humanize >=4
+    - packaging >=22
+    - pbs-installer >=2025.1.6
+    - tomli >=1.1
+    - virtualenv >=20.15
+    - importlib_resources
+    - jinja2
+    - tox >=4
+
+tests:
+  - python:
+      imports:
+        - nox
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+      pip_check: true
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - nox --help
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Flexible test automation for Python
+  description: |
+    nox is a command-line tool that automates testing in multiple Python
+    environments, similar to Tox. Unlike Tox, Nox uses a standard Python
+    file for configuration.
+  homepage: https://nox.thea.codes
+  repository: https://github.com/wntrblm/nox
+  documentation: https://nox.thea.codes
+
+extra:
+  recipe-maintainers:
+    - kynan
+    - MarckK
+    - tswast
+    - henryiii

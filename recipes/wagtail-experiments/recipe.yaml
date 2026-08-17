@@ -2,24 +2,25 @@
 schema_version: 1
 
 context:
+  name: wagtail-experiments
   version: "0.4"
 
 package:
-  name: wagtail-experiments
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/w/wagtail-experiments/wagtail-experiments-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail-experiments-${{ version }}.tar.gz
   sha256: 32adc3e85685ef44e1760806208b426bcc722646f3624ff72cf81c662f78f93a
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
@@ -30,16 +31,13 @@ tests:
       imports:
         - experiments
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: A/B testing for Wagtail
   license: BSD-3-Clause
   license_file: LICENSE
   homepage: https://github.com/torchbox/wagtail-experiments
-  repository: https://github.com/torchbox/wagtail-experiments
 
 extra:
   recipe-maintainers:

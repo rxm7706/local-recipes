@@ -1,0 +1,185 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: systemd
+  version: "261.2"
+  build: 0
+  libudev_abi_version: 1
+  libsystemd_abi_version: 0
+
+recipe:
+  name: ${{ name|lower }}-split
+  version: ${{ version }}
+
+source:
+  url: https://github.com/${{ name }}/${{ name }}/archive/v${{ version }}.tar.gz
+  sha256: ed1059ff964f5df35b6056434cc17cc83f86dc913f10489948a0b19b6081c5ec
+
+build:
+  number: ${{ build }}
+  skip: not linux
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - coreutils
+    - gperf
+    - jinja2
+    - meson
+    - ninja
+    - pkg-config
+    - python *
+  host:
+    - elfutils
+    - libacl
+    - libcap
+    - libgcrypt
+    - lz4-c
+    - p11-kit
+    - libseccomp
+    - openssl
+    - util-linux
+    - liblzma-devel
+    - zstd
+
+outputs:
+  - package:
+      name: libudev${{ libudev_abi_version }}
+    files:
+      - lib/libudev.so.${{ libudev_abi_version }}
+      - lib/libudev.so.${{ libudev_abi_version }}.*
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
+      host:
+        - libcap
+    tests:
+      - script:
+          - test -h $PREFIX/lib/libudev.so.${{ libudev_abi_version }}
+          - test -f $PREFIX/lib/libudev.so.${{ libudev_abi_version }}
+    about:
+      license: LGPL-2.1-or-later
+      license_file: LICENSE.LGPL2.1
+      summary: Library to access udev device information
+      homepage: https://www.freedesktop.org/wiki/Software/systemd/
+      repository: https://github.com/systemd/systemd
+  - package:
+      name: libudev
+    files:
+      - include/libudev.h
+      - lib/pkgconfig/libudev.pc
+      - lib/libudev.so
+    build:
+      # set build string to ensure unique outputs for each build of libudevN
+      string: ${{ pin_subpackage('libudev' + libudev_abi_version, exact=True).split(' ')[-1] }}
+    requirements:
+      run:
+        - ${{ pin_subpackage('libudev' + libudev_abi_version, exact=True) }}
+      run_exports:
+        - ${{ pin_subpackage('libudev' + libudev_abi_version, upper_bound='') }}
+    tests:
+      - script:
+          - test -f $PREFIX/include/libudev.h
+          - test -f $PREFIX/lib/pkgconfig/libudev.pc
+          - test -h $PREFIX/lib/libudev.so
+          - test -f $PREFIX/lib/libudev.so
+    about:
+      license: LGPL-2.1-or-later
+      license_file: LICENSE.LGPL2.1
+      summary: Development package for the udev library
+      homepage: https://www.freedesktop.org/wiki/Software/systemd/
+      repository: https://github.com/systemd/systemd
+  - package:
+      name: libsystemd${{ libsystemd_abi_version }}
+    files:
+      - lib/libsystemd.so.${{ libsystemd_abi_version }}
+      - lib/libsystemd.so.${{ libsystemd_abi_version }}.*
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
+      host:
+        - libcap
+    tests:
+      - script:
+          - test -h $PREFIX/lib/libsystemd.so.${{ libsystemd_abi_version }}
+          - test -f $PREFIX/lib/libsystemd.so.${{ libsystemd_abi_version }}
+    about:
+      license: LGPL-2.1-or-later
+      license_file: LICENSE.LGPL2.1
+      summary: Library for interfacing with systemd
+      homepage: https://www.freedesktop.org/wiki/Software/systemd/
+      repository: https://github.com/systemd/systemd
+  - package:
+      name: libsystemd
+    files:
+      - include/systemd
+      - lib/pkgconfig/libsystemd.pc
+      - lib/libsystemd.so
+    build:
+      # set build string to ensure unique outputs for each build of libudevN
+      string: ${{ pin_subpackage('libsystemd' + libsystemd_abi_version, exact=True).split(' ')[-1] }}
+    requirements:
+      run:
+        - ${{ pin_subpackage('libsystemd' + libsystemd_abi_version, exact=True) }}
+      run_exports:
+        - ${{ pin_subpackage('libsystemd' + libsystemd_abi_version, upper_bound='') }}
+    tests:
+      - script:
+          - test -f $PREFIX/include/systemd/_sd-common.h
+          - test -f $PREFIX/include/systemd/sd-bus-protocol.h
+          - test -f $PREFIX/include/systemd/sd-bus-vtable.h
+          - test -f $PREFIX/include/systemd/sd-bus.h
+          - test -f $PREFIX/include/systemd/sd-daemon.h
+          - test -f $PREFIX/include/systemd/sd-device.h
+          - test -f $PREFIX/include/systemd/sd-event.h
+          - test -f $PREFIX/include/systemd/sd-hwdb.h
+          - test -f $PREFIX/include/systemd/sd-id128.h
+          - test -f $PREFIX/include/systemd/sd-journal.h
+          - test -f $PREFIX/include/systemd/sd-login.h
+          - test -f $PREFIX/include/systemd/sd-messages.h
+          - test -f $PREFIX/include/systemd/sd-path.h
+          - test -f $PREFIX/lib/pkgconfig/libsystemd.pc
+          - test -h $PREFIX/lib/libsystemd.so
+          - test -f $PREFIX/lib/libsystemd.so
+    about:
+      license: LGPL-2.1-or-later
+      license_file: LICENSE.LGPL2.1
+      summary: Development package for the systemd library
+      homepage: https://www.freedesktop.org/wiki/Software/systemd/
+      repository: https://github.com/systemd/systemd
+
+about:
+  license: LGPL-2.1-or-later AND GPL-2.0-or-later
+  license_file:
+    - LICENSE.LGPL2.1
+    - LICENSE.GPL2
+  summary: System and Service Manager
+  description: |
+    systemd is a suite of basic building blocks for a Linux system. It provides
+    a system and service manager that runs as PID 1 and starts the rest of the
+    system.
+
+    systemd provides aggressive parallelization capabilities, uses socket and
+    D-Bus activation for starting services, offers on-demand starting of
+    daemons, keeps track of processes using Linux control groups, maintains
+    mount and automount points, and implements an elaborate transactional
+    dependency-based service control logic. systemd supports SysV and LSB init
+    scripts and works as a replacement for sysvinit.
+
+    Other parts include a logging daemon, utilities to control basic system
+    configuration like the hostname, date, locale, maintain a list of logged-in
+    users and running containers and virtual machines, system accounts, runtime
+    directories and settings, and daemons to manage simple network
+    configuration, network time synchronization, log forwarding, and name
+    resolution.
+  homepage: https://www.freedesktop.org/wiki/Software/systemd/
+  repository: https://github.com/systemd/systemd
+
+extra:
+  feedstock-name: ${{ name }}
+  recipe-maintainers:
+    - ryanvolz

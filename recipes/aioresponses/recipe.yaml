@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: aioresponses
+  version: "0.7.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/aioresponses-${{ version }}.tar.gz
+  sha256: b861cdfe5dc58f3b8afac7b0a6973d5d7b2cb608dd0f6253d16b8ee8eaf6df11
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pbr
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - aiohttp >=3.3.0,<4
+    - packaging
+
+tests:
+  - python:
+      imports:
+        - aioresponses
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Mock out requests made by ClientSession from aiohttp package
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/pnuckowski/aioresponses
+
+extra:
+  recipe-maintainers:
+    - jonashaag

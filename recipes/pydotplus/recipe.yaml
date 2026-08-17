@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.2"
+
+package:
+  name: pydotplus
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pydotplus/pydotplus-${{ version }}.tar.gz
+  md5: 0e2fc3dbdfd846819d4cd3769cb4595b
+  file_name: pydotplus-${{ version }}.tar.gz
+  patches:
+    # https://github.com/carlos-jenkins/pydotplus/pull/18
+    - 0001-Detect-graphviz-executables-with-bat-extension.patch
+
+build:
+  number: 7
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pyparsing >=2.0.1
+    - graphviz
+
+tests:
+  - python:
+      imports:
+        - pydotplus
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Python interface to Graphviz's Dot language
+  homepage: http://pydotplus.readthedocs.org/
+
+extra:
+  recipe-maintainers:
+    - satra
+    - jschueller
+    - PaulKMueller

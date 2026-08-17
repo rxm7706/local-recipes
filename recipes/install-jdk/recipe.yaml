@@ -2,49 +2,42 @@
 schema_version: 1
 
 context:
+  name: install-jdk
   version: "1.1.0"
 
 package:
-  name: install-jdk
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/i/install-jdk/install_jdk-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: 2bfd53caf660e4916df0215a5715519dcb9547fa2a5f07421fd97a8046851eaa
 
 build:
-  number: 0
+  number: 1
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - poetry-core
     - pip
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
 
 tests:
   - python:
       imports:
         - jdk
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
-  summary: install-jdk allows you to easily install the latest Java OpenJDK version
+  summary: Installs AdoptOpenJDK Java
   license: MIT
   license_file: LICENSE.md
   homepage: https://github.com/jyksnw/install-jdk
-  repository: https://github.com/jyksnw/install-jdk
-  documentation: https://github.com/jyksnw/install-jdk
-  description: |
-    install-jdk allows you to easily install the latest Java OpenJDK
-    version. Supports OpenJDK builds from Adoptium (previously
-    AdoptOpenJDK), Corretto, and Zulu.
 
 extra:
   recipe-maintainers:

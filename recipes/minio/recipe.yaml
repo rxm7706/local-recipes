@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: minio
+  version: "7.2.20"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/minio-${{ version }}.tar.gz
+  sha256: 95898b7a023fbbfde375985aa77e2cd6a0762268db79cf886f002a9ea8e68598
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - typing_extensions
+    - python >=${{ python_min }}
+    - certifi
+    - urllib3
+    - argon2-cffi
+    - pycryptodome
+
+tests:
+  - python:
+      imports:
+        - minio
+        - minio.api
+        - minio.helpers
+        - minio.error
+        - minio.sse
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: MinIO Python Library for Amazon S3 Compatible Cloud Storage for Python
+  description: |
+    The MinIO Python Client SDK provides simple APIs to access any Amazon S3
+    compatible object storage server.
+  homepage: https://github.com/minio/minio-py
+  repository: https://github.com/minio/minio-py
+  documentation: https://docs.min.io/docs/python-client-api-reference
+
+extra:
+  recipe-maintainers:
+    - guzman-raphael
+    - rxm7706

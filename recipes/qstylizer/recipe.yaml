@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: qstylizer
+  version: "0.2.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/blambright/${{ name }}/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 5ad15eeafdb140af3711531a1468382e3a15d8a416e5b1bcc6bf28693a7c37ee
+
+build:
+  number: 0
+  noarch: python
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - pbr
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - tinycss2 >=1.1.0,<2.0
+    - inflection >0.3.0,<1.0
+
+tests:
+  - python:
+      imports:
+        - qstylizer
+        - qstylizer.style
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Qt stylesheet generation utility for PyQt/PySide
+  description: |
+    qstylizer is a python package designed to help with the construction of
+    PyQt/PySide stylesheets.
+  homepage: https://github.com/blambright/qstylizer
+  repository: https://github.com/blambright/qstylizer
+  documentation: http://qstylizer.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - andfoy
+    - ccordoba12
+    - steff456

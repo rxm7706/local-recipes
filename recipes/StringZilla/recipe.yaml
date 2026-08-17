@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: StringZilla
-  version: 4.4.2
+  version: "4.6.3"
 
 package:
   name: ${{ name|lower }}
@@ -11,11 +11,12 @@ package:
 
 source:
   url: https://github.com/ashvardanian/StringZilla/archive/v${{ version }}.tar.gz
-  sha256: 5c49782bc7f5a7392c8b960248d3cc9ba87b3a9629b665f731a2d407fefe425b
+  sha256: 5470ed92c91032ac11b8b95c2a0967822b81ad72e68a9db0653c2c8d4316e7e6
+  <conda_recipe_manager.types.SentinelType object at 0x72101874dbe0>:  #patches:
+    #- patches/0001-fix-build-option.patch
 
 build:
   number: 0
-  skip: match(python, "<3.8")
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
@@ -24,10 +25,15 @@ build:
 
 requirements:
   build:
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: python
     - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
   host:
     - python
-    - setuptools >=61
+    - setuptools >=42
     - wheel
     - pip
   run:
@@ -37,19 +43,21 @@ tests:
   - python:
       imports:
         - cli
+      pip_check: true
   - requirements:
       run:
         - pip
     script:
-      - pip check
       - sz_split --help
       - sz_wc --help
 
 about:
+  summary: SIMD-accelerated string search, sort, hashes, fingerprints, & edit distances
   license: Apache-2.0
   license_file: LICENSE
   homepage: https://github.com/ashvardanian/StringZilla
 
 extra:
   recipe-maintainers:
+    - mukhery
     - rxm7706

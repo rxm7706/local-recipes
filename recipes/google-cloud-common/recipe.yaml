@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.10.0"
+
+package:
+  name: google-cloud-common
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/google-cloud-common/google_cloud_common-${{ version }}.tar.gz
+  sha256: 9363f8bc5ef828f879aca12e412fcd1a595146e79de91a4e27b92829104921ce
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - google-api-core <3.0.0,>=2.17.1
+    - google-auth !=2.24.0,!=2.25.0,<3.0.0,>=2.14.1
+    - grpcio <2.0.0,>=1.59.0
+    - proto-plus <2.0.0,>=1.22.3
+    - protobuf <8.0.0,>=4.25.8
+
+tests:
+  - python:
+      imports:
+        - google.cloud.common
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-common
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Google Cloud Common API client library
+  description: |
+    Google Cloud Common API client library
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-cloud-common
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-cloud-common
+  cfe-purls:
+    - pkg:conda/google-cloud-common@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-cloud-common@${{ version }}
+  cfe-upstream-repo: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-common
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-common
+  cfe-import-names: [google.cloud.common]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:12:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:12:40Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4 Create-recipe local. Dep-first for google-cloud-filestore.
+####

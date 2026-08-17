@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.6"
+
+package:
+  name: jsonschema-pydantic
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/jsonschema-pydantic/jsonschema_pydantic-${{ version }}.tar.gz
+  sha256: 6069a8929a333a7c7ea8510e9de50f062e747e655e6ba106da5af1981f995270
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pydantic >=1.10.0
+
+tests:
+  - python:
+      imports:
+        - jsonschema_pydantic
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/kreneskyp/jsonschema-pydantic/
+  license: MIT
+  license_file: LICENSE
+  summary: Convert JSON Schemas to Pydantic models
+  description: |
+    Convert JSON Schemas to Pydantic models
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jsonschema-pydantic
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jsonschema-pydantic
+  cfe-purls:
+    - pkg:conda/jsonschema-pydantic@${{ version }}?channel=conda-forge
+    - pkg:pypi/jsonschema-pydantic@${{ version }}
+  cfe-upstream-repo: https://github.com/kreneskyp/jsonschema-pydantic/
+  cfe-upstream-homepage: https://github.com/kreneskyp/jsonschema-pydantic/
+  cfe-import-names: [jsonschema_pydantic]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:40:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:40:32Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

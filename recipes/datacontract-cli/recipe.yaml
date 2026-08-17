@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.1"
+
+package:
+  name: datacontract-cli
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/datacontract-cli/datacontract_cli-${{ version }}.tar.gz
+  sha256: 97c2fdb9a1160802e5d64b332917bf8aa2395770e560f61f0a19041cb04676e6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - typer <0.28,>=0.18.0
+    - click <9.0.0,>=8.1.0
+    - pydantic <2.14.0,>=2.8.2
+    - pydantic-settings <3.0.0,>=2.5.0
+    - pyyaml ~=6.0.1
+    - ruamel.yaml <0.20,>=0.17
+    - requests <2.35,>=2.31
+    - truststore <1.0,>=0.10
+    - python-fastjsonschema <2.23.0,>=2.19.1
+    - jsonschema <5.0.0,>=4.23.0
+    - pytz >=2024.1
+    - python-multipart <1.0.0,>=0.0.20
+    - rich <16.0,>=13.7
+    - sqlglot <31.0.0,>=26.6.0
+    - python-dotenv <2.0.0,>=1.0.0
+    - boto3 <2.0.0,>=1.34.41
+    - jinja2 <4.0.0,>=3.1.5
+    - jinja_partials <1.0.0,>=0.2.1
+    - datacontract-specification <2.0.0,>=1.2.3
+    - open-data-contract-standard <4.0.0,>=3.1.2
+    - deepdiff <10.0.0,>=6.0.0
+
+tests:
+  - python:
+      imports:
+        - datacontract
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://cli.datacontract.com
+  license: MIT
+  license_file: LICENSE
+  summary: The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library.
+  description: |
+    The datacontract CLI is an open source command-line tool for working with Data Contracts. It uses data contract YAML files to lint the data contract, connect to data sources and execute schema and quality tests, detect breaking changes, and export to different formats. The tool is written in Python. It can be used as a standalone CLI tool, in a CI/CD pipeline, or directly as a Python library.
+  repository: https://github.com/datacontract/datacontract-cli
+  documentation: https://docs.datacontract.com
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: datacontract-cli
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: datacontract-cli
+  cfe-purls:
+    - pkg:conda/datacontract-cli@${{ version }}?channel=conda-forge
+    - pkg:pypi/datacontract-cli@${{ version }}
+  cfe-upstream-repo: https://github.com/datacontract/datacontract-cli
+  cfe-upstream-homepage: https://cli.datacontract.com
+  cfe-import-names: [datacontract]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:52:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:52:25Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

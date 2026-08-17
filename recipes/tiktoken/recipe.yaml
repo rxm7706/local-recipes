@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: tiktoken
+  version: "0.13.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/tiktoken-${{ version }}.tar.gz
+  sha256: c9435714c3a84c2319499de9a300c0e604449dd0799ff246458b3bb6a7f433c1
+
+build:
+  number: 0
+  script:
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+    - ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('rust') }}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - setuptools >=62.4
+    - wheel
+    - setuptools-rust >=1.5.2
+    - pip
+  run:
+    - python
+    - regex
+    - requests
+
+tests:
+  - python:
+      imports:
+        - tiktoken
+        - tiktoken_ext
+      pip_check: true
+
+about:
+  summary: tiktoken is a fast BPE tokeniser for use with OpenAI's models
+  license: MIT
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  homepage: https://github.com/openai/tiktoken
+  repository: https://github.com/openai/tiktoken
+
+extra:
+  recipe-maintainers:
+    - BastianZim
+    - xhochy

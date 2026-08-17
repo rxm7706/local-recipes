@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: uv-dynamic-versioning
+  version: "0.14.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/uv_dynamic_versioning-${{ version }}.tar.gz
+  sha256: 574fbc07e87ace45c01d55967ad3b864871257b98ff5b8ac87c261227ac8db5b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - dunamai ~=1.23
+    - eval-type-backport ~=0.2
+    - hatchling ~=1.26
+    - jinja2 ~=3.0
+    - pydantic ~=2.10
+    - tomlkit ~=0.13
+
+tests:
+  - python:
+      imports:
+        - uv_dynamic_versioning
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Dynamic versioning based on VCS tags for uv/hatch project
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/ninoseki/uv-dynamic-versioning
+  repository: https://github.com/ninoseki/uv-dynamic-versioning
+  documentation: https://github.com/ninoseki/uv-dynamic-versioning
+
+extra:
+  recipe-maintainers:
+    - ninoseki
+    - tobiasraabe

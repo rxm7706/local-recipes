@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: scramp
+  version: "1.4.17"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 28970f29ebc33df47f9975c805e5e5a360effe5b31045e607d64b3b60370dba1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+    - versioningit
+  run:
+    - python >=${{ python_min }},<4.0
+    - asn1crypto >=1.5.1
+
+tests:
+  - python:
+      imports:
+        - scramp
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - script:
+      - python -c "import scramp; print(scramp.__version__)"
+
+about:
+  homepage: https://codeberg.org/tlocke/scramp
+  license: MIT
+  license_file: LICENSE
+  summary: A pure-Python implementation of the SCRAM authentication protocol
+  description: |
+    A Python implementation of the SCRAM authentication protocol defined by
+    RFC 5802 and RFC 7677.
+
+extra:
+  recipe-maintainers:
+    - nicolas-geniteau
+    - maximerihouey
+    - ncolomer
+    - xylar

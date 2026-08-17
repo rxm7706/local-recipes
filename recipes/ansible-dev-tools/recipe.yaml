@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.8.0"
+  python_min: "3.11"
+
+package:
+  name: ansible-dev-tools
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/ansible-dev-tools/ansible_dev_tools-${{ version }}.tar.gz
+  sha256: 83921e305565101b563c52bee73970f1cab79f2004c14edfbf5b49914c20656f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - ansible-builder >=3.1.1
+    - ansible-compat >=26.3.0
+    - ansible-creator >=26.6.1
+    - ansible-dev-environment >=26.4.0
+    - ansible-lint >=26.4.0
+    - ansible-navigator >=26.1.3
+    - ansible-sign >=0.1.5
+    - molecule >=26.3.0
+    - pytest-ansible >=26.4.0
+    - setuptools >=65.5.1
+    - tox-ansible >=26.7.1
+
+tests:
+  - python:
+      imports:
+        - ansible_dev_tools
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/ansible/ansible-dev-tools
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: Ansible Developtment Tools kit bundles all tools needed for content creation and testing.
+  description: |
+    Ansible Developtment Tools kit bundles all tools needed for content creation and testing.
+  documentation: https://docs.ansible.com/projects/dev-tools/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ansible-dev-tools
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ansible-dev-tools
+  cfe-purls:
+    - pkg:conda/ansible-dev-tools@${{ version }}?channel=conda-forge
+    - pkg:pypi/ansible-dev-tools@${{ version }}
+  cfe-upstream-repo: https://github.com/ansible/ansible-dev-tools
+  cfe-upstream-homepage: https://github.com/ansible/ansible-dev-tools
+  cfe-import-names: [ansible_dev_tools]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:46:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:46:30Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

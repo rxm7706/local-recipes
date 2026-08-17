@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: WebError
+  version: "0.13.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: c19f8bd57de2f1eea1b18a44f1ba1ad27421097c9ecfa0ae754fa42c9cdd9864
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - paste >=1.7.1
+    - pygments
+    - python
+    - tempita
+    - webob
+
+tests:
+  - python:
+      imports:
+        - weberror
+        - weberror.exceptions
+        - weberror.util
+      pip_check: false
+  - requirements:
+      run:
+        - nose
+        - paste
+        - webtest
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Web Error handling and exception catching\
+  homepage: https://github.com/Pylons/weberror
+  repository: https://github.com/Pylons/weberror
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - rluria14
+    - mwilson8
+    - oblute

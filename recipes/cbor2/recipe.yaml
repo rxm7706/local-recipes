@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cbor2
+  version: "6.1.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/cbor2-${{ version }}.tar.gz
+  sha256: 01ecc79a28f33d17331943ce508fc1e21f4b06553c73f874f4c77120d72b2ef9
+
+build:
+  number: 0
+  script:
+    - cd rust && cargo-bundle-licenses --format yaml --output ../THIRDPARTY.yml && cd ..
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - cbor2=cbor2.tool:main
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('rust') }}
+    - cargo-bundle-licenses
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+  host:
+    - python
+    - setuptools >=77
+    - setuptools-scm >=6.4
+    - setuptools-rust
+    - tomli
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - cbor2
+      pip_check: true
+  - script:
+      - cbor2 --help
+
+about:
+  summary: CBOR (de)serializer with extensive tag support
+  license: MIT
+  license_file:
+    - LICENSE.txt
+    - THIRDPARTY.yml
+  homepage: https://github.com/agronholm/cbor2
+  documentation: https://cbor2.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - thewchan

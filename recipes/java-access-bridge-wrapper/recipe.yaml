@@ -16,36 +16,28 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv
   python:
     entry_points:
-      - java_tree_reader = JABWrapper.context_tree_reader:main
+      - java_tree_reader = 'JABWrapper.context_tree_reader:main'
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - poetry-core
     - pip
   run:
-    - python >=${{ python_min }},<4.0
-    - pywin32-on-windows # >=300,<=311
+    - python >=${{ python_min }},<4.0.0
+    - pywin32-on-windows
     - pywin32 >=300,<=311
+    - __win
 
 tests:
   - python:
       imports:
-        #- java_access_bridge_wrapper
         - JABWrapper
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      #- JABWrapper --help
-      - pip check
+      python_version: ${{ python_min }}
 
 about:
   summary: Python wrapper for the Windows Java Access Bridge

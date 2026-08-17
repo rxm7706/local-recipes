@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.24.0"
+  name: thrift
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/apache/thrift/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: d3a60676b1df3fb9850f6ce1e8a3df9a0efac036ceb4bce8ce46ee3eca735d2d
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install lib/py --no-deps -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - thrift
+        - thrift.protocol
+        - thrift.server
+        - thrift.transport
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python bindings for the Apache Thrift RPC system
+  homepage: http://thrift.apache.org
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - mariusvniekerk
+    - marshall245
+    - xhochy

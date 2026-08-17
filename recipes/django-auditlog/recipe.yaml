@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: django-auditlog
   version: "3.4.1"
 
 package:
-  name: django-auditlog
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-auditlog/django_auditlog-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: ad07b9db452d5fa8303822cccd78cd3fcb2c2863aeb6abe039ec45739b4d7e33
 
 build:
@@ -19,11 +20,12 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - setuptools-scm
-    - setuptools
     - pip
+    - setuptools
   run:
+    - freezegun
     - python >=${{ python_min }}
     - django >=4.2
     - python-dateutil >=2.7.0
@@ -33,9 +35,7 @@ tests:
       imports:
         - auditlog
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Audit log app for Django
@@ -43,11 +43,6 @@ about:
   license_file: LICENSE
   homepage: https://github.com/jazzband/django-auditlog
   repository: https://github.com/jazzband/django-auditlog
-  documentation: https://django-auditlog.readthedocs.io
-  description: |
-    django-auditlog (Audit Log) is a reusable app for Django that makes
-    logging object changes a breeze. Changes of a model object are stored
-    and can be displayed and reverted from the admin or programmatically.
 
 extra:
   recipe-maintainers:

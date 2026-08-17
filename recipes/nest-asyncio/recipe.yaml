@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: nest-asyncio
+  nameUnderscore: nest_asyncio
+  version: "1.6.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ nameUnderscore[0] }}/${{ nameUnderscore }}/${{ nameUnderscore }}-${{ version }}.tar.gz
+  sha256: 6f172d5449aca15afd6c646851f4e31e02c598d553a667e38cafa997cfec55fe
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - nest_asyncio
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Patch asyncio to allow nested event loops
+  description: |
+    By design asyncio does not allow its event loop to be nested.
+    This presents a practical problem - when in an environment where the event loop is already running it's impossible to run tasks and wait for the result.
+    Trying to do so will give the error RuntimeError - This event loop is already running.
+    The issue pops up in various environments, such as web servers, GUI applications and in Jupyter notebooks.
+    This module patches asyncio to allow nested use of asyncio.run and loop.run_until_complete.
+  homepage: https://github.com/erdewit/nest_asyncio
+  repository: https://github.com/erdewit/nest_asyncio
+  documentation: https://github.com/erdewit/nest_asyncio
+
+extra:
+  recipe-maintainers:
+    - pavelzw
+    - yehoshuadimarsky
+    - SylvainCorlay
+    - dhirschfeld

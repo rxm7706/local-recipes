@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.0.53"
+
+recipe:
+  name: prompt-toolkit
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/prompt_toolkit/prompt_toolkit-${{ version }}.tar.gz
+  sha256: 9ec8a0ad96d5c56148b3f914aa79c1564c3fde5d2e6b876e7bc327e353cf8fa6
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: prompt-toolkit
+    build:
+      noarch: python
+      script:
+        file: ${{ 'build_base.sh' if not win else 'build_base.bat' if win else '' }}
+    requirements:
+      build:
+        - if: build_platform != target_platform
+          then: python
+        - if: build_platform != target_platform
+          then: cross-python_${{ target_platform }}
+      host:
+        - python ${{ python_min }}
+        - setuptools
+        - pip
+      run:
+        - python >=${{ python_min }}
+        - wcwidth
+      run_constraints:
+        - prompt_toolkit ${{ version }}
+    tests:
+      - python:
+          imports:
+            - prompt_toolkit
+            - prompt_toolkit.clipboard
+            - prompt_toolkit.contrib
+            - prompt_toolkit.contrib.completers
+            - prompt_toolkit.contrib.regular_languages
+            - prompt_toolkit.eventloop
+            - prompt_toolkit.filters
+            - prompt_toolkit.key_binding
+            - prompt_toolkit.key_binding.bindings
+            - prompt_toolkit.layout
+          pip_check: true
+          python_version: ${{ python_min }}
+  - package:
+      name: prompt_toolkit
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('prompt-toolkit', upper_bound="x.x.x") }}
+    tests:
+      - python:
+          imports:
+            - prompt_toolkit
+          pip_check: false
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Library for building powerful interactive command lines in Python
+  description: |
+    prompt_toolkit is a library for building powerful interactive command
+    lines and terminal applications in Python. It can be a pure Python
+    replacement for GNU readline, but it can be much more than that.
+  homepage: https://github.com/jonathanslenders/python-prompt-toolkit
+  repository: https://github.com/jonathanslenders/python-prompt-toolkit
+  documentation: http://python-prompt-toolkit.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - ocefpaf
+    - scopatz
+    - asmeurer

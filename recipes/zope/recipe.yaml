@@ -1,0 +1,135 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.2"
+
+package:
+  name: zope
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/z/Zope/zope-${{ version }}.tar.gz
+  sha256: 37b39d696c344c6b5def08127ac2f1c58e8ab2b1c80e412b43bdad437b693c07
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=78.1.1,<82
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - accesscontrol
+    - acquisition
+    - btrees
+    - chameleon
+    - datetime
+    - documenttemplate
+    - extensionclass
+    - multimapping
+    - pastedeploy
+    - persistence
+    - restrictedpython
+    - zconfig
+    - zodb
+    - multipart
+    - transaction
+    - waitress
+    - zexceptions
+    - z3c.pt
+    - zope.browser
+    - zope.browsermenu
+    - zope.browserpage
+    - zope.browserresource
+    - zope.component
+    - zope.configuration
+    - zope.container
+    - zope.contentprovider
+    - zope.contenttype
+    - zope.datetime
+    - zope.deferredimport
+    - zope.event
+    - zope.exceptions
+    - zope.globalrequest
+    - zope.i18n
+    - zope.i18nmessageid
+    - zope.interface
+    - zope.lifecycleevent
+    - zope.location
+    - zope.pagetemplate
+    - zope.processlifetime
+    - zope.proxy
+    - zope.ptresource
+    - zope.publisher
+    - zope.schema
+    - zope.security
+    - zope.sequencesort
+    - zope.site
+    - zope.size
+    - zope.tal
+    - zope.tales
+    - zope.testbrowser
+    - zope.testing
+    - zope.traversing
+    - zope.viewlet
+
+tests:
+  - python:
+      imports:
+        - App
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/Zope/
+  license: ZPL-2.1
+  license_file: LICENSE
+  summary: Zope application server / web framework
+  description: |
+    Zope application server / web framework
+  repository: https://github.com/zopefoundation/Zope
+  documentation: https://zope.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: zope
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: Zope
+  cfe-purls:
+    - pkg:conda/zope@${{ version }}?channel=conda-forge
+    - pkg:pypi/zope@${{ version }}
+  cfe-upstream-repo: https://github.com/zopefoundation/Zope
+  cfe-upstream-homepage: https://pypi.org/project/Zope/
+  cfe-import-names: [App]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:11:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:11:19Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

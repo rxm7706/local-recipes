@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "7.24.0"
+
+package:
+  name: openapi-generator-cli
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/openapi-generator-cli/openapi_generator_cli-${{ version }}.tar.gz
+  sha256: 89493ecf8d8f736b9d137991a8c8d81282fb2fd84cceff1d0975ee477db24bb4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - openapi_generator_cli
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://openapi-generator.tech
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: CLI for openapi generator
+  description: |
+    CLI for openapi generator
+  repository: https://github.com/OpenAPITools/openapi-generator
+  documentation: https://github.com/OpenAPITools/openapi-generator#3---usage
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: openapi-generator-cli
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: openapi-generator-cli
+  cfe-purls:
+    - pkg:conda/openapi-generator-cli@${{ version }}?channel=conda-forge
+    - pkg:pypi/openapi-generator-cli@${{ version }}
+  cfe-upstream-repo: https://github.com/OpenAPITools/openapi-generator
+  cfe-upstream-homepage: https://openapi-generator.tech
+  cfe-import-names: [openapi_generator_cli]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:55:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:55:29Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

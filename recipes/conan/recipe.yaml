@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: conan
+  version: "2.31.2"
+  sha256: d820e9f5ac44eca1567874f6a7c83586c16a3df5ebca006d9c0c6933fbb375b1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  python:
+    entry_points:
+      - conan=conans.conan:run
+      - conan_server=conans.conan_server:run
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    # client requirements
+    - requests >=2.25,<3.0.0
+    - urllib3 >=1.26.6,<1.27
+    - colorama >=0.4.3,<0.5.0
+    - pyyaml >=6.0,<7.0
+    - patch-ng >=1.18.0, <1.19
+    - fasteners >=0.15
+    - distro >=1.4.0,<=1.8.0
+    - jinja2 >=3.0,<4.0.0
+    - python-dateutil >=2.8.0,<3
+    # server requirements
+    - bottle >=0.12.8,<0.13
+    - pluginbase >=0.5
+    - pyjwt >=2.4.0,<3.0.0
+
+tests:
+  - python:
+      imports:
+        - conans
+        - conan
+        - conan.tools
+        - conan.tools.cmake
+        - conan.tools.gnu
+        - conan.tools.google
+        - conan.tools.apple
+        - conan.tools.meson
+        - conan.tools.intel
+        - conan.tools.microsoft
+        - conan.tools.qbs
+        - conan.tools.env
+        - conan.tools.system
+        - conan.tools.files
+        - conan.tools.layout
+        - conan.tools.scm
+        - conan.tools.build
+        - conan.errors
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - conan --help
+
+about:
+  license: MIT
+  license_file: LICENSE.md
+  summary: Conan C/C++ package manager
+  homepage: https://conan.io
+  repository: https://github.com/conan-io/conan
+  documentation: http://docs.conan.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - abloemert

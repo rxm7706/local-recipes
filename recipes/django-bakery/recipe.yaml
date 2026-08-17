@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-bakery
+  version: "0.13.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_bakery-${{ version }}.tar.gz
+  sha256: 282962fea713e17564d16b5a56e291638e3a231f84edb53df8bf2f99121ba935
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools-scm
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - six >1.5.2
+    - boto3 >=1.4.4
+    - fs >=2.0.17
+
+tests:
+  - python:
+      imports:
+        - bakery
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE
+  summary: A set of helpers for baking your Django site out as flat files
+  description: |
+    A set of helpers for baking your Django site out as flat files
+  homepage: http://www.github.com/palewire/django-bakery/
+  repository: https://github.com/datadesk/django-bakery
+  documentation: https://django-bakery.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - rxm7706
+    - sannykr

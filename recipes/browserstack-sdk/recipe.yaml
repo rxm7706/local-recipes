@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.51.2"
+
+package:
+  name: browserstack-sdk
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/browserstack-sdk/browserstack_sdk-${{ version }}.tar.gz
+  sha256: 2cab86c79001d5f376d4fe7481d94843bf841be40314a8912c8d0a912359eb68
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - bstack_utils
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/browserstack-sdk/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Python SDK for browserstack selenium-webdriver tests
+  description: |
+    Python SDK for browserstack selenium-webdriver tests
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: browserstack-sdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: browserstack-sdk
+  cfe-purls:
+    - pkg:conda/browserstack-sdk@${{ version }}?channel=conda-forge
+    - pkg:pypi/browserstack-sdk@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/browserstack-sdk/
+  cfe-upstream-homepage: https://pypi.org/project/browserstack-sdk/
+  cfe-import-names: [bstack_utils]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:49:48Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:49:48Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

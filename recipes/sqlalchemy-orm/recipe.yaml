@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.10"
+
+package:
+  name: sqlalchemy-orm
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sqlalchemy-orm/sqlalchemy-orm-${{ version }}.tar.gz
+  sha256: 7ab46d2a54a429d4fd384df9a37ad639dc87ff93be5205ed649c5ca4dad164bb
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - typing-inspect
+    - sqlalchemy
+
+tests:
+  - python:
+      imports:
+        - sqlalchemy_orm
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://gitlab.com/parob/sqlalchemy-orm
+  license: MIT
+  license_file: LICENSE
+  summary: Data Relation Mapping framework for Python.
+  description: |
+    Data Relation Mapping framework for Python.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sqlalchemy-orm
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sqlalchemy-orm
+  cfe-purls:
+    - pkg:conda/sqlalchemy-orm@${{ version }}?channel=conda-forge
+    - pkg:pypi/sqlalchemy-orm@${{ version }}
+  cfe-upstream-repo: https://gitlab.com/parob/sqlalchemy-orm
+  cfe-upstream-homepage: https://gitlab.com/parob/sqlalchemy-orm
+  cfe-import-names: [sqlalchemy_orm]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:07:06Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:07:06Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

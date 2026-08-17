@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.24.0"
+
+package:
+  name: quart-schema
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/q/quart-schema/quart_schema-${{ version }}.tar.gz
+  sha256: 90c6dc2dd219a02a094e7c93083d97032b82a101145e5f6b15d29717f6fdbbb9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - pdm-backend
+  run:
+    - python >=${{ python_min }}
+    - pyhumps >=1.6.1
+    - quart >=0.19.0
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - quart_schema
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/quart-schema/
+  license: MIT
+  license_file: LICENSE
+  summary: A Quart extension to provide schema validation
+  description: |
+    A Quart extension to provide schema validation
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: quart-schema
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: quart-schema
+  cfe-purls:
+    - pkg:conda/quart-schema@${{ version }}?channel=conda-forge
+    - pkg:pypi/quart-schema@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/quart-schema/
+  cfe-upstream-homepage: https://pypi.org/project/quart-schema/
+  cfe-import-names: [quart_schema]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:55:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:55:29Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

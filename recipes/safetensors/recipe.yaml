@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: safetensors
+  version: "0.8.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/safetensors-${{ version }}.tar.gz
+  sha256: fabaf3e0f18a6618d9b36560682562157f77c2b71fcffc7b432be2baed9d753d
+
+build:
+  skip:
+    - target_platform == "linux-ppc64le" and "cp314t" in python
+  number: 0
+  script:
+    # PyPy has weird sysconfigdata name
+    - if: build_platform != target_platform and target_platform == "linux-ppc64le"
+      then: rm -f $PREFIX/lib/pypy$PY_VER/_sysconfigdata.py
+    - ${{ PYTHON }} -m pip install . -vv
+    - cd safetensors && cargo-bundle-licenses --format yaml --output ../THIRDPARTY.yml
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - maturin >=1.0,<2.0
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('rust') }}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - pip
+    - setuptools-rust
+    - maturin >=1.0,<2.0
+    - tomli
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - safetensors
+      pip_check: true
+
+about:
+  summary: Fast and Safe Tensor serialization
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  homepage: https://github.com/huggingface/safetensors
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - setu4993
+    - xhochy

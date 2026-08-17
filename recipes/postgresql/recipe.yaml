@@ -1,0 +1,328 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "18.6"
+  pqver: ${{ '.'.join(("5", version | split('.')[0])) }}
+
+recipe:
+  name: postgresql-split
+  version: ${{ version }}
+
+source:
+  url: https://ftp.postgresql.org/pub/source/v${{ version }}/postgresql-${{ version }}.tar.bz2
+  sha256: 555610c24d53e4316da5b7d3fc25c279d96856d5e0e23ee308c328c5fa881d9f
+  patches:
+    - patches/0002-disable-new-dtags.patch
+    - if: win
+      then: patches/fix_gssapi_setenv_win.patch
+    - if: win
+      then: patches/fix_auth_setenv_win.patch
+    - if: win
+      then: patches/fix_x509_name_win.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: unix
+      then: gnuconfig
+    - if: win
+      then: meson
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - if: unix
+      then: make
+    - if: unix
+      then: pkg-config
+    - if: unix
+      then: bison
+    - if: win
+      then: ninja
+    - if: win
+      then: perl 5.*
+    - if: win
+      then: m2-base
+    - if: win
+      then: m2-bison
+    - if: win
+      then: m2-diffutils
+    - if: win
+      then: m2-flex
+    - icu
+  host:
+    - icu
+    - if: linux
+      then: liburing
+    - libxml2-devel
+    - libxslt
+    - krb5
+    - if: not win
+      then: openldap
+    - openssl
+    - lz4-c
+    - zlib
+    - zstd
+    - if: win
+      then: vc
+    - if: not win
+      then: libuuid
+    - if: not win
+      then: readline
+    - if: not win
+      then: tzcode
+    - if: not win
+      then: tzdata
+  run:
+    - krb5
+    - if: not win
+      then: openldap
+    - openssl
+    - if: not win
+      then: readline
+    - if: not win
+      then: tzcode
+    - if: not win
+      then: tzdata
+
+outputs:
+  - package:
+      name: postgresql
+    build:
+      script:
+        file: ${{ 'install_db.sh' if unix else 'install_db.bat' if win else '' }}
+    requirements:
+      build:
+        - if: unix
+          then: gnuconfig
+        - if: win
+          then: meson
+        # solely for sake of lining up vc versions and other runtimes
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
+        - if: unix
+          then: make
+        - if: unix
+          then: pkg-config
+        - if: unix
+          then: bison
+        - if: win
+          then: ninja
+        - if: win
+          then: perl 5.*
+        - if: win
+          then: m2-bison
+        - if: win
+          then: m2-diffutils
+        - if: win
+          then: m2-flex
+        - if: win
+          then: posix
+        - icu
+      host:
+        # these are here for sake of run_exports taking effect
+        - icu
+        - if: linux
+          then: liburing
+        - libxml2-devel
+        - libxslt
+        - krb5
+        - if: not win
+          then: openldap
+        - openssl
+        - lz4-c
+        - zlib
+        - zstd
+        - if: not win
+          then: readline
+        - if: not win
+          then: tzcode
+        - if: not win
+          then: tzdata
+        - ${{ pin_subpackage('libpq', exact=True) }}
+      run:
+        - ${{ pin_subpackage('libpq', exact=True) }}
+        - if: not win
+          then: tzcode
+        - if: not win
+          then: tzdata
+      run_exports:
+        - ${{ pin_subpackage('libpq') }}
+    tests:
+      - requirements:
+          - if: linux
+            then: binutils
+        script:
+          - postgres --help
+          - if: unix
+            then: export TEST_DIR=./test_postgres
+          - if: unix
+            then: initdb -D $TEST_DIR
+          - if: unix
+            then: pg_ctl -D $TEST_DIR -l logfile start || cat ./logfile
+          - if: unix
+            then: pg_ctl -D $TEST_DIR stop
+          - if: linux
+            then: nm -D $(which postgres) | grep -q palloc0 || exit 1
+    about:
+      summary: PostgreSQL is a powerful, open source object-relational database system.
+      license: PostgreSQL
+      license_file: COPYRIGHT
+  - package:
+      name: postgresql-plpython
+    build:
+      # needs packaging help on windows
+      skip: win
+      script:
+        file: ${{ 'install_plpython.sh' if unix else '' }}
+    requirements:
+      build:
+        - if: build_platform != target_platform
+          then: python
+        - if: build_platform != target_platform
+          then: cross-python_${{ target_platform }}
+        - if: unix
+          then: gnuconfig
+        - if: win
+          then: meson
+        # solely for sake of lining up vc versions and other runtimes
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
+        - if: unix
+          then: make
+        - if: unix
+          then: pkg-config
+        - if: unix
+          then: bison
+        - if: win
+          then: ninja
+        - if: win
+          then: perl 5.*
+        - if: win
+          then: m2-bison
+        - if: win
+          then: m2-diffutils
+        - if: win
+          then: m2-flex
+        - if: win
+          then: posix
+        - icu
+      host:
+        # these are here for sake of run_exports taking effect
+        - icu
+        - libxml2-devel
+        - libxslt
+        - krb5
+        - if: not win
+          then: openldap
+        - openssl
+        - lz4-c
+        - zlib
+        - zstd
+        - if: win
+          then: vc
+        - if: not win
+          then: libuuid
+        - if: not win
+          then: readline
+        - ${{ pin_subpackage('postgresql', exact=True) }}
+        - python
+      run:
+        - ${{ pin_subpackage('postgresql', exact=True) }}
+        - python
+      run_exports:
+        - ${{ pin_subpackage('postgresql-plpython') }}
+    tests:
+        script:
+    about:
+      summary: The plpythonu postgresql extension
+      license: PostgreSQL
+      license_file: COPYRIGHT
+  - package:
+      name: libpq
+    build:
+      script:
+        file: ${{ 'install_runtime.sh' if unix else 'install_runtime.bat' if win else '' }}
+    requirements:
+      build:
+        - if: unix
+          then: gnuconfig
+        - if: win
+          then: meson
+        # solely for sake of lining up vc versions and other runtimes
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
+        - if: unix
+          then: make
+        - if: unix
+          then: pkg-config
+        - if: unix
+          then: bison
+        - if: win
+          then: ninja
+        - if: win
+          then: perl 5.*
+        - if: win
+          then: m2-bison
+        - if: win
+          then: m2-diffutils
+        - if: win
+          then: m2-flex
+        - if: win
+          then: posix
+        - icu
+      host:
+        # these are here for sake of run_exports taking effect
+        - icu
+        - krb5
+        - if: not win
+          then: openldap
+        - openssl
+        - if: not win
+          then: tzcode
+        - if: not win
+          then: tzdata
+      run_exports:
+        - ${{ pin_subpackage('libpq') }}
+    tests:
+      - script:
+          - pg_config
+          - if: linux
+            then: test -f $PREFIX/lib/libpq.so.${{ pqver }}
+          - if: linux
+            then: test -f $PREFIX/lib/libpq.so.5
+          - if: linux
+            then: test -f $PREFIX/lib/libpq.so
+          - if: osx
+            then: test -f $PREFIX/lib/libpq.5.dylib
+          - if: osx
+            then: test -f $PREFIX/lib/libpq.dylib
+          - if: win
+            then: IF NOT EXIST %LIBRARY_BIN%\libpq.dll EXIT 1
+          - if: win
+            then: IF NOT EXIST %LIBRARY_BIN%\pg_config.exe EXIT 1
+    about:
+      summary: The postgres runtime libraries and utilities (not the server itself)
+      license: PostgreSQL
+      license_file: COPYRIGHT
+
+about:
+  license: PostgreSQL
+  license_file: COPYRIGHT
+  summary: multi-ouput recipe for postgresql
+  homepage: http://www.postgresql.org/
+
+extra:
+  recipe-maintainers:
+    - akrherz
+    - flaviomartins
+    - gillins
+    - msarahan
+    - ocefpaf
+    - mariusvniekerk
+    - sodre

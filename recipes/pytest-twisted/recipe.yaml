@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytest-twisted
+  version: "1.14.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 37e150cbbc0edba6592d36c53f44fc1196f3a9e93e7bef6a25bb10d9963f7f3e
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - decorator
+    - greenlet
+    - pytest >=2.3
+    - twisted
+
+tests:
+  - python:
+      imports:
+        - pytest_twisted
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A twisted plugin for pytest.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/pytest-dev/pytest-twisted
+
+extra:
+  recipe-maintainers:
+    - akrherz

@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.62.0"
+
+package:
+  name: msgraph-beta-sdk
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/msgraph-beta-sdk/msgraph_beta_sdk-${{ version }}.tar.gz
+  sha256: 8279627ac7ef7f4584833bb2964e0d290aeab6d94f9d1423535fb628f525e718
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core ==3.10
+  run:
+    - python >=${{ python_min }}
+    - azure-identity >=1.12.0
+    - microsoft-kiota-serialization-json <2.0.0,>=1.9.0
+    - microsoft-kiota-serialization-text <2.0.0,>=1.9.0
+    - microsoft-kiota-serialization-form >=1.9.0
+    - microsoft-kiota-serialization-multipart >=1.9.0
+    - msgraph-core >=1.5.1
+
+tests:
+  - python:
+      imports:
+        - msgraph_beta
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/microsoftgraph/msgraph-beta-sdk-python#readme
+  license: MIT
+  license_file: LICENSE
+  summary: The Microsoft Graph Beta Python SDK
+  description: |
+    The Microsoft Graph Beta Python SDK
+  documentation: https://github.com/microsoftgraph/msgraph-beta-sdk-python/docs
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: msgraph-beta-sdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: msgraph-beta-sdk
+  cfe-purls:
+    - pkg:conda/msgraph-beta-sdk@${{ version }}?channel=conda-forge
+    - pkg:pypi/msgraph-beta-sdk@${{ version }}
+  cfe-upstream-repo: https://github.com/microsoftgraph/msgraph-beta-sdk-python#readme
+  cfe-upstream-homepage: https://github.com/microsoftgraph/msgraph-beta-sdk-python#readme
+  cfe-import-names: [msgraph_beta]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:16:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:16:31Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

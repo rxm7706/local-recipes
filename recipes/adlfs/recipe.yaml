@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2026.8.0"
+
+package:
+  name: adlfs
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/adlfs/adlfs-${{ version }}.tar.gz
+  sha256: b78a01bd892c2a99f461b2b2ef4592c2eb45934e728f318472291ccaa6378e06
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    # The dependencies below are required to make sure `setuptools_scm` is used to
+    # dynamically infer the version. Without this, the `pip` version of the package
+    # would appear to be 0.0.0
+    - setuptools >=69
+    - setuptools_scm >=8
+    - toml
+  run:
+    - python >=${{ python_min }}
+    - aiohttp >=3.7.0
+    - azure-core >=1.28.0,<2.0.0
+    - azure-identity
+    - azure-storage-blob >=12.17.0
+    - fsspec >=2023.12.0
+
+tests:
+  - python:
+      imports:
+        - adlfs
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: fsspec-compatible Azure Datalake and Azure Blob Storage access
+  homepage: https://github.com/dask/adlfs
+
+extra:
+  recipe-maintainers:
+    - hayesgb
+    - martindurant
+    - TomAugspurger
+    - raybellwaves
+    - dhirschfeld

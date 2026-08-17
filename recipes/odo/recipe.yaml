@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: odo
+  version: "0.5.1"
+  sha256: e3ae46d57bfb4430eba0dfe1f13911fc91f1d9e76d6d364b908b24eb9a604fa9
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/blaze/odo/archive/${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+    - datashape >=0.5.0
+    - numpy >=1.7
+    - pandas >=0.15.0
+    - toolz >=0.7.3
+    - multipledispatch >=0.4.7
+    - networkx >=1.0
+    - dask >=0.11.1
+
+tests:
+  - python:
+      imports:
+        - odo
+        - odo.backends
+        - odo.backends.tests
+        - odo.tests
+      pip_check: false
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Data migration in Python
+  homepage: https://github.com/blaze/odo
+  documentation: https://odo.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - nehaljwani

@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-keycloak
+  version: "7.1.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/python_keycloak-${{ version }}.tar.gz
+  sha256: 38973e54694a656fe6f3f8fc2af0b89c78136863f928261f0d243445e9e486bc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - aiofiles >=24.1.0
+    - async-property >=0.2.2
+    - httpx >=0.23.2
+    - jwcrypto >=1.5.4
+    - python >=${{ python_min }}
+    - requests >=2.20.0
+    - requests-toolbelt >=0.6.0
+    - deprecation >=2.1.0
+
+tests:
+  - python:
+      imports:
+        - keycloak
+        - keycloak.authorization
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: python-keycloak is a Python package providing access to the Keycloak API.
+  homepage: https://github.com/marcospereirampj/python-keycloak
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - edennuriel
+    - fcollonval

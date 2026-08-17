@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: py4j
+  version: "0.10.9.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: f694cad19efa5bd1dee4f3e5270eb406613c974394035e5bfc4ec1aba870b879
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - py4j
+        - py4j.tests
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Enables Python programs to dynamically access arbitrary Java objects
+  homepage: http://py4j.sourceforge.net/
+  repository: https://github.com/bartdag/py4j
+  documentation: http://py4j.sourceforge.net/
+
+extra:
+  recipe-maintainers:
+    - parente
+    - h-vetinari

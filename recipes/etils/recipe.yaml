@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  python_min: "3.10"
+  name: etils
+  version: "1.13.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/google/etils/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 9daae4499336e6586e7025227ccdf37966f9778d37e9982895e6309d2dc13407
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python 3.10.*
+    - flit-core >=3.8,<4
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - etils
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Collection of common python utils
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://pypi.org/project/etils/
+
+extra:
+  recipe-maintainers:
+    - ngam
+    - traversaro

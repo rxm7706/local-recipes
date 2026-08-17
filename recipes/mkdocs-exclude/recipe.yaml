@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mkdocs-exclude
+  version: "1.0.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ba6fab3c80ddbe3fd31d3e579861fd3124513708271180a5f81846da8c7e2a51
+  patches:
+    - mkdocs-config-import.patch
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - mkdocs
+
+tests:
+  - python:
+      imports:
+        - mkdocs_exclude
+      pip_check: false
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: File exclude plugin for mkdocs
+  description: |
+    mkdocs-exclude is a mkdocs plugin that allows you to exclude files from
+    your input using unix-style wildcards (globs) or regular expressions
+    (regexes).
+  homepage: https://github.com/apenwarr/mkdocs-exclude
+  repository: https://github.com/apenwarr/mkdocs-exclude
+
+extra:
+  recipe-maintainers:
+    - cpcloud

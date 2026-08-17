@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3"
+
+package:
+  name: radar
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/radar/radar-${{ version }}.tar.gz
+  sha256: b5e0e4406ce4e47c0d5dad5744e94e8d382b212488f62e14f94d9ea244b1b3b4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - radar
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/barseghyanartur/radar
+  license: GPL-2.0-only
+  license_file: LICENSE
+  summary: Generate random date(time).
+  description: |
+    Generate random date(time).
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: radar
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: radar
+  cfe-purls:
+    - pkg:conda/radar@${{ version }}?channel=conda-forge
+    - pkg:pypi/radar@${{ version }}
+  cfe-upstream-repo: https://github.com/barseghyanartur/radar
+  cfe-upstream-homepage: https://github.com/barseghyanartur/radar
+  cfe-import-names: [radar]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:25:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:25:50Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4 Create-recipe local-only. radar.
+####

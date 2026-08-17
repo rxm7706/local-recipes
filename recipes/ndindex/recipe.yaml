@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ndindex
+  version: "1.10.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 0f6113c1f031248f8818cbee1aa92aa3c9472b7701debcce9fddebcd2f610f11
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib('c') }}
+  host:
+    - pip
+    - python
+    - setuptools
+    - cython
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - ndindex
+      pip_check: true
+
+about:
+  summary: A Python library for manipulating indices of ndarrays.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://quansight.github.io/ndindex/
+  repository: https://github.com/Quansight/ndindex
+
+extra:
+  recipe-maintainers:
+    - asmeurer

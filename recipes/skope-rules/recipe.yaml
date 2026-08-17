@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: skope-rules
+  version: "1.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/scikit-learn-contrib/skope-rules/archive/v${{ version }}.tar.gz
+  sha256: 733a1ee9c4125fde221f0ccc9ec76f35408daf29a99878e271f357976974b295
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<3.10
+    - numpy >=1.10.4
+    - scikit-learn >=0.17.1,<1.0.0
+    - scipy >=0.17.0
+    - pandas >=0.18.1
+
+tests:
+  - python:
+      imports:
+        - skrules
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Skope-rules is a Python machine learning module built on top of scikit-learn.
+  license: BSD-3-Clause AND MIT
+  license_file:
+    - license.txt
+    - COPYING
+  homepage: https://github.com/scikit-learn-contrib/skope-rules
+
+extra:
+  recipe-maintainers:
+    - rxm7706

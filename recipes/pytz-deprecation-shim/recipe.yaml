@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytz-deprecation-shim
+  version: 0.1.0.post0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytz_deprecation_shim-${{ version }}.tar.gz
+  sha256: af097bae1b616dde5c5744441e2ddc69e74dfdcb0c263129610d85b87445a59d
+
+build:
+  number: 6
+  skip: match(python, "<3.6")
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: 
+      - python
+      - cross-python_${{ target_platform }}
+  host:
+    - pip
+    - python
+    - setuptools >=40.8.0
+    - wheel
+  run:
+    - if: match(python, ">=3.6") and match(python, "<3.9")
+      then: backports.zoneinfo
+    - python
+    - if: match(python, "<3.6")
+      then: python-dateutil
+    - if: match(python, ">=3.6")
+      then: python-tzdata
+
+tests:
+  - python:
+      imports:
+        - pytz_deprecation_shim
+      pip_check: true
+
+about:
+  summary: Shims to make deprecation of pytz easier
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/pganssle/pytz-deprecation-shim
+  repository: https://github.com/pganssle/pytz-deprecation-shim
+
+extra:
+  recipe-maintainers:
+    - synapticarbors

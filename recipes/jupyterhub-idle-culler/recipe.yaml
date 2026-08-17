@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: 
+  version: "2.0.0"
+
+package:
+  name: jupyterhub-idle-culler
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/jupyterhub-idle-culler/jupyterhub_idle_culler-${{ version }}.tar.gz
+  sha256: a377454a115eb04da9beec5f8e9b20023f94f0259c12f1a590c44122d4bebd0b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - cull_idle_servers.py = jupyterhub_idle_culler:main
+      - jupyterhub-idle-culler = jupyterhub_idle_culler:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - packaging
+    - tornado
+    - python-dateutil
+    - traitlets
+
+tests:
+  - python:
+      imports:
+        - jupyterhub_idle_culler
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "3.14"
+  - script:
+      - cull_idle_servers.py --help
+      - jupyterhub-idle-culler --help
+
+about:
+  license: BSD-3-Clause
+  license_file: COPYING.md
+  summary: JupyterHub service to cull idle servers and users
+  description: |
+    jupyterhub-idle-culler provides a JupyterHub service to cull and shut down
+    idle notebook servers and users on a JupyterHub deployment.
+  homepage: https://github.com/jupyterhub/jupyterhub-idle-culler
+  repository: https://github.com/jupyterhub/jupyterhub-idle-culler
+
+extra:
+  recipe-maintainers:
+    - ktaletsk
+    - minrk
+    - consideRatio

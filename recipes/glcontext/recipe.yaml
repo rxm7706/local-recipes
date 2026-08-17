@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: glcontext
+  version: "3.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/moderngl/glcontext/archive/${{ version }}.tar.gz
+  sha256: 69ff64297e571d35d26764f9395404a3ecb1b40885cbe1d69e2cd641293a2b21
+
+build:
+  number: 3
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - if: linux
+      then: xorg-libx11
+    - if: linux
+      then: xorg-xorgproto
+    - if: linux
+      then: libegl-devel
+    - if: linux
+      then: libgl-devel
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - glcontext
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A library providing OpenGL implementation for ModernGL on multiple platforms.
+  homepage: https://github.com/moderngl/glcontext
+
+extra:
+  recipe-maintainers:
+    - pavelzw
+    - patricksnape

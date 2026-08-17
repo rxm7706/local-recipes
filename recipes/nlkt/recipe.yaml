@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.0.1"
+
+package:
+  name: nlkt
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/nlkt/nlkt-${{ version }}.tar.gz
+  sha256: 7b0c3e16e2d522eabdc41a81d23664cf55b9f98f2fd764127553575b11692785
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - gensim ==4.3.3
+    - scipy ==1.13.1
+    - numpy ==1.26.4
+    - hmmlearn ==0.3.3
+    - keras ==3.9.0
+    - pandas ==2.2.3
+    - sklearn-crfsuite ==0.5.0
+
+tests:
+  - python:
+      imports:
+        - corpas
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/nlkt/
+  license: MIT
+  license_file: LICENSE
+  summary: A short description of your package
+  description: |
+    A short description of your package
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nlkt
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: nlkt
+  cfe-purls:
+    - pkg:conda/nlkt@${{ version }}?channel=conda-forge
+    - pkg:pypi/nlkt@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/nlkt/
+  cfe-upstream-homepage: https://pypi.org/project/nlkt/
+  cfe-import-names: [corpas]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:33:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:33:24Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

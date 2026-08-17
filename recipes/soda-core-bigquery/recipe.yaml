@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.5.6"
+
+package:
+  name: soda-core-bigquery
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/soda-core-bigquery/soda_core_bigquery-${{ version }}.tar.gz
+  sha256: d390c6e6b4f93355f0a5cfad27768fab96e09898afd1b834027eac124a2ed8a3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - soda-core ==3.5.6
+    - google-cloud-bigquery <4.0,>=2.25.0
+
+tests:
+  - python:
+      imports:
+        - soda_core_bigquery
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/soda-core-bigquery/
+  license: MIT
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+  description: |
+    REPLACE_DESCRIPTION
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: soda-core-bigquery
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: soda-core-bigquery
+  cfe-purls:
+    - pkg:conda/soda-core-bigquery@${{ version }}?channel=conda-forge
+    - pkg:pypi/soda-core-bigquery@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/soda-core-bigquery/
+  cfe-upstream-homepage: https://pypi.org/project/soda-core-bigquery/
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:31:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:31:19Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

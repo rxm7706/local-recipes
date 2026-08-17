@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyignite
+  version: "0.6.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/pyignite-${{ version }}.zip
+  sha256: e143d7a907e2662da11f63d2e9e34234dc722cd63c9aeb74486280e3aef3369d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+    - attrs >=20.3.0
+
+tests:
+  - python:
+      imports:
+        - pyignite
+      pip_check: true
+
+about:
+  summary: Apache Ignite binary client Python API
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+  homepage: https://github.com/apache/ignite-python-thin-client
+
+extra:
+  recipe-maintainers:
+    - rxm7706

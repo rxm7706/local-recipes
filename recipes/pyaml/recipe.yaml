@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyaml
+  version: "26.2.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyaml-${{ version }}.tar.gz
+  sha256: 489dd82997235d4cfcf76a6287fce2f075487d77a6567c271e8d790583690c68
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - pyaml=pyaml.cli:main
+
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pyyaml
+
+tests:
+  - python:
+      imports:
+        - pyaml
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - script: pyaml --help
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+
+about:
+  license: WTFPL
+  license_file: COPYING
+  summary: PyYAML-based module to produce pretty and readable YAML-serialized data
+  homepage: https://github.com/mk-fg/pretty-yaml
+
+extra:
+  recipe-maintainers:
+    - thewchan

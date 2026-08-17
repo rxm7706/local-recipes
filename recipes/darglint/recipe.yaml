@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: darglint
+  version: "1.8.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 080d5106df149b199822e7ee7deb9c012b49891538f14a11be681044f0bb20da
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - darglint = darglint.driver:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+    - poetry
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - darglint
+        - darglint.docstring
+        - darglint.parse
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - darglint --help
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: A python documentation linter which checks that the docstring description matches the definition.
+  description: |
+    A functional docstring linter which checks whether a docstring's description
+    matches the actual function/method implementation. Darglint expects
+    docstrings to be formatted using the Google Python Style Guide.
+  homepage: http://github.com/terrencepreilly/darglint
+  repository: http://github.com/terrencepreilly/darglint
+
+extra:
+  recipe-maintainers:
+    - asford
+    - jcollado

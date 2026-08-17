@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jmespath
+  version: "1.1.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 472c87d80f36026ae83c6ddd0f1d05d4e510134ed462851fd5f754c8c3cbb88d
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - jmespath
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: JSON Matching Expressions
+  homepage: https://github.com/jmespath/jmespath.py
+  repository: https://github.com/jmespath/jmespath.py
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - xylar

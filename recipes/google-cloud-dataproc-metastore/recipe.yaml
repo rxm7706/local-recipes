@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: google-cloud-dataproc-metastore
+  version: "1.23.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/google_cloud_dataproc_metastore-${{ version }}.tar.gz
+  sha256: 275899ea0137ab72993d283cd52a84a9d48f0c4851eb0b6589982f2d4d3dad4d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - google-api-core >=2.17.1,<3.0.0
+    - google-api-core-grpc
+    - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
+    # more restrictive constraint for python >=3.14
+    - grpcio >=1.75.1,<2.0.0
+    # more restrictive constraint for python >=3.13
+    - proto-plus >=1.25.0,<2.0.0
+    - protobuf >=4.25.8,<8.0.0
+    - grpc-google-iam-v1 >=0.14.0,<1.0.0
+
+tests:
+  - python:
+      imports:
+        - google.cloud.metastore_v1
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  summary: Google Cloud Dataproc Metastore API client library
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-dataproc-metastore
+  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-dataproc-metastore
+  documentation: https://cloud.google.com/dataproc-metastore/docs
+
+extra:
+  recipe-maintainers:
+    - xylar

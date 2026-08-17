@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: xcb-util-keysyms
+  version: "0.4.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://xcb.freedesktop.org/dist/xcb-util-keysyms-${{ version }}.tar.xz
+  sha256: 7c260a5294412aed429df1da2f8afd3bd07b7cba3fec772fba15a613a6d5c638
+
+build:
+  number: 0
+  skip: not linux
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - make
+    - pkg-config
+  host:
+    - libxcb
+    - xorg-xproto
+  run_exports:
+    - ${{ pin_subpackage('xcb-util-keysyms', upper_bound='x.x') }}
+
+tests:
+  - script:
+      - test -f ${PREFIX}/lib/libxcb-keysyms.so
+
+about:
+  license: MIT
+  license_file: COPYING
+  summary: Standard X key constants and conversion to/from keycodes
+  homepage: https://xcb.freedesktop.org/
+
+extra:
+  recipe-maintainers:
+    - scopatz
+    - hmaarrfk

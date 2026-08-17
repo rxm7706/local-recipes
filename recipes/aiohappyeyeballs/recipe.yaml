@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: aiohappyeyeballs
+  version: "2.7.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/aiohappyeyeballs-${{ version }}.tar.gz
+  sha256: 065665c041c42a5938ed220bdcd7230f22527fbec085e1853d2402c8a3615d9d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - aiohappyeyeballs
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Happy Eyeballs for asyncio
+  license: PSF-2.0
+  license_file: LICENSE
+  homepage: https://github.com/aio-libs/aiohappyeyeballs
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

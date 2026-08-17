@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: tox-poetry-installer
+  version: "0.10.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 58af36082293b87e3488184f46ccf6f288c52c90e802066f53d3209c0f1c6226
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core >=1.1.0
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - poetry-core >=1.1.0,<2.0.0
+    - tox >=3.8.0,<4.0.0
+  run_constraints:
+    - cleo >=1.0,<3.0
+    - poetry >=1.2.0,<1.5.0
+
+tests:
+  - python:
+      imports:
+        - tox_poetry_installer
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A plugin for Tox that lets you install test environment dependencies from the Poetry lockfile
+  license: MIT
+  license_file: LICENSE.md
+  homepage: https://github.com/enpaul/tox-poetry-installer/
+
+extra:
+  recipe-maintainers:
+    - rxm7706

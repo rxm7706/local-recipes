@@ -1,0 +1,191 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.16.1"
+  python_check_max: "3.14"
+  summary: |-
+    A pure-python PDF library capable of splitting, merging, cropping, and transforming PDF files
+
+recipe:
+  name: pypdf
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/p/pypdf/pypdf-${{ version }}.tar.gz
+    sha256: c4d1b43ddae921387321cf63936cd16a7743b91d2da92f165c149a195c972ba9
+    target_directory: dist
+  - url: https://github.com/py-pdf/pypdf/archive/refs/tags/${{ version }}.tar.gz
+    sha256: 68daddaacea36ee53d0f94a6d220beb9e78fea3c6024a108916565bc4c2ae100
+    target_directory: src
+
+build:
+  number: 0
+  noarch: python
+
+outputs:
+  - package:
+      name: pypdf
+    build:
+      noarch: python
+      script:
+        - cd dist
+        - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+    requirements:
+      host:
+        - flit-core >=3.11,<4
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - python >=${{ python_min }}
+        - typing_extensions >=4.0
+    tests:
+      - python:
+          imports: pypdf
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+
+  - package:
+      name: pypdf-with-crypto
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("pypdf", exact=True) }}
+        - cryptography >3.0
+    tests:
+      - python:
+          imports: pypdf
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: ${{ summary }} (with [crypto])
+
+  - package:
+      name: pypdf-with-fonts
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("pypdf", exact=True) }}
+        - fonttools
+    tests:
+      - python:
+          imports: pypdf
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: ${{ summary }} (with [fonts])
+
+  - package:
+      name: pypdf-with-image
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("pypdf", exact=True) }}
+        - pillow >=8.0.0
+    tests:
+      - python:
+          imports: pypdf
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: ${{ summary }} (with [image])
+
+  - package:
+      name: pypdf-with-rtl-text
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("pypdf", exact=True) }}
+        - arabic-reshaper
+        - python-bidi
+    tests:
+      - python:
+          imports: pypdf
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: ${{ summary }} (with [rtl_text])
+
+  - package:
+      name: pypdf-with-full
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("pypdf-with-crypto", exact=True) }}
+        - ${{ pin_subpackage("pypdf-with-image", exact=True) }}
+        - ${{ pin_subpackage("pypdf-with-fonts", exact=True) }}
+        - ${{ pin_subpackage("pypdf-with-rtl-text", exact=True) }}
+        - ${{ pin_subpackage("pypdf", exact=True) }}
+    tests:
+      - python:
+          imports: pypdf
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: ${{ summary }} (with [full])
+
+  - package:
+      name: _pypdf-with-full-tests
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("pypdf-with-full", exact=True) }}
+    tests:
+      - python:
+          imports: pypdf
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+      - files:
+          recipe:
+            - test_all.py
+          source:
+            - src/pyproject.toml
+            - src/tests/
+            - src/resources/
+        requirements:
+          run:
+            - fpdf
+            - pytest-cov
+            - pytest-socket
+            - pytest-timeout
+            - pyyaml
+            - types-pillow
+            - python ${{ python_min }}.*
+        script:
+          - python test_all.py
+    about:
+      summary: ${{ summary }} (with [full] and all tests)
+
+about:
+  summary: ${{ summary }}
+  license: BSD-3-Clause
+  license_file: dist/LICENSE
+  homepage: https://pypi.org/project/pypdf
+  repository: https://github.com/py-pdf/pypdf
+  documentation: https://pypdf.readthedocs.io
+
+extra:
+  feedstock-name: pypdf
+  recipe-maintainers:
+    - MartinThoma
+    - bollwyvl

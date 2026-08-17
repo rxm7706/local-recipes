@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: telepath
+  version: "0.3.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/telepath-${{ version }}.tar.gz
+  sha256: 925c0609e0a8a6488ec4a55b19d485882cf72223b2b19fe2359a50fddd813c9c
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - django
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - telepath
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A library for exchanging data between Python and JavaScript
+  license: BSD-3-Clause
+  license_file: LICENSE
+  description: |
+    Telepath provides a mechanism for packing structured data, including Python
+    objects, into a JSON-serializable format. This mechanism can be extended to
+    support any Python class, by registering the class with a corresponding
+    JavaScript implementation. The packed data can then be included in an HTTP
+    response, and unpacked in JavaScript to obtain an equivalent data structure
+    to the original. Think of it as pickle, but with the unpickling happening in
+    the browser.
+
+
+  homepage: https://github.com/wagtail/telepath
+  documentation: https://wagtail.github.io/telepath/
+
+extra:
+  recipe-maintainers:
+    - thewchan

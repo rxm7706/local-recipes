@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: junit2html
+  version: 022
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 2160977bec4168babd323da4cf86f5b33ae0220007df0f94abc3f0a57e6d9cdd
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  host:
+    - pip
+    - python
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - junit2htmlreport
+        - junit2htmlreport.matrix
+        - junit2htmlreport.merge
+        - junit2htmlreport.parser
+        - junit2htmlreport.runner
+        - junit2htmlreport.tag
+        - junit2htmlreport.textutils
+      pip_check: false
+  - script:
+      - if: unix
+        then: junit2html --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Generate HTML reports from Junit results
+  homepage: https://gitlab.com/inorton/junit2html
+
+extra:
+  recipe-maintainers:
+    - pg-hbk
+    - sy-hbk

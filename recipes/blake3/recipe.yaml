@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: blake3
+  version: "1.0.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 5fa374fa5070ca084368776c19b420157eb0f2d3f091343d6bc59189929d62e2
+
+build:
+  number: 0
+  script:
+    - ${{ PYTHON }} -m pip install . -vv
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - maturin >=1.0,<2
+    - ${{ compiler('rust') }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - cargo-bundle-licenses
+  host:
+    - maturin >=1.0,<2
+    - pip
+    - python
+    - toml
+  run:
+    - python
+    - if: match(python, "<=3.11")
+      then:
+        - typing_extensions >=4.6.0
+
+tests:
+  - python:
+      imports:
+        - blake3
+  - requirements:
+      run:
+        - pip
+    script:
+      - pip check
+
+about:
+  summary: Python bindings for the Rust blake3 crate
+  description: |
+    BLAKE3 is a cryptographic hash function that claims to be much faster than MD5, SHA-1, SHA-2,
+    SHA-3, and BLAKE2.
+
+    This conda package is the Python bindings for the Rust blake3 crate. If you are looking for the
+    reference implementation of BLAKE3 as a command line tool, see the b3sum conda package instead.
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  homepage: https://github.com/oconnor663/blake3-py
+
+extra:
+  recipe-maintainers:
+    - shermansiu
+    - maartenbreddels
+    - oconnor663

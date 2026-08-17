@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: marshmallow-enum
+  version: "1.5.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/justanr/marshmallow_enum/archive/v${{ version }}.tar.gz
+  sha256: d1f6a58bf201be8a615942d29c4ac2b4dc2ddd2e36de3cac9c87bee3002bcc6f
+
+build:
+  number: 4
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - marshmallow >=2.0.0
+
+tests:
+  - python:
+      imports:
+        - marshmallow_enum
+      pip_check: false
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - tests/test_enum_field.py
+    requirements:
+      run:
+        - pytest
+        - python ${{ python_min }}
+    script:
+      - python tests/test_enum_field.py
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Enum handling for Marshmallow
+  homepage: https://github.com/justanr/marshmallow_enum
+  repository: https://github.com/justanr/marshmallow_enum
+  documentation: https://github.com/justanr/marshmallow_enum
+
+extra:
+  recipe-maintainers:
+    - xylar

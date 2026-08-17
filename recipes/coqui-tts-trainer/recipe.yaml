@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.0"
+
+package:
+  name: coqui-tts-trainer
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/coqui-tts-trainer/coqui_tts_trainer-${{ version }}.tar.gz
+  sha256: d1658b5ee7cfc0a5a24dafbc899dab02a58e119115762dbfc37e1062045ad41d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - coqpit-config <0.3.0,>=0.2.2
+    - fsspec >=2023.6.0
+    - packaging >=21.0
+    - psutil >=5
+    - tensorboard >=2.17.1
+
+tests:
+  - python:
+      imports:
+        - trainer
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/idiap/coqui-ai-Trainer
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: General purpose model trainer for PyTorch that is more flexible than it should be, by 🐸Coqui.
+  description: |
+    General purpose model trainer for PyTorch that is more flexible than it should be, by 🐸Coqui.
+  repository: https://github.com/idiap/coqui-ai-Trainer
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: coqui-tts-trainer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: coqui-tts-trainer
+  cfe-purls:
+    - pkg:conda/coqui-tts-trainer@${{ version }}?channel=conda-forge
+    - pkg:pypi/coqui-tts-trainer@${{ version }}
+  cfe-upstream-repo: https://github.com/idiap/coqui-ai-Trainer
+  cfe-upstream-homepage: https://github.com/idiap/coqui-ai-Trainer
+  cfe-import-names: [trainer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:51:33Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:51:33Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

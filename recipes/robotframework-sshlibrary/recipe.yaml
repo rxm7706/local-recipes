@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.8.0"
+
+package:
+  name: robotframework-sshlibrary
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/robotframework-sshlibrary/robotframework-sshlibrary-${{ version }}.tar.gz
+  sha256: aedf8a02bcb7344404cf8575d0ada25d6c7dc2fcb65de2113c4e07c63d2446c2
+
+build:
+  number: 1
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - paramiko >=1.15.3
+    - python >=${{ python_min }}
+    - robotframework >=3.0
+    - scp >=0.13.0
+
+tests:
+  - python:
+      imports:
+        - SSHLibrary
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file:
+    - LICENSE.txt
+    - COPYRIGHT.txt
+  summary: Robot Framework test library for SSH and SFTP
+  description: |
+    SSHLibrary is operating system independent and supports Python 2.7 as well
+    as Python 3.4 or newer. In addition to the normal Python interpreter, it
+    also works with Jython 2.7.
+
+    The library has the following main usages:
+
+    - Executing commands on the remote machine, either with blocking or
+    non-blocking behavior.
+    - Writing and reading in an interactive shell.
+    - Transferring files and directories over SFTP.
+    - Ensuring that files and directories exist on the remote machine.
+  homepage: https://robotframework.org/SSHLibrary
+  repository: https://github.com/robotframework/SSHLibrary
+  documentation: http://robotframework.org/SSHLibrary/SSHLibrary.html
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

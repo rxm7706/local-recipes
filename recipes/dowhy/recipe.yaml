@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dowhy
+  version: "0.13"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 865683155ae1383cd1fc66eb26d046fdd2337723d0ccbfe5504575e0f9eca1f5
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - poetry
+  run:
+    - cython >=0.29.32
+    - scipy >=1.4.1
+    - statsmodels >=0.13.5
+    - numpy >=1.20
+    - pandas >=1.4.3
+    - networkx >=2.8.5
+    - sympy >=1.10.1
+    - scikit-learn >1.0
+    - joblib >=1.1.0
+    - tqdm >=4.64.0
+    - matplotlib-base
+    - poetry
+    - causal-learn
+    - python >=${{ python_min }},<3.12
+    - cvxpy >=1.2.2
+
+tests:
+  - python:
+      imports:
+        - dowhy
+        - dowhy.api
+        - dowhy.causal_estimators
+        - dowhy.causal_refuters
+        - dowhy.do_samplers
+        - dowhy.causal_identifier
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE  # LICENSE file is in the root folder of the archive
+  summary: DoWhy is a Python library for causal inference that supports explicit modeling and testing of causal assumptions.
+  homepage: https://github.com/microsoft/dowhy
+  repository: https://github.com/microsoft/dowhy
+  documentation: https://microsoft.github.io/dowhy/
+
+extra:
+  recipe-maintainers:
+    - amit-sharma

@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.6.2.1"
+
+package:
+  name: multiprocessing
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/multiprocessing/multiprocessing-${{ version }}.tar.gz
+  sha256: ef3b81ad85d7de252e5491b1daac028e17f9741cbe3625032e6eaa4ad4c79900
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - Lib.multiprocessing
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://code.google.com/p/python-multiprocessing
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Backport of the multiprocessing package to Python 2.4 and 2.5
+  description: |
+    Backport of the multiprocessing package to Python 2.4 and 2.5
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: multiprocessing
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: multiprocessing
+  cfe-purls:
+    - pkg:conda/multiprocessing@${{ version }}?channel=conda-forge
+    - pkg:pypi/multiprocessing@${{ version }}
+  cfe-upstream-repo: http://code.google.com/p/python-multiprocessing
+  cfe-upstream-homepage: http://code.google.com/p/python-multiprocessing
+  cfe-import-names: [Lib.multiprocessing]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:40:56Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:40:56Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

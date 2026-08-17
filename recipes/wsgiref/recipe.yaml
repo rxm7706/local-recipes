@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: wsgiref
+  version: "0.1.2"
+  compress_type: zip
+  hash_type: sha256
+  hash_val: c7e610c800957046c04c8014aab8cce8f0b9f0495c8cd349e57c1f7cabf40e79
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ compress_type }}
+  sha256: ${{ hash_val }}
+  file_name: ${{ name }}-${{ version }}.${{ compress_type }}
+
+build:
+  number: 0
+  skip: match(python, ">=3,<4")
+  script: python setup.py install --single-version-externally-managed --record=record.txt
+
+requirements:
+  build:
+    - python
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - wsgiref
+      pip_check: false
+
+about:
+  license: PSF or ZPL
+  summary: WSGI (PEP 333) Reference Library
+  homepage: http://cheeseshop.python.org/pypi/wsgiref
+  documentation: http://peak.telecommunity.com/wsgiref_docs/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr

@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: XlsxWriter
+  version: "3.2.9"
+  sha256: 254b1c37a368c444eac6e2f867405cc9e461b0ed97a3233b2ac1e574efb4140c
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | lower }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - xlsxwriter
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE.txt
+  summary: A Python module for creating Excel XLSX files
+  description: |
+    XlsxWriter is a Python module that can be used to write text, numbers, formulas
+    and hyperlinks to multiple worksheets in an Excel 2007+ XLSX file.
+  homepage: https://xlsxwriter.readthedocs.io/
+  repository: https://github.com/jmcnamara/XlsxWriter
+  documentation: https://xlsxwriter.readthedocs.org/
+
+extra:
+  recipe-maintainers:
+    - nehaljwani

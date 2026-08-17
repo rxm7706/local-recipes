@@ -2,15 +2,16 @@
 schema_version: 1
 
 context:
-  version: "1.12.0a0"
+  name: opentelemetry-exporter-gcp-monitoring
+  version: 1.14.0a0
 
 package:
-  name: opentelemetry-exporter-gcp-monitoring
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/o/opentelemetry-exporter-gcp-monitoring/opentelemetry_exporter_gcp_monitoring-${{ version }}.tar.gz
-  sha256: 2b285078cddd4af78a363a55b5478e89f7df6f15bba9139d3f484099e534df4c
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_exporter_gcp_monitoring-${{ version }}.tar.gz
+  sha256: 5d0abd42f93a11cd99bf55dcd4b98423d8c9989505bcccf6c975bd4a4f050395
 
 build:
   number: 0
@@ -19,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
@@ -27,23 +28,22 @@ requirements:
     - google-cloud-monitoring ~=2.0
     - opentelemetry-api ~=1.30
     - opentelemetry-sdk ~=1.30
-    - opentelemetry-resourcedetector-gcp >=1.5.0dev0,<2
+    - opentelemetry-resourcedetector-gcp <1.15,>=1.5.0dev0
+    # - typing_extensions
+    # - typing_extensions
 
 tests:
   - python:
       imports:
-        - opentelemetry.exporter.cloud_monitoring
+        - opentelemetry
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Google Cloud Monitoring exporter for OpenTelemetry
   license: Apache-2.0
   license_file: LICENSE
   homepage: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python/tree/main/opentelemetry-exporter-gcp-monitoring
-  repository: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python
 
 extra:
   recipe-maintainers:

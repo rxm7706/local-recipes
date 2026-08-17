@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: w3lib
+  version: "2.4.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 8dd69ee39ff6398d708c793abc779c334a69bac7cee1cdf71736c669ed6be864
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - w3lib
+        - w3lib.html
+        - w3lib.http
+        - w3lib.url
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: This is a Python library of web-related functions
+  description: |
+    This is a Python library of web-related functions, such as
+    remove comments, or tags from HTML snippets,
+    extract base url from HTML snippets,
+    translate entites on HTML strings,
+    convert raw HTTP headers to dicts and vice-versa,
+    construct HTTP auth header,
+    converting HTML pages to unicode,
+    sanitize urls (like browsers do),
+    extract arguments from urls.
+  homepage: https://github.com/scrapy/w3lib/
+  repository: https://github.com/scrapy/w3lib
+
+extra:
+  recipe-maintainers:
+    - mgorny

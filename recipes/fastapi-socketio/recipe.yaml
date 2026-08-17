@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: fastapi-socketio
+  version: "0.0.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fastapi-socketio-${{ version }}.tar.gz
+  sha256: 202f9b319f010001cbd1114ec92a0d9eb5f5ca9316eae5fd41a6088da0812727
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - fastapi >=0.61.1
+    - python-socketio >=4.6.0
+
+tests:
+  - python:
+      imports:
+        - fastapi_socketio
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Easily integrate socket.io with your FastAPI app.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/pyropy/fastapi-socketio
+
+extra:
+  recipe-maintainers:
+    - rodja

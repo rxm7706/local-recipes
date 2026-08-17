@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: elastic
+  version: "5.2.5.3"
+  sha256: 961329d58f78e84ffa174d257c690c1f8e06761be78d93f88bf27e418f1c6fa9
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  python:
+    entry_points:
+      - elastic = elastic.cli.elastic:cli
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+    - future
+    - setuptools_scm
+    - sphinx
+  run:
+    - python >=${{ python_min }}
+    - ase
+    - numpy
+    - scipy
+    - spglib
+    - future
+    - click
+
+tests:
+  - python:
+      imports:
+        - elastic
+      pip_check: false
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - test
+        - tests
+    requirements:
+      run:
+        - hypothesis
+        - python ${{ python_min }}
+    script:
+      - python -m unittest discover -s test -b
+      - elastic --version
+      - elastic -v --cij proc tests/data/calc-cij_*/vasprun.xml
+
+about:
+  license: GPL-3.0-or-later
+  license_file: LICENSE
+  summary: Elastic is a set of python routines for calculation of elastic properties of crystals
+  description: |
+    Elastic is a set of python routines for calculation of elastic properties
+    of crystals (elastic constants, equation of state, sound velocities, etc.).
+    It is a third version of the code implemented as a extension to the ASE system.
+    The code was a basis for some of my publications and was described briefly
+    in these papers. The code was available to anyone, presented at the Workshop
+    on ab initio Calculations in Geosciences and used by some of my co-workers.
+  homepage: http://jochym.github.io/Elastic/
+  repository: https://github.com/jochym/elastic
+  documentation: http://elastic.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - jochym

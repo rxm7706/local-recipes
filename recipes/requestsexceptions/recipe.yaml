@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: requestsexceptions
+  version: "1.4.0"
+  bundle: tar.gz
+  hash: b095cbc77618f066d459a02b137b020c37da9f46d9b057704019c9f77dba3065
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
+  sha256: ${{ hash }}
+  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+
+build:
+  number: 0
+  noarch: python
+  script: python setup.py install --single-version-externally-managed --record=record.txt
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - pbr >=2.0.0
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - requestsexceptions
+      pip_check: false
+
+about:
+  license_file: ${{ RECIPE_DIR }}/LICENSE
+  license: Apache-2.0
+  summary: Import exceptions from potentially bundled packages in requests.
+  homepage: https://github.com/openstack-infra/requestsexceptions
+  repository: https://github.com/openstack-infra/requestsexceptions
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr

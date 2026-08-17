@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: xmldiff
+  version: "2.7.0"
+  sha256: c0910b1f800366dd7ec62923e5d06e8b06a1bd9120569a1c27f4f2446b9c68a2
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/55/d8/b31a4d75bc72d5c3a5adf5012405118169b56d163ebf407e4fc49a575e96/xmldiff-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - xmldiff = xmldiff.main:diff_command
+      - xmlpatch = xmldiff.main:patch_command
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - lxml
+    - setuptools
+    - six
+
+tests:
+  - python:
+      imports:
+        - xmldiff
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - xmldiff -h
+      - xmlpatch -h
+
+about:
+  summary: Creates diffs of XML files
+  license: MIT
+  license_file: LICENSE.txt
+  description: |
+    xmldiff is a library and a command-line utility for making diffs out of XML
+  homepage: https://github.com/Shoobx/xmldiff
+  repository: https://github.com/Shoobx/xmldiff
+  documentation: https://xmldiff.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - bernt-matthias

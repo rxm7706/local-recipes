@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyerfa
+  version: "2.0.1.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 17d6b24fe4846c65d5e7d8c362dcb08199dc63b30a236aedd73875cc83e1f6c0
+
+build:
+  number: 2
+  skip: is_abi3 and not is_python_min
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    version_independent: ${{ true if is_abi3 }}
+
+requirements:
+  build:
+    - if: is_abi3
+      then: python-abi3
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: numpy
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - pip
+    - setuptools_scm
+    - setuptools
+    - jinja2 >=2.10.3
+    - python
+    - numpy
+    - packaging
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - erfa
+      pip_check: false
+  - requirements:
+      run:
+        - if: is_abi3
+          then: abi3audit
+    script:
+      - if: unix and is_abi3
+        then: abi3audit $SP_DIR/erfa/ufunc.abi3.so -s -v --assume-minimum-abi3 3.11
+      - if: win and is_abi3
+        then: abi3audit %SP_DIR%/erfa/ufunc.pyd -s -v --assume-minimum-abi3 3.11
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.rst
+  summary: Python bindings for ERFA routines
+  description: |
+    PyERFA is the Python wrapper for the ERFA library (Essential Routines for
+    Fundamental Astronomy), a C library containing key algorithms for astronomy,
+    which is based on the SOFA library published by the International
+    Astronomical Union (IAU). All C routines are wrapped as Numpy universal
+    functions, so that they can be called with scalar or array inputs.
+
+    The project is a split of astropy._erfa module, developed in the context of
+    Astropy project, into a standalone package. It contains the ERFA C source
+    code as a git submodule. The wrapping is done with help of the Jinja2
+    template engine.
+  homepage: https://pyerfa.readthedocs.io/
+  repository: https://github.com/liberfa/pyerfa
+  documentation: https://pyerfa.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - mwcraig
+    - astrofrog
+    - avalentino

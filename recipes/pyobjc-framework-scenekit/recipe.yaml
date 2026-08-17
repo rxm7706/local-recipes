@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "12.2.2"
+
+package:
+  name: pyobjc-framework-scenekit
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pyobjc-framework-SceneKit/pyobjc_framework_scenekit-${{ version }}.tar.gz
+  sha256: 7bc3896b8fb19d7a5de01b468b91fdaf625e8a4a6b37d3cb5dc938a60d11ee78
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - pyobjc-core >=12.2.2
+    - pyobjc-framework-cocoa >=12.2.2
+    - pyobjc-framework-quartz >=12.2.2
+
+tests:
+  - python:
+      imports:
+        - PyObjCTest
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/ronaldoussoren/pyobjc
+  license: MIT
+  license_file: LICENSE
+  summary: Wrappers for the framework SceneKit on macOS
+  description: |
+    Wrappers for the framework SceneKit on macOS
+  repository: https://github.com/ronaldoussoren/pyobjc
+  documentation: https://pyobjc.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyobjc-framework-scenekit
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyobjc-framework-SceneKit
+  cfe-purls:
+    - pkg:conda/pyobjc-framework-scenekit@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyobjc-framework-scenekit@${{ version }}
+  cfe-upstream-repo: https://github.com/ronaldoussoren/pyobjc
+  cfe-upstream-homepage: https://github.com/ronaldoussoren/pyobjc
+  cfe-import-names: [PyObjCTest]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:09:10Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:09:10Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

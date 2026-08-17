@@ -2,16 +2,17 @@
 schema_version: 1
 
 context:
-  version: "4.0.1"
+  name: django-autocomplete-light
+  version: "5.0.0"
   python_min: "3.11"
 
 package:
-  name: django-autocomplete-light
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-autocomplete-light/django_autocomplete_light-${{ version }}.tar.gz
-  sha256: cdf7c7ae8596d4f1b2bb85e04cc25ef8438c70ad5eb9e7592b5afac2d3ec266c
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 115ee3541ee4a7ddd1b92396ea75d0f38d0b91899b0dc17259310975c728b32e
 
 build:
   number: 0
@@ -20,13 +21,20 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python 3.11.*
     - setuptools >=65.5.1
     - wheel
     - pip
   run:
-    - python >=${{ python_min }},<4
+    - python >=${{ python_min }}
     - django >=5.2
+    #- six
+    # - django-taggit
+    # - django-querysetsequence >=0.11
+    # - django-nested-admin >=3.0.21
+    # - django-taggit
+    # - django-querysetsequence >=0.11
+    # - django-nested-admin >=3.0.21
 
 tests:
   - python:
@@ -40,9 +48,7 @@ tests:
         - dal_select2_queryset_sequence
         - dal_select2_taggit
       pip_check: true
-      python_version:
-      - ${{ python_min }}.*
-      - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Fresh autocompletes for Django
@@ -54,3 +60,4 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - maksdan

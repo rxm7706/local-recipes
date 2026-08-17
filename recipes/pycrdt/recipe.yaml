@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.14.2"
+
+package:
+  name: pycrdt
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pycrdt/pycrdt-${{ version }}.tar.gz
+  sha256: 8acb68fbede3093cc1f6dfa7b15f10c023c3ce459e54f2efd358156112d9d304
+
+build:
+  number: 0
+  script:
+    - ${{ PYTHON }} -m pip install . -vv
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+
+requirements:
+  build:
+    - python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('rust') }}
+    - cargo-bundle-licenses
+    - maturin
+  host:
+    - maturin
+    - pip
+    - python
+  run:
+    - python
+    - anyio >=4.4.0,<5.0.0
+    - typing_extensions >=4.14.0
+    - exceptiongroup
+    - typing_extensions >=4.15.0,<5.0.0
+
+tests:
+  - python:
+      imports:
+        - pycrdt
+        - pycrdt._awareness
+        - pycrdt._doc
+        - pycrdt._text
+        - pycrdt._array
+        - pycrdt._map
+        - pycrdt._transaction
+        - pycrdt._undo
+        - pycrdt._update
+        - pycrdt._sync
+      pip_check: true
+
+about:
+  license: MIT
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  summary: CRDTs based on Yrs
+  homepage: https://github.com/y-crdt/pycrdt
+  repository: https://github.com/y-crdt/pycrdt
+  documentation: https://y-crdt.github.io/pycrdt
+
+extra:
+  recipe-maintainers:
+    - davidbrochart

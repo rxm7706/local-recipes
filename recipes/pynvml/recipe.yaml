@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pynvml
+  version: "13.0.1"
+  major_version: ${{ version.split(".")[0]|int }}
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 1245991d9db786b4d2f277ce66869bd58f38ac654e38c9397d18f243c8f6e48f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - nvidia-ml-py >=12.0.0
+
+tests:
+  - python:
+      imports:
+        - pynvml
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Python Bindings for the NVIDIA Management Library
+  description: |
+    This is a wrapper around the NVML library. For information about
+    the NVML library, see <http://developer.nvidia.com>.
+  homepage: https://github.com/gpuopenanalytics/${{ name }}
+  repository: https://github.com/gpuopenanalytics/pynvml
+  documentation: https://pypi.org/project/pynvml/
+
+extra:
+  recipe-maintainers:
+    - rjzamora

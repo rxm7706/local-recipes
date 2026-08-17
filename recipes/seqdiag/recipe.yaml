@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: seqdiag
+  version: "3.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/seqdiag-${{ version }}.tar.gz
+  sha256: e15113a28bd075460a62da44e15a88fafa3c81fdf3a35dcd5e3cd64ef15e961a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - seqdiag = seqdiag.command:main
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+    - blockdiag >=3.0.0
+
+tests:
+  - python:
+      imports:
+        - seqdiag
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - seqdiag --help
+
+about:
+  summary: seqdiag generates sequence-diagram image from text
+  license: BSD-3-Clause-HP
+  license_file:
+    - LICENSE
+    - src/seqdiag/tests/VLGothic/LICENSE
+  homepage: http://blockdiag.com/
+
+extra:
+  recipe-maintainers:
+    - sodre

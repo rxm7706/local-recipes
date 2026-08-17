@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.0"
+
+package:
+  name: stringcase
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/stringcase/stringcase-${{ version }}.tar.gz
+  sha256: 48a06980661908efe8d9d34eab2b6c13aefa2163b3ced26972902e3bdfd87008
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+    - wheel
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - stringcase
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - pytest
+        - coverage
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: |-
+    Convert string cases between camel case, pascal case, snake case etc...
+
+
+  homepage: https://github.com/okunishinishi/python-stringcase
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

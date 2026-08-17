@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.3"
+
+package:
+  name: fix
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/fix/fix-${{ version }}.tar.gz
+  sha256: b378107a8975238fd27d1018bb4a78d86836f4f57769df86dadc127bc431001b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - fix
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://bitbucket.org/schesis/fix
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: Simple test fixtures.
+  description: |
+    Simple test fixtures.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: fix
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: fix
+  cfe-purls:
+    - pkg:conda/fix@${{ version }}?channel=conda-forge
+    - pkg:pypi/fix@${{ version }}
+  cfe-upstream-repo: https://bitbucket.org/schesis/fix
+  cfe-upstream-homepage: https://bitbucket.org/schesis/fix
+  cfe-import-names: [fix]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:52:36Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:52:36Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

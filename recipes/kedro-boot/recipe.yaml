@@ -2,10 +2,11 @@
 schema_version: 1
 
 context:
+  name: kedro-boot
   version: "0.3.0"
 
 package:
-  name: kedro-boot
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
@@ -19,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
@@ -31,19 +32,13 @@ tests:
       imports:
         - kedro_boot
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
+      python_version: ${{ python_min }}
 
 about:
   summary: A kedro plugin that streamlines the integration between Kedro projects and external applications, making it easier for you to develop production-ready data science applications.
   license: Apache-2.0
   license_file: LICENSE
   homepage: https://github.com/takikadiri/kedro-boot
-  repository: https://github.com/takikadiri/kedro-boot
-  description: |
-    A kedro plugin that streamlines the integration between Kedro projects
-    and external applications, making it easier for you to develop
-    production-ready data science applications.
 
 extra:
   recipe-maintainers:

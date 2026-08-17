@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.19.3"
+
+package:
+  name: msgspec-m
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/msgspec-m/msgspec_m-${{ version }}.tar.gz
+  sha256: 074d56f17de25e6c0f4184ecff9c163de0f612a9956260df4342f3f51d959c41
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=42
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - versioneer
+
+tests:
+  - python:
+      imports:
+        - msgspec
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/marimo-team/msgspec
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A fast serialization and validation library, with builtin support for JSON, MessagePack, YAML, and TOML.
+  description: |
+    A fast serialization and validation library, with builtin support for JSON, MessagePack, YAML, and TOML.
+  repository: https://github.com/marimo-team/msgspec
+  documentation: https://jcristharif.com/msgspec/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: msgspec-m
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: msgspec-m
+  cfe-purls:
+    - pkg:conda/msgspec-m@${{ version }}?channel=conda-forge
+    - pkg:pypi/msgspec-m@${{ version }}
+  cfe-upstream-repo: https://github.com/marimo-team/msgspec
+  cfe-upstream-homepage: https://github.com/marimo-team/msgspec
+  cfe-import-names: [msgspec]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:42:18Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:42:18Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

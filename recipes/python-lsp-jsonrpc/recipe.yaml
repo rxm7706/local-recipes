@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-lsp-jsonrpc
+  version: "1.1.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 4688e453eef55cd952bff762c705cedefa12055c0aec17a06f595bcc002cc912
+
+build:
+  number: 1
+  noarch: python
+  script: python -m pip install . --no-deps --no-build-isolation -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools >=61.2.0
+    # Needed at build time to produce a package with the correct version for pip
+    # See https://github.com/pypa/setuptools_scm/issues/636#issuecomment-1026435048
+    - setuptools_scm >=3.4.3
+  run:
+    - python >=${{ python_min }}
+    - ujson >=3.0.0
+
+tests:
+  - python:
+      imports:
+        - pylsp_jsonrpc
+        - pylsp_jsonrpc.dispatchers
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pip list | grep -i ${{ name }} | grep ${{ version }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A Python 3.8+ server implementation of the JSON RPC 2.0 protocol.
+  homepage: https://github.com/python-lsp/python-lsp-jsonrpc
+  repository: https://github.com/python-lsp/python-lsp-jsonrpc
+
+extra:
+  recipe-maintainers:
+    - ccordoba12
+    - dalthviz
+    - andfoy
+    - steff456

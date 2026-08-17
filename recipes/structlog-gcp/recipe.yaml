@@ -3,7 +3,8 @@ schema_version: 1
 
 context:
   name: structlog-gcp
-  version: "0.5.0"
+  version: "0.5.1"
+  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/structlog_gcp-${{ version }}.tar.gz
-  sha256: 361da96886023e6fb8fa49f60f5278aff666820c8987534ca61e091b32047592
+  sha256: 44a9b13f237a2de52df7b2fd4bd20cf0e71cf84888cbab6d07ffed9fcc22c157
 
 build:
   number: 0
@@ -31,8 +32,14 @@ tests:
   - python:
       imports:
         - structlog_gcp
-      pip_check: true
       python_version: ${{ python_min }}.*
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
 
 about:
   summary: A structlog set of processors to output as Google Cloud Logging format
@@ -40,6 +47,7 @@ about:
   license_file: LICENSE
   repository: https://github.com/multani/structlog-gcp
   homepage: https://github.com/multani/structlog-gcp
+  documentation: https://github.com/multani/structlog-gcp/blob/main/README.md
 
 extra:
   recipe-maintainers:

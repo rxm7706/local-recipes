@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: rocksdict
+  version: "0.3.23"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/Congyuwang/RocksDict/archive/v${{ version }}.tar.gz
+  sha256: 79441cd6668b337649027df4612382d1f28fd8cf5d41edc11e99cc8f3f5eb9cb
+
+build:
+  number: 1
+  skip: match(python, "<3.7")
+  script:
+    content: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('rust') }}
+    - clangdev
+  host:
+    - python
+    - maturin >=1.0,<2.0
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - rocksdict
+      pip_check: true
+
+about:
+  summary: Python fast on-disk dictionary; RocksDB & SpeeDB Python binding
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/Congyuwang/RocksDict
+  documentation: https://congyuwang.github.io/RocksDict/rocksdict.html
+
+extra:
+  recipe-maintainers:
+    - thewchan

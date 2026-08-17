@@ -1,0 +1,132 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "28.0.1"
+
+package:
+  name: neutron
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/neutron/neutron-${{ version }}.tar.gz
+  sha256: b1e9d95ab71048d54fcb0f12845c891f75adb4bf72c32293087d59e7857a60e1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - pbr >=6.1.1
+  run:
+    - python >=${{ python_min }}
+    - pbr >=6.0.0
+    - paste >=2.0.2
+    - pastedeploy >=1.5.0
+    - routes >=2.3.1
+    - debtcollector >=1.19.0
+    - decorator >=4.1.0
+    - pecan >=1.4.0
+    - httplib2 >=0.22.0
+    - requests >=2.32.3
+    - jinja2 >=2.10
+    - keystonemiddleware >=5.1.0
+    - netaddr >=0.7.18
+    - neutron-lib >=3.24.0
+    - python-neutronclient >=7.8.0
+    - tenacity >=6.0.0
+    - sqlalchemy >=1.4.23
+    - webob >=1.8.2
+    - keystoneauth1 >=3.14.0
+    - alembic >=1.6.5
+    - stevedore >=2.0.1
+    - oslo.cache >=1.26.0
+    - oslo.concurrency >=3.26.0
+    - oslo.config >=10.2.0
+    - oslo.context >=2.22.0
+    - oslo.db >=4.44.0
+    - oslo.i18n >=3.20.0
+    - oslo.log >=5.3.0
+    - oslo.messaging >=7.0.0
+    - oslo.middleware >=3.31.0
+    - oslo.policy >=4.5.0
+    - oslo.privsep >=2.3.0
+    - oslo.reports >=1.18.0
+    - oslo.rootwrap >=5.15.0
+    - oslo.serialization >=5.5.0
+    - oslo.service >=4.2.1
+    - oslo.upgradecheck >=1.3.0
+    - oslo.utils >=7.3.0
+    - oslo.versionedobjects >=1.35.1
+    - osprofiler >=2.3.0
+    - os-ken >=4.1.1
+    - os-resource-classes >=1.1.0
+    - ovs >3.3.0
+    - ovsdbapp >=2.14.1
+    - psutil >=6.1.0
+    - pyopenssl >=17.1.0
+    - python-novaclient >=9.1.0
+    - openstacksdk >=0.31.2
+    - python-designateclient >=2.7.0
+    - os-vif >=3.1.0
+    - futurist >=1.2.0
+    - tooz >=1.58.0
+
+tests:
+  - python:
+      imports:
+        - neutron
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/neutron/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: OpenStack Networking
+  description: |
+    OpenStack Networking
+  repository: https://opendev.org/openstack/neutron
+  documentation: https://docs.openstack.org/neutron
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: neutron
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: neutron
+  cfe-purls:
+    - pkg:conda/neutron@${{ version }}?channel=conda-forge
+    - pkg:pypi/neutron@${{ version }}
+  cfe-upstream-repo: https://opendev.org/openstack/neutron
+  cfe-upstream-homepage: https://pypi.org/project/neutron/
+  cfe-import-names: [neutron]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:32:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:32:02Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

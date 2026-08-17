@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pygam
+  version: "0.12.0"
+  sha256: 7c098dfbfbb7a6b9fa4e1a579380e3b0b866fe8fa56f9d852ffdeaecfe56d5ea
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - poetry
+    - poetry-dynamic-versioning
+  run:
+    - python >=${{ python_min }}
+    - numpy
+    - scipy >=1.10
+    - progressbar2
+    - future
+
+tests:
+  - python:
+      imports:
+        - pygam
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Generalized Additive Models in Python
+  description: |
+    pyGAM is a library for training generalized additive models in Python.
+    GAMs are powerful and interpretable, which makes it easy to fit
+    complex data while still being able to understand the model.
+  homepage: https://github.com/dswah/pyGAM
+  repository: https://github.com/dswah/pyGAM
+
+extra:
+  recipe-maintainers:
+    - dswah
+    - jtilly
+    - fkiraly
+    - marrov

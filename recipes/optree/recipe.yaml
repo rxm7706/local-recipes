@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: optree
+  version: "0.19.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 4497d1c9197b8c6842e511368163d318ce536521ebdcff8bebb7551dcdfac532
+
+build:
+  number: 0
+  script:
+    content: ${{ PYTHON }} -m pip install -vv --no-deps --no-build-isolation .
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+    - cmake >=3.18  # to support `CMAKE_GENERATOR`
+    - if: not win
+      then: make
+  host:
+    - pip
+    - setuptools
+    - python
+    - pybind11 >=2.12
+  run:
+    - python
+    - if: match(python, "<3.13")
+      then: typing-extensions >=4.6
+    - if: match(python, ">=3.13")
+      then: typing-extensions >=4.12
+
+tests:
+  - python:
+      imports:
+        - optree
+      pip_check: true
+  - files:
+      source:
+        - pyproject.toml
+        - tests
+    requirements:
+      run:
+        - pip
+        - pytest
+    script:
+      - pytest -Walways -Werror --showlocals tests
+
+about:
+  summary: Optimized PyTree Utilities
+  description: Optimized PyTree Utilities.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/metaopt/optree
+  repository: https://github.com/metaopt/optree
+  documentation: https://optree.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - XuehaiPan

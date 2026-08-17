@@ -1,0 +1,154 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.4.3"
+
+recipe:
+  name: nexus-split
+  version: ${{ version }}
+
+source:
+  url: https://github.com/nexusformat/code/archive/v${{ version }}.tar.gz
+  sha256: e78a116feb2ebd04de31a8d8707c65e8e15a64aa8999a40fea305e3909bd6533
+  patches:
+    - 0001-Remove-deprecated-functions.patch
+    - include_libxml_sax.patch
+    - if: win
+      then: nexus_windows.patch
+
+build:
+  number: 18
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+    - cmake >=2.8.8
+    - ninja
+  host:
+    - hdf5
+    - hdf4
+    - libjpeg-turbo
+    - zlib
+    - if: not win
+      then: libxml2-devel
+    - if: not win
+      then: ncurses
+    - if: not win
+      then: readline
+
+outputs:
+  # Do not package apps in libnexus to avoid conflict with nexusformat
+  # (which includes a pure python nxdir)
+  - package:
+      name: libnexus
+    build:
+      script:
+        file: ${{ 'install.sh' if unix else 'install.bat' if win else '' }}
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib("c") }}
+        - cmake
+        - ninja
+      host:
+        - hdf5
+        - hdf4
+        - libjpeg-turbo
+        - zlib
+        - if: not win
+          then: libxml2-devel
+        - if: not win
+          then: ncurses
+        - if: not win
+          then: readline
+      run_exports:
+        - ${{ pin_subpackage("libnexus", upper_bound="x.x") }}
+    tests:
+      - script:
+          - if: unix
+            then: test -f $PREFIX/lib/libNeXus${SHLIB_EXT}
+          - if: unix
+            then: test -f $PREFIX/lib/libNeXusCPP${SHLIB_EXT}
+          - if: unix
+            then: test -f $PREFIX/include/nexus/NeXusFile.hpp
+          - if: win
+            then: if not exist %LIBRARY_BIN%\\NeXus.dll exit 1
+          - if: win
+            then: if not exist %LIBRARY_LIB%\\NeXus.lib exit 1
+          - if: win
+            then: if not exist %LIBRARY_LIB%\\NeXusCPP.lib exit 1
+          - if: unix
+            then: test ! -f $PREFIX/bin/nxdir
+          - if: win
+            then: if exist %LIBRARY_BIN%\\nxdir.exe exit 1
+  # separate package for apps (executables)
+  - package:
+      name: nexus-apps
+    build:
+      script:
+        file: ${{ 'install.sh' if unix else 'install.bat' if win else '' }}
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib("c") }}
+        - cmake
+        - ninja
+      host:
+        - hdf5
+        - hdf4
+        - libjpeg-turbo
+        - zlib
+        - if: not win
+          then: libxml2-devel
+        - if: not win
+          then: ncurses
+        - if: not win
+          then: readline
+        - ${{ pin_subpackage("libnexus", exact=True) }}
+      run:
+        - ${{ pin_subpackage("libnexus", exact=True) }}
+      run_constraints:
+        - nexusformat ==9999999999
+    tests:
+      - script:
+          - nxtraverse -h
+          - if: not win
+            then: nxsummary --help
+          - if: not win
+            then: nxtranslate --help
+          - nxdir --help
+  # meta-package to install libnexus and applications
+  - package:
+      name: nexus
+    requirements:
+      run:
+        - ${{ pin_subpackage("libnexus", exact=True) }}
+        - ${{ pin_subpackage("nexus-apps", exact=True) }}
+    tests:
+      - script:
+          - if: not win
+            then: nxsummary --help
+          - nxdir --help
+
+about:
+  license: LGPL-2.1-or-later
+  license_file: COPYING
+  summary: NeXus is a common data format for neutron, x-ray, and muon science
+  description: |
+    NeXus is a common data format for neutron, x-ray, and muon science.
+    It is being developed as an international standard by scientists and
+    programmers representing major scientific facilities in order to facilitate
+    greater cooperation in the analysis and visualization of neutron, x-ray, and muon data.
+  homepage: https://github.com/nexusformat/code
+  repository: https://github.com/nexusformat/code
+  documentation: https://www.nexusformat.org
+
+extra:
+  feedstock-name: nexus
+  recipe-maintainers:
+    - beenje

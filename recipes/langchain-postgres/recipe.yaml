@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: langchain-postgres
+  version: "0.0.16"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/langchain_postgres-${{ version }}.tar.gz
+  sha256: d09aa4ea77ee8600a9ff64de9c185fb558aa388c816c7be04dd4559c878530b7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - asyncpg >=0.30.0
+    - langchain-core >=0.2.13,<0.4.0
+    - pgvector-python >=0.2.5,<0.4
+    - psycopg >=3,<4
+    - psycopg-pool >=3.2.1,<4
+    - sqlalchemy >=2,<3
+    - numpy >=1.21,<3
+
+tests:
+  - python:
+      imports:
+        - langchain_postgres
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: An integration package connecting Postgres and LangChain
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/langchain-ai/langchain-postgres
+
+extra:
+  recipe-maintainers:
+    - mediocretech

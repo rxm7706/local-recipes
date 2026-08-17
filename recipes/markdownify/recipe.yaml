@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: markdownify
+  version: "1.2.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/markdownify-${{ version }}.tar.gz
+  sha256: 1a176f05522c8a2cb1dd3ab9d307dcdadbed5c26ae717855bfc42b3b6d38d937
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - markdownify = markdownify.main:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - beautifulsoup4 >=4.9,<5
+    - six >=1.15,<2
+
+tests:
+  - python:
+      imports:
+        - markdownify
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+      - markdownify --help
+
+about:
+  summary: Convert HTML to markdown.
+  license: MIT
+  license_file: LICENSE
+  homepage: http://github.com/matthewwithanm/python-markdownify
+
+extra:
+  recipe-maintainers:
+    - davidbrochart
+    - gscoppino
+    - moritzwilksch

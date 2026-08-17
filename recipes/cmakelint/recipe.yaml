@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cmakelint
+  version: "1.4.3"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 98a1e485318b41eeaf4dee3469ca3039d4745985353ecea208d6dd2c1204c71d
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+  python:
+    entry_points:
+      - cmakelint = cmakelint.main:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - pytest-runner
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - cmakelint
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - cmakelint --version
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Static code checker for CMake files
+  homepage: https://github.com/cmake-lint/cmake-lint
+  repository: https://github.com/cmake-lint/cmake-lint
+
+extra:
+  recipe-maintainers:
+    - asafkahlon
+    - timkpaine

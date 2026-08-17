@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: vcver
+  version: "0.2.12"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/vcver-${{ version }}.tar.gz
+  sha256: 6ff8181d87bd943c8e0dc939acf6a1358aa68eb4e2db537591982452a3005553
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - packaging
+
+tests:
+  - python:
+      imports:
+        - vcver
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: provide package versions with version control data.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/toumorokoshi/vcver-python
+
+extra:
+  recipe-maintainers:
+    - rxm7706

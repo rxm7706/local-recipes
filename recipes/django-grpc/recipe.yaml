@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-grpc
+  version: "1.0.21"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django-grpc-${{ version }}.tar.gz
+  sha256: 87adcfb7a20e56a5d04f9c50b820ac95e2815fb31370aa7fa5f2385a61899613
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - setuptools
+    - django >=4.2
+    - protobuf >=4.21.4
+    - grpcio >=1.47.0,<2.0.0
+    - grpcio-tools >=1.47.0,<2.0.0
+
+tests:
+  - python:
+      imports:
+        - django_grpc
+        - django_grpc_testtools
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Easy Django based gRPC service
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/gluk-w/django-grpc
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: priority
+  version: "2.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/priority-${{ version }}.tar.gz
+  sha256: c965d54f1b8d0d0b19479db3924c7c36cf672dbf2aec92d43fbdaf4492ba18c0
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - priority
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A pure-Python implementation of the HTTP/2 priority tree
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/python-hyper/priority/
+  repository: https://github.com/python-hyper/priority/
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

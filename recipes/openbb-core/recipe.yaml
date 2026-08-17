@@ -1,0 +1,93 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.6.13"
+
+package:
+  name: openbb-core
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/openbb-core/openbb_core-${{ version }}.tar.gz
+  sha256: c26cfc2ae37c1700e01db9ca0fd2cd02118715cec2097ea870f47a70186402bb
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - aiohttp >=3.14.1
+    - fastapi ==0.136.3
+    - html5lib <2.0,>=1.1
+    - importlib-metadata >=6.8.0
+    - pandas >=1.5.3
+    - pydantic <3.0.0,>=2.12.3
+    - pyjwt <3.0.0,>=2.12.0
+    - python-dotenv <2.0.0,>=1.0.0
+    - python-multipart >=0.0.30
+    - requests <3.0.0,>=2.33.0
+    - ruff <0.16,>=0.15
+    - uuid7 <0.2.0,>=0.1.0
+    - uvicorn <0.41.0,>=0.40.0
+    - websockets >=15.0
+
+tests:
+  - python:
+      imports:
+        - openbb
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/openbb-core/
+  license: AGPL-3.0-only
+  license_file: LICENSE
+  summary: OpenBB package with core functionality.
+  description: |
+    OpenBB package with core functionality.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: openbb-core
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: openbb-core
+  cfe-purls:
+    - pkg:conda/openbb-core@${{ version }}?channel=conda-forge
+    - pkg:pypi/openbb-core@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/openbb-core/
+  cfe-upstream-homepage: https://pypi.org/project/openbb-core/
+  cfe-import-names: [openbb]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:34:49Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:34:49Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

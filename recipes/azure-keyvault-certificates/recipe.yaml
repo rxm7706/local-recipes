@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: azure-keyvault-certificates
+  version: "4.11.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 734d9a65faa0f2bd45b9e162d317acadec71056934ebf4bbfe058b23d74bd073
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - typing_extensions >=4.6.0
+    - python >=${{ python_min }}
+    - azure-core >=1.31.0
+    - isodate >=0.6.1
+    - typing-extensions >=4.0.1
+
+tests:
+  - python:
+      imports:
+        - azure.keyvault.certificates
+        - azure.keyvault.certificates.aio
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Azure Key Vault Certificates client library for Python
+  homepage: https://docs.microsoft.com/en-au/azure/key-vault/
+  repository: https://github.com/Azure/azure-sdk-for-python/tree/master/sdk/keyvault/azure-keyvault-certificates
+  documentation: https://azuresdkdocs.blob.core.windows.net/$web/python/azure-keyvault-certificates/latest/azure.keyvault.certificates.html
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld

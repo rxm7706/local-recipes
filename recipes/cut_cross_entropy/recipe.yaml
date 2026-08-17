@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cut_cross_entropy
+  version: "25.1.1"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/cut_cross_entropy-${{ version }}.tar.gz
+  sha256: 5fe5924509248b1aea5c890f8887c6a7759f7c8b1ebc0490e42c247c4f7c1e34
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.10.*
+    - setuptools >=61.0
+    - setuptools-scm
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pytorch
+    - triton
+
+tests:
+  - python:
+      imports:
+        - cut_cross_entropy
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Code for cut cross entropy, a memory efficient implementation of linear-cross-entropy loss.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/unslothai/cut_cross_entropy
+
+extra:
+  recipe-maintainers:
+    - isuruf

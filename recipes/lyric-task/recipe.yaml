@@ -20,6 +20,7 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
+    # TODO: tighten once 1.26.3 stays current upstream (upstream pyproject pins ==1.26.3)
     - hatchling >=1.26.3
     - pip
   run:

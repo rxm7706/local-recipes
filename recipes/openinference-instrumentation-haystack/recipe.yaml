@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: openinference-instrumentation-haystack
+  version: "0.1.36"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/openinference_instrumentation_haystack-${{ version }}.tar.gz
+  sha256: c4e98c5d66d8bb33b81c7a44102773a10936280c41efa836faa3b4039ee1616b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<3.13
+    - opentelemetry-api
+    - opentelemetry-instrumentation
+    - opentelemetry-semantic-conventions
+    - openinference-instrumentation >=0.1.15
+    - openinference-semantic-conventions
+    - wrapt
+    - typing-extensions
+
+tests:
+  - python:
+      imports:
+        - openinference.instrumentation.haystack
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: OpenInference Haystack Instrumentation
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/Arize-ai/openinference
+
+extra:
+  recipe-maintainers:
+    - michaelschiff
+    - mikeldking
+    - RogerHYang
+    - axiomofjoy
+    - anticorrelator

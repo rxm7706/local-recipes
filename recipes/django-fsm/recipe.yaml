@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-fsm
+  version: "3.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django-fsm-${{ version }}.tar.gz
+  sha256: d6436f5931e09d76e9a434781548627deab80c74cd6726adce95b31b5ddd4d1e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<3.11
+    - django >=1.6
+
+tests:
+  - python:
+      imports:
+        - django_fsm
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE
+  summary: Django friendly finite state machine support
+  description: django-fsm adds simple declarative states management for django models.
+  homepage: http://github.com/kmmbvnr/django-fsm
+  repository: http://github.com/kmmbvnr/django-fsm
+  documentation: http://github.com/kmmbvnr/django-fsm
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - rxm7706
+    - sannykr

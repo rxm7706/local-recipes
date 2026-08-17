@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.2"
+  python_check_max: "3.14"
+
+package:
+  name: pytest-github-actions-annotate-failures
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pytest-github-actions-annotate-failures/pytest_github_actions_annotate_failures-${{ version }}.tar.gz
+  sha256: 5dd18304512361788bc7b5c5c805db853f03f4950c6be09b088de6bab8e2e6c9
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools >=64.0.0
+    - setuptools-scm >=7.0.5
+  run:
+    - pytest >=7.0.0
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports: pytest_github_actions_annotate_failures
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - python -c "from importlib.metadata import version; v = version('pytest-github-actions-annotate-failures'); print(v); assert v == '${{ version }}'"
+
+about:
+  summary: pytest plugin to annotate failed tests with a workflow command for GitHub Actions
+  license: MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/pytest-github-actions-annotate-failures
+  repository: https://github.com/pytest-dev/pytest-github-actions-annotate-failures
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

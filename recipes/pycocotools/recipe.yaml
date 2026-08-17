@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.11"
+
+package:
+  name: pycocotools
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pycocotools/pycocotools-${{ version }}.tar.gz
+  sha256: 34254d76da85576fcaf5c1f3aa9aae16b8cb15418334ba4283b800796bd1993d
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vvv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - if: build_platform != target_platform
+      then: numpy
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - cython
+    - numpy
+  run:
+    - python
+    - matplotlib-base
+
+tests:
+  - python:
+      imports:
+        - pycocotools
+        - pycocotools.mask
+      pip_check: true
+
+about:
+  license: BSD-3-Clause
+  license_file: license.txt
+  summary: Library to work with COCO dataset.
+  homepage: https://github.com/ppwwyyxx/cocoapi
+  repository: https://github.com/ppwwyyxx/cocoapi
+  documentation: http://cocodataset.org
+
+extra:
+  recipe-maintainers:
+    - mukhery
+    - erykoff

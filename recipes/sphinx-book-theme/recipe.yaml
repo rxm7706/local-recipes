@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4.0"
+  python_min: "3.11"
+  python_check_max: "3.14"
+  sphinx_min: "8.2"
+
+package:
+  name: sphinx-book-theme
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/py3/s/sphinx-book-theme/sphinx_book_theme-${{ version }}-py3-none-any.whl
+    sha256: 10fd57d667ee0b565928c3ce95562e281c5d1b94bd5a2aafc5cd41a5d498dcd0
+  - url: https://github.com/executablebooks/sphinx-book-theme/archive/refs/tags/v${{ version }}.tar.gz
+    sha256: 18a0ffc5d043091c5111f0fe8db16d01c951bf46f7ea1e88db45edc70ceb5ec8
+    target_directory: src
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install --find-links . --no-index --ignore-installed --no-deps sphinx-book-theme
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    # not accurate, but not dealing with sphinx-theme-builder
+    - setuptools
+  run:
+    - pydata-sphinx-theme ==0.20.0
+    - python >=${{ python_min }}
+    - sphinx >=${{ sphinx_min }}
+
+tests:
+  - python:
+      imports: sphinx_book_theme
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - files:
+      recipe:
+        - run_test.py
+      source:
+        - src/tests/
+    requirements:
+      run:
+        - beautifulsoup4
+        - coverage
+        - defusedxml
+        - myst-nb
+        - pytest
+        - pytest-regressions
+        - python ${{ python_min }}.*
+        - sphinx ${{ sphinx_min }}.*
+        - sphinx-thebe
+    script:
+      - python run_test.py
+
+about:
+  summary: A clean book theme for scientific explanations and documentation with Sphinx
+  license: BSD-3-Clause
+  license_file: src/LICENSE
+  homepage: https://pypi.org/project/sphinx-book-theme
+  repository: https://github.com/executablebooks/sphinx-book-theme
+  documentation: https://sphinx-book-theme.readthedocs.org
+
+extra:
+  recipe-maintainers:
+    - anirrudh
+    - conda-forge/jupyter-book

@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0rc3"
+  python_min: "3.10"
+
+package:
+  name: agent-framework-orchestrations
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/agent-framework-orchestrations/agent_framework_orchestrations-${{ version }}.tar.gz
+  sha256: 5144d04b65c1fa3e405690e2dcf05b5c9723fd003b85530ee6ac3c76b81c20d8
+
+build:
+  noarch: python
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core <4.0,>=3.11
+  run:
+    - python >=${{ python_min }}
+    - agent-framework-core <2,>=1.8.0
+
+tests:
+  - python:
+      imports:
+        - agent_framework.orchestrations
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  summary: |
+    Orchestration patterns for Microsoft Agent Framework. Includes SequentialBuilder, ConcurrentBuilder, HandoffBuilder, GroupChatBuilder, and MagenticBuilder.
+  homepage: https://pypi.org/project/agent-framework-orchestrations/
+  repository: https://github.com/microsoft/agent-framework
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - killua156
+    - mgorny

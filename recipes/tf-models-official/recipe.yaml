@@ -1,0 +1,107 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.20.0"
+
+package:
+  name: tf-models-official
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/tf-models-official/tf_models_official-${{ version }}.tar.gz
+  sha256: 90ffccda8e3a802b88d9d1fb1638851e1d663f9a944c6c7a65c53e544238953b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - six
+    - google-api-python-client >=1.6.7
+    - kaggle >=1.3.9
+    - numpy >=1.20
+    - oauth2client
+    - pandas >=0.22.0
+    - psutil >=5.4.3
+    - py-cpuinfo >=3.3.0
+    - scipy >=0.19.1
+    - tensorflow-hub >=0.6.0
+    - tensorflow-model-optimization >=0.4.1
+    - tensorflow-datasets
+    - tf-keras >=2.16.0
+    - gin-config
+    - tf-slim >=1.1.0
+    - cython
+    - matplotlib-base
+    - pyyaml >=6.0.0
+    - opencv
+    - pillow
+    - pycocotools
+    - seqeval
+    - sentencepiece
+    - sacrebleu
+    - immutabledict
+    - ai-edge-litert >=1.0.1
+    - tensorflow ~=2.20.0
+    - tensorflow-text ~=2.20.0
+
+tests:
+  - python:
+      imports:
+        - orbit
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/tensorflow/models
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: TensorFlow Official Models
+  description: |
+    TensorFlow Official Models
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tf-models-official
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tf-models-official
+  cfe-purls:
+    - pkg:conda/tf-models-official@${{ version }}?channel=conda-forge
+    - pkg:pypi/tf-models-official@${{ version }}
+  cfe-upstream-repo: https://github.com/tensorflow/models
+  cfe-upstream-homepage: https://github.com/tensorflow/models
+  cfe-import-names: [orbit]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:09:46Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:09:46Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

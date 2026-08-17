@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: xcb-util-wm
+  version: "0.4.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://xcb.freedesktop.org/dist/xcb-util-wm-${{ version }}.tar.xz
+  sha256: 62c34e21d06264687faea7edbf63632c9f04d55e72114aa4a57bb95e4f888a0b
+
+build:
+  number: 0
+  skip: not linux
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - make
+    - m4
+    - pkg-config
+  host:
+    - libxcb
+    - xorg-xproto
+  run_exports:
+    - ${{ pin_subpackage('xcb-util-wm', upper_bound='x.x') }}
+
+tests:
+  - script:
+      - test -f ${PREFIX}/lib/libxcb-icccm.so
+
+about:
+  license: MIT
+  license_file: COPYING
+  summary: Client and window-manager helpers for EWMH and ICCCM
+  homepage: https://xcb.freedesktop.org/
+
+extra:
+  recipe-maintainers:
+    - scopatz
+    - hmaarrfk

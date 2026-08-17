@@ -1,0 +1,94 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0"
+
+package:
+  name: splunklib
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/splunklib/splunklib-${{ version }}.tar.gz
+  sha256: d8015f05a4ae9799d63b7f52ba617c3ed75d4cbce113f8b96281ec100606173e
+  patches:
+    - patches/0001-pycrypto-to-pycryptodome.patch
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pycryptodome
+    - requests
+
+tests:
+  - python:
+      imports:
+        - splunklib
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/IntegralDefense/splunklib
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A simple library for performing splunk search automation.
+  description: |
+    IntegralDefense helper for automating Splunk searches over the REST API
+    (PyPI name ``splunklib``). This is not the official Splunk Python SDK
+    (PyPI ``splunk-sdk``), which also imports as ``splunklib``.
+  repository: https://github.com/IntegralDefense/splunklib
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: splunklib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: splunklib
+  cfe-purls:
+    - pkg:conda/splunklib@${{ version }}?channel=conda-forge
+    - pkg:pypi/splunklib@${{ version }}
+  cfe-upstream-repo: https://github.com/IntegralDefense/splunklib
+  cfe-upstream-homepage: https://github.com/IntegralDefense/splunklib
+  cfe-import-names: [splunklib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T16:01:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T15:59:00Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-16T16:01:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Identity: PyPI splunklib == IntegralDefense/splunklib 1.0.0, NOT
+#    # official Splunk SDK (PyPI splunk-sdk, same import name).
+# source.patches:
+#    # pycrypto is abandoned; conda-forge last built it for py310 in 2021
+#    # (no py311+). A noarch run-dep on pycrypto would not resolve on the
+#    # current matrix. Crypto.Cipher.ARC4 is only used by the unused CLI
+#    # encrypt path; the library import needs requests only. Patch setup.py
+#    # install_requires pycrypto -> pycryptodome so pip_check matches run:.
+# extra.recipe-maintainers:
+#    # rxm7706 (no existing feedstock; enrich_from_feedstock N/A)
+####

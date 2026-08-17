@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ppft
+  version: 1.7.8
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 5f696d4f397ae9b0af39b1faffb31957c51dfbc5a3815856472d4f4e872937ee
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=42
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - ppft
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  license: BSD-3-Clause
+  license_file: COPYING
+  summary: distributed and parallel python
+  homepage: https://github.com/uqfoundation/ppft
+
+extra:
+  recipe-maintainers:
+    - jschueller
+    - synapticarbors

@@ -1,0 +1,109 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.3.1"
+  sha256: 83eee956b84ab7bf9e9d5b38544acc40a0e55f05cea7112fd01cda172c98244a
+
+package:
+  name: kivy
+  version: ${{ version }}
+
+source:
+  url: https://github.com/kivy/kivy/archive/${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 5
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+    - if: win
+      then: m2-sed
+  host:
+    - freetype
+    - python
+    - pip
+    - nose
+    - setuptools
+    - packaging
+    - cython >=3.0.1,<=3.0.11
+    - sdl2
+    - sdl2_mixer
+    - sdl2_image
+    - sdl2_ttf
+    - pkgconfig
+    - if: linux
+      then:
+        - xorg-libx11
+        - xorg-libxrender
+        - xvfbwrapper
+        - xorg-libxfixes
+        - libgl-devel
+        - xorg-xorgproto
+    - if: unix
+      then:
+        - gstreamer
+        - gst-plugins-base ${{ gstreamer }}.*
+        - glib
+    - if: win
+      then:
+        - msinttypes
+        - glew
+  run:
+    - python
+    - if: win
+      then: glew
+    - docutils
+    - pillow
+    - pygments
+    - requests
+    - filetype
+    - kivy-garden
+
+tests:
+  - python:
+      imports:
+        - kivy
+        - kivy.properties
+  - files:
+      source:
+        - examples
+        - kivy/tests
+    requirements:
+      run:
+        - nose
+        - if: linux
+          then: 
+            - xvfbwrapper
+            - xorg-libxrender
+            - xvfbwrapper
+            - ffmpeg
+    script:
+      - if: not win
+        then: export KIVY_GL_BACKEND=mock
+      - if: win
+        then: set KIVY_GL_BACKEND=mock
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Open source UI framework written in Python, running on Windows, Linux, macOS, Android and iOS.
+  description: |
+    Kivy is an open source, cross-platform Python framework for the development of
+    applications that make use of innovative, multi-touch user interfaces. The aim
+    is to allow for quick and easy interaction design and rapid prototyping whilst
+    making your code reusable and deployable.
+  homepage: http://kivy.org/
+  repository: https://github.com/kivy/kivy
+  documentation: https://kivy.org/docs/gettingstarted/intro.html
+
+extra:
+  recipe-maintainers:
+    - misl6
+    - matham
+    - akshayaurora
+    - tito

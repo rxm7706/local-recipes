@@ -1,0 +1,102 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Generated from python-maturin path; PyO3/maturin detected via sdist
+# pyproject.toml [build-system].requires. Modelled on phonors PR pattern
+# (modal 27-PR PyO3 sample, Mar 2020 – May 2026). Recipe shape follows the
+# 2026 grayskull / conda-forge convention: literal ``package.name``, literal
+# ``source.url`` (only ``${ version }`` templated), no ``name`` in context.
+schema_version: 1
+
+context:
+  version: "0.1.3"
+
+package:
+  name: base2048
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/base2048/base2048-${{ version }}.tar.gz
+  sha256: 51d9eeae723b8aa84d9721211ca3b62a20cb2b884efbf53b61b3c3a7c440969d
+
+build:
+  number: 0
+  script:
+    env:
+      # Per conda-forge.org/docs/maintainer/example_recipes/rust/ — applies to
+      # any Rust build (CLI binary OR maturin/PyO3 cdylib). maturin invokes
+      # cargo build internally and inherits these env vars.
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+    content:
+      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - crossenv
+        - maturin >=1,<2
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - pip
+    - maturin >=1.7,<2.0
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - base2048
+      pip_check: true
+
+about:
+  homepage: https://pypi.org/project/base2048/
+  license: MIT
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  summary: Binary encoding with Base2048 in Rust.
+  description: |
+    Binary encoding with Base2048 in Rust.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: base2048
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: base2048
+  cfe-purls:
+    - pkg:conda/base2048@${{ version }}?channel=conda-forge
+    - pkg:pypi/base2048@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/base2048/
+  cfe-upstream-homepage: https://pypi.org/project/base2048/
+  cfe-import-names: [base2048]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:05:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:05:25Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

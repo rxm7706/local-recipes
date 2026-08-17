@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.12.1"
+  python_check_max: "3.14"
+
+package:
+  name: pathspec
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pathspec/pathspec-${{ version }}.tar.gz
+  sha256: a482d51503a1ab33b1c67a6c3813a26953dbdc71c31dacaef9a838c4e29f5712
+
+build:
+  noarch: python
+  number: 2
+  script:
+    - ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - flit-core >=3.2,<4
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports: pathspec
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - pytest
+        - python ${{ python_min }}.*
+    script:
+      env:
+        # skip symlink tests on windows
+        # https://github.com/cpburnz/python-path-specification/commit/d268375a4c6aa
+        PYTEST_ADDOPTS: ${{ '-k "not (2_1_check_realpath or 2_4_recursive_links or 2_5_recursive_circular_links)"' if win }}
+      content:
+        - pytest -vv --tb=long --color=yes
+
+about:
+  homepage: https://github.com/cpburnz/python-pathspec
+  repository: https://github.com/cpburnz/python-pathspec
+  summary: A utility library for pattern matching of file paths
+  license: MPL-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - bollwyvl
+    - proinsias

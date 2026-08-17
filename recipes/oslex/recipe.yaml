@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: oslex
+  version: "2.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 30d9f4a7201bdce3ab7d9cfc0f9ee9e18c423b2b1d1668141b0dd3594b368ffe
+
+build:
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+  number: 0
+  noarch: python
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - mslex
+
+tests:
+  - python:
+      imports:
+        - oslex
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  homepage: https://github.com/petamas/oslex
+  summary: 'OS-independent wrapper for shlex and mslex'
+  description: |
+    oslex is an OS-independent wrapper for shlex and mslex.
+    Its main purpose is to provide functions similar in functionality
+    to shlex.quote(), shlex.split() and shlex.join() on both Windows
+    and POSIX-compatible platforms.
+
+    This goal is achieved by simply forwarding the calls to either shlex
+    (from the standard library) on POSIX-compatible systems, or the excellent
+    mslex library (written by Lawrence D'Anna / @smoofra) on Windows.
+
+    In other words, oslex is to shlex/mslex what os-path is to posixpath/ntpath.
+  license: MIT
+  license_file: LICENSE
+  repository: https://github.com/petamas/oslex
+
+extra:
+  recipe-maintainers:
+    - MementoRC

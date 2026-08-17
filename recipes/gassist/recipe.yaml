@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.1"
+
+package:
+  name: gassist
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/g/gassist/gassist-0.0.1-py3-none-any.whl
+  sha256: bb0fac74b453153a6c74b2db40a14fdde7879cbc10ec692ed170e576c8e2b6aa
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - tqdm
+    - flask
+    - flask_cors
+    - colorama
+
+tests:
+  - python:
+      imports:
+        - gassist
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/gassist/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Python interfaces into G-Assist module
+  description: |
+    Python interfaces into G-Assist module
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: gassist
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: gassist
+  cfe-purls:
+    - pkg:conda/gassist@${{ version }}?channel=conda-forge
+    - pkg:pypi/gassist@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/gassist/
+  cfe-upstream-homepage: https://pypi.org/project/gassist/
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:28:48Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:28:48Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

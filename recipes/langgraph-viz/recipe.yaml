@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.2"
+
+package:
+  name: langgraph-viz
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/langgraph-viz/langgraph_viz-${{ version }}.tar.gz
+  sha256: 13da7ad4add21c26fdf0a80755bc1547eaf056dc6d90fedba8356223dbd76e5c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - deepdiff >=6.7.0
+    - fastapi >=0.104.0
+    - langchain-anthropic >=0.3.22
+    - langchain-openai >=0.3.35
+    - langchain >=0.3.27
+    - langgraph >=0.0.1
+    - pydantic >=2.12.5
+    - python-dotenv >=1.2.1
+    - uvicorn >=0.24.0
+    - websockets >=12.0
+
+tests:
+  - python:
+      imports:
+        - langgraph_viz
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/mk-tdev/langgraph-viz
+  license: MIT
+  license_file: LICENSE
+  summary: Real-time browser-based visualization for LangGraph workflows
+  description: |
+    Real-time browser-based visualization for LangGraph workflows
+  repository: https://github.com/mk-tdev/langgraph-viz
+  documentation: https://github.com/mk-tdev/langgraph-viz#readme
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langgraph-viz
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langgraph-viz
+  cfe-purls:
+    - pkg:conda/langgraph-viz@${{ version }}?channel=conda-forge
+    - pkg:pypi/langgraph-viz@${{ version }}
+  cfe-upstream-repo: https://github.com/mk-tdev/langgraph-viz
+  cfe-upstream-homepage: https://github.com/mk-tdev/langgraph-viz
+  cfe-import-names: [langgraph_viz]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:42:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:42:05Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

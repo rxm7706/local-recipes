@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: rpyc
+  version: "6.0.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/tomerfiliba-org/${{ name }}/archive/${{ version }}.tar.gz
+  sha256: ffb0dad67300c0e26d48397c1f4cf5c8413bff2f3b2d4f3e9e8653e6ef2e67cc
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling >=1.6.0
+  run:
+    - python >=${{ python_min }}
+    - plumbum
+
+tests:
+  - python:
+      imports:
+        - rpyc
+        - rpyc.core
+        - rpyc.lib
+        - rpyc.utils
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+        - pip
+    script:
+      - rpyc_classic --help
+      - rpyc_registry --help
+      - rpyc_classic.py --help
+      - rpyc_registry.py --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Transparent, Symmetric Distributed Computing
+  description: |
+    RPyC (pronounced like are-pie-see), or Remote Python Call, is a
+    transparent library for symmetrical remote procedure calls,
+    clustering, and distributed-computing. RPyC makes use of
+    object-proxying, a technique that employs python's dynamic nature, to
+    overcome the physical boundaries between processes and computers, so
+    that remote objects can be manipulated as if they were local.
+  homepage: https://github.com/tomerfiliba-org/rpyc
+  repository: https://github.com/tomerfiliba-org/rpyc
+  documentation: https://rpyc.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - mtsolmn
+    - comrumino
+    - jacobfeder

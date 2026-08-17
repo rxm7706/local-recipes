@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: msgspec
+  version: "0.21.1"
+
+recipe:
+  name: ${{ name|lower }}-split
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 2313508e394b0d208f8f56892ca9b2799e2561329de9763b19619595a6c0f72c
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: msgspec
+      version: ${{ version }}
+    build:
+      skip: match(python, "<3.8")
+      script: python -m pip install . -vv
+    requirements:
+      build:
+        - if: build_platform != target_platform
+          then: python
+        - if: build_platform != target_platform
+          then: cross-python_${{ target_platform }}
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
+      host:
+        - python
+        - setuptools >=80
+        - setuptools-scm >=8
+        - pip
+      run:
+        - python
+    tests:
+      - python:
+          imports:
+            - msgspec
+          pip_check: true
+      - requirements:
+          run:
+            - pip
+            - python
+        script:
+          - python -c "from importlib.metadata import version; print(version('${{ name }}'))"
+          - python -c "from importlib.metadata import version; assert '${{ version }}' == version('${{ name }}')"
+  - package:
+      name: msgspec-yaml
+      version: ${{ version }}
+    requirements:
+      run:
+        - ${{ pin_subpackage(name) }}
+        - pyyaml
+    tests:
+      - python:
+          imports:
+            - msgspec
+          pip_check: false
+  - package:
+      name: msgspec-toml
+      version: ${{ version }}
+    requirements:
+      run:
+        - ${{ pin_subpackage(name) }}
+        - if: match(python, "<3.11")
+          then: tomli
+        - tomli-w
+    tests:
+      - python:
+          imports:
+            - msgspec
+          pip_check: false
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: |
+    A fast serialization and validation library, with builtin support for JSON,
+    MessagePack, YAML, and TOML.
+  description: |
+    `msgspec` is a fast serialization and validation library for Python,
+    supporting JSON, MessagePack, YAML, and TOML. It integrates well with
+    Python's type annotations, providing ergonomic (and performant!) schema
+    validation.
+  homepage: https://jcristharif.com/msgspec/
+  repository: https://github.com/jcrist/msgspec
+  documentation: https://jcristharif.com/msgspec/
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - jcrist

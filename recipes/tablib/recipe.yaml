@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.10.0"
+
+package:
+  name: tablib
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/tablib/tablib-${{ version }}.tar.gz
+  sha256: 781cfa9a42de8f33c52aff857fd0a04e483de4fd1c53eaaa9a6aeac62bad11de
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=58
+    - setuptools-scm >=6.2
+    - pip
+  run:
+    - python >=${{ python_min }}
+    # optional [all]
+    - markuppy
+    - odfpy
+    - openpyxl >=2.6.0
+    - pandas
+    - pyyaml
+    - tabulate
+    - xlrd
+    - xlwt
+
+tests:
+  - python:
+      imports:
+        - tablib
+        - tablib.formats
+      pip_check: true
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - tests/test_tablib.py
+    requirements:
+      run:
+        - pip
+        - pytest
+        - python ${{ python_min }}
+    script:
+      - python tests/test_tablib.py
+
+about:
+  summary: Format agnostic tabular data library (XLS, JSON, YAML, CSV)
+  license: MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/tablib/
+  repository: https://github.com/jazzband/tablib
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

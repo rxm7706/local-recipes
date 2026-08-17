@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: gprof2dot
+  version: "2025.4.14"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/gprof2dot-${{ version }}.tar.gz
+  sha256: 35743e2d2ca027bf48fa7cba37021aaf4a27beeae1ae8e05a50b55f1f921a6ce
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - gprof2dot = gprof2dot:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - gprof2dot
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - gprof2dot --help
+
+about:
+  license: LGPL-3.0-or-later
+  license_file: LICENSE.txt
+  summary: Generate a dot graph from the output of several profilers.
+  homepage: https://github.com/jrfonseca/gprof2dot
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - pmgrafe

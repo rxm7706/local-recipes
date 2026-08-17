@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: 0.99b6
+  name: tachyon
+  sha256: f4dcaf9c76a4f49310f56254390f9611c22e353947a1745a8c623e8bc8119b97
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  # Upstream is down currently. We reached out to the author to see if there's
+  # a new source somewhere. In the meantime, we are using a Fedora mirror.
+  # url: http://jedi.ks.uiuc.edu/~johns/raytracer/files/{{ version }}/{{ name }}-{{ version }}.tar.gz
+  url: https://src.fedoraproject.org/lookaside/pkgs/tachyon/tachyon-0.99b6.tar.gz/9e5ed4045c472e01e57480d7c7eee849/tachyon-0.99b6.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1002
+  skip: win
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - make
+  host:
+    - libpng
+    - zlib
+    - libjpeg-turbo
+  run:
+    - libpng
+    - zlib
+    - libjpeg-turbo
+
+tests:
+  - script:
+      - tachyon | exit 0
+
+about:
+  license: BSD-3-Clause
+  license_file: Copyright
+  summary: Parallel/Multiprocessor Ray Tracing Software
+  homepage: http://jedi.ks.uiuc.edu/~johns/raytracer/
+
+extra:
+  recipe-maintainers:
+    - isuruf
+    - saraedum

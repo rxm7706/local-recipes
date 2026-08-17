@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# hmaarrfk - 2024/09
+# Seems like this test fails with ppc64le when using emulation (not tested natively)
+# Seems like this test fails with aarch... but only with the gpl variant... i can't
+# figure it out .... hmaarrffk 2025/03
+schema_version: 1
+
+context:
+  version: "18.1.0"
+
+package:
+  name: av
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/a/av/av-${{ version }}.tar.gz
+  sha256: 47bfc286e1bc9de7ab4681fc2b575cd2460a66919d31ffe1bd5aa54fae531a28
+  patches:
+    - patches/0001-Convert-h264-tests-to-openh264-for-lgpl-build.patch
+    - patches/0002-Disable-cp111-abi.patch
+
+build:
+  # https://github.com/PyAV-Org/PyAV/blob/main/pyproject.toml#L13
+  number: 0
+  skip: match(python, "<3.11")
+  script:
+    - ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - if: build_platform != target_platform
+      then: numpy
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - if: not win
+      then: pkg-config
+  host:
+    - python
+    - pip
+    - setuptools
+    - cython
+    - numpy
+    - ffmpeg ${{ ffmpeg }} lgpl*
+  run:
+    - python
+    - pillow
+    - numpy >=1.22
+  run_exports:
+    - ${{ pin_subpackage('av') }}
+
+tests:
+  - python:
+      imports:
+        - av
+        - av.audio
+        - av.audio.fifo
+      pip_check: false
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - if: match(python, "==3.11")
+          then: ffmpeg * gpl*
+        - if: match(python, "==3.12")
+          then: ffmpeg * lgpl*
+        - pytest
+    script:
+      - if: match(python, "==3.11")
+        then: python -c "import av; assert 'libx264' in av.codecs_available"
+      - if: match(python, "==3.11")
+        then: python -c "import av; assert 'libx265' in av.codecs_available"
+      - if: match(python, "==3.12")
+        then: python -c "import av; assert 'libx264' not in av.codecs_available"
+      - if: match(python, "==3.12")
+        then: python -c "import av; assert 'libx265' not in av.codecs_available"
+      - python -c "import av; assert 'libopenh264' in av.codecs_available"
+      - pytest tests -k "not (${{ tests_to_skip }})"
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Pythonic bindings for FFmpeg.
+  description: |
+    PyAV is a Pythonic binding for FFmpeg or Libav. We aim to provide all of
+    the power and control of the underlying library, but manage the gritty
+    details as much as possible.
+  homepage: https://github.com/PyAV-Org/PyAV/
+  repository: https://github.com/PyAV-Org/PyAV/
+  documentation: https://pyav.org/docs/develop/
+
+extra:
+  recipe-maintainers:
+    - danielballan
+    - mikeboers
+    - sdvillal
+    - h-vetinari
+    - hmaarrfk

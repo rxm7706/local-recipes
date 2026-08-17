@@ -3,7 +3,8 @@ schema_version: 1
 
 context:
   name: openlineage-sql
-  version: "1.42.1"
+  version: "1.52.0"
+  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/openlineage_sql-${{ version }}.tar.gz
-  sha256: 92e91e4fda792913845204849ee99c5b87fd266a06eb7110345bf2f09b58cadc
+  sha256: fd00e6ead0e87875a60054bf7fa361c36a8e410f2bbd88d5f82ffa738563953c
 
 build:
   number: 0
@@ -27,13 +28,13 @@ requirements:
         - cross-python_${{ target_platform }}
         - maturin >=1,<2
     - ${{ compiler("c") }}
-    #- ${{ stdlib("c") }}
+    - ${{ stdlib("c") }}
     - ${{ compiler("rust") }}
     - cargo-bundle-licenses
   host:
     - python
-    - maturin >=1.0
     - pip
+    - maturin >=1,<2
   run:
     - python
 

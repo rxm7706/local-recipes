@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  python_min: "3.12.0"
+  name: phx-class-registry
+  version: "5.2.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: c8f792b8856a6c0af990f648be108de10ed0560771555d81a0452c4627f8f489
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.12.0.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0.0
+
+tests:
+  - python:
+      imports:
+        - class_registry
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Factory+Registry pattern for Python classes
+  license: MIT
+  license_file: LICENCE.txt
+  homepage: https://github.com/todofixthis/class-registry
+
+extra:
+  recipe-maintainers:
+    - freundTech

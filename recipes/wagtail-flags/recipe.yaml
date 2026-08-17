@@ -21,7 +21,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python 3.12.*
     - setuptools >=63
     - setuptools-scm >=8
     - pip
@@ -35,15 +35,13 @@ tests:
       imports:
         - wagtailflags
       pip_check: true
-      python_version:
-      - ${{ python_min }}.*
-      - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Feature flags for Wagtail sites
-  homepage: https://github.com/cfpb/wagtail-flags
   license: CC0-1.0
   license_file: LICENSE
+  homepage: https://github.com/cfpb/wagtail-flags
   repository: https://github.com/cfpb/wagtail-flags
 
 extra:

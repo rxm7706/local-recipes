@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.18.0"
+
+package:
+  name: neo4j-graphrag
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/neo4j-graphrag/neo4j_graphrag-${{ version }}.tar.gz
+  sha256: c5accf78b8c0a5cdf6ca70ec2fdad69812631e4a2b5430af0ff4752e6c446298
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - fsspec >=2024.9.0
+    - json-repair <1.0.0,>=0.44.1
+    - neo4j <7.0.0,>=5.17.0
+    - numpy <3.0.0,>=2.0.0
+    - pydantic <3.0.0,>=2.6.3
+    - pypdf <7.0.0,>=6.0.0
+    - pyyaml <7.0.0,>=6.0.2
+    - scipy <2.0.0,>=1.13.0
+    - tenacity <10.0.0,>=9.1.2
+    - types-pyyaml <7.0.0,>=6.0.12.20240917
+
+tests:
+  - python:
+      imports:
+        - neo4j_graphrag
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://neo4j.com/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python package to allow easy integration to Neo4j's GraphRAG features
+  description: |
+    Python package to allow easy integration to Neo4j's GraphRAG features
+  repository: https://github.com/neo4j/neo4j-graphrag-python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: neo4j-graphrag
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: neo4j-graphrag
+  cfe-purls:
+    - pkg:conda/neo4j-graphrag@${{ version }}?channel=conda-forge
+    - pkg:pypi/neo4j-graphrag@${{ version }}
+  cfe-upstream-repo: https://github.com/neo4j/neo4j-graphrag-python
+  cfe-upstream-homepage: https://neo4j.com/
+  cfe-import-names: [neo4j_graphrag]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:55:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:55:25Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

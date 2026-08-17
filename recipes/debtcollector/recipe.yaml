@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: debtcollector
+  version: "3.1.0"
+  bundle: tar.gz
+  hash: 278a45608cf16e79c0ae10851d869185c6b78f86610df8f27a451a18c1fec732
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
+  sha256: ${{ hash }}
+  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+    - pbr !=2.1.0,>=2.0.0
+  run:
+    - python >=${{ python_min }}
+    - wrapt >=1.7.0
+
+tests:
+  - python:
+      imports:
+        - debtcollector
+        - debtcollector.moves
+        - debtcollector.renames
+        - debtcollector.removals
+        - debtcollector.fixtures
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license_file: LICENSE
+  license: Apache-2.0
+  summary: A collection of Python deprecation patterns and strategies that help you collect your technical debt in a non-destructive manner.
+  homepage: http://docs.openstack.org/developer/debtcollector/
+  repository: https://git.openstack.org/cgit/openstack/debtcollector
+  documentation: http://docs.openstack.org/developer/debtcollector/
+
+extra:
+  recipe-maintainers:
+    - anguslees
+    - tschoonj

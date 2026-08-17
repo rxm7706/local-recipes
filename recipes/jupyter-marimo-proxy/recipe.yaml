@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jupyter-marimo-proxy
+  version: "0.0.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jupyter_marimo_proxy-${{ version }}.tar.gz
+  sha256: a55185fe35c2d6f2ff0cb5bee5cc8935d508ab6bf893ea82a678ec57def9de7b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - jupyter-server-proxy
+
+tests:
+  - python:
+      imports:
+        - jupyter_marimo_proxy
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Jupyter extension to proxy Marimo
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/jyio/jupyter-marimo-proxy
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.5"
+
+package:
+  name: kaleo
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/k/kaleo/kaleo-${{ version }}.tar.gz
+  sha256: 7468dd5f4ddf82293d6c9b9d6a40ba381d3f55b4c962fe71a8fceefe6628ce71
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - kaleo
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://github.com/eldarion/kaleo
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: a user to user join invitations app
+  description: |
+    a user to user join invitations app
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kaleo
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: kaleo
+  cfe-purls:
+    - pkg:conda/kaleo@${{ version }}?channel=conda-forge
+    - pkg:pypi/kaleo@${{ version }}
+  cfe-upstream-repo: http://github.com/eldarion/kaleo
+  cfe-upstream-homepage: http://github.com/eldarion/kaleo
+  cfe-import-names: [kaleo]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:41:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:41:23Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

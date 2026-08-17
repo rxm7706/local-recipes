@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyclipper
+  version: "1.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyclipper-${{ version }}.tar.gz
+  sha256: 9882bd889f27da78add4dd6f881d25697efc740bf840274e749988d25496c8e1
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - wheel
+    - cython >=0.28
+    - setuptools_scm >=1.11.1
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - pyclipper
+      pip_check: true
+
+about:
+  license: MIT
+  license_file:
+    - LICENSE
+    - LICENSE.txt
+  summary: Cython wrapper for the C++ translation of the Angus Johnson's Clipper library (ver. 6.4.2)
+  description: |
+    "Pyclipper is a Cython wrapper exposing public functions and classes of the C++
+    translation of the Angus Johnson’s Clipper library (ver. 6.4.2)."
+  homepage: https://github.com/fonttools/pyclipper
+  repository: https://github.com/fonttools/pyclipper
+
+extra:
+  recipe-maintainers:
+    - jakakokosar

@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.4"
+
+package:
+  name: opal-fetcher-postgres
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/opal-fetcher-postgres/opal-fetcher-postgres-${{ version }}.tar.gz
+  sha256: 55a953dac28e04b1c92f34222f770a12f3bec604226fbeed9a5e44fdf081599a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.0
+  run:
+    - python >=${{ python_min }}
+    - opal-common
+    - asyncpg
+    - pydantic
+    - tenacity
+    - click
+
+tests:
+  - python:
+      imports:
+        - opal_fetcher_postgres
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/opal-fetcher-postgres/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: An OPAL fetch provider to bring authorization state from Postgres DB.
+  description: |
+    An OPAL fetch provider to bring authorization state from Postgres DB.
+  repository: https://github.com/permitio/opal-fetcher-postgres
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opal-fetcher-postgres
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opal-fetcher-postgres
+  cfe-purls:
+    - pkg:conda/opal-fetcher-postgres@${{ version }}?channel=conda-forge
+    - pkg:pypi/opal-fetcher-postgres@${{ version }}
+  cfe-upstream-repo: https://github.com/permitio/opal-fetcher-postgres
+  cfe-upstream-homepage: https://pypi.org/project/opal-fetcher-postgres/
+  cfe-import-names: [opal_fetcher_postgres]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:37:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:37:27Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,182 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: qiskit-aer
+  version: "0.17.2"
+  build: 5
+  has_cuda: ${{ cuda_compiler_version != "None" }}
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/Qiskit/${{ name }}/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 0231c74ae23d7dcaef664c39e57f800ee5174f73821a60f328ca3fe542266950
+  patches:
+    # Update cmake configuration to base build flags on target architecture instead of host
+    # Submitted upstream in https://github.com/Qiskit/qiskit-aer/pull/2390
+    - 0001-Base-x86-compiler-flags-on-target-rather-than-host-s.patch
+    # Replace lambdas in pybind11 init method with direct references to class
+    # constructors to avoid ambiguous template compile error on gcc 14
+    # Submitted upstream in https://github.com/Qiskit/qiskit-aer/pull/2416
+    - 0002-Fix-pybind11-init-template-errors.patch
+    # Switch from pybind11 enum_ to native_enum to avoid ambiguous template
+    # compile error on gcc 14
+    # Submitted upstream in https://github.com/Qiskit/qiskit-aer/pull/2417
+    - 0003-Switch-from-pybind11-enum_-to-native_enum.patch
+
+build:
+  number: ${{ build }}
+  string: ${{ "cpu" if not has_cuda else "cuda" + (cuda_compiler_version | replace('.', '')) }}_py${{ python | version_to_buildstring }}h${{ hash }}_${{ build if not has_cuda else build + 200 }}
+  skip: has_cuda and not (linux and x86_64)
+  script:
+    env:
+      DISABLE_DEPENDENCY_INSTALL: ON
+      DISABLE_CONAN: ON
+    content:
+      - if: unix and has_cuda
+        then:
+          - |
+            export CMAKE_BUILD_PARALLEL_LEVEL=1
+            export CUQUANTUM_ROOT="$PREFIX"
+            export CUTENSOR_ROOT="$PREFIX"
+            export AER_THRUST_BACKEND=CUDA
+            export AER_ENABLE_CUQUANTUM=ON
+            {% raw %}# cuQuantum only supports Volta+{% endraw %}
+            export AER_CUDA_ARCH="7.0;7.5;8.0;8.6;9.0+PTX"
+
+      - if: win
+        then: |
+          SET "CMAKE_PREFIX_PATH=%PREFIX%"
+          SET "CMAKE_ARGS=%CMAKE_ARGS% -DUSE_BUNDLED_BLAS_WIN:BOOL=FALSE"
+          SET "CMAKE_GENERATOR=Ninja"
+        else: export CMAKE_GENERATOR="Ninja"
+
+      - ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - pybind11 >=3.0
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+    - if: has_cuda
+      then: ${{ compiler('cuda') }}
+    - cmake !=3.17,>=3.8
+    - if: linux
+      then: libgomp
+    - if: osx
+      then: llvm-openmp
+    - if: win
+      then: vcomp14
+    - ninja
+  host:
+    - libblas
+    - liblapack
+    # Upstream builds with 3.1.2 but that has no osx arm64 build. Instead we
+    # pin the latest known working version. See
+    # https://github.com/Qiskit/qiskit-aer/issues/1742 where problems were
+    # reported with 3.10.3
+    - nlohmann_json <=3.10.2
+    # In early 2025, mkl started getting installed randomly on Linux about 50%
+    # of the time. When this happens the build seems to link to it but not add
+    # it to the run exports. Maybe mkl builds could work but we have been doing
+    # fine without them so just make sure they do not happen for now.
+    - nomkl
+    - pip
+    - python
+    - pybind11 >=3.0
+    - scikit-build >=0.11.0
+    - setuptools >=40.1.0
+    - spdlog
+    - if: has_cuda
+      then:
+        - cuda-version ${{ cuda_compiler_version }}.*
+        # Qiskit Aer now uses both
+        - custatevec
+        - cutensornet
+  run:
+    - python
+    - numpy >=1.16.3
+    - psutil >=5
+    - python-dateutil >=2.8.0
+    - qiskit >=0.45.2
+    - scipy >=1.0
+    - if: has_cuda
+      then: ${{ pin_compatible('cuda-version', upper_bound='x', lower_bound='x') }}
+  ignore_run_exports:
+    from_package:
+      - if: has_cuda
+        then: cuda-version
+      # Only headers used from spdlog
+      - spdlog
+
+tests:
+  # NOTE: as of https://github.com/conda-forge/qiskit-aer-feedstock/pull/62
+  # we can no longer test import of the CUDA build even this way because
+  # custatevec now pulls in a binary not provided by conda-forge.
+  # - export CUDA_STUB="$PREFIX/lib/stubs/libcuda.so"
+  # - LD_PRELOAD="$CUDA_STUB" python -c "import qiskit_aer"
+  # - python -c "import qiskit_aer"
+  - python:
+      imports:
+        - if: build_platform == target_platform and not has_cuda
+          then: qiskit_aer
+      pip_check: true
+  - files:
+      source:
+        - .stestr.conf
+        - test/*
+    requirements:
+      run:
+        - ddt
+        - ipython
+        - matplotlib-base
+        - numpy
+        - pip
+        - seaborn
+        - scipy
+        - stestr
+        - sympy
+        - if: linux and has_cuda
+          then: cuda-driver-dev
+    script:
+      # Ignore tests that require qiskit_qasm3_import which is not packaged in
+      # conda-forge by using `-E test_save_statevector_for_qasm3_circuit`
+      #
+      # Ignore shot_branching tests that seem to be flaky in the upstream tests as well.
+      #
+      # Ignore test_switch_register_with_classical_expression because Qiskit 2.1
+      # broke these tests. It appears qiskit-aer code was wrong (passing list of
+      # CLbit to Var() when only passing a single Clbit is documented as
+      # supported). See
+      # https://github.com/Qiskit/qiskit-aer/pull/2361
+      #
+      # Ignore test_mps_svd_method because it sometimes fails with `Wrong SVD calculations: A != USV*`
+      # on Windows. No idea why.
+      - if: build_platform == target_platform and not has_cuda
+        then: stestr run -E "test_save_statevector_for_qasm3_circuit|TestShotBranching|test_dynamic_circuit_with_shot_branching|test_switch_register_with_classical_expression|test_mps_svd_method"
+
+      # The following used to work for CUDA builds but broke with 0.15.0. See
+      # https://github.com/Qiskit/qiskit-aer/issues/2213
+      #
+      # Ignore _GPU tests for CUDA builds because the environment does not have a GPU
+      # - export CUDA_STUB="$PREFIX/lib/stubs/libcuda.so"
+      # - LD_PRELOAD="$CUDA_STUB" stestr run -E 'test_save_statevector_for_qasm3_circuit|_GPU'
+
+about:
+  summary: Qiskit Aer - High performance simulators for Qiskit
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  homepage: https://github.com/Qiskit/qiskit-aer
+
+extra:
+  recipe-maintainers:
+    - leofang
+    - wshanks
+    - basnijholt

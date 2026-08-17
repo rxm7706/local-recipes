@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  python_min: "3.7"
+  version: "4.0.1"
+
+package:
+  name: github3.py
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/g/github3.py/github3.py-${{ version }}.tar.gz
+  sha256: 30d571076753efc389edc7f9aaef338a4fcb24b54d8968d5f39b1342f45ddd36
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.7.*
+    - hatchling >=1.14.1
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pyjwt >=2.3.0
+    - python-dateutil >=2.6.0
+    - requests >=2.18
+    - uritemplate >=3.0.0
+
+tests:
+  - python:
+      imports:
+        - github3
+        - github3.gists
+        - github3.issues
+        - github3.repos
+        - github3.search
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Python wrapper for the GitHub API (http://developer.github.com/v3).
+  homepage: https://github3.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - ocefpaf
+    - sigmavirus24
+    - scopatz

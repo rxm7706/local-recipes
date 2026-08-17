@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: colorhash
+  version: "1.0.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/colorhash-${{ version }}.tar.gz
+  sha256: 5460c5539b68712c97b09ba41e5200c81dce6e23f4533d0f4f8beafc3eb2fafa
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - poetry
+    - python >=3.6,<4.0
+  run:
+    - python >=3.6,<4.0
+
+tests:
+  - python:
+      imports:
+        - colorhash
+      pip_check: true
+
+about:
+  summary: Generate color based on any object
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/dimostenis/color-hash-python
+
+extra:
+  recipe-maintainers:
+    - shaharh9110

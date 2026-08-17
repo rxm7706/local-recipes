@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: fs-gcsfs
+  version: "1.5.1"
+  sha256: 35f52862723ed2214f92ad941527066d10a2261a95b1b991dbdacc162dab5045
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python >=3.5
+    - pip
+    - setuptools_scm
+  run:
+    - python >=3.5
+    - fs >=2,<3
+    - google-cloud-storage >=1.0,<3
+    - urllib3 >=1.25,<2
+    - packaging >=20
+    - requests >=2.20,<3
+
+tests:
+  - python:
+      imports:
+        - fs_gcsfs
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A Python filesystem abstraction of Google Cloud Storage (GCS) implemented as a PyFilesystem2 extension
+  homepage: https://github.com/Othoz/gcsfs
+  repository: https://github.com/Othoz/gcsfs
+  documentation: https://fs-gcsfs.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - mathiaseitz
+    - trendelkampschroer

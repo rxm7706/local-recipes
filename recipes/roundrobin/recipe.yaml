@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.0"
+  python_check_max: "3.14"
+
+package:
+  name: roundrobin
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/r/roundrobin/roundrobin-${{ version }}.tar.gz
+    sha256: 14126ed1706a9c6638c81c3f3d915357f7ab0c0245c464a611eb5903811ee45b
+    target_directory: dist
+  - url: https://github.com/linnik/roundrobin/archive/refs/tags/${{ version }}.tar.gz
+    sha256: 623b3505599ce5ae34e95369192c91ce7a3e9bef1f8e0fa9aa1a8d2343233a02
+    target_directory: src
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - cd dist
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports: roundrobin
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - files:
+      source:
+        - src/test*.py
+        - src/README.md
+    requirements:
+      run:
+        - pytest-cov
+        - python ${{ python_min }}.*
+    script:
+      - cd src
+      - coverage run --source=roundrobin --branch --append test.py
+      - coverage run --source=roundrobin --branch --append test_readme.py
+      - coverage report --show-missing --skip-covered --fail-under=99
+
+about:
+  summary: Collection of roundrobin utilities
+  license: MIT
+  license_file: dist/LICENSE
+  homepage: https://pypi.org/project/roundrobin
+  repository: https://github.com/linnik/roundrobin
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

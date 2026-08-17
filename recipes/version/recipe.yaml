@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.1"
+
+package:
+  name: version
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/v/version/version-${{ version }}.tar.gz
+  sha256: 9ca4aae0312bc3924f4fd31cbfbef468ebf29f278174be0a6bb418fbfad7e85f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - version
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://github.com/halst/version
+  license: MIT
+  license_file: LICENSE
+  summary: Implementation of semantic version
+  description: |
+    Implementation of semantic version
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: version
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: version
+  cfe-purls:
+    - pkg:conda/version@${{ version }}?channel=conda-forge
+    - pkg:pypi/version@${{ version }}
+  cfe-upstream-repo: http://github.com/halst/version
+  cfe-upstream-homepage: http://github.com/halst/version
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:40:33Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:40:33Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

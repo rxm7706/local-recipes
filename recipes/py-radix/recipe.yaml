@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.0"
+
+package:
+  name: py-radix
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/py-radix/py_radix-${{ version }}.tar.gz
+  sha256: 4abdb4e4969aaeef40eeb186bada2911462183788a6f445b971d18aa5d1af9be
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - radix
+      pip_check: true
+
+about:
+  homepage: https://github.com/mjschultz/py-radix
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Radix tree implementation
+  description: |
+    Radix tree implementation
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: py-radix
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: py-radix
+  cfe-purls:
+    - pkg:conda/py-radix@${{ version }}?channel=conda-forge
+    - pkg:pypi/py-radix@${{ version }}
+  cfe-upstream-repo: https://github.com/mjschultz/py-radix
+  cfe-upstream-homepage: https://github.com/mjschultz/py-radix
+  cfe-import-names: [radix]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: false
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:44:20Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:44:20Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4/P5 Create-recipe local-only. py-radix.
+####

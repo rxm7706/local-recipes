@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: channels
+  version: "4.3.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: f2bb6bfb73ad7fb4705041d07613c7b4e69528f01ef8cb9fb6c21d9295f15667
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - asgiref >=3.6.0,<4
+    - django >=4.2
+  # daphne is [options.extras_require] and not install_requires Refer https://github.com/django/channels/blob/main/setup.cfg#L38
+  run_constraints:
+    - daphne >=4.0.0
+
+tests:
+  - python:
+      imports:
+        - channels
+        - channels.generic
+        - channels.management
+        - channels.management.commands
+        - channels.security
+        - channels.testing
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Brings async, event-driven capabilities to Django. Django 4.2 and up only.
+  homepage: http://github.com/django/channels
+  repository: http://github.com/django/channels
+  documentation: https://channels.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - chrisbarber
+    - swainn

@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.10.0"
+  python_check_max: "3.14"
+
+package:
+  name: httpx2
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/httpx2/httpx2-${{ version }}.tar.gz
+  sha256: 8741d7329fe2c7885fc9ceb61c8217acfb87a85f75723714b89ebf7ad7196338
+
+build:
+  noarch: python
+  number: 0
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  python:
+    entry_points:
+      - httpx2 = httpx2:main
+
+requirements:
+  host:
+    - hatch-fancy-pypi-readme
+    - hatchling
+    - pip
+    - python ${{ python_min }}.*
+    - uv-dynamic-versioning >=0.8.0
+  run:
+    - anyio
+    - httpcore2 ==${{ version }}
+    - idna >=3.18
+    - python >=${{ python_min }}
+    - truststore >=0.10
+    - typing_extensions >=4.5.0
+  run_constraints:
+    - click >=8.4
+    - pygments 2.*
+    - rich >=10,<16
+    - h2 >=3,<5
+    - socksio 1.*
+    - wsproto >=1.2
+    - zstandard >=0.18.0
+  # depends on https://github.com/conda/ceps/pull/146
+  # extras:
+  #   cli:
+  #     - click 8.*
+  #     - pygments 2.*
+  #     - rich >=10,<16
+  #   http2:
+  #     - h2 >=3,<5
+  #   socks:
+  #     - socksio 1.*
+  #   brotli:
+  #     - brotli
+  #   zstd:
+  #     - zstandard >=0.18.0
+
+tests:
+  - python:
+      imports: httpx2
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - requirements:
+      run:
+        - click >=8.4
+        - python ${{ python_min }}.*
+        - pygments 2.*
+        - rich >=10,<16
+    script:
+      env:
+        PYTHONIOENCODING: utf-8
+        PYTHONUTF8: "1"
+      content:
+        - httpx2 --help
+
+about:
+  homepage: https://pypi.org/project/httpx2
+  summary: The next generation HTTP client.
+  license: BSD-3-Clause
+  license_file: LICENSE.md
+  repository: https://github.com/pydantic/httpx2
+
+extra:
+  recipe-maintainers:
+    - bollwyvl
+    - Kludex

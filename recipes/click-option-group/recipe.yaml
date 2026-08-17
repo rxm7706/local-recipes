@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.9"
+
+package:
+  name: click-option-group
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/click-option-group/click_option_group-${{ version }}.tar.gz
+  sha256: f94ed2bc4cf69052e0f29592bd1e771a1789bd7bfc482dd0bc482134aff95823
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - hatch-vcs
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - click >=7.0
+
+tests:
+  - python:
+      imports:
+        - click_option_group
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      - pytest
+    requirements:
+      run:
+        - pytest
+    files:
+      source:
+        - tests/
+
+about:
+  summary: Option groups missing in Click
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/click-contrib/click-option-group
+  documentation: https://click-option-group.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - SimonBoothroyd
+    - sodre
+    - mgorny

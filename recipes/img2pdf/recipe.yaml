@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: img2pdf
+  version: "0.6.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 306e279eb832bc159d7d6294b697a9fbd11b4be1f799b14b3b2174fb506af289
+
+build:
+  number: 1
+  skip: python_impl == 'pypy'
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - img2pdf = img2pdf:main
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+    - pillow
+
+tests:
+  - python:
+      imports:
+        - img2pdf
+      pip_check: false
+  - script:
+      - img2pdf --help
+
+about:
+  license: LGPL-3.0-only
+  license_file: LICENSE
+  summary: Lossless conversion of raster images to PDF
+  description: |
+    Lossless conversion of raster images to PDF. You should use img2pdf if your priorities
+    are (in this order):
+
+    1. always lossless: the image embedded in the PDF will always have the exact same color information for every pixel as the input
+    2. small: if possible, the difference in filesize between the input image and the output PDF will only be the overhead of the PDF container itself
+    3 fast: if possible, the input image is just pasted into the PDF document as-is without any CPU hungry re-encoding of the pixel data
+
+
+  homepage: https://gitlab.mister-muffin.de/josch/img2pdf
+
+extra:
+  recipe-maintainers:
+    - jonashaag
+    - izahn
+    - djsutherland

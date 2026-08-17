@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-test-plus
+  version: "2.6.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 3b12bdc8ebd2df439f8cd5a62923acea345135f96f2bcbedfc17dec3eefb94f7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pytest-runner
+    - pytest-django
+    - hatchling
+    - pip
+  run:
+    - packaging
+    - pytest
+    - python >=${{ python_min }}
+    - django >=1.8
+
+tests:
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pip check
+
+about:
+  license: BSD-3-Clause
+  #license_file: '{{ env.get("RECIPE_DIR") }}/LICENSE'
+  license_file: LICENSE
+  summary: Useful additions to Django default TestCase
+  description: |
+    Let's face it, writing tests isn't always fun. Part of the reason for that is all of the
+    boilerplate you end up writing. django-test-plus is an attempt to cut down on some of
+    that when writing Django tests. We guarantee it will increase the time before you get
+    carpal tunnel by at least 3 weeks!
+  homepage: https://github.com/revsys/django-test-plus
+  repository: https://github.com/revsys/django-test-plus
+  documentation: http://django-test-plus.readthedocs.org/
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - rxm7706
+    - sannykr

@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: datadog
+  version: "0.53.0"
+  sha256: 9f69a18089c852e20edff7e55226a6f4ca9749e162cfa4ae88c949dd722ebef8
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - dog = datadog.dogshell:main
+      - dogwrap = datadog.dogshell.wrap:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - decorator >=3.3.2
+    - requests >=2.6.0
+
+tests:
+  - python:
+      imports:
+        - datadog
+        - datadog.dogshell
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - dog --help
+      - dogwrap --help
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: The Datadog Python library
+  description: |
+    The Python integration enables you to monitor any custom metric by instrumenting a few lines of code.
+  homepage: https://github.com/DataDog/datadogpy
+  documentation: https://docs.datadoghq.com/integrations/python/
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk

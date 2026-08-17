@@ -2,18 +2,19 @@
 schema_version: 1
 
 context:
+  name: django-log-viewer
   version: "1.1.8"
 
 package:
-  name: django-log-viewer
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-log-viewer/django_log_viewer-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: 3b70837cc1877356831a5d4831d30426809ccd12a0705b7fb11512ee17f3b50a
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -23,24 +24,21 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }}
     - django
+    - python >=${{ python_min }},<4.0
 
 tests:
   - python:
       imports:
         - log_viewer
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
   summary: Django log viewer
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/agusmakmun/django-log-viewer
-  repository: https://github.com/agusmakmun/django-log-viewer
 
 extra:
   recipe-maintainers:

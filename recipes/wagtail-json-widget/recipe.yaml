@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: wagtail-json-widget
+  version: "0.0.7"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/cursive-works/wagtail-json-widget/archive/${{ version }}.tar.gz
+  sha256: aee47b62b78d3192fe08759fda6081d016d7bddb0270fbe09348bb1326f57767
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - wagtail >=4.0
+
+tests:
+  - python:
+      imports:
+        - wagtail_json_widget
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: JSON editing for Wagtail
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/cursive-works/wagtail-json-widget
+
+extra:
+  recipe-maintainers:
+    - rxm7706

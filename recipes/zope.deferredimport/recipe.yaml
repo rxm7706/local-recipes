@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: zope.deferredimport
+  version: "4.3.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 57b2345e7b5eef47efcd4f634ff16c93e4265de3dcf325afc7315ade48d909e1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - zope.proxy
+
+tests:
+  - python:
+      imports:
+        - ${{ name }}
+      pip_check: false
+
+about:
+  license: ZPL-2.1
+  license_file: LICENSE.txt
+  summary: defers import to when objects are actually used
+  description: |
+    Often, especially for package modules, you want to import names for
+    convenience, but not actually perform the imports until necessary.
+    The zope.deferredimport package provided facilities for defining
+    names in modules that will be imported from somewhere else when
+    used. You can also cause deprecation warnings to be issued when a
+    variable is used.
+  homepage: https://github.com/zopefoundation/zope.deferredimport
+  repository: https://github.com/zopefoundation/zope.deferredimport
+  documentation: https://zopedeferredimport.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - ChrisBarker-NOAA
+    - daf

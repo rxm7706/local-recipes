@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pre-commit-uv
+  version: "4.3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pre_commit_uv-${{ version }}.tar.gz
+  sha256: 7a46537c0c2cd346dc6f3b6d64c7c45250189d5e3d5a17f626ec3e3b2503bf46
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatch-vcs >=0.4
+    - hatchling >=1.25
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pre-commit >=3.8
+    - python-uv >=0.4.7
+
+tests:
+  - python:
+      imports:
+        - pre_commit_uv
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - uv pip check
+
+about:
+  summary: Run pre-commit with uv
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/tox-dev/pre-commit-uv
+
+extra:
+  recipe-maintainers:
+    - anjos

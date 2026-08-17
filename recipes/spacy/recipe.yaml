@@ -1,0 +1,108 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.8.14"
+
+package:
+  name: spacy
+  version: ${{ version }}
+
+source:
+  url: https://github.com/explosion/spaCy/archive/refs/tags/release-v${{ version }}.tar.gz
+  sha256: ad0ea4e15153de6703a1a77f22c34bdbf105b9362ccde4f4789e02dc9abcb538
+  patches:
+    - patches/0001-skip-beam-density-test.patch
+    # backport https://github.com/explosion/spaCy/pull/13943
+    - patches/0002-match-confection-bounds-between-requirements.txt-and.patch
+
+build:
+  # no cython-blis v1.3.x builds (dependency of newer thinc)
+  number: 0
+  skip: ppc64le
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython >=3.0,<4.0
+    - if: build_platform != target_platform
+      then: numpy
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - setuptools
+    - cython >=3.0,<4.0
+    - cymem >=2.0.2,<2.1.0
+    - preshed >=3.0.2,<3.1.0
+    - murmurhash >=0.28.0,<1.1.0
+    - thinc >=8.3.12,<8.4.0
+    - numpy
+    - pip
+    - wheel
+  run:
+    - python
+    # Our libraries
+    - spacy-legacy >=3.0.11,<3.1.0
+    - spacy-loggers >=1.0.0,<2.0.0
+    - murmurhash >=0.28.0,<1.1.0
+    - confection >=1.1.0,<2.0.0
+    - cymem >=2.0.2,<2.1.0
+    - preshed >=3.0.2,<3.1.0
+    - thinc >=8.3.12,<8.4.0
+    # Not Available on conda-forge, ml_datasets is only in requirements.txt and not setup.cg
+    #- ml_datasets >=0.2.0,<0.3.0
+    - wasabi >=0.9.1,<1.2.0
+    - srsly >=2.5.3,<3.0.0
+    - catalogue >=2.0.6,<2.1.0
+    - typer >=0.3.0,<1.0.0
+    - weasel >=1.0.0,<2.0.0
+    # Third-party dependencies
+    - tqdm >=4.38.0,<5.0.0
+    - requests >=2.13.0,<3.0.0
+    - pydantic >=2.0.0,<3.0.0
+    - jinja2
+    # Official Python utilities
+    - setuptools
+    - packaging >=20.0
+
+tests:
+  - python:
+      imports:
+        - spacy
+      pip_check: false
+  - files:
+      source:
+        - setup.cfg
+    requirements:
+      run:
+        - pytest
+        - pytest-timeout
+        - mock
+        - hypothesis
+    script:
+      - if: not aarch64
+        then: python -m pytest --tb=native --pyargs spacy -k "not (${{ tests_to_skip }})"
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Industrial-strength Natural Language Processing
+  description: |
+    spaCy is a library for advanced natural language processing in Python and
+    Cython.
+  homepage: https://spacy.io/
+  repository: https://github.com/explosion/spaCy
+  documentation: https://spacy.io
+
+extra:
+  recipe-maintainers:
+    - rmax
+    - honnibal
+    - ines
+    - h-vetinari

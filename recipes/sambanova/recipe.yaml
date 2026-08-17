@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.9.1"
+  version: "1.12.0"
 
 package:
   name: sambanova
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/s/sambanova/sambanova-${{ version }}.tar.gz
-  sha256: 481445e9ca983ee50104531a701b951248e2570a4663554e0266ca6f90c36de8
+  sha256: a10bcda886bb372f97ada474494924471452fcd9a1e46e95019efe6e42f39a31
 
 build:
   number: 0

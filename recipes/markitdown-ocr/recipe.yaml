@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.0"
+
+package:
+  name: markitdown-ocr
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/markitdown-ocr/markitdown_ocr-${{ version }}.tar.gz
+  sha256: 431c52842697657db66fd32f5b00e55640089568502228c1c7a974a3fd89f362
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - mammoth ~=1.11.0
+    - markitdown >=0.1.0
+    - openpyxl
+    - pandas
+    - pdfminer-six >=20251230
+    - pdfplumber >=0.11.9
+    - pillow >=9.0.0
+    - pymupdf >=1.24.0
+    - python-docx
+    - python-pptx
+
+tests:
+  - python:
+      imports:
+        - markitdown_ocr
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/markitdown-ocr/
+  license: MIT
+  license_file: LICENSE
+  summary: OCR plugin for MarkItDown - Extracts text from images in PDF, DOCX, PPTX, and XLSX via LLM Vision
+  description: |
+    OCR plugin for MarkItDown - Extracts text from images in PDF, DOCX, PPTX, and XLSX via LLM Vision
+  repository: https://github.com/microsoft/markitdown
+  documentation: https://github.com/microsoft/markitdown#readme
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: markitdown-ocr
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: markitdown-ocr
+  cfe-purls:
+    - pkg:conda/markitdown-ocr@${{ version }}?channel=conda-forge
+    - pkg:pypi/markitdown-ocr@${{ version }}
+  cfe-upstream-repo: https://github.com/microsoft/markitdown
+  cfe-upstream-homepage: https://pypi.org/project/markitdown-ocr/
+  cfe-import-names: [markitdown_ocr]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:37:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:37:03Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

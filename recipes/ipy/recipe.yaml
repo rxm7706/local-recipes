@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ipy
+  version: "1.01"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/IPy-${{ version }}.tar.gz
+  sha256: edeca741dea2d54aca568fa23740288c3fe86c0f3ea700344571e9ef14a7cc1a
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - IPy
+      python_version: ["${{ python_min }}.*", "3.*"]
+      pip_check: true
+
+about:
+  summary: Class and tools for handling of IPv4 and IPv6 addresses and networks
+  license: BSD-3-Clause
+  license_file: COPYING
+  homepage: https://github.com/autocracy/python-ipy
+  repository: https://github.com/autocracy/python-ipy
+
+extra:
+  recipe-maintainers:
+    - beenje

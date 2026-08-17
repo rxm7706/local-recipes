@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.0"
+
+package:
+  name: pyworkbench
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pyworkbench/pyworkbench-${{ version }}.tar.gz
+  sha256: dfdec08ea37eafae27df39b95389bc950a6666b48fff1334676df87e6cb1b007
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - deta >=1.2.0
+    - uvicorn >=0.23.2
+    - fastapi >=0.103.2
+    - attrs >=23.1.0
+    - rich >=13.6.0
+    - pyjwt >=2.8.0
+
+tests:
+  - python:
+      imports:
+        - pyworkbench
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/ricardoleal20/personal_interface/
+  license: MIT
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+  description: |
+    REPLACE_DESCRIPTION
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyworkbench
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyworkbench
+  cfe-purls:
+    - pkg:conda/pyworkbench@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyworkbench@${{ version }}
+  cfe-upstream-repo: https://github.com/ricardoleal20/personal_interface/
+  cfe-upstream-homepage: https://github.com/ricardoleal20/personal_interface/
+  cfe-import-names: [pyworkbench]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:14:49Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:14:49Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

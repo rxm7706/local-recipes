@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "153.0.8009.0.0"
+  chromedriver_version: ${{ (version | split("."))[0:4] | join(".") }}
+  python_check_max: "3.14"
+
+package:
+  name: python-chromedriver-binary
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/danielkaiser/python-chromedriver-binary/archive/v${{ version }}.tar.gz
+    sha256: eec15f781b9a72477ed8420989d0e4d12d0d75e3a42963c38f895b80b2c303f6
+  - if: target_platform == "linux-64"
+    then:
+      url: https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/${{ chromedriver_version }}/linux64/chromedriver-linux64.zip
+      sha256: 53f9feca77901043f850b003e0168eba8fe53210f62265275b4cb3ffb214442c
+  - if: target_platform == "osx-64"
+    then:
+      url: https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/${{ chromedriver_version }}/mac-x64/chromedriver-mac-x64.zip
+      sha256: 7b896dce62308174860fdf95d8defb806690fafa6486575f17a0c90f39bbb4e7
+  - if: target_platform == "osx-arm64"
+    then:
+      url: https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/${{ chromedriver_version }}/mac-arm64/chromedriver-mac-arm64.zip
+      sha256: 98dce9bfbb45669e95c7bf9272e6f897d094fe361733fdb63d704dc8e33a1a42
+  - if: target_platform == "win-64"
+    then:
+      url: https://edgedl.me.gvt1.com/edgedl/chrome/chrome-for-testing/${{ chromedriver_version }}/win32/chromedriver-win32.zip
+      sha256: e1d16a042f589203c104f01d5cf01eaea5ee29a9f46a213d2c34b052bb37298c
+
+build:
+  number: 0
+  dynamic_linking:
+    binary_relocation: ${{ not osx }}
+  python:
+    version_independent: true
+    entry_points:
+      - chromedriver-path = chromedriver_binary.utils:print_chromedriver_path
+  script:
+    - if: not win
+      then:
+        - chmod +x chromedriver
+      else:
+        # see https://conda-forge.zulipchat.com/#narrow/channel/457337-general/topic/.60pip.20install.60.20failing.20on.20Windows.20today/with/603912616
+        - set PIP_USE_DEPRECATED=legacy-certs
+        - set PYTHONHASHSEED=0
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports: chromedriver_binary
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      file: run_test.py
+
+about:
+  homepage: https://pypi.org/project/chromedriver-binary
+  repository: https://github.com/danielkaiser/python-chromedriver-binary
+  license: MIT
+  license_file:
+    - LICENSE
+    - LICENSE.chromedriver
+    - THIRD_PARTY_NOTICES.chromedriver
+  summary: Downloads and installs the chromedriver binary version
+  description: |
+    Downloads and installs the chromedriver binary for automated
+    testing of webapps. The installer supports Linux, MacOS and Windows
+    operating systems.
+
+extra:
+  recipe-maintainers:
+    - williamjamir
+    - bollwyvl

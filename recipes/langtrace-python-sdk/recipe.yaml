@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.8.21"
+
+package:
+  name: langtrace-python-sdk
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/langtrace-python-sdk/langtrace_python_sdk-${{ version }}.tar.gz
+  sha256: f35726453c8e35bdd87b8c5dce58b2477658eac5fa1d5dadd25726c0afbc1b51
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - boto3 ==1.38.0
+    - colorama >=0.4.6
+    - deprecated ==1.2.18
+    - fsspec >=2024.6.0
+    - opentelemetry-api >=1.25.0
+    - opentelemetry-exporter-otlp-proto-grpc >=1.25.0
+    - opentelemetry-exporter-otlp-proto-http >=1.25.0
+    - opentelemetry-instrumentation-sqlalchemy >=0.46b0
+    - opentelemetry-instrumentation >=0.47b0
+    - opentelemetry-sdk >=1.25.0
+    - sentry-sdk >=2.14.0
+    - setuptools
+    - sqlalchemy
+    - tiktoken >=0.1.1
+    - trace-attributes ==7.2.1
+    - transformers >=4.11.3
+    - ujson >=5.10.0
+
+tests:
+  - python:
+      imports:
+        - langtrace_python_sdk
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/Scale3-Labs/langtrace-python-sdk
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python SDK for LangTrace
+  description: |
+    Python SDK for LangTrace
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langtrace-python-sdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langtrace-python-sdk
+  cfe-purls:
+    - pkg:conda/langtrace-python-sdk@${{ version }}?channel=conda-forge
+    - pkg:pypi/langtrace-python-sdk@${{ version }}
+  cfe-upstream-repo: https://github.com/Scale3-Labs/langtrace-python-sdk
+  cfe-upstream-homepage: https://github.com/Scale3-Labs/langtrace-python-sdk
+  cfe-import-names: [langtrace_python_sdk]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:42:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:42:17Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

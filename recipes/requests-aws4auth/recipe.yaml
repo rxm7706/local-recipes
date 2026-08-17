@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: requests-aws4auth
+  version: "1.1.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: c0883346ce30b5018903a67da88df72f73ff06e1a320845bba9cd85e811ba0ba
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - python >=3.6
+    - requests
+
+tests:
+  - python:
+      imports:
+        - requests_aws4auth
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: AWS4 authentication for Requests
+  homepage: https://github.com/sam-washington/requests-aws4auth
+  repository: https://github.com/sam-washington/requests-aws4auth
+  documentation: https://pypi.org/project/requests-aws4auth/
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - oblute
+    - benhuff
+    - mwilson8

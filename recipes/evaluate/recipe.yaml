@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: evaluate
+  version: "0.4.6"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/evaluate-${{ version }}.tar.gz
+  sha256: e07036ca12b3c24331f83ab787f21cc2dbf3631813a1631e63e40897c69a3f21
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - evaluate-cli=evaluate.commands.evaluate_cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - datasets >=2.0.0
+    - numpy >=1.17
+    - dill
+    - pandas
+    - requests >=2.19.0
+    - tqdm >=4.62.1
+    - python-xxhash
+    - multiprocess
+    - fsspec >=2021.05.0
+    - huggingface_hub >=0.7.0
+    - packaging
+    # template deps
+    - cookiecutter
+    - gradio >=3.0.0
+    # evaluator deps
+    - transformers
+    - scipy >=1.7.1
+
+tests:
+  - python:
+      imports:
+        - evaluate
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - evaluate-cli --help
+
+about:
+  summary: HuggingFace community-driven open-source library of evaluation
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/huggingface/evaluate
+
+extra:
+  recipe-maintainers:
+    - wietsedv
+    - hadim

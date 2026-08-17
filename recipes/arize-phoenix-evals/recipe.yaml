@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: arize-phoenix-evals
+  version: "3.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/arize_phoenix_evals-${{ version }}.tar.gz
+  sha256: 27ba75f71d35ab95baee200b70b8f39db045db9067f45cdbc2dbdf02ecc971d1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<3.12
+    - pandas
+    - tqdm
+    - typing-extensions >=4.5,<5
+    - pystache
+    - pydantic
+    - jsonpath-ng
+    - openinference-semantic-conventions
+    - openinference-instrumentation
+    - opentelemetry-api
+
+tests:
+  - python:
+      imports:
+        - phoenix.evals
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: LLM Evaluations
+  license: Elastic-2.0
+  license_file: LICENSE
+  homepage: https://github.com/Arize-ai/phoenix/
+
+extra:
+  recipe-maintainers:
+    - anticorrelator
+    - axiomofjoy
+    - michaelschiff
+    - mikeldking
+    - RogerHYang

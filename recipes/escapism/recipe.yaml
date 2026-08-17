@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.0"
+
+package:
+  name: escapism
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/e/escapism/escapism-${{ version }}.tar.gz
+  sha256: add130e48a85bb1aaea3e74fb031f5033c7055aedb39a3265f923d5f40c3f974
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - escapism
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Simple, generic API for escaping strings
+  homepage: https://github.com/minrk/escapism
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

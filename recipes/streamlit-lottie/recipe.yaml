@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.5"
+
+package:
+  name: streamlit-lottie
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/streamlit-lottie/streamlit-lottie-${{ version }}.tar.gz
+  sha256: c61589fb92bdf1dd5bd0a2ea75315d92e3383f46059b3704515d096a1e953d79
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - streamlit
+
+tests:
+  - python:
+      imports:
+        - streamlit_lottie
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/andfanilo/streamlit-lottie
+  license: MIT
+  license_file: LICENSE
+  summary: A Streamlit custom component to load Lottie animations
+  description: |
+    A Streamlit custom component to load Lottie animations
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: streamlit-lottie
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: streamlit-lottie
+  cfe-purls:
+    - pkg:conda/streamlit-lottie@${{ version }}?channel=conda-forge
+    - pkg:pypi/streamlit-lottie@${{ version }}
+  cfe-upstream-repo: https://github.com/andfanilo/streamlit-lottie
+  cfe-upstream-homepage: https://github.com/andfanilo/streamlit-lottie
+  cfe-import-names: [streamlit_lottie]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:39:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:39:05Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

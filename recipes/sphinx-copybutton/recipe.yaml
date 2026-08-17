@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.2"
+
+package:
+  name: sphinx-copybutton
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sphinx-copybutton/sphinx-copybutton-${{ version }}.tar.gz
+  sha256: 4cf17c82fb9646d1bc9ca92ac280813a3b605d8c421225fd9913154103ee1fbd
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - sphinx >=1.8
+
+tests:
+  - python:
+      imports:
+        - sphinx_copybutton
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A small sphinx extension to add a "copy" button to code blocks.
+  homepage: https://github.com/executablebooks/sphinx-copybutton
+
+extra:
+  recipe-maintainers:
+    - conda-forge/sphinx
+    - hmaarrfk
+    - choldgraf

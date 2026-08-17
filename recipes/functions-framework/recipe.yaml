@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: functions-framework
+  version: "3.10.2"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/functions_framework-${{ version }}.tar.gz
+  sha256: a92f72fc35ead71753090787181ab96a869e609baab0ac3f1ef3a0fddfd20d48
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - ff = functions_framework._cli:_cli
+      - functions-framework = functions_framework._cli:_cli
+      - functions_framework = functions_framework._cli:_cli
+      - functions-framework-python = functions_framework._cli:_cli
+      - functions_framework_python = functions_framework._cli:_cli
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=61.0.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - flask >=2.0,<4.0
+    - click >=7.0,<9.0
+    - watchdog >=1.0.0
+    - if: unix
+      then: gunicorn >=22.0.0
+    - cloudevents >=1.12.0,<=1.12.0
+    - werkzeug >=0.14,<4.0.0
+    - if: unix
+      then: __unix
+    - if: win
+      then: __win
+    - httpx >=0.24.1
+    - starlette >=1.0.1,<2.0.0
+    - uvicorn >=0.18.0,<1.0.0
+    - uvicorn-worker >=0.2.0,<1.0.0
+    - werkzeug >=0.14,<4.0.0
+
+tests:
+  - python:
+      imports:
+        - functions_framework
+        - google
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+    script:
+      - ff --help
+      - functions-framework --help
+      - functions_framework --help
+      - functions-framework-python --help
+      - functions_framework_python --help
+
+about:
+  summary: An open source FaaS (Function as a service) framework for writing portable Python functions -- brought to you by the Google Cloud Functions team.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/googlecloudplatform/functions-framework-python
+
+extra:
+  recipe-maintainers:
+    - sarthakpati

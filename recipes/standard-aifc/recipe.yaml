@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: standard-aifc
+  version: "3.13.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/standard_aifc-${{ version }}.tar.gz
+  sha256: 64e249c7cb4b3daf2fdba4e95721f811bde8bdfc43ad9f936589b7bb2fae2e43
+
+build:
+  number: 3
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: setuptools >=61.0
+  host:
+    - python
+    - setuptools >=61.0
+    - pip
+  run:
+    - python
+    - if: match(python, ">=3.13")
+      then: audioop-lts
+    - if: match(python, ">=3.13")
+      then: standard-chunk
+
+tests:
+  - python:
+      imports:
+        - aifc
+      pip_check: true
+
+about:
+  summary: Standard library aifc redistribution. "dead battery".
+  license: BSD-4-Clause
+  license_file: LICENSE
+  homepage: https://github.com/youknowone/python-deadlib
+
+extra:
+  recipe-maintainers:
+    - bmcfee

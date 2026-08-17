@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyvis
+  version: "0.3.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/WestHealth/pyvis/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: ff947e224d9825e4b0f3d6710075945c5c8d13bf60aa54e6396c996f34851a3a
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - ipython >=5.3.0
+    - jinja2 >=2.9.6
+    - jsonpickle >=1.4.1
+    - networkx >=1.11
+
+tests:
+  - python:
+      imports:
+        - pyvis
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE_BSD.txt
+  summary: A Python network visualization library
+  homepage: https://github.com/WestHealth/pyvis
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

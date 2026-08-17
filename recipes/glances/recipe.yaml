@@ -1,0 +1,106 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.5.6"
+  python_min: "3.10"
+
+recipe:
+  name: glances-suite
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/glances/glances-${{ version }}.tar.gz
+  sha256: 8a26329f0a25e878d53c2558f1eb0615b09acc1dce2ba523cab32dbe175fe8bf
+  file_name: glances-${{ version }}.tar.gz
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: glances
+    build:
+      noarch: python
+      script: python -m pip install . -vv --no-deps --no-build-isolation
+      python:
+        entry_points:
+          - glances = glances:main
+    requirements:
+      host:
+        - python 3.10.*
+        - pip
+        - setuptools
+      run:
+        - python >=${{ python_min }}
+        - psutil >=5.6.7
+        - defusedxml
+        - packaging
+        - jinja2
+        - pyinstrument >=5.1.2
+        - shtab
+    tests:
+      - python:
+          imports:
+            - glances
+          pip_check: true
+          python_version: ${{ python_min }}
+      - requirements:
+          run:
+            - pip
+            - python ${{ python_min }}
+        script:
+          - glances --help
+  - package:
+      name: glances-web
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('glances', exact=True) }}
+        - fastapi >=0.82.0
+        - python-jose >=3.3.0
+        - requests
+        - uvicorn
+    tests:
+      - python:
+          imports:
+            - glances
+          pip_check: false
+          python_version: ${{ python_min }}
+      - requirements:
+          run:
+            - python ${{ python_min }}
+        script:
+          - python -c "import fastapi; import jose; import uvicorn"
+  - package:
+      name: glances-gpu
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('glances', exact=True) }}
+        - nvidia-ml-py
+    tests:
+      - python:
+          imports:
+            - glances
+          pip_check: false
+          python_version: ${{ python_min }}
+      - requirements:
+          run:
+            - python ${{ python_min }}
+        script:
+          - python -c "import pynvml"
+
+about:
+  license: LGPL-3.0-or-later
+  license_file: COPYING
+  summary: A cross-platform curses-based monitoring tool
+  homepage: https://github.com/nicolargo/glances
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - ConorForgie
+    - gabrielcnr

@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: language_tool_python
+  version: "2.5.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/jxmorris12/${{ name }}/archive/${{ version }}.tar.gz
+  sha256: f36b1617e89c5092a5565512dfa2eeada5ed23a4317a2f47fa39f73498fd57bc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python
+  run:
+    - requests
+    - tqdm
+    - python
+
+tests:
+  - python:
+      imports:
+        - language_tool_python
+      pip_check: false
+
+about:
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: a grammar checker for Python
+  homepage: https://github.com/jxmorris12/language_tool_python
+  repository: https://github.com/jxmorris12/language_tool_python
+  documentation: https://pypi.org/project/language-tool-python/
+
+extra:
+  recipe-maintainers:
+    - rluria14
+    - oblute
+    - ndmaxar

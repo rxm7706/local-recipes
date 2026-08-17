@@ -1,0 +1,112 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3.3"
+  maturin_min: "1.0"
+  maturin_max: "2.0"
+  python_check_max: "3.14"
+  abi3_bin: ${{ "abi3.so" if unix else "pyd" }}
+
+package:
+  name: delta-kernel-rust-sharing-wrapper
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/d/delta-kernel-rust-sharing-wrapper/delta_kernel_rust_sharing_wrapper-${{ version }}.tar.gz
+    sha256: 1ce82f9d18c66faaacca7f7a9a77b5210255a4d5bc6d61b8410f6bd5a9f37623
+  - url: https://raw.githubusercontent.com/delta-io/delta-sharing/refs/heads/main/LICENSE.txt
+    sha256: 5a2ae634be68464e407b80dbece9d8d822926c9b2cbdb1e801f5d27929589802
+
+build:
+  number: 0
+  skip: is_abi3 and not is_python_min
+  python:
+    version_independent: ${{ is_abi3 }}
+  script:
+    env:
+      CARGO_PROFILE_RELEASE_LTO: fat
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO: cargo-auditable-wrapper${{ ".bat" if win }}
+      PYTHONIOENCODING: utf-8
+      PYTHONLEGACYTEXTENCODING: utf-8
+      OPENSSL_DIR: ${{ "$PREFIX" if unix else "%LIBRARY_PREFIX%" }}
+    content:
+      - if: win
+        then:
+          - set CARGO_HOME=c:\.cg
+          - copy "%RECIPE_DIR%\cargo-auditable-wrapper.bat" "%BUILD_PREFIX%\Library\bin\cargo-auditable-wrapper.bat"
+        else:
+          - cp "${RECIPE_DIR}/cargo-auditable-wrapper.sh" "${BUILD_PREFIX}/bin/cargo-auditable-wrapper"
+          - chmod 755 "${BUILD_PREFIX}/bin/cargo-auditable-wrapper"
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+      - cargo-bundle-licenses --format=yaml --output=THIRDPARTY.yml
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("rust") }}
+    - ${{ stdlib("c") }}
+    - cargo-bundle-licenses
+    - cargo-auditable
+    - make
+    - if: win
+      then:
+        - perl
+  host:
+    - maturin >=${{ maturin_min }},<${{ maturin_max }}
+    - openssl
+    - pip
+    - python
+    - if: is_abi3
+      then:
+        - python-abi3
+        - python ${{ python_min }}.*
+  run:
+    - if: is_abi3
+      then:
+        - python >=${{ python_min }}
+      else:
+        - python
+  ignore_run_exports:
+    by_name:
+      - if: is_abi3
+        then:
+          - python_abi
+
+tests:
+  - if: is_abi3
+    then:
+      - python:
+          imports: delta_kernel_rust_sharing_wrapper
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    else:
+      - python:
+          imports: delta_kernel_rust_sharing_wrapper
+          pip_check: true
+  - requirements:
+      run:
+        - if: is_abi3
+          then:
+            - abi3audit
+            - python ${{ python_check_max }}.*
+    script:
+      - python -c "from importlib.metadata import version; assert version('delta-kernel-rust-sharing-wrapper') == '${{ version }}'"
+      - if: is_abi3
+        then:
+          - cd "${{ '$SP_DIR' if unix else '%SP_DIR%' }}" && cd delta_kernel_rust_sharing_wrapper
+          - abi3audit -s -v --assume-minimum-abi3 ${{ python_min }} delta_kernel_rust_sharing_wrapper.${{ abi3_bin }}
+
+about:
+  homepage: https://pypi.org/project/delta-kernel-rust-sharing-wrapper
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  summary: This adds a thin python bindings via maturin and pyo3 for delta-kernel-rust.
+  repository: https://github.com/delta-io/delta-sharing/tree/main/python/delta-kernel-rust-sharing-wrapper
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

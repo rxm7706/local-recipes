@@ -1,0 +1,106 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.0.0"
+  python_min: "3.11"
+
+package:
+  name: neutron-lib
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/neutron-lib/neutron_lib-${{ version }}.tar.gz
+  sha256: 969082c8838579643ff9267d6995d1aafd4c1e68f142c9a5764e5d84846f926b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - pbr >=6.1.1
+  run:
+    - python >=${{ python_min }}
+    - pbr >=4.0.0
+    - sqlalchemy >=1.2.0
+    - pecan >=1.0.0
+    - keystoneauth1 >=3.14.0
+    - netaddr >=0.7.18
+    - stevedore >=5.6.0
+    - os-ken >=0.3.0
+    - oslo.concurrency >=3.26.0
+    - oslo.config >=8.0.0
+    - oslo.context >=2.22.0
+    - oslo.db >=12.1.0
+    - oslo.i18n >=3.20.0
+    - oslo.log >=4.3.0
+    - oslo.messaging >=14.2.0
+    - oslo.policy >=6.0.0
+    - oslo.serialization >=2.25.0
+    - oslo.service >=1.24.0
+    - oslo.utils >=7.0.0
+    - oslo.versionedobjects >=1.31.2
+    - osprofiler >=1.4.0
+    - setproctitle >=1.1.10
+    - webob >=1.7.1
+    - os-traits >=0.9.0
+    - debtcollector >=3.0.0
+
+tests:
+  - python:
+      imports:
+        - neutron_lib
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/neutron-lib/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Neutron shared routines and utilities
+  description: |
+    Neutron shared routines and utilities
+  repository: https://opendev.org/openstack/neutron-lib
+  documentation: https://docs.openstack.org/neutron-lib
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: neutron-lib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: neutron-lib
+  cfe-purls:
+    - pkg:conda/neutron-lib@${{ version }}?channel=conda-forge
+    - pkg:pypi/neutron-lib@${{ version }}
+  cfe-upstream-repo: https://opendev.org/openstack/neutron-lib
+  cfe-upstream-homepage: https://pypi.org/project/neutron-lib/
+  cfe-import-names: [neutron_lib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:33:06Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:33:06Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

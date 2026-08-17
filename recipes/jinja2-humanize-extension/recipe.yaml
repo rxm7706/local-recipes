@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jinja2-humanize-extension
+  version: "0.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jinja2_humanize_extension-${{ version }}.tar.gz
+  sha256: e7d69b1c20f32815bbec722330ee8af14b1287bb1c2b0afa590dbf031cadeaa0
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - jinja2
+    - humanize >=3.14.0
+
+tests:
+  - python:
+      imports:
+        - jinja2_humanize_extension
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: a jinja2 extension to use humanize library inside jinja2 templates
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/metwork-framework/jinja2_humanize_extension
+
+extra:
+  recipe-maintainers:
+    - peterbygrave

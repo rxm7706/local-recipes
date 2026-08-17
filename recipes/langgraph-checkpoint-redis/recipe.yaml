@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.1"
+
+package:
+  name: langgraph-checkpoint-redis
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/langgraph-checkpoint-redis/langgraph_checkpoint_redis-${{ version }}.tar.gz
+  sha256: ea3696f7b78ec8380949961cd9b9767c373437ec0c6fcc56dfbab3bde4d78ff4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=1.0.0
+  run:
+    - python >=${{ python_min }}
+    - langgraph-checkpoint <5.0.0,>=4.1.1
+    - orjson <4.0.0,>=3.9.0
+    - redis-py >=5.2.1
+    - redisvl <1.0.0,>=0.15.0
+    - tomli <3.0.0,>=2.0.1
+
+tests:
+  - python:
+      imports:
+        - langgraph.middleware
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://www.github.com/redis-developer/langgraph-redis
+  license: MIT
+  license_file: LICENSE
+  summary: Redis implementation of the LangGraph agent checkpoint saver and store.
+  description: |
+    Redis implementation of the LangGraph agent checkpoint saver and store.
+  repository: https://www.github.com/redis-developer/langgraph-redis
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langgraph-checkpoint-redis
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langgraph-checkpoint-redis
+  cfe-purls:
+    - pkg:conda/langgraph-checkpoint-redis@${{ version }}?channel=conda-forge
+    - pkg:pypi/langgraph-checkpoint-redis@${{ version }}
+  cfe-upstream-repo: https://www.github.com/redis-developer/langgraph-redis
+  cfe-upstream-homepage: https://www.github.com/redis-developer/langgraph-redis
+  cfe-import-names: [langgraph.middleware]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:51:01Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:51:01Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.9.0"
+
+package:
+  name: sleef
+  version: ${{ version }}
+
+source:
+  url: https://github.com/shibatch/sleef/archive/${{ version }}.tar.gz
+  sha256: af60856abac08a3b5e72a8d156dd71fec1f7ac23de8ee67793f45f9edcdf0908
+
+build:
+  number: 0
+  skip: win and vc<14
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+    - cmake
+    - if: unix
+      then: ninja
+    - if: osx
+      then: llvm-openmp
+    - if: linux
+      then: libgomp
+  host:
+    - openssl
+    - if: osx
+      then: llvm-openmp
+  run_exports:
+    - ${{ pin_subpackage('sleef', upper_bound='x') }}
+  ignore_run_exports:
+    from_package:
+      - openssl
+
+tests:
+  - script:
+      - if: unix
+        then: test -f $PREFIX/include/sleef.h
+      - if: unix
+        then: test -f $PREFIX/lib/libsleef${SHLIB_EXT}
+      - if: linux
+        then: test -f $PREFIX/lib/libsleefquad${SHLIB_EXT}
+      - if: linux
+        then: test -f $PREFIX/include/sleefquad.h
+      - if: win
+        then: if not exist %PREFIX%\\Library\\include\\sleef.h exit 1
+      - if: win
+        then: if not exist %PREFIX%\\Library\\include\\sleefquad.h exit 1
+
+about:
+  license: BSL-1.0
+  license_file: LICENSE.txt
+  summary: SIMD library for evaluating elementary functions
+  homepage: https://sleef.org/
+
+extra:
+  recipe-maintainers:
+    - bluescarni

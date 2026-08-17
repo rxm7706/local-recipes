@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.2"
+
+package:
+  name: expiring-dict
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/e/expiring-dict/expiring_dict-${{ version }}.tar.gz
+  sha256: ca8cb802304eae5b33a23ec4c19019b610adfda50cbc4c9bfa3ad5c2cd387631
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - sortedcontainers
+
+tests:
+  - python:
+      imports:
+        - expiring_dict
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/dparker2/py-expiring-dict
+  license: MIT
+  license_file: LICENSE
+  summary: Python dict with TTL support for auto-expiring caches
+  description: |
+    Python dict with TTL support for auto-expiring caches
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: expiring-dict
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: expiring-dict
+  cfe-purls:
+    - pkg:conda/expiring-dict@${{ version }}?channel=conda-forge
+    - pkg:pypi/expiring-dict@${{ version }}
+  cfe-upstream-repo: https://github.com/dparker2/py-expiring-dict
+  cfe-upstream-homepage: https://github.com/dparker2/py-expiring-dict
+  cfe-import-names: [expiring_dict]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:48:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:48:19Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

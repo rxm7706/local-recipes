@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: elevenlabs
+  version: "2.64.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/elevenlabs-${{ version }}.tar.gz
+  sha256: 97cab1d3b84019a08f0e52fa00c8ed38dae9276e4209745be929cb3f6d830426
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - httpx >=0.21.2
+    - pydantic >=1.9.2
+    - pydantic-core >=2.18.2
+    - requests >=2.20
+    - typing_extensions >=4.0.0
+    - websockets >=13.0
+  run_constraints:
+    - pyaudio >=0.2.14
+
+tests:
+  - python:
+      imports:
+        - elevenlabs
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  homepage: https://elevenlabs.io/docs/api-reference/introduction
+  repository: https://github.com/elevenlabs/elevenlabs-python
+  summary: The official Python SDK for ElevenLabs.
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - xhochy

@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ttp
+  version: "0.9.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/ttp-${{ version }}.tar.gz
+  sha256: 234414f4d3039d2d1cde09993f89f8db1b34d447f76c6a402555cefac2e59c4e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - ttp = ttp.ttp:cli_tool
+
+requirements:
+  host:
+    - python >=3.7,<4.0
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=3.7,<4.0
+
+tests:
+  - python:
+      imports:
+        - ttp
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - ttp --help
+
+about:
+  summary: Template Text Parser
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/dmulyalin/ttp
+
+extra:
+  recipe-maintainers:
+    - cousinbr

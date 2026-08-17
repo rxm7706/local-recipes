@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.21.0"
+
+package:
+  name: libucx-cu13
+  version: ${{ version }}
+
+source:
+  url: https://github.com/openucx/ucx/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 55afc43ae6006b226e570bcc9a80a028785aa5d77bc9c4b68d4f9ae60eada1a9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - libucx_cu13
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/openucx/ucx
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: The Unified Communication X library (UCX)
+  description: |
+    The Unified Communication X library (UCX)
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: libucx-cu13
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: libucx-cu13
+  cfe-purls:
+    - pkg:conda/libucx-cu13@${{ version }}?channel=conda-forge
+    - pkg:pypi/libucx-cu13@${{ version }}
+  cfe-upstream-repo: https://github.com/openucx/ucx
+  cfe-upstream-homepage: https://github.com/openucx/ucx
+  cfe-import-names: []
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:02:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:02:32Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -2,57 +2,57 @@
 schema_version: 1
 
 context:
+  name: okta-jwt-verifier
   version: "0.5.0"
 
 package:
-  name: okta-jwt-verifier
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/o/okta-jwt-verifier/okta_jwt_verifier-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/okta_jwt_verifier-${{ version }}.tar.gz
   sha256: 4fe6e4f4ffff6c03b6b63a7709b879bdaf57025ae1dcc06ea2f32dd4a07963df
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    - if: unix
+      then: cp -R ${{ RECIPE_DIR }}/LONG_DESCRIPTION.md ${{ SRC_DIR }}/LONG_DESCRIPTION.md
+    - if: win
+      then: echo f | xcopy /f /y /S %RECIPE_DIR%\LONG_DESCRIPTION.md %SRC_DIR%\LONG_DESCRIPTION.md
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - poetry-core
   run:
+    - requests
     - python >=${{ python_min }}
     - pyjwt >=2.8.0,<3.0.0
     - acachecontrol >=0.3.6,<0.4.0
-    - retry
-    - requests
+    - retry  # upstream wants retry2 (a fork, not on conda-forge); retry is the original w/ the same `retry` import. TODO: switch to retry2 once packaged
 
 tests:
   - python:
       imports:
         - okta_jwt_verifier
       pip_check: false
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
-  - script:
-      - python -c "assert __import__('okta_jwt_verifier').__version__ == '${{ version }}'"
-    requirements:
+      python_version: ${{ python_min }}
+  - requirements:
       run:
-        - python ${{ python_min }}.*
+        - pip
+        - python ${{ python_min }}
+    script:
+      - python -c "assert __import__('okta_jwt_verifier').__version__ == '${{ version }}'"
 
 about:
-  summary: A Python library for OKTA JWT tokens validation
+  summary: Okta JWT Verifier
   license: Apache-2.0
   license_file: LICENSE.md
   homepage: https://github.com/okta/okta-jwt-verifier-python
-  repository: https://github.com/okta/okta-jwt-verifier-python
-  description: |
-    Okta JWT Verifier for Python — verifies Okta-issued JWT access and ID
-    tokens locally (signature, claims, and expiry) without a network
-    round-trip per request.
 
 extra:
   recipe-maintainers:

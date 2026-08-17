@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: pixitainer
-  version: "0.8.2"
+  version: "0.8.3"
 
 recipe:
   name: ${{ name }}
@@ -11,16 +11,14 @@ recipe:
 
 source:
   url: https://github.com/RaphaelRibes/pixitainer/archive/refs/tags/v${{ version }}.tar.gz
-  sha256: 5745b6eb3b34ae7f13687dbcc980377a7628968b1f7a931acb723b569894fde7
+  sha256: f0a6878084728073926e40b319f7bd463618ccb9f27196463e042bab067c8b22
 
 build:
   number: 0
   # Both outputs depend on Linux-only runtimes (apptainer for the SIF
   # variant, docker-cli for the docker variant — neither has osx-* or
   # win-* conda-forge builds). __linux runtime constraint already prevents
-  # install on non-Linux; this skip prevents the staged-recipes CI from
-  # even attempting build + test on osx + win (the test stage would fail
-  # to resolve __linux otherwise — staged-recipes#33454 buildId 1525840).
+  # install on non-Linux; 
   skip: not linux
 
 outputs:
@@ -63,41 +61,7 @@ outputs:
 
   # New in 0.8.2: upstream split the Singularity path out of the apptainer
   # CLI into its own pixi-containerize-singularity entry point, backed by the
-  # `singularity` runtime instead of `apptainer`.
-  - package:
-      name: ${{ name }}-singularity
-    build:
-      noarch: generic
-      script:
-        - mkdir -p $PREFIX/bin
-        - mkdir -p $PREFIX/opt/pixitainer
-        - cp lib/common.sh $PREFIX/opt/pixitainer/common.sh
-        - cp lib/sif.sh $PREFIX/opt/pixitainer/sif.sh
-        - cp lib/bootstrap.sh $PREFIX/opt/pixitainer/bootstrap.sh
-        - cp lib/tool.sh $PREFIX/opt/pixitainer/tool.sh
-        - cp pixi-containerize-singularity $PREFIX/bin/pixi-containerize-singularity
-        - chmod +x $PREFIX/bin/pixi-containerize-singularity
-    requirements:
-      run:
-        - __linux
-        - singularity >=3.0.0
-        - bash
-    tests:
-      - script:
-          - test -x ${PREFIX}/bin/pixi-containerize-singularity
-          - test -f ${PREFIX}/opt/pixitainer/common.sh
-          - test -f ${PREFIX}/opt/pixitainer/sif.sh
-          - test -f ${PREFIX}/opt/pixitainer/bootstrap.sh
-          - test -f ${PREFIX}/opt/pixitainer/tool.sh
-          - pixi-containerize-singularity --help
-    about:
-      summary: Containerize Pixi workspaces into Singularity images with a single command
-      description: |
-        `pixitainer-singularity` is the Singularity-backed sibling of
-        `pixitainer`. It wraps the `singularity` runtime to build images from
-        a `pixi.toml` workspace with a single command, handling bootstrap,
-        build, and metadata so reproducible-research pipelines can be shipped
-        as portable images without hand-writing a definition file.
+  # `singularity` runtime instead of `apptainer`. TBD later
 
   - package:
       name: ${{ name }}-docker
@@ -148,6 +112,4 @@ about:
 
 extra:
   recipe-maintainers:
-    - RaphaelRibes
-    - ruben-arts
     - rxm7706

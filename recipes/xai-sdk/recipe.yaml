@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.18.0"
+
+package:
+  name: xai-sdk
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/x/xai-sdk/xai_sdk-${{ version }}.tar.gz
+  sha256: e3a8f58f37675cc154906fd78be7d26dd9215e5602ee3c40c1d2a03fb589bbaf
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+    - hatch-fancy-pypi-readme
+  run:
+    - python >=${{ python_min }}
+    - aiohttp <4,>=3.8.6
+    - googleapis-common-protos <2,>=1.65.0
+    - grpcio <2,>=1.72.1
+    - opentelemetry-sdk <2,>=1.36.0
+    - packaging <26,>=25.0
+    - protobuf <7,>=5.29.4
+    - pydantic <3,>=2.5.3
+    - requests <3,>=2.31.0
+
+tests:
+  - python:
+      imports:
+        - xai_sdk
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/xai-org/xai-sdk-python
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: The official Python SDK for the xAI API
+  description: |
+    The official Python SDK for the xAI API
+  repository: https://github.com/xai-org/xai-sdk-python
+  documentation: https://docs.x.ai
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: xai-sdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: xai-sdk
+  cfe-purls:
+    - pkg:conda/xai-sdk@${{ version }}?channel=conda-forge
+    - pkg:pypi/xai-sdk@${{ version }}
+  cfe-upstream-repo: https://github.com/xai-org/xai-sdk-python
+  cfe-upstream-homepage: https://github.com/xai-org/xai-sdk-python
+  cfe-import-names: [xai_sdk]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:01:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:01:43Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

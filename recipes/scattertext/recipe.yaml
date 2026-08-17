@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: scattertext
+  version: "0.1.10"
+  sha256: dd283a69c5aa6a4a04927bfb30343cd7db51a8885314abadc6622b5a638a094e
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - scattertext = scattertext.CLI:main
+
+requirements:
+  host:
+    - python >=3.4
+    - pip
+  run:
+    - python >=3.4
+    - numpy
+    - scipy
+    - scikit-learn
+    - pandas
+    - statsmodels
+    - flashtext
+    - gensim >=4.0
+    - spacy >=3.2
+
+tests:
+  - python:
+      imports:
+        - scattertext
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - scattertext -h
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Beautiful visualizations of how language differs among document types
+  description: |
+    A tool for finding distinguishing terms in small-to-medium-sized corpora, and presenting them in a sexy,
+    interactive scatter plot with non-overlapping term labels. Exploratory data analysis just got more fun.
+  homepage: https://github.com/JasonKessler/scattertext
+  repository: https://github.com/JasonKessler/scattertext
+
+extra:
+  recipe-maintainers:
+    - synapticarbors
+    - JasonKessler

@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.7.1"
+
+package:
+  name: flowmaster
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/FlowMaster/FlowMaster-${{ version }}.tar.gz
+  sha256: fc2fa6892f710e5f5dcbd9ce2f1181d4134a14e47fba879a5c2ed1bf051e9265
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - flowmaster
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/pavelmaksimov/flowmaster
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: ETL flow framework based on Yaml configs in Python
+  description: |
+    ETL flow framework based on Yaml configs in Python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flowmaster
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: FlowMaster
+  cfe-purls:
+    - pkg:conda/flowmaster@${{ version }}?channel=conda-forge
+    - pkg:pypi/flowmaster@${{ version }}
+  cfe-upstream-repo: https://github.com/pavelmaksimov/flowmaster
+  cfe-upstream-homepage: https://github.com/pavelmaksimov/flowmaster
+  cfe-import-names: [flowmaster]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:50:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:50:32Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

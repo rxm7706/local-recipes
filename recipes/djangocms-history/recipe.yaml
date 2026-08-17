@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: djangocms-history
+  version: "3.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 229d5fabd7633d3a7c779e1928a4f37a862d3b9162ad705edfeb8b9d2eeb2c18
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - django
+    - python >=${{ python_min }}
+    - django-cms >=4.1
+
+tests:
+  - python:
+      imports:
+        - djangocms_history
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Adds undo/redo functionality to django CMS
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/django-cms/djangocms-history
+
+extra:
+  recipe-maintainers:
+    - rxm7706

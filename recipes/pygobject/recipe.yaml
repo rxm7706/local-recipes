@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pygobject
+  version: "3.56.3"
+  majmin: ${{ '.'.join(version | split('.', 2)[:2]) }}
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://download.gnome.org/sources/${{ name }}/${{ majmin }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 12760e4a0e3d04b6eb95e06f7a27e362c826d567ea613373a92c003b6c70d2d6
+
+build:
+  number: 0
+  skip: match(python, "<3.8")
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - meson
+    - ninja
+    - pkg-config
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - cairo
+    - expat
+    # This dep is intentionally written twice; the second time allows
+    # conda-build to add its global pin if one exists.
+    - glib ${{ local_glib_pin }}
+    - glib
+    - gobject-introspection >=1.64
+    - libffi
+    - pycairo
+    - python
+    - if: linux
+      then: xorg-xorgproto
+    - zlib
+    - freetype
+  run:
+    - libgirepository
+    - libiconv  # on Windows we seem to need the conda-forge version here (see #15)
+    - pycairo
+    - python
+    - if: win
+      then: ucrt
+
+tests:
+  - python:
+      imports:
+        - gi
+        - gi.repository.GLib
+        - gi._gi_cairo
+      pip_check: false
+  - requirements:
+      run:
+        - pkg-config
+    script:
+      - if: unix
+        then: test -f $PREFIX/include/pygobject-3.0/pygobject.h
+      - if: unix
+        then: test -f `pkg-config --variable=pygobjectincludedir --dont-define-prefix pygobject-3.0`/pygobject.h
+      - if: win
+        then: if not exist %LIBRARY_INC%\\pygobject-3.0\\pygobject.h exit 1
+      - if: win
+        then: for /f "usebackq tokens=*" %%a in (`pkg-config --variable=pygobjectincludedir --dont-define-prefix pygobject-3.0`) do if not exist "%%a/pygobject.h" exit 1
+
+about:
+  license: LGPL-2.1-or-later
+  license_file: COPYING
+  summary: Python bindings for GObject Introspection
+  description: |
+    PyGObject is a Python package which provides bindings for GObject based libraries
+    such as GTK+, GStreamer, WebKitGTK+, GLib, GIO and many more.
+
+  homepage: https://pygobject.gnome.org
+  repository: https://gitlab.gnome.org/GNOME/pygobject
+  documentation: https://pygobject.gnome.org
+
+extra:
+  recipe-maintainers:
+    - pkgw
+    - ryanvolz
+    - sebastian-luna-valero
+    - tschoonj

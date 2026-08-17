@@ -1,0 +1,97 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.4"
+
+recipe:
+  name: geopandas
+  version: ${{ version }}
+
+source:
+  url: https://github.com/geopandas/geopandas/releases/download/v${{ version }}/geopandas-${{ version }}.tar.gz
+  sha256: 06f2890a07e1a239047daa14b486a7c6ae5ce82dcf7405e13c46bf31f5d0dd66
+  patches:
+    # pyproj and pyogrio are intentionally excluded from geopandas-base, as they
+    # are large and not strictly required
+    - 0001-remove-pyproj-pyogrio-from-pyproject-toml.patch
+
+build:
+  number: 0
+  noarch: python
+
+outputs:
+  - package:
+      name: geopandas-base
+    build:
+      noarch: python
+      script:
+        file: build_base.sh
+    requirements:
+      build:
+        - if: build_platform != target_platform
+          then: python
+        - if: build_platform != target_platform
+          then: cross-python_${{ target_platform }}
+      host:
+        - python ${{ python_min }}
+        - setuptools
+        - pip
+      run:
+        - python >=${{ python_min }}
+        - numpy >=1.24
+        - pandas >=2.0.0
+        - shapely >=2.0.0
+        - packaging
+        # pyproj and pyogrio are intentionally moved to geopandas, as they
+        # are large and not strictly required
+    tests:
+      - python:
+          imports:
+            - geopandas
+            - geopandas.io
+          pip_check: true
+          python_version: ${{ python_min }}
+      - files:
+          recipe:
+            - test_data
+  - package:
+      name: geopandas
+    requirements:
+      host:
+        - python ${{ python_min }}
+      run:
+        - python >=${{ python_min }}
+        - ${{ pin_subpackage('geopandas-base', exact=True) }}
+        - pyproj >=3.5.0
+        - pyogrio >=0.7.2
+        - matplotlib-base
+        - mapclassify >=2.5.0
+        - folium
+        - xyzservices
+    tests:
+      - python:
+          imports:
+            - geopandas
+            - geopandas.io
+          pip_check: false
+          python_version: ${{ python_min }}
+      - files:
+          recipe:
+            - test_data
+        requirements:
+          run:
+            - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Geographic pandas extensions
+  homepage: http://geopandas.org
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - jorisvandenbossche
+    - jdmcbr
+    - martinfleis

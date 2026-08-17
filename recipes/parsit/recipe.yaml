@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.1"
+
+package:
+  name: parsit
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/parsit/parsit-${{ version }}.tar.gz
+  sha256: e821766082fec8c59bc1f5d4ab148cbc7762aac38e53b7db56fc772510891f4a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - boto3 >=1.28.43
+    - brotli >=1.1.0
+    - click >=8.1.7
+    - fast-langdetect <0.3.0,>=0.2.3
+    - loguru >=0.6.0
+    - numpy >=1.21.6
+    - pydantic <2.11,>=2.7.2
+    - pymupdf <1.25.0,>=1.24.9
+    - scikit-learn >=1.0.2
+    - pytorch !=2.5.0,!=2.5.1,<3,>=2.2.2
+    - torchvision
+    - transformers !=4.51.0,<5.0.0,>=4.49.0
+    - pdfminer.six ==20250506
+    - tqdm >=4.67.1
+    - onnxruntime >=1.16.0
+    - huggingface-hub >=0.19.4
+    - rapid-table <2.0.0,>=1.0.5
+    - omegaconf ==2.3.0
+    - pillow >=8.4.0
+    - parsit-yolo >=0.1.0
+
+tests:
+  - python:
+      imports:
+        - parsit
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://parsit.ai/
+  license: AGPL-3.0-only
+  license_file: LICENSE
+  summary: A practical tool for converting PDF to Markdown
+  description: |
+    A practical tool for converting PDF to Markdown
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: parsit
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: parsit
+  cfe-purls:
+    - pkg:conda/parsit@${{ version }}?channel=conda-forge
+    - pkg:pypi/parsit@${{ version }}
+  cfe-upstream-repo: https://parsit.ai/
+  cfe-upstream-homepage: https://parsit.ai/
+  cfe-import-names: [parsit]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:55:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:55:15Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

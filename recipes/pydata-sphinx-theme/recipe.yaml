@@ -1,0 +1,94 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.20.0"
+  # build
+  python_min: "3.11"
+  nodejs_min: "22.9"
+  # run
+  sphinx_min: "8.2"
+  sphinx_max: "10.0"
+  # test
+  python_check_max: "3.14"
+  pytest_k: not chromium
+  cov_fail_under: "85"
+
+package:
+  name: pydata-sphinx-theme
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pydata-sphinx-theme/pydata_sphinx_theme-${{ version }}.tar.gz
+  sha256: 0da172d41e19a66de875f4002f7054b385372ec65763852193791e658d50bb4a
+
+build:
+  number: 0
+  noarch: python
+  script:
+    env:
+      STB_USE_SYSTEM_NODE: "1"
+      STB_RELAX_NODE_VERSION_CHECK: "1"
+    content:
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  build:
+    - nodejs ${{ nodejs_min }}.*
+  host:
+    - babel
+    - pip
+    - python ${{ python_min }}.*
+    - sphinx-theme-builder >=0.3.2
+  run:
+    - accessible-pygments
+    - babel
+    - beautifulsoup4
+    - docutils !=0.17.0
+    - jinja2
+    - pygments >=2.7
+    - python >=${{ python_min }}
+    - requests
+    - sphinx >=${{ sphinx_min }}
+
+tests:
+  - python:
+      imports: pydata_sphinx_theme
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - requirements:
+      run:
+        - pytest-cov
+        - pytest-playwright
+        - pytest-regressions
+        - rich
+        - python ${{ python_min }}.*
+        - sphinx ${{ sphinx_min }}.*
+        - typing_extensions
+    files:
+      source:
+        - pyproject.toml
+        - tests/
+    script:
+      - coverage run --source=pydata_sphinx_theme --branch -m pytest -vv --tb=long --color=yes -k="${{ pytest_k }}"
+      - coverage report --show-missing --skip-covered --fail-under=${{ cov_fail_under }}
+
+about:
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE
+    - src/pydata_sphinx_theme/theme/pydata_sphinx_theme/static/scripts/fontawesome.js.LICENSE.txt
+    - src/pydata_sphinx_theme/theme/pydata_sphinx_theme/static/scripts/bootstrap.js.LICENSE.txt
+  summary: Bootstrap-based Sphinx theme from the PyData community
+  homepage: https://pypi.org/project/pydata-sphinx-theme
+  repository: https://github.com/pydata/pydata-sphinx-theme
+  documentation: https://pydata-sphinx-theme.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - jorisvandenbossche
+    - bollwyvl
+    - Yann-P
+    - Carreau

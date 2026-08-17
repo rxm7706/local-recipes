@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  python_min: "3.12"
+  name: ansible-core
+  version: "2.20.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 66e0e91ee43d98b3968a612c42c8e6e3d1ea43be501c4f8f6fc8c75b35892cdf
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - ansible=ansible.cli.adhoc:main
+      - ansible-config=ansible.cli.config:main
+      - ansible-console=ansible.cli.console:main
+      - ansible-doc=ansible.cli.doc:main
+      - ansible-galaxy=ansible.cli.galaxy:main
+      - ansible-inventory=ansible.cli.inventory:main
+      - ansible-playbook=ansible.cli.playbook:main
+      - ansible-pull=ansible.cli.pull:main
+      - ansible-vault=ansible.cli.vault:main
+      - ansible-connection=ansible.cli.scripts.ansible_connection_cli_stub:main
+
+requirements:
+  host:
+    - setuptools >=45.2.0
+    - pip
+    - python 3.12.*
+  run:
+    - cryptography
+    - jinja2 >=3.1.0
+    - packaging
+    - python >=${{ python_min }}
+    - pyyaml >=5.1
+    - resolvelib >=0.5.3,<1.1.0
+    # https://docs.ansible.com/ansible/latest/user_guide/windows_faq.html#can-ansible-run-on-windows
+    - __unix
+
+tests:
+  - python:
+      imports:
+        - ansible
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - ansible --help
+      - ansible-config --help
+      - ansible-console --help
+      - ansible-doc --help
+      - ansible-galaxy --help
+      - ansible-inventory --help
+      - ansible-playbook --help
+      - ansible-pull --help
+      - ansible-vault --help
+      - ansible-connection --help
+
+about:
+  summary: Radically simple IT automation
+  license: GPL-3.0-or-later
+  license_file: COPYING
+  homepage: https://ansible.com/
+
+extra:
+  recipe-maintainers:
+    - pavelzw
+    - mariusvniekerk
+    - etcet
+    - Wafflenator

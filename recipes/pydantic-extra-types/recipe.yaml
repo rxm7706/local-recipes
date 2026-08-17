@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pydantic-extra-types
+  version: "2.11.2"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pydantic_extra_types-${{ version }}.tar.gz
+  sha256: 3a2b83b61fe920925688e7838b59caa90a45637d1dbba2b1364b8d1f7ff72a0a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pydantic >=2.5.2
+  run_constraints:
+    - phonenumbers >=8,<9
+    - pycountry >=23
+    - semver >=3.0.2,<4
+    - python-ulid >=1,<4
+    - pendulum >=3.0.0,<4.0.0
+    - pytz >=2024.1
+    - tzdata >=2024a
+
+tests:
+  - python:
+      imports:
+        - pydantic_extra_types
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - 3.*
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A place for pydantic types that probably shouldn't exist in the main pydantic lib.
+  homepage: https://github.com/pydantic/pydantic-extra-types
+  repository: https://github.com/pydantic/pydantic-extra-types
+  documentation: https://docs.pydantic.dev/
+
+extra:
+  recipe-maintainers:
+    - ytausch

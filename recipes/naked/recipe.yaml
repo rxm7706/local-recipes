@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: Naked
+  version: "0.1.32"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/Naked-${{ version }}.tar.gz
+  sha256: f81015107e3aefdc801d7144fbae214bdf3cb179c0020a1dc6d5acb3659d5d5c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - naked = Naked.app:main
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - requests
+    - pyyaml
+
+tests:
+  - python:
+      imports:
+        - Naked
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - naked --help
+
+about:
+  summary: A command line application framework
+  license: Apache-2.0
+  license_file: lib/Naked/templates/licenses.py
+  homepage: https://github.com/chrissimpkins/naked
+
+extra:
+  recipe-maintainers:
+    - millsks

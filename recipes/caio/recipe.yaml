@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.12.2"
+
+package:
+  name: caio
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/caio/caio-${{ version }}.tar.gz
+  sha256: 87a67c0dccc60e432888bd532ec504b66e124a5d8b391aab894583b55abd39ea
+
+build:
+  number: 0
+  script:
+    - ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - if: build_platform != target_platform
+      then:
+        - cross-python_${{ target_platform }}
+        - python
+  host:
+    - pip
+    - python
+    - setuptools >=77
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - caio
+      pip_check: true
+
+about:
+  summary: Asynchronous file IO for Linux Posix and Windows.
+  license: Apache-2.0
+  license_file: COPYING
+  homepage: https://github.com/mosquito/caio
+
+extra:
+  recipe-maintainers:
+    - thewchan
+    - matthewfeickert

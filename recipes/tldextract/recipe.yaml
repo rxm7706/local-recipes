@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: tldextract
+  version: "5.3.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/tldextract-${{ version }}.tar.gz
+  sha256: c017431bc0800f2d3d1b57cce36e06668f0930f60a6d8c4615d4e2b8da298fa9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - tldextract = tldextract.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=61.2
+    - setuptools-scm >=6.2
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - idna
+    - requests >=2.1.0
+    - requests-file >=1.4
+    - filelock >=3.0.8
+
+tests:
+  - python:
+      imports:
+        - tldextract
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - tldextract --help
+
+about:
+  summary: Accurately separates a URL's subdomain, domain, and public suffix, using the Public Suffix List (PSL). By default, this includes the public ICANN TLDs and their exceptions. You can optionally support the Public Suffix List's private domains as well.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/john-kurkowski/tldextract
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - jan-janssen

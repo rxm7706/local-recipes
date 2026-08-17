@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.7.1"
+
+package:
+  name: onnxscript
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/onnxscript/onnxscript-${{ version }}.tar.gz
+  sha256: 309fb86484b11fa4ded90dba580e0d63f1a0827588e521cecaf2eeddb46d6e86
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=70.0.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - ml_dtypes
+    - numpy
+    - onnx-ir >=0.1.16,<2
+    - onnx >=1.17
+    - packaging
+    - typing_extensions >=4.10
+
+tests:
+  - python:
+      imports:
+        - onnxscript
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Naturally author ONNX functions and models using a subset of Python
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/microsoft/onnxscript
+
+extra:
+  recipe-maintainers:
+    - hmaarrfk
+    - apmorton

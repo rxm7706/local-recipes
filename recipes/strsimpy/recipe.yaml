@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: strsimpy
+  version: "0.1.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 23b4820fad5584ddf1b4701d2e9b82a06b5f4db009ee7f816fd5694901655259
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - strsimpy
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Python3.x implementation of tdebatty/java-string-similarity
+  description: A library implementing different string similarity and distance measures.
+  homepage: https://github.com/luozhouyang/python-string-similarity
+  repository: https://github.com/luozhouyang/python-string-similarity
+  documentation: https://github.com/luozhouyang/python-string-similarity
+
+extra:
+  recipe-maintainers:
+    - aschonfeld

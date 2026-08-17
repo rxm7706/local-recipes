@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0"
+
+package:
+  name: card-validator
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/Card-Validator/Card Validator-1.0.0.zip
+  sha256: da869a62c51b7879d0477ca68d2a78348b52cdadb3d6ef89923240b8742bf5de
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - card_validator
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/chetan92/CardValidator.git
+  license: MIT
+  license_file: LICENSE
+  summary: Module to validate, generate and determine the format of card numbers.
+  description: |
+    Module to validate, generate and determine the format of card numbers.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: card-validator
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: Card-Validator
+  cfe-purls:
+    - pkg:conda/card-validator@${{ version }}?channel=conda-forge
+    - pkg:pypi/card-validator@${{ version }}
+  cfe-upstream-repo: https://github.com/chetan92/CardValidator.git
+  cfe-upstream-homepage: https://github.com/chetan92/CardValidator.git
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:46:18Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:46:18Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.2"
+
+package:
+  name: antsibull-docs-parser
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/antsibull-docs-parser/antsibull_docs_parser-${{ version }}.tar.gz
+  sha256: 52d647b1683466f9a27e93ae997b9eda955617c7fa7670b1268a6922d24b7340
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - antsibull_docs_parser
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/antsibull-docs-parser/
+  license: GPL-3.0-or-later AND BSD-2-Clause
+  license_file: LICENSE
+  summary: Python library for processing Ansible documentation markup
+  description: |
+    Python library for processing Ansible documentation markup
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: antsibull-docs-parser
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: antsibull-docs-parser
+  cfe-purls:
+    - pkg:conda/antsibull-docs-parser@${{ version }}?channel=conda-forge
+    - pkg:pypi/antsibull-docs-parser@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/antsibull-docs-parser/
+  cfe-upstream-homepage: https://pypi.org/project/antsibull-docs-parser/
+  cfe-import-names: [antsibull_docs_parser]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:22Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

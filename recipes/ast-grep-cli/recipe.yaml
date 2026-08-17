@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Generated from python-maturin path; PyO3/maturin detected via sdist
+# pyproject.toml [build-system].requires. Modelled on phonors PR pattern
+# (modal 27-PR PyO3 sample, Mar 2020 – May 2026). Recipe shape follows the
+# 2026 grayskull / conda-forge convention: literal ``package.name``, literal
+# ``source.url`` (only ``${ version }`` templated), no ``name`` in context.
+schema_version: 1
+
+context:
+  version: "0.45.1"
+
+package:
+  name: ast-grep-cli
+  version: ${{ version }}
+
+source:
+  url: https://github.com/ast-grep/ast-grep/archive/refs/tags/${{ version }}.tar.gz
+  sha256: a3cf5afc5a7302c79df56c2d52762a70e8290ce86291050e3febe90abd388d6c
+
+build:
+  number: 0
+  script:
+    env:
+      # Per conda-forge.org/docs/maintainer/example_recipes/rust/ — applies to
+      # any Rust build (CLI binary OR maturin/PyO3 cdylib). maturin invokes
+      # cargo build internally and inherits these env vars.
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+    content:
+      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - crossenv
+        - maturin >=1,<2
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - pip
+    - maturin >=1.7,<2.0
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - ast_grep_cli
+      pip_check: true
+
+about:
+  homepage: https://ast-grep.github.io/
+  license: MIT
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  summary: Structural Search and Rewrite code at large scale using precise AST pattern.
+  description: |
+    Structural Search and Rewrite code at large scale using precise AST pattern.
+  repository: https://github.com/ast-grep/ast-grep
+  documentation: https://ast-grep.github.io/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ast-grep-cli
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ast-grep-cli
+  cfe-purls:
+    - pkg:conda/ast-grep-cli@${{ version }}?channel=conda-forge
+    - pkg:pypi/ast-grep-cli@${{ version }}
+  cfe-upstream-repo: https://github.com/ast-grep/ast-grep
+  cfe-upstream-homepage: https://ast-grep.github.io/
+  cfe-import-names: []
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: compiled
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:34Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-hcl2
+  version: "8.1.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/python_hcl2-${{ version }}.tar.gz
+  sha256: ae809c7e6e39e8c3c3555e7b7f389082207929591fcba062c9f76afb1abe972d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools >=61.2.0
+    - setuptools-scm
+    - wheel
+  run:
+    - lark >=1.1.5,<2.0
+    - regex >=2024.4.16
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - hcl2
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A parser for HCL2
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/amplify-education/python-hcl2
+
+extra:
+  recipe-maintainers:
+    - RohitK89
+    - mariusvniekerk

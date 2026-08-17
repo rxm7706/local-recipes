@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.7"
+
+package:
+  name: sphinxcontrib-websupport
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/s/sphinxcontrib-websupport/sphinxcontrib_websupport-${{ version }}.tar.gz
+  sha256: e322802ebfd5fe79368efd864aeb87b063566ae61911dccb2714e28a45ed7561
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.9
+    - pip
+    - flit-core >=3.7
+  run:
+    - python >=3.9
+    - sphinx >=5
+    - jinja2
+    - sphinxcontrib-serializinghtml
+
+tests:
+  - python:
+      imports:
+        - sphinxcontrib
+        - sphinxcontrib.websupport
+      pip_check: true
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Sphinx API for Web Apps
+  description: |
+    sphinxcontrib-websupport provides a Python API to easily integrate
+    Sphinx documentation into your Web application
+  homepage: https://www.sphinx-doc.org/
+  repository: https://github.com/sphinx-doc/sphinxcontrib-websupport
+  documentation: https://www.sphinx-doc.org/en/master/
+
+extra:
+  recipe-maintainers:
+    - AA-Turner

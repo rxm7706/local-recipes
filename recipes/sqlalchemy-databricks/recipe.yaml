@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sqlalchemy-databricks
+  version: "0.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sqlalchemy-databricks-${{ version }}.tar.gz
+  sha256: d6efc02643962a1841eeb9139b942efc0246440c9cef3e7f7ebb3ea8d38eb5c0
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }},<4.0
+    - pyhive >=0,<1
+    - sqlalchemy >=1,<2
+    - databricks-sql-connector >=2,<3
+
+tests:
+  - python:
+      imports:
+        - sqlalchemy_databricks
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: SQLAlchemy Dialect for Databricks
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/crflynn/sqlalchemy-databricks
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.6"
+
+package:
+  name: ratelim
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/ratelim/ratelim-${{ version }}.tar.gz
+  sha256: 826d32177e11f9a12831901c9fda6679fd5bbea3605910820167088f5acbb11d
+
+build:
+  number: 3
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - decorator
+
+tests:
+  - python:
+      imports:
+        - ratelim
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Makes it easy to respect rate limits
+  homepage: http://github.com/themiurgo/ratelim
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

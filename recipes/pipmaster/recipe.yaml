@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.13"
+
+package:
+  name: pipmaster
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pipmaster/pipmaster-${{ version }}.tar.gz
+  sha256: fdb179f44e9f16188cf7e623d9a740d54a2b74d03437f231ce7863d0fae07a2e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=77.0.0
+  run:
+    - python >=${{ python_min }}
+    - packaging >=21.0
+    - ascii-colors >=0.11.11
+
+tests:
+  - python:
+      imports:
+        - pipmaster
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/ParisNeo/pipmaster
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A versatile Python package manager utility for simplifying package installation, updates, checks, and environment management.
+  description: |
+    A versatile Python package manager utility for simplifying package installation, updates, checks, and environment management.
+  repository: https://github.com/ParisNeo/pipmaster
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pipmaster
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pipmaster
+  cfe-purls:
+    - pkg:conda/pipmaster@${{ version }}?channel=conda-forge
+    - pkg:pypi/pipmaster@${{ version }}
+  cfe-upstream-repo: https://github.com/ParisNeo/pipmaster
+  cfe-upstream-homepage: https://github.com/ParisNeo/pipmaster
+  cfe-import-names: [pipmaster]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:02:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:02:42Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # Dep-first for P1 lightrag-hku 1.5.6. Local-only.
+####

@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: kantoku
   version: "0.18.3"
 
 package:
-  name: kantoku
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/k/kantoku/kantoku-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/kantoku-${{ version }}.tar.gz
   sha256: 751882b2bde074cd8d65f8f9f62606a805b7aa9ea956ba452d13fab0352b5163
 
 build:
@@ -26,7 +27,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - flit-core >=3.4,<4
     - pip
   run:
@@ -35,28 +36,33 @@ requirements:
     - pyzmq >=17.0
     - tornado >=5.0.2
     - if: unix
-      then:
-        - ncurses
+      then: __unix
+    - if: win
+      then: __win
+    - if: unix
+      then: ncurses
 
 tests:
   - python:
       imports:
         - circus
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
   - requirements:
       run:
-        - python ${{ python_min }}.*
+        - pip
+        - python ${{ python_min }}
     script:
       - if: unix
-        then:
-          - circusd --help
-          - circusd-stats --help
-          - circusctl --help
-          - circus-top --help
-          - circus-plugin --help
+        then: circusd --help
+      - if: unix
+        then: circusd-stats --help
+      - if: unix
+        then: circusctl --help
+      - if: unix
+        then: circus-top --help
+      - if: unix
+        then: circus-plugin --help
 
 about:
   summary: Circus is a program that will let you run and watch multiple processes and sockets.
@@ -64,11 +70,6 @@ about:
   license_file: LICENSE
   homepage: https://circus.readthedocs.io/en/latest/
   repository: https://github.com/bentoml/kantoku
-  documentation: https://circus.readthedocs.io
-  description: |
-    Circus is a Python program which can be used to monitor and control
-    processes and sockets. kantoku is the BentoML-maintained distribution of
-    the circus process and socket manager.
 
 extra:
   recipe-maintainers:

@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.0.0"
+  lib_min: "3.0.0"
+  lib_max: "4"
+  python_check_max: "3.14"
+  jupyterlab_min: "4.6.0"
+  jupyterlab_max: "4.7.0"
+  grep: ${{ 'grep -iE' if unix else 'findstr /c' }}
+
+package:
+  name: jupyter-collaboration
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/j/jupyter-collaboration/jupyter_collaboration-${{ version }}.tar.gz
+  sha256: 2b382e9cb463759d22045d2f8e44e26fcc401af90685286a18a68488cb56a966
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - hatchling >=1.4.0
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - jupyter_server_ydoc >=${{ lib_min }},<${{ lib_max }}
+    - jupyter-collaboration-ui >=${{ lib_min }},<${{ lib_max }}
+    - jupyter-docprovider >=${{ lib_min }},<${{ lib_max }}
+    - jupyterlab >=${{ jupyterlab_min }},<${{ jupyterlab_max }}
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports: jupyter_collaboration
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - requirements:
+      run:
+        - jupyterlab
+        - python ${{ python_min }}.*
+    script:
+      - jupyter server extension list
+      - jupyter labextension list --debug
+      - jupyter labextension list 2>&1 | ${{ grep }} "collaboration-extension.*OK"
+      - jupyter labextension list 2>&1 | ${{ grep }} "docprovider-extension.*OK"
+about:
+  summary: JupyterLab/Jupyter Notebook 7+ Real Time Collaboration extension (metapackage)
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://pypi.org/project/jupyter-collaboration
+  repository: https://github.com/jupyterlab/jupyter-collaboration
+  documentation: https://jupyterlab-realtime-collaboration.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - dlqqq
+    - hbcarlos
+    - martinRenou
+    - fcollonval
+    - davidbrochart
+    - conda-forge/jupyterlab

@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: rich-click
+  version: "1.9.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/ewels/rich-click/archive/v${{ version }}.tar.gz
+  sha256: 4b515ec866b99d68d2f8454907a04c3c80b6e1db81a21ee8cc0819d9b612e13c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+  python:
+    entry_points:
+      - rich-click=rich_click.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=45
+  run:
+    - python >=${{ python_min }}
+    - rich >=12
+    - click >=8
+    - typing-extensions >=4
+    - if: win
+      then:
+        - __win
+        - colorama
+    - if: unix
+      then: __unix
+
+tests:
+  - python:
+      imports:
+        - rich_click
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - rich-click --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Format click help output nicely with rich
+  description: |
+    Provides attractive help output from click,
+    formatted with rich, with minimal customisation required.
+  homepage: https://github.com/ewels/rich-click
+  repository: https://github.com/ewels/rich-click
+  documentation: https://github.com/ewels/rich-click
+
+extra:
+  recipe-maintainers:
+    - ewels
+    - synapticarbors

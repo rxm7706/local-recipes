@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: tableau-to-sqlite
+  version: "0.2.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/tableau-to-sqlite-${{ version }}.tar.gz
+  sha256: ae5ff89ed0c5a645f3a17e5eb795f68d84a4df77ecb9c7b31f9663bad4bb3c8c
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - tableau-to-sqlite = tableau_to_sqlite.cli:cli
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - click
+    - tableauscraper ==0.1.2
+
+tests:
+  - python:
+      imports:
+        - tableau_to_sqlite
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - tableau-to-sqlite --help
+
+about:
+  summary: Fetch data from Tableau into a SQLite database
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/simonw/tableau-to-sqlite
+
+extra:
+  recipe-maintainers:
+    - rxm7706

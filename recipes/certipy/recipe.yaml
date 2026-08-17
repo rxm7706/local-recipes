@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.3"
+
+package:
+  name: certipy
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/certipy/certipy-${{ version }}.tar.gz
+  sha256: 4e8701e6a2f281e7a154c2f368cff4edf374009084d29788cbe8c3838897784f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - certipy = certipy.command_line:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - setuptools_scm
+  run:
+    - python >=${{ python_min }}
+    - cryptography
+
+tests:
+  - python:
+      imports:
+        - certipy
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - certipy test
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Simple, fast, extensible JSON encoder/decoder for Python
+  description: |
+    A simple python tool for creating certificate authorities
+    and certificates on the fly.
+  homepage: https://github.com/LLNL/certipy
+  repository: https://github.com/LLNL/certipy
+
+extra:
+  recipe-maintainers:
+    - minrk

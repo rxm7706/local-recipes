@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: pyrefly
+  version: "1.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/facebook/${{ name }}/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 39c3d391da0aa85eb7d0149fc57e860495f50e431f4911547f21906a35ab33bd
+
+build:
+  script:
+    env:
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+    content:
+      - cd pyrefly
+      - if: win
+        then:
+          # path too long for git dependencies
+          - set CARGO_HOME=C:\.cargo
+      - if: unix
+        then:
+          - cargo auditable install --locked --no-track --bins --root ${{ PREFIX }} --path .
+        else:
+          - cargo auditable install --locked --no-track --bins --root %LIBRARY_PREFIX% --path .
+      - cargo-bundle-licenses --format yaml --output ./THIRDPARTY.yml
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('rust') }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - cargo-bundle-licenses
+    - cargo-auditable
+    - make
+
+tests:
+  - script: pyrefly --help
+  - package_contents:
+      bin:
+        - pyrefly
+      strict: true
+
+about:
+  homepage: http://pyrefly.org
+  summary: A fast type checker and IDE for Python
+  description: |
+    Pyrefly is a fast type checker for Python. It's designed to replace the existing Pyre type checker at Meta by the end of 2025. This README describes basic usage. See the Pyrefly website for full documentation and a tool for checking code.
+  license: MIT
+  license_file:
+    - LICENSE
+    - pyrefly/THIRDPARTY.yml
+  documentation: https://pyrefly.org/en/docs/
+  repository: https://github.com/facebook/pyrefly
+
+extra:
+  recipe-maintainers:
+    - pavelzw

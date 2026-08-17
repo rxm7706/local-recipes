@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: langchain-protocol
+  version: "0.0.18"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/langchain_protocol-${{ version }}.tar.gz
+  sha256: ec3e11782f1ed0c9db38e5a9ed01b0e7a0d3fba406faa8aef6594b73c56a63e6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0.0
+    - typing_extensions >=4.13.0,<5.0.0
+tests:
+  - python:
+      imports:
+        - langchain_protocol
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Python bindings for the LangChain agent streaming protocol
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/langchain-ai/langchain
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

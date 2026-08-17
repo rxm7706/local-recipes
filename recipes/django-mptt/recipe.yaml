@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-mptt
+  version: "0.18.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_mptt-${{ version }}.tar.gz
+  sha256: cf5661357ff22bc64e20d3341c26e538aa54583aea0763cfe6aaec0ab8e3a8ee
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=3.2
+    - django-js-asset
+
+tests:
+  - python:
+      imports:
+        - mptt
+        - mptt.templatetags
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Utilities for implementing Modified Preorder Tree Traversal with your Django Models and working with trees of Model instances.
+  license: MIT
+  license_file: LICENSE
+  description: Utilities for implementing Modified Preorder Tree Traversal with your Django Models and working with trees of Model instances.
+  homepage: https://github.com/django-mptt/django-mptt
+  repository: https://github.com/django-mptt/django-mptt
+  documentation: https://django-mptt.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - sannykr
+    - rxm7706
+    - MichelML

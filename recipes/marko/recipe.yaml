@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: marko
+  version: "2.2.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/marko-${{ version }}.tar.gz
+  sha256: c042c66f835425673123d7536b39b4660de3b68e30078c70fd26245b31170683
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - marko=marko.cli:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - pdm-backend
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - marko
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - marko --help
+
+about:
+  summary: A markdown parser with high extensibility.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/marko/
+
+extra:
+  recipe-maintainers:
+    - xhochy
+    - asford

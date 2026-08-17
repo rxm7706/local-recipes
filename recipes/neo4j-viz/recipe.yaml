@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.7.0"
+
+package:
+  name: neo4j-viz
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/neo4j-viz/neo4j_viz-${{ version }}.tar.gz
+  sha256: 1ece1eb82a90b13a596ec69f908a33b574bd3cdb9420cc053d9c60f1d2bdaa91
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=77.0.3
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - ipython <10,>=7
+    - pydantic <3,>=2
+    - pydantic-extra-types <3,>=2
+    - enum-tools ==0.13.0
+    - anywidget <1,>=0.9
+    - traitlets <6,>=5
+
+tests:
+  - python:
+      imports:
+        - neo4j_viz
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://neo4j.com/
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: A simple graph visualization tool
+  description: |
+    A simple graph visualization tool
+  repository: https://github.com/neo4j/python-graph-visualization
+  documentation: https://neo4j.com/docs/python-graph-visualization/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: neo4j-viz
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: neo4j-viz
+  cfe-purls:
+    - pkg:conda/neo4j-viz@${{ version }}?channel=conda-forge
+    - pkg:pypi/neo4j-viz@${{ version }}
+  cfe-upstream-repo: https://github.com/neo4j/python-graph-visualization
+  cfe-upstream-homepage: https://neo4j.com/
+  cfe-import-names: [neo4j_viz]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:55:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:55:21Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

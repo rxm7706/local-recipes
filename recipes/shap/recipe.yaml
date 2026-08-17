@@ -1,0 +1,133 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: shap
+  version: "0.52.0"
+  build: 0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 81d4ae478f67f8122de1bb411dc4e3ddff0604cbc27dc9cb8ea66d5c73462fd2
+
+build:
+  number: ${{ build if cuda_compiler_version == "None" else build + 200 }}
+  string: ${{ "cpu" if cuda_compiler_version == "None" else "cuda" + (cuda_compiler_version | replace('.', '')) }}_py${{ python | version_to_buildstring }}h${{ hash }}_${{ build if cuda_compiler_version == "None" else build + 200 }}
+  skip:
+    - cuda_compiler_version == "11.2" or match(python, "<3.12") or ppc64le
+    - osx and x86_64 and match(python, ">=3.14")
+  script:
+    - if: unix
+      then: export NVCC_PREPEND_FLAGS="-ccbin ${CXX}"
+    - if: cuda_compiler_version != "None" and unix
+      then: export SHAP_ENABLE_CUDA=1
+    - if: cuda_compiler_version != "None" and win
+      then: set SHAP_ENABLE_CUDA=1
+    - if: win
+      then:
+        - set CMAKE_GENERATOR=Ninja
+        - set CMAKE_GENERATOR_PLATFORM=
+        - set CMAKE_GENERATOR_TOOLSET=
+    - ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - if: cuda_compiler_version != "None"
+      then: ${{ compiler('cuda') }}
+    - if: unix
+      then: make
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - numpy
+  host:
+    - python
+    - pip
+    - setuptools
+    - scikit-build-core >=0.10.0
+    - setuptools-scm >=8.0
+    - numpy
+    - packaging >20.9
+    - nanobind >=2.0.0
+    - if: (cuda_compiler_version or "") is startingwith("12")
+      then: cuda-cudart-dev
+  run:
+    - typing_extensions
+    - python
+    - packaging >20.9
+    - numpy >=2
+    - scipy
+    - scikit-learn
+    - pandas
+    - tqdm >=4.27.0
+    - slicer ==0.0.8
+    - numba >=0.54
+    - if: osx and x86_64
+      then:
+        - llvmlite <0.46
+    - cloudpickle
+    - if: cuda_compiler_version != "None"
+      then: __cuda
+
+tests:
+  - python:
+      imports:
+        - shap
+        - shap._cext
+        - if: cuda_compiler_version != "None"
+          then: shap._cext_gpu
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - pip
+        - pytest
+        - pytest-mpl
+        - matplotlib-base
+        - ipython
+        - xgboost
+        - if: osx or linux64
+          then: pytorch
+        - if: not (win or ppc64le or aarch64) and not match(python, "=3.14") # excluding python 3.14 due to missing tokenizers package required by transformers <4.54.0
+          then: transformers <4.54.0 # taken from https://github.com/shap/shap/pull/4176
+        - if: not ppc64le and not (win and match(python, "=3.14"))
+          then: catboost >=1.2.7
+        - if: not match(python, ">=3.13")
+          then: ngboost
+        - pyod >=1
+        - lightgbm
+        - sentencepiece
+    script:
+      - pip check
+      # https://github.com/shap/shap/issues/4179
+      - if: cuda_compiler_version == "None" and build_platform != "osx-64"
+        then: pytest -k "not xslow" -sv tests
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A unified approach to explain the output of any machine learning model.
+  description: |
+    SHAP (SHapley Additive exPlanations) is a unified approach to explain the output of any machine learning model. SHAP connects game theory with local explanations, uniting several previous methods and representing the only possible consistent and locally accurate additive feature attribution method based on expectations.
+  homepage: https://github.com/slundberg/shap
+  repository: https://github.com/slundberg/shap
+  documentation: https://shap.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - connortann
+    - mrandrewandrade
+    - primozgodec
+    - slundberg
+    - xhochy

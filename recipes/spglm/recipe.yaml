@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.0"
+
+package:
+  name: spglm
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/spglm/spglm-${{ version }}.tar.gz
+  sha256: 20519dc38be9d660a28109bb1b89d1068454e79f6413bab2e3987db5bf959327
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vvv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools >=61.0
+    - setuptools-scm >=6.2
+  run:
+    - python >=${{ python_min }}
+    - libpysal >=4.5
+    - numpy >=1.23
+    - scipy >=1.8
+    - spreg >=1.2
+
+tests:
+  - python:
+      imports:
+        - spglm
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Sparse Generalized Linear Models
+  homepage: http://pysal.org/
+  repository: https://github.com/pysal/spglm
+  documentation: https://pysal.org/spglm
+
+extra:
+  recipe-maintainers:
+    - knaaptime
+    - martinfleis
+    - jGaboardi
+    - ocefpaf

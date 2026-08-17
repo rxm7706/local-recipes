@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: litecli
+  version: "1.17.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: e2f7191eaba830b24dbbfc9171a495c62562df923ba1cc3b2db2652547c1bac8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+  python:
+    entry_points:
+      - litecli = litecli.main:cli
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - cli_helpers >=2.2.1
+    - click >=4.1
+    - configobj >=5.0.5
+    - prompt_toolkit >=3.0.3,<4.0.0
+    - pygments >=1.6
+    - sqlparse >=0.4.4
+    - llm >=0.25.0
+
+tests:
+  - python:
+      imports:
+        - litecli
+        - litecli.packages
+        - litecli.packages.special
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - litecli --version
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: CLI for SQLite Databases with auto-completion and syntax highlighting.
+  homepage: https://litecli.com/
+  repository: https://github.com/dbcli/litecli/
+  documentation: https://litecli.com/features/
+
+extra:
+  recipe-maintainers:
+    - cofinoa

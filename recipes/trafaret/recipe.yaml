@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: trafaret
+  version: "2.1.1"
+  sha256: d9d00800318fbd343fdfb3353e947b2ebb5557159c844696c5ac24846f76d41c
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - trafaret
+        - trafaret.constructor
+        - trafaret.keys
+        - trafaret.utils
+        - trafaret.contrib.object_id
+        - trafaret.contrib.rfc_3339
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pymongo >=2.4.1
+        - python-dateutil >=1.5
+        - python ${{ python_min }}
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE.txt
+  summary: Ultimate transformation library that supports validation, contexts and aiohttp
+  description: |
+    Trafaret is rigid and powerful lib to work with foreign data, configs etc.
+    It provides simple way to check anything, and convert it accordingly to
+    your needs.
+  homepage: https://github.com/Deepwalker/trafaret
+  repository: https://github.com/Deepwalker/trafaret
+  documentation: http://trafaret.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - elatt
+    - dsakagi
+    - peterhurford
+    - madmott
+    - nott
+    - Deepwalker

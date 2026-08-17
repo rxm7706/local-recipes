@@ -2,29 +2,30 @@
 schema_version: 1
 
 context:
+  name: json_stream
   version: "2.5.1"
 
 package:
-  name: json_stream
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/j/json-stream/json_stream-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
   sha256: f7a2c72f208544276c0ee3f58c11eb635f2d3c1d37c7237cac2cf6681b67f655
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - setuptools
     - wheel
     - pip
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
     - json-stream-rs-tokenizer >=0.4.17
 
 tests:
@@ -32,20 +33,13 @@ tests:
       imports:
         - json_stream
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Streaming JSON encoder and decoder
-  description: |
-    json-stream is a streaming JSON parser and encoder for Python. It reads and
-    writes JSON data incrementally, allowing very large documents to be processed
-    without loading the entire structure into memory at once.
   license: MIT
   license_file: LICENSE.txt
   homepage: https://github.com/daggaz/json-stream
-  repository: https://github.com/daggaz/json-stream
 
 extra:
   recipe-maintainers:

@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.50"
+
+package:
+  name: tableau-api-lib
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/tableau-api-lib/tableau_api_lib-${{ version }}.tar.gz
+  sha256: c85e81c2b245ddd42430dd71495691b8dd218c4fc87ddccc0aa3b10594a89d72
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - requests
+    - urllib3
+    - pandas
+    - requests-toolbelt
+    - bleach
+    - typeguard
+    - packaging
+
+tests:
+  - python:
+      imports:
+        - tableau_api_lib
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/divinorum-webb/tableau-api-lib
+  license: MIT
+  license_file: LICENSE
+  summary: This library enables developers to call any method seen in Tableau Server's REST API documentation.
+  description: |
+    This library enables developers to call any method seen in Tableau Server's REST API documentation.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tableau-api-lib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tableau-api-lib
+  cfe-purls:
+    - pkg:conda/tableau-api-lib@${{ version }}?channel=conda-forge
+    - pkg:pypi/tableau-api-lib@${{ version }}
+  cfe-upstream-repo: https://github.com/divinorum-webb/tableau-api-lib
+  cfe-upstream-homepage: https://github.com/divinorum-webb/tableau-api-lib
+  cfe-import-names: [tableau_api_lib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:43:48Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:43:48Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4/P5 Create-recipe local-only. tableau-api-lib.
+####

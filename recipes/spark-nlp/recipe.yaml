@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.4.2"
+
+package:
+  name: spark-nlp
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/spark-nlp/spark_nlp-${{ version }}.tar.gz
+  sha256: 8bb178f1c83a3b21b9896a5fd6e00c8e7dd6e24a74a2d47034bc42f73d6046ab
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pyspark >=3.0,<4
+
+tests:
+  - python:
+      imports:
+        - sparknlp
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/JohnSnowLabs/spark-nlp
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Natural language processing library built on Apache Spark ML
+  description: |
+    John Snow Labs Spark NLP is a natural language processing library built on top of Apache Spark ML. It provides simple, performant & accurate NLP annotations for machine learning pipelines, that scale easily in a distributed environment.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: spark-nlp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: spark-nlp
+  cfe-purls:
+    - pkg:conda/spark-nlp@${{ version }}?channel=conda-forge
+    - pkg:pypi/spark-nlp@${{ version }}
+  cfe-upstream-repo: https://github.com/JohnSnowLabs/spark-nlp
+  cfe-upstream-homepage: https://github.com/JohnSnowLabs/spark-nlp
+  cfe-import-names: [sparknlp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T16:28:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T16:28:16Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-16T16:29:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Apache-2.0 noarch Python wrappers over Spark; JAR is fetched at runtime.
+#    # LICENSE not in sdist; pattern (2) in-recipe copy from GitHub master/LICENSE.
+#    # PyPI declares no install_requires but sparknlp/__init__.py imports pyspark
+#    # at module import time. Upstream 6.4.2 supports Spark 3.0–3.5 only (not 4.x),
+#    # so pin pyspark >=3.0,<4. No NOTICE file in the GitHub tree.
+####

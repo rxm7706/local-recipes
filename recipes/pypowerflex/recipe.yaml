@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.0"
+
+package:
+  name: pypowerflex
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/PyPowerFlex/pypowerflex-${{ version }}.tar.gz
+  sha256: 9bbfa1d4245422e28d98c50a0277d16629d94351af8b03abfed931ff12c41dec
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - packaging >=20.4
+    - requests >=2.23.0
+
+tests:
+  - python:
+      imports:
+        - PyPowerFlex
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/PyPowerFlex/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python library for Dell PowerFlex
+  description: |
+    Python library for Dell PowerFlex
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pypowerflex
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: PyPowerFlex
+  cfe-purls:
+    - pkg:conda/pypowerflex@${{ version }}?channel=conda-forge
+    - pkg:pypi/pypowerflex@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/PyPowerFlex/
+  cfe-upstream-homepage: https://pypi.org/project/PyPowerFlex/
+  cfe-import-names: [PyPowerFlex]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:39:51Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:39:51Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

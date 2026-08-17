@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "24.0.0"
+
+package:
+  name: neutron-fwaas
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/neutron-fwaas/neutron_fwaas-${{ version }}.tar.gz
+  sha256: 0a5ec3309c2d9d116b21e3d0b2605b46e215ee83710e74cee25325605355957f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - pbr >=6.1.1
+  run:
+    - python >=${{ python_min }}
+    - eventlet !=0.18.3,!=0.20.1,>=0.18.2
+    - netaddr >=0.7.18
+    - sqlalchemy >=1.4.23
+    - alembic >=1.6.5
+    - neutron-lib >=3.23.0
+    - os-ken >=0.3.0
+    - oslo.concurrency >=3.26.0
+    - oslo.config >=5.2.0
+    - oslo.db >=4.37.0
+    - oslo.log >=3.36.0
+    - oslo.messaging >=5.29.0
+    - oslo.service !=1.28.1,>=1.24.0
+    - oslo.utils >=3.33.0
+    - oslo.privsep >=1.32.0
+    - neutron >=28.0.0.0b2
+    - pyzmq >=14.3.1
+
+tests:
+  - python:
+      imports:
+        - neutron_fwaas
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://docs.openstack.org/neutron-fwaas/latest/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: OpenStack Networking FWaaS
+  description: |
+    OpenStack Networking FWaaS
+  repository: https://opendev.org/openstack/neutron-fwaas
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: neutron-fwaas
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: neutron-fwaas
+  cfe-purls:
+    - pkg:conda/neutron-fwaas@${{ version }}?channel=conda-forge
+    - pkg:pypi/neutron-fwaas@${{ version }}
+  cfe-upstream-repo: https://opendev.org/openstack/neutron-fwaas
+  cfe-upstream-homepage: https://docs.openstack.org/neutron-fwaas/latest/
+  cfe-import-names: [neutron_fwaas]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:33:01Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:33:01Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

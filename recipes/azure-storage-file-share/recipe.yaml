@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: azure-storage-file-share
+  version: "12.26.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/azure_storage_file_share-${{ version }}.tar.gz
+  sha256: 08cf8bc436df532cdb9bfdfce7bb10c5f1d83d51360954cd8eef56cbccf4300a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - azure-core >=1.30.0
+    - cryptography >=2.1.4
+    - typing_extensions >=4.6.0
+    - isodate >=0.6.1
+
+tests:
+  - python:
+      imports:
+        - azure.storage.fileshare
+        - azure.storage.fileshare._generated
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Microsoft Azure Azure File Share Storage Client Library for Python
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/storage/azure-storage-file-share
+
+extra:
+  recipe-maintainers:
+    - davidbrochart
+    - rxm7706

@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: olefile
+  version: "0.47"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/olefile-${{ version }}.zip
+  sha256: 599383381a0bf3dfbd932ca0ca6515acd174ed48870cbf7fee123d698c192c1c
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - olefile
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE.txt
+  summary: >
+    Python package to parse, read and write Microsoft OLE2 files (Structured Storage or Compound Document, Microsoft Office) - Improved version of the OleFileIO module from PIL, the Python Image Library.
+  homepage: http://www.decalage.info/python/olefileio
+  repository: https://github.com/decalage2/olefile
+
+extra:
+  recipe-maintainers:
+    - dgursoy
+    - decarlof
+    - ericdill
+    - licode
+    - ravescovi
+    - tacaswell
+    - ocefpaf

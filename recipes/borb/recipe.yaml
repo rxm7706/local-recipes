@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: borb
+  version: "3.0.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/borb-${{ version }}.tar.gz
+  sha256: 36671baf34f067f027d68c7b2bc7ee378529575e1ae58e3521400658715fa190
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools >=51.1.1
+  run:
+    - python >=${{ python_min }}
+    - setuptools >=51.1.1
+
+tests:
+  - python:
+      imports:
+        - borb
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A library for reading, creating and manipulating PDF files in python.
+  license: AGPL-3.0-or-later
+  license_file: LICENSE.md
+  homepage: https://github.com/jorisschellekens/borb
+
+extra:
+  recipe-maintainers:
+    - thewchan

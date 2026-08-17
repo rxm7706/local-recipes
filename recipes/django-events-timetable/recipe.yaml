@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-events-timetable
+  version: "1.0.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django-events-timetable-${{ version }}.tar.gz
+  sha256: 5835fd76081cbb2f1cc91bd5a85b2e266c492975d7414571c0f00a8c69cc1558
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - django >=3.0
+
+tests:
+  - python:
+      imports:
+        - django_events_timetable
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  summary: Django Events Timetable is an app component offering easy integration with Django, Django CMS, and Wagtail CMS. It features a user-friendly interface for managing event items, customizable and responsive templates with Dark and Light themes, and a color picker for design personalization. Designed to complement any project seamlessly, it is also extendable and customizable to meet specific needs.
+  license: MIT
+  license_file: django_events_timetable/LICENSE
+  homepage: https://github.com/dostogircse171/django_events_timetable
+  repository: https://github.com/dostogircse171/django_events_timetable
+
+extra:
+  recipe-maintainers:
+    - rxm7706

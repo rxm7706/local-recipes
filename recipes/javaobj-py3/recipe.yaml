@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: javaobj-py3
+  version: "0.3.0"
+  file_ext: tar.gz
+  hash_value: a57469e4f0d0eeba7482ad9839595db6e99ca4ac6630a4c8064dda75a2182549
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ file_ext }}
+  sha256: ${{ hash_value }}
+  file_name: ${{ name }}-${{ version }}.${{ file_ext }}
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  build:
+    - python
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - javaobj
+      pip_check: false
+
+about:
+  license: Apache Software
+  summary: Module for serializing and de-serializing Java objects.
+  description: |
+    provides functions for reading and writing (writing is WIP currently) Java objects serialized or will be
+    deserialized by ``ObjectOutputStream``. This form of object representation is a standard data interchange
+    format in Java world.
+
+
+  homepage: https://github.com/tcalmant/python-javaobj
+
+extra:
+  recipe-maintainers:
+    - msarahan

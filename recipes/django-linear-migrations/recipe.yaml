@@ -2,50 +2,43 @@
 schema_version: 1
 
 context:
+  name: django-linear-migrations
   version: "2.19.0"
 
 package:
-  name: django-linear-migrations
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-linear-migrations/django_linear_migrations-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_linear_migrations-${{ version }}.tar.gz
   sha256: 5436a7d980ceb65b936a87bac5461bcce68ea24e03cd804f284ea91565589e1b
 
 build:
-  number: 0
+  number: 1
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - pip
+    - python ${{ python_min }}
     - setuptools
+    - pip
   run:
     - python >=${{ python_min }}
-    - django >=4.2
+    - django >=3.2
 
 tests:
   - python:
       imports:
         - django_linear_migrations
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Ensure your migrations are linear.
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/adamchainz/django-linear-migrations
-  repository: https://github.com/adamchainz/django-linear-migrations
-  documentation: https://github.com/adamchainz/django-linear-migrations/blob/main/CHANGELOG.rst
-  description: |
-    Ensure your Django migrations are linear. Provides a max_migration.txt
-    file per app that records the latest migration, plus management commands
-    and a system check that detect and help resolve migration conflicts.
 
 extra:
   recipe-maintainers:

@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: 0.4.0
+
+package:
+  name: hatch-nodejs-version
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/hatch-nodejs-version/hatch_nodejs_version-${{ version }}.tar.gz
+  sha256: 2428ea398dd053f019d2b7ac949dd6b690ca8e826b6d433ad13c5b6c475ae91b
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - hatchling
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - hatchling >=0.21.0
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports: hatch_nodejs_version
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - 3.13.*
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - pytest >=7.0.1
+        - pytest-cov
+        - python ${{ python_min }}.*
+    script:
+      - |
+        python -c "from importlib.metadata import version; v = version('hatch-nodejs-version'); assert v == '${{ version }}', v"
+      - pytest -vvv --capture=tee-sys --cov=hatch_nodejs_version --cov-report=term-missing:skip-covered --no-cov-on-fail --cov-fail-under=80
+
+about:
+  summary: Hatch plugin for versioning from a package.json file
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/agoose77/hatch-nodejs-version
+
+extra:
+  recipe-maintainers:
+    - bollwyvl
+    - agoose77
+    - thewchan

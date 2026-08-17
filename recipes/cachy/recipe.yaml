@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cachy
+  version: "0.3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/cachy-${{ version }}.tar.gz
+  sha256: 186581f4ceb42a0bbe040c407da73c14092379b1e4c0e327fdb72ae4a9b269b1
+  patches:
+    # Do not package tests as a module.
+    - remove_tests.patch
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - cachy
+        - cachy.contracts
+        - cachy.serializers
+        - cachy.stores
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Cachy provides a simple yet effective caching library
+  homepage: https://github.com/sdispater/cachy
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

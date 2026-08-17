@@ -2,27 +2,28 @@
 schema_version: 1
 
 context:
-  version: "2026.6.22"
   python_min: "3.11"
+  name: kedro-light
+  version: "2026.6.22"
 
 package:
-  name: kedro-light
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/k/kedro-light/kedro_light-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: 325abbe1928c2b40980646fefcb6b3f260f5f7633466a7b5127c80f5cbeb762a
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - pip
+    - python 3.11.*
     - setuptools
+    - pip
   run:
     - python >=${{ python_min }}
     - kedro
@@ -33,18 +34,13 @@ tests:
       imports:
         - kedro_light
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
-  homepage: https://pypi.org/project/kedro-light/
+  summary: A lightweight interface to Kedro and Kedro-Viz
   license: MIT
   license_file: LICENSE
-  summary: A lightweight interface to Kedro and Kedro-Viz
-  description: |
-    A lightweight interface to Kedro and Kedro-Viz
-  repository: https://github.com/ellwise/kedro-light
+  homepage: https://github.com/ellwise/kedro-light
 
 extra:
   recipe-maintainers:

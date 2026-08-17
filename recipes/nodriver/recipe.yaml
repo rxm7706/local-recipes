@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.50.3"
+
+package:
+  name: nodriver
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/nodriver/nodriver-${{ version }}.tar.gz
+  sha256: 24ca688d8646ef8ffad5c8ce65804e5e7671a779ad26a24d76f6465d5666c631
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=43.0.0
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - python-mss
+    - websockets >=14
+    - deprecated
+
+tests:
+  - python:
+      imports:
+        - nodriver
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/UltrafunkAmsterdam/nodriver
+  license: AGPL-3.0-only
+  license_file: LICENSE
+  summary: "[Docs here](https://ultrafunkamsterdam.github.io/nodriver)"
+  description: |
+    [Docs here](https://ultrafunkamsterdam.github.io/nodriver)
+  repository: https://github.com/UltrafunkAmsterdam/nodriver
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nodriver
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: nodriver
+  cfe-purls:
+    - pkg:conda/nodriver@${{ version }}?channel=conda-forge
+    - pkg:pypi/nodriver@${{ version }}
+  cfe-upstream-repo: https://github.com/UltrafunkAmsterdam/nodriver
+  cfe-upstream-homepage: https://github.com/UltrafunkAmsterdam/nodriver
+  cfe-import-names: [nodriver]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:51:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:51:25Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

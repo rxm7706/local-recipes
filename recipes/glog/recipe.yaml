@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.7.1"
+
+package:
+  name: glog
+  version: ${{ version }}
+
+source:
+  url: https://github.com/google/glog/archive/v${{ version }}.tar.gz
+  sha256: 00e4a87e87b7e7612f519a41e491f16623b12423620006f59f5688bfd8d13b08
+  file_name: glog-${{ version }}.tar.gz
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - cmake
+    - ninja
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+  host:
+    - gflags
+  run:
+  run_exports:
+    - ${{ pin_subpackage('glog', upper_bound="x.x") }}
+
+tests:
+  - script:
+      - if: unix
+        then: test -f ${PREFIX}/lib/libglog${SHLIB_EXT}
+      - if: win
+        then: if not exist %PREFIX%\\Library\\bin\\glog.dll exit 1
+
+about:
+  license: BSD-3-Clause
+  license_file: COPYING
+  summary: C++ implementation of the Google logging module.
+  homepage: https://github.com/google/glog
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - xhochy

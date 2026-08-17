@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.8.0"
+  python_min: "3.11"
+
+package:
+  name: nx-cugraph-cu12
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/n/nx-cugraph-cu12/nx_cugraph_cu12-26.8.0-py3-none-any.whl
+  sha256: a58d1c71e908a99e145aac0a5338abdcd07fd0f0e772d636c040516fd3953d48
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - cupy-cuda12x !=14.1.0,>=14.0.1
+    - networkx >=3.2
+    - numpy <3.0,>=2.0
+    - pylibcugraph-cu12 ==26.8.*
+
+tests:
+  - python:
+      imports:
+        - nx_cugraph_cu12
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/rapidsai/nx-cugraph
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: cugraph backend for NetworkX
+  description: |
+    cugraph backend for NetworkX
+  documentation: https://docs.rapids.ai/api/cugraph/stable/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nx-cugraph-cu12
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: nx-cugraph-cu12
+  cfe-purls:
+    - pkg:conda/nx-cugraph-cu12@${{ version }}?channel=conda-forge
+    - pkg:pypi/nx-cugraph-cu12@${{ version }}
+  cfe-upstream-repo: https://github.com/rapidsai/nx-cugraph
+  cfe-upstream-homepage: https://github.com/rapidsai/nx-cugraph
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:03:45Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:03:45Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: bashlex
+  version: "0.18"
+  sha256: 5bb03a01c6d5676338c36fd1028009c8ad07e7d61d8a1ce3f513b7fff52796ee
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 3
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+    - if: match(python, "<3.4")
+      then: enum34
+
+tests:
+  - python:
+      imports:
+        - bashlex
+      pip_check: false
+
+about:
+  license: GPL-3.0-only
+  # License file added manually so far:
+  # https://github.com/idank/bashlex/issues/27
+  # https://github.com/conda-forge/staged-recipes/pull/4401
+  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE
+  summary: Python parser for bash
+  homepage: https://github.com/idank/bashlex
+  repository: https://github.com/idank/bashlex
+
+extra:
+  recipe-maintainers:
+    - sebastian-luna-valero

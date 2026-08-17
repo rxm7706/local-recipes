@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mail-parser
+  version: "4.6.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 5b402aa262df7faa8c05759dc35003fef332cbeaba0e4d8753639acbab50841f
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - mailparser = mailparser.__main__:main
+
+requirements:
+  host:
+    - pip
+    - hatchling
+    - python
+  run:
+    - if: match(python, "<3.3")
+      then: ipaddress >=1.0.23
+    - python
+    - simplejson >=3.17.0
+    - six >=1.14.0
+
+tests:
+  - python:
+      imports:
+        - mailparser
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - mailparser --help
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  summary: Tokenizer for raw mails
+  description: |
+    mail-parser is not only a wrapper for email Python Standard Library.
+    It give you an easy way to pass from raw mail to Python object that
+    you can use in your code.
+  homepage: https://github.com/SpamScope/mail-parser
+  repository: https://github.com/SpamScope/mail-parser
+  documentation: https://github.com/SpamScope/mail-parser
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

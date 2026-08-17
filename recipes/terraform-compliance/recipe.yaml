@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.15.1"
+
+package:
+  name: terraform-compliance
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/terraform-compliance/terraform_compliance-${{ version }}.tar.gz
+  sha256: e61de7914a3644ddba5967db2262b51328d869ccdfcbf755ae12e946b6ad9761
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - radish-bdd ==0.18.2
+    - gitpython >=3.0.5
+    - netaddr >=0.7.19
+    - colorful >=0.5.4
+    - filetype >=1.0.5
+    - junit-xml >=1.8
+    - lxml >=4.5.0
+    - emoji >=0.5.4
+    - mock >=3.0.5
+    - semver >=2.10.2
+    - ipython ==7.16.1
+    - diskcache >=5.1.0
+    - orjson >=3.10.15
+
+tests:
+  - python:
+      imports:
+        - terraform_compliance
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/eerkunt/terraform-compliance
+  license: MIT
+  license_file: LICENSE
+  summary: BDD test framework for terraform
+  description: |
+    BDD test framework for terraform
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: terraform-compliance
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: terraform-compliance
+  cfe-purls:
+    - pkg:conda/terraform-compliance@${{ version }}?channel=conda-forge
+    - pkg:pypi/terraform-compliance@${{ version }}
+  cfe-upstream-repo: https://github.com/eerkunt/terraform-compliance
+  cfe-upstream-homepage: https://github.com/eerkunt/terraform-compliance
+  cfe-import-names: [terraform_compliance]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:32:28Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:32:28Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

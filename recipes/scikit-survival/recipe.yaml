@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: scikit-survival
+  version: 0.28.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/scikit_survival-${{ version }}.tar.gz
+  sha256: f8903bf9b67bf9040c7a8b639d300b0817d9e208c8fd7bf34cc624dcc71d32ee
+
+build:
+  number: 0
+  script:
+    - python -m pip install . -vv
+  skip:
+    - match(python, "<3.11")
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - cython
+        - numpy
+    - ${{ compiler("cxx") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("cxx") }}
+  host:
+    - cython
+    - numpy >=2.0.0
+    - pip
+    - scikit-learn >=1.9.0,<1.10
+    - setuptools
+    - setuptools_scm
+    - packaging
+    - python
+  run:
+    - python
+    - scikit-learn >=1.9.0,<1.10
+    - ecos
+    - joblib
+    - narwhals >=2.0.1
+    - numexpr
+    - osqp >=1.0.2
+    - pandas >=2.2.0
+    - scipy >=1.13.0
+    - numpy >=2.0.0
+tests:
+  - python:
+      imports:
+        - sksurv
+        - sksurv.datasets
+        - sksurv.ensemble
+        - sksurv.io
+        - sksurv.kernels
+        - sksurv.linear_model
+        - sksurv.meta
+        - sksurv.svm
+        - sksurv.tree
+
+about:
+  homepage: https://github.com/sebp/scikit-survival
+  summary: Survival analysis built on top of scikit-learn
+  documentation: https://scikit-survival.readthedocs.io
+  license: GPL-3.0-or-later
+  license_file: COPYING
+
+extra:
+  recipe-maintainers:
+    - sebp
+    - janjagusch
+    - xhochy

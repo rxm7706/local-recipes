@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: openai-whisper
+  version: 20250625
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/openai_whisper-${{ version }}.tar.gz
+  sha256: 37a91a3921809d9f44748ffc73c0a55c9f366c85a3ef5c2ae0cc09540432eb96
+  patches:
+    - 000-utf8.patch
+    - 001-pyproject.patch
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps
+  python:
+    entry_points:
+      - whisper=whisper.transcribe:cli
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools >=61.2
+  run:
+    - python >=${{ python_min }}
+    - numba
+    - numpy
+    - pytorch
+    - tqdm
+    - more-itertools
+    - tiktoken
+    - ffmpeg
+  run_constraints:
+    - triton >=2.0.0
+
+tests:
+  - python:
+      imports:
+        - whisper
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+        - pip
+    script:
+      - whisper --help
+
+about:
+  summary: Robust Speech Recognition via Large-Scale Weak Supervision
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/openai/whisper
+
+extra:
+  recipe-maintainers:
+    - hoxbro

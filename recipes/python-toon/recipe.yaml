@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "0.1.3"
+
+package:
+  name: python-toon
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/p/python-toon/python_toon-${{ version }}.tar.gz
+    sha256: ca348b214c4f1cdad3579fd83dd60032d9eb87eb349c2d430ad9eb6371f174bf
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install .
+  noarch: python
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      python_version: ${{ python_min }}.*
+      imports:
+        - toon
+      pip_check: true
+
+about:
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/xaviviro/python-toon
+  summary: Token-Oriented Object Notation (TOON) encoder for Python - Optimized data format for LLMs
+
+extra:
+  recipe-maintainers:
+    - moritzwilksch

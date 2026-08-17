@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: durationpy
+  version: "0.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/durationpy-${{ version }}.tar.gz
+  sha256: 1fa6893409a6e739c9c72334fc65cca1f355dbdd93405d30f726deb5bde42fba
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - durationpy
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Module for converting between datetime.timedelta and Go's Duration strings.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/icholy/durationpy
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

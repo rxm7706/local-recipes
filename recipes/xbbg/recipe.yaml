@@ -1,0 +1,94 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: xbbg
+  version: "1.4.6"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/xbbg-org/xbbg/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 48ecc706921732896d8583038dda5b05198216a5f1d4c7fb830eaf661439c21c
+
+build:
+  number: 0
+  skip: match(python, "<3.10") or match(python, ">=3.15") or (osx and x86_64)
+  script:
+    - if: unix
+      then: export BLPAPI_INCLUDE_DIR="${PREFIX}/include"
+    - if: unix
+      then: export BLPAPI_LIB_DIR="${PREFIX}/lib"
+    - if: unix
+      then: export LIBCLANG_PATH="${BUILD_PREFIX}/lib"
+    - if: unix
+      then: export SETUPTOOLS_SCM_PRETEND_VERSION="${{ version }}"
+    - if: win
+      then: set "BLPAPI_INCLUDE_DIR=%LIBRARY_INC%"
+    - if: win
+      then: set "BLPAPI_LIB_DIR=%LIBRARY_LIB%"
+    - if: win
+      then: set "LIBCLANG_PATH=%BUILD_PREFIX%\Library\bin"
+    - if: win
+      then: set "SETUPTOOLS_SCM_PRETEND_VERSION=${{ version }}"
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+    - ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation --no-cache-dir -vv
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('rust') }}
+    - ${{ stdlib('c') }}
+    - cargo-bundle-licenses
+    - if: unix
+      then: clangdev
+    - if: win
+      then: libclang
+  host:
+    - python
+    - pip
+    - setuptools >=82
+    - setuptools-rust >=1.12
+    - setuptools-scm >=9
+    - wheel >=0.46
+    - libblpapi-devel
+  run:
+    - python
+    - narwhals >=2.0
+    - blpapi
+    - libblpapi
+
+tests:
+  - python:
+      imports:
+        - xbbg
+      pip_check: false
+  - requirements:
+      run:
+        - python
+
+about:
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  summary: Independent Bloomberg BLPAPI client for Python data workflows
+  description: |
+    xbbg is an independent Bloomberg BLPAPI client for authorized Bloomberg
+    environments. It provides Python APIs backed by a Rust engine for BDP, BDS,
+    BDH, BQL, BEQS, BSRCH, intraday bars, ticks, subscriptions, async execution,
+    typed errors, diagnostics, and Arrow/Narwhals-native data outputs. Supported
+    connection modes include Bloomberg Desktop API/DAPI, SAPI/B-PIPE, and ZFP.
+    Current v1 conda-forge builds are platform-specific packages for linux-64,
+    osx-arm64, and win-64 on Python 3.10 through 3.14; older noarch entries on
+    anaconda.org are historical v0.x builds.
+  homepage: https://xbbg.org/
+  repository: https://github.com/xbbg-org/xbbg
+  documentation: https://xbbg.org/
+
+extra:
+  recipe-maintainers:
+    - m3ridian-zero
+    - makoponi

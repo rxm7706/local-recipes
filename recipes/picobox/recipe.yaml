@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: picobox
+  version: 4.0.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 114da1b5606b2f615e8b0eb68d04198ad9de75af5adbcf5b36fe4f664ab927b6
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+    - hatch-vcs
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - picobox
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  summary: Dependency injection framework designed with Python in mind.
+  description: |
+    Picobox is opinionated dependency injection framework
+    designed to be clean, pragmatic and with Python in mind.
+    No complex graphs, no implicit injections, no type bindings
+    – just picoboxes, and explicit demands!
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/ikalnytskyi/picobox
+  repository: https://github.com/ikalnytskyi/picobox
+  documentation: https://picobox.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - carlodri

@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: collate-sqlfluff
   version: "3.5.3"
 
 package:
-  name: collate-sqlfluff
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/c/collate-sqlfluff/collate_sqlfluff-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/collate_sqlfluff-${{ version }}.tar.gz
   sha256: feed770a232250b66f77d34aa1c1471a09e4f77b78f1824aca6d2400a06ec9ca
 
 build:
@@ -47,15 +48,13 @@ tests:
       imports:
         - sqlfluff
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}.*
 
 about:
   homepage: https://github.com/sqlfluff/sqlfluff
+  summary: The SQL Linter for Humans
   license: MIT
   license_file: LICENSE.md
-  summary: The SQL Linter for Humans
   repository: https://github.com/sqlfluff/sqlfluff
 
 extra:

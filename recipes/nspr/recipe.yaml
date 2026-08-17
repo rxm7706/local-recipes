@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.40"
+
+package:
+  name: nspr
+  version: ${{ version }}
+
+source:
+  url: https://ftp.mozilla.org/pub/nspr/releases/v${{ version }}/src/nspr-${{ version }}.tar.gz
+  sha256: c0c1884c627f3db7a783f7c7314c695226b2043696791d15519e7e0578c19bdc
+
+build:
+  number: 0
+  skip: win
+
+requirements:
+  build:
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - make
+    - gnuconfig
+    - autoconf
+    - sed
+  run_exports:
+    - ${{ pin_subpackage('nspr', upper_bound='x') }}
+
+tests:
+  - script:
+      - if: unix
+        then: test -f ${PREFIX}/lib/libnspr4${SHLIB_EXT}
+      - if: unix
+        then: test -f ${PREFIX}/lib/libplc4${SHLIB_EXT}
+      - if: unix
+        then: test -f ${PREFIX}/lib/libplds4${SHLIB_EXT}
+      - if: unix
+        then: test -d ${PREFIX}/include/nspr
+      - if: unix
+        then: test -f ${PREFIX}/bin/nspr-config
+
+about:
+  license: MPL-2.0
+  license_file: nspr/LICENSE
+  summary: A platform-neutral API for system level and libc-like functions.
+  description: |
+    NetScape Portable Runtime (NSPR) provides platform independence for
+    non-GUI operating system facilities. These facilities include threads,
+    thread synchronization, normal file and network I/O, interval timing and
+    calendar time, basic memory management (malloc and free) and shared
+    library linking.
+  homepage: https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSPR
+  repository: https://developer.mozilla.org/en-US/docs/MDN
+  documentation: https://developer.mozilla.org/en-US/docs/Mozilla/Projects/NSPR
+
+extra:
+  recipe-maintainers:
+    - hmaarrfk
+    - marcelotrevisani
+    - jakirkham

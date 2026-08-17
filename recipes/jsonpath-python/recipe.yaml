@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jsonpath-python
+  version: "1.1.6"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: dded9932b4ec41fb8726e09c83afa4e6be618f938c2db287cc2a81723c639671
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - jsonpath
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - jsonpath
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A more powerful JSONPath implementation in modern python
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/zhangxianbing/jsonpath-python
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

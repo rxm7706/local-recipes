@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.0"
+
+package:
+  name: sql-compare
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sql-compare/sql_compare-${{ version }}.tar.gz
+  sha256: 73f934f003e564eab2c450d5abae169f9fc568769c74d1d9e5fb68cf4a55385a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=1.0.0
+    - poetry-dynamic-versioning >=1.0.0,<2.0.0
+  run:
+    - python >=${{ python_min }}
+    - sqlparse >=0.5.0
+
+tests:
+  - python:
+      imports:
+        - sql_compare
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/sql-compare/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Compare SQL schemas
+  description: |
+    Compare SQL schemas
+  repository: https://github.com/Mergifyio/sql-compare
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sql-compare
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sql-compare
+  cfe-purls:
+    - pkg:conda/sql-compare@${{ version }}?channel=conda-forge
+    - pkg:pypi/sql-compare@${{ version }}
+  cfe-upstream-repo: https://github.com/Mergifyio/sql-compare
+  cfe-upstream-homepage: https://pypi.org/project/sql-compare/
+  cfe-import-names: [sql_compare]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:47:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:47:22Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

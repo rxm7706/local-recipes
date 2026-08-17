@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: collate-sqllineage
-  version: "2.1.4"
+  version: 2.0.2
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/collate_sqllineage-${{ version }}.tar.gz
-  sha256: 923327e2c2e3220c7359dbecc729243c73541ec55fc9c701e04d26b0a3ab8e77
+  sha256: c036f5a5b9f27cf3eafa65b944e9afecc278da5104d1253d51214177c8e43846
 
 build:
   number: 0
@@ -28,19 +28,16 @@ requirements:
     - setuptools
   run:
     - python >=${{ python_min }},<4.0
-    - sqlparse ==0.5.4
+    - sqlparse ==0.5.3
     - networkx >=2.4
     - collate-sqlfluff >=3.3,<4.dev0
-    - sqlglot ==29.0.1
-
+    - sqlglot >=27.29,<28.dev0
 tests:
   - python:
       imports:
         - collate_sqllineage
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
   - requirements:
       run:
         - python ${{ python_min }}.*
@@ -49,20 +46,10 @@ tests:
       - sqllineage --help
 
 about:
-  homepage: https://pypi.org/project/collate-sqllineage/
+  summary: Collate SQL Lineage for Analysis Tool powered by Python and sqlfluff based on sqllineage.
   license: MIT
   license_file: LICENSE
-  summary: Collate SQL Lineage for Analysis Tool powered by Python and sqlfluff based on sqllineage.
-  repository: https://github.com/open-metadata/openmetadata-sqllineage
-  documentation: https://github.com/open-metadata/openmetadata-sqllineage#readme
-  description: |
-    collate-sqllineage is the OpenMetadata/Collate community fork of sqllineage,
-    a SQL lineage analysis tool powered by Python. Given a SQL command it reports
-    the source and target tables (and column-level lineage) without exposing the
-    underlying parser tokens. The fork swaps in sqlfluff as the parsing backend
-    (in addition to sqlparse) and is the lineage engine consumed by OpenMetadata.
-    The original upstream project lives at https://github.com/reata/sqllineage
-    with documentation at https://sqllineage.readthedocs.io.
+  homepage: https://github.com/reata/sqllineage
 
 extra:
   recipe-maintainers:

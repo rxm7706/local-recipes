@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cx_Freeze
+  version: "8.6.4"
+  sha256: 16227706ad06b4b96f77c48980e2b363f0302c971f66c6b05567fd63a27596a4
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name|lower }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 1
+  script: python -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - cxfreeze = cx_Freeze.cli:main
+      - cxfreeze-quickstart = cx_Freeze.setupwriter:main
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools ==83.0
+  run:
+    - python
+    - freeze-core ==0.6.1
+    - packaging >=25.0
+    - setuptools >=78.1.1,<83.0
+    - if: match(python, "<3.11")
+      then:
+        - tomli >=2.0.1
+    - if: linux
+      then:
+        - filelock >=3.20.3
+        - patchelf >=0.14,<0.18
+    - if: osx
+      then:
+        - dmgbuild >=1.6.1
+    - if: win
+      then:
+        - py-lief >=0.15.1,<0.18
+        - if: match(python, "==3.13")
+          then:
+            - python-msilib >=0.4.3
+
+tests:
+  - python:
+      imports:
+        - cx_Freeze
+      pip_check: false
+  - files:
+      source:
+        - pyproject.toml
+        - samples
+        - tests
+    requirements:
+      run:
+        - coverage >=7.13.0
+        - pytest >=9.0.3
+        - pytest-mock
+        - pytest-timeout
+        - pytest-xdist
+    script:
+      - cxfreeze --version
+      - if: not (osx and x86_64)
+        then: coverage run || true
+
+about:
+  license: PSF-2.0
+  license_file: LICENSE.md
+  summary: Creates standalone executables from Python scripts with the same performance as the original script. It is cross-platform and should work on any platform that Python runs on. 
+  homepage: https://marcelotduarte.github.io/cx_Freeze
+
+extra:
+  recipe-maintainers:
+    - marcelotduarte
+    - jschueller

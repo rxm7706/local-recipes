@@ -44,7 +44,7 @@ tests:
 
 about:
   homepage: 
-    https://github.com/open-telemetry/opentelemetry-python-contrib/instrumentation/opentelemetry-instrumentation-click
+    https://github.com/open-telemetry/opentelemetry-python-contrib/tree/v0.64b0/instrumentation/opentelemetry-instrumentation-click
   license: Apache-2.0
   license_file: LICENSE
   summary: Click instrumentation for OpenTelemetry
@@ -54,8 +54,8 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
     - pb01ka
+    - rxm7706
     - conda-forge/opentelemetry-api
 
 #### CFE metadata AND comments

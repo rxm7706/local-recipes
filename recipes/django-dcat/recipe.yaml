@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-dcat
+  version: "0.0.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_dcat-${{ version }}.tar.gz
+  sha256: bc26e2874a8f963061c492f908fd28c7264289ab3d948dea20ff73d3c65b641b
+
+build:
+  number: 3
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - django >=5.0
+
+tests:
+  - python:
+      imports:
+        - dcat
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: A Django app that provides a model layer and tools for DCAT applications.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/pdelboca/django-dcat/
+
+extra:
+  recipe-maintainers:
+    - rxm7706

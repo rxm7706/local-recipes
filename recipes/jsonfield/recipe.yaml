@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  python_min: "3.10"
+  name: jsonfield
+  version: "3.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jsonfield-${{ version }}.tar.gz
+  sha256: ca53871bc3308ae4f4cddc3b4f99ed5c6fc6abb1832fbfb499bc6da566c70e4a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.10.*
+    - setuptools >=77
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+
+tests:
+  - python:
+      imports:
+        - jsonfield
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A reusable Django field that allows you to store validated JSON in your model.
+  homepage: https://github.com/dmkoch/django-jsonfield/
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

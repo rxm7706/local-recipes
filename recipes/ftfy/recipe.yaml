@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ftfy
+  version: "6.3.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ftfy-${{ version }}.tar.gz
+  sha256: 9b3c3d90f84fb267fe64d375a07b7f8912d817cf86009ae134aa03e1819506ec
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - ftfy = ftfy.cli:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - wcwidth
+
+tests:
+  - python:
+      imports:
+        - ftfy
+        - ftfy.bad_codecs
+      pip_check: true
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - pip
+        - pytest
+        - python ${{ python_min }}
+    script:
+      - ftfy --help
+      - pytest -vvv --capture=tee-sys -k "not test_cli" tests
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Fixes some problems with Unicode text after the fact
+  homepage: https://github.com/LuminosoInsight/python-ftfy/
+  documentation: http://ftfy.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - rmax
+    - FernandezMathieu
+    - thewchan

@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: json5
+  version: "0.15.0"
+  python_min: python_min|default("3.8")
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/json5-${{ version }}.tar.gz
+  sha256: 7424d1f1eb1d56da6e3d70643f53619862b4ce81440bdb8ecfd6f875e5ba4a71
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - pyjson5=json5.tool:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - json5
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+        - pip
+    script:
+      - pyjson5 --help
+
+about:
+  summary: A Python implementation of the JSON5 data format.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/dpranke/pyjson5
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - ian-r-rose

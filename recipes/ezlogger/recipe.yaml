@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.2"
+
+package:
+  name: ezlogger
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/e/ezlogger/ezlogger-${{ version }}.tar.gz
+    sha256: 851e47feb5ddc1278bc3aeb66f48337a29ff9417f4d0302ea44f45afe49a5037
+  # PyPI sdist omits LICENSE; fetch from upstream GitHub commit.
+  - url: https://raw.githubusercontent.com/zerosignal0/ezlogger/2a238da594c90d5e1a05a042c45d2934fffa6eee/LICENSE
+    sha256:  c6596eb7be8581c18be736c846fb9173b69eccf6ef94c5135893ec56bd92ba08
+    file_name: LICENSE
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - rainbow-logging-handler
+
+tests:
+  - python:
+      imports:
+        - ezlogger
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/zerosignal0/ezlogger/blob/master/README.md
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: ezlogger - The purpose of this module is to provide python scripters a very easy logging wrapper to handle more difficult to setup functions.
+  description: |
+    ezlogger - The purpose of this module is to provide python scripters a very easy logging wrapper to handle more difficult to setup functions.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ezlogger
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ezlogger
+  cfe-purls:
+    - pkg:conda/ezlogger@${{ version }}?channel=conda-forge
+    - pkg:pypi/ezlogger@${{ version }}
+  cfe-upstream-repo: https://github.com/zerosignal0/ezlogger/blob/master/README.md
+  cfe-upstream-homepage: https://github.com/zerosignal0/ezlogger/blob/master/README.md
+  cfe-import-names: [ezlogger]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:44:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:44:15Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4/P5 Create-recipe local-only. ezlogger.
+####

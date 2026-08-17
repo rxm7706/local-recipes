@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.0.1"
+
+package:
+  name: bracex
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/bracex/bracex-${{ version }}.tar.gz
+  sha256: 4e38e32392e4a4780fe15d644bfc7c8514057cfc3861e060b11814ce829c25e4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling >=0.21.1
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - bracex
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Bash style brace expander.
+  license: MIT
+  license_file: LICENSE.md
+  homepage: https://github.com/facelessuser/bracex
+
+extra:
+  recipe-maintainers:
+    - asford
+    - ocefpaf

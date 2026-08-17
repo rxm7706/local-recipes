@@ -2,38 +2,44 @@
 schema_version: 1
 
 context:
-  version: "0.11.3"
+  name: spec-kit
+  version: "0.16.4"
   python_min: "3.11"
 
 package:
-  name: spec-kit
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
   url: https://github.com/github/spec-kit/archive/v${{ version }}.tar.gz
-  sha256: 78b37dbcda69648ab648f82b6af83da4b56e34b2a6c9b2027c0152819d6e0646
+  sha256: 0012e4c1b956284b4284cae9b98ee984f7a71bcf61d2d0aff179824eb22ff387
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    env:
+      PYTHONIOENCODING: utf8
+      PYTHONUTF8: 1
+    content: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
       - specify = specify_cli:main
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python 3.11.*
     - hatchling
     - pip
   run:
-    - python >=${{ python_min }}
     - json5 >=0.13.0
     - pathspec >=0.12.0
     - click >=8.2.1
+    - python >=${{ python_min }},<4.0
     - typer >=0.24.0
     - rich
     - httpx
+    # https://github.com/encode/httpx/blob/master/pyproject.toml#L51
     - socksio ==1
     - platformdirs
     - readchar
@@ -45,13 +51,12 @@ tests:
   - python:
       imports:
         - specify_cli
-      pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      pip_check: false
+      python_version: ${{ python_min }}
   - requirements:
       run:
-        - python ${{ python_min }}.*
+        - pip
+        - python ${{ python_min }}
     script:
       - specify --help
 
@@ -60,7 +65,6 @@ about:
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/github/spec-kit
-  repository: https://github.com/github/spec-kit
 
 extra:
   recipe-maintainers:

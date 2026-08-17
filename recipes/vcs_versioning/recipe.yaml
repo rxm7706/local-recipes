@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.2.4"
+
+package:
+  name: vcs_versioning
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/v/vcs_versioning/vcs_versioning-${{ version }}.tar.gz
+  sha256: ed718fdee42170e128a8add6f23f53aa64dc7d9ab2de87d3083a691df881a809
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - vcs-versioning = vcs_versioning._cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=77.0.3
+    - packaging >=20
+    - typing_extensions
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - packaging >=26.2
+    - tomli >=1
+    - typing_extensions >=4.1
+tests:
+  - python:
+      imports:
+        - vcs_versioning
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - '*'
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - vcs-versioning --help
+
+about:
+  summary: the blessed package to manage your versions by vcs metadata
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://pypi.org/project/vcs-versioning/
+  repository: https://github.com/pypa/setuptools-scm
+  documentation: https://github.com/pypa/setuptools-scm
+
+extra:
+  recipe-maintainers:
+    - tcompa
+    - ocefpaf

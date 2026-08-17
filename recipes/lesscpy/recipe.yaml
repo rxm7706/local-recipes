@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: lesscpy
+  version: "0.15.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 4f6b7f34c22c5ce137e7ee280dcb1984ade0d500b6dab591d4a4d84252d18de9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - lesscpy = lesscpy.scripts.compiler:run
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - ply
+    - six
+
+tests:
+  - python:
+      imports:
+        - lesscpy
+        - lesscpy.lessc
+        - lesscpy.lib
+        - lesscpy.plib
+        - lesscpy.scripts
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - lesscpy --help
+
+about:
+  license_file: LICENSE
+  license: MIT
+  summary: Python LESS compiler
+  homepage: https://github.com/lesscpy/lesscpy
+  repository: https://github.com/lesscpy/lesscpy
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - jan-janssen

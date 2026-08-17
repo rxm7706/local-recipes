@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ansible-vault
+  version: 4.1.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 7e985a9329e4728961d7a00f62412fa8ec246a4d832ad6e6d158165e0026529b
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . --no-deps --ignore-installed --no-build-isolation -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - ansible-core >=2.16
+    - pyyaml >=5.1
+
+tests:
+  - python:
+      imports:
+        - ansible_vault
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  license: GPL-3.0-only
+  license_file: LICENSE.txt
+  summary: R/W an ansible-vault yaml file
+  homepage: https://github.com/tomoh1r/ansible-vault
+  repository: https://github.com/tomoh1r/ansible-vault
+
+extra:
+  recipe-maintainers:
+    - zoltanctoth
+    - synapticarbors

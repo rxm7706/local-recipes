@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: Keras-Preprocessing
+  version: "1.1.2"
+  sha256: add82567c50c8bc648c14195bf544a5ce7c1f76761536956c3d2978970179ef3
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/K/Keras-Preprocessing/Keras_Preprocessing-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - numpy >=1.9.1
+    - scipy >=0.14
+    - six >=1.9.0
+  # avoid a direct requirement on keras to prevent a circular dependency
+  run_constraints:
+    - keras >=2.1.6
+
+tests:
+  - python:
+      imports:
+        - keras_preprocessing
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Data preprocessing and data augmentation module of the Keras deep learning library
+  description: |
+    Keras Preprocessing is the data preprocessing and data augmentation module
+    of the Keras deep learning library. It provides utilities for working
+    with image data, text data, and sequence data.
+  homepage: https://github.com/keras-team/keras-preprocessing
+  repository: https://github.com/keras-team/keras-preprocessing
+  documentation: https://keras.io/
+
+extra:
+  recipe-maintainers:
+    - CurtLH
+    - h-vetinari

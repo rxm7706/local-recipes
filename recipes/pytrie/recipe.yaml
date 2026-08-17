@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: PyTrie
+  version: "0.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 8f4488f402d3465993fb6b6efa09866849ed8cda7903b50647b7d0342b805379
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - sortedcontainers
+
+tests:
+  - python:
+      imports:
+        - pytrie
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A pure Python implementation of the trie data structure.
+  homepage: https://github.com/gsakkis/pytrie
+  repository: https://github.com/gsakkis/pytrie
+  documentation: https://pytrie.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

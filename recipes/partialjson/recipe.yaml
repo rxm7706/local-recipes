@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: partialjson
+  version: "0.0.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 91217e19a15049332df534477f56420065ad1729cedee7d8c7433e1d2acc7dca
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - partialjson
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Parse incomplete or partial json
+  description: Parse incomplete or partial json
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/iw4p/partialjson
+  repository: https://github.com/iw4p/partialjson
+
+extra:
+  recipe-maintainers:
+    - raybellwaves

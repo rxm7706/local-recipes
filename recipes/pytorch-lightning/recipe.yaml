@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytorch-lightning
+  version: "2.6.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 1c32cefa76a1a9c4c5250338272d961d1e48b180e68396849efe128538ddb28e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - fsspec >=2022.5.0
+    - python >=${{ python_min }}
+    - packaging >=23.0
+    - pyyaml >5.4
+    - pytorch >=2.1.0
+    - tqdm >=4.57.0
+    - torchmetrics >0.7.0
+    - typing_extensions >4.5.0
+    - lightning-utilities >=0.10.0
+tests:
+  - python:
+      imports:
+        - pytorch_lightning
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: PyTorch Lightning is the lightweight PyTorch wrapper for ML researchers. Scale your models. Write less boilerplate.
+  license: Apache-2.0
+  license_file: LICENSE
+  description: |
+    Lightning is a way to organize your PyTorch code to decouple the science code from the engineering.
+    It's more of a style-guide than a framework.
+
+    In Lightning, you organize your code into 3 distinct categories:
+
+    1. Research code (goes in the LightningModule).
+    2. Engineering code (you delete, and is handled by the Trainer).
+    3. Non-essential research code (logging, etc. this goes in Callbacks).
+
+    Although your research/production project might start simple, once you add things like GPU AND TPU training,
+    16-bit precision, etc, you end up spending more time engineering than researching.
+    Lightning automates AND rigorously tests those parts for you.
+
+    Overall, Lightning guarantees rigorously tested, correct, modern best practices for the automated parts.
+
+    Documentation
+    -------------
+    - https://pytorch-lightning.readthedocs.io/en/latest
+    - https://pytorch-lightning.readthedocs.io/en/stable
+
+
+  homepage: https://pypi.org/project/pytorch-lightning/
+  repository: https://github.com/Lightning-AI/pytorch-lightning
+
+extra:
+  recipe-maintainers:
+    - williamFalcon
+    - borda
+    - carmocca
+    - jan-janssen
+    - synapticarbors

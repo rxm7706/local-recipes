@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.6.2"
+
+package:
+  name: pynacl
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/P/PyNaCl/pynacl-${{ version }}.tar.gz
+  sha256: 018494d6d696ae03c7e656e5e74cdfd8ea1326962cc401bcf018f1ed8436811c
+
+build:
+  number: 3
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cffi
+    - if: win
+      then: m2-patch
+    - if: unix
+      then: gnuconfig
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - wheel
+    - cffi >=2.0.0
+    - libsodium
+  run:
+    - python
+    - six
+    - cffi >=2.0.0
+
+tests:
+  - python:
+      imports:
+        - nacl
+        - nacl.bindings
+        - nacl.pwhash
+      pip_check: false
+  - files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - pytest >=3.2.1
+        - hypothesis >=3.27.0
+    script:
+      - pytest
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: PyNaCl is a Python binding to the Networking and Cryptography library, a crypto library with the stated goal of improving usability, security and speed.
+  description: |
+    PyNaCl is a Python binding to the Networking and Cryptography library, a crypto library with the stated goal of improving usability, security and speed. It supports Python 2.7 and 3.3+ as well as PyPy 2.6+.
+  homepage: https://github.com/pyca/pynacl
+  repository: https://github.com/pyca/pynacl
+  documentation: https://pynacl.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - CJ-Wright
+    - mariusvniekerk
+    - h-vetinari

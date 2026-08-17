@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: openvino-telemetry
+  version: "2025.2.0"
+  python_min: "3.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 8bf8127218e51e99547bf38b8fb85a8b31c9bf96e6f3a82eb0b3b6a34155977c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - opt_in_out = openvino_telemetry.opt_in_out:main
+
+requirements:
+  host:
+    - pip
+    - setuptools
+    - python 3.8.*
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - openvino_telemetry
+        - openvino_telemetry.backend
+        - openvino_telemetry.utils
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - opt_in_out --help
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: OpenVINO™ Telemetry package for sending statistics with user's consent, used in combination with other OpenVINO™ packages.
+  homepage: https://github.com/openvinotoolkit/telemetry
+  repository: https://github.com/openvinotoolkit/telemetry
+  documentation: https://pypi.org/project/openvino-telemetry/#description
+
+extra:
+  recipe-maintainers:
+    - popovaan

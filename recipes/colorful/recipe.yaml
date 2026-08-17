@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Need these up here for conda-smithy to handle them properly.
+schema_version: 1
+
+context:
+  version: "0.5.8"
+
+package:
+  name: colorful
+  version: ${{ version }}
+
+source:
+  url: https://github.com/timofurrer/colorful/archive/v${{ version }}.zip
+  sha256: 31adc852e53ba3980cc834c0d3bd6efcfee28bf88940f892d1ce55f0dcbd9ab7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - colorama
+
+tests:
+  - python:
+      imports:
+        - colorful
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Terminal string styling done right, in Python
+  description: |
+    Terminal string styling done right, in Python.
+    Key Features:
+    * expressive and consistent API
+    * support for different color modes (8 ANSI, 256 ANSI, true colors)
+    * support for predefined awesome styles (solarized, ...)
+    * support for custom color palettes
+    * support nesting styles
+    * support for different platforms (using colorama on Windows)
+    * context managers for clean color mode, color palette or style switch
+    * support len() on colored strings
+    * support color names from X11 rgb.txt
+    * no dependencies
+
+  homepage: http://github.com/timofurrer/colorful
+  repository: https://github.com/timofurrer/colorful
+  documentation: https://github.com/timofurrer/colorful
+
+extra:
+  recipe-maintainers:
+    - vnlitvinov
+    - timofurrer

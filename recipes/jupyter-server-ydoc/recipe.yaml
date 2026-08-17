@@ -2,49 +2,91 @@
 schema_version: 1
 
 context:
-  name: jupyter-server-ydoc
-  version: 2.1.1
+  version: "3.0.0"
+  python_check_max: "3.14"
+  # mismatch-sensitve upstream deps
+  jupyter_ydoc_min: "4.1.1"
+  jupyter_server_min: "2.19.0"
+  pycrdt_websocket_min: "0.16.4"
+  # testing
+  grep: ${{ "grep -iE" if unix else "findstr /c" }}
+  cov_fail_under: "74"
+  pytest_k: |-
+    -k "not room_handler_doc_client_should_emit_awareness_event"
 
 package:
-  name: ${{ name|lower }}
+  name: jupyter_server_ydoc
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jupyter_server_ydoc-${{ version }}.tar.gz
-  sha256: 2b0995cdc1d1ff9f46a38b00352c29c29d7b3c703038163a73e9cf0a72f9077b
+  url: https://files.pythonhosted.org/packages/source/j/jupyter-server-ydoc/jupyter_server_ydoc-${{ version }}.tar.gz
+  sha256: f252498e76a90bee9c0b6b8499dd75885c9646e0a928c7e61f01f456c1f85c04
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
 
 requirements:
   host:
-    - python >=3.8
     - hatchling >=1.4.0
     - pip
+    - python ${{ python_min }}.*
   run:
-    - python >=3.8
-    - jupyter_server >=2.15.0,<3.0.0
-    - jupyter_ydoc >=3.0.3,<4.0.0
-    - pycrdt
-    - pycrdt-websocket >=0.16.0,<0.17.0
-    - jupyter_events >=0.11.0
-    - jupyter_server_fileid >=0.7.0,<1
     - jsonschema >=4.18.0
+    - jupyter_events >=0.11.0
+    - jupyter_server >=${{ jupyter_server_min }},<3.0.0
+    - jupyter_server_fileid >=0.7.0,<1
+    - jupyter_ydoc >=${{ jupyter_ydoc_min }},<5.0.0
+    - pycrdt
+    - pycrdt-websocket >=${{ pycrdt_websocket_min }},<0.17.0
+    - python >=${{ python_min }}
 
 tests:
   - python:
-      imports:
-        - jupyter_server_ydoc
+      imports: jupyter_server_ydoc
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - jupyter_server ${{ jupyter_server_min }}.*
+        - jupyter_ydoc ${{ jupyter_ydoc_min }}.*
+        - pycrdt-websocket ${{ pycrdt_websocket_min }}.*
+    script:
+      - pip check
+  - files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - dirty-equals
+        - httpx-ws >=0.5.2
+        - pytest-cov
+        - python ${{ python_min }}.*
+        - pytest-jupyter
+        - pip
+    script:
+      env:
+        JUPYTER_PLATFORM_DIRS: "1"
+      content:
+        - pip check
+        - jupyter server extension list
+        - jupyter server extension list 2>&1 | ${{ grep }} "jupyter_server_ydoc.*${{ version | replace(".", "\\.") }}.*OK"
+        - coverage run --source=jupyter_server_ydoc --branch -m pytest -vv --tb=long --color=yes ${{ pytest_k }}
+        - coverage report --show-missing --skip-covered --fail-under=${{ cov_fail_under }}
 
 about:
-  summary: jupyter-server extension integrating collaborative shared models.
   license: BSD-3-Clause
   license_file: LICENSE
-  repository: https://github.com/jupyterlab/jupyter-collaboration/tree/main/projects/jupyter-server-ydoc
+  summary: jupyter-server extension integrating collaborative shared models.
+  homepage: https://pypi.org/project/jupyter-server-ydoc
+  repository: https://github.com/jupyterlab/jupyter_collaboration
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - davidbrochart
+    - conda-forge/jupyter_server

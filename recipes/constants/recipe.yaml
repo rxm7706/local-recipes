@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2023.2.0"
+
+package:
+  name: constants
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/constants/constants-${{ version }}.tar.gz
+  sha256: c48048e3baa02803a0b4c31633c72bb9b2a029b025c76d552661f855e41ab86c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - constants
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://github.com/3kwa/constants
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: The simple way to deal with environment constants.
+  description: |
+    The simple way to deal with environment constants.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: constants
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: constants
+  cfe-purls:
+    - pkg:conda/constants@${{ version }}?channel=conda-forge
+    - pkg:pypi/constants@${{ version }}
+  cfe-upstream-repo: http://github.com/3kwa/constants
+  cfe-upstream-homepage: http://github.com/3kwa/constants
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:56:46Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:56:46Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

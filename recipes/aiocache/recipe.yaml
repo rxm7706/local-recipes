@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: aiocache
+  version: "0.12.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/aiocache-${{ version }}.tar.gz
+  sha256: f528b27bf4d436b497a1d0d1a8f59a542c153ab1e37c3621713cb376d44c4713
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - aiocache
+        - aiocache.backends
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: multi backend asyncio cache
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/aio-libs/aiocache
+  documentation: https://aiocache.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - owenlamont

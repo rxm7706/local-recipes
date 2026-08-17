@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.5.0"
+
+package:
+  name: socketdev
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/socketdev/socketdev-${{ version }}.tar.gz
+  sha256: a2b20f9b98f73c25f3d2e97a1ae730504509c91219c0b393f28a9230266b3531
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling ==1.27.0
+  run:
+    - python >=${{ python_min }}
+    - requests <3,>=2.32.5
+    - typing_extensions <5,>=4.12.2
+
+tests:
+  - python:
+      imports:
+        - socketdev
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/SocketDev/socket-sdk-python
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Socket Security Python SDK
+  description: |
+    Socket Security Python SDK
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: socketdev
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: socketdev
+  cfe-purls:
+    - pkg:conda/socketdev@${{ version }}?channel=conda-forge
+    - pkg:pypi/socketdev@${{ version }}
+  cfe-upstream-repo: https://github.com/SocketDev/socket-sdk-python
+  cfe-upstream-homepage: https://github.com/SocketDev/socket-sdk-python
+  cfe-import-names: [socketdev]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:27:06Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:27:06Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mypy-protobuf
+  version: "5.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 8493758852a9cdc075a11dbe96c6e37ea2feba5fd5f33ef7442b9a275322a94c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - protoc-gen-mypy = mypy_protobuf.main:main
+      - protoc-gen-mypy_grpc = mypy_protobuf.main:grpc
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+    - protobuf >=6.32
+    - types-protobuf >=6.32
+
+tests:
+  - python:
+      imports:
+        - mypy_protobuf
+        - mypy_protobuf.extensions_pb2
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - cat /dev/null | protoc-gen-mypy
+      - cat /dev/null | protoc-gen-mypy_grpc
+
+about:
+  summary: Generate mypy stub files from protobuf specs
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/dropbox/mypy-protobuf
+
+extra:
+  recipe-maintainers:
+    - hmaarrfk
+    - asford

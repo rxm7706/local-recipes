@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: num2words
+  version: 0.5.14
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: b066ec18e56b6616a3b38086b5747daafbaa8868b226a36127e0451c0cf379c6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - docopt >=0.6.2
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      python_version: ${{ python_min }}.*
+      imports:
+        - num2words
+
+about:
+  license: LGPL-2.1-or-later
+  license_file: COPYING
+  summary: Modules to convert numbers to words. Easily extensible.
+  homepage: https://github.com/savoirfairelinux/num2words
+  repository: https://github.com/savoirfairelinux/num2words
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - oblute
+    - Tata17
+    - xhochy

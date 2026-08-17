@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: eradicate
+  version: "3.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/eradicate-${{ version }}.tar.gz
+  sha256: c9cb7ef8e7e83c3fbd9806010e21089892bb649531c68875a555c7b5c978faa6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - eradicate
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Removes commented-out code.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/myint/eradicate
+
+extra:
+  recipe-maintainers:
+    - thewchan

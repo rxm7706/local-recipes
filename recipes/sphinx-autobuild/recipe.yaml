@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2025.8.25"
+  python_check_max: "3.14"
+  python_min: "3.11"
+
+package:
+  name: sphinx-autobuild
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sphinx-autobuild/sphinx_autobuild-${{ version }}.tar.gz
+  sha256: 9cf5aab32853c8c31af572e4fecdc09c997e2b8be5a07daf2a389e270e85b213
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  python:
+    entry_points:
+      - sphinx-autobuild = sphinx_autobuild.__main__:main
+
+requirements:
+  host:
+    - flit-core >=3.7
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - colorama >=0.4.6
+    - python >=${{ python_min }}
+    - sphinx
+    - starlette >=0.35
+    - uvicorn >=0.25
+    - watchfiles >=0.20
+    - websockets >=11
+
+tests:
+  - python:
+      imports: sphinx_autobuild
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - httpx
+        - mock
+        - pytest >=6
+        - python ${{ python_min }}.*
+    script:
+      - sphinx-autobuild --version
+      - sphinx-autobuild --help
+      - pytest -vv --color=yes --tb=long -k "not test_application"
+
+about:
+  summary: Rebuild Sphinx documentation on changes, with live-reload in the browser.
+  license: MIT
+  license_file: LICENSE.rst
+  homepage: https://github.com/sphinx-doc/sphinx-autobuild
+
+extra:
+  recipe-maintainers:
+    - jrderuiter
+    - xhochy
+    - bollwyvl

@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: execnb
+  version: "0.3.2"
+  python_min: "3.11"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/execnb-${{ version }}.tar.gz
+  sha256: 723d01cb6388c112ad0eba1424637c105ad2fbed95c789baff7216078fae41da
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - exec_nb=execnb.shell:exec_nb
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools >=64
+  run:
+    - python >=${{ python_min }}
+    - fastcore >=2.2.5
+    - ipython
+
+tests:
+  - python:
+      imports:
+        - execnb
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - exec_nb --help
+
+about:
+  summary: Execute a jupyter notebook, fast, without needing jupyter
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://fastai.github.io/execnb/
+  repository: https://github.com/fastai/execnb
+
+extra:
+  recipe-maintainers:
+    - thewchan

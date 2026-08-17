@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ConfigUpdater
+  version: "3.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 9fdac53831c1b062929bf398b649b87ca30e7f1a735f3fbf482072804106306b
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+    - setuptools-scm
+  run:
+    - python >=${{ python_min }}
+    - importlib-metadata
+
+tests:
+  - python:
+      imports:
+        - configupdater
+      pip_check: true
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - pip
+        - pytest
+        - pytest-cov
+        - python ${{ python_min }}
+    script:
+      - pytest
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Parser like ConfigParser but for updating configuration files
+  description: |
+    The sole purpose of ConfigUpdater is to easily update an INI config file
+    with no changes to the original file except the intended ones. This means
+    comments, the ordering of sections and key/value-pairs as wells as their
+    cases are kept as in the original file. Thus ConfigUpdater provides
+    complementary functionality to Python's ConfigParser which is primarily
+    meant for reading config files and writing *new* ones.
+  homepage: https://github.com/pyscaffold/configupdater
+  repository: https://github.com/pyscaffold/configupdater
+  documentation: https://configupdater.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - maresb
+    - FlorianWilhelm
+    - abravalheri

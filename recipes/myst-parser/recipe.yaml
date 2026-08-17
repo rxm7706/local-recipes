@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  python_min: "3.11"
+  name: myst-parser
+  version: "5.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: ab69322dc6719dcc7f296479dbb70181b66df6ed315064f92dbc85c0e1bf2f02
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+  python:
+    entry_points:
+      - myst-benchmark = myst_parser.cli.benchmark:main
+
+requirements:
+  host:
+    - python 3.11.*
+    - pip
+    - flit-core >=3.4,<4
+  run:
+    - docutils >=0.20,<0.23
+    - markdown-it-py >=4.2.0,<4.3.0
+    - mdit-py-plugins >=0.6.1,<0.7
+    - jinja2
+    - python >=${{ python_min }}
+    - pyyaml
+    - sphinx >=8,<10
+
+tests:
+  - python:
+      imports:
+        - myst_parser
+        - myst_parser.cli
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: An extended commonmark compliant parser, with bridges to docutils & sphinx.
+  homepage: https://github.com/ExecutableBookProject/MyST-Parser
+  documentation: https://myst-parser.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - dopplershift
+    - choldgraf

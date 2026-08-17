@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: PasteDeploy
+  version: "3.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 9ddbaf152f8095438a9fe81f82c78a6714b92ae8e066bed418b6a7ff6a095a95
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - setuptools
+
+tests:
+  - python:
+      imports:
+        - paste
+        - paste.deploy
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: license.txt
+  summary: Load, configure, and compose WSGI applications and servers
+  homepage: https://pylonsproject.org/
+  repository: https://github.com/Pylons/pastedeploy
+  documentation: https://docs.pylonsproject.org/projects/pastedeploy/
+
+extra:
+  recipe-maintainers:
+    - lincrosenbach
+    - kfasolin
+    - synapticarbors

@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: aiosmtpd
+  version: "1.4.6"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/aiosmtpd-${{ version }}.tar.gz
+  sha256: 5a811826e1a5a06c25ebc3e6c4a704613eb9a1bcf6b78428fbe865f4f6c9a4b8
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - aiosmtpd = aiosmtpd.main:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - atpublic
+    - attrs
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - aiosmtpd
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - aiosmtpd --help
+
+about:
+  summary: aiosmtpd - asyncio based SMTP server
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://aiosmtpd.readthedocs.io/
+  repository: https://github.com/aio-libs/aiosmtpd
+
+extra:
+  recipe-maintainers:
+    - nicoddemus

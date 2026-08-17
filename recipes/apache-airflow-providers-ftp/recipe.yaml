@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: apache-airflow-providers-ftp
+  version: "3.15.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/apache_airflow_providers_ftp-${{ version }}.tar.gz
+  sha256: 0355ea366f3bc1fee0c5d48d6d2c6a65555863659bbd998e3ddeafcb88461526
+
+build:
+  noarch: python
+  script: python -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core ==3.12.0
+  run:
+    - python >=${{ python_min }}
+    - apache-airflow >=2.11.0
+    - apache-airflow-providers-common-compat >=1.8.0
+
+tests:
+  - python:
+      imports:
+        - airflow.providers.ftp
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/apache/airflow/
+  summary: Provider package apache-airflow-providers-ftp for Apache Airflow
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+  documentation: https://airflow.apache.org/docs/apache-airflow-providers-ftp/stable/index.html
+  repository: https://github.com/apache/airflow/
+
+extra:
+  recipe-maintainers:
+    - xylar

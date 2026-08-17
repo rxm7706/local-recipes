@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: frictionless-ckan-mapper
+  version: "1.0.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/frictionless-ckan-mapper-${{ version }}.tar.gz
+  sha256: 9972b94f59709bf83928a02f9581a42981364a69c2a150053178427432b37893
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - six >=1.9,<2.0
+    - unidecode
+
+tests:
+  - python:
+      imports:
+        - frictionless_ckan_mapper
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A library for mapping CKAN metadata <=> Frictionless metadata.
+  license: MIT
+  license_file: LICENSE.md
+  homepage: https://github.com/frictionlessdata/frictionless-ckan-mapper
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python_version
+  version: 0.0.2
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/python_version-${{ version }}.tar.gz
+  sha256: 5c16de57c7f2d614621cf468e8f5a20bb6b3cec665c9c7f5e9f9f000bf04fe67
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - python_version
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Provides a simple utility for checking the python version.
+  description: |
+    This package provides a basic python version checking utility. It
+    will check for a range of python versions and either report an error
+    or exit depending on the parameters provided.
+  homepage: https://gitlab.com/halfak/python_version
+  repository: https://gitlab.com/halfak/python_version
+  documentation: https://gitlab.com/halfak/python_version
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

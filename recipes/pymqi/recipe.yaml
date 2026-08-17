@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.12.13"
+
+package:
+  name: pymqi
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pymqi/pymqi-${{ version }}.tar.gz
+  sha256: a74a48d6f0c59180f678a926927b69d8d7e7df0b228f8903c08b95f54627051c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - code.pymqi
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/pymqi/
+  license: PSF-2.0
+  license_file: LICENSE
+  summary: The development of this product is currently on hold.
+  description: |
+    The development of this product is currently on hold.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pymqi
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pymqi
+  cfe-purls:
+    - pkg:conda/pymqi@${{ version }}?channel=conda-forge
+    - pkg:pypi/pymqi@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/pymqi/
+  cfe-upstream-homepage: https://pypi.org/project/pymqi/
+  cfe-import-names: [code.pymqi]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:06:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:06:15Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

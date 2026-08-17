@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.0"
+
+package:
+  name: tortilla
+  version: ${{ version }}
+
+source:
+  url: https://github.com/tortilla/tortilla/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 71b131f780cba0071f0d031df86a14c198ddea286da24a6cb747e49022405730
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - colorama
+    - requests
+    - formats
+    - six
+    - httpretty
+
+tests:
+  - python:
+      imports:
+        - tortilla
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/tortilla/tortilla
+  license: MIT
+  license_file: LICENSE
+  summary: Wrapping web APIs made easy.
+  description: |
+    Wrapping web APIs made easy.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tortilla
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tortilla
+  cfe-purls:
+    - pkg:conda/tortilla@${{ version }}?channel=conda-forge
+    - pkg:pypi/tortilla@${{ version }}
+  cfe-upstream-repo: https://github.com/tortilla/tortilla
+  cfe-upstream-homepage: https://github.com/tortilla/tortilla
+  cfe-import-names: [tortilla]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:55:13Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:55:13Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

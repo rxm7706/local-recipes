@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: langgraph-checkpoint
+  version: "4.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/langgraph_checkpoint-${{ version }}.tar.gz
+  sha256: 51a593b6bee684b0818e5d6e58e28ab340c6db7794575056ce7bd1b746a84ed7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - ormsgpack >=1.12.0
+    - python >=${{ python_min }}
+    - langchain-core >=0.2.38
+tests:
+  - python:
+      imports:
+        - langgraph.checkpoint.memory
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  summary: Library with base interfaces for LangGraph checkpoint savers.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://www.github.com/langchain-ai/langgraph
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

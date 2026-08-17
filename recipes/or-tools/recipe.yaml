@@ -1,0 +1,302 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# many, many more headers; this just covers one from main namespace and a nested one
+# The meta package
+schema_version: 1
+
+context:
+  version: "9.6"
+  libs:
+    - ortools
+    - ortools_flatzinc
+  headers:
+    - ortools_export.h
+    - ortools/algorithms/dense_doubly_linked_list.h
+  binaries:
+    - fzn-ortools
+    - sat_runner
+    - solve
+
+recipe:
+  name: or-tools-package
+  version: ${{ version }}
+
+source:
+  url: https://github.com/google/or-tools/archive/v${{ version }}.tar.gz
+  sha256: bc4b07dc9c23f0cca43b1f5c889f08a59c8f2515836b03d4cc7e0f8f2c879234
+  patches:
+    - patches/0001-fail-loudly-in-sample-program-if-scip-not-found.patch
+    - patches/0002-depend-on-libortools-for-python-bindings.patch
+    - patches/0003-avoid-host.cmake.patch
+
+build:
+  number: 3
+  skip: not linux
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - pkg-config
+    - if: build_platform != target_platform
+      then: libprotobuf
+  host:
+    # eigen does not have a run-export but is header-only
+    - eigen
+    - libabseil
+    - libprotobuf
+    - re2
+    # not available on aarch/ppc yet
+    - if: not (aarch64 or ppc64le)
+      then: scip
+    - zlib
+    # coin or deps
+    - coin-or-utils
+    - coin-or-osi
+    - coin-or-clp
+    - coin-or-cgl
+    - coin-or-cbc
+
+outputs:
+  # The core package
+  - package:
+      name: libortools
+    build:
+      script:
+        file: install-cpp.sh
+    requirements:
+      build:
+        - cmake
+        # for strong run export
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+      host:
+        # these are only here for proper run-exports
+        - libabseil
+        - libprotobuf
+        - re2
+        - if: not (aarch64 or ppc64le)
+          then: scip
+        - zlib
+        - coin-or-utils
+        - coin-or-osi
+        - coin-or-clp
+        - coin-or-cgl
+        - coin-or-cbc
+      run:
+        # header-only without run-export, but ortoolsConfig.cmake really wants it, see
+        # https://github.com/google/or-tools/blob/v9.6/cmake/ortoolsConfig.cmake.in#L64
+        - eigen
+      run_exports:
+        - ${{ pin_subpackage('libortools', upper_bound='x.x') }}
+      run_constraints:
+        - ortools-cpp =${{ version }}
+    tests:
+      - script:
+          - if: linux
+            then: test -f $PREFIX/lib/lib${{ each_lib }}.so
+          - if: unix
+            then: test ! -f $PREFIX/lib/lib${{ each_lib }}.a
+          - if: unix
+            then: test -f $PREFIX/include/${{ each_header }} || (echo "${{ each_header }} not found" && exit 1)
+          - if: unix
+            then: test ! -f $PREFIX/bin/${{ each_bin }}
+          - test -f $PREFIX/lib/cmake/ortools/ortoolsTargets.cmake
+          - test -f $PREFIX/lib/cmake/ortools/ortoolsConfig.cmake
+  # originally for compatibility with previous output nomenclature,
+  # now used for binaries, c.f. thrift-cpp feedstock, resp.
+  # https://github.com/conda-forge/conda-forge.github.io/issues/1073#issuecomment-1228192146
+  - package:
+      name: ortools-cpp
+    build:
+      script:
+        file: install-cpp.sh
+    requirements:
+      build:
+        - cmake
+        # for strong run export
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+      host:
+        - ${{ pin_subpackage('libortools', exact=True) }}
+        # for proper run-exports
+        - libabseil
+        - libprotobuf
+      run:
+        - ${{ pin_subpackage('libortools', exact=True) }}
+      run_exports:
+        - ${{ pin_subpackage('libortools', upper_bound='x.x') }}
+    tests:
+      - files:
+          recipe:
+            - cmake_test/
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+        script:
+          - if: unix
+            then: test -f $PREFIX/bin/${{ each_bin }}
+          - if: unix
+            then: test -d $PREFIX/share/minizinc/ortools
+          - if: unix
+            then: test -d $PREFIX/share/minizinc/solvers
+          - cd cmake_test
+          - if: unix
+            then: cmake -GNinja $CMAKE_ARGS .
+          - if: win
+            then: cmake -GNinja %CMAKE_ARGS% .
+  # this package exists primarily to be able to test scip integration without
+  # polluting the other outputs (and $CONDA_PREFIX/bin) with useless sample binaries
+  - package:
+      name: ortools-samples
+    build:
+      script:
+        file: install-cpp.sh
+    requirements:
+      build:
+        - cmake
+        # for strong run export
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+      host:
+        - ${{ pin_subpackage('ortools-cpp', exact=True) }}
+        - libabseil
+        - libprotobuf
+      run:
+        - ${{ pin_subpackage('ortools-cpp', exact=True) }}
+        # it seems that conda-build does not correctly apply run-exports
+        # for dependencies added through `pin_subpackage`...
+        - ${{ pin_subpackage('libortools', upper_bound='x.x') }}
+    tests:
+      - script:
+          - if: not (aarch64 or ppc64le)
+            then: $CONDA_PREFIX/bin/simple_mip_program
+  # The python package.
+    # Source: https://github.com/google/or-tools/blob/stable/ortools/python/setup.py.in#L44
+    package:
+      name: ortools-python
+    build:
+      script:
+        file: build-python.sh
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - ninja
+        - pkg-config
+        - swig >=4.0
+        - if: build_platform != target_platform
+          then: libprotobuf
+      host:
+        # find_package(ortools) wants to find the binaries as well
+        - ${{ pin_subpackage('ortools-cpp', exact=True) }}
+        - python
+        - pip
+        - setuptools
+        - wheel
+        - absl-py >=0.13
+        - numpy
+        - mypy-protobuf
+        - protobuf >=4.21.12
+        - scipy >=1.10
+        # match protobuf version from libortools to help solver
+        - libprotobuf
+        # other C/C++ deps
+        - eigen
+        - libabseil
+        - pybind11
+        - re2
+        - zlib
+        # coin or deps
+        - coin-or-utils
+        - coin-or-osi
+        - coin-or-clp
+        - coin-or-cgl
+        - coin-or-cbc
+      run:
+        - ${{ pin_subpackage('libortools', exact=True) }}
+        - python
+        - absl-py >=0.13
+        - mypy-protobuf
+        - ${{ pin_compatible('numpy') }}
+        - protobuf >=4.21.12
+        - scipy >=1.10
+      ignore_run_exports:
+        from_package:
+          - coin-or-utils
+          - coin-or-osi
+          - coin-or-clp
+          - coin-or-cgl
+          - coin-or-cbc
+          - re2
+          - zlib
+    tests:
+      - python:
+          imports:
+            - ortools
+            - ortools.algorithms.pywrapknapsack_solver
+            - ortools.constraint_solver.pywrapcp
+            - ortools.constraint_solver.routing_enums_pb2
+            - ortools.glop.parameters_pb2
+            - ortools.graph.flow_problem_pb2
+            - ortools.graph.python
+            - ortools.init.pywrapinit
+            - ortools.linear_solver.linear_solver_pb2
+            - ortools.linear_solver.python
+            - ortools.linear_solver.python.model_builder
+            - ortools.linear_solver.pywraplp
+            - ortools.packing.multiple_dimensions_bin_packing_pb2
+            - ortools.packing.vector_bin_packing_pb2
+            - ortools.pdlp.python
+            - ortools.sat.boolean_problem_pb2
+            - ortools.sat.cp_model_pb2
+            - ortools.sat.cp_model_service_pb2
+            - ortools.sat.python
+            - ortools.sat.python.cp_model
+            - ortools.sat.sat_parameters_pb2
+            - ortools.scheduling.course_scheduling_pb2
+            - ortools.scheduling.jobshop_scheduling_pb2
+            - ortools.scheduling.pywraprcpsp
+            - ortools.scheduling.rcpsp_pb2
+            - ortools.util.optional_boolean_pb2
+            - ortools.util.python
+          pip_check: true
+      - files:
+          source:
+            - cmake/samples/python/sample.py
+            - ortools/sat/samples/assignment_sat.py
+        requirements:
+          run:
+            - pip
+        script:
+          - ${PYTHON} cmake/samples/python/sample.py
+          - ${PYTHON} ortools/sat/samples/assignment_sat.py
+          - if: not (aarch64 or ppc64le)
+            then: python -c "from ortools.linear_solver import pywraplp; pywraplp.Solver.CreateSolver('SCIP')"
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Google Operations Research Tools (or-tools) python package
+  description: |
+    OR-Tools is an open source software suite for optimization, tuned for tackling
+    the world's toughest problems in vehicle routing, flows, integer and linear
+    programming, and constraint programming.
+
+    After modeling your problem in the programming language of your choice, you
+    can use any of a half dozen solvers to solve it: commercial solvers such as
+    Gurobi or CPLEX, or open-source solvers such as SCIP, GLPK, or Google's GLOP
+    and award-winning CP-SAT.
+  homepage: https://developers.google.com/optimization
+  repository: https://github.com/google/or-tools
+
+extra:
+  recipe-maintainers:
+    - wolfv
+    - BastianZim
+    - h-vetinari
+  feedstock-name: or-tools

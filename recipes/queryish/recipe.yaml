@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: queryish
   version: "0.3"
 
 package:
-  name: queryish
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/q/queryish/queryish-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/queryish-${{ version }}.tar.gz
   sha256: 7f5e32cb466b4c87d8e8e1b8272da68ba43c413155a868453558e4ad6a4dc8d5
 
 build:
@@ -31,9 +32,7 @@ tests:
       imports:
         - queryish
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}.*
 
 about:
   summary: A library for constructing queries on arbitrary data sources following Django's QuerySet API

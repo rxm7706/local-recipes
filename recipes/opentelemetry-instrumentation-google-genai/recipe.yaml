@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0b1"
+
+package:
+  name: opentelemetry-instrumentation-google-genai
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-google-genai/opentelemetry_instrumentation_google_genai-${{ version }}.tar.gz
+  sha256: 784b3a473ed51033837114b96854b31a0f0b0fe7c81e132e58a45352eee3b102
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - google
+    - opentelemetry-api ~=1.43
+    - opentelemetry-instrumentation <1,>=0.64b0
+    - opentelemetry-semantic-conventions <1,>=0.64b0
+    - opentelemetry-util-genai <2,>=1.0b0
+    - wrapt <3.0.0,>=1.17.0
+
+tests:
+  - python:
+      imports:
+        - opentelemetry.instrumentation.google_genai
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/open-telemetry/opentelemetry-python-genai/tree/main/instrumentation/opentelemetry-instrumentation-google-genai
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: OpenTelemetry
+  description: |
+    OpenTelemetry
+  repository: https://github.com/open-telemetry/opentelemetry-python-genai
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opentelemetry-instrumentation-google-genai
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opentelemetry-instrumentation-google-genai
+  cfe-purls:
+    - pkg:conda/opentelemetry-instrumentation-google-genai@${{ version }}?channel=conda-forge
+    - pkg:pypi/opentelemetry-instrumentation-google-genai@${{ version }}
+  cfe-upstream-repo: https://github.com/open-telemetry/opentelemetry-python-genai
+  cfe-upstream-homepage: https://github.com/open-telemetry/opentelemetry-python-genai/tree/main/instrumentation/opentelemetry-instrumentation-google-genai
+  cfe-import-names: [opentelemetry.instrumentation.google_genai]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:53:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:53:02Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

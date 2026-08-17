@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.26"
+
+package:
+  name: dataprep-ml
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/dataprep-ml/dataprep_ml-${{ version }}.tar.gz
+  sha256: c1d7c05896f7db0b3a9b00d84af32453c3c8dfa9bf903b7eee9cfd641a4941de
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - numpy <3,>=2
+    - pandas <3,>=2
+    - pydateinfer ==0.3.0
+    - python-dateutil >=2.1
+    - scipy >=1.7.3
+    - type-infer >=0.0.26
+    - dataclasses-json <0.7.0,>=0.6.3
+    - colorlog <7.0.0,>=6.5.0
+    - pydantic
+
+tests:
+  - python:
+      imports:
+        - dataprep_ml
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/dataprep-ml/
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: Automated dataframe analysis for Machine Learning pipelines.
+  description: |
+    Automated dataframe analysis for Machine Learning pipelines.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dataprep-ml
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dataprep-ml
+  cfe-purls:
+    - pkg:conda/dataprep-ml@${{ version }}?channel=conda-forge
+    - pkg:pypi/dataprep-ml@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/dataprep-ml/
+  cfe-upstream-homepage: https://pypi.org/project/dataprep-ml/
+  cfe-import-names: [dataprep_ml]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:52:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:52:24Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

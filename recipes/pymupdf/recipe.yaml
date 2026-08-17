@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: pymupdf
+  version: "1.28.0"
+  mupdf_version: "1.28.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/pymupdf/PyMuPDF/archive/${{ version }}.tar.gz
+  sha256: 20920e04b48d248454b2eb6086de26c3baff55e5d66530530174a4d4e02c0410
+  patches:
+    - system-mupdf.patch
+
+build:
+  number: 1
+  script:
+    - if: unix
+      then: LD="$CXX" PYMUPDF_SETUP_MUPDF_BUILD="" PYMUPDF_SETUP_MUPDF_REBUILD=0 PYMUPDF_MUPDF_LIB="$PREFIX/lib" PYMUPDF_INCLUDES="$PREFIX/include:$PREFIX/include/mupdf:$PREFIX/include/freetype2" pip install . -vv --no-deps --no-build-isolation
+    - if: win
+      then: |
+        set "CC="
+        set "CXX="
+        set "LD="
+        set "PYMUPDF_SETUP_MUPDF_BUILD=system"
+        set "PYMUPDF_SETUP_MUPDF_REBUILD=0"
+        set "PYMUPDF_MUPDF_LIB=%LIBRARY_LIB%"
+        set "PYMUPDF_INCLUDES=%LIBRARY_INC%\mupdf"
+        pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != host_platform
+      then:
+        - python
+        - cross-python_${{ host_platform }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+    # SWIG 4.5.0 dropped the Python 2 -> 3 compatibility shims that PyMuPDF's
+    # src/extra.i relies on, causing 'PyString_FromString' undeclared errors.
+    # Pin below 4.5 until upstream PyMuPDF supports SWIG 4.5.
+    - swig <4.5
+    - mupdf =${{ mupdf_version }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - pipcl
+    - mupdf =${{ mupdf_version }}
+  run:
+    - python
+    - mupdf =${{ mupdf_version }}
+
+tests:
+  - python:
+      imports:
+        - fitz
+        - pymupdf
+      pip_check: true
+
+about:
+  summary: A high performance Python library for data extraction, analysis, conversion & manipulation of PDF (and other) documents.
+  license: AGPL-3.0-or-later
+  license_file: COPYING
+  homepage: https://github.com/pymupdf/pymupdf
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - moritzwilksch
+    - benmoss

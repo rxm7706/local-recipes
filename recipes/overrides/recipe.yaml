@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "7.7.0"
+
+package:
+  name: overrides
+  version: ${{ version }}
+
+source:
+  url: https://github.com/mkorpela/overrides/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 0d2b70ba4b51d6f9007fa830f425083b708438515bc284853ccd0ff47aacb0cc
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+    - typing_utils
+
+tests:
+  - python:
+      imports:
+        - overrides
+      pip_check: false
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - pytest
+        - python ${{ python_min }}
+    script:
+      - pytest -v tests/ -k "not test_nested_typevar_in_signature"
+
+about:
+  license: Apache-2.0
+  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE
+  summary: A decorator to automatically detect mismatch when overriding a method.
+  description: A decorator to automatically detect mismatch when overriding a method.
+  homepage: https://github.com/mkorpela/overrides
+  repository: https://github.com/mkorpela/overrides
+  documentation: https://github.com/mkorpela/overrides
+
+extra:
+  recipe-maintainers:
+    - h-vetinari
+    - nelson-liu

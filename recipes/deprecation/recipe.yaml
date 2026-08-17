@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: deprecation
+  version: "2.1.0"
+  bundle: tar.gz
+  hash: 72b3bde64e5d778694b0cf68178aed03d15e15477116add3fb773e581f9518ff
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
+  sha256: ${{ hash }}
+  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - python
+    - pip
+  run:
+    - python
+    - packaging
+
+tests:
+  - python:
+      imports:
+        - deprecation
+      pip_check: false
+
+about:
+  license_file: LICENSE
+  license: Apache-2.0
+  summary: A library to handle automated deprecations
+  homepage: http://deprecation.readthedocs.io/
+  repository: https://github.com/briancurtin/deprecation
+  documentation: http://deprecation.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - kmuehlbauer

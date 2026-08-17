@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: wagtail-tag-manager
+  version: "2.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail-tag-manager-${{ version }}.tar.gz
+  sha256: aa9bd32de537529240af51866d619440a7171bff401a28b0fa7ebdae31e19691
+
+build:
+  number: 1
+  noarch: python
+  script:
+    env:
+      PYTHONUTF8: 1
+    content: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - wagtail >=4.0,<6.0
+    - wagtail-modeladmin <1.1.0,>=1.0.0
+    - selenium >=3.141.0,<3.142.0
+
+tests:
+  - python:
+      imports:
+        - wagtail_tag_manager
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A Wagtail add-on for managing tags.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/jberghoef/wagtail-tag-manager
+
+extra:
+  recipe-maintainers:
+    - rxm7706

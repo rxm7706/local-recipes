@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.14.5"
+
+package:
+  name: aem-cmd
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py2.py3/a/aem-cmd/aem_cmd-0.14.5-py2.py3-none-any.whl
+  sha256: 10cac0adf4fb72098a41e63c938278391366b1b4665cd7738f7fbe4cef155081
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - requests
+    - requests-toolbelt
+    - configparser
+    - keyring
+    - keyrings.alt
+
+tests:
+  - python:
+      imports:
+        - aem_cmd
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/bjorns/aem-cmd
+  license: MIT
+  license_file: LICENSE
+  summary: AEM Command line tools
+  description: |
+    AEM Command line tools
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: aem-cmd
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: aem-cmd
+  cfe-purls:
+    - pkg:conda/aem-cmd@${{ version }}?channel=conda-forge
+    - pkg:pypi/aem-cmd@${{ version }}
+  cfe-upstream-repo: https://github.com/bjorns/aem-cmd
+  cfe-upstream-homepage: https://github.com/bjorns/aem-cmd
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:49:45Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:49:45Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

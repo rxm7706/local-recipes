@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.13.0"
+
+package:
+  name: dbt-fabricspark
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/dbt-fabricspark/dbt_fabricspark-${{ version }}.tar.gz
+  sha256: 52ce5ea8dffa659c2d6d62807459dac637197541b58ea9cfbf15ddea01f3ff7e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - azure-core >=1.33.0
+    - azure-identity >=1.21.0
+    - dbt-adapters <2.0,>=1.7
+    - dbt-common <2.0,>=1.10
+    - dbt-core >=1.8.0
+    - requests >=2.32.0
+
+tests:
+  - python:
+      imports:
+        - dbt.include.fabricspark
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/microsoft/dbt-fabricspark
+  license: MIT
+  license_file: LICENSE
+  summary: A Microsoft Fabric Spark adapter plugin for dbt
+  description: |
+    A Microsoft Fabric Spark adapter plugin for dbt
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dbt-fabricspark
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dbt-fabricspark
+  cfe-purls:
+    - pkg:conda/dbt-fabricspark@${{ version }}?channel=conda-forge
+    - pkg:pypi/dbt-fabricspark@${{ version }}
+  cfe-upstream-repo: https://github.com/microsoft/dbt-fabricspark
+  cfe-upstream-homepage: https://github.com/microsoft/dbt-fabricspark
+  cfe-import-names: [dbt.include.fabricspark]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:52:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:52:40Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

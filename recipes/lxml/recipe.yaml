@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.1.1"
+
+package:
+  name: lxml
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/lxml/lxml-${{ version }}.tar.gz
+  sha256: ba96ae44888e0185281e937633a743ea90d5a196c6000f82565ebb0580012d40
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - pkg-config
+  host:
+    - libxml2-devel
+    - python
+    - pip
+    - setuptools
+    - cython
+    - libxslt
+    - zlib
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - lxml
+        - lxml.etree
+        - lxml.objectify
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+        - if: unix
+          then: jq
+    script:
+      - if: unix
+        then: test_file=$(jq '.files[] | select( . | endswith("/test.py"))' $CONDA_PREFIX/conda-meta/${{ PKG_NAME }}-${{ PKG_VERSION }}-${PKG_BUILD_STRING}.json)
+      - if: unix
+        then: if [[ ${test_file} ]]; then echo "found test.py file being packaged ${test_file}"; exit 1; fi
+
+about:
+  # ElementTree comes with a supposedly custom license that is simply MIT-CMU with a different copyright holder.
+  license: BSD-3-Clause and MIT-CMU
+  license_file:
+    - LICENSES.txt
+    - LICENSE.txt
+    - doc/licenses/elementtree.txt
+    # doc/licenses/BSD.txt is the same as LICENSE.txt
+    # doc/licenses/GPL.txt is used in test files only, doesn't get packaged
+  summary: Pythonic binding for the C libraries libxml2-devel and libxslt.
+  description: |
+    The lxml XML toolkit is a Pythonic binding for the C libraries libxml2-devel and
+    libxslt. It is unique in that it combines the speed and XML feature
+    completeness of these libraries with the simplicity of a native Python API,
+    mostly compatible but superior to the well-known ElementTree API.
+  homepage: http://lxml.de/
+  repository: https://github.com/lxml/lxml
+  documentation: http://lxml.de/index.html#documentation
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - zklaus

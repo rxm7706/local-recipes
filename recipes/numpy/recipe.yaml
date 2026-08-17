@@ -1,0 +1,189 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "2.5.2"
+  # -1, or less, means "not a dev version", a number > -1 will emit postfix "rc${{ rc_num }}"
+  rc_num: -1
+  version_rc: ${{ version }}${{ ("rc" ~ rc_num) if rc_num > -1 else "" }}
+  # numpy will by default use the ABI feature level for the first numpy version
+  # that added support for the oldest currently-supported CPython version; see
+  # https://github.com/numpy/numpy/blob/v2.5.0rc1/numpy/_core/include/numpy/numpyconfig.h#L124
+  default_abi_level: '1.25'
+  # ensure is_freethreading gets detected as a used variable
+  touch_is_freethreading: ${{ is_freethreading }}
+
+package:
+  name: numpy
+  version: ${{ version_rc }}
+
+source:
+  - url: https://github.com/numpy/numpy/releases/download/v${{ version_rc }}/numpy-${{ version_rc }}.tar.gz
+    sha256: d482d171c406ae88c5b19cad3b6a1c4c5209f886ab74bc44c2c865c23f52d860
+    patches:
+      - patches/0001-avoid-backslashes-from-sneaking-into-__config__.py.patch
+
+build:
+  number: 0
+  skip: match(python, "<3.12")
+  python:
+    entry_points:
+      - if: win
+        then:
+          - f2py = numpy.f2py.f2py2e:main
+          - numpy-config = numpy._configtool:main
+
+requirements:
+  build:
+    - if: build_platform != host_platform
+      then:
+        - python
+        - cross-python_${{ host_platform }}
+        - cython
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ninja
+    - pkg-config
+  host:
+    # ABI-relevant
+    - libblas
+    - libcblas
+    - liblapack
+    - python
+    # interpreted py-libs used during installation
+    - cython
+    - meson-python
+    - pip
+    - python-build
+  run:
+    - python
+    - if: rc_num > -1
+      then: _numpy_rc
+  run_exports:
+    - numpy >=${{ default_abi_level }},<3
+  run_constraints:
+    # enforce eviction of package from anaconda defaults
+    - numpy-base <0a0
+
+tests:
+  - python:
+      imports:
+        - numpy
+        # reference for public API is effectively PUBLIC_MODULES under
+        # https://github.com/numpy/numpy/blame/main/numpy/tests/test_public_api.py
+        - numpy.ctypeslib
+        - numpy.dtypes
+        - numpy.exceptions
+        - numpy.f2py
+        - numpy.fft
+        - numpy.lib
+        - numpy.lib.format
+        - numpy.lib.mixins
+        - numpy.lib.recfunctions
+        - numpy.lib.scimath
+        - numpy.lib.stride_tricks
+        - numpy.lib.npyio
+        - numpy.lib.introspect
+        - numpy.lib.array_utils
+        - numpy.linalg
+        - numpy.ma
+        - numpy.ma.extras
+        - numpy.ma.mrecords
+        - numpy.polynomial
+        - numpy.polynomial.chebyshev
+        - numpy.polynomial.hermite
+        - numpy.polynomial.hermite_e
+        - numpy.polynomial.laguerre
+        - numpy.polynomial.legendre
+        - numpy.polynomial.polynomial
+        - numpy.random
+        - numpy.testing
+        - numpy.testing.overrides
+        - numpy.typing
+        - numpy.typing.mypy_plugin
+        - numpy.version
+        # some private modules that were once upon a time
+        # determined to be useful packaging checks
+        - numpy.core.multiarray
+        - numpy.core.numeric
+        - numpy.core.umath
+        - numpy.linalg.lapack_lite
+        - numpy.random.mtrand
+
+  - script:
+      - f2py -h
+
+  - requirements:
+      run:
+        - pytest
+        - pytest-timeout
+        - pytest-xdist
+        # (mostly) optional test requirements (except wheel, python-cov, mypy), see
+        # https://github.com/numpy/numpy/blob/main/requirements/test_requirements.txt
+        - cython
+        - hypothesis
+        - meson
+        - pytz
+        - setuptools
+        - typing_extensions
+        # some linux tests need a C/C++ compiler;
+        # extra f2py tests need a fortran compiler
+        - if: unix
+          then:
+            - ${{ compiler('c') }}
+            - ${{ compiler('cxx') }}
+        - if: linux
+          then: ${{ compiler('fortran') }}
+        # For some cython tests
+        - pkg-config
+    script:
+      interpreter: python
+      content:
+        - import numpy, sys
+        - 'tests_to_skip = "_not_a_real_test"'
+        - if: linux
+          then:
+            # OOMs on GHA agents
+            - 'tests_to_skip += " or test_huge_list_error"'
+        - if: linux and x86_64
+          then:
+            # https://github.com/numpy/numpy/issues/27460
+            - 'tests_to_skip += " or test_validate_transcendentals"'
+        - if: linux and ppc64le
+          then:
+            # may be emulation-related; feel free to investigate
+            - 'tests_to_skip += " or test_concurrent_allocator_acquire_no_deadlock"'
+            - 'tests_to_skip += " or test_concurrent_unique_no_deadlock"'
+        - if: build_platform != host_platform
+          then:
+            # there are some tests that cannot really work in emulation, see e.g. numpy/numpy#20445
+            - 'tests_to_skip += " or Test_ARM_Features"'
+            - 'tests_to_skip += " or Test_POWER_Features"'
+            # test_new_policy reruns part of test suite; including a CPU feature test that fails in emulation
+            - 'tests_to_skip += " or test_new_policy"'
+        # numpy.test will show SIMD features of agent (in the past, there have been
+        # failures that occured depending on presence/absence of e.g. AVX512);
+        # for signature of numpy.test see the following (note default: label='fast'),
+        # https://github.com/numpy/numpy/blob/maintenance/1.22.x/numpy/_pytesttester.py#L81-L82
+        - 'param = {"verbose": 1, "label": "full", "tests": None}'
+        - 'extra_argv = ["-k", f"not ({tests_to_skip})", "-nauto", "--timeout=3000", "--durations=50", "--maxfail=100"]'
+        - 'print(f"running with args: kwargs={param}, extra_argv={extra_argv}")'
+        - 'sys.exit(not numpy.test(**param, extra_argv=extra_argv))'
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: The fundamental package for scientific computing with Python.
+  homepage: http://numpy.org/
+  repository: https://github.com/numpy/numpy
+  documentation: https://numpy.org/doc/stable/
+
+extra:
+  recipe-maintainers:
+    - h-vetinari
+    - isuruf
+    - jakirkham
+    - msarahan
+    - ocefpaf
+    - pelson
+    - rgommers
+    - xhochy

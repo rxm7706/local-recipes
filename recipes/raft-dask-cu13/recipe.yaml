@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.8.0"
+  python_min: "3.11"
+
+package:
+  name: raft-dask-cu13
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/cp311/r/raft-dask-cu13/raft_dask_cu13-26.8.0-cp311-abi3-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl
+  sha256: 77b8cb2aa3ab11cdfda3dd78dc4c58539a6fbaad7b8da7abd892d76049e25f83
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - dask-cuda ==26.8.*
+    - distributed-ucxx-cu13 ==0.51.*
+    - libraft-cu13 ==26.8.*
+    - nvidia-nccl-cu13 >=2.19
+    - pylibraft-cu13 ==26.8.*
+    - rapids-dask-dependency ==26.8.*
+
+tests:
+  - python:
+      imports:
+        - raft_dask_cu13
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/rapidsai/raft
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Reusable Accelerated Functions & Tools Dask Infrastructure
+  description: |
+    Reusable Accelerated Functions & Tools Dask Infrastructure
+  documentation: https://docs.rapids.ai/api/raft/stable/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: raft-dask-cu13
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: raft-dask-cu13
+  cfe-purls:
+    - pkg:conda/raft-dask-cu13@${{ version }}?channel=conda-forge
+    - pkg:pypi/raft-dask-cu13@${{ version }}
+  cfe-upstream-repo: https://github.com/rapidsai/raft
+  cfe-upstream-homepage: https://github.com/rapidsai/raft
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:07:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:07:47Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

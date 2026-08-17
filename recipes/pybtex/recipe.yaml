@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.26.1"
+
+package:
+  name: pybtex
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pybtex/pybtex-${{ version }}.tar.gz
+  sha256: 2e5543bea424e60e9e42eef70bff597be48649d8f68ba061a7a092b2477d5464
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - pybtex = pybtex.__main__:main
+      - pybtex-convert = pybtex.database.convert.__main__:main
+      - pybtex-format = pybtex.database.format.__main__:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pyyaml >=3.01
+    - latexcodec >=1.0.4
+    - importlib-metadata
+
+tests:
+  - python:
+      imports:
+        - pybtex
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+    script:
+      - pybtex --help
+      - pybtex-convert --help
+      - pybtex-format --help
+
+about:
+  summary: A BibTeX-compatible bibliography processor in Python
+  license: MIT
+  license_file: COPYING
+  homepage: https://pybtex.org/
+  documentation: https://docs.pybtex.org/
+
+extra:
+  recipe-maintainers:
+    - croth1
+    - ocefpaf

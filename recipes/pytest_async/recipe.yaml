@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.1"
+
+package:
+  name: pytest_async
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pytest_async/pytest_async-${{ version }}.tar.gz
+  sha256: 0d6ffd3ebac2f3aa47d606dbae1984750268a89dc8caf4a908ba61c60299cdfd
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core >=2,<3
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pytest_async
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/hyperleex/pytest-async
+  license: MIT
+  license_file: LICENSE
+  summary: pytest-async - Run your coroutine in event loop without decorator
+  description: |
+    pytest-async - Run your coroutine in event loop without decorator
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest_async
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest_async
+  cfe-purls:
+    - pkg:conda/pytest_async@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-async@${{ version }}
+  cfe-upstream-repo: https://github.com/hyperleex/pytest-async
+  cfe-upstream-homepage: https://github.com/hyperleex/pytest-async
+  cfe-import-names: [pytest_async]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:36:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:36:03Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

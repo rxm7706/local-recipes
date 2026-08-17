@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jsons
+  version: "1.6.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/ramonhagenaars/jsons/archive/v${{ version }}.tar.gz
+  sha256: 46f0e286edcd1ff46d160af8219db9f2626873225518b80a6c946ada562dec33
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+  host:
+    - python >=3.5
+    - pip
+  run:
+    - python >=3.5
+    - typish >=1.9.2
+
+tests:
+  - python:
+      imports:
+        - jsons
+      pip_check: true
+      python_version: >= 3.6
+  - files:
+      source:
+        - tests
+        - test_resources
+    requirements:
+      run:
+        - pip
+        - dataclasses
+        - python >= 3.6
+        - pytest
+    script:
+      - pytest --pyargs jsons .
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Turn Python objects into dicts or (json)strings
+  description: Turn Python objects into dicts or (json)strings No changes required to your objects Easily customizable and extendable
+  homepage: https://github.com/ramonhagenaars/jsons/
+  repository: https://github.com/ramonhagenaars/jsons/
+  documentation: https://jsons.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - ngodber

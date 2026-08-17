@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: setuptools-git-version
+  version: "1.0.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/setuptools-git-version-${{ version }}.zip
+  sha256: 82cf7ab80272e20b7cae81d907e0adf295ef7a1f735418c046ae7f40f5861e15
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - setuptools >=8.0
+
+tests:
+  - python:
+      imports:
+        - setuptools_git_version
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Automatically set package version from Git.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/pyfidelity/setuptools-git-version
+
+extra:
+  recipe-maintainers:
+    - rxm7706

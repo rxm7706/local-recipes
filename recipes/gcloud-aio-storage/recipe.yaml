@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: gcloud-aio-storage
+  version: 9.6.4
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/gcloud_aio_storage-${{ version }}.tar.gz
+  sha256: 4da741e9e45f0ab5f57aa9ba2d46032dde4b80f3eb0a03de31ac741add420485
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - aiofiles >=0.6.0,<26.0.0
+    - gcloud-aio-auth >=5.4.4,<6.0.0
+    - pyasn1-modules >=0.2.1,<0.5.0
+    - rsa >=3.1.4,<5.0.0
+
+tests:
+  - python:
+      imports:
+        - gcloud.aio.storage
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  summary: Python Client for Google Cloud Storage
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/talkiq/gcloud-aio
+
+extra:
+  recipe-maintainers:
+    - xylar

@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-decouple
+  version: "3.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ba6e2657d4f376ecc46f77a3a615e058d93ba5e465c01bbe57289bfb7cce680f
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -v
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - decouple
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Strict separation of config from code.
+  description: |
+    Decouple helps you to organize your settings so that you can change
+    parameters without having to redeploy your app.
+
+
+  homepage: https://github.com/henriquebastos/python-decouple/
+  repository: https://github.com/henriquebastos/python-decouple/
+  documentation: https://github.com/henriquebastos/python-decouple/blob/master/README.rst
+
+extra:
+  recipe-maintainers:
+    - xmnlab
+    - thewchan

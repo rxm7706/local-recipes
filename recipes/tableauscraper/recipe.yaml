@@ -2,24 +2,25 @@
 schema_version: 1
 
 context:
+  name: tableauscraper
   version: "0.1.29"
 
 package:
-  name: tableauscraper
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/t/tableauscraper/TableauScraper-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/TableauScraper-${{ version }}.tar.gz
   sha256: 7fa031b9b4aacecb8b525ad1d5908623456c3975fc46bf88fb2b6fd13156288e
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
@@ -33,19 +34,13 @@ tests:
       imports:
         - tableauscraper
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Library to get data from Tableau Viz
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/bertrandmartel/tableau-scraping
-  repository: https://github.com/bertrandmartel/tableau-scraping
-  description: |
-    Python library to scrape data from Tableau visualizations (Tableau Viz),
-    returning the underlying worksheet data as pandas DataFrames.
 
 extra:
   recipe-maintainers:

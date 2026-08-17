@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4.0"
+  python_check_max: "3.14"
+  test_skips: not parse_tz_name_zzz
+  cov_fail_under: "99"
+
+package:
+  name: arrow
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/arrow/arrow-${{ version }}.tar.gz
+  sha256: ed0cc050e98001b8779e84d461b0098c4ac597e88704a655582b21d116e526d7
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - flit-core >=3.2,<4
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - python >=${{ python_min }}
+    - python-dateutil >=2.7.0
+    - python-tzdata
+
+tests:
+  - python:
+      imports: arrow
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - dateparser >=1,<2
+        - pytest
+        - pytest-cov
+        - pytest-mock
+        - python ${{ python_min }}.*
+        - pytz
+        - simplejson >=3,<4
+    script:
+      - coverage run --source=arrow --branch -m pytest -vv --tb=long --color=yes -k "${{ test_skips }}"
+      - coverage report --show-missing --skip-covered --fail-under=${{ cov_fail_under }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Better dates & times for Python
+  description: |
+    Arrow is a Python library that offers a sensible, human-friendly approach to
+    creating, manipulating, formatting and converting dates, times, and timestamps.
+    It implements and updates the datetime type, plugging gaps in functionality,
+    and provides an intelligent module API that supports many common creation
+    scenarios. Simply put, it helps you work with dates and times with fewer
+    imports and a lot less code.
+  homepage: https://github.com/arrow-py/arrow
+  documentation: https://arrow.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - bollwyvl
+    - ocefpaf

@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "5_0_5"
+
+package:
+  name: groovy
+  version: ${{ version }}
+
+source:
+  url: https://github.com/apache/groovy/archive//GROOVY_${{ version | replace(".", "_") }}.tar.gz
+  sha256: 089fa644f57ada3058de20efd9c6f7d93ac7b03c4cbd1feee6f1067df1b5ca4e
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  build:
+    - graphviz
+    - findutils
+    - maven
+    - openjdk >=17,<18
+    - unzip
+    - sed
+  run:
+    - openjdk
+
+tests:
+  - script:
+      - groovysh --help
+
+about:
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - target/generated-resources/licenses/
+  summary: Java-based scripting language
+  homepage: https://www.groovy-lang.org
+  repository: https://github.com/apache/groovy
+
+extra:
+  recipe-maintainers:
+    - danielnachun

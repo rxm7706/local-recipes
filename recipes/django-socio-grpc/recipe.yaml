@@ -2,14 +2,16 @@
 schema_version: 1
 
 context:
+  name: django-socio-grpc
   version: "0.25.0"
+  python_min: "3.10"
 
 package:
-  name: django-socio-grpc
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-socio-grpc/django_socio_grpc-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_socio_grpc-${{ version }}.tar.gz
   sha256: f89264dd11dbcf98f667fc258b8730e9047dafa96f4a79be47e346374204aa76
 
 build:
@@ -19,15 +21,16 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python 3.10.*
+    - poetry-core >=2.0.1,<3.0.0
     - pip
-    - poetry-core
   run:
-    - python >=${{ python_min }}
+    - lark >=1.0.0,<2.0.0
+    - python >=${{ python_min }},<4.0
     - django >=4.2
     - djangorestframework
-    - grpcio-tools <2.0.0,>=1.50.0
-    - lark <2.0.0,>=1.0.0
+    - grpcio-tools >=1.50.0,<2.0.0
+    - lark-parser >=0.12.0,<0.13.0
     - grpcio-health-checking
 
 tests:
@@ -35,17 +38,13 @@ tests:
       imports:
         - django_socio_grpc
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
-  homepage: https://pypi.org/project/django-socio-grpc/
-  license: MIT
-  license_file: LICENSE
   summary: Fork of django-grpc-framework with more feature maintained by the socio team. Make GRPC with django easy.
-  description: |
-    Fork of django-grpc-framework with more feature maintained by the socio team. Make GRPC with django easy.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/socotecio/django-socio-grpc
 
 extra:
   recipe-maintainers:

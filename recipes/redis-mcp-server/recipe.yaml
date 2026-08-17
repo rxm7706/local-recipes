@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.1"
+
+package:
+  name: redis-mcp-server
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/redis-mcp-server/redis_mcp_server-${{ version }}.tar.gz
+  sha256: c6c88b91f5c0e6c5c1e9bb5aff2edcb77bd136b7db5b9c409e90136a4e19376a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - uv-build >=0.8.3,<0.13.0
+  run:
+    - python >=${{ python_min }}
+    - mcp <2,>=1.26.0
+    - redis-py >=6.0.0
+    - python-dotenv >=1.0.1
+    - numpy >=2.2.4
+    - click >=8.0.0
+    - aiohttp >=3.13.0
+    - redis-entraid >=1.0.0
+
+tests:
+  - python:
+      imports:
+        - common
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/redis/mcp-redis
+  license: MIT
+  license_file: LICENSE
+  summary: Redis MCP Server - Model Context Protocol server for Redis
+  description: |
+    Redis MCP Server - Model Context Protocol server for Redis
+  repository: https://github.com/redis/mcp-redis
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: redis-mcp-server
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: redis-mcp-server
+  cfe-purls:
+    - pkg:conda/redis-mcp-server@${{ version }}?channel=conda-forge
+    - pkg:pypi/redis-mcp-server@${{ version }}
+  cfe-upstream-repo: https://github.com/redis/mcp-redis
+  cfe-upstream-homepage: https://github.com/redis/mcp-redis
+  cfe-import-names: [common]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:15:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:15:22Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

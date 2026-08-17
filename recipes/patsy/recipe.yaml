@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.2"
+  python_check_max: "3.14"
+  cov_fail_under: "47"
+
+package:
+  name: patsy
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/patsy/patsy-${{ version }}.tar.gz
+  sha256: cdc995455f6233e90e22de72c37fcadb344e7586fb83f06696f54d92f8ce74c0
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - numpy >=1.4.0
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports: patsy
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - requirements:
+      run:
+        - pytest-cov
+        - python ${{ python_min }}.*
+        - scipy
+    script:
+      - coverage run --source=patsy --branch -m pytest -vv --color=yes --tb=long --pyargs patsy
+      - coverage report --show-missing --skip-covered --fail-under=${{ cov_fail_under }}
+
+about:
+  license: BSD-2-Clause AND PSF-2.0
+  license_file: LICENSE.txt
+  summary: Describing statistical models in Python using symbolic formulas
+  homepage: https://github.com/pydata/patsy
+  documentation: https://patsy.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - bollwyvl
+    - croth1

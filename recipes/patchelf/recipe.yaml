@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.19.1"
+
+package:
+  name: patchelf
+  version: ${{ version }}
+
+source:
+  url: https://github.com/NixOS/patchelf/releases/download/${{ version }}/patchelf-${{ version }}.tar.bz2
+  sha256: 2cce01de93653829f6ab68a20c2ec275e1c00a946110704a27e928d2e6e88716
+
+build:
+  number: 0
+  skip: win
+  dynamic_linking:
+    binary_relocation: false
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib('c') }}
+    - make
+    - automake 1.16.*
+    - gnuconfig
+
+tests:
+  - script:
+      - bash -c '[[ "$(patchelf --version)" =~ "patchelf ${{ version }}".* ]]'
+
+about:
+  license: GPL-3.0-or-later
+  license_file: COPYING
+  summary: A small utility to modify the dynamic linker and RPATH of ELF executables.
+  description: |
+    PatchELF is a small utility to modify the dynamic linker and RPATH of ELF
+    executables.
+  homepage: http://nixos.org/patchelf.html
+  repository: https://github.com/NixOS/patchelf
+  documentation: http://nixos.org/patchelf.html
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - leofang
+    - mjuric
+    - xhochy

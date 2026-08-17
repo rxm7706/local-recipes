@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: weave
+  version: "0.17.0"
+  sha256: 2703f3ae6d23ad47b5f09b6bcb7affd0fb587120a0c973e7be40ef24de709998
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+  patches:
+    - python_requires.patch
+
+build:
+  number: 4
+  skip: match(python, ">=3,<4") or not x86_64
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python
+    - numpy
+    - pip
+  run:
+    - python
+    - numpy
+    - if: not win
+      then: ${{ compiler("cxx") }}
+
+tests:
+  - python:
+      imports:
+        - weave
+      pip_check: false
+  - script:
+      - if: not win
+        then: python -c "import weave;assert weave.inline('int x=42; return_val=x;') == 42"
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: "Weave: a C++ compiler for Python."
+  description: |
+    Weave provides tools for including C/C++ code within Python code. Inlining
+    C/C++ code within Python generally results in speedups of 1.5x to 30x over
+    algorithms written in pure Python.
+    Weave is the stand-alone version of the deprecated Scipy submodule
+    ``scipy.weave``.   It is Python 2.x only, and is provided for users that need
+    new versions of Scipy (from which the ``weave`` submodule may be removed) but
+    have existing code that still depends on ``scipy.weave``.  For new code, users
+    are recommended to use Cython.
+  homepage: https://pypi.python.org/pypi/weave
+  repository: http://www.github.com/scipy/weave
+
+extra:
+  recipe-maintainers:
+    - mstimberg

@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.10.2.20260712"
+
+package:
+  name: types-markdown
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/types-markdown/types_markdown-${{ version }}.tar.gz
+  sha256: 25aea17282490f35ab6b17a87771abd2f479185aaff8e8f4a0035043f02f2c52
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - pip
+    - setuptools
+    - python ${{ python_min }}.*
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+    script:
+      - pip check
+
+  - package_contents:
+      site_packages:
+        - markdown-stubs/__init__.pyi
+
+about:
+  summary: Typing stubs for Markdown
+  license: Apache-2.0 AND MIT
+  license_file: LICENSE
+  homepage: https://github.com/python/typeshed
+
+extra:
+  recipe-maintainers:
+    - fhoehle
+    - conda-forge/mypy

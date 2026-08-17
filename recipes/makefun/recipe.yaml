@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: makefun
+  version: "1.16.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/makefun-${{ version }}.tar.gz
+  sha256: e14601831570bff1f6d7e68828bcd30d2f5856f24bad5de0ccb22921ceebc947
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - pytest-runner
+    - python ${{ python_min }}
+    - setuptools
+    - setuptools_scm
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - makefun
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Small library to dynamically create python functions.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  description: |
+    `makefun` helps you create functions dynamically, with the signature of
+    your choice. It was largely inspired by `decorator` and `functools`, and
+    created mainly to cover some of their limitations.
+  homepage: https://github.com/smarie/python-makefun
+  repository: https://github.com/smarie/python-makefun
+  documentation: https://smarie.github.io/python-makefun
+
+extra:
+  recipe-maintainers:
+    - smarie

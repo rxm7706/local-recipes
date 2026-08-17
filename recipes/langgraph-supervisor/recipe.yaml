@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.31"
+
+package:
+  name: langgraph-supervisor
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/langgraph-supervisor/langgraph_supervisor-${{ version }}.tar.gz
+  sha256: 0f71d5098fa1ac274423eff08750345450045c1e0dd2480ab7f3e5c1848f6016
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - pdm-backend
+  run:
+    - python >=${{ python_min }}
+    - langgraph <2.0.0,>=1.0.2
+    - langchain-core <2.0.0,>=1.0.0
+
+tests:
+  - python:
+      imports:
+        - langgraph_supervisor
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/langgraph-supervisor/
+  license: MIT
+  license_file: LICENSE
+  summary: An implementation of a supervisor multi-agent architecture using LangGraph
+  description: |
+    An implementation of a supervisor multi-agent architecture using LangGraph
+  repository: https://github.com/langchain-ai/langgraph-supervisor-py
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langgraph-supervisor
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langgraph-supervisor
+  cfe-purls:
+    - pkg:conda/langgraph-supervisor@${{ version }}?channel=conda-forge
+    - pkg:pypi/langgraph-supervisor@${{ version }}
+  cfe-upstream-repo: https://github.com/langchain-ai/langgraph-supervisor-py
+  cfe-upstream-homepage: https://pypi.org/project/langgraph-supervisor/
+  cfe-import-names: [langgraph_supervisor]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:19:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:19:37Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

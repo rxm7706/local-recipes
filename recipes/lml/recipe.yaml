@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: lml
+  version: "0.2.0"
+  sha256: 8dd5afb4367a593d1cdb2144a05874cd9938f5266bebb0c9e1413200423c0d74
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . --no-deps --ignore-installed
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - lml
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE
+  summary: Load me later. A lazy loading plugin management system.
+  homepage: https://github.com/chfw/lml.git
+  repository: https://github.com/chfw/lml.git
+  documentation: http://lml.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - williamjamir
+    - nicoddemus

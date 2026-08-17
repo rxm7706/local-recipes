@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3.11"
+
+package:
+  name: bedrock-agentcore-starter-toolkit
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/bedrock-agentcore-starter-toolkit/bedrock_agentcore_starter_toolkit-${{ version }}.tar.gz
+  sha256: 3eb5520676c4878967b68d563bbf4ece740cf5ded29f9632260a613d49fa88d1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - autopep8 >=2.3.2
+    - bedrock-agentcore >=1.1.0
+    - boto3 >=1.42.1
+    - botocore >=1.42.1
+    - docstring_parser <1.0,>=0.15
+    - httpx >=0.28.1
+    - jinja2 >=3.1.6
+    - openapi-spec-validator >=0.7.2
+    - prance >=25.4.8.0
+    - prompt-toolkit >=3.0.51
+    - py-openapi-schema-to-json-schema >=0.0.3
+    - pydantic <2.41.3,>=2.0.0
+    - pyyaml >=6.0.2
+    - questionary >=2.1.0
+    - requests >=2.25.0
+    - rich >=13.0.0
+    - ruamel.yaml >=0.18.14
+    - starlette >=0.46.2
+    - toml >=0.10.2
+    - typer >=0.19.0
+    - typing_extensions <5.0.0,>=4.13.2
+    - urllib3 >=1.26.0
+    - uvicorn >=0.34.2
+
+tests:
+  - python:
+      imports:
+        - tests_integ
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/aws/bedrock-agentcore-starter-toolkit
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A starter toolkit for using Bedrock AgentCore
+  description: |
+    A starter toolkit for using Bedrock AgentCore
+  documentation: https://github.com/aws/bedrock-agentcore-starter-toolkit
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bedrock-agentcore-starter-toolkit
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: bedrock-agentcore-starter-toolkit
+  cfe-purls:
+    - pkg:conda/bedrock-agentcore-starter-toolkit@${{ version }}?channel=conda-forge
+    - pkg:pypi/bedrock-agentcore-starter-toolkit@${{ version }}
+  cfe-upstream-repo: https://github.com/aws/bedrock-agentcore-starter-toolkit
+  cfe-upstream-homepage: https://github.com/aws/bedrock-agentcore-starter-toolkit
+  cfe-import-names: [tests_integ]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:49:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:49:08Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

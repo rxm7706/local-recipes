@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: datasette-nteract-data-explorer
+  version: "0.5.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/datasette-nteract-data-explorer-${{ version }}.tar.gz
+  sha256: 2a2791c6e6a783a3a4eeffb7fd1425893a37971f0b436743d886d53fecef0c4e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+    - datasette
+
+tests:
+  - python:
+      imports:
+        - datasette_nteract_data_explorer
+      pip_check: true
+
+about:
+  summary: automatic visual data explorer for datasette
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/hydrosquall/datasette-nteract-data-explorer
+
+extra:
+  recipe-maintainers:
+    - rxm7706

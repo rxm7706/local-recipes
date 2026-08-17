@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sqlite-fts4
+  version: "1.0.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sqlite-fts4-${{ version }}.tar.gz
+  sha256: 78b05eeaf6680e9dbed8986bde011e9c086a06cb0c931b3cf7da94c214e8930c
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - sqlite_fts4
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Python functions for working with SQLite FTS4 search
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/simonw/sqlite-fts4
+
+extra:
+  recipe-maintainers:
+    - thewchan

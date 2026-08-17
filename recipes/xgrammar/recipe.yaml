@@ -1,0 +1,126 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: xgrammar
+  version: "0.2.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/xgrammar-${{ version }}.tar.gz
+  sha256: f76423630ae3ac4e090cb38ce1e30e7bcc69b3dee4d22d94353944386a4c6f18
+
+build:
+  number: 1
+  skip:
+    - win
+  script:
+    - if: unix
+      then: |
+        export CMAKE_BUILD_TYPE=Release
+        if [[ $(uname) == "Linux" ]]; then
+          export CXXFLAGS="$CXXFLAGS -Wno-dangling-reference"
+          # Disable LTO to avoid linker issues with tvm_ffi shared library
+          export CXXFLAGS="$CXXFLAGS -isystem $PREFIX/include -fno-lto"
+          export LDFLAGS="$LDFLAGS -fno-lto"
+        fi
+        if [[ "${CONDA_BUILD_CROSS_COMPILATION:-}" == "1" ]]; then
+          # Cross-compilation fixes for tvm_ffi:
+          # 1. Write a custom cmake config that hardcodes host env paths (the upstream config
+          #    uses Python_EXECUTABLE to discover paths, which picks up build-arch libs).
+          export TVM_FFI_DIR=$PREFIX/lib/python${PY_VER}/site-packages/tvm_ffi
+          TVM_FFI_CMAKE=$SRC_DIR/tvm_ffi_override
+          mkdir -p $TVM_FFI_CMAKE
+          sed -e "s|\${TVM_FFI_DIR}|${TVM_FFI_DIR}|g" -e "s|\${SHLIB_EXT}|${SHLIB_EXT}|g" \
+            $RECIPE_DIR/tvm_ffi-cross.cmake.in > $TVM_FFI_CMAKE/tvm_ffi-config.cmake
+          export CMAKE_ARGS="$CMAKE_ARGS -Dtvm_ffi_ROOT=$TVM_FFI_CMAKE"
+          # 2. Disable stub generation post-build step (it uses ctypes.CDLL to load the
+          #    cross-compiled library which fails: arm64 lib on x86_64 host).
+          sed 's/STUB_DIR.*STUB_INIT ON//' cpp/tvm_ffi/CMakeLists.txt > cpp/tvm_ffi/CMakeLists.txt.tmp
+          mv cpp/tvm_ffi/CMakeLists.txt.tmp cpp/tvm_ffi/CMakeLists.txt
+        fi
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    - if: unix
+      then: |
+        if [[ "${CONDA_BUILD_CROSS_COMPILATION:-}" == "1" ]]; then
+          bash $RECIPE_DIR/create_ffi_stubs.sh
+        fi
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - scikit-build-core >=0.10.0
+        - apache-tvm-ffi >=0.1.9
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+    - cmake
+    - ninja
+    - if: unix
+      then:
+        - make
+  host:
+    - python
+    - scikit-build-core >=0.10.0
+    - pip
+    - apache-tvm-ffi >=0.1.9
+  run:
+    - python
+    - apache-tvm-ffi >=0.1.9
+    - numpy >=1.26.0
+    - ninja
+    - pydantic
+    - sentencepiece
+    - tiktoken
+    - pytorch >=1.10.0
+    - transformers >=4.38.0
+    - typer
+    - typing_extensions >=4.9.0
+    - if: linux and x86_64
+      then: triton
+    - if: osx and arm64
+      then: mlx-lm
+
+tests:
+  - python:
+      imports:
+        - xgrammar
+      pip_check: true
+
+  - script:
+      - python -m pytest tests/ -m "not hf_token_required"
+    files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - ninja
+        - protobuf
+        - pytest
+        - huggingface_hub
+        - numpy >=1.26.0
+        - pydantic
+        - sentencepiece
+        - tiktoken
+        - pytorch >=1.10.0
+        - transformers >=4.38.0
+
+about:
+  homepage: https://github.com/mlc-ai/xgrammar
+  summary: XGrammar is an open-source library for efficient, flexible, and portable structured generation.
+  license: Apache-2.0 AND BSD-4-Clause
+  license_file:
+    - LICENSE
+    - NOTICE
+
+extra:
+  recipe-maintainers:
+    - zbowling
+    - Ubospica
+    - LeeNethertonQC

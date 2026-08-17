@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: venusian
+  version: "3.1.1"
+  python_min: "3.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 534fb3b355669283eb3954581931e5d1d071fce61d029d58f3219a5e3a6f0c41
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - venusian
+      pip_check: false
+
+about:
+  license: BSD-derived
+  license_file: LICENSE.txt
+  summary: A library for deferring decorator actions
+  homepage: http://pylonsproject.org
+  repository: https://github.com/Pylons/venusian
+  documentation: https://docs.pylonsproject.org/projects/venusian/
+
+extra:
+  recipe-maintainers:
+    - lincrosenbach
+    - kfasolin
+    - ChrisBarker-NOAA

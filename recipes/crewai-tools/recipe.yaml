@@ -2,49 +2,257 @@
 schema_version: 1
 
 context:
-  name: crewai-tools
-  version: 1.14.1
+  version: "1.15.16"
 
-package:
-  name: ${{ name|lower }}
+recipe:
+  name: crewai-suite
   version: ${{ version }}
-
-source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/crewai_tools-${{ version }}.tar.gz
-  sha256: 2e24e062aa37acf93a7cdec6e514ecee08c7819a2f2f51c9ab85d172376fe691
 
 build:
   number: 0
-  noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
-requirements:
-  host:
-    - python >=3.10,<3.14
-    - hatchling
-    - pip
-  run:
-    - python >=3.10,<3.14
-    - pytube >=15.0.0,<15.1.dev0
-    - requests >=2.32.5,<2.33.dev0
-    - crewai ==1.14.1
-    - tiktoken >=0.8.0,<0.9.dev0
-    - beautifulsoup4 >=4.13.4,<4.14.dev0
-    - python-docx >=1.2.0,<1.3.dev0
-    - youtube-transcript-api >=1.2.2,<1.3.dev0
-    - pymupdf >=1.26.6,<1.27.dev0
+outputs:
+  - package:
+      name: crewai-core
+      version: ${{ version }}
+    source:
+      - url: https://pypi.org/packages/source/c/crewai_core/crewai_core-${{ version }}.tar.gz
+        sha256: c8d5548e223f32262243e91ee83b6976002616a26fc10951b3d5f1c05f10697f
+    build:
+      noarch: python
+      script: |
+        pip install . -vv --no-deps --no-build-isolation
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - hatchling
+        - pip
+      run:
+        - python >=${{ python_min }},<3.14
+        - appdirs >=1.4.4,<1.5.0
+        - cryptography >=42.0
+        - httpx >=0.28.1,<0.29.0
+        - packaging >=23.0
+        - portalocker >=2.7.0,<2.8.0
+        - pyjwt >=2.13.0,<3
+        - pydantic >=2.11.9,<2.13.0
+        - rich >=13.7.1
+        - opentelemetry-api >=1.42.0,<1.43.0
+        - opentelemetry-sdk >=1.42.0,<1.43.0
+        - opentelemetry-exporter-otlp-proto-http >=1.42.0,<1.43.0
+        - tomli >=2.0.2,<2.1.0
+    tests:
+      - python:
+          imports:
+            - crewai_core
+          pip_check: false
+          python_version: ${{ python_min }}.*
+    about:
+      summary: Shared utilities for CrewAI — version, paths, user-data, telemetry, printer."
+      license: MIT
+      license_file: LICENSE
+      homepage: https://github.com/crewAIInc/crewAI
 
-tests:
-  - python:
-      imports:
-        - crewai_tools
-      pip_check: true
+  - package:
+      name: crewai-cli
+      version: ${{ version }}
+    source:
+      - url: https://pypi.org/packages/source/c/crewai_cli/crewai_cli-${{ version }}.tar.gz
+        sha256: 6d8f0c03bb05e88114b1a60e93aced09db2cc0a83f6811ec83f2e902fda14426
+    build:
+      noarch: python
+      python:
+        entry_points:
+          - crewai = crewai_cli.cli:crewai
+      script: |
+        pip install . -vv --no-deps --no-build-isolation
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - hatchling
+        - pip
+      run:
+        - python >=${{ python_min }},<3.14
+        - ${{ pin_subpackage('crewai-core', exact=True) }}
+        - click >=8.1.7,<9
+        - pydantic >=2.11.9,<2.13.0
+        - pydantic-settings >=2.14.1,<3
+        - appdirs >=1.4.4,<1.5.0
+        - cryptography >=42.0
+        - httpx >=0.28.1,<0.29.0
+        - pyjwt >=2.13.0,<3
+        - rich >=13.7.1
+        - tomli >=2.0.2,<2.1.0
+        - tomli-w >=1.1.0,<1.2.0
+        - packaging >=23.0
+        - python-dotenv >=1.2.2,<2
+        - uv >=0.11.6,<0.12.0
+        - textual>=7.5.0
+        - certifi
+    tests:
+      - python:
+          imports:
+            - crewai_cli
+          pip_check: false
+          python_version: ${{ python_min }}.*
+      - script:
+          - crewai --help
+        requirements:
+          run:
+            - python ${{ python_min }}.*
+    about:
+      summary: CLI for CrewAI — scaffold, run, deploy and manage AI agent crews.
+      license: MIT
+      license_file: LICENSE
+      homepage: https://github.com/crewAIInc/crewAI
+
+  - package:
+      name: crewai
+      version: ${{ version }}
+    source:
+      - url: https://pypi.org/packages/source/c/crewai/crewai-${{ version }}.tar.gz
+        sha256: 38f75f499a5e6a5dc78369a3f5384452b791bc4852a1ff38c342aca4e04e8264
+    build:
+      noarch: python
+      python:
+        entry_points:
+          - crewai = crewai_cli.cli:crewai
+      script: |
+        python -m pip install . -vv --no-deps --no-build-isolation
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - hatchling
+        - pip
+      run:
+        - python >=${{ python_min }},<3.14
+        - ${{ pin_subpackage('crewai-core', exact=True) }}
+        - ${{ pin_subpackage('crewai-cli', exact=True) }}
+        - pydantic >=2.11.9,<2.13
+        - openai >=2.30.0,<3
+        - instructor >=1.3.3
+        - pdfplumber >=0.11.4,<0.12.0
+        - regex >=2026.1.15,<2026.2.0
+        - opentelemetry-api >=1.42.0,<1.43.0
+        - opentelemetry-sdk >=1.42.0,<1.43.0
+        - opentelemetry-exporter-otlp-proto-http >=1.42.0,<1.43.0
+        - chromadb >=1.1.0,<1.2.0
+        - tokenizers >=0.21,<1
+        - openpyxl >=3.1.5,<3.2.0
+        - python-dotenv >=1.2.2,<2
+        - pyjwt >=2.13.0,<3
+        - click >=8.1.7,<8.2.0
+        - appdirs >=1.4.4,<1.5.0
+        - jsonref >=1.1.0,<1.2.0
+        - json-repair >=0.60.1,<0.61.0
+        - tomli-w >=1.1.0,<1.2.0
+        - tomli >=2.0.2,<2.1.0
+        - json5 >=0.10.0,<0.11.0
+        - portalocker >=2.7.0,<2.8.0
+        - pydantic-settings >=2.14.2,<3
+        - httpx >=0.28.1,<0.29.0
+        - mcp >=1.28.1,<1.29.0
+        - aiosqlite >=0.21.0,<0.22.0
+        - pyyaml >=6.0,<7.0
+        - aiofiles >=24.1.0,<24.2.0
+        - lancedb >=0.29.2,<0.30.1
+    tests:
+      - python:
+          imports:
+            - crewai
+          pip_check: false
+          python_version: ${{ python_min }}.*
+      - script:
+          - crewai --help
+        requirements:
+          run:
+            - python ${{ python_min }}.*
+    about:
+      summary: Cutting-edge framework for orchestrating role-playing, autonomous AI agents. By fostering collaborative intelligence, CrewAI empowers agents to work together seamlessly, tackling complex tasks.
+      license: MIT
+      license_file: LICENSE
+      homepage: https://github.com/crewAIInc/crewAI
+
+  - package:
+      name: crewai-tools
+      version: ${{ version }}
+    source:
+      - url: https://pypi.org/packages/source/c/crewai_tools/crewai_tools-${{ version }}.tar.gz
+        sha256: 1bf4c3cc316f6b5cbe4c3f8edf4984465cba5ca9b9f70ec95f00e373255c7430
+    build:
+      noarch: python
+      script: |
+        pip install . -vv --no-deps --no-build-isolation
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - hatchling
+        - pip
+      run:
+        - python >=${{ python_min }},<3.14
+        - ${{ pin_subpackage('crewai', exact=True) }}
+        - pytube >=15.0.0,<15.1.0
+        - requests >=2.33.0,<3
+        - tiktoken >=0.8.0,<0.13
+        - beautifulsoup4 >=4.13.4,<4.14.0
+        - python-docx >=1.2.0,<1.3.0
+        - youtube-transcript-api >=1.2.2,<1.3.0
+        - pymupdf >=1.26.6,<1.27.0
+    tests:
+      - python:
+          imports:
+            - crewai_tools
+          pip_check: false
+          python_version: ${{ python_min }}.*
+    about:
+      summary: Set of tools for the crewAI framework
+      license: MIT
+      license_file: LICENSE
+      homepage: https://github.com/crewAIInc/crewAI
+
+  - package:
+      name: crewai-files
+      version: ${{ version }}
+    source:
+      - url: https://pypi.org/packages/source/c/crewai-files/crewai_files-${{ version }}.tar.gz
+        sha256: 8a1ea93d86c3e4769f0e3aba80d97bc0f32718535906912372912feba155353d
+    build:
+      noarch: python
+      script: |
+        pip install . -vv --no-deps --no-build-isolation
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - hatchling
+        - pip
+      run:
+        - python >=${{ python_min }},<3.14
+        - pillow >=12.3.0,<12.4.0
+        - pypdf >=6.14.2,<6.15.0
+        - python-magic >=0.4.27
+        - aiocache >=0.12.3,<0.13.0
+        - aiofiles >=24.1.0,<24.2.0
+        - tinytag >=2.2.1,<2.3.0
+        - av >=13.0.0,<13.1.0
+        - pydantic >=2.11.9,<2.13.0
+    tests:
+      - python:
+          imports:
+            - crewai_files
+          pip_check: false
+          python_version: ${{ python_min }}.*
+    about:
+      summary: File handling utilities for CrewAI multimodal inputs
+      license: MIT
+      license_file: LICENSE
+      homepage: https://github.com/crewAIInc/crewAI
 
 about:
-  summary: Set of tools for the crewAI framework
-  license: Unlicense
-  license_file: PLEASE_ADD_LICENSE_FILE
+  summary: CrewAI framework and tools for orchestrating autonomous AI agents
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/crewAIInc/crewAI
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - soapy1

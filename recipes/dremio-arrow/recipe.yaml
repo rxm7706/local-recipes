@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dremio-arrow
+  version: "1.0.3"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 16298472d5e43b52d7f419d24476403d265d7fde0b5f487066ed784ce35fe52c
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python 3.10.*
+    - pip
+    - poetry-core >=1.0.0
+  run:
+    - python >=${{ python_min }},<3.12
+    - pandas >=1.3,<3.0
+    - pyarrow >=4.0,<13.0
+
+tests:
+  - python:
+      imports:
+        - dremioarrow
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  summary: Dremio SQL Lakehouse Arrow Flight Client.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/jaysnm/dremio-arrow
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mssql-django
+  version: "1.8.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/mssql_django-${{ version }}.tar.gz
+  sha256: 023a3d55a85d1d0d9f38d731182c35c2fecbf6bdc7b2464ed7ebf29c9e7bbdb2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=3.2,<6.2
+    - pyodbc >=3.0
+    - pytz
+
+tests:
+  - python:
+      imports:
+        - mssql
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Django backend for Microsoft SQL Server
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE.txt
+    - NOTICE.md
+  homepage: https://github.com/microsoft/mssql-django
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - cshaley

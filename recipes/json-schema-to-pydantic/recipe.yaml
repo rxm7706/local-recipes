@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: json-schema-to-pydantic
+  version: "0.4.11"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/json_schema_to_pydantic-${{ version }}.tar.gz
+  sha256: 35448ed711a28dd33396b095c8492939b4925aa30eb31942e9b8e08d04279465
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - uv-dynamic-versioning
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pydantic >=2.10.4
+
+tests:
+  - python:
+      imports:
+        - json_schema_to_pydantic
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A Python library for automatically generating Pydantic v2 models from JSON Schema definitions
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/richard-gyiko/json-schema-to-pydantic
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-silk
+  version: "5.5.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: c488ee1eab763a6f3d0db09a969e7a91b637743f04159cd8d10141386157ec0d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools-scm
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - sqlparse
+    - autopep8
+    - gprof2dot >=2017.09.19
+
+tests:
+  - python:
+      imports:
+        - silk
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Silky smooth profiling for the Django Framework
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/jazzband/django-silk
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - cshaley

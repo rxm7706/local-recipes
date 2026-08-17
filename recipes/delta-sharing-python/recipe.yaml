@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4.2"
+  python_check_max: "3.14"
+
+package:
+  name: delta-sharing-python
+  version: ${{ version }}
+
+source:
+  - url: https://files.pythonhosted.org/packages/source/d/delta-sharing/delta_sharing-${{ version }}.tar.gz
+    sha256: 4e8d248a547d997ed5c18a92d84ffd361e4dbad47a786fbc0333729a785b8abe
+  - url: https://raw.githubusercontent.com/delta-io/delta-sharing/refs/tags/py-v${{ version }}/LICENSE.txt
+    sha256: 5a2ae634be68464e407b80dbece9d8d822926c9b2cbdb1e801f5d27929589802
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - aiohttp >=3.0.0,<=3.13.4
+    - delta-kernel-rust-sharing-wrapper >=0.3.2,<1.0
+    - fsspec >=0.7.4,<=2026.2.0
+    - jwcrypto >=1.5.6,<2.0
+    - pandas >=2.0.3,<3.0.0
+    - pyarrow >=16.1.0,<=23.0.1
+    - python >=${{ python_min }}
+    - requests >=2.20.0,<=2.33.0
+    - yarl >=1.6.0,<=1.23.0
+
+tests:
+  - python:
+      imports: delta_sharing
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+
+about:
+  summary: Python Connector for Delta Sharing
+  license: Apache-2.0
+  license_file:
+    - NOTICE.txt
+    - LICENSE.txt
+  homepage: https://pypi.org/project/delta-sharing
+  repository: https://github.com/delta-io/delta-sharing
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

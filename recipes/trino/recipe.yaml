@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: trino
+  version: "0.338.0"
+
+package:
+  name: trino-python-client
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/trino-${{ version }}.tar.gz
+  sha256: 1103d249cb96ba8f88f699588581965e2be088c16b9f8178e34cb64aa8a6c011
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - lz4
+    - orjson >=3.11.0
+    - python-dateutil
+    - pytz
+    - requests >=2.32.4
+    - tzlocal
+    - zstandard
+
+tests:
+  - python:
+      imports:
+        - trino
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Client for the Trino distributed SQL Engine
+  license: Apache-2.0
+  license_file: LICENSE
+  description: |
+    Client for Trino (https://trino.io), a distributed SQL engine for
+    interactive and batch big data processing. Provides a low-level client and
+    a DBAPI 2.0 implementation.
+  homepage: https://github.com/trinodb/trino-python-client
+  repository: https://github.com/trinodb/trino-python-client
+
+extra:
+  recipe-maintainers:
+    - xylar
+    - h-vetinari
+  feedstock-name: trino

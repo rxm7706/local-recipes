@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: rlpycairo
+  version: "0.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 07c2c3c47828e83d9c09657a54ecbcd1a97aac9dc199780234456d3473faadc7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pycairo >=1.20.0
+    - freetype-py >=2.3
+
+tests:
+  - python:
+      imports:
+        - rlPyCairo
+        - rlPyCairo.gstate
+        - rlPyCairo.pil2pict
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - reportlab
+        - python ${{ python_min }}
+
+about:
+  summary: Plugin backend renderer for reportlab.graphics.renderPM
+  description: |
+    This is a plugin for the ReportLab PDF Toolkit.
+    which constructs rich PDF documents, and also creation
+    of charts in a variety of bitmap and vector formats.
+
+    This plugin is intended to replace most of the usage of the
+    libart based C extension _renderPM which has been shown to
+    have issues when rendering complex documents.
+
+    This backend can be brought into use by setting
+    reportlab.rl_config.renderPMBackend = 'rlPyCairo'
+    any of the methods detailed in reportlab/rl_config.py
+    can be used to accomplish this.
+
+    The new backend seems able to handle all the same behaviour as
+    _renderPM and the only place where it seems inferior is in the
+    rendering of scaled images and the speed with which it draws
+    text.
+
+    At present the rlPyCairo backend only uses the _renderPM extension
+    to use its mapping of ReportLab font names to extract paths for
+    rendering this is no doubt the reason for its slowness when
+    rendering text.
+
+    Currently we are not making use of any of the more advanced
+    abilities of PyCairo such as transparency, patterns etc,
+    but that may change in the future.
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  homepage: https://hg.reportlab.com/hg-public/rlPyCairo
+
+extra:
+  recipe-maintainers:
+    - bkpoon

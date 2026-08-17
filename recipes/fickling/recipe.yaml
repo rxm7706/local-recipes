@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: fickling
+  version: "0.1.12"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fickling-${{ version }}.tar.gz
+  sha256: 83f6ccc948e21edb9ebd92795069536b47f481ce6add62598eac608b31576821
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - fickling = fickling.__main__:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    # not listed in dependencies but needed to past import
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - fickling
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - fickling --help
+
+about:
+  summary: A static analyzer and interpreter for Python pickle data
+  license: LGPL-3.0-only
+  license_file: LICENSE
+  homepage: https://github.com/trailofbits/fickling
+
+extra:
+  recipe-maintainers:
+    - thewchan

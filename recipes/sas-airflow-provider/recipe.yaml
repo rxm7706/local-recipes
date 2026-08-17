@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.25"
+
+package:
+  name: sas-airflow-provider
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sas-airflow-provider/sas_airflow_provider-${{ version }}.tar.gz
+  sha256: f10b8c782075299ea3d230fe28b0aa9e067619e6d96a1ca85916131cbd5c4e4d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - airflow >=2.4
+
+tests:
+  - python:
+      imports:
+        - sas_airflow_provider
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/sassoftware/sas-airflow-provider
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Enables execution of Studio Flows and Jobs from Airflow
+  description: |
+    Enables execution of Studio Flows and Jobs from Airflow
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sas-airflow-provider
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sas-airflow-provider
+  cfe-purls:
+    - pkg:conda/sas-airflow-provider@${{ version }}?channel=conda-forge
+    - pkg:pypi/sas-airflow-provider@${{ version }}
+  cfe-upstream-repo: https://github.com/sassoftware/sas-airflow-provider
+  cfe-upstream-homepage: https://github.com/sassoftware/sas-airflow-provider
+  cfe-import-names: [sas_airflow_provider]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:47:20Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:47:20Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

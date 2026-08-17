@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: halo
+  version: "0.0.31"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 7b67a3521ee91d53b7152d4ee3452811e1d2a6321975137762eb3d70063cc9d6
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - colorama >=0.3.9
+    - log_symbols >=0.0.14
+    - python >=${{ python_min }}
+    - six >=1.12.0
+    - spinners >=0.0.24
+    - termcolor >=1.1.0
+
+tests:
+  - python:
+      imports:
+        - halo
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Beautiful terminal spinners in Python
+  homepage: https://github.com/manrajgrover/halo
+
+extra:
+  recipe-maintainers:
+    - duncanmmacleod

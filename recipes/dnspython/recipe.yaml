@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dnspython
+  version: 2.8.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 181d3c6996452cb1189c4046c61599b84a5a86e099562ffde77d26984ff26d0f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling >=1.21.0
+  run:
+    - python >=${{ python_min }},<4.0.0
+    - sniffio
+  run_constraints:
+    - aioquic >=1.2.0
+    - cryptography >=45
+    - httpcore >=1.0.0
+    - httpx >=0.28.0
+    - h2 >=4.2.0
+    - idna >=3.10
+    - trio >=0.30
+    - wmi >=1.5.1
+
+tests:
+  - python:
+      imports:
+        - dns
+        - dns.rdtypes
+        - dns.rdtypes.ANY
+        - dns.rdtypes.IN
+        - dns.rdtypes.CH
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: DNS toolkit
+  license: ISC
+  license_file: LICENSE
+  homepage: http://www.dnspython.org
+  repository: https://github.com/rthalley/dnspython
+  documentation: http://www.dnspython.org
+
+extra:
+  recipe-maintainers:
+    - synapticarbors
+    - jan-janssen
+    - xylar

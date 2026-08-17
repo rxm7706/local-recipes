@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyyaml-env-tag
+  version: "1.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyyaml_env_tag-${{ version }}.tar.gz
+  sha256: 2eb38b75a2d21ee0475d6d97ec19c63287a7e140231e4214969d0eac923cd7ff
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - flit-core
+  run:
+    - python >=${{ python_min }}
+    - pyyaml
+
+tests:
+  - python:
+      imports:
+        - yaml_env_tag
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A custom YAML tag for referencing environment variables in YAML files.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/waylan/pyyaml-env-tag
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

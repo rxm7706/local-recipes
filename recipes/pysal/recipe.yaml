@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  python_min: "3.12"
+  version: "26.7"
+
+package:
+  name: pysal
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pysal/pysal-${{ version }}.tar.gz
+  sha256: 6cf0988412c2ac6441f08dc1ce6c2c28a58875eee6fd970b71cb689a9414d843
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.12.*
+    - pip
+    - setuptools
+    - setuptools_scm
+  run:
+    - spml >=0.2.2
+    - lazy_loader >=0.3
+    - arm_pyart
+    - beautifulsoup4 >=4.10
+    - geopandas >=0.10.0
+    - numpy >=1.22
+    - packaging >=22
+    - pandas >=1.4
+    - platformdirs >=2.0.2
+    - pytz
+    - pyyaml
+    - requests >=2.27
+    - scikit-learn >=1.1
+    - scipy >=1.8
+    - shapely >=2.0.1
+    - python >=${{ python_min }}
+    - libpysal >=4.15.0
+    - access >=1.1.10.post3
+    - esda >=2.10.0
+    - giddy >=2.3.8
+    - inequality >=1.1.2
+    - pointpats >=2.6.0
+    - segregation >=2.5.5
+    - spaghetti >=1.7.6
+    - mgwr >=2.2.1
+    - momepy >=1.0.0
+    - spglm >=1.1.0
+    - spint >=1.1.0
+    - spreg >=1.9.0
+    - spvcm >=0.3.0
+    - tobler >=0.14.0
+    - mapclassify >=2.10.0
+    - splot >=1.1.7
+    - spopt >=0.7.0
+
+tests:
+  - python:
+      imports:
+        - pysal
+        - pysal.viz
+        - pysal.explore
+        - pysal.model
+        - pysal.lib
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Library of spatial analysis functions
+  description: |
+    PySAL(Python Spatial Analysis Library) for spatial data science and the development of high level applications.
+  homepage: http://pysal.org
+  repository: https://github.com/pysal
+  documentation: http://pysal.org/pysal
+
+extra:
+  recipe-maintainers:
+    - knaaptime
+    - martinfleis
+    - jGaboardi
+    - sjsrey
+    - ocefpaf
+    - mariusvniekerk
+    - marcelotrevisani

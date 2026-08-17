@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.4.0"
+
+package:
+  name: time-machine
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/t/time-machine/time_machine-${{ version }}.tar.gz
+    sha256: f1c2d8c581f4be50e2f4ff3afd753f8157d52816560de284db716c2b6e9949a8
+    target_directory: dist
+    patches:
+      - if: target_platform == "linux-ppc64le"
+        then:
+          - 0000-no-leaf-frame-pointer.patch
+  - url: https://github.com/adamchainz/time-machine/archive/refs/tags/${{ version }}.tar.gz
+    sha256: 95b34f3d8c6a1ae5156f26d2b70bd02f18cda4b0faa80d572555bfd0e0f153a4
+    target_directory: src
+
+build:
+  number: 0
+  script:
+    - cd dist
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+  run_constraints:
+    - python-dateutil >=2.8.2
+
+tests:
+  - python:
+      imports: time_machine
+      pip_check: true
+  # conftest.py uses tzset; not available on all platforms/python
+  - if: not (win or match(python, "<3.12"))
+    then:
+      files:
+        source:
+          - src/tests/
+      requirements:
+        run:
+          - backports.zoneinfo
+          - coverage
+          - freezegun
+          - hypothesis
+          - pytest
+          - pytest-randomly
+          - python-dateutil
+          - tokenize-rt
+      script:
+        - coverage run --source=time_machine --branch -m pytest src/tests -vv --color=yes --tb=long -p pytester
+        - coverage report --show-missing --skip-covered --fail-under=98
+
+about:
+  summary: Travel through time in your tests.
+  license: MIT
+  license_file: dist/LICENSE
+  homepage: https://pypi.org/project/time-machine
+  repository: https://github.com/adamchainz/time-machine
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

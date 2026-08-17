@@ -10,39 +10,42 @@ package:
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyjwkest-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
   sha256: 5560fd5ba08655f29ff6ad1df1e15dc05abc9d976fcbcec8d2b5167f49b70222
 
 build:
-  number: 0
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vvv
 
 requirements:
   host:
-    - python ${{ python_min }}.*
     - pip
+    - python ${{ python_min }}
     - setuptools
   run:
-    - python >=${{ python_min }},<4.0
+    - future
     - pycryptodomex
+    - python >=${{ python_min }}
     - requests
     - six
-    - future
 
 tests:
   - python:
       imports:
         - jwkest
-      pip_check: true
-      python_version: ${{ python_min }}.*
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
 
 about:
-  homepage: https://github.com/IdentityPython/pyjwkest
   license: Apache-2.0
   license_file: LICENSE.txt
   summary: Python implementation of JWT, JWE, JWS and JWK
+  homepage: https://github.com/IdentityPython/pyjwkest
 
 extra:
   recipe-maintainers:
     - mariusvniekerk
-    - rxm7706

@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.5.5"
+
+package:
+  name: freezegun
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/freezegun/freezegun-${{ version }}.tar.gz
+  sha256: ac7742a6cc6c25a2c35e9292dfd554b897b517d2dec26891a2e8debf205cb94a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - python-dateutil >=2.7
+
+tests:
+  - python:
+      imports:
+        - freezegun
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Let your Python tests travel through time
+  homepage: https://github.com/spulec/freezegun
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

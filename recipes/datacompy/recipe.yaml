@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: datacompy
+  version: "1.0.4"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: baf7f429f6bf45f1b5b704db7f06074115cb8baa60488eb08377271d25e60ba0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python 3.10.*
+    - pip
+    - setuptools
+  run:
+    - pandas >=2.2,<3.1
+    - numpy >=1.26,<2.6
+    - ordered-set <=4.1,>=4.0.2
+    - polars[pandas] >=0.20.4,<1.44
+    - Jinja2 >=3.0.0
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - datacompy
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Pandas and Spark DataFrame comparison for humans
+  homepage: https://github.com/capitalone/datacompy
+
+extra:
+  recipe-maintainers:
+    - rhaffar
+    - jdawang
+    - gladysteh99
+    - fdosani
+    - ak-gupta

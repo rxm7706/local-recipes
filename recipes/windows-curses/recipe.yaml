@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: windows-curses
+  version: "2.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/zephyrproject-rtos/windows-curses/archive/v${{ version }}.tar.gz
+  sha256: 9293366651d2e54edbb936f970018b24c85f1419d310d7a889844501ececf725
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - windows_curses
+      pip_check: true
+
+about:
+  license: EPL-2.0
+  license_file: LICENSE
+  homepage: https://github.com/zephyrproject-rtos/windows-curses
+
+extra:
+  recipe-maintainers:
+    - rxm7706

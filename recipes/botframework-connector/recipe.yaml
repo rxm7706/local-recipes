@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.17.1"
+
+package:
+  name: botframework-connector
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py2.py3/b/botframework-connector/botframework_connector-4.17.1-py2.py3-none-any.whl
+  sha256: 929d242a242f16c7c637eec7c239a84fd7f5f5bb7f95968407d3a9aa9d7bdf8d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - msrest ==0.7.*
+    - pyjwt >=2.4.0
+    - botbuilder-schema ==4.17.1
+    - msal >=1.31.1
+
+tests:
+  - python:
+      imports:
+        - botframework_connector
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://www.github.com/Microsoft/botbuilder-python
+  license: MIT
+  license_file: LICENSE
+  summary: Microsoft Bot Framework Bot Builder SDK for Python.
+  description: |
+    Microsoft Bot Framework Bot Builder SDK for Python.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: botframework-connector
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: botframework-connector
+  cfe-purls:
+    - pkg:conda/botframework-connector@${{ version }}?channel=conda-forge
+    - pkg:pypi/botframework-connector@${{ version }}
+  cfe-upstream-repo: https://www.github.com/Microsoft/botbuilder-python
+  cfe-upstream-homepage: https://www.github.com/Microsoft/botbuilder-python
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:49:36Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:49:36Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

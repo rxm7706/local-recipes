@@ -25,10 +25,10 @@ requirements:
   run:
     - python >=${{ python_min }}
     - annotated-types >=0.7.0
-    - datamodel-code-generator <=0.39.0,>=0.26.1
+    - datamodel-code-generator >=0.26.1,<=0.39.0
     - loguru >=0.7.3
     - pillow >=10.2.0
-    - pydantic <3,>=2.5
+    - pydantic >=2.5,<3
     - pydantic-core >=2.23.4
     - pydantic-yaml >=1.2.0
     - typing_extensions >=4.12.2

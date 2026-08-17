@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: django-tree-queries
   version: "0.24.0"
 
 package:
-  name: django-tree-queries
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-tree-queries/django_tree_queries-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_tree_queries-${{ version }}.tar.gz
   sha256: 8971da3fd15a1e6a52a5a2af76c086aa460e6974a130d9ec90ca0d0588baf848
 
 build:
@@ -19,29 +20,26 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - hatchling
     - pip
   run:
-    - python >=${{ python_min }}
-    - django
     - django-js-asset
+    - django
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - tree_queries
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Tree queries with explicit opt-in, without configurability
   license: BSD-3-Clause
   license_file: LICENSE
   homepage: https://github.com/feincms/django-tree-queries
-  repository: https://github.com/feincms/django-tree-queries
 
 extra:
   recipe-maintainers:

@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.3"
+
+package:
+  name: wasabi
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wasabi/wasabi-${{ version }}.tar.gz
+  sha256: 4bb3008f003809db0c3e28b4daf20906ea871a2bb43f9914197d540f4f2e0878
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - wasabi
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+        - pip
+        - pytest
+        - if: not ppc64le
+          then: nbconvert
+        - ipykernel
+    script:
+      - python -m pytest --tb=native --pyargs wasabi -k "not (${{ tests_to_skip }})"
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A lightweight console printing and formatting toolkit
+  homepage: https://github.com/explosion/wasabi
+  repository: https://github.com/explosion/wasabi
+
+extra:
+  recipe-maintainers:
+    - conda-forge/spacy

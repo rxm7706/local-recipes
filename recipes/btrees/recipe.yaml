@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: btrees
+  version: "5.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/BTrees-${{ version }}.tar.gz
+  sha256: fddf8a4dcc0253e39027bab380a2e20d47ae370a32485416f2a66ad9ae1a43fa
+
+build:
+  number: 1
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+  host:
+    - persistent
+    - pip
+    - python
+  run:
+    - persistent >=4.1.0
+    - python
+    - zope.interface >=5.0.0
+
+tests:
+  - python:
+      imports:
+        - BTrees
+        - BTrees.tests
+      pip_check: true
+
+about:
+  summary: Scalable persistent object containers
+  license: ZPL-2.1
+  license_file:
+    - COPYRIGHT.txt
+    - LICENSE.txt
+  homepage: https://github.com/zopefoundation/BTrees
+  documentation: https://pythonhosted.org/BTrees/
+
+extra:
+  recipe-maintainers:
+    - osamples
+    - izahn

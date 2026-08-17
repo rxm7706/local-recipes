@@ -1,0 +1,122 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyinstaller
+  version: "6.22.0"
+  sha256: 8b0166fff4583b374bbe7fa044bf03ddc33cab0f792a665807d96048e63f060e
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  patches:
+    - patches/0001-don-t-set-arch.patch
+    - patches/0002-Including-sys-ipc.h-requires-defining-_XOPEN_SOURCE-.patch
+
+build:
+  number: 0
+  skip: match(python, "<3.8") or match(python, ">3.15")
+  script:
+    - if: unix
+      then: export PYI_STATIC_ZLIB=1
+    - if: unix
+      then: export LDFLAGS="${LDFLAGS} -L${PREFIX}/lib"
+    - if: osx
+      then: export LDFLAGS="${LDFLAGS} -mmacosx-version-min=${MACOSX_DEPLOYMENT_TARGET}"
+    # Remove the pre-compiled bootloaders (available in sdist)
+    - if: unix
+      then: rm -fr ${SRC_DIR}/PyInstaller/bootloader/{Darwin,Linux,Windows}-{64,32}bit
+    # Remove vendored waflib dir
+    - if: unix
+      then: rm -fr ${SRC_DIR}/bootloader/waflib
+    - if: win
+      then: rd /s /q %SRC_DIR%\bootloader\waflib
+    # Build the bootloader
+    - pushd bootloader
+    - if: osx
+      then: waf --prefix="${PREFIX}" --clang distclean all
+    - if: linux
+      then: waf --prefix="${PREFIX}" --gcc distclean all
+    - if: win
+      then: waf --prefix="%LIBRARY_PREFIX%" distclean all
+    # Build the package
+    - popd
+    - ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - pyinstaller = PyInstaller.__main__:run
+      - pyi-archive_viewer = PyInstaller.utils.cliutils.archive_viewer:run
+      - pyi-bindepend = PyInstaller.utils.cliutils.bindepend:run
+      - pyi-grab_version = PyInstaller.utils.cliutils.grab_version:run
+      - pyi-makespec = PyInstaller.utils.cliutils.makespec:run
+      - pyi-set_version = PyInstaller.utils.cliutils.set_version:run
+  preserve_egg_dir: true
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - hatchling
+    - pip
+    - python
+  host:
+    - hatchling
+    - pip
+    - python
+    - waf
+    - zlib
+  run:
+    - altgraph
+    - packaging >=22.0
+    - python
+    - if: win
+      then: pefile >=2022.5.30,!=2024.8.26
+    - if: win
+      then: pywin32
+    - if: win
+      then: pywin32-ctypes >=0.2.1
+    - if: osx
+      then: macholib >=1.8
+    - pyinstaller-hooks-contrib >=2025.9
+    - setuptools >=42.0.0
+    - if: match(python, "<3.10")
+      then: importlib-metadata >=4.6
+
+tests:
+  - python:
+      imports:
+        - PyInstaller
+      pip_check: false
+  - files:
+      recipe:
+        - hello.py
+    script:
+      - pyinstaller --help
+      - pyi-archive_viewer --help
+      - pyi-bindepend --help
+      - pyi-makespec --help
+      - if: win
+        then: pyi-grab_version --help
+      - if: win
+        then: pyi-set_version --help
+
+about:
+  # https://github.com/pyinstaller/pyinstaller/blob/v3.6/COPYING.txt#L11
+  license: GPL-2.0-or-later WITH Bootloader-exception
+  license_file: COPYING.txt
+  summary: PyInstaller bundles a Python application and all its dependencies into a single package.
+  homepage: http://www.pyinstaller.org
+  repository: https://github.com/pyinstaller/pyinstaller
+
+extra:
+  recipe-maintainers:
+    - isuruf
+    - jakirkham
+    - nicoddemus
+    - nehaljwani

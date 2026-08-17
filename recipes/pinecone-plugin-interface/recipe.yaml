@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pinecone-plugin-interface
+  version: "0.0.7"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pinecone_plugin_interface-${{ version }}.tar.gz
+  sha256: b8e6675e41847333aa13923cc44daa3f85676d7157324682dc1640588a982846
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pinecone_plugin_interface
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Plugin interface for the Pinecone python client
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  homepage: https://www.pinecone.io
+
+extra:
+  recipe-maintainers:
+    - isuruf

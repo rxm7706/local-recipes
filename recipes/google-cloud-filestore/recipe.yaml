@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.17.1"
+
+package:
+  name: google-cloud-filestore
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/google-cloud-filestore/google_cloud_filestore-${{ version }}.tar.gz
+  sha256: c210a5f975594a7ee74db1f2688eb361167bf66cc399c3cd9308f4c75a3887da
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - google-api-core <3.0.0,>=2.25.0
+    - google-auth !=2.24.0,!=2.25.0,<3.0.0,>=2.14.1
+    - google-cloud-common <2.0.0,>=1.5.1
+    - grpcio <2.0.0,>=1.59.0
+    - proto-plus <2.0.0,>=1.26.1
+    - protobuf <8.0.0,>=6.33.5
+
+tests:
+  - python:
+      imports:
+        - google.cloud.filestore
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-filestore
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Google Cloud Filestore API client library
+  description: |
+    Google Cloud Filestore API client library
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-cloud-filestore
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-cloud-filestore
+  cfe-purls:
+    - pkg:conda/google-cloud-filestore@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-cloud-filestore@${{ version }}
+  cfe-upstream-repo: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-filestore
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-filestore
+  cfe-import-names: [google.cloud.filestore]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:14:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:14:16Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4 Create-recipe local. Run dep google-cloud-common from local channel.
+####

@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cronsim
+  version: "2.6"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/cronsim-${{ version }}.tar.gz
+  sha256: 5aab98716ef90ab5ac6be294b2c3965dbf76dc869f048846a0af74ebb506c10d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - cronsim
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Cron expression parser and evaluator
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/cuu508/cronsim
+
+extra:
+  recipe-maintainers:
+    - apmorton

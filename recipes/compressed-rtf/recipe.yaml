@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: compressed-rtf
+  version: "1.0.6"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/compressed_rtf-${{ version }}.tar.gz
+  sha256: c1c827f1d124d24608981a56e8b8691eb1f2a69a78ccad6440e7d92fde1781dd
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - compressed_rtf
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Compressed Rich Text Format (RTF) compression and decompression package
+  homepage: https://github.com/delimitry/compressed_rtf
+  repository: https://github.com/delimitry/compressed_rtf
+  documentation: https://msdn.microsoft.com/en-us/library/cc463890(v=exchg.80).aspx
+
+extra:
+  recipe-maintainers:
+    - oblute
+    - rluria14
+    - ndmaxar

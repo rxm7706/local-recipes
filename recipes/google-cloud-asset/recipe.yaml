@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.4.0"
+
+package:
+  name: google-cloud-asset
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/google-cloud-asset/google_cloud_asset-${{ version }}.tar.gz
+  sha256: 350d564db6edb2d9521d4776fc44d559765fecd06bdb7284017cf24261039c8d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - google-api-core <3.0.0,>=2.17.1
+    - google-auth !=2.24.0,!=2.25.0,<3.0.0,>=2.14.1
+    - google-cloud-org-policy <2.0.0,>=1.11.1
+    - grpcio <2.0.0,>=1.59.0
+    - proto-plus <2.0.0,>=1.22.3
+    - protobuf <8.0.0,>=4.25.8
+    - google-cloud-access-context-manager <1.0.0,>=0.2.0
+    - google-cloud-os-config <2.0.0,>=1.13.0
+    - grpc-google-iam-v1 <1.0.0,>=0.14.0
+
+tests:
+  - python:
+      imports:
+        - google.cloud.asset
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-asset
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Google Cloud Asset API client library
+  description: |
+    Google Cloud Asset API client library
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-cloud-asset
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-cloud-asset
+  cfe-purls:
+    - pkg:conda/google-cloud-asset@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-cloud-asset@${{ version }}
+  cfe-upstream-repo: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-asset
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-asset
+  cfe-import-names: [google.cloud.asset]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T16:42:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T16:42:24Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-16T16:44:20Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Apache-2.0 Google client. Dep-first: google-cloud-org-policy,
+#    # google-cloud-access-context-manager, google-cloud-os-config.
+####

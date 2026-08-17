@@ -2,21 +2,22 @@
 schema_version: 1
 
 context:
+  name: pytest-excel
   version: "1.8.1"
-  python_min: "3.11"
+  python_min: '3.11'
 
 package:
-  name: pytest-excel
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/p/pytest-excel/pytest_excel-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytest_excel-${{ version }}.tar.gz
   sha256: 39bc29161b1e49e64d9ad3f35ca74aac641c7afcd5d4a79cd264cbbb8b3d2bea
 
 build:
-  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
 
 requirements:
   host:
@@ -24,26 +25,23 @@ requirements:
     - pip
     - hatchling
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
     - openpyxl
-    - pandas
     - pytest
+    - pandas
 
 tests:
   - python:
       imports:
         - pytest_excel
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}.*
 
 about:
+  homepage: https://github.com/ssrikanta/pytest-excel
   summary: pytest plugin for generating excel reports
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/ssrikanta/pytest-excel
-  repository: https://github.com/ssrikanta/pytest-excel
 
 extra:
   recipe-maintainers:

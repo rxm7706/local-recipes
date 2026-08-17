@@ -2,20 +2,21 @@
 schema_version: 1
 
 context:
+  name: antlr4-tools
   version: "0.2.2"
 
 package:
-  name: antlr4-tools
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/a/antlr4-tools/antlr4_tools-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: 8af6fba512fc168e48eb93690ed21bdbe8848ed812d12b365d9d259a26ad6ba3
 
 build:
-  number: 0
+  number: 1
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv
   python:
     entry_points:
       - antlr4=antlr4_tool_runner:tool
@@ -27,7 +28,8 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
+    # setup.py requires install-jdk to pass pip check, added install-jdk to requirements run section.
     - install-jdk
     - openjdk
 
@@ -35,30 +37,21 @@ tests:
   - python:
       imports:
         - antlr4_tool_runner
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
   - requirements:
       run:
         - pip
         - python ${{ python_min }}.*
     script:
+      - pip check
       - antlr4-parse --help
 
 about:
-  homepage: https://pypi.org/project/antlr4-tools/
+  summary: Tools to run ANTLR4 tool and grammar interpreter/profiler
   license: MIT
   license_file: LICENSE
-  summary: Tools to run ANTLR4 tool and grammar interpreter/profiler
-  repository: https://github.com/antlr/antlr4-tools
-  documentation: https://github.com/antlr/antlr4-tools/blob/master/README.md
-  description: |
-    antlr4-tools provides the antlr4 and antlr4-parse command-line tools that
-    let you run the ANTLR4 parser generator and grammar interpreter/profiler
-    without installing Java or ANTLR yourself. It only requires Python 3; the
-    underlying JDK and ANTLR jar are provisioned automatically at runtime.
-    Homepage: http://www.antlr.org
+  homepage: http://www.antlr.org
 
 extra:
   recipe-maintainers:

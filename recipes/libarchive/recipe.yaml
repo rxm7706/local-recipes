@@ -1,0 +1,174 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.8.9"
+
+recipe:
+  name: libarchive-split
+  version: ${{ version }}
+
+source:
+  url: https://github.com/libarchive/libarchive/archive/v${{ version }}.tar.gz
+  sha256: 744346f6bca195c8f894f847bb32a16e9bcae6002624a58fadc81e80f595b3cb
+  patches:
+    - patches/0001-Add-lib-to-CMAKE_FIND_LIBRARY_PREFIXES-for-lzma.patch
+
+build:
+  number: ${{ build }}
+  string: ${{ license_family }}_h${{ PKG_HASH }}_${{ PKG_BUILDNUM }}
+
+outputs:
+  - package:
+      name: libarchive
+    build:
+      string: ${{ license_family }}_h${{ PKG_HASH }}_${{ PKG_BUILDNUM }}
+      script:
+        file: ${{ 'build_libarchive.bat' if win else 'build_libarchive.sh' if unix else '' }}
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+        - if: unix
+          then: autoconf
+        - if: unix
+          then: automake
+        - if: unix
+          then: libtool
+        - if: unix
+          then: pkg-config
+        - if: win
+          then: cmake <4
+        - if: unix
+          then: make
+        - if: win
+          then: ninja
+        - if: win
+          then: m2-patch
+      host:
+        - bzip2
+        - if: osx
+          then: libiconv
+        - lz4-c
+        - liblzma-devel
+        - lzo
+        - openssl
+        - libxml2-devel
+        - zlib
+        - zstd
+      run_exports:
+        - ${{ pin_subpackage('libarchive', upper_bound='x.x') }}
+      run_constraints:
+        - lzo <0.0a0
+    tests:
+      - files:
+          recipe:
+            - test/*
+        requirements:
+          run:
+            - ${{ compiler('c') }}
+            - cmake
+            - ninja
+        script:
+          - if: unix
+            then: test -f "${PREFIX}/lib/pkgconfig/libarchive.pc"
+          - if: unix
+            then: test -f "${PREFIX}/include/archive.h"
+          - if: win
+            then: if not exist %LIBRARY_INC%\archive.h (exit 1)
+          - if: unix
+            then: test -f "${PREFIX}/include/archive_entry.h"
+          - if: win
+            then: if not exist %LIBRARY_INC%\archive_entry.h (exit 1)
+          - if: unix
+            then: test -f "${PREFIX}/lib/libarchive.a"
+          - if: unix
+            then: test -f "${PREFIX}/lib/libarchive${SHLIB_EXT}"
+          - if: win
+            then: if not exist %LIBRARY_LIB%\archive.lib (exit 1)
+          - if: win
+            then: if not exist %LIBRARY_BIN%\archive.dll (exit 1)
+          - bsdcat --version
+          - bsdcpio --version
+          - bsdtar --version
+          - bsdtar -tf test/hello_world.xar
+          - if: unix
+            then: cmake -G Ninja -S test/ -B build/ -D LIB_NAME="libarchive${{ SHLIB_EXT }}" ${CMAKE_ARGS}
+          - if: win
+            then: cmake -G Ninja -S test/ -B build/ -D LIB_NAME="archive" %CMAKE_ARGS%
+          - cmake --build build/
+          - cmake --build build --target test
+  - package:
+      name: libarchive-minimal-static
+    build:
+      string: ${{ license_family }}_h${{ PKG_HASH }}_${{ PKG_BUILDNUM }}
+      skip: true
+      script:
+        - {}
+        file: ${{ 'build_minimal.bat' if win else 'build_minimal.sh' if unix else '' }}
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
+        - if: unix
+          then: autoconf
+        - if: unix
+          then: automake
+        - if: unix
+          then: libtool
+        - if: unix
+          then: pkg-config
+        - if: unix
+          then: make
+        - if: win
+          then: cmake >=3.24
+        - if: win
+          then: ninja
+      host:
+        - if: osx
+          then: libiconv
+        - bzip2
+        - zlib
+        - zstd-static
+    tests:
+      - files:
+          recipe:
+            - test/*
+        requirements:
+          run:
+            - ${{ compiler('c') }}
+            - cmake
+            - ninja
+        script:
+          - if: unix
+            then: test -f "${PREFIX}/lib/pkgconfig/libarchive.pc"
+          - if: unix
+            then: test -f "${PREFIX}/include/archive.h"
+          - if: win
+            then: if not exist %LIBRARY_INC%\archive.h (exit 1)
+          - if: unix
+            then: test -f "${PREFIX}/include/archive_entry.h"
+          - if: win
+            then: if not exist %LIBRARY_INC%\archive_entry.h (exit 1)
+          - if: unix
+            then: test -f "${PREFIX}/lib/libarchive.a"
+          - if: win
+            then: if not exist %LIBRARY_LIB%\archive_static.lib (exit 1)
+          - if: unix
+            then: cmake -G Ninja -S test/ -B build/ -D LIB_NAME="libarchive.a" ${CMAKE_ARGS}
+          - if: win
+            then: cmake -G Ninja -S test/ -B build/ -D LIB_NAME="archive_static" %CMAKE_ARGS%
+          - cmake --build build/
+          - cmake --build build --target test
+
+about:
+  summary: Multi-format archive and compression library
+  license: BSD-2-Clause
+  license_file: COPYING
+  homepage: http://www.libarchive.org/
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - ocefpaf
+    - jjerphan

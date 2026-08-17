@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.1.1"
+
+package:
+  name: z0lib
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/z/z0lib/z0lib-${{ version }}.tar.gz
+  sha256: d9f012caab053dc450dddea692caeb176b49edb2686b46f21ca7a0a701307300
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - z0lib
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/zeroincombenze/tools
+  license: GPL-3.0-or-later
+  license_file: LICENSE
+  summary: Bash zeroincombenze lib
+  description: |
+    Bash zeroincombenze lib
+  repository: https://github.com/zeroincombenze/tools/tree/master/z0lib
+  documentation: https://zeroincombenze-tools.readthedocs.io/en/latest/#z0lib
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: z0lib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: z0lib
+  cfe-purls:
+    - pkg:conda/z0lib@${{ version }}?channel=conda-forge
+    - pkg:pypi/z0lib@${{ version }}
+  cfe-upstream-repo: https://github.com/zeroincombenze/tools/tree/master/z0lib
+  cfe-upstream-homepage: https://github.com/zeroincombenze/tools
+  cfe-import-names: [z0lib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:43:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:43:50Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4/P5 Create-recipe local-only. z0lib.
+####

@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: apache-airflow-providers-apache-beam
+  version: "6.2.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/apache_airflow_providers_apache_beam-${{ version }}.tar.gz
+  sha256: fe88b2bf9591c6fc66ad2d0a270190cd781847809dd6af630f36ee954bb99e67
+
+build:
+  noarch: python
+  script: python -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core ==3.12.0
+  run:
+    - python >=${{ python_min }}
+    - apache-airflow >=2.11.0
+    - apache-airflow-providers-common-compat >=1.12.0
+    - apache-beam >=2.69.0
+    - pyarrow >=16.1.0
+    # more restrictive for python >=3.12
+    - numpy >=1.26.0
+
+tests:
+  - python:
+      imports:
+        - airflow.providers.apache.beam
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  homepage: https://github.com/apache/airflow/
+  summary: Provider package apache-airflow-providers-apache-beam for Apache Airflow
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+  documentation: https://airflow.apache.org/docs/apache-airflow-providers-apache-beam/stable/index.html
+  repository: https://github.com/apache/airflow/
+
+extra:
+  recipe-maintainers:
+    - xylar

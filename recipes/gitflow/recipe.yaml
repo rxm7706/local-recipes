@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: gitflow
+  version: "1.0.2"
+  pipname: nu-gitflow
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ pipname[0] }}/${{ pipname }}/nu-gitflow-${{ version }}.tar.gz
+  sha256: bec2f5d99244e3e0b6587f0dc7fce87e26291724c704f3a771d57f3121c4e1e7
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - git-flow = gitflow.bin:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - ez_setup
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - gitpython >=1.0.1
+    - future
+
+tests:
+  - python:
+      imports:
+        - gitflow
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Git extensions to provide high-level repository operations for Vincent Driessen's branching model
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  homepage: http://github.com/chassing/gitflow/
+
+extra:
+  recipe-maintainers:
+    - rxm7706

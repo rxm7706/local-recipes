@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: aiorun
+  version: "2025.1.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 86d1075a034ce2671ab532db06e9204fe784cdd0c66ca7b8cc47a7527d0d50a3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.5
+    - pip
+    - flit
+  run:
+    - python >=3.5
+
+tests:
+  - python:
+      imports:
+        - aiorun
+      pip_check: false
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A "run" function for asyncio-based apps that does all the boilerplate.
+  homepage: https://github.com/cjrh/aiorun
+
+extra:
+  recipe-maintainers:
+    - scopatz

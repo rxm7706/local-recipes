@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.9"
+
+package:
+  name: minikerberos
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/minikerberos/minikerberos-${{ version }}.tar.gz
+  sha256: 095a980a1976adff48c3de1f73d75efe9b39da7214dc7c891a2363240716a9e7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.0.0
+  run:
+    - python >=${{ python_min }}
+    - asn1crypto >=1.5.1
+    - oscrypto >=1.3.0
+    - asysocks >=0.2.18
+    - unicrypto >=0.0.12
+    - tqdm
+    - six
+
+tests:
+  - python:
+      imports:
+        - minikerberos
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/skelsec/minikerberos
+  license: MIT
+  license_file: LICENSE
+  summary: Kerberos manipulation library in pure Python
+  description: |
+    Kerberos manipulation library in pure Python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: minikerberos
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: minikerberos
+  cfe-purls:
+    - pkg:conda/minikerberos@${{ version }}?channel=conda-forge
+    - pkg:pypi/minikerberos@${{ version }}
+  cfe-upstream-repo: https://github.com/skelsec/minikerberos
+  cfe-upstream-homepage: https://github.com/skelsec/minikerberos
+  cfe-import-names: [minikerberos]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:48:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:48:26Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

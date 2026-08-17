@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: hijri-converter
+  version: "2.3.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 069b6789291e0830f4860a79dcd34fb3ceea3b95516ed4010202b9656ba1ab61
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - hijri_converter
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Accurate Hijri-Gregorian dates converter based on the Umm al-Qura calendar
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/dralshehri/hijri-converter
+
+extra:
+  recipe-maintainers:
+    - dralshehri
+    - synapticarbors

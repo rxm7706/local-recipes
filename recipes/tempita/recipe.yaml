@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.6.0"
+
+package:
+  name: tempita
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/T/Tempita/tempita-${{ version }}.tar.gz
+  sha256: 76e15de0137e5011c22949cc15a5161f623fe6a31655751c6d765db6bbac27b6
+  file_name: Tempita-${{ version }}dev.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - tempita
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A small templating language
+  description: |
+    tempita is a small templating language. This language implements
+    if/elif/else, for/continue/break, expressions, and blocks of Python code.
+  homepage: http://pythonpaste.org/tempita/
+  repository: https://bitbucket.org/ianb/tempita
+  documentation: http://pythonpaste.org/tempita/
+
+extra:
+  recipe-maintainers:
+    - msarahan
+    - jan-janssen

@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: anaconda-catalogs
+  version: "0.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/anaconda-catalogs-${{ version }}.tar.gz
+  sha256: 9f9396ced850ec377fd6ef0d9be43bb6f62dd0a61da69582d077458e3bb12e7d
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - setuptools-scm >=6.2
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - aiohttp
+    - intake
+    - requests
+
+tests:
+  - python:
+      imports:
+        - anaconda_catalogs
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Client library for Anaconda Catalogs
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/anaconda/anaconda-catalogs
+
+extra:
+  recipe-maintainers:
+    - mattkram
+    - millsks
+    - rxm7706

@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: starlette-context
+  version: 0.5.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/starlette_context-${{ version }}.tar.gz
+  sha256: f6025753f8ede041778b2f2c3823e2da9df3c2d94832575bcb59374216b7c2b2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }},<4.0
+    - starlette >=0.27.0
+
+tests:
+  - python:
+      imports:
+        - starlette_context
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Access context in Starlette
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/tomwojcik/starlette-context
+  documentation: https://starlette-context.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - thewchan

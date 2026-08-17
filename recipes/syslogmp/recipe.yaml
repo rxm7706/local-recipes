@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4"
+
+package:
+  name: syslogmp
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/syslogmp/syslogmp-${{ version }}.tar.gz
+  sha256: bcf94858407cf8993e9bf73dc306157f087db6c66503e74853d0a95bf6a4f0fb
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=51.1.2
+    - wheel
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - syslogmp
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://homework.nwsnet.de/releases/76d6/#syslogmp
+  license: MIT
+  license_file: LICENSE
+  summary: A parser for BSD syslog protocol (RFC 3164) messages
+  description: |
+    A parser for BSD syslog protocol (RFC 3164) messages
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: syslogmp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: syslogmp
+  cfe-purls:
+    - pkg:conda/syslogmp@${{ version }}?channel=conda-forge
+    - pkg:pypi/syslogmp@${{ version }}
+  cfe-upstream-repo: https://homework.nwsnet.de/releases/76d6/#syslogmp
+  cfe-upstream-homepage: https://homework.nwsnet.de/releases/76d6/#syslogmp
+  cfe-import-names: [syslogmp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:02:13Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:02:13Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

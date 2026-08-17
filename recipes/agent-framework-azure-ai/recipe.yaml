@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0rc6"
+
+package:
+  name: agent-framework-azure-ai
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/agent-framework-azure-ai/agent_framework_azure_ai-${{ version }}.tar.gz
+  sha256: afcca236fae24e6fdd44285e47a633abcc14f2bbea62d0421663c2d771bec418
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core >=3.11,<4.0
+  run:
+    - python >=${{ python_min }}
+    - agent-framework-core >=1.0.0rc6
+    - agent-framework-openai >=1.0.0rc6
+    - azure-ai-projects <3.0,>=2.0.0
+    - azure-ai-agents <1.2.0b6,>=1.2.0b5
+    - azure-ai-inference <1.0.0b10,>=1.0.0b9
+    - azure-identity <2,>=1
+    - aiohttp <4,>=3.7.0
+
+tests:
+  - python:
+      imports:
+        - agent_framework_azure_ai
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://aka.ms/agent-framework
+  license: MIT
+  license_file: LICENSE
+  summary: Azure AI Foundry integration for Microsoft Agent Framework.
+  description: |
+    Azure AI Foundry integration for Microsoft Agent Framework.
+  repository: https://github.com/microsoft/agent-framework/tree/main/python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: agent-framework-azure-ai
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: agent-framework-azure-ai
+  cfe-purls:
+    - pkg:conda/agent-framework-azure-ai@${{ version }}?channel=conda-forge
+    - pkg:pypi/agent-framework-azure-ai@${{ version }}
+  cfe-upstream-repo: https://github.com/microsoft/agent-framework/tree/main/python
+  cfe-upstream-homepage: https://aka.ms/agent-framework
+  cfe-import-names: [agent_framework_azure_ai]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:47:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:47:58Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

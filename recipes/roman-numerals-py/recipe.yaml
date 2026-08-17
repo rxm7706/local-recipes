@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.1.0"
+
+package:
+  name: roman-numerals-py
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/roman-numerals-py/roman_numerals_py-${{ version }}.tar.gz
+  sha256: f5d7b2b4ca52dd855ef7ab8eb3590f428c0b1ea480736ce32b01fef2a5f8daf9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools >=77
+  run:
+    - roman-numerals ==4.1.0
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - roman_numerals
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: 0BSD OR CC0-1.0
+  license_file: LICENCE.rst
+  summary: Manipulate well-formed Roman numerals
+  homepage: https://github.com/AA-Turner/roman-numerals
+  repository: https://github.com/AA-Turner/roman-numerals
+
+extra:
+  recipe-maintainers:
+    - AA-Turner

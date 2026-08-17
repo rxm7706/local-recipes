@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: fakeredis
+  version: "2.37.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 7461f124dcba04a80691d72270b3d1d5cd100ef14dc068c76db825940f3ed799
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - hatchling
+  run:
+    - python >=${{ python_min }},<4
+    - redis-py >=4.3
+    - sortedcontainers >=2.4.0,<3
+    - typing-extensions >=4.7,<5
+
+tests:
+  - python:
+      imports:
+        - fakeredis
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Fake implementation of redis API (redis-py) for testing purposes.
+  homepage: https://github.com/cunla/fakeredis-py
+
+extra:
+  recipe-maintainers:
+    - cunla
+    - synapticarbors

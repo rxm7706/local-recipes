@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: Docs2Static
-  version: "0.6"
+  version: "0.6.9"
   python_min: "3.14"
 
 package:
@@ -12,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/docs2static-${{ version }}.tar.gz
-  sha256: 55db2d6b898b55132e191fc8cbeb6e0543b32509ac2302ab0e4533555888b745
+  sha256: 4d94d227c1c04ac5fec0e00c9083c33cc8edc80b57f77ba64de48d5b9705c404
 
 build:
   number: 0
@@ -41,8 +41,8 @@ tests:
         - docs2static
       pip_check: true
       python_version:
-      - ${{ python_min }}.*
-      - "*"
+        - ${{ python_min }}.*
+        - "*"
   - requirements:
       run:
         - pip
@@ -52,6 +52,7 @@ tests:
 about:
   summary: Fetch collaborative documents from a Docs instance and generate static sites with Zensical
   homepage: https://github.com/CoopCodeCommun/Docs2static
+  repository: https://github.com/CoopCodeCommun/Docs2static
   license: Apache-2.0
   license_file: LICENSE
 

@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.1"
+
+package:
+  name: stringify
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/s/stringify/stringify-0.1.1-py3-none-any.whl
+  sha256: f0187b1a288bec62cfa48a33e4b39ae88f298d81bfaf733c566b8e70ecd21b83
+  file_name: stringify-${{ version }}-py3-none-any.whl
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install stringify-${{ version }}-py3-none-any.whl -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - stringify
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/slightlynybbled/stringify
+  license: MIT
+  license_file: LICENSE
+  summary: Automatic string encoding ofbinary files into python variables
+  description: |
+    Automatic string encoding ofbinary files into python variables
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: stringify
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: stringify
+  cfe-purls:
+    - pkg:conda/stringify@${{ version }}?channel=conda-forge
+    - pkg:pypi/stringify@${{ version }}
+  cfe-upstream-repo: https://github.com/slightlynybbled/stringify
+  cfe-upstream-homepage: https://github.com/slightlynybbled/stringify
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:38:39Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:38:39Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

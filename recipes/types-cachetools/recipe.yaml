@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "7.0.0.20260713"
+
+package:
+  name: types-cachetools
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/types-cachetools/types_cachetools-${{ version }}.tar.gz
+  sha256: f1acf079e9c66a81e096a897ef0b261a82117cf856834e37b4bd0c9a116a076a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - urllib3 >=2
+
+tests:
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+  - package_contents:
+      site_packages:
+        - cachetools-stubs/__init__.pyi
+
+about:
+  summary: Typing stubs for cachetools
+  license: Apache-2.0 AND MIT
+  license_file: LICENSE
+  homepage: https://github.com/python/typeshed
+  repository: https://github.com/python/typeshed
+
+extra:
+  recipe-maintainers:
+    - fhoehle
+    - conda-forge/mypy

@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.0"
+
+package:
+  name: sqlalchemy-sybase
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sqlalchemy-sybase/sqlalchemy-sybase-${{ version }}.tar.gz
+  sha256: fb328b9542d24f2b9b8a68da3d3637eb43450c8ab37a4acf397124c93095409e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - odbcinst
+    - pyodbc
+    - sqlalchemy
+
+tests:
+  - python:
+      imports:
+        - sqlalchemy_sybase
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/gordthompson/sqlalchemy-sybase
+  license: MIT
+  license_file: LICENSE
+  summary: SAP ASE (Sybase) for SQLAlchemy
+  description: |
+    SAP ASE (Sybase) for SQLAlchemy
+  repository: https://github.com/gordthompson/sqlalchemy-sybase
+  documentation: https://github.com/gordthompson/sqlalchemy-sybase/wiki
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sqlalchemy-sybase
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sqlalchemy-sybase
+  cfe-purls:
+    - pkg:conda/sqlalchemy-sybase@${{ version }}?channel=conda-forge
+    - pkg:pypi/sqlalchemy-sybase@${{ version }}
+  cfe-upstream-repo: https://github.com/gordthompson/sqlalchemy-sybase
+  cfe-upstream-homepage: https://github.com/gordthompson/sqlalchemy-sybase
+  cfe-import-names: [sqlalchemy_sybase]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:07:20Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:07:20Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dask-yarn
+  pkg_name: dask_yarn
+  version: "0.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 6461a125e6c8bf881ec3b8007be239a5520d8df2371095ee625bd99a9b0f3daa
+
+build:
+  number: 2
+  skip: win or match(python, "<3.7")
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - dask-yarn=dask_yarn.cli:main
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - dask-core >=2021.1.0
+    - distributed >=2021.1.0
+    - skein >=0.8.1
+    - grpcio >=1.14.0
+
+tests:
+  - python:
+      imports:
+        - dask_yarn
+      pip_check: false
+  - script:
+      - dask-yarn --help
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Deploy dask clusters on Apache YARN
+  description: |
+    Dask-Yarn deploys Dask on YARN clusters, such as are found in traditional
+    Hadoop installations. Dask-Yarn provides an easy interface to quickly
+    start, stop, and scale Dask clusters natively from Python.
+  homepage: https://github.com/dask/dask-yarn
+  repository: https://github.com/dask/dask-yarn
+  documentation: https://dask-yarn.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - jcrist
+    - mrocklin
+    - quasiben

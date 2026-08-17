@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: prance
+  version: "25.4.8.0"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/prance-${{ version }}.tar.gz
+  sha256: 2f72d2983d0474b6f53fd604eb21690c1ebdb00d79a6331b7ec95fb4f25a1f65
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - prance=prance.cli:cli
+
+requirements:
+  host:
+    - pip
+    - python 3.10.*
+    - setuptools >65
+    - wheel
+    - setuptools_scm >8
+    # from setuptools_scm[toml]
+    - tomli
+  run:
+    - python >=${{ python_min }}
+    - chardet >=5.2
+    - ruamel.yaml >=0.18.10
+    - requests >=2.32.3
+    - packaging >=24.2
+
+tests:
+  - python:
+      imports:
+        - prance
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - flex-swagger
+        - python ${{ python_min }}
+    script:
+      - prance --help
+      - pip list | grep ${{ name }} | tr -s " " | grep ${{ version }}
+
+about:
+  summary: Resolving Swagger/OpenAPI 2.0 and 3.0.0 Parser
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/jfinkhaeuser/prance
+
+extra:
+  recipe-maintainers:
+    - xhochy
+    - thewchan

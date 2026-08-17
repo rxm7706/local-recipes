@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: matplotlib-inline
+  version: "0.2.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 72f3fe8fce36b70d4a5b612f899090cd0401deddc4ea90e1572b9f4bfb058c79
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - traitlets
+
+tests:
+  - python:
+      imports:
+        - matplotlib_inline
+        - matplotlib_inline.backend_inline
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Inline Matplotlib backend for Jupyter
+  homepage: https://github.com/ipython/matplotlib-inline
+  repository: https://github.com/ipython/matplotlib-inline
+
+extra:
+  recipe-maintainers:
+    - Carreau
+    - SylvainCorlay
+    - martinRenou
+    - fperez

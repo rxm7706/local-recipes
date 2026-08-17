@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: azure-keyvault
+  version: "4.3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+build:
+  number: 1
+  noarch: generic
+
+requirements:
+  run:
+    - azure-keyvault-certificates ~=4.3
+    - azure-keyvault-keys ~=4.3
+    - azure-keyvault-secrets ~=4.3
+
+tests:
+  - python:
+      imports:
+        - azure.keyvault.certificates
+        - azure.keyvault.keys
+        - azure.keyvault.secrets
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Azure Key Vault client libraries for Python
+  description: |
+    This package does not contain any code in itself.
+    It installs a set of packages that provide APIs for Key Vault operations.
+  homepage: https://docs.microsoft.com/en-au/azure/key-vault/
+  repository: https://github.com/Azure/azure-sdk-for-python/tree/master/sdk/keyvault/azure-keyvault
+  documentation: https://docs.microsoft.com/en-au/azure/key-vault/
+
+extra:
+  recipe-maintainers:
+    - andreyz4k
+    - dhirschfeld

@@ -1,9 +1,7 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-schema_version: 1
-
 context:
   name: zensical
-  version: "0.0.5"
+  version: "0.0.54"
 
 package:
   name: ${{ name|lower }}
@@ -11,19 +9,18 @@ package:
 
 source:
   - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-    sha256: e64ac31897602a6c4ab1d58d76386e0abc428539cbb2f7432111b6f8afa8f19e
-  # https://github.com/zensical/ui/issues/1-zensical-ui
-  - url: https://raw.githubusercontent.com/lucide-icons/lucide/refs/heads/main/LICENSE
-    sha256: 3c57143f22dac950efebf84002e360bba5458c7b90fe583b0667aaaef1a7256e
-    file_name: LICENSE-lucide
+    sha256: 4de205dbb323d0a443e2ebf3fef77e93e3c1493c34a58d205e7f3631dd7745af
+  - url: https://raw.githubusercontent.com/zensical/ui/refs/heads/master/LICENSE
+    sha256: ac044e6db7ba08069f635afc1759b0ae11a7d47f79144a4ccdd16fc94ba47d1e
+    file_name: LICENSE-zensical-ui
 
 build:
   python:
     version_independent: true
     entry_points:
       - zensical=zensical.main:cli
-  #skip:
-    #- not (match(python, python_min ~ ".*") and is_abi3)
+  skip:
+    - not (match(python, python_min ~ ".*") and is_abi3)
   script:
     env:
       CARGO_PROFILE_RELEASE_STRIP: symbols
@@ -41,7 +38,7 @@ build:
 
 requirements:
   build:
-    #- ${{ stdlib('c') }}
+    - ${{ stdlib('c') }}
     - ${{ compiler('c') }}
     - ${{ compiler('rust') }}
     - cargo-bundle-licenses
@@ -56,16 +53,16 @@ requirements:
     - python-abi3
     - pip
     - maturin >=1.8,<2.0
-    - puccinialin
   run:
     - python
     - click >=8.1.8
     - deepmerge >=2.0
     - markdown >=3.7
-    - pygments >=2.16
-    - pymdown-extensions >=10.15
+    - pygments >=2.20
+    - pymdown-extensions >=11.0
     - pyyaml >=6.0.2
-    - tomli >=2.0
+    - tomli >=2.4.0
+    - jinja2 >=3.1
   ignore_run_exports:
     from_package:
       - cross-python_${{ target_platform }}
@@ -76,6 +73,11 @@ tests:
         - zensical
       pip_check: true
       python_version: ${{ python_min }}.*
+  - package_contents:
+      site_packages:
+        - zensical/bootstrap/.github/workflows/docs.yml
+        - zensical-${{ version }}.dist-info/*
+
   - script:
       content:
         - if: win
@@ -91,7 +93,7 @@ tests:
 
 about:
   homepage: https://zensical.org
-  summary: 'A modern static site generator by the creators of Material for MkDocs'
+  summary: A modern static site generator by the creators of Material for MkDocs
   description: |
     Write your documentation in Markdown and create a professional static site for your Open Source or commercial project in minutes – searchable, customizable, more than 60 languages, for all devices.
   license: MIT
@@ -102,8 +104,8 @@ about:
     - python/zensical/templates/.icons/material/LICENSE
     - python/zensical/templates/.icons/octicons/LICENSE
     - python/zensical/templates/.icons/simple/LICENSE.md
-    # https://github.com/zensical/ui/issues/1
-    - LICENSE-lucide
+    - python/zensical/templates/.icons/lucide/LICENSE
+    - python/zensical/templates/assets/javascripts/LICENSE
     - LICENSE-zensical-ui
   documentation: https://zensical.org
   repository: https://github.com/zensical/zensical

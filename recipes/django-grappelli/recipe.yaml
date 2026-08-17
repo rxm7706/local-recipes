@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-grappelli
+  version: "5.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 404c8480024758b537bed723070c64eef695de557ad470b43161dbff0aa4c642
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django
+
+tests:
+  - python:
+      imports:
+        - grappelli
+        - grappelli.templatetags
+        - grappelli.views
+        - grappelli.dashboard
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A jazzy skin for the Django Admin-Interface
+  homepage: http://django-grappelli.readthedocs.org
+
+extra:
+  recipe-maintainers:
+    - kwilcox
+    - ocefpaf

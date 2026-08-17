@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: uuid6
+  version: "2025.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/uuid6-${{ version }}.tar.gz
+  sha256: cd0af94fa428675a44e32c5319ec5a3485225ba2179eefcf4c3f205ae30a81bd
+
+build:
+  number: 0
+  noarch: python
+  script:
+    env:
+      GITHUB_REF: refs/tags/${{ version }}
+    content: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=45
+    - setuptools_scm >=6.2
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - uuid6
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pip show __RECIPE_MANAGER_SUBSTITUTION_MARKER__ | grep -Fx 'Version: ${{ name }}'
+
+about:
+  summary: New time-based UUID formats which are suited for use as a database key
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/oittaa/uuid6-python
+
+extra:
+  recipe-maintainers:
+    - deepsihag
+    - xylar

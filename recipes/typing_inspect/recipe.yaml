@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: typing_inspect
+  version: "0.9.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: b23fc42ff6f6ef6954e4852c1fb512cdd18dbea03134f91f856a95ccc9461f78
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - mypy_extensions >=0.3.0
+    - python >=${{ python_min }}
+    - typing_extensions >=3.7.4
+
+tests:
+  - python:
+      imports:
+        - typing_inspect
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Runtime inspection utilities for typing module.
+  homepage: http://github.com/ilevkivskyi/typing_inspect
+
+extra:
+  recipe-maintainers:
+    - tarcisioe
+    - thewchan

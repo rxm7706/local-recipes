@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.1"
+
+package:
+  name: google-cloud-vertexai
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/g/google-cloud-vertexai/google_cloud_vertexai-0.0.1-py3-none-any.whl
+  sha256: b6589f47339e3a7563ee45b613cd0fe22d57b7c373d183f9357846c53bbf1080
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - google_cloud_vertexai
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/google-cloud-vertexai/
+  license: MIT
+  license_file: LICENSE
+  summary: This is a placeholder package. Please install `google-cloud-aiplatform` instead.
+  description: |
+    This is a placeholder package. Please install `google-cloud-aiplatform` instead.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-cloud-vertexai
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-cloud-vertexai
+  cfe-purls:
+    - pkg:conda/google-cloud-vertexai@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-cloud-vertexai@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/google-cloud-vertexai/
+  cfe-upstream-homepage: https://pypi.org/project/google-cloud-vertexai/
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:52:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:52:29Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

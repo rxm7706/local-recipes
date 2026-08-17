@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: aiohttp-devtools
+  version: "1.1.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/aiohttp-devtools-${{ version }}.tar.gz
+  sha256: aae66fc9dd36b6c13e1ca381004dfaa4db6ba0dd50764c8ae3a49c1ed43f9587
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - adev = aiohttp_devtools.cli:cli
+      - aiohttp-devtools = aiohttp_devtools.cli:cli
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - aiohttp >=3.8.0
+    - click >=6.6
+    - python-devtools >=0.6
+    - pygments >=2.2.0
+    - watchfiles >=0.10
+
+tests:
+  - python:
+      imports:
+        - aiohttp_devtools
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - adev --help
+      - aiohttp-devtools --help
+
+about:
+  summary: Dev tools for aiohttp
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/aio-libs/aiohttp-devtools
+
+extra:
+  recipe-maintainers:
+    - apmorton

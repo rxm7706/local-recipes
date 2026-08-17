@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: tabula-py
+  version: "2.7.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: e95d8ff49fe2f86534006ae8bf38d54a9894ae70042831d70d5760800519bae8
+
+build:
+  number: 2
+  skip: match(python, ">=2,<3")
+  script:
+    - python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - flake8
+    - setuptools
+    - setuptools_scm
+  run:
+    - python
+    - pandas
+    - numpy
+    - requests
+    - if: linux
+      then: distro
+    - openjdk
+    - setuptools
+    - setuptools_scm
+
+tests:
+  - python:
+      imports:
+        - tabula
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: "Simple wrapper of tabula-java: extract table from PDF into pandas DataFrame"
+  description: |
+    tabula-py is a simple Python wrapper of tabula-java, which can read
+    table of PDF. You can read tables from PDF and convert into pandas's
+    DataFrame. tabula-py also enables you to convert a PDF file into
+    CSV/TSV/JSON file.
+  homepage: https://github.com/chezou/tabula-py
+  repository: https://github.com/chezou/tabula-py
+  documentation: https://tabula.technology/
+
+extra:
+  recipe-maintainers:
+    - CurtLH
+    - sodre
+    - tpmusielak

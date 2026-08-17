@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: aws-checksums
+  version: "0.2.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/awslabs/${{ name }}/archive/v${{ version }}.tar.gz
+  sha256: cb6509f75e42ee25c372a6d379e8582ce5179e5335183842e808f7d8abb0c314
+
+build:
+  number: 6
+
+requirements:
+  build:
+    - cmake !=3.19.0,!=3.19.1
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ninja
+  host:
+    - aws-c-common
+  run_exports:
+    - ${{ pin_subpackage("aws-checksums", upper_bound="x.x.x") }}
+
+tests:
+  - script:
+      - if: unix
+        then:
+          - test -f $PREFIX/lib/libaws-checksums${SHLIB_EXT}
+          - test -f $PREFIX/include/aws/checksums/exports.h
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Cross-Platform HW accelerated CRC32c and CRC32 with fallback to efficient SW implementations. C interface with language bindings for each of our SDKs.
+  homepage: https://github.com/awslabs/aws-checksums
+  repository: https://github.com/awslabs/aws-checksums
+
+extra:
+  recipe-maintainers:
+    - xhochy
+    - conda-forge/aws-sdk-cpp

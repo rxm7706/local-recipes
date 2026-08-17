@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: yagmail
+  version: "0.16.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: c8c5d38124fa33c6ea00e7a46202180e08a93881f35d782503f08c9de657a84a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - yagmail = yagmail.__main__:main
+
+requirements:
+  host:
+    - pip
+    - premailer
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - yagmail
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - yagmail --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Yet Another GMAIL client
+  homepage: https://github.com/kootenpv/yagmail
+
+extra:
+  recipe-maintainers:
+    - setu4993

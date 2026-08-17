@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.14"
+
+package:
+  name: llama-agents
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/llama-agents/llama_agents-${{ version }}.tar.gz
+  sha256: 5491886cc1e3b0ca602067e08a9c29e86b427c33e685016a262a838cb4d16c78
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - fastapi <0.110.0,>=0.109.1
+    - llama-index-core <0.11.0,>=0.10.50
+    - pytest-asyncio <0.24.0,>=0.23.7
+    - textual <0.71.0,>=0.70.0
+    - uvicorn <0.31.0,>=0.30.1
+    - pytest-mock <4.0.0,>=3.14.0
+
+tests:
+  - python:
+      imports:
+        - llama_agents
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/llama-agents/
+  license: MIT
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+  description: |
+    REPLACE_DESCRIPTION
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: llama-agents
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: llama-agents
+  cfe-purls:
+    - pkg:conda/llama-agents@${{ version }}?channel=conda-forge
+    - pkg:pypi/llama-agents@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/llama-agents/
+  cfe-upstream-homepage: https://pypi.org/project/llama-agents/
+  cfe-import-names: [llama_agents]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:30:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:30:22Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

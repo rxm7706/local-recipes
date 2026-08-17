@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: 0.1.11
+
+package:
+  name: cmake-language-server
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/cmake-language-server/cmake_language_server-${{ version }}.tar.gz
+  sha256: 005f48367ec569457a7229a58f6762044fddacac647858b39d725ae2b3cd695b
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - cmake-language-server = cmake_language_server.server:main
+
+requirements:
+  host:
+    - python =${{ python_min }}
+    - pdm-backend
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pygls <2
+
+tests:
+  - python:
+      imports:
+        - cmake_language_server
+  - requirements:
+      run:
+        - pip
+        - python =${{ python_min }}
+    script:
+      - pip check
+      - cmake-language-server --help
+
+about:
+  summary: CMake LSP Implementation
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/regen100/cmake-language-server
+
+extra:
+  recipe-maintainers:
+    - danielnachun

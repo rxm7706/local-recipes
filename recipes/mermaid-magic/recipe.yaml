@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.4"
+
+package:
+  name: mermaid-magic
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mermaid-magic/mermaid_magic-${{ version }}.tar.gz
+  sha256: f65b3095312fb42aa6d064be3e6f642df62da0cd1fd7024de57389627b308513
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - ipython
+
+tests:
+  - python:
+      imports:
+        - mermaid_magic
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/mermaid-magic/
+  license: MIT
+  license_file: LICENSE
+  summary: IPython magic for rendering Mermaid diagrams
+  description: |
+    IPython magic for rendering Mermaid diagrams
+  repository: https://github.com/vbalasu/mermaid-magic
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mermaid-magic
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mermaid-magic
+  cfe-purls:
+    - pkg:conda/mermaid-magic@${{ version }}?channel=conda-forge
+    - pkg:pypi/mermaid-magic@${{ version }}
+  cfe-upstream-repo: https://github.com/vbalasu/mermaid-magic
+  cfe-upstream-homepage: https://pypi.org/project/mermaid-magic/
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:38:39Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:38:39Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

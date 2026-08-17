@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: azure-mgmt-rdbms
+  version: "10.1.1"
+  u_name: azure_mgmt_rdbms
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/a/${{ u_name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+    sha256: 963455ace0d6566d299826713e54ed8fa87a88fec6467e8fd3932387ca0a2e8c
+
+build:
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - azure-common
+    - azure-mgmt-core
+    - msrest
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - azure.mgmt.rdbms
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  homepage: https://github.com/Azure/azure-sdk-for-python
+  summary: 'This is the Microsoft Azure RDBMS Management Client Library.'
+  description: |
+    This is the Microsoft Azure RDBMS Management Client Library.
+  license: MIT
+  license_file: LICENSE
+  documentation: https://azure.github.io/azure-sdk-for-python
+  repository: https://github.com/Azure/azure-sdk-for-python
+
+extra:
+  recipe-maintainers:
+    - janjagusch
+    - MementoRC

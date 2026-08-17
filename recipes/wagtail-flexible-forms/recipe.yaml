@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: wagtail-flexible-forms
   version: "2.1.0"
 
 package:
-  name: wagtail-flexible-forms
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/w/wagtail-flexible-forms/wagtail_flexible_forms-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail_flexible_forms-${{ version }}.tar.gz
   sha256: 558401f14ee116887eeecb55d98e5b901c4455f32b7ccd1e235d8a0928121479
 
 build:
@@ -19,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - setuptools >=65.0
     - pip
   run:
@@ -31,9 +32,7 @@ tests:
       imports:
         - wagtail_flexible_forms
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Wagtail StreamField-based form builder.

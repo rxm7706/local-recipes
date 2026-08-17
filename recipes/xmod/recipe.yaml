@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: xmod
+  version: "1.8.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/xmod-${{ version }}.tar.gz
+  sha256: 38c76486b9d672c546d57d8035df0beb7f4a9b088bc3fb2de5431ae821444377
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - xmod
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: 🌱 Turn any object into a module 🌱
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/rec/xmod
+
+extra:
+  recipe-maintainers:
+    - nicornk

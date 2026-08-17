@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: beartype
+  version: "0.22.9"
+  sha256: 8f82b54aa723a2848a56008d18875f91c1db02c32ef6a62319a002e3e25a975f
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling >=1.14.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - files:
+      source:
+        - conftest.py
+        - beartype_test
+    requirements:
+      run:
+        - pytest
+        - python ${{ python_min }}
+    script:
+      - pytest beartype_test
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Unbearably fast near-real-time hybrid runtime-static type-checking. Unbearably fast runtime type checking in pure Python.
+  description: |
+    Beartype is an open-source PEP-compliant near-real-time pure-Python hybrid
+    runtime-static type checker emphasizing efficiency, usability, and thrilling
+    puns.
+  homepage: https://github.com/beartype/beartype
+  repository: https://github.com/beartype/beartype
+  documentation: https://beartype.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - leycec

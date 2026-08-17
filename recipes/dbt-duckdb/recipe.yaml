@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dbt-duckdb
+  version: "1.11.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 4b087557e8559e2c141a8daae28f4a832a06f425d0b4567eca7c8ffb635cd0fe
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools >=61.2
+    - pbr >=1.9
+  run:
+    - python >=${{ python_min }}
+    - dbt-common >=1,<2
+    - dbt-adapters >=1,<2
+    - dbt-core >=1.8.0
+    - python-duckdb >=1.0.0
+
+tests:
+  - python:
+      imports:
+        - dbt
+        - dbt.adapters.duckdb
+        - dbt.adapters.duckdb.environments
+        - dbt.adapters.duckdb.plugins
+        - dbt.include.duckdb
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: The duckdb adapter plugin for dbt (data build tool)
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/duckdb/dbt-duckdb
+
+extra:
+  recipe-maintainers:
+    - AlexanderThebeltQC
+    - SaravananSathyanandhaQC
+    - zaneselvans

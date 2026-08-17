@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: zeep
+  version: "4.3.3"
+  sha256: 99d5059f92f721020998695fd9c85289ccb03ec5a2398ad49c6dbe43f19cfb94
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - attrs >=17.2.0
+    - isodate >=0.5.4
+    - lxml >=4.6.0
+    - platformdirs >=1.4.0
+    - requests >=2.7.0
+    - requests-toolbelt >=0.7.1
+    - requests-file >=1.5.1
+
+tests:
+  - python:
+      imports:
+        - zeep
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A fast and modern Python SOAP client
+  description: |
+    Zeep inspects the WSDL document and generates the corresponding code to use
+    the services and types in the document. This provides an easy to use
+    programmatic interface to a SOAP server.
+
+    The emphasis is on SOAP 1.1 and SOAP 1.2, however Zeep also offers support
+    for HTTP Get and Post bindings.
+
+    Parsing the XML documents is done by using the lxml library. This is the
+    most performant and compliant Python XML library currently available. This
+    results in major speed benefits when processing large SOAP responses.
+  homepage: http://www.python-zeep.org
+  repository: https://github.com/mvantellingen/python-zeep
+  documentation: http://docs.python-zeep.org/
+
+extra:
+  recipe-maintainers:
+    - adament
+    - Cadair

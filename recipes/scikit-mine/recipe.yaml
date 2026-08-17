@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0"
+
+package:
+  name: scikit-mine
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/scikit-mine/scikit-mine-${{ version }}.tar.gz
+  sha256: c66cdbe9b1b2ac380b1de7aa2a02b42a39380e7f74546fb72549d9febc0fc078
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - scipy
+    - pandas
+    - pyroaring
+    - joblib
+    - sortedcontainers
+    - dataclasses
+    - networkx
+    - python-wget
+    - scikit-learn
+    - python-graphviz
+    - matplotlib-base
+    - pydot
+
+tests:
+  - python:
+      imports:
+        - skmine
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/scikit-mine/scikit-mine
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Pattern mining in Python
+  description: |
+    Pattern mining in Python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: scikit-mine
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: scikit-mine
+  cfe-purls:
+    - pkg:conda/scikit-mine@${{ version }}?channel=conda-forge
+    - pkg:pypi/scikit-mine@${{ version }}
+  cfe-upstream-repo: https://github.com/scikit-mine/scikit-mine
+  cfe-upstream-homepage: https://github.com/scikit-mine/scikit-mine
+  cfe-import-names: [skmine]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:49:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:49:24Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

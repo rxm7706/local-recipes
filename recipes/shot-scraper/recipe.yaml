@@ -2,50 +2,55 @@
 schema_version: 1
 
 context:
-  version: "1.10"
+  name: shot-scraper
+  version: "1.11"
 
 package:
-  name: shot-scraper
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/s/shot-scraper/shot_scraper-${{ version }}.tar.gz
-  sha256: 571be6d721d1d3cbc47c703b1cd3314ed43457e2c3f5fa65fa217fdcdaf16679
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/shot_scraper-${{ version }}.tar.gz
+  sha256: af3efcad697f3b001f624ccdb2499417e4169bee5bf01672840a55175eef6d92
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - shot-scraper = shot_scraper.cli:cli
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
-    - uv-build
+    - uv-build >=0.9.7,<0.10.0
   run:
+    - pydantic
+    - playwright >=1.61.0
     - python >=${{ python_min }}
     - click
     - pyyaml
-    - pydantic
-    - playwright >=1.61.0
+    - playwright-python
     - click-default-group
 
 tests:
   - python:
       imports:
         - shot_scraper
-      pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
 
 about:
-  homepage: https://shot-scraper.datasette.io/
+  summary: A command-line utility for taking automated screenshots of websites
   license: Apache-2.0
   license_file: LICENSE
-  summary: A CLI utility for taking screenshots of websites, recording video demos and scraping sites using JavaScript
-  description: |
-    A CLI utility for taking screenshots of websites, recording video demos and scraping sites using JavaScript
+  homepage: https://github.com/simonw/shot-scraper
 
 extra:
   recipe-maintainers:

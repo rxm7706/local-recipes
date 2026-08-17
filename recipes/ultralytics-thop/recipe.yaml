@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "2.1.6"
+
+package:
+  name: ultralytics-thop
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/u/ultralytics-thop/ultralytics_thop-${{ version }}.tar.gz
+    sha256: 0ec2df8ebd3db35795e1f80cdc8bce6734446dbe989bca1b0c89396353f0f08c
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install .
+  noarch: python
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=70.0.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - numpy
+    - pytorch
+
+tests:
+  - python:
+      imports:
+        - thop
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Ultralytics THOP package for fast computation of PyTorch model FLOPs and parameters.
+  homepage: https://github.com/ultralytics/thop
+  license: AGPL-3.0-only
+  license_file: LICENSE
+  documentation: https://docs.ultralytics.com
+
+extra:
+  recipe-maintainers:
+    - glenn-jocher
+    - carlodri

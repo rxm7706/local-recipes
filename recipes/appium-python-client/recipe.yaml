@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: appium-python-client
+  version: "3.2.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/Appium-Python-Client-${{ version }}.tar.gz
+  sha256: f48be85e66aa887fa5e1583785ecff4671dc5ce3dde54a5d550d816a87c9d635
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - selenium ~=4.12
+
+tests:
+  - python:
+      imports:
+        - appium
+        - appium.common
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Python client for Appium
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: http://appium.io/
+
+extra:
+  recipe-maintainers:
+    - nisharai1
+    - saibhargav1508

@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mkdocs-gen-files
+  version: "0.6.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 57d7ff2229e23d077e46d14a33db6d37c8823f6ce1a503c874c1764a71679763
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - gen-files = mkdocs_gen_files.plugin:GenFilesPlugin
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - mkdocs >=1.4.1,<=1.6.1
+    - properdocs >=1.6.5
+
+tests:
+  - python:
+      pip_check: true
+      python_version: ${{ python_min }}.*
+      imports:
+        - mkdocs_gen_files
+
+
+about:
+  summary: MkDocs plugin to programmatically generate documentation pages during the build
+  description: MkDocs plugin to programmatically generate documentation pages during the build
+  license: MIT
+  license_file: LICENSE.md
+  homepage: https://oprypin.github.io/mkdocs-gen-files/
+  repository: https://github.com/oprypin/mkdocs-gen-files
+  documentation: https://oprypin.github.io/mkdocs-gen-files/
+
+extra:
+  recipe-maintainers:
+    - cpcloud
+    - dhirschfeld
+    - soapy1

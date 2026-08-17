@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: freetype-py
+  version: "2.5.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.zip
+  sha256: cfe2686a174d0dd3d71a9d8ee9bf6a2c23f5872385cf8ce9f24af83d076e2fbd
+
+build:
+  # Note: --no-deps is currently required due to https://github.com/conda/conda-build/issues/3254
+  # Once resolved, it should be removed.
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools_scm
+  run:
+    - python >=${{ python_min }}
+    - freetype
+
+tests:
+  - python:
+      imports:
+        - freetype
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Python binding for the freetype library
+  description: |
+    Freetype Python provides bindings for the FreeType library.
+    Only the high-level API is bound.
+  homepage: https://github.com/rougier/freetype-py
+  repository: https://github.com/rougier/freetype-py
+  documentation: https://freetype-py.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - hoechenberger
+    - kastman

@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.4"
+
+package:
+  name: notebook-shim
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/notebook-shim/notebook_shim-${{ version }}.tar.gz
+  sha256: b4b2cfa1b65d98307ca24361f5b30fe785b53c3fd07b7a47e89acb5e6ac638cb
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - hatchling >=1.0
+    - pip
+    - python ${{ python_min }}
+  run:
+    - jupyter_server >=1.8,<3
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - notebook_shim
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A shim layer for notebook traits and config
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/jupyterlab/notebook_shim
+
+extra:
+  recipe-maintainers:
+    - bollwyvl
+    - jtpio
+    - Zsailer

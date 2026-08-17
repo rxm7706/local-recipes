@@ -2,24 +2,25 @@
 schema_version: 1
 
 context:
+  name: djangorestframework-dataclasses
   version: "1.4.0"
 
 package:
-  name: djangorestframework-dataclasses
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/djangorestframework-dataclasses/djangorestframework_dataclasses-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: fffa19b6f650b2c4c346b3cadf42dd9aa5a265a34f0827608953910d01919039
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - setuptools >=61
     - wheel
     - pip
@@ -27,27 +28,22 @@ requirements:
     - python >=${{ python_min }}
     - django >=2.0
     - djangorestframework >=3.9
+    - typing-extensions >=3.7.4
 
 tests:
-  - python:
-      imports:
-        - rest_framework_dataclasses
-      pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - python -c "from django.conf import settings; settings.configure(DEBUG=True); from rest_framework_dataclasses.serializers import DataclassSerializer"
+      - pip check
 
 about:
   summary: A dataclasses serializer for Django REST Framework
   license: BSD-3-Clause
   license_file: LICENSE
   homepage: https://github.com/oxan/djangorestframework-dataclasses
-  repository: https://github.com/oxan/djangorestframework-dataclasses
-  documentation: https://github.com/oxan/djangorestframework-dataclasses/blob/master/README.rst
-  description: |
-    A dataclasses serializer for the Django REST Framework. Maps Python
-    dataclasses to DRF serializer fields, generating serializers from
-    dataclass type annotations.
 
 extra:
   recipe-maintainers:

@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.0"
+
+package:
+  name: erlastic
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/e/erlastic/erlastic-${{ version }}.tar.gz
+  sha256: 63d1bc20eabf28df8c0449a82f25fad72fb6f03ddb958ef52f38355cb95565a5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - erlastic
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/samuel/python-erlastic
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Erlang binary term codec and node communication helpers for Python.
+  description: |
+    Erlastic encodes and decodes Erlang external term format and provides
+    helpers for talking to Erlang nodes from Python.
+  repository: https://github.com/samuel/python-erlastic
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: erlastic
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: erlastic
+  cfe-purls:
+    - pkg:conda/erlastic@${{ version }}?channel=conda-forge
+    - pkg:pypi/erlastic@${{ version }}
+  cfe-upstream-repo: https://github.com/samuel/python-erlastic
+  cfe-upstream-homepage: https://github.com/samuel/python-erlastic
+  cfe-import-names: [erlastic]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T16:14:01Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T16:14:01Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-16T16:14:20Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Pure Python Erlang term codec. LICENSE in sdist is BSD-3-Clause
+#    # (PyPI license field was UNKNOWN; classifiers say OSI BSD).
+#    # No runtime deps. Distutils setup.py; host still uses setuptools+pip.
+####

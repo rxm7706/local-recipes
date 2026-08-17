@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: gooey
+  version: "1.0.8.1"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/Gooey-${{ version }}.tar.gz
+  sha256: 08d6bf534f4d50d50dafba5cfc68dcf31a6e9eeef13a94cbe3ea17c4e45c4671
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install --no-deps --ignore-installed .
+
+requirements:
+  host:
+    - pip
+    - python 3.10.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pillow >=4.3.0
+    - psutil >=5.4.2
+    - colored >=1.3.93
+    - pygtrie >=2.3.3
+    - wxpython >=4.1.0
+
+tests:
+  - python:
+      imports:
+        - gooey
+        - gooey.gui
+        - gooey.gui.components
+        - gooey.gui.components.layouts
+        - gooey.gui.components.widgets
+        - gooey.gui.components.widgets.core
+        - gooey.gui.components.widgets.dialogs
+        - gooey.gui.containers
+        - gooey.gui.lang
+        - gooey.gui.util
+        - gooey.images
+        - gooey.languages
+        - gooey.python_bindings
+        - gooey.tests
+        - gooey.util
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Turn (almost) any command line program into a full GUI application with one line
+  homepage: http://pypi.python.org/pypi/Gooey
+  repository: https://github.com/chriskiehl/Gooey
+  documentation: https://github.com/chriskiehl/Gooey
+
+extra:
+  recipe-maintainers:
+    - jfcorbett
+    - casperdcl
+    - chriskiehl
+    - ickc
+    - sbillinge

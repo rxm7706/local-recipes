@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.12.4"
+  python_min: '3.11'
+
+package:
+  name: orbax-checkpoint
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/orbax-checkpoint/orbax_checkpoint-${{ version }}.tar.gz
+  sha256: 5e6e14b6ca4a7979e04e6769afa0a39dd535bb4b9bf9af64bdf5b55ca44eb795
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - flit-core >=3.5,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - absl-py
+    - etils
+    - typing_extensions
+    - msgpack-python
+    - jax >=0.6.0
+    - numpy
+    - pyyaml
+    - tensorstore >=0.1.84
+    - importlib_resources
+    - protobuf
+    - humanize
+    - aiofiles
+    - simplejson >=3.16.0
+    - psutil
+    - uvloop
+    - prometheus_client
+tests:
+  - python:
+      imports:
+        - orbax.checkpoint
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Orbax Checkpoint
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/google/orbax
+
+extra:
+  recipe-maintainers:
+    - flferretti
+    - jan-janssen
+    - bwohlberg

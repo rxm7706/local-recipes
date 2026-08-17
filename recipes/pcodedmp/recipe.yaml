@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pcodedmp
+  version: "1.2.6"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pcodedmp-${{ version }}.tar.gz
+  sha256: 025f8c809a126f45a082ffa820893e6a8d990d9d7ddb68694b5a9f0a6dbcd955
+
+build:
+  number: 6
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - pcodedmp = pcodedmp.pcodedmp:main
+
+requirements:
+  host:
+    - pip
+    - pypandoc
+    - python
+    - setuptools
+  run:
+    - oletools >=0.54
+    - python
+    - if: win
+      then: win_unicode_console
+
+tests:
+  - python:
+      imports:
+        - pcodedmp
+      pip_check: true
+
+about:
+  summary: A VBA p-code disassembler
+  license: GPL-3.0-or-later
+  license_file: LICENSE
+  homepage: https://github.com/bontchev/pcodedmp
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

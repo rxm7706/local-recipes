@@ -1,0 +1,113 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.197.0"
+  python_min: "3.11"
+
+package:
+  name: canvas
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/canvas/canvas-${{ version }}.tar.gz
+  sha256: adf48634ae20d4e46af77c092b273a242777b1d79716145c79a175fdc0d09c74
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - cookiecutter
+    - cron-converter <2,>=1.2.1
+    - cryptography >=45.0.5
+    - defusedxml >=0.7.1
+    - deprecation <3,>=2.1.0
+    - django-stubs <6,>=5.1.1
+    - django-timezone-utils <0.16,>=0.15.0
+    - django <6,>=5.1.1
+    - env-tools <3,>=2.4.0
+    - factory_boy >=3.3.3
+    - frozendict >=2.4.6
+    - grpcio <2,>=1.78.0
+    - ipython <9,>=8.21.0
+    - jsonschema <5,>=4.21.1
+    - pathspec >=0.12.1
+    - protobuf <7,>=6
+    - psutil ==7.2.2
+    - psycopg <4,>=3.3.3
+    - pydantic <3,>=2.12.5
+    - pyjwt ==2.10.1
+    - python-dotenv <2,>=1.0.1
+    - python-logstash-async >=4.0.2
+    - rapidfuzz <4,>=3.10.1
+    - redis-py <6,>=5.0.4
+    - requests
+    - restrictedpython <8.3,>=8.0
+    - sentry-sdk >=2.33.2
+    - snowflake-connector-python ==4.6.0
+    - statsd <5,>=4.0.1
+    - stripe >=14.1.0
+    - typer
+    - typing_extensions <5,>=4.14.1
+    - websocket-client <2,>=1.7.0
+
+tests:
+  - python:
+      imports:
+        - logger
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/canvas/
+  license: MIT
+  license_file: LICENSE
+  summary: SDK to customize event-driven actions in your Canvas instance
+  description: |
+    SDK to customize event-driven actions in your Canvas instance
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: canvas
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: canvas
+  cfe-purls:
+    - pkg:conda/canvas@${{ version }}?channel=conda-forge
+    - pkg:pypi/canvas@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/canvas/
+  cfe-upstream-homepage: https://pypi.org/project/canvas/
+  cfe-import-names: [logger]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:50:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:50:04Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

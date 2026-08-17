@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.4.1"
+
+package:
+  name: logging-utilities
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/logging-utilities/logging_utilities-${{ version }}.tar.gz
+  sha256: 1c26cadfd7b7e8320d7fcade91234bad2a1787f861b2141e8e92c52e6b07501b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - python-build
+    - setuptools-git-versioning <2
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - logging_utilities
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/geoadmin/lib-py-logging-utilities
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A collection of useful logging formatters and filters.Logging Context, JSON Formatter, Extra Formatter, ISO Time Filter, Flask Filter, Django Filter, ...
+  description: |
+    A collection of useful logging formatters and filters.Logging Context, JSON Formatter, Extra Formatter, ISO Time Filter, Flask Filter, Django Filter, ...
+  repository: https://github.com/geoadmin/lib-py-logging-utilities
+  documentation: https://github.com/geoadmin/lib-py-logging-utilities#readme
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: logging-utilities
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: logging-utilities
+  cfe-purls:
+    - pkg:conda/logging-utilities@${{ version }}?channel=conda-forge
+    - pkg:pypi/logging-utilities@${{ version }}
+  cfe-upstream-repo: https://github.com/geoadmin/lib-py-logging-utilities
+  cfe-upstream-homepage: https://github.com/geoadmin/lib-py-logging-utilities
+  cfe-import-names: [logging_utilities]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:52:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:52:02Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

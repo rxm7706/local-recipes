@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.7"
+
+package:
+  name: cprofilev
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/CProfileV/CProfileV-${{ version }}.tar.gz
+  sha256: 8791748b1f3d3468c2c927c3fd5f905080b84d8f2d217ca764b7d9d7a1fb9a77
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - cprofilev
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/ymichael/cprofilev
+  license: MIT
+  license_file: LICENSE
+  summary: An easier way to use cProfile
+  description: |
+    An easier way to use cProfile
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cprofilev
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: CProfileV
+  cfe-purls:
+    - pkg:conda/cprofilev@${{ version }}?channel=conda-forge
+    - pkg:pypi/cprofilev@${{ version }}
+  cfe-upstream-repo: https://github.com/ymichael/cprofilev
+  cfe-upstream-homepage: https://github.com/ymichael/cprofilev
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:48:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:48:31Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: itertable
+  version: "2.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/itertable-${{ version }}.tar.gz
+  sha256: 0ebdd0919a71ac2b8850fc3f45990fbe9520ec3cfd65eba00ab8f92785459314
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - setuptools-scm
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - requests
+    - openpyxl
+    - click
+
+tests:
+  - python:
+      imports:
+        - itertable
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Iterable API for tabular datasets including CSV, XLSX, XML, & JSON.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/wq/itertable/
+  repository: https://github.com/wq/itertable/
+
+extra:
+  recipe-maintainers:
+    - rxm7706

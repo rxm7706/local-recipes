@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: amundsen-search
   version: "4.2.0"
 
 package:
-  name: amundsen-search
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/a/amundsen-search/amundsen-search-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/amundsen-search-${{ version }}.tar.gz
   sha256: 4d6cf0e15b27a628880e44097fe9318f28fae4eb7683a0974e3c147e35e3f32d
 
 build:
@@ -52,19 +53,14 @@ tests:
       imports:
         - search_service
       pip_check: false
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}.*
 
 about:
   summary: Search Service for Amundsen
   license: Apache-2.0
   license_file:
     - LICENSE
-    - NOTICE
   homepage: https://github.com/amundsen-io/amundsen/tree/main/search
-  repository: https://github.com/amundsen-io/amundsen
-  documentation: https://www.amundsen.io/amundsen/
 
 extra:
   recipe-maintainers:

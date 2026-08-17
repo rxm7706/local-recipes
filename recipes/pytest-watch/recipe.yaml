@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytest-watch
+  version: "4.1.0"
+  sha256: 29941f6ff74e6d85cc0796434a5cbc27ebe51e91ed24fd0757fad5cc6fd3d491
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.zip
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.zip
+
+build:
+  # Skip build on win32 untill we have a solution for conda-build issue #2619
+  number: 1007
+  skip: win32
+  script: python setup.py install --single-version-externally-managed --record record.txt
+  python:
+    entry_points:
+      - pytest-watch = pytest_watch:main
+      - ptw = pytest_watch:main
+
+requirements:
+  host:
+    - python
+    - setuptools
+  run:
+    - python
+    - pytest >=2.6.4
+    - docopt >=0.6.2
+    - colorama >=0.3.3
+    - watchdog >=0.6.0
+
+tests:
+  - python:
+      imports:
+        - pytest_watch
+      pip_check: false
+  - script:
+      - ptw -V
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Local continuous test runner with pytest and watchdog.
+  description: |
+    pytest-watch a zero-config CLI tool that runs pytest, and re-runs it when
+    a file in your project changes. It beeps on failures and can run arbitrary
+    commands on each passing and failing test run.
+
+
+  homepage: http://github.com/joeyespo/pytest-watch
+
+extra:
+  recipe-maintainers:
+    - igortg

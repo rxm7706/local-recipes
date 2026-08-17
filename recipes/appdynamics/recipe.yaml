@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: appdynamics
+  version: "25.1.0.7425"
+  python_min: "3.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py2.py3/a/appdynamics/appdynamics-${{ version }}-py2.py3-none-any.whl
+  sha256: 8c7ea0523ff5c36cd8634f709e710726d6da42d15827f236ab8d324046d81b77
+
+build:
+  number: 0
+  string: py2.py3
+  noarch: python
+  script:
+    - ${{ PYTHON }} pip install --find-links . --no-index --ignore-installed --no-deps appdynamics
+  dynamic_linking:
+    missing_dso_allowlist:
+      - "*/libjvm.so"
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - cmake
+    - ninja
+  host:
+    - python 3.8.*
+    - pip
+    - setuptools >=38.0
+  run:
+    - python >=${{ python_min }},<4.0
+    - appdynamics-proxysupport-linux-x64
+    - appdynamics-bindeps-linux-x64 >=24.12.0
+  ignore_run_exports:
+    from_package:
+      - ${{ stdlib('c') }}
+      - ${{ compiler('c') }}
+
+tests:
+  - python:
+      imports:
+        - appdynamics
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Python Agent for AppDynamics
+  license: Proprietary
+  license_file:
+    - LICENSE
+  homepage: https://www.appdynamics.com/python
+  documentation: https://pypi.org/project/appdynamics/
+
+extra:
+  copy_test_source_files: true
+  final: true

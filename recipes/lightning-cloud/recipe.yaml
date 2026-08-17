@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: lightning-cloud
+  version: "0.5.70"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/lightning_cloud-${{ version }}.tar.gz
+  sha256: 026a459f9b4f555439d291c5b1b5a5412173d5546dddf3f95fc6f9eb0f3fbd87
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - lightning_cloud=lightning_cloud.cli.__main__:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - boto3
+    - click
+    - fastapi
+    - protobuf
+    - pyjwt
+    - python >=${{ python_min }}
+    - python-multipart
+    - requests
+    - rich
+    - six
+    - urllib3
+    - uvicorn
+    - websocket-client
+
+tests:
+  - python:
+      imports:
+        - lightning_cloud
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - lightning_cloud --help
+
+about:
+  summary: Lightning Cloud
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/Lightning-AI/lightning
+
+extra:
+  recipe-maintainers:
+    - Borda
+    - weiji14

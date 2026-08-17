@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: affine
+  version: "3.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/affine-${{ version }}.tar.gz
+  sha256: 573514d5c37e98401a0ec34139c2b725d9f9ae4d074662f4b62a47d6a2ba9f06
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - flit-core >=3.2,<4
+  run:
+    - attrs
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - affine
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  summary: Matrices describing affine transformation of the plane.
+  license_file: LICENSE.txt
+  description: |
+    The Affine package is used to produce the affine transformation
+    matrix.
+  homepage: https://github.com/sgillies/affine
+  repository: https://github.com/sgillies/affine
+
+extra:
+  recipe-maintainers:
+    - mwtoews
+    - ocefpaf

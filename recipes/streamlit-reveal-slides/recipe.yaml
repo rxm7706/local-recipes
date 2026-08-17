@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: streamlit-reveal-slides
+  version: "0.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/streamlit-reveal-slides-${{ version }}.tar.gz
+  sha256: a226c18758fa0c902c4fa06148e858316a5bebf914cf8932ce82f27d641ff752
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - streamlit >=0.63
+
+tests:
+  - python:
+      imports:
+        - reveal_slides
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: reveal.js HTML presentations for streamlit
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/bouzidanas/streamlit-reveal-slides
+
+extra:
+  recipe-maintainers:
+    - rxm7706

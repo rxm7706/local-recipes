@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: azure-datalake-store
+  version: "1.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 5364d4445aab154a1c7cb10215629c3ce46ce5c7aaaf16071890c03fae53a035
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - cffi
+    - msal >=1.16.0,<2
+    - requests >=2.20.0
+
+tests:
+  - python:
+      imports:
+        - azure.datalake.store
+      python_version: ${{ python_min }}.*
+about:
+  license: MIT
+  license_file: License.txt
+  summary: This project is the Python filesystem library for Azure Data Lake Store
+  description: |
+    A pure-python interface to the Azure Data-lake Storage system,
+    providing pythonic file-system and file objects, seamless transition
+    between Windows and POSIX remote paths, high-performance up- and down-loader.
+  homepage: http://github.com/Azure/azure-data-lake-store-python
+  repository: http://github.com/Azure/azure-data-lake-store-python
+  documentation: http://github.com/Azure/azure-data-lake-store-python
+
+extra:
+  recipe-maintainers:
+    - janjagusch
+    - dillonroach
+    - scopatz
+    - costrouc
+    - dhirschfeld

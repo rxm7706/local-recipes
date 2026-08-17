@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: multitasking
+  version: "0.0.13"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/multitasking-${{ version }}.tar.gz
+  sha256: d896b5df877c9ca5eeddbf0e5994124694d6cb535aba698fb23344c7025155a1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - multitasking
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Non-blocking Python methods using decorators
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  homepage: https://github.com/ranaroussi/multitasking
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: tf-keras
+  version: "2.19.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/tf_keras-${{ version }}.tar.gz
+    sha256: b09a407d87a4571ce1e8ca985cfc68483e3d63b2518a5d79a97ad92cb64dbe9c
+  - url: https://raw.githubusercontent.com/keras-team/tf-keras/master/LICENSE
+    sha256: 58d1e17ffe5109a7ae296caafcadfdbe6a7d176f0bc4ab01e12a689b0499d8bd
+    file_name: LICENSE
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - numpy >=1.23
+    - tensorflow >=2.19,<2.20
+
+tests:
+  - python:
+      imports:
+        - tf_keras
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Deep learning for humans.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://keras.io/
+  repository: https://github.com/keras-team/tf-keras
+
+extra:
+  recipe-maintainers:
+    - conda-forge/keras

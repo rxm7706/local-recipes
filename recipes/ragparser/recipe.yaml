@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.5"
+
+package:
+  name: ragparser
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/ragparser/ragparser-${{ version }}.tar.gz
+  sha256: a03c71b6f86269d6f2cced2cbfefd3f05c05b14edc0970564466429e46e12e91
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=45
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - aiofiles >=0.8.0
+
+tests:
+  - python:
+      imports:
+        - ragparser
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/shubham7995/ragparser
+  license: MIT
+  license_file: LICENSE
+  summary: A comprehensive document parser for RAG applications with support for PDF, DOCX, PPTX, XLSX, and more
+  description: |
+    A comprehensive document parser for RAG applications with support for PDF, DOCX, PPTX, XLSX, and more
+  repository: https://github.com/shubham7995/ragparser
+  documentation: https://github.com/shubham7995/ragparser#readme
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ragparser
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ragparser
+  cfe-purls:
+    - pkg:conda/ragparser@${{ version }}?channel=conda-forge
+    - pkg:pypi/ragparser@${{ version }}
+  cfe-upstream-repo: https://github.com/shubham7995/ragparser
+  cfe-upstream-homepage: https://github.com/shubham7995/ragparser
+  cfe-import-names: [ragparser]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:30:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:30:59Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

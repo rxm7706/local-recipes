@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: spdx-tools
+  version: "0.8.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: be600beb2f762f0116025e05490d399e724f668bef84025a7c421bb266688bdb
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - pyspdxtools = spdx_tools.spdx.clitools.pyspdxtools:main
+      - pyspdxtools3 = spdx_tools.spdx3.clitools.pyspdxtools3:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=61.2
+    - setuptools-scm >=3.4.3
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - click
+    - pyyaml
+    - xmltodict
+    - rdflib
+    - beartype
+    - uritools
+    - license-expression
+    - ply
+    - semantic_version
+
+tests:
+  - python:
+      imports:
+        - spdx_tools
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pyspdxtools --help
+      - pyspdxtools3 --help
+
+about:
+  summary: SPDX parser and tools.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/spdx/tools-python
+
+extra:
+  recipe-maintainers:
+    - nick-harmening
+    - borchero

@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: peft
+  version: 0.20.0
+  python_min: '3.10'
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/peft-${{ version }}.tar.gz
+  sha256: 4769c8093a4ca145fd6fb3fd4dd50449675f5fe46434ad1e98b285a132d4b1d0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - accelerate >=0.21.0
+    - huggingface_hub >=0.25.0
+    - numpy >=1.17
+    - packaging >=20.0
+    - psutil
+    - python >=${{ python_min }}
+    - pytorch >=1.13.0
+    - pyyaml
+    - safetensors
+    - transformers >=4.36.0
+    - tqdm
+tests:
+  - python:
+      imports:
+        - peft
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Parameter-Efficient Fine-Tuning (PEFT)
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/huggingface/peft
+  repository: https://github.com/huggingface/peft
+  documentation: https://huggingface.co/docs/peft
+
+extra:
+  recipe-maintainers:
+    - weiji14

@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.0.0"
+
+package:
+  name: flex-config
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/flex-config/flex_config-${{ version }}.tar.gz
+  sha256: 032a059b90f793a6647948fd58169ef3ccb012324ba5cef4ce457aa3dbf26849
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry >=0.12
+  run:
+    - python >=${{ python_min }}
+    - pydantic
+
+tests:
+  - python:
+      imports:
+        - flex_config
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/emann/flex-config
+  license: MIT
+  license_file: LICENSE
+  summary: Easily configure Python apps via environment variables, YAML, and AWS SSM Param Store.
+  description: |
+    Easily configure Python apps via environment variables, YAML, and AWS SSM Param Store.
+  repository: https://github.com/emann/flex-config
+  documentation: https://emann.github.io/flex-config
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flex-config
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flex-config
+  cfe-purls:
+    - pkg:conda/flex-config@${{ version }}?channel=conda-forge
+    - pkg:pypi/flex-config@${{ version }}
+  cfe-upstream-repo: https://github.com/emann/flex-config
+  cfe-upstream-homepage: https://github.com/emann/flex-config
+  cfe-import-names: [flex_config]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:50:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:50:22Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

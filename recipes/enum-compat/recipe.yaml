@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: enum-compat
+  version: "0.0.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 3677daabed56a6f724451d585662253d8fb4e5569845aafa8bb0da36b1a8751e
+
+build:
+  number: 7
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+    - if: match(python, "<=3.4")
+      then: enum34
+
+tests:
+  - python:
+      imports:
+        - enum
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: This is a virtual package, its whole purpose is to install enum34 on Python older than 3.4. On Python 3.4+ it’s a no-op.
+  homepage: https://github.com/jstasiak/enum-compat
+  repository: https://github.com/jstasiak/enum-compat
+  documentation: https://github.com/jstasiak/enum-compat/blob/master/README.rst
+
+extra:
+  recipe-maintainers:
+    - trendelkampschroer

@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: google-genai
+  version: "2.18.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/google_genai-${{ version }}.tar.gz
+  sha256: a1e2be75c16234adc6641afd1ad4dd44218c9eec005d938bdc428585a048918a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - wheel
+    - pip
+    - twine >=6.1.0
+  run:
+    - python >=${{ python_min }}
+    - anyio >=4.8.0,<5.0.0
+    - google-auth >=2.56.0,<3.0.0
+    - httpx >=0.28.1,<1.0.0
+    - pydantic >=2.12.5,<3.0.0
+    - requests >=2.28.1,<3.0.0
+    - tenacity >=8.2.3,<9.2.0
+    - websockets >=13.0.0,<17.0
+    - typing_extensions >=4.14.0,<5.0.0
+    - sniffio
+    - distro >=1.7.0,<2
+tests:
+  - python:
+      imports:
+        - google.genai
+        - google.genai.types
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: GenAI Python SDK
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/googleapis/python-genai
+
+extra:
+  recipe-maintainers:
+    - hadim

@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.4.1"
+
+package:
+  name: hiredis
+  version: ${{ version }}
+
+source:
+  url: https://pypi.python.org/packages/source/h/hiredis/hiredis-${{ version }}.tar.gz
+  sha256: 2bbb55435506e481d270df8d0b29dd94acb85d11d71df4b8efce23849a4d0bb7
+
+build:
+  number: 0
+  script: python -m pip install . --no-deps --no-build-isolation -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - hiredis
+      pip_check: true
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Python wrapper for hiredis
+  homepage: https://github.com/redis/hiredis-py
+
+extra:
+  recipe-maintainers:
+    - kwilcox
+    - mariusvniekerk
+    - synapticarbors

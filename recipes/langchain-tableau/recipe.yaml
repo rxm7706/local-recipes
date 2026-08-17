@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.39"
+  python_min: "3.12"
+
+package:
+  name: langchain-tableau
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/langchain-tableau/langchain_tableau-${{ version }}.tar.gz
+  sha256: a163b7cc996a458c9e4f810dc4ceb067cd18f6b1065ec6e782bc553ad11eb460
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - aiohttp
+    - langchain
+    - langchain-core
+    - langchain-openai
+    - langgraph
+    - pydantic
+    - pyjwt
+    - python-dotenv
+    - requests
+
+tests:
+  - python:
+      imports:
+        - langchain_tableau
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/Tab-SE/tableau_langchain
+  license: MIT
+  license_file: LICENSE
+  summary: Tableau tools for Agentic use cases with Langchain
+  description: |
+    Tableau tools for Agentic use cases with Langchain
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langchain-tableau
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langchain-tableau
+  cfe-purls:
+    - pkg:conda/langchain-tableau@${{ version }}?channel=conda-forge
+    - pkg:pypi/langchain-tableau@${{ version }}
+  cfe-upstream-repo: https://github.com/Tab-SE/tableau_langchain
+  cfe-upstream-homepage: https://github.com/Tab-SE/tableau_langchain
+  cfe-import-names: [langchain_tableau]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:36:48Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:36:48Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

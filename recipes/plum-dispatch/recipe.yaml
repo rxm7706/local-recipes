@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: plum-dispatch
+  version: "2.9.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/plum_dispatch-${{ version }}.tar.gz
+  sha256: fb45c5b2dd4dadd57def51bcf321dfa3a258df5c725f43adea7e7f6db3b79b52
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install --no-deps --ignore-installed --no-cache-dir -vvv .
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling >=1.10
+    - hatch-vcs >=0.3
+  run:
+    - python >=${{ python_min }}
+    - beartype >=0.12
+    - rich >=10.0
+
+tests:
+  - python:
+      imports:
+        - plum
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Multiple dispatch in Python
+  license: MIT
+  license_file: LICENCE.txt
+  homepage: https://github.com/wesselb/plum
+  repository: https://github.com/wesselb/plum
+  documentation: https://wesselb.github.io/plum
+
+extra:
+  recipe-maintainers:
+    - PhilipVinc
+    - wesselb

@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0"
+
+package:
+  name: pylibsrtp
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pylibsrtp/pylibsrtp-${{ version }}.tar.gz
+  sha256: b39dff075b263a8ded5377f2490c60d2af452c9f06c4d061c7a2b640612b34d4
+
+build:
+  number: 1
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cffi
+  host:
+    - python
+    - cffi
+    - setuptools
+    - wheel
+    - pip
+    - libsrtp2
+  run:
+    - python
+    - cffi
+
+tests:
+  - python:
+      imports:
+        - pylibsrtp
+      pip_check: true
+
+about:
+  summary: Python wrapper around the libsrtp (2) library
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/aiortc/pylibsrtp
+
+extra:
+  recipe-maintainers:
+    - hmaarrfk

@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "15.7.4"
+
+package:
+  name: sql-formatter
+  version: ${{ version }}
+
+source:
+  url: https://registry.npmjs.org/sql-formatter/-/sql-formatter-${{ version }}.tgz
+  sha256: c844ac53f813cdb555ca57772c64d4bce643e0175adb6ade2c2ed4cbfb4787ac
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  host:
+    - jq
+    - nodejs
+    - pnpm
+    - pnpm-licenses
+  run:
+    - nodejs
+
+tests:
+  - script:
+      - sql-formatter --help
+
+about:
+  license: MIT
+  license_file:
+    - LICENSE
+    - third-party-licenses.txt
+  summary: A whitespace formatter for different query languages
+  homepage: https://github.com/sql-formatter-org/sql-formatter
+  repository: https://github.com/sql-formatter-org/sql-formatter
+
+extra:
+  recipe-maintainers:
+    - danielnachun

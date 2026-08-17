@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.1.1"
+  python_check_max: "3.14"
+
+package:
+  name: jupyter_ydoc
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/j/jupyter-ydoc/jupyter_ydoc-${{ version }}.tar.gz
+    sha256: 834749749e2714dbec9bfd245ac9115b0546a0c0e11f657938fff9ed193b09c2
+    target_directory: dist
+  - url: https://github.com/jupyter-server/jupyter_ydoc/archive/refs/tags/v${{ version }}.tar.gz
+    sha256: a3c718c3ba943a49ef9727590acdd601b96a0945fd68ff9e2a4ee3e7ed40abb6
+    target_directory: src
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - cd dist
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - hatch-nodejs-version
+    - hatchling >=1.10.0
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - anyio >=4.12.1,<5.0.0
+    - pycrdt >=0.14.0,<0.15.0
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports: jupyter_ydoc
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - files:
+      recipe:
+        - run_test.py
+      source:
+        - src/javascript/
+        - src/lerna.json
+        - src/package.json
+        - src/tests/
+        - src/yarn.lock
+    requirements:
+      run:
+        - httpx-ws >=0.5.2
+        - hypercorn >=0.16.0
+        - nodejs >=22,<23
+        - pycrdt-websocket >=0.16.3,<0.17.0
+        - pytest-timeout
+        - pytest-cov
+        - python ${{ python_min }}.*
+        - yarn <4
+    script:
+      file: run_test.py
+      interpreter: python
+
+about:
+  license: BSD-3-Clause
+  license_file: dist/LICENSE
+  summary: Document structures for collaborative editing using Ypy
+  homepage: https://pypi.org/project/jupyter-ydoc
+  repository: https://github.com/jupyter-server/jupyter_ydoc
+  documentation: https://jupyter-ydoc.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - davidbrochart
+    - conda-forge/jupyter_server

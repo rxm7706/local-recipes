@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.11.0"
+
+package:
+  name: torchdata
+  version: ${{ version }}
+
+source:
+  url: https://github.com/pytorch/data/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 945c53a8587567624aaad2d66204fbae9acb9535696554c53ffeb83320c308b9
+
+build:
+  number: 2
+  script:
+    - if: unix
+      then: export BUILD_VERSION=${{ version }}
+    - if: win
+      then: set BUILD_VERSION=${{ version }}
+    - ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+    - cmake
+    - ninja
+  host:
+    - pip
+    - setuptools
+    - python
+  run:
+    - python
+    - requests
+    - urllib3 >=1.25
+    - pytorch >=2
+  ignore_run_exports:
+    from_package:
+      - zlib
+
+tests:
+  - python:
+      imports:
+        - torchdata
+      pip_check: true
+  - files:
+      source:
+        - test/
+    requirements:
+      run:
+        - pip
+        - pytest
+        - pytest-timeout
+        - pytest-xdist
+        - adlfs
+        - awscli
+        - cryptography
+        - datasets
+        - expecttest
+        - fsspec
+        - numpy *
+        - msal_extensions >=1.2
+        - parameterized
+        - portalocker >=2.0.0
+        - psutil
+        - s3fs >=2023.12.2
+    script:
+      - if: unix
+        then: test -f $SP_DIR/torchdata-${{ version }}.dist-info/METADATA
+      - if: win
+        then: if not exist %SP_DIR%\torchdata-${{ version }}.dist-info\METADATA exit 1
+      - cd test
+      - pytest -n auto -v --ignore=test_audio_examples.py --ignore=test_text_examples.py -k "not (${{ tests_to_skip }})" --timeout=1200 --durations=50
+
+about:
+  summary: A PyTorch repo for data loading and utilities to be shared by the PyTorch domain libraries.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/pytorch/data
+
+extra:
+  recipe-maintainers:
+    - weiji14
+    - BastianZim
+    - Tobias-Fischer
+    - h-vetinari

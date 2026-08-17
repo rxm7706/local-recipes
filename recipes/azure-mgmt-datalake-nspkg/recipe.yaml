@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.0.1"
+
+package:
+  name: azure-mgmt-datalake-nspkg
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/azure-mgmt-datalake-nspkg/azure-mgmt-datalake-nspkg-3.0.1.zip
+  sha256: deb192ba422f8b3ec272ce4e88736796f216f28ea5b03f28331d784b7a3f4880
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - azure-mgmt-nspkg
+
+tests:
+  - python:
+      imports:
+        - azure_mgmt_datalake_nspkg
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/Azure/azure-sdk-for-python
+  license: MIT
+  license_file: LICENSE
+  summary: Microsoft Azure Data Lake Management Namespace Package [Internal]
+  description: |
+    Microsoft Azure Data Lake Management Namespace Package [Internal]
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: azure-mgmt-datalake-nspkg
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: azure-mgmt-datalake-nspkg
+  cfe-purls:
+    - pkg:conda/azure-mgmt-datalake-nspkg@${{ version }}?channel=conda-forge
+    - pkg:pypi/azure-mgmt-datalake-nspkg@${{ version }}
+  cfe-upstream-repo: https://github.com/Azure/azure-sdk-for-python
+  cfe-upstream-homepage: https://github.com/Azure/azure-sdk-for-python
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:02:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:02:29Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

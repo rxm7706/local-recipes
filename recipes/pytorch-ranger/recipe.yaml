@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytorch-ranger
+  version: "0.1.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytorch_ranger-${{ version }}.tar.gz
+  sha256: aa7115431cef11b57d7dd7bc86e7302a911dae467f62ec5d0b10e1ff744875db
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pytorch >=1.7
+
+tests:
+  - python:
+      imports:
+        - pytorch_ranger
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Ranger - a synergistic optimizer using RAdam (Rectified Adam) and LookAhead in one codebase
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/mpariente/Ranger-Deep-Learning-Optimizer
+
+extra:
+  recipe-maintainers:
+    - sarthakpati

@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: top2vec
+  version: "1.0.26"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/top2vec-${{ version }}.tar.gz
+  sha256: cd6ffc093b6ac2e24140df91e68b7332be013a969815d75714ebd06b3a022de7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - cython
+    - gensim <4.0.0
+    - fuzzytm
+    - hdbscan >=0.8.27
+    - numpy >=1.20.0
+    - pandas
+    - python >=3.6
+    - umap-learn >=0.5.1
+    - wordcloud
+
+tests:
+  - python:
+      imports:
+        - top2vec
+      pip_check: true
+
+about:
+  summary: Top2Vec learns jointly embedded topic, document and word vectors.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/ddangelov/Top2Vec
+
+extra:
+  recipe-maintainers:
+    - llperez

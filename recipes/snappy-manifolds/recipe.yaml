@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4"
+
+package:
+  name: snappy-manifolds
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/snappy-manifolds/snappy_manifolds-${{ version }}.tar.gz
+  sha256: 3a5b354e6cb545bed6d13a5f0b99a399d03a352c51111662150632c0c7d316dc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=59
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - snappy_manifolds
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/3-manifolds/snappy_manifolds
+  license: GPL-2.0-or-later
+  license_file: LICENSE
+  summary: Database of snappy manifolds
+  description: |
+    Database of snappy manifolds
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: snappy-manifolds
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: snappy-manifolds
+  cfe-purls:
+    - pkg:conda/snappy-manifolds@${{ version }}?channel=conda-forge
+    - pkg:pypi/snappy-manifolds@${{ version }}
+  cfe-upstream-repo: https://github.com/3-manifolds/snappy_manifolds
+  cfe-upstream-homepage: https://github.com/3-manifolds/snappy_manifolds
+  cfe-import-names: [snappy_manifolds]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:12:49Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:12:49Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4 Create-recipe local. Import is snappy_manifolds (python_src is
+#    # package_dir). LICENSE from sibling PLink gpl-2.0.txt (not in sdist).
+####

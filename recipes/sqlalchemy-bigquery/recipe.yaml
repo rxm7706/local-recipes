@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sqlalchemy-bigquery
+  version: 1.17.2
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 32f7893c16546d5cc5dc939fb7cf74f51505766a16422f21dd2e7e78ea8ec849
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<3.15
+    - google-api-core >=2.25.0,<3.0.0
+    - google-auth >=2.14.1,<3.0.0
+    - google-cloud-bigquery-core >=3.20.0,<4.0.0
+    - packaging
+    - sqlalchemy >=1.4.16,<3.0.0
+tests:
+  - python:
+      imports:
+        - sqlalchemy_bigquery
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  summary: SQLAlchemy dialect for BigQuery
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/sqlalchemy-bigquery
+
+extra:
+  recipe-maintainers:
+    - xylar

@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Version bump reminder: Must manually check the file constraints to ensure
+# they match those similar to
+# 2024/01 hmaarrfk -- However we have found that these get somewhat stale
+# https://keras.io/getting_started/#compatibility-matrix
+schema_version: 1
+
+context:
+  version: "3.15.1"
+  python_min: "3.11"
+  name: keras
+
+package:
+  name: keras
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/keras-${{ version }}.tar.gz
+  sha256: 92ae7c1dd7f61041953dc2d42253181ee099086f0b58ae36fcf98147a6f08a29
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    # see https://github.com/keras-team/keras/blob/master/oss_setup.py
+    - python 3.11.*
+    - pip
+    - setuptools >=61.0
+  run:
+    - python >=${{ python_min }}
+    - absl-py
+    - numpy
+    - rich
+    - namex
+    - h5py
+    - optree
+    - ml_dtypes
+    - packaging
+  run_constraints:
+    - tensorflow >=2.18.0
+    - jax >=0.5.0
+    - pytorch >=2.6.0
+
+tests:
+  - python:
+      imports:
+        - tensorflow.keras
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+        - jax
+        - tensorflow
+    script:
+      - KERAS_BACKEND=numpy python -c "import keras"
+      - KERAS_BACKEND=jax python -c "import keras"
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Deep Learning for Python
+  homepage: https://github.com/keras-team/keras
+
+extra:
+  recipe-maintainers:
+    - ngam
+    - mariusvniekerk
+    - croth1
+    - ocefpaf
+    - xhochy
+    - hmaarrfk

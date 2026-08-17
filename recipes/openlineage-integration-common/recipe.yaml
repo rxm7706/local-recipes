@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: openlineage-integration-common
-  version: "1.50.0"
+  version: "1.52.0"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/OpenLineage/OpenLineage/archive/refs/tags/${{ version }}.tar.gz
-  sha256: 393af02649095ff829dfc1f4193b61a6955cff1243facb8131429d6ec986096b
+  sha256: 20a85962b78732f40b80071a8921daa754783361054c1425eb16c8b1210f8b35
 
 build:
   number: 0

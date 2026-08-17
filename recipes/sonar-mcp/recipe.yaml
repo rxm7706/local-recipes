@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.0"
+  python_min: "3.11"
+
+package:
+  name: sonar-mcp
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sonar-mcp/sonar_mcp-${{ version }}.tar.gz
+  sha256: 035d55509c126e01e8c549f5471b68e50a55ed310172a4b7f37611458e839926
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=75.0
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - mcp <2,>=1.25.0
+    - httpx >=0.27.0
+    - pydantic >=2.12.5
+    - pyyaml >=6.0.2
+    - structlog >=25.5.0
+    - tenacity >=9.1.2
+    - python-dotenv >=1.1.0
+
+tests:
+  - python:
+      imports:
+        - sonar_mcp
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/wadew/sonar-mcp
+  license: MIT
+  license_file: LICENSE
+  summary: MCP server for SonarQube code quality platform
+  description: |
+    MCP server for SonarQube code quality platform
+  repository: https://github.com/wadew/sonar-mcp.git
+  documentation: https://github.com/wadew/sonar-mcp#documentation
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sonar-mcp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sonar-mcp
+  cfe-purls:
+    - pkg:conda/sonar-mcp@${{ version }}?channel=conda-forge
+    - pkg:pypi/sonar-mcp@${{ version }}
+  cfe-upstream-repo: https://github.com/wadew/sonar-mcp.git
+  cfe-upstream-homepage: https://github.com/wadew/sonar-mcp
+  cfe-import-names: [sonar_mcp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:06:14Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:06:14Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

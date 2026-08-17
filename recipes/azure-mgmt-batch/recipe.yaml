@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: 19.0.0
+  name: azure-mgmt-batch
+  sha256: 275483fa3940933c73c22a42b59d1b5b053191d8f01f6c2c09af0eef52f31a5c
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - azure-mgmt-core >=1.6.0
+    - isodate >=0.6.1
+    - typing_extensions >=4.6.0
+tests:
+  - python:
+      imports:
+        - azure.mgmt
+        - azure.mgmt.batch
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Microsoft Azure Batch Management Client Library for Python
+  homepage: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/batch/azure-mgmt-batch
+
+extra:
+  recipe-maintainers:
+    - johanneskoester
+    - janjagusch

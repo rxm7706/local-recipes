@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: h2o
+  version: "3.46.0.12"
+
+package:
+  name: ${{ name|lower }}-py
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 64279024cadea9c19ed49580c7733aa21bb9aff302805a1ae2f6cdf2e3cea0d3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - colorama >=0.3.8
+    - future
+    - python >=${{ python_min }}
+    - requests
+    - tabulate
+    - numpy
+
+tests:
+  - python:
+      imports:
+        - h2o
+        - h2o.automl
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: H2O, Fast Scalable Machine Learning, for python
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/h2oai/h2o-3
+
+extra:
+  recipe-maintainers:
+    - xhochy

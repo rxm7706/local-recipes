@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: supafunc
+  version: "0.10.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 45e4d500854167c261515c43f7a363320e0a928118182fe8932adefddeddb545
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - poetry
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - httpx >=0.26.0,<0.28
+    - strenum >=0.4.15,<0.5
+
+tests:
+  - python:
+      imports:
+        - supafunc
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Python Library for Supabase Functions
+  description: |
+    Python Library for Supabase Functions
+
+
+  homepage: https://github.com/supabase-community/functions-py
+
+extra:
+  recipe-maintainers:
+    - timkpaine
+    - J0
+    - anand2312

@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.2.4.20260711"
+
+package:
+  name: types-croniter
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/types-croniter/types_croniter-${{ version }}.tar.gz
+  sha256: 807793e109f4e0d51ec18f6277a1a5f1d133e425ac6bee3a7c3254ab1793e0ea
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools >=82.0.1
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - package_contents:
+      site_packages:
+        - croniter-stubs/__init__.pyi
+  - requirements:
+      run:
+        - croniter
+        - mypy
+        - python ${{ python_min }}.*
+    script:
+      - mypy -p croniter
+
+about:
+  summary: Typing stubs for croniter
+  license: Apache-2.0 AND MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/types-croniter
+  repository: https://github.com/python/typeshed/tree/main/stubs/croniter/croniter
+
+extra:
+  recipe-maintainers:
+    - fhoehle
+    - conda-forge/mypy

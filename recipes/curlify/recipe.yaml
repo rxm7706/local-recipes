@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: curlify
+  version: "2.2.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/curlify-${{ version }}.tar.gz
+  sha256: 0d3f02e7235faf952de8ef45ef469845196d30632d5838bcd5aee217726ddd6d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python
+  run:
+    - python
+    - requests
+
+tests:
+  - python:
+      imports:
+        - curlify
+      pip_check: true
+
+about:
+  summary: Library to convert python requests object to curl command.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/oeegor/curlify
+
+extra:
+  recipe-maintainers:
+    - kcemenike

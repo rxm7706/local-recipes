@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: writer-sdk
+  version: "3.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/writer_sdk-${{ version }}.tar.gz
+  sha256: 99815ecff4d112a791280ca9d5c8d4884fa2d13d8e4c454af163653f0251aed2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling ==1.26.3
+    - hatch-fancy-pypi-readme
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - httpx >=0.23.0,<1
+    - pydantic >=1.9.0,<3
+    - typing-extensions >=4.10,<5
+    - anyio >=3.5.0,<5
+    - distro >=1.7.0,<2
+    - sniffio
+    - jiter >=0.4.0,<1
+
+tests:
+  - python:
+      imports:
+        - writerai
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: The official Python library for the Writer API
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://www.traceloop.com/openllmetry
+  repository: https://github.com/writer/writer-python
+
+extra:
+  recipe-maintainers:
+    - timkpaine

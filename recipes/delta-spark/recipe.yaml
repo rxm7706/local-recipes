@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: delta-spark
+  version: "2.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/delta-io/delta/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 18ad6b9630e02847fa145327cfb7d2a62b58f347f828846200167f4604b20182
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - pyspark <3.4.0,>=3.3.0
+    - importlib-metadata >=1.0.0
+
+tests:
+  - python:
+      imports:
+        - delta
+      pip_check: true
+
+about:
+  summary: Python APIs for using Delta Lake with Apache Spark
+  license: Apache-2.0
+  license_file:
+    - NOTICE.txt
+    - LICENSE.txt
+  homepage: https://github.com/delta-io/delta/
+  repository: https://github.com/delta-io/delta
+  documentation: https://docs.delta.io
+
+extra:
+  recipe-maintainers:
+    - scottsand-db
+    - allisonport-db
+    - nkarpov

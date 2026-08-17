@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  pkgname: python-confluent-kafka
+  name: confluent-kafka
+  version: "2.15.0"
+
+package:
+  name: ${{ pkgname|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/confluentinc/confluent-kafka-python/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: c2e9b232d4377254603f56de63e35893f59941f591a009106babbe2454300d1a
+  file_name: ${{ name }}-${{ version }}.tar.gz
+  patches:
+    - if: win
+      then: 0001-Fix-setup-for-windows.patch
+
+build:
+  # This package does not support PyPy.
+  # See https://github.com/confluentinc/confluent-kafka-python/issues/1747#issuecomment-2112004625
+  number: 0
+  skip: python_impl == 'pypy'
+  script:
+    - if: unix
+      then: export CFLAGS="${CFLAGS} -I${PREFIX}/include"
+    - if: unix
+      then: export LDFLAGS="${LDFLAGS} -I${PREFIX}/lib"
+    - if: win
+      then: set CFLAGS="%CFLAGS% /I%LIBRARY_INC%"
+    - if: win
+      then: set LDFLAGS="%LDFLAGS% /I%LIBRARY_LIB%"
+    - ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - setuptools
+    - pip
+    - librdkafka >=${{ version }}
+  run:
+    - python
+    - librdkafka >=${{ version }}
+
+tests:
+  - python:
+      imports:
+        - confluent_kafka
+      pip_check: false
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Confluent's Apache Kafka client for Python
+  description: |
+    Confluent's Kafka client for Python wraps the librdkafka C library,
+    providing full Kafka protocol support with great performance and
+    reliability.
+  homepage: https://github.com/confluentinc/confluent-kafka-python
+  documentation: http://docs.confluent.io/current/clients/confluent-kafka-python/index.html
+
+extra:
+  recipe-maintainers:
+    - lpsinger
+    - rmax
+    - mrocklin
+    - mariusvniekerk

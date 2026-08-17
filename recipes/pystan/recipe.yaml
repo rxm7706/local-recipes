@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pystan
+  version: "3.10.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 2e6c1cdbec8b2769f134b35a19e59e6655074da0c2f807af78dc310a99a8eb79
+
+build:
+  number: 0
+  skip: win or match(python, "<3.10")
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: numpy
+    - ${{ stdlib('c') }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+    - pip
+    - numpy
+    - scipy
+    - setuptools
+    - poetry
+  run:
+    - python
+    - clikit >=0.6,<0.7
+    - httpstan >=4.6,<4.7
+    - pysimdjson >=3.2
+    - aiohttp >=3.6
+
+tests:
+  - python:
+      imports:
+        - stan
+        - stan.common
+        - stan.fit
+        - stan.model
+        - stan.plugins
+      pip_check: false
+
+about:
+  license: ISC
+  license_file: LICENSE
+  summary: Python interface to Stan, a package for Bayesian inference
+  description: |
+    PyStan provides a Python interface to Stan, a package for Bayesian
+    inference using the No-U-Turn sampler, a variant of Hamiltonian Monte
+    Carlo.
+  homepage: http://mc-stan.org/interfaces/pystan.html
+  repository: https://github.com/stan-dev/pystan
+  documentation: https://pystan.readthedocs.org/
+
+extra:
+  recipe-maintainers:
+    - rmax
+    - dhirschfeld
+    - mxr-conda
+    - danielnachun

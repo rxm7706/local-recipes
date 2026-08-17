@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: funcparserlib
+  version: "1.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: a2c4a0d7942f7a0e7635c369d921066c8d4cae7f8b5bf7914466bec3c69837f4
+
+build:
+  number: 3
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - pip
+    - python
+    - poetry
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - funcparserlib
+      pip_check: true
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Recursive descent parsing library based on functional combinators
+  homepage: https://github.com/vlasovskikh/funcparserlib
+  repository: https://github.com/vlasovskikh/funcparserlib
+
+extra:
+  recipe-maintainers:
+    - danielbrown2
+    - mariusvniekerk

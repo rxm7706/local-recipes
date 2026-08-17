@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: flair
+  version: "0.13.1"
+
+package:
+  name: python-flair
+  version: ${{ version }}
+
+source:
+  url: https://github.com/flairNLP/${{ name }}/archive/v${{ version }}.tar.gz
+  sha256: def482184dec116345df37cd0dfcda25d835f3c3d8bc2e0981e02e567d60dccb
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+    - boto3 >=1.20.27
+    - bpemb >=0.3.2
+    - deprecated >=1.2.13
+    - ftfy >=6.1.0
+    - gdown >=4.4.0
+    - gensim >=4.2.0
+    - huggingface_hub >=0.10.0
+    - janome >=0.4.2
+    - langdetect >=1.0.9
+    - lxml >=4.8.0
+    - matplotlib-base >=2.2.3
+    - more-itertools >=8.13.0
+    - mpld3 >=0.3
+    - pptree >=3.1
+    - python-dateutil >=2.8.2
+    - pytorch_revgrad >=0.2.0
+    - regex >=2022.1.18
+    - scikit-learn >=1.0.2
+    - segtok >=1.5.11
+    - sqlitedict >=2.0.0
+    - tabulate >=0.8.10
+    - pytorch >=1.5.0,!=1.8
+    - tqdm >=4.63.0
+    - transformer-smaller-training-vocab >=0.2.3
+    - transformers >=4.18.0,<5.0.0
+    - sentencepiece
+    - urllib3 >=1.0.0
+    - wikipedia-api >=0.5.7
+    - semver <4.0.0,>=3.0.0
+    - conllu >=4.0
+
+tests:
+  - python:
+      imports:
+        - flair
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A very simple framework for state-of-the-art NLP.
+  homepage: https://github.com/flairNLP/flair
+  repository: https://github.com/flairNLP/flair
+  documentation: https://pypi.org/project/flair/
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - oblute
+    - rluria14
+    - ndmaxar
+    - BastianZim

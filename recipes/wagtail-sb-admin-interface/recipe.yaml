@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: wagtail-sb-admin-interface
+  version: "0.7.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail_sb_admin_interface-${{ version }}.tar.gz
+  sha256: dc847e223eebe177711e1dab700714fcd1966df26818f46eb88ec455be1a12ff
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0.0
+    - django <5.0
+    - django-colorfield <1.0.0
+    - wagtail <6.0
+
+tests:
+  - python:
+      imports:
+        - wagtail_sb_admin_interface
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Customize the Wagtail admin interface from the admin itself.
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://gitlab.com/softbutterfly/open-source/wagtail-sb-admin-interface
+
+extra:
+  recipe-maintainers:
+    - rxm7706

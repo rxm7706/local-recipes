@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytest-httpx
+  version: "0.36.2"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 05a56527484f7f4e8c856419ea379b8dc359c36801c4992fdb330f294c690356
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python 3.10.*
+    - setuptools
+    - setuptools_scm
+  run:
+    - httpx ==0.28
+    - pytest ==9
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pytest_httpx
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Send responses to httpx.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://colin-b.github.io/pytest_httpx/
+
+extra:
+  recipe-maintainers:
+    - owenlamont
+    - dgasmith

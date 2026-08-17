@@ -1,0 +1,136 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# mpi must be defined for conda-smithy lint
+# prefer nompi builds via a build number offset
+# https://github.com/h5py/h5py/issues/2850
+schema_version: 1
+
+context:
+  version: "3.16.0"
+  mpi: mpi or 'nompi'
+
+package:
+  name: h5py
+  version: ${{ version }}
+
+source:
+  url: https://github.com/h5py/h5py/archive/${{ version }}.tar.gz
+  sha256: 9c3aa5e1fc0c33ae8501a17987af2f986c8ba3ade25da66c78738a5abefea133
+  patches:
+    # Disable complex256 for arm64
+    # follow https://github.com/conda-forge/cross-python-feedstock/issues/92
+    - if: osx and arm64
+      then: bad-numpy-patch.patch
+
+build:
+  # add build string so packages can depend on
+  # mpi or nompi variants
+  # dependencies:
+  # `pkg * mpi_mpich_*` for mpich
+  # `hdf5 * mpi_*` for any mpi
+  # `hdf5 * nompi_*` for no mpi
+  number: ${{ build }}
+  string: ${{ mpi_prefix }}_py${{ py }}h${{ PKG_HASH }}_${{ build }}
+  script: {}
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython >=0.29.31,<4
+    - if: build_platform != target_platform
+      then: hdf5
+    - if: build_platform != target_platform
+      then: hdf5 * ${{ mpi_prefix }}_*
+    - if: build_platform != target_platform
+      then: numpy
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - if: mpi == 'openmpi' and build_platform != target_platform or mpi == 'openmpi' and build_platform != target_platform
+      then: mpi or 'nompi'.*
+  host:
+    - python
+    - pip
+    - setuptools
+    - numpy
+    - if: mpi != 'nompi' or mpi != 'nompi'
+      then: mpi or 'nompi'.*
+    - if: mpi != 'nompi'
+      then: mpi4py >=3.0
+    # need to list hdf5 twice to get version pinning from conda_build_config
+    # and build pinning from {{ mpi_prefix }}
+    - hdf5
+    - hdf5 * ${{ mpi_prefix }}_*
+    - cython >=0.29.31,<4
+    - pkgconfig
+  run:
+    - python
+    - cached-property
+    - if: mpi != 'nompi' or mpi != 'nompi'
+      then: mpi or 'nompi'.*
+    - if: mpi != 'nompi'
+      then: mpi4py >=3.0
+    # hdf5 >=1.10.4 has run_exports
+    - hdf5
+
+tests:
+  - python:
+      imports:
+        - h5py
+        - h5py._conv
+        - h5py._errors
+        - h5py._objects
+        - h5py._proxy
+        - h5py.defs
+        - h5py.h5
+        - h5py.h5a
+        - h5py.h5d
+        - h5py.h5f
+        - h5py.h5fd
+        - h5py.h5g
+        - h5py.h5i
+        - h5py.h5l
+        - h5py.h5o
+        - h5py.h5p
+        - h5py.h5r
+        - h5py.h5s
+        - h5py.h5t
+        - h5py.h5z
+        - h5py.utils
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+        - pytest
+        - pytest-mpi
+    script:
+      - ${{ export }} AWS_REGION=us-east-2
+      - if: mpi != 'nompi'
+        then: ${{ export }} OMPI_MCA_plm=isolated
+      - if: mpi != 'nompi'
+        then: ${{ export }} OMPI_MCA_btl_vader_single_copy_mechanism=none
+      - if: mpi != 'nompi'
+        then: ${{ export }} OMPI_MCA_rmaps_base_oversubscribe=yes
+      - if: mpi == 'nompi'
+        then: python -c "import h5py; assert not h5py.get_config().mpi"
+      - if: mpi != 'nompi'
+        then: python -c "import h5py; assert h5py.get_config().mpi"
+      - python -m pytest --pyargs h5py ${{ mpi_pytest_flag }} -k "not (${{ tests_to_skip }})"
+
+about:
+  license: BSD-3-Clause
+  license_file: licenses/license.txt
+  summary: Read and write HDF5 files from Python
+  homepage: http://www.h5py.org/
+  repository: https://github.com/h5py/h5py
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - jakirkham
+    - tacaswell
+    - ocefpaf
+    - minrk
+    - scopatz

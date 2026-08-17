@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytokens
+  version: "0.4.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytokens-${{ version }}.tar.gz
+  sha256: 292052fe80923aae2260c073f822ceba21f3872ced9a68bb7953b348e561179a
+
+build:
+  number: 2
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ stdlib("c") }}
+    - ${{ compiler('c') }}
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - mypy
+  host:
+    - python
+    - pip
+    - setuptools
+    - mypy
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - pytokens
+      pip_check: true
+
+about:
+  summary: A Fast, spec compliant Python 3.14+ tokenizer that runs on older Pythons.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/tusharsadhwani/pytokens
+
+extra:
+  recipe-maintainers:
+    - xhochy

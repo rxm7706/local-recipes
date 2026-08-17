@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.6"
+
+package:
+  name: pylantern
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pylantern/pylantern-${{ version }}.tar.gz
+  sha256: 6b003ba23409178468ad1d2cdeef42703be24d46d4d4041293c13cfdc8095409
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - bokeh
+    - bs4
+    - python-cufflinks
+    - faker
+    - finance-enums
+    - future
+    - ipysheet
+    - ipywidgets
+    - jupyterlab
+    - lineup-widget
+    - matplotlib-base
+    - mimesis
+    - numpy
+    - pandas
+    - perspective-python
+    - plotly
+    - qgrid
+    - scipy
+    - seaborn-base
+    - sidecar
+    - six
+    - scikit-learn
+    - ujson
+    - websocket-client
+
+tests:
+  - python:
+      imports:
+        - lantern
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/timkpaine/lantern
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Analytics library
+  description: |
+    Analytics library
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pylantern
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pylantern
+  cfe-purls:
+    - pkg:conda/pylantern@${{ version }}?channel=conda-forge
+    - pkg:pypi/pylantern@${{ version }}
+  cfe-upstream-repo: https://github.com/timkpaine/lantern
+  cfe-upstream-homepage: https://github.com/timkpaine/lantern
+  cfe-import-names: [lantern]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:24:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:24:59Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

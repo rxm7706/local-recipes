@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: identify
+  version: "2.6.19"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/pre-commit/identify/archive/v${{ version }}.tar.gz
+  sha256: b939a2e57f1085886aab677c7b78d07ca02bf1186c8aeaa12021b596229e5195
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . --no-deps --ignore-installed
+  python:
+    entry_points:
+      - identify-cli = identify.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - ukkonen
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - identify
+      pip_check: false
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - LICENSE
+        - tests
+        - setup.py
+    requirements:
+      run:
+        - pytest
+        - python ${{ python_min }}
+    script:
+      - identify-cli --help
+      - pytest tests
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: File identification library for Python
+  homepage: https://github.com/pre-commit/identify
+
+extra:
+  recipe-maintainers:
+    - nicoddemus
+    - tdegeus
+    - deadsnakes-issues-bot

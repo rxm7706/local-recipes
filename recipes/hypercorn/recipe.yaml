@@ -1,0 +1,173 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.18.0"
+  python_check_max: "3.14"
+
+recipe:
+  name: hypercorn-split
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/hypercorn/hypercorn-${{ version }}.tar.gz
+  sha256: d63267548939c46b0247dc8e5b45a9947590e35e64ee73a23c074aa3cf88e9da
+
+build:
+  number: 0
+  noarch: python
+
+outputs:
+  - package:
+      name: hypercorn
+    build:
+      noarch: python
+      script:
+        - ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
+      python:
+        entry_points:
+          - hypercorn = hypercorn.__main__:main
+    requirements:
+      host:
+        - pip
+        - pdm-backend
+        - python ${{ python_min }}.*
+      run:
+        - h11
+        - h2 >=3.1.0
+        - priority
+        - python >=${{ python_min }}
+        - wsproto >=0.14.0
+        # below are all py<3.11, but keep for noarch
+        - exceptiongroup >=1.1.0
+        - taskgroup
+        - tomli
+        - typing_extensions
+      run_constraints:
+        - aioquic >=0.9.0
+        - trio >=0.22.0
+        - uvloop >=0.18
+    tests:
+      - python:
+          imports: hypercorn
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+      - requirements:
+          run:
+            - python ${{ python_min }}.*
+        script:
+          - hypercorn --help
+
+  - package:
+      name: hypercorn-h3
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("hypercorn", exact=True) }}
+        - aioquic
+    tests:
+      - python:
+          imports: hypercorn.protocol.h3
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+      - requirements:
+          run:
+            - python ${{ python_min }}.*
+        script:
+          - hypercorn --help
+
+  - package:
+      name: hypercorn-trio
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("hypercorn", exact=True) }}
+        - trio
+    tests:
+      - python:
+          imports: hypercorn.trio
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+      - requirements:
+          run:
+            - python ${{ python_min }}.*
+        script:
+          - hypercorn --help
+
+  - package:
+      name: hypercorn-uvloop
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("hypercorn", exact=True) }}
+        - uvloop
+    tests:
+      - python:
+          imports: hypercorn
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+      - requirements:
+          run:
+            - python ${{ python_min }}.*
+        script:
+          - hypercorn --help
+
+  - package:
+      name: hypercorn-all
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("hypercorn-h3", exact=True) }}
+        - ${{ pin_subpackage("hypercorn-trio", exact=True) }}
+        - ${{ pin_subpackage("hypercorn-uvloop", exact=True) }}
+        - ${{ pin_subpackage("hypercorn", exact=True) }}
+    tests:
+      - files:
+          source:
+            - tests/
+        requirements:
+          run:
+            - coverage
+            - httpx
+            - hypothesis
+            - pytest
+            - pytest-asyncio
+            - pytest-cov
+            - pytest-sugar
+            - pytest-trio
+            - python ${{ python_min }}.*
+        script:
+          - coverage run --source=hypercorn --branch -m pytest -vv --tb=long --color=yes
+          - coverage report --show-missing --skip-covered --fail-under=69
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A ASGI Server based on Hyper libraries and inspired by Gunicorn.
+  description: |
+    Hypercorn is an ASGI web server based on the sans-io hyper, h11, h2,
+    and wsproto libraries and inspired by Gunicorn. Hypercorn supports HTTP/1, HTTP/2,
+    and websockets and the ASGI 2 specification. Hypercorn can utilise asyncio,
+    uvloop, or trio worker types.
+  homepage: https://github.com/pgjones/hypercorn
+  documentation: https://hypercorn.readthedocs.io
+
+extra:
+  feedstock-name: hypercorn
+  recipe-maintainers:
+    - maxyme
+    - dhirschfeld
+    - synapticarbors
+    - bollwyvl

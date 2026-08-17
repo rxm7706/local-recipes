@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.6.3"
+
+package:
+  name: ir-datasets
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/i/ir-datasets/ir_datasets-${{ version }}.tar.gz
+  sha256: e8b82870b556a2ef30cc965cf133411c013fe0021f3448de8be8cfdc14f58a9f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=42
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - lxml >=4.5.2
+    - numpy >=1.18.1
+    - pyyaml >=5.3.1
+    - requests >=2.22.0
+    - tqdm >=4.38.0
+    - lz4 >=3.1.10
+
+tests:
+  - python:
+      imports:
+        - ir_datasets
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://ir-datasets.com/
+  license: MIT
+  license_file: LICENSE
+  summary: provides a common interface to many IR ad-hoc ranking benchmarks, training datasets, etc.
+  description: |
+    provides a common interface to many IR ad-hoc ranking benchmarks, training datasets, etc.
+  repository: https://github.com/ir-datasets/ir-datasets
+  documentation: https://project.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ir-datasets
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ir-datasets
+  cfe-purls:
+    - pkg:conda/ir-datasets@${{ version }}?channel=conda-forge
+    - pkg:pypi/ir-datasets@${{ version }}
+  cfe-upstream-repo: https://github.com/ir-datasets/ir-datasets
+  cfe-upstream-homepage: https://ir-datasets.com/
+  cfe-import-names: [ir_datasets]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:46:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:46:21Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

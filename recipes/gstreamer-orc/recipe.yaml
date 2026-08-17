@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: gstreamer-orc
+  version: "0.4.42"
+  majmin: ${{ ".".join(version | split(".")[:2]) }}
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://gstreamer.freedesktop.org/data/src/orc/orc-${{ version }}.tar.xz
+  sha256: 7ec912ab59af3cc97874c456a56a8ae1eec520c385ec447e8a102b2bd122c90c
+  patches:
+    - 0001-Add-install_rpath-to-meson.build.patch
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - meson
+    - ninja
+
+tests:
+  - requirements:
+      run:
+        - if: linux
+          then: chrpath
+    script:
+      - if: unix
+        then: test -f ${PREFIX}/lib/liborc-${{ majmin }}${SHLIB_EXT}
+      - if: win
+        then: if not exist %PREFIX%\\Library\\bin\\orc-${{ majmin }}-0.dll exit 1
+      - if: win
+        then: if not exist %PREFIX%\\Library\\lib\\orc-${{ majmin }}.lib exit 1
+      - if: linux
+        then: chrpath -l ${PREFIX}/lib/liborc-${{ majmin }}.so      | grep -qF 'RPATH=$ORIGIN/.'
+      - if: linux
+        then: chrpath -l ${PREFIX}/lib/liborc-test-${{ majmin }}.so | grep -qF 'RPATH=$ORIGIN/.'
+      - orcc --help
+      - orc-bugreport --help
+
+about:
+  license: BSD-2-Clause AND BSD-3-Clause
+  license_file: COPYING
+  summary: Optimized Inner Loop Runtime Compiler
+  homepage: https://gstreamer.freedesktop.org/modules/orc.html
+
+extra:
+  recipe-maintainers:
+    - ryanvolz
+    - sebastian-luna-valero

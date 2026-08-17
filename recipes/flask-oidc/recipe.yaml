@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.4.0"
+
+package:
+  name: flask-oidc
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/flask-oidc/flask_oidc-${{ version }}.tar.gz
+  sha256: e72378fcea8f90ccab874836a61f1783092a900c965e52587c1307e38b2e2153
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
+    - flask
+  run:
+    - python >=${{ python_min }}
+    - flask >=0.12.2,<4.0.0
+    - authlib >=1.2.0,<2.0.0
+    - requests >=2.20.0,<3.0.0
+    - blinker >=1.4.0,<2.0.0
+
+tests:
+  - python:
+      imports:
+        - flask_oidc
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSES/BSD-2-Clause.txt
+  summary: OpenID Connect extension for Flask
+  description: |
+    Flask-OIDC is an extension to Flask that allows you to add OpenID
+    Connect based authentication to your website in a matter of minutes.
+
+  homepage: https://github.com/fedora-infra/flask-oidc
+  repository: https://github.com/fedora-infra/flask-oidc
+  documentation: https://flask-oidc.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - mgorny

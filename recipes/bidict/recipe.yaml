@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: bidict
+  version: "0.23.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 03069d763bc387bbd20e7d49914e75fc4132a41937fa3405417e1a5a2d006d71
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools >=40.9.0
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - bidict
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MPL-2.0
+  license_file: LICENSE
+  summary: Efficient, Pythonic bidirectional map implementation and related functionality
+  homepage: https://bidict.readthedocs.io
+  repository: https://github.com/jab/bidict
+  documentation: https://bidict.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - synapticarbors
+    - jab

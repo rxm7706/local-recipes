@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: dbt-dremio
   version: "1.10.1"
 
 package:
-  name: dbt-dremio
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/dbt-dremio/dbt_dremio-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: 6b0bc19dffe45984bee95217078579936f276630e3892c8816bba3efcbb0f22f
 
 build:
@@ -19,31 +20,27 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
-    - setuptools >=61.0
+    - setuptools
   run:
     - python >=${{ python_min }}
-    - dbt-core >=1.10
-    - dbt-common >=1.27,<2.0
-    - dbt-adapters >=1.16.1,<2.0
+    - dbt-adapters >=1.0.0,<2.0.0
     - requests >=2.31.0
+    - dbt-core >=1.8
 
 tests:
   - python:
       imports:
-        - dbt.adapters.dremio
+        - dbt
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: The Dremio adapter plugin for dbt
   license: Apache-2.0
   license_file: LICENSE
   homepage: https://github.com/dremio/dbt-dremio
-  repository: https://github.com/dremio/dbt-dremio
 
 extra:
   recipe-maintainers:

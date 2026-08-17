@@ -1,0 +1,279 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: apache-airflow-core
+  version: "3.1.8"
+  python_over: "3.14"
+
+recipe:
+  name: ${{ name|lower }}-split
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/apache_airflow_core-${{ version }}.tar.gz
+  sha256: 484aa133b3a8684d64e0bac4f0354938a430bd9e4a7bcc2f142b3e59fc8c2a1c
+
+build:
+  number: 0
+  noarch: python
+
+outputs:
+  - package:
+      name: ${{ name }}
+    build:
+      noarch: python
+      python:
+        entry_points:
+          - airflow = airflow.__main__:main
+      script:
+        file: install_airflow_core.sh
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - pip
+        - gitdb ==4.0.12
+        - gitpython ==3.1.46
+        - hatchling ==1.29.0
+        - packaging ==26.0
+        - pathspec ==1.0.4
+        - pluggy ==1.6.0
+        - smmap ==5.0.2
+        - tomli ==2.4.0
+        - trove-classifiers ==2026.1.14.14
+      
+      run:
+        - python >=${{ python_min }},<${{ python_over }}
+        - a2wsgi >=1.10.8
+        - aiosqlite >=0.20.0,<0.22.0
+        - alembic >=1.13.1,<2.0
+        - argcomplete >=1.10
+        - asgiref >=2.3.0
+        - attrs >=22.1.0,!=25.2.0
+        - cadwyn >=5.2.1
+        - colorlog >=6.8.2
+        - cron-descriptor >=1.2.24
+        - croniter >=2.0.2
+        - cryptography >=41.0.0
+        - deprecated >=1.2.13
+        - dill >=0.2.2
+        - uvicorn >=0.37.0
+        # conda-forge package includes fastapi[standard]
+        - fastapi >=0.116.0,<0.118.0
+        - starlette >=0.45.0
+        - httpx >=0.25.0
+        # most restrictive to stay noarch: python
+        - importlib-metadata >=7.0
+        - itsdangerous >=2.0
+        - jinja2 >=3.1.5
+        - jsonschema >=4.19.1
+        - lazy-object-proxy >=1.2.0
+        - libcst >=1.8.2
+        - linkify-it-py >=2.0.0
+        - lockfile >=0.12.2
+        - methodtools >=0.4.7
+        - natsort >=8.4.0
+        - opentelemetry-api >=1.27.0
+        - opentelemetry-exporter-otlp >=1.27.0
+        # leaving out opentelemetry-proto as this seems to be present
+        # for a pip issue that shouldn't apply to conda
+        - packaging >=25.0
+        - pathspec >=0.9.0
+        # stricter constraint for py>=312 to stay noarch: python
+        - pendulum >=3.1.0
+        - pluggy >=1.5.0
+        - psutil >=5.8.0
+        - pydantic >=2.11.0
+        - pygments >=2.0.1,!=2.19.0
+        - pyjwt >=2.11.0
+        - python-daemon >=3.0.0
+        - python-dateutil >=2.7.0
+        - python-slugify >=5.0
+        - requests >=2.32.0,<3
+        - rich-argparse >=1.0.0
+        - rich >=13.6.0
+        - setproctitle >=1.3.3
+        - sqlalchemy >=1.4.54
+
+        # sqlalchemy[asyncio]
+        - greenlet !=0.4.17
+
+        - sqlalchemy-jsonfield >=1.0
+        - sqlalchemy-utils >=0.41.2
+        - svcs >=25.1.0
+        - tabulate >=0.9.0
+        - tenacity >=8.3.0
+        - termcolor >=3.0.0
+        - typing-extensions >=4.14.1
+        - universal-pathlib >=0.2.6,<0.3.0
+        - uuid6 >=2024.7.10
+        # this constraint is strange, but I'm following upstream...
+        - apache-airflow-task-sdk <1.2.0,==1.1.8
+        - apache-airflow-providers-common-compat >=1.7.4
+        - apache-airflow-providers-common-io >=1.6.3
+        - apache-airflow-providers-common-sql >=1.28.1
+        - apache-airflow-providers-smtp >=2.3.1
+        - apache-airflow-providers-standard >=1.9.0
+        - msgspec >=0.19.0
+        - pygtrie >=2.5.0
+        - structlog >=25.4.0
+    tests:
+      - python:
+          imports:
+            - airflow
+          pip_check: true
+          python_version: ${{ python_min }}.*
+      - requirements:
+          run:
+            - python ${{ python_min }}.*
+            - natsort >=8.4.0
+        script:
+          - airflow --help
+  - package:
+      name: ${{ name }}-with-async
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+      run:
+        - python >=${{ python_min }},<${{ python_over }}
+        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
+        - eventlet >=0.37.0
+        - gevent >=25.4.1
+        - greenlet >=3.1.0
+        - greenback >=1.2.1
+    tests:
+      - python:
+          imports:
+            - airflow
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: ${{ name }}-with-graphviz
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+      run:
+        - python >=${{ python_min }},<${{ python_over }}
+        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
+        - python-graphviz >=0.20
+    tests:
+      - python:
+          imports:
+            - airflow
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: ${{ name }}-with-kerberos
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+      run:
+        - python >=${{ python_min }},<${{ python_over }}
+        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
+        - pykerberos >=1.1.13
+        - requests-kerberos >=0.14.0
+        - thrift_sasl >=0.4.2
+    tests:
+      - python:
+          imports:
+            - airflow
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: ${{ name }}-with-otel
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+      run:
+        - python >=${{ python_min }},<${{ python_over }}
+        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
+        # going with more recent versions because of incorrect deps in older versions
+        - opentelemetry-exporter-prometheus >=0.51b0
+    tests:
+      - python:
+          imports:
+            - airflow
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: ${{ name }}-with-sentry
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+      run:
+        - python >=${{ python_min }},<${{ python_over }}
+        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
+        - blinker >=1.1
+        - sentry-sdk >=2.30.0
+        # sentry-sdk[flask] extra
+        - flask >=0.11
+        - blinker >=1.1
+        - markupsafe
+    tests:
+      - python:
+          imports:
+            - airflow
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: ${{ name }}-with-statsd
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+      run:
+        - python >=${{ python_min }},<${{ python_over }}
+        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
+        - statsd >=3.3.0
+    tests:
+      - python:
+          imports:
+            - airflow
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: ${{ name }}-with-all
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+      run:
+        - python >=${{ python_min }},<${{ python_over }}
+        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
+        - ${{ name }}-with-graphviz
+        - ${{ name }}-with-kerberos
+        - ${{ name }}-with-otel
+        - ${{ name }}-with-sentry
+        - ${{ name }}-with-statsd
+    tests:
+      - python:
+          imports:
+            - airflow
+          pip_check: true
+          python_version: ${{ python_min }}.*
+
+about:
+  summary: Core packages for Apache Airflow, schedule and API server
+  license: MIT AND BSD-3-Clause AND BSD-2-Clause AND Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+  homepage: http://airflow.apache.org
+  repository: https://github.com/apache/airflow
+  documentation: http://pythonhosted.org/airflow/profiling.html
+
+extra:
+  recipe-maintainers:
+    - xylar

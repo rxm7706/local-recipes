@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: inotify
+  version: "0.2.12"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/inotify-${{ version }}.tar.gz
+  sha256: 9aee407f92c7d51a2ce50f3b78291a9094e334e34bd68e82bf60020795fa2c94
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - python-build
+
+tests:
+  - python:
+      imports:
+        - inotify
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: An adapter to Linux kernel support for inotify directory-watching.
+  license: GPL-2.0-only
+  license_file: LICENSE
+  homepage: https://github.com/dsoprea/PyInotify
+
+extra:
+  recipe-maintainers:
+    - akrherz

@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: config
+  version: "0.5.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/config-${{ version }}.zip
+  sha256: 2dd4a03aa383d30711d5a3325a1858de225328d61950a85be5b74c100f63016d
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - config
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A hierarchical, easy-to-use, powerful configuration module for Python
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: http://docs.red-dove.com/cfg/python.html
+
+extra:
+  recipe-maintainers:
+    - zklaus

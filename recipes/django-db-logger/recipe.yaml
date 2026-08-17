@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-db-logger
+  version: "0.1.13"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django-db-logger-${{ version }}.tar.gz
+  sha256: a299a08638a741eb0b1d192f2a27eae57ed5118673c2aa916467f2e060c24e72
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools-scm
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - django >=1.9
+    - six
+
+tests:
+  - python:
+      imports:
+        - django_db_logger
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  summary: Django logging in database
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/CiCiUi/django-db-logger
+
+extra:
+  recipe-maintainers:
+    - rxm7706

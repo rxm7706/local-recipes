@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: wagtail-review
   version: "0.5"
 
 package:
-  name: wagtail-review
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/w/wagtail-review/wagtail-review-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail-review-${{ version }}.tar.gz
   sha256: 989638729af00abff0308c8f9410bc607fd64e5574da8dd907c064a25e13aab0
 
 build:
@@ -19,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
@@ -31,16 +32,13 @@ tests:
       imports:
         - wagtail_review
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Review workflow for Wagtail
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/wagtail-nest/wagtail-review
-  repository: https://github.com/wagtail-nest/wagtail-review
+  homepage: https://github.com/wagtail/wagtail-review
 
 extra:
   recipe-maintainers:

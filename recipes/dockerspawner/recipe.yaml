@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dockerspawner
+  version: "14.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 5641d4763ecc78c1b1c3c7621bfe88c055596893e43be7f66ee0dccac06c1d2a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install --no-deps --ignore-installed --no-cache-dir -vv .
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - docker-py
+    - escapism
+    - jupyterhub-base >=4.0.0
+
+tests:
+  - python:
+      imports:
+        - dockerspawner
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Spawns JupyterHub single user servers in Docker containers
+  homepage: https://github.com/jupyterhub/dockerspawner
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - rzillman
+    - minrk

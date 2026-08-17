@@ -2,15 +2,16 @@
 schema_version: 1
 
 context:
-  version: "1.4.8"
+  name: langchain-anthropic
+  version: "1.5.6"
 
 package:
-  name: langchain-anthropic
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/l/langchain-anthropic/langchain_anthropic-${{ version }}.tar.gz
-  sha256: c76891b2044d56105ff13c106ed12650637b53bd598a4bdf15b4796eefa2a4ec
+  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/langchain_anthropic-${{ version }}.tar.gz
+  sha256: 648fdab25573fc9d29543c4b4af1d682b7b6e548d452bb46e67ebc586e195629
 
 build:
   number: 0
@@ -19,41 +20,31 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - hatchling
     - pip
   run:
-    - python >=${{ python_min }}
-    - anthropic >=0.96.0,<1.0.0
-    - langchain-core >=1.4.7,<2.0.0
     - pydantic >=2.7.4,<3.0.0
+    - python >=${{ python_min }},<4.0
+    - langchain-core >=1.5.4,<2.0.0
+    - anthropic >=0.120.0,<1.0.0
 
 tests:
   - python:
       imports:
         - langchain_anthropic
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
-  homepage: https://docs.langchain.com/oss/python/integrations/providers/anthropic
+  summary: An integration package connecting AnthropicMessages and LangChain
   license: MIT
   license_file: LICENSE
-  summary: Integration package connecting Claude (Anthropic) APIs and LangChain
-  repository: https://github.com/langchain-ai/langchain
-  documentation: https://reference.langchain.com/python/integrations/langchain_anthropic/
-  description: |
-    langchain-anthropic is the LangChain partner package that integrates
-    Anthropic's Claude models with LangChain. It provides the ChatAnthropic
-    chat model and related interfaces (tool calling, streaming, multimodal
-    inputs) backed by the Anthropic Messages API, exposed through the standard
-    LangChain abstractions.
+  homepage: https://github.com/langchain-ai/langchain
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - jan-janssen
 
 #### CFE metadata AND comments
 # CFE metadata

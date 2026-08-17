@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.7.2"
+  python_check_max: "3.14"
+
+package:
+  name: authlib
+  version: ${{ version }}
+
+source:
+  - target_directory: dist
+    url: https://pypi.org/packages/source/a/authlib/authlib-${{ version }}.tar.gz
+    sha256: 2cea25fefcd4e7173bdf1372c0afc265c8034b23a8cd5dcb6a9164b826c64231
+  - target_directory: src
+    url: https://github.com/authlib/authlib/archive/refs/tags/v${{ version }}.tar.gz
+    sha256: 939d7d4c1ea10e3747b03cc76c478f5158657a32645a496be38100c927ee6a4c
+
+build:
+  number: 1
+  noarch: python
+  script:
+    - cd dist
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+    - wheel
+  run:
+    - cryptography
+    - joserfc >=1.6.0
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports: authlib
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - files:
+      source:
+        - src/tests/
+        - src/pyproject.toml
+    requirements:
+      run:
+        - cachelib
+        - django
+        - flask-sqlalchemy
+        - httpx <1
+        - pytest-asyncio
+        - pytest-django
+        - pytest-env
+        - python ${{ python_min }}.*
+        - requests
+        - starlette-full
+    script:
+      - cd src
+      - pytest -vv --tb=long --color=yes
+
+about:
+  summary: The ultimate Python library in building OAuth and OpenID Connect servers and clients.
+  license: BSD-3-Clause
+  license_file: dist/LICENSE
+  homepage: https://pypi.org/project/authlib
+  repository: https://github.com/authlib/authlib
+  documentation: https://docs.authlib.org
+
+extra:
+  recipe-maintainers:
+    - chrisburr
+    - markfennema
+    - xylar

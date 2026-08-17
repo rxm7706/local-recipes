@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: Pint
+  version: "0.25.3"
+  python_min: "3.11"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pint-${{ version }}.tar.gz
+  sha256: f8f5df6cf65314d74da1ade1bf96f8e3e4d0c41b51577ac53c49e7d44ca5acee
+
+build:
+  number: 0
+  noarch: python
+  script: SETUPTOOLS_SCM_PRETEND_VERSION=${{ version }} ${{ PYTHON }} -m pip install . -v
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - platformdirs >=2.1.0
+    - flexcache >=0.3
+    - flexparser >=0.4
+    - typing_extensions >=4.0.0
+  run_constraints:
+    - numpy >=1.23
+
+tests:
+  - python:
+      imports:
+        - pint
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+      - "python -c \"import pint; ver = pint.__version__; assert ver != '0.0.0'\""
+      - pint-convert --help
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Operate and manipulate physical quantities in Python
+  description: |
+    Pint is a Python package to define, operate and manipulate physical
+    quantities: the product of a numerical value and a unit of measurement.
+    It allows arithmetic operations between them and conversions from and to
+    different units. It is distributed with a comprehensive list of physical
+    units, prefixes and constants. Due to its modular design, you can extend
+    (or even rewrite!) the complete list without changing the source code.
+    It supports a lot of numpy mathematical operations without monkey
+    patching or wrapping numpy.
+  homepage: https://github.com/hgrecco/pint
+  repository: https://github.com/hgrecco/pint
+  documentation: https://pint.readthedocs.org/
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - dopplershift

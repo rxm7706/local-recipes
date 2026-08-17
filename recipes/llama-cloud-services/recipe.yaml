@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: llama-cloud-services
+  version: "0.6.94"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/llama_cloud_services-${{ version }}.tar.gz
+  sha256: 127b8440d3d3a964d0c4b3f5fe7fcac3ead482f7645971cc8ae30768dcf63306
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - llama-parse = llama_cloud_services.parse.cli.main:parse
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - tenacity >=8.5.0,<10.0
+    - platformdirs >=4.3.7,<5
+    - python >=${{ python_min }}
+    - llama-index-core >=0.12.0
+    - llama-cloud ==0.1.46
+    - pydantic >=2.8,!=2.10
+    - click >=8.1.7,<9
+    - python-dotenv >=1.0.1,<2
+    - packaging >=23.0
+tests:
+  - python:
+      imports:
+        - llama_cloud_services
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+      - llama-parse --help
+
+about:
+  summary: Tailored SDK clients for LlamaCloud services.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://docs.cloud.llamaindex.ai
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

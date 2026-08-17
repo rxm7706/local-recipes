@@ -3,7 +3,8 @@ schema_version: 1
 
 context:
   name: ocrmypdf
-  version: "16.11.1"
+  version: "17.10.0"
+  python_min: "3.11"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ocrmypdf-${{ version }}.tar.gz
-  sha256: 838ab69e0ee0f04feea0d5861a17badecab6d3beaed0e29a97058eadda58cbb1
+  sha256: 3e80a22e7ca9a746034e990414c9f18791f168800f3ede92101504f45be6129c
 
 build:
   number: 0
@@ -25,21 +26,24 @@ requirements:
   host:
     - python ${{ python_min }}.*
     - hatchling
-    - hatch-vcs
     - pip
   run:
     - python >=${{ python_min }},<4
     - deprecation >=2.1.0
+    - fpdf2 >=2.8.0
     - img2pdf >=0.5
     - packaging >=20
-    - pdfminer.six >=20220319
-    #- pi-heif
+    - pdfminer-six >=20260107
     - pillow-heif
-    - pikepdf >=8.10.1,!=9.8.0
+    - pngquant
+    - pikepdf >=10
+    - pypdfium2 >=5.0.0
     - pillow >=10.0.1
+    - pydantic >=2.12.5
     - pluggy >=1
     - rich >=13
-    - pdfminer-six >=20220319
+    - tesseract
+    - uharfbuzz >=0.53.2
 
 tests:
   - python:
@@ -47,15 +51,20 @@ tests:
         - ocrmypdf
         - ocrmypdf._exec
       pip_check: false
-      #│ │ ocrmypdf 16.11.1 requires pi-heif, which is not installed. # Note conda package is pillow-heif
-      #│ │ ocrmypdf 16.11.1 has requirement pdfminer-six>=20220319, but you have pdfminer-six 0.0.0. # Note conda package pdfminer-six is returning version 0.0.0
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - files:
+      source:
+        - tests/resources/linn.pdf
+        - tests/resources/graph_ocred.pdf
     script:
       - ocrmypdf --help
+      - ocrmypdf --version
+      - ocrmypdf --mode force --output-type pdf tests/resources/linn.pdf /tmp/ocr_output.pdf
+      - test -s /tmp/ocr_output.pdf
+      - ocrmypdf --mode skip --optimize 3 --output-type pdf tests/resources/graph_ocred.pdf /tmp/opt_output.pdf
+      - test -s /tmp/opt_output.pdf
 
 about:
   summary: OCRmyPDF adds an OCR text layer to scanned PDF files, allowing them to be searched
@@ -67,4 +76,5 @@ about:
 extra:
   recipe-maintainers:
     - izahn
+    - carlodri
     - rxm7706

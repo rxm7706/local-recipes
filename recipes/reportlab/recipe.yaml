@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: reportlab
+  version: "5.0.0"
+  python_min: "3.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/reportlab/reportlab-${{ version }}.tar.gz
+  sha256: e4494a0c6623ae213bb856fba523171b2b54a7bf629fda02d5e525a7b899a784
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - pip
+    - python >=${{ python_min }}
+    - setuptools
+  run:
+    - charset-normalizer
+    - pillow >=9
+    - python >=${{ python_min }},<4
+    # pycairo and freetype are optional dependencies
+    - rlpycairo >=0.2.0,<1
+    - freetype-py >=2.3.0,<2.4
+
+
+tests:
+  - python:
+      imports:
+        - reportlab
+        - reportlab.graphics.charts
+        - reportlab.graphics.samples
+        - reportlab.graphics.widgets
+        - reportlab.graphics.barcode
+        - reportlab.graphics
+        - reportlab.lib
+        - reportlab.pdfbase
+        - reportlab.pdfgen
+        - reportlab.platypus
+      python_version: ["${{ python_min }}.*"]
+
+about:
+  homepage: https://www.reportlab.com/opensource/
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Open-source engine for creating complex, data-driven PDF documents and custom vector graphics
+  description: |
+    This is the ReportLab PDF Toolkit. It allows rapid creation
+    of rich PDF documents, and also creation of charts in a variety
+    of bitmap and vector formats.
+  documentation: https://docs.reportlab.com
+
+extra:
+  recipe-maintainers:
+    - bkpoon

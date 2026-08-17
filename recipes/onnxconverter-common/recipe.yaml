@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.16.0"
+
+package:
+  name: onnxconverter-common
+  version: ${{ version }}
+
+source:
+  # pypi doesn't include sdist:
+  # https://pypi.org/project/onnxconverter-common/1.16.0/#files
+  # They accidentally tagged 1.16.0 as 0.16.0
+  # https://github.com/microsoft/onnxconverter-common/issues/324
+  # https://github.com/microsoft/onnxconverter-common/issues/322
+  url: https://github.com/microsoft/onnxconverter-common/archive/refs/tags/v${{ version | replace("1.16.0", "0.16.0") }}.tar.gz
+  sha256: dc00ef7fbb014020cdf9bfaa93301cb13280ed79c23c394391fad1af5f03708e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - packaging
+    - python >=${{ python_min }}
+    - numpy
+    - protobuf >=3.20.2
+    - onnx
+
+tests:
+  - python:
+      imports:
+        - onnxconverter_common
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Common utilities for ONNX converters
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/microsoft/onnxconverter-common
+
+extra:
+  recipe-maintainers:
+    - xhochy
+    - hmaarrfk

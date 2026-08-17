@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.3.5"
+
+package:
+  name: pyston-autoload
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/cp310/p/pyston-autoload/pyston_autoload-2.3.5-cp310-cp310-macosx_10_16_x86_64.whl
+  sha256: 50c5d2e2855a542f9e427601ed1cc94aa1ff82937c001e5765f4db67af8a309a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pyston
+
+tests:
+  - python:
+      imports:
+        - pyston_autoload
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://www.github.com/pyston/pyston
+  license: MIT
+  license_file: LICENSE
+  summary: Automatically loads and enables pyston
+  description: |
+    Automatically loads and enables pyston
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyston-autoload
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyston-autoload
+  cfe-purls:
+    - pkg:conda/pyston-autoload@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyston-autoload@${{ version }}
+  cfe-upstream-repo: https://www.github.com/pyston/pyston
+  cfe-upstream-homepage: https://www.github.com/pyston/pyston
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:36:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:36:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

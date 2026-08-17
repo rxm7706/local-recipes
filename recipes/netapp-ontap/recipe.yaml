@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "9.19.1.0"
+
+package:
+  name: netapp-ontap
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/netapp-ontap/netapp_ontap-${{ version }}.tar.gz
+  sha256: 605018d4b05789918894acdec7abed4078b540dee3f581c7c0d6abe629fcbb1a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - marshmallow <4.0.0,>=3.21.3
+    - requests <3.0.0,>=2.32.4
+    - requests-toolbelt <2.0.0,>=1.0.0
+    - urllib3 <3.0.0,>=2.7.0
+    - certifi >2022.12.7
+    - apipkg <4.0.0,>=3.0.2
+
+tests:
+  - python:
+      imports:
+        - netapp_ontap
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://www.netapp.com/developer/
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A library for working with ONTAP's REST APIs simply in Python
+  description: |
+    A library for working with ONTAP's REST APIs simply in Python
+  documentation: https://library.netapp.com/ecmdocs/ECMLP3383665/html/index.html
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: netapp-ontap
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: netapp-ontap
+  cfe-purls:
+    - pkg:conda/netapp-ontap@${{ version }}?channel=conda-forge
+    - pkg:pypi/netapp-ontap@${{ version }}
+  cfe-upstream-repo: https://www.netapp.com/developer/
+  cfe-upstream-homepage: https://www.netapp.com/developer/
+  cfe-import-names: [netapp_ontap]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:40:46Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:40:46Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

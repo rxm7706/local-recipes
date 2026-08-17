@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.9.8"
+
+package:
+  name: amphi-etl
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/a/amphi-etl/amphi_etl-0.9.8-py3-none-any.whl
+  sha256: 4a3b56770fcffe5d83f085000a6ab1246bec07be69098a0684cd20a8d9afa28f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - jupyterlab ==4.5.3
+    - jupyterlab-amphi ==0.9.7
+    - amphi-scheduler ==0.9.7
+    - pandas >=2.0
+
+tests:
+  - python:
+      imports:
+        - amphi_etl
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/amphi-etl/
+  license: ELv2
+  license_file: LICENSE
+  summary: Open-source and Python-based ETL
+  description: |
+    Open-source and Python-based ETL
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: amphi-etl
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: amphi-etl
+  cfe-purls:
+    - pkg:conda/amphi-etl@${{ version }}?channel=conda-forge
+    - pkg:pypi/amphi-etl@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/amphi-etl/
+  cfe-upstream-homepage: https://pypi.org/project/amphi-etl/
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:15Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

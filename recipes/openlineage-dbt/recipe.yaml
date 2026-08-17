@@ -19,6 +19,9 @@ build:
   script:
     - cd integration/dbt
     - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - dbt-ol = openlineage.dbt:main
 
 requirements:
   host:
@@ -28,7 +31,7 @@ requirements:
   run:
     - python >=${{ python_min }},<4.0
     - tqdm >=4.62.0
-    - openlineage-integration-common ==1.50.0
+    - openlineage-integration-common ==${{ version }}
     - dbt-core >=1.0.0
 
 tests:
@@ -36,7 +39,19 @@ tests:
       imports:
         - openlineage.dbt
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+        - dbt-core >=1.0.0
+    script:
+      # Note: Needs fix to enable script cli check dbt-ol --help
+      # Error is │ FileNotFoundError: [Errno 2] No such file or directory: './dbt_project.yml'
+      #- dbt-ol --help
+      - pip check
 
 about:
   summary: OpenLineage integration with dbt
@@ -47,6 +62,10 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - millsks
+    - conda-forge/openlineage-integration-common
+    - conda-forge/openlineage-sql
+    - conda-forge/openlineage-python
 
 #### CFE metadata AND comments
 # CFE metadata

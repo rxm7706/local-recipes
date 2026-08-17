@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: outlines-core
+  version: "0.2.14"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/outlines_core-${{ version }}.tar.gz
+  sha256: 64808deed1591ca3029ff64346ceb974cd5d780c916ea82504951fe83523039e
+
+build:
+  number: 1
+  script:
+    # NOTE: Switch to `script.content` and `script.env` once
+    # https://github.com/prefix-dev/rattler-build/pull/1353 is merged.
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+    - ${{ "export OPENSSL_DIR=${PREFIX}" if unix }}
+    - ${{ "cargo install --force --locked bindgen-cli" if unix }}
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - maturin
+    - ${{ compiler('rust') }}
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - cargo-bundle-licenses
+    - pkg-config
+  host:
+    - python
+    - pip
+    - maturin
+    - ${{ "patchelf" if not win }}
+    - ${{ "openssl" if unix }}
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - outlines_core
+      pip_check: true
+
+  # NOTE: disable the test for linux-ppc64le since pytorch is not
+  # available. See https://github.com/conda-forge/pytorch-cpu-feedstock/pull/255
+  - if: not (linux and ppc64le)
+    then:
+      requirements:
+        run:
+          - pytest
+          - pytest-benchmark
+          - pytest-mock
+          - scipy
+          - numpy
+          - pytorch
+          - pydantic
+          - transformers
+          - datasets
+          - sentencepiece
+          # E       ImportError: To use the kernels in `outlines_core.kernels.numpy`, `numba` must be installed. You can install it with `pip install numba`
+          # ../../../../../lib/python3.13/site-packages/outlines_core/kernels/numpy.py:8: ImportError
+          - numba
+          # >       raise exc.InvalidCxxCompiler
+          # E       torch._dynamo.exc.BackendCompilerFailed: backend='inductor' raised:
+          # E       InvalidCxxCompiler: No working C++ compiler found in torch._inductor.config.cpp.cxx: (None, 'g++')
+          # E
+          # E       Set TORCH_LOGS="+dynamo" and TORCHDYNAMO_VERBOSE=1 for more information
+          # E
+          # E
+          # E       You can suppress this exception and fall back to eager by setting:
+          # E           import torch._dynamo
+          # E           torch._dynamo.config.suppress_errors = True
+          # ../../../../../lib/python3.10/site-packages/torch/_inductor/cpp_builder.py:94: BackendCompilerFailed
+          - ${{ compiler('cxx') }}
+
+
+      files:
+        source:
+          - tests/
+      script:
+        - pytest -vvv tests/
+
+about:
+  summary: Structured Text Generation in Rust
+  license: Apache-2.0
+  license_file:
+    - THIRDPARTY.yml
+    - LICENSE
+  homepage: https://github.com/dottxt-ai/outlines-core
+  repository: https://github.com/dottxt-ai/outlines-core
+
+extra:
+  recipe-maintainers:
+    - hadim
+    - maresb

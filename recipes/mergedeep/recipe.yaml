@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mergedeep
+  version: "1.3.4"
+  sha256: 7d44051cce4de6a870bc08642e561e9d2b0c09b261e9fb709a5489f44699f551
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/clarketm/${{ name }}/archive/v${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - mergedeep
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A deep merge function for Python
+  description: A deep merge function for Python
+  homepage: https://github.com/clarketm/mergedeep
+  repository: https://github.com/clarketm/mergedeep
+  documentation: https://github.com/clarketm/mergedeep
+
+extra:
+  recipe-maintainers:
+    - tdegeus

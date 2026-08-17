@@ -2,29 +2,26 @@
 schema_version: 1
 
 context:
-  version: "1.8.9"
+  name: h2o-lightwave-web
+  version: "1.8.12"
 
 package:
-  name: h2o-lightwave-web
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  # PyPI ships ONLY a py3-none-any wheel for 1.8.9 (no sdist); the wheel is the
-  # ONLY artifact that carries the 423 bundled www/ web assets. The GitHub
-  # monorepo archive's py/h2o_lightwave_web subdir ships NO www/ assets (they
-  # are generated from ui/ at release time), so a from-source build produces an
-  # empty shell. Install the prebuilt wheel.
-  url: https://pypi.org/packages/py3/h/h2o-lightwave-web/h2o_lightwave_web-${{ version }}-py3-none-any.whl
-  sha256: 8abc5e61f5df46e240d83d891d0d367c4b5a9e9f48ee9abaa5494f612d045241
+  url: https://github.com/h2oai/wave/archive/v${{ version }}.tar.gz
+  sha256: b8662b2d4e5bf38a91f0492af146bc08278f6a6dbbbe63afe76bad2b804bf7b0
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install h2o_lightwave_web-${{ version }}-py3-none-any.whl -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install ./py/h2o_lightwave_web -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
+    - hatchling
     - pip
   run:
     - python >=${{ python_min }}
@@ -34,24 +31,19 @@ tests:
       imports:
         - h2o_lightwave_web
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
+  description: Web assets for H2O Lightwave.
   summary: Web assets package for H2O Lightwave apps.
   license: Apache-2.0
   license_file:
     - LICENSE
     - NOTICE
+    - py/h2o_lightwave_web/LICENSE
   homepage: https://wave.h2o.ai/
-  repository: https://github.com/h2oai/wave
+  repository: https://github.com/h2oai/wave/tree/main/py/h2o_lightwave_web
   documentation: https://wave.h2o.ai/
-  description: |
-    Web assets (static JavaScript, CSS, fonts, and HTML) for H2O Lightwave
-    apps. Ships the bundled front-end of the H2O Wave realtime app framework
-    so Lightwave applications can serve their UI without a separate Wave
-    server install.
 
 extra:
   recipe-maintainers:

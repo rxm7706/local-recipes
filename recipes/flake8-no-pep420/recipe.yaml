@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: flake8-no-pep420
   version: "2.9.0"
 
 package:
-  name: flake8-no-pep420
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/f/flake8-no-pep420/flake8_no_pep420-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/flake8_no_pep420-${{ version }}.tar.gz
   sha256: 5dcd9e23bdd545cb957dd23987d9d227e733d1610717b0e13591262df1a33413
 
 build:
@@ -19,9 +20,9 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - pip
+    - python ${{ python_min }}
     - setuptools
+    - pip
   run:
     - python >=${{ python_min }}
     - flake8 >=3,!=3.2
@@ -31,16 +32,13 @@ tests:
       imports:
         - flake8_no_pep420
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: A flake8 plugin to ban PEP-420 implicit namespace packages.
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/adamchainz/flake8-no-pep420
-  repository: https://github.com/adamchainz/flake8-no-pep420
 
 extra:
   recipe-maintainers:

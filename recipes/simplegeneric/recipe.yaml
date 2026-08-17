@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.8.1"
+
+package:
+  name: simplegeneric
+  version: ${{ version }}
+
+source:
+  url: https://pypi.python.org/packages/source/s/simplegeneric/simplegeneric-${{ version }}.zip
+  md5: f9c1fab00fd981be588fc32759f474e3
+  file_name: simplegeneric-${{ version }}.zip
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - simplegeneric
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: ZPL-2.1
+  summary: Simple generic functions (similar to Python's own len(), pickle.dump(), etc.)
+  homepage: http://cheeseshop.python.org/pypi/simplegeneric
+
+extra:
+  recipe-maintainers:
+    - minrk
+    - msarahan
+    - pelson

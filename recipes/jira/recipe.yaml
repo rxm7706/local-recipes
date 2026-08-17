@@ -1,0 +1,122 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: 3.10.5
+  python_check_max: 3.13
+
+recipe:
+  name: jira-split
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/jira/jira-${{ version }}.tar.gz
+  sha256: 2d09ae3bf4741a2787dd889dfea5926a5d509aac3b28ab3b98c098709e6ee72d
+
+build:
+  number: 0
+  noarch: python
+
+outputs:
+  - package:
+      name: jira-base
+    build:
+      noarch: python
+      script:
+        - ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
+      python:
+        entry_points:
+          - jirashell = jira.jirashell:main
+    requirements:
+      host:
+        - pip
+        - python ${{ python_min }}.*
+        - setuptools >=60.0.0
+        - setuptools-scm >=7.0.0
+      run:
+        - defusedxml
+        - packaging
+        - pillow >=2.1.0
+        - python >=${{ python_min }}
+        - requests >=2.10.0
+        - requests-oauthlib >=1.1.0
+        - requests-toolbelt
+        - typing_extensions >=3.7.4.2
+      run_constraints:
+        - ipython >=4.0.0
+        - requests-futures >=0.9.7
+    tests:
+      - python:
+          imports: jira
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+
+  - package:
+      name: jira-with-cli
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("jira-base", exact=True) }}
+        - keyring
+        - ipython
+    tests:
+      - python:
+          imports: jira
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+      - script:
+          - jirashell --help
+
+  - package:
+      name: jira-with-async
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("jira-base", exact=True) }}
+        - requests-futures
+    tests:
+      - python:
+          imports: jira
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+
+  - package:
+      name: jira
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("jira-base", exact=True) }}
+        - ${{ pin_subpackage("jira-with-cli", exact=True) }}
+    tests:
+      - python:
+          imports: jira
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Python library for interacting with JIRA via REST APIs.
+  homepage: https://github.com/pycontribs/jira
+  documentation: https://jira.readthedocs.io
+  description: |-
+    This library eases the use of the Jira REST API from Python and it has been
+    used in production for years.
+
+extra:
+  feedstock-name: jira
+  recipe-maintainers:
+    - ericdill
+    - parente
+    - bollwyvl

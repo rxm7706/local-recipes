@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.0.0"
+
+package:
+  name: azure
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/a/azure/azure-${{ version }}.zip
+  md5: 6e614825d35adb90bfd8c878cbae833c
+  file_name: azure-${{ version }}.zip
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  host:
+    - pip
+    - python
+    - setuptools
+    - azure-mgmt ==0.20.1
+    - azure-servicebus ==0.20.1
+    - azure-storage ==0.20.3
+    - azure-servicemanagement-legacy ==0.20.1
+  run:
+    - python
+    - setuptools
+    - azure-mgmt ==0.20.1
+    - azure-servicebus ==0.20.1
+    - azure-storage ==0.20.3
+    - azure-servicemanagement-legacy ==0.20.1
+
+tests:
+  - python:
+      imports:
+        - azure
+      pip_check: false
+  - script:
+      - python -m unittest discover -p "test_*.py"
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Microsoft Azure Client Libraries for Python
+  homepage: https://github.com/Azure/azure-sdk-for-python
+
+extra:
+  recipe-maintainers:
+    - Maxyme

@@ -1,0 +1,93 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.3.3"
+
+package:
+  name: django-helpdesk
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-helpdesk/django_helpdesk-${{ version }}.tar.gz
+  sha256: 351af358df8c2967f345880515cd99821942f1e9b07210ae499023d79e295612
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - pdm-backend
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - django-bootstrap4-form
+    - celery
+    - email-reply-parser
+    - akismet
+    - markdown
+    - beautifulsoup4
+    - nh3
+    - djangorestframework
+    - django-model-utils
+    - django-cleanup
+    - oauthlib
+    - requests-oauthlib
+    - requests
+
+tests:
+  - python:
+      imports:
+        - helpdesk
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/django-helpdesk/django-helpdesk
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Django-powered ticket tracker for your helpdesk
+  description: |
+    Django-powered ticket tracker for your helpdesk
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-helpdesk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-helpdesk
+  cfe-purls:
+    - pkg:conda/django-helpdesk@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-helpdesk@${{ version }}
+  cfe-upstream-repo: https://github.com/django-helpdesk/django-helpdesk
+  cfe-upstream-homepage: https://github.com/django-helpdesk/django-helpdesk
+  cfe-import-names: [helpdesk]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:53:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:53:37Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

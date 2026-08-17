@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.5.6"
+
+package:
+  name: soda-core-snowflake
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/soda-core-snowflake/soda_core_snowflake-${{ version }}.tar.gz
+  sha256: c3a5f0819e0d4746d9340f3dcf13dff252a12cdac1768408b46ba57d3f9c4393
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - soda-core ==3.5.6
+    - snowflake-connector-python ~=3.0
+
+tests:
+  - python:
+      imports:
+        - soda_core_snowflake
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/soda-core-snowflake/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+  description: |
+    REPLACE_DESCRIPTION
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: soda-core-snowflake
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: soda-core-snowflake
+  cfe-purls:
+    - pkg:conda/soda-core-snowflake@${{ version }}?channel=conda-forge
+    - pkg:pypi/soda-core-snowflake@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/soda-core-snowflake/
+  cfe-upstream-homepage: https://pypi.org/project/soda-core-snowflake/
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:55:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:55:08Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

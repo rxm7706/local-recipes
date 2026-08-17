@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: aioconsole
+  version: "0.8.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 25cb5530f58f7ab431e9af84fbb5417178287b6c3300d5b1185e3b129a227cef
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - apython = aioconsole:run_apython
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - aioconsole
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: Asynchronous console and interfaces for asyncio
+  description: |
+    Asynchronous console and interfaces for asyncio
+  homepage: https://github.com/vxgmichel/aioconsole
+  repository: https://github.com/vxgmichel/aioconsole
+  documentation: https://aioconsole.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - vxgmichel
+    - timkpaine

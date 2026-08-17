@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: zope.hookable
+  version: "5.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: fb601f00ac87e5aa582a81315ed96768ce3513280729d3f51f79312e2b8b94ac
+
+build:
+  number: 1
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - zope.proxy
+
+tests:
+  - python:
+      imports:
+        - ${{ name }}
+      pip_check: false
+
+about:
+  license: ZPL-2.1
+  license_file: LICENSE.txt
+  summary: supports the efficient creation of “hookable” objects, which are callable objects that are meant to be optionally replaced.
+  description: |
+    This package supports the efficient creation of “hookable” objects, which
+    are callable objects that are meant to be optionally replaced.
+    The idea is that you create a function that does some default thing and make
+    it hookable. Later, someone can modify what it does by calling its sethook
+    method and changing its implementation. All users of the function, including
+    those that imported it, will see the change.
+  homepage: https://github.com/zopefoundation/zope.hookable
+  repository: https://github.com/zopefoundation/zope.hookable
+  documentation: https://zopehookable.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - ChrisBarker-NOAA
+    - daf

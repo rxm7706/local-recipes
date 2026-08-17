@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mo-imports
+  version: "7.685.25166"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: d5c44eca0f5db99f7443548759f49094f1c1d5c348176826c460a8ba37429202
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - mo-future ==7.685.25166
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - mo_imports
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: More Imports! - Delayed importing
+  license: MPL-2.0
+  license_file: LICENSE
+  homepage: https://github.com/klahnakoski/mo-imports
+
+extra:
+  recipe-maintainers:
+    - xhochy

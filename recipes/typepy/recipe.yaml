@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: typepy
+  version: "2.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 413fec52a54a010e2e20d6e18eef68840ebf13b95b719e17b5e2e81c6e85e4a6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=64
+    - setuptools-scm >=8
+    - releasecmd
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - mbstrdecoder >=1.0.0,<2
+    - setuptools >=64
+
+tests:
+  - python:
+      imports:
+        - typepy
+        - typepy.checker
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: typepy is a Python library for variable type checker/validator/converter at a run time.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/thombashi/typepy
+  repository: https://github.com/thombashi/typepy
+
+extra:
+  recipe-maintainers:
+    - basnijholt

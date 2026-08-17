@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.4"
+
+package:
+  name: persistence
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/Persistence/persistence-${{ version }}.tar.gz
+  sha256: 272b0e4d5ea36135ca397a72013838a60225e409c118b1b6bf661a591b54587c
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - extensionclass
+  run:
+    - python
+    - extensionclass
+    - persistent
+
+tests:
+  - python:
+      imports:
+        - Persistence
+      pip_check: true
+
+about:
+  homepage: https://pypi.org/project/Persistence/
+  license: ZPL-2.1
+  license_file: LICENSE.txt
+  summary: Persistent ExtensionClass
+  description: |
+    Persistent ExtensionClass
+  repository: https://github.com/zopefoundation/Persistence
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: persistence
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: Persistence
+  cfe-purls:
+    - pkg:conda/persistence@${{ version }}?channel=conda-forge
+    - pkg:pypi/persistence@${{ version }}
+  cfe-upstream-repo: https://github.com/zopefoundation/Persistence
+  cfe-upstream-homepage: https://pypi.org/project/Persistence/
+  cfe-import-names: [Persistence]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: false
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:27:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:27:25Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4 Create-recipe local-only. persistence.
+####

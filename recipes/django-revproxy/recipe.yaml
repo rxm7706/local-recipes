@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-revproxy
+  version: "0.13.0"
+  python_min: python_min|default("3.8")
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/jazzband/django-revproxy/archive/${{ version }}.tar.gz
+  sha256: c9b7b712a1b05c91f12ea4d374f5e4b458981f4a20962f46b0e4b1f7b5d9bd96
+
+build:
+  number: 0
+  noarch: python
+  script:
+    env:
+      SETUPTOOLS_SCM_PRETEND_VERSION: ${{ version }}
+    content: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=45
+    - wheel
+    - setuptools-scm >=6.2
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=3.0
+    - urllib3 >=1.12
+  run_constraints:
+    - diazo >=1.0.5
+    - lxml >=3.4
+
+tests:
+  - python:
+      imports:
+        - revproxy
+      pip_check: true
+      python_version: =${{ python_min }}
+
+about:
+  summary: Reverse Proxy view that supports all HTTP methods, Diazo transformations and Single Sign-On.
+  license: MPL-2.0
+  license_file: LICENSE
+  homepage: https://github.com/jazzband/django-revproxy
+
+extra:
+  recipe-maintainers:
+    - rxm7706

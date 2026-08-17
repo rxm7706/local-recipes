@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.3"
+
+recipe:
+  name: human_readable
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/human_readable/human_readable-${{ version }}.tar.gz
+  sha256: 3f811fd56ee8669572cb2ec9f852b53ee0700748e53c3695731ffd9ab4fc524b
+
+build:
+  number: 0
+  noarch: python
+
+outputs:
+  - package:
+      name: human_readable
+    build:
+      noarch: python
+      script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - hatchling
+        - hatch-vcs
+        - pip
+      run:
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports:
+            - human_readable
+      - requirements:
+          run:
+            - pip
+            - python ${{ python_min }}.*
+        script:
+          - pip check
+
+  - package:
+      name: human-readable
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("human_readable", exact=True) }}
+    tests:
+      - python:
+          imports:
+            - human_readable
+
+about:
+  summary: Human Readable
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/staticdev/human-readable
+
+extra:
+  feedstock-name: human_readable
+  recipe-maintainers:
+    - delucchi-cmu
+    - staticdev
+    - hombit

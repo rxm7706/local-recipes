@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-ipware
+  version: "7.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: d9ec43d2bf7cdf216fed8d494a084deb5761a54860a53b2e74346a4f384cff47
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - setuptools
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+    - django
+    - python-ipware >=2.0.0
+
+tests:
+  - python:
+      imports:
+        - ipware
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  summary: This is django-ipware, application to retrieve client's IP address.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/django-ipware/
+
+extra:
+  recipe-maintainers:
+    - swainn
+    - gagelarsen

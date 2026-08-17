@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.1.6"
+
+package:
+  name: workflow
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/workflow/workflow-${{ version }}.tar.gz
+  sha256: 4cf108b6e12fae2b254d48fdcecda16f98158aae86600f6a8b6fd5b67e66ad4b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - autosemver
+    - configobj
+    - blinker
+    - six
+    - enum34
+
+tests:
+  - python:
+      imports:
+        - workflow
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/inveniosoftware/workflow
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Simple workflows for Python
+  description: |
+    Simple workflows for Python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: workflow
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: workflow
+  cfe-purls:
+    - pkg:conda/workflow@${{ version }}?channel=conda-forge
+    - pkg:pypi/workflow@${{ version }}
+  cfe-upstream-repo: https://github.com/inveniosoftware/workflow
+  cfe-upstream-homepage: https://github.com/inveniosoftware/workflow
+  cfe-import-names: [workflow]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:59:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:59:02Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

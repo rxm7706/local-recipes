@@ -1,0 +1,120 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.5.0"
+  sha256: 88202d8a616dbe789a6c35bbf86d1008dd1b78b300cde92174a9d76d00af666e
+
+package:
+  name: obspy
+  version: ${{ version }}
+
+source:
+  #url: https://test.pypi.io/packages/source/o/obspy/obspy-{{ version }}.tar.gz
+  url: https://pypi.org/packages/source/o/obspy/obspy-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: obspy-${{ version }}.zip
+
+build:
+  # skip pypy builds for now
+  # https://conda-forge.org/blog/posts/2020-03-10-pypy/
+  # https://conda-forge.org/docs/maintainer/knowledge_base.html?highlight=pypy
+  number: 1
+  skip: python_impl == 'pypy'
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  python:
+    entry_points:
+      - obspy-flinn-engdahl = obspy.scripts.flinnengdahl:main
+      - obspy-runtests = obspy.scripts.runtests:main
+      - obspy-reftek-rescue = obspy.scripts.reftekrescue:main
+      - obspy-print = obspy.scripts.print:main
+      - obspy-sds-report = obspy.scripts.sds_html_report:main
+      - obspy-scan = obspy.imaging.scripts.scan:main
+      - obspy-plot = obspy.imaging.scripts.plot:main
+      - obspy-mopad = obspy.imaging.scripts.mopad:main
+      - obspy-mseed-recordanalyzer = obspy.io.mseed.scripts.recordanalyzer:main
+      - obspy-dataless2xseed = obspy.io.xseed.scripts.dataless2xseed:main
+      - obspy-xseed2dataless = obspy.io.xseed.scripts.xseed2dataless:main
+      - obspy-dataless2resp = obspy.io.xseed.scripts.dataless2resp:main
+  preserve_egg_dir: true
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: numpy
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - numpy
+    - scipy
+    - matplotlib-base
+    - lxml
+    - sqlalchemy
+    - requests
+    - decorator
+  run:
+    - python
+    - setuptools
+    - numpy >=1.21
+    - scipy >=1.7
+    - matplotlib-base >=3.3
+    - lxml
+    - sqlalchemy >=1.4
+    - requests
+    - decorator
+
+tests:
+  - python:
+      imports:
+        - obspy
+        - obspy.io.mseed
+      pip_check: false
+  - requirements:
+      run:
+        - pytest
+        - pytest-json-report >=1.4
+        - packaging
+        - pyproj
+        - flake8
+        - matplotlib-base
+        - pyshp <3
+        - cartopy
+    script:
+      - python -c "from obspy import read;"
+      - if: not win
+        then: obspy-print -h
+      - if: not win
+        then: obspy-plot -h
+      - if: not win
+        then: obspy-runtests -h
+      - if: not win
+        then: obspy-scan -h
+
+about:
+  license: LGPL-3.0-only
+  license_file: LICENSE.txt
+  summary: "ObsPy: A Python Toolbox for seismology/seismological observatories."
+  description: |
+    ObsPy is an open-source project dedicated to provide a Python framework for
+    processing seismological data. It provides parsers for common file formats,
+    clients to access data centers and seismological signal processing routines
+    which allow the manipulation of seismological time series (see Beyreuther
+    et al. 2010, Megies et al. 2011, Krischer et al. 2015).
+  homepage: https://obspy.org
+  repository: https://github.com/obspy/obspy
+  documentation: http://docs.obspy.org/
+
+extra:
+  recipe-maintainers:
+    - megies
+    - krischer
+    - barsch
+    - QuLogic
+    - ThomasLecocq

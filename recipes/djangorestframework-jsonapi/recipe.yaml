@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: djangorestframework-jsonapi
+  version: "8.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: d02defa331c240cef136dc522f670e5535a2f1fad182dc04bd4abf4c4a747340
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - django-filter
+    - python >=${{ python_min }}
+    - inflection >=0.5.0
+    - djangorestframework >=3.15
+    - django >=4.2
+
+tests:
+  - python:
+      imports:
+        - rest_framework_json_api
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A Django REST framework API adapter for the JSON:API spec.
+  license: BSD-2-Clause
+  license_file: LICENSE
+  homepage: https://github.com/django-json-api/django-rest-framework-json-api
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - cshaley

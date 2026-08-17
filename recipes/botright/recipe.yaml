@@ -1,0 +1,93 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.1"
+
+package:
+  name: botright
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/botright/botright-${{ version }}.tar.gz
+  sha256: 5b174100eb6a56b35085385b8aa22e9bfb141554cc1146081033ca0404a13a9c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=68.0
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - async-class
+    - httpx >=0.24.1
+    - playwright >=1.40.0
+    - undetected-playwright-patch
+    - pybrowsers >=0.5.2
+    - chrome-fingerprints
+    - numpy
+    - hcaptcha-challenger >=0.10.1.post1
+    - recognizer
+    - setuptools
+    - loguru
+
+tests:
+  - python:
+      imports:
+        - botright
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/Vinyzu/Botright
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Botright, the most advance undetected, fingerprint-changing, captcha-solving, open-source automation framework. Build on Playwright, its as easy to use as it is to extend your code. Solving your Captchas for free with AI.
+  description: |
+    Botright, the most advance undetected, fingerprint-changing, captcha-solving, open-source automation framework. Build on Playwright, its as easy to use as it is to extend your code. Solving your Captchas for free with AI.
+  repository: https://github.com/Vinyzu/Botright
+  documentation: https://github.com/Vinyzu/Botright/blob/main/docs/index.rst
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: botright
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: botright
+  cfe-purls:
+    - pkg:conda/botright@${{ version }}?channel=conda-forge
+    - pkg:pypi/botright@${{ version }}
+  cfe-upstream-repo: https://github.com/Vinyzu/Botright
+  cfe-upstream-homepage: https://github.com/Vinyzu/Botright
+  cfe-import-names: [botright]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:49:39Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:49:39Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

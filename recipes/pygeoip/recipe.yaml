@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pygeoip
+  version: "0.3.2"
+  compress_type: tar.gz
+  hash_val: f22c4e00ddf1213e0fae36dc60b46ee7c25a6339941ec1a975539014c1f9a96d
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ compress_type }}
+  sha256: ${{ hash_val }}
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - pygeoip
+      pip_check: false
+
+about:
+  license: LPL-1.0
+  license_file: LICENSE.md
+  summary: Pure Python GeoIP API
+  homepage: https://github.com/appliedsec/pygeoip
+  repository: https://github.com/appliedsec/pygeoip
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr

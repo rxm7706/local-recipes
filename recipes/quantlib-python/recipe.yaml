@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: QuantLib-python
+  version: "1.43"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/lballabio/QuantLib-SWIG/releases/download/v${{ version }}/QuantLib-SWIG-${{ version }}.tar.gz
+  sha256: 3bc45bc596bf5fd123a3ca5d3bad9439ab6a052bc278a24398a10c0053f84998
+  patches:
+    - no-isolation.diff
+
+build:
+  number: 1
+  skip: win and vc<14
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+    - if: unix
+      then: autoconf
+    - if: unix
+      then: automake
+    - if: unix
+      then: make
+    - swig
+  host:
+    - python
+    - pip
+    - libboost-devel
+    - setuptools
+    - python-build
+    - quantlib ==${{ version }}
+    - pytest
+  run:
+    - python
+    - if: not win
+      then: quantlib
+
+tests:
+  - files:
+      source:
+        - Python/test/*
+    requirements:
+      run:
+        - pytest
+    script:
+      - pytest Python/test/
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.TXT
+  summary: The python wrapper of QuantLib.
+  description: The QuantLib project (https://www.quantlib.org) is aimed at providing a comprehensive software framework for quantitative finance. QuantLib is a free/open-source library for modeling, trading, and risk management in real-life.
+  homepage: https://github.com/lballabio/QuantLib
+  repository: https://github.com/lballabio/QuantLib
+  documentation: https://www.quantlib.org
+
+extra:
+  recipe-maintainers:
+    - timkpaine
+    - ruben-arts

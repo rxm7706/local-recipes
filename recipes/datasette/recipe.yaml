@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: datasette
+  version: "0.65.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/datasette-${{ version }}.tar.gz
+  sha256: ad283ea3c7f80423cb8ea5741fb9072878b40aedae3e3b63ab9856d92191582d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - datasette = datasette.cli:cli
+
+requirements:
+  host:
+    - pip
+    - pytest-runner
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - asgiref >=3.2.10
+    - click >=7.1.1
+    - click-default-group >=1.2.3
+    - jinja2 >=2.10.3
+    - hupper >=1.9
+    - httpx >=0.20
+    - pluggy >=1.0
+    - uvicorn >=0.11
+    - aiofiles >=0.4
+    - janus >=0.6.2
+    - asgi-csrf >=0.9
+    - pyyaml >=5.3
+    - mergedeep >=1.1.1
+    - itsdangerous >=1.1
+    - setuptools
+    - pip
+    - platformdirs >=2.1.0
+    - typing_extensions >=4.0.0
+    - flexcache >=0.3
+    - flexparser >=0.3
+
+tests:
+  - python:
+      imports:
+        - datasette
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - datasette --help
+
+about:
+  summary: An open source multi-tool for exploring and publishing data
+  license: Apache-2.0
+  license_file: LICENSE
+  description: |
+    Datasette is a tool for exploring and publishing data. It helps people take
+    data of any shape or size and publish that as an interactive,
+    explorable website and accompanying API. Datasette is aimed at data
+    journalists, museum curators, archivists, local governments and anyone else
+    who has data that they wish to share with the world. It is part of a wider
+    ecosystem of tools and plugins dedicated to making working with structured
+    data as productive as possible.
+
+
+  homepage: https://datasette.io/
+  repository: https://github.com/simonw/datasette
+  documentation: https://docs.datasette.io/en/stable/
+
+extra:
+  recipe-maintainers:
+    - thewchan

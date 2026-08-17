@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cytoolz
+  version: "1.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/cytoolz-${{ version }}.tar.gz
+  sha256: 13a7bf254c3c0d28b12e2290b82aed0f0977a4c2a2bf84854fcdc7796a29f3b0
+
+build:
+  number: 2
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv --config-settings="--build-option=--with-cython"
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+  host:
+    - cython
+    - pip
+    - setuptools >=77
+    - setuptools-git-versioning >=2.0
+    - python
+  run:
+    - python
+    - toolz >=0.10.0
+
+tests:
+  - python:
+      imports:
+        - cytoolz
+        - cytoolz.curried
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+        - pytest
+        - toolz =${{ ".".join(version | split(".")[:2]) }}
+    script:
+      - pytest -v --doctest-modules --pyargs cytoolz
+      - python -c "import cytoolz; assert cytoolz.__version__ != '0.0.0'"
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Cython implementation of Toolz. High performance functional utilities
+  description: |
+    CyToolz is the Cython implementation of the toolz package, which provides
+    high performance utility functions for iterables, functions, and
+    dictionaries.
+  homepage: https://github.com/pytoolz/cytoolz
+  repository: https://github.com/pytoolz/cytoolz
+  documentation: https://pypi.python.org/pypi/cytoolz
+
+extra:
+  recipe-maintainers:
+    - hendrikmakait
+    - jrbourbeau
+    - eriknw
+    - mrocklin
+    - jcrist
+    - jakirkham
+    - zklaus

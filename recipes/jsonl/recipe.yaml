@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.6"
+
+package:
+  name: jsonl
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/jsonl/jsonl-${{ version }}.tar.gz
+  sha256: c06c069cadfd437ed537afd957409bf03839309d9b15211424348e531219e081
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - simplejson
+
+tests:
+  - python:
+      imports:
+        - jsonl
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://bitbucket.org/sys-git/jsonl
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: JSON decoding to mutable or immutable objects allowing attribute access
+  description: |
+    JSON decoding to mutable or immutable objects allowing attribute access
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jsonl
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jsonl
+  cfe-purls:
+    - pkg:conda/jsonl@${{ version }}?channel=conda-forge
+    - pkg:pypi/jsonl@${{ version }}
+  cfe-upstream-repo: https://bitbucket.org/sys-git/jsonl
+  cfe-upstream-homepage: https://bitbucket.org/sys-git/jsonl
+  cfe-import-names: [jsonl]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:47:52Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:47:52Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

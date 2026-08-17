@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mixpanel
+  version: "5.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/mixpanel-${{ version }}.tar.gz
+  sha256: 6ee99415b4e3e4b2aa6d73bf5df134cd5d60a72b5577c557dd2537c92085ca32
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.0
+  run:
+    - python >=${{ python_min }}
+    - requests >=2.4.2,<3
+    - httpx >=0.27.0
+    - pydantic >=2.0.0,<2.12
+    - asgiref >=3.0.0
+    - json-logic ==0.7.0a0
+
+tests:
+  - python:
+      imports:
+        - mixpanel
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Official Mixpanel library for Python
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  homepage: https://github.com/mixpanel/mixpanel-python
+
+extra:
+  recipe-maintainers:
+    - rabah-khalek
+    - synapticarbors

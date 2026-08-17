@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-groups-manager
+  version: "1.3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django-groups-manager-${{ version }}.tar.gz
+  sha256: fcc099ac8ce8efc1a620f679728d26de1f9cc8068482b9cfb06bfef1d08ad3a8
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - jsonfield
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - django >=3.2
+    - django-mptt
+
+tests:
+  - python:
+      imports:
+        - groups_manager
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  summary: Django groups manager through django-mptt.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/vittoriozamboni/django-groups-manager
+
+extra:
+  recipe-maintainers:
+    - rxm7706

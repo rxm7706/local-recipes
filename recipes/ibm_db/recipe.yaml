@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# v1 recipe format
+
+context:
+  version: "3.2.9"
+  build_number: 0
+
+package:
+  name: ibm_db
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/i/ibm_db/ibm_db-${{ version }}.tar.gz
+  sha256: 0ad6dc4575519a5563fd7f845fc6bc00d688020e1d3ae78d382e79183bc32b0b
+  patches:
+    - 0001-Omit-GCC-check.patch
+    - 0002-Add-wctype-include.patch
+
+build:
+  number: ${{ build_number }}
+  # the osx-64 libdb2.dylib is built using gcc, which is incompatible with the conda-forge ecosystem
+  # otool -L $SP_DIR/clidriver/lib/libdb2.dylib|grep gcc
+  # https://github.com/ibmdb/db2drivers/issues/3#issuecomment-2566168370
+  skip:
+    - if: osx and x86_64
+      then: true
+  script:
+    - if: win
+      then: ${{ PYTHON }} -m pip install . -vv
+    - if: not win
+      then: build.sh
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - if: linux
+      then: libxml2
+    - if: ppc64le
+      then: libnuma
+  run:
+    - python
+    - setuptools
+    - if: linux
+      then: libxcrypt1
+
+tests:
+  - if: win
+    then:
+      - script:
+          - python -c "import os; os.add_dll_directory(os.environ['SP_DIR'] + '\\clidriver\\bin'); import ibm_db; import ibm_db_dbi"
+  - if: not win
+    then:
+      - python:
+          imports:
+            - ibm_db
+            - ibm_db_dbi
+
+about:
+  homepage: https://pypi.org/project/ibm-db/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python DBI driver for DB2 (LUW, zOS, i5) and IDS
+  description: |
+    This extension is the implementation of Python Database API Specification v2.0
+    The extension supports DB2 (LUW, zOS, i5) and IDS (Informix Dynamic Server)
+  documentation: https://github.com/ibmdb/python-ibmdb/wiki
+  repository: https://github.com/ibmdb/python-ibmdb
+
+extra:
+  recipe-maintainers:
+    - SabaKauser
+    - xhochy
+    - amukherjee28

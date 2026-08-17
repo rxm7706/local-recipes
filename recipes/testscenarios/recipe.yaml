@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: testscenarios
+  version: "0.6.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/testscenarios/testscenarios-${{ version }}.tar.gz
+  sha256: ab5ae8cd550e11ea978151981e7a8ecac329b7b22e4dec706b1e6fe213f463e7
+  # patches:
+  #   - remove-fix-tests.patch
+
+build:
+  noarch: python
+  script: python -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pbr >=0.11
+    - pip
+    - hatchling
+    - hatch-vcs
+  run:
+    - pbr >=0.11
+    - python >=${{ python_min }}
+    - testtools
+
+tests:
+  - python:
+      imports:
+        - testscenarios
+        - testscenarios.scenarios
+        - testscenarios.testcase
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - script:
+      - if: unix
+        then:
+          - mkdir -p ${PREFIX}/__hack__
+          - cp -r doc/ ${PREFIX}/__hack__
+          - cp -r README.rst ${PREFIX}/__hack__/README
+          # - python -m pip install ".[tests]"
+          # - python -W once -m testtools.run testscenarios.test_suite
+        else:
+          - echo "Skip hacky test"
+          # - mkdir -p %PREFIX%\__hack__
+          # - cp -r doc README %PREFIX%\__hack__
+          # - python -m testtools.run testscenarios.test_suite
+    requirements:
+      run:
+        - python >=${{ python_min }}
+        - testtools >=2.8.7
+    files:
+      source:
+        - README.rst
+        - doc/
+     
+about:
+  homepage: https://github.com/testing-cabal/testscenarios
+  summary: 'Testscenarios, a pyunit extension for dependency injection'
+  description: |
+    testscenarios provides clean dependency injection for python unittest
+    style tests. This can be used for interface testing (testing many
+    implementations via a single test suite) or for classic dependency
+    injection (provide tests with dependencies externally to the test code
+    itself, allowing easy testing in different situations).
+  license: BSD-3-Clause
+  license_file: BSD
+  repository: https://github.com/testing-cabal/testscenarios
+
+extra:
+  recipe-maintainers:
+    - MementoRC

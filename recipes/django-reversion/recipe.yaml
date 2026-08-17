@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-reversion
+  version: "6.3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 0aa54eb334694f522fd234743978c614d45aa785edc70a6177267cdaaf06f967
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - babel
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+
+tests:
+  - python:
+      imports:
+        - reversion
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: django-reversion is an extension to the Django web framework that provides version control for model instances.
+  description: django-reversion is an extension to the Django web framework that provides version control for model instances.
+  homepage: https://github.com/etianen/django-reversion
+  repository: https://github.com/etianen/django-reversion
+  documentation: https://django-reversion.readthedocs.io/en/stable/
+
+extra:
+  recipe-maintainers:
+    - elanqo
+    - cshaley
+    - sannykr
+    - rxm7706

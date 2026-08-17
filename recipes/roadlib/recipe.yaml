@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.7.0"
+
+package:
+  name: roadlib
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/roadlib/roadlib-${{ version }}.tar.gz
+  sha256: 6a5d459cb70a005591638df0797b6c4bc0cde695c23b5a85530d6fc0b7d9bc63
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=42.0.0
+  run:
+    - python >=${{ python_min }}
+    - requests
+    - cryptography
+    - sqlalchemy >=1.4
+    - pyjwt >=2.0
+    - cbor2
+
+tests:
+  - python:
+      imports:
+        - roadtools.roadlib
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/dirkjanm/ROADtools/
+  license: MIT
+  license_file: LICENSE
+  summary: ROADtools common components library
+  description: |
+    ROADtools common components library
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: roadlib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: roadlib
+  cfe-purls:
+    - pkg:conda/roadlib@${{ version }}?channel=conda-forge
+    - pkg:pypi/roadlib@${{ version }}
+  cfe-upstream-repo: https://github.com/dirkjanm/ROADtools/
+  cfe-upstream-homepage: https://github.com/dirkjanm/ROADtools/
+  cfe-import-names: [roadtools.roadlib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:31:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:31:08Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

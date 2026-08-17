@@ -1,0 +1,105 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.12.1"
+
+recipe:
+  name: jupyter_events
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/jupyter-events/jupyter_events-${{ version }}.tar.gz
+  sha256: faff25f77218335752f35f23c5fe6e4a392a7bd99a5939ccb9b8fbf594636cf3
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: jupyter_events
+    build:
+      noarch: python
+      script:
+        - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+      python:
+        entry_points:
+          - jupyter-events = jupyter_events.cli:main
+    requirements:
+      host:
+        - hatchling >=1.5
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - jsonschema-with-format-nongpl >=4.18.0
+        - packaging
+        - python >=${{ python_min }}
+        - python-json-logger >=2.0.4
+        - pyyaml >=5.3
+        - referencing
+        - rfc3339-validator
+        - rfc3986-validator >=0.1.1
+        - traitlets >=5.3
+    tests:
+      - python:
+          imports: jupyter_events
+          pip_check: true
+          python_version: ${{ python_min }}.*
+
+  - package:
+      name: jupyter_events_with_cli
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("jupyter_events") }}
+        - click
+        - rich
+    tests:
+      - python:
+          imports:
+            - jupyter_events
+            - jupyter_events.cli
+          pip_check: true
+          python_version: ${{ python_min }}.*
+      - script:
+          - jupyter-events --help
+
+  - package:
+      name: _jupyter_events_tests
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("jupyter_events") }}
+        - ${{ pin_subpackage("jupyter_events_with_cli") }}
+    tests:
+      - files:
+          source:
+            - tests/
+            - pyproject.toml
+        requirements:
+          run:
+            - coverage
+            - pytest-asyncio >=0.19.0
+            - pytest-console-scripts
+            - python ${{ python_min }}.*
+        script:
+          - coverage run --source=jupyter_events --branch -m pytest -vv --tb=long --color=yes
+          - coverage report --show-missing --skip-covered --fail-under=81
+
+about:
+  summary: Jupyter Event System library
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://pypi.org/project/jupyter-events
+  repository: https://github.com/jupyter/jupyter_events
+  documentation: https://jupyter-events.readthedocs.io
+
+extra:
+  feedstock-name: jupyter_events
+  recipe-maintainers:
+    - Zsailer
+    - blink1073
+    - afshin
+    - bollwyvl

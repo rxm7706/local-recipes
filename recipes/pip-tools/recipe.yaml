@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pip-tools
+  version: "7.6.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 695556edeb647eb94ee8345cc7108657fdb7fb16b3876623a399b4f61bbede01
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - pip-compile = piptools.scripts.compile:cli
+      - pip-sync = piptools.scripts.sync:cli
+
+requirements:
+  host:
+    - python >=3.7
+    - setuptools-scm
+    - pip
+  run:
+    - python >=3.7
+    - python-build
+    - click >=7
+    - pip >=21.2
+    - setuptools
+    - wheel
+
+tests:
+  - python:
+      imports:
+        - piptools
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - pip-compile --help
+      - pip-sync --help
+
+about:
+  summary: pip-tools keeps your pinned dependencies fresh.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://pypi.org/project/pip-tools/
+
+extra:
+  recipe-maintainers:
+    - marcelotrevisani

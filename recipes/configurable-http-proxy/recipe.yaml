@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: configurable-http-proxy
+  version: "5.3.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://registry.npmjs.org/${{ name }}/-/${{ name }}-${{ version }}.tgz
+  sha256: 8960d148a9f471f9ca9d48cefdffa92bd8ab6685af51b54b4dad993aac9d80bb
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - nodejs
+  host:
+    - nodejs
+    - yarn <2
+  run:
+    - nodejs
+
+tests:
+  - script:
+      - configurable-http-proxy -h
+      - if: not win
+        then: test -f $PREFIX/bin/configurable-http-proxy
+      - if: win
+        then: if not exist %PREFIX%\\configurable-http-proxy exit 1
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: node-http-proxy plus a REST API
+  homepage: https://github.com/jupyterhub/configurable-http-proxy
+
+extra:
+  recipe-maintainers:
+    - minrk
+    - willingc

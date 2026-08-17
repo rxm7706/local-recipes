@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.11.0"
+
+package:
+  name: quart-auth
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/q/quart-auth/quart_auth-${{ version }}.tar.gz
+  sha256: 7703df693d795b3ec43a634efe4118c6adbddd98e7b8195008ca6def6d45cb47
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - pdm-backend
+  run:
+    - python >=${{ python_min }}
+    - quart >=0.18
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - quart_auth
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/quart-auth/
+  license: MIT
+  license_file: LICENSE
+  summary: A Quart extension to provide secure cookie authentication
+  description: |
+    A Quart extension to provide secure cookie authentication
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: quart-auth
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: quart-auth
+  cfe-purls:
+    - pkg:conda/quart-auth@${{ version }}?channel=conda-forge
+    - pkg:pypi/quart-auth@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/quart-auth/
+  cfe-upstream-homepage: https://pypi.org/project/quart-auth/
+  cfe-import-names: [quart_auth]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:55:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:55:50Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

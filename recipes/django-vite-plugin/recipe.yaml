@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: django-vite-plugin
   version: "4.1.2"
 
 package:
-  name: django-vite-plugin
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-vite-plugin/django_vite_plugin-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_vite_plugin-${{ version }}.tar.gz
   sha256: 90dd9de1c89eebadb4db49226ee8ce6c3b962ded0bb9991ef957e55af71c289f
 
 build:
@@ -19,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - hatchling
     - pip
   run:
@@ -30,20 +31,13 @@ tests:
       imports:
         - django_vite_plugin
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Vite build tools integration for django
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/protibimbok/django-vite-plugin
-  repository: https://github.com/protibimbok/django-vite-plugin
-  description: |
-    Vite build tools integration for Django. Provides template tags and
-    management commands to integrate the Vite frontend build tool with
-    Django projects.
 
 extra:
   recipe-maintainers:

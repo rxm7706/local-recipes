@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: SQLAlchemy-Utc
+  version: "0.14.0"
+  sha256: c4829530141a8da5936d45d37749d5c21b58517097b1d1bf6e311dfeadda3692
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/spoqa/${{ name }}/archive/${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - sqlalchemy >=0.9.0
+
+tests:
+  - python:
+      imports:
+        - sqlalchemy_utc
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: SQLAlchemy type to store aware datetime values
+  description: |
+    This package provides a drop-in replacement of SQLAlchemy's built-in
+    DateTime type with timezone=True option enabled. Although SQLAlchemy's
+    built-in DateTime type provides timezone=True option, since some vendors
+    like SQLite and MySQL don't provide timestamptz data type, the option
+    doesn't make any effect on these vendors.
+
+
+  homepage: https://github.com/spoqa/${{ name }}
+
+extra:
+  recipe-maintainers:
+    - igortg
+    - lvoliveira
+    - lincrosenbach

@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytorch_revgrad
+  version: "0.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytorch_revgrad-${{ version }}.tar.gz
+  sha256: 9cf097a7d18cbadddeaec9fef74b258d70b6cb8d0c77f524baab18bffc7d7be9
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - flit
+    - numpy
+    - pip
+    - pytorch >=1.0.0
+  run:
+    - python >=${{ python_min }}
+    - numpy
+    - pytorch >=1.0.0
+
+tests:
+  - python:
+      imports:
+        - pytorch_revgrad
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A pytorch module (and function) to reverse gradients.
+  license: MIT
+  license_file:
+    - LICENSE.md
+    - LICENSE
+  homepage: https://github.com/janfreyberg/pytorch-revgrad
+
+extra:
+  recipe-maintainers:
+    - BastianZim

@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: retryhttp
+  version: "1.5.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/retryhttp-${{ version }}.tar.gz
+  sha256: 6ad975fef6603eba8acf6e4eaaeda8cf37d1db8527bb4bbf118ccde65f32cca0
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=21.0.0,!=24.0.0,!=34.0.0,!=34.0.1,!=34.0.2,!=34.0.3,!=34.1.0,!=34.1.1,!=34.2.0,!=34.3.0,!=34.3.1,!=34.3.2,!=36.2.0
+    - setuptools-scm >=3.4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pydantic
+    - tenacity
+    # all extra
+    - httpx
+    - httpx2
+    - requests
+    - types-requests
+
+tests:
+  - python:
+      imports:
+        - retryhttp
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Retry potentially transient HTTP errors in Python.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/austind/retryhttp
+  repository: https://github.com/austind/retryhttp
+  documentation: https://retryhttp.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - xylar

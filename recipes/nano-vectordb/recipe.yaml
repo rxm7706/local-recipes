@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: nano-vectordb
+  version: "0.0.4.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/nano_vectordb-${{ version }}.tar.gz
+  sha256: 3d13074476f2b739e51261974ed44aa467725579966219734c03502c929ed3b5
+  patches:
+    - requirements.patch
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - numpy
+
+tests:
+  - python:
+      imports:
+        - nano_vectordb
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A simple, easy-to-hack Vector Database implementation
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/gusye1234/nano-vectordb
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

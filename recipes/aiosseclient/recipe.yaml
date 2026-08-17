@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.8"
+
+package:
+  name: aiosseclient
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/aiosseclient/aiosseclient-${{ version }}.tar.gz
+  sha256: 7180d4c6e5d514f3e036bd7c658ef1b9acd6b296f97d2d1c237e9ed6795c36e4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=42
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - aiohttp
+
+tests:
+  - python:
+      imports:
+        - aiosseclient
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/ebraminio/aiosseclient
+  license: MIT
+  license_file: LICENSE
+  summary: Asynchronous Server Sent Event streams client.
+  description: |
+    Asynchronous Server Sent Event streams client.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: aiosseclient
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: aiosseclient
+  cfe-purls:
+    - pkg:conda/aiosseclient@${{ version }}?channel=conda-forge
+    - pkg:pypi/aiosseclient@${{ version }}
+  cfe-upstream-repo: https://github.com/ebraminio/aiosseclient
+  cfe-upstream-homepage: https://github.com/ebraminio/aiosseclient
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:07Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:07Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: django-tastypie
   version: "0.15.1"
 
 package:
-  name: django-tastypie
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-tastypie/django_tastypie-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_tastypie-${{ version }}.tar.gz
   sha256: 1eb41318b08c0ebc9b8a386871b45401a623e6a5566bf32ae3e17be2c59318b7
 
 build:
@@ -19,7 +20,8 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
+    - ez_setup
     - pip
     - setuptools
   run:
@@ -32,20 +34,13 @@ tests:
       imports:
         - tastypie
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: A flexible & capable API layer for Django.
   license: BSD-3-Clause
   license_file: LICENSE
   homepage: https://github.com/django-tastypie/django-tastypie
-  repository: https://github.com/django-tastypie/django-tastypie
-  description: |
-    Tastypie is a webservice API framework for Django. It provides a
-    convenient, yet powerful and highly customizable abstraction for
-    creating REST-style interfaces.
 
 extra:
   recipe-maintainers:

@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pylint-plugin-utils
+  version: "0.9.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pylint_plugin_utils-${{ version }}.tar.gz
+  sha256: 5468d763878a18d5cc4db46eaffdda14313b043c962a263a7d78151b90132055
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - pylint >=1.7
+
+tests:
+  - python:
+      imports:
+        - pylint_plugin_utils
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Utilities and helpers for writing Pylint plugins
+  license: GPL-2.0-only
+  license_file: LICENSE
+  homepage: https://github.com/landscapeio/pylint-plugin-utils
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - jakirkham

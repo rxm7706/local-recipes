@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: analytics-python
+  pypi_name: segment-analytics-python
+  version: 2.3.3
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ pypi_name[0] }}/${{ pypi_name }}/${{ pypi_name }}-${{ version }}.tar.gz
+  sha256: ce6b3b4387ec9ebc5b55842c44d7dd63b4d4b0b8188e268c4492f909e5eeeed8
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - backoff ~=2.1
+    - python-dateutil ~=2.2
+    - requests ~=2.7
+    - pyjwt ~=2.8.0
+
+tests:
+  - python:
+      imports:
+        - segment.analytics
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: The hassle-free way to integrate analytics into any python application.
+  license: MIT
+  license_file: LICENSE
+  description: |
+    analytics-python is a python client for [Segment](https://segment.com)
+
+    <div align="center">
+    <img src="https://user-images.githubusercontent.com/16131737/53616895-a1142d80-3b99-11e9-8e0e-594c0b0dcdc9.png"/>
+    <p><b><i>You can't fix what you can't measure</i></b></p>
+    </div>
+
+    Analytics helps you measure your users, product, and business.
+    It unlocks insights into your app's funnel, core business metrics,
+    and whether you have a product-market fit.
+
+    PyPI: [https://pypi.org/project/analytics-python](https://pypi.org/project/analytics-python)
+
+  homepage: https://github.com/segmentio/analytics-python
+  repository: https://github.com/segmentio/analytics-python
+  documentation: https://segment.com/libraries/python
+
+extra:
+  recipe-maintainers:
+    - BrentDorsey
+    - sugatoray
+    - thewchan

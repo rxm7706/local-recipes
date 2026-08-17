@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  python_min: "3.10"
+  name: kedro-pack
+  version: "0.18.12.1"
+  module_name: kedro_pack
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ module_name }}-${{ version }}.tar.gz
+  sha256: e8d0692702f0e7c972f92a723bb5e60812f259d390c40fa1f83bad01459577dd
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install .  -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.10.*
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=${{ python_min }},<3.11
+    - kedro ==0.18.12
+    - kedro-datasets ==1.6.0
+    - kedro-airflow ==0.6.0
+    - kedro-mlflow ==0.11.9
+    - kedro-viz ==6.4.0
+    - kedro-light ==2023.3.13
+
+tests:
+  - python:
+      imports:
+        - kedro_pack
+        - kedro
+        - kedro_datasets
+        - kedro_airflow
+        - kedro_mlflow
+        - kedro_viz
+        - kedro_light
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+
+about:
+  summary: A generic recipe to install the kedro framework and additional kedro plugins.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/millsks/kedro-pack
+
+extra:
+  recipe-maintainers:
+    - elanqo
+    - cshaley
+    - zaigner
+    - rxm7706
+    - millsks

@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: scikit-plot
+  version: "0.3.7"
+  sha256: 2c7948817fd2dc06879cfe3c1fdde56a8e71fa5ac626ffbe79f043650baa6242
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: python -m pip install .
+
+requirements:
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+    - matplotlib-base
+    - scikit-learn
+    - scipy
+    - joblib
+
+tests:
+  - python:
+      imports:
+        - scikitplot
+        - scikitplot.plotters
+        - scikitplot.helpers
+        - scikitplot.classifiers
+        - scikitplot.clustering
+        - scikitplot.estimators
+        - scikitplot.cluster
+        - scikitplot.decomposition
+        - scikitplot.metrics
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: An intuitive library to add plotting functionality to scikit-learn objects.
+  homepage: https://github.com/reiinakano/scikit-plot/
+  documentation: scikit-plot.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - ericmjl
+    - reiinakano

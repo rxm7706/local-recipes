@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: botocore-stubs
+  version: "1.43.67"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 853e74014a1f557055c4ffae5fb38d7c65c7c0520e1aab366cac41d5428f419d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - setuptools
+    - python ${{ python_min }}.*
+  run:
+    - python >=${{ python_min }}
+    - types-awscrt
+    - typing_extensions >=4.1.0
+
+tests:
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - python -c "import importlib; importlib.import_module('botocore-stubs')"
+      - pip check
+
+about:
+  summary: Type annotations for botocore.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/vemel/mypy_boto3_builder
+  repository: https://github.com/vemel/mypy_boto3_builder/tree/main/types_botocore
+
+extra:
+  recipe-maintainers:
+    - thewchan

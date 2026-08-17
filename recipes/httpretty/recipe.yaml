@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.4"
+
+package:
+  name: httpretty
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/httpretty/httpretty-${{ version }}.tar.gz
+  sha256: 20de0e5dd5a18292d36d928cc3d6e52f8b2ac73daec40d41eb62dee154933b68
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - six
+
+tests:
+  - python:
+      imports:
+        - httpretty
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: COPYING
+  summary: HTTP client mock for Python
+  homepage: http://github.com/gabrielfalcao/httpretty
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

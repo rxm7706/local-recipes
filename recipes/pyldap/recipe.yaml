@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.0.0.post1"
+
+package:
+  name: pyldap
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/p/pyldap/pyldap-3.0.0.post1-py3-none-any.whl
+  sha256: 9ea6ae79b48f3178561a6bc105bcbc77231d5994e67ffb81b7699b8f19dd92c3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - python-ldap
+
+tests:
+  - python:
+      imports:
+        - pyldap
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/pyldap/pyldap/
+  license: MIT
+  license_file: LICENSE
+  summary: DEPRECATED; use python-ldap instead
+  description: |
+    DEPRECATED; use python-ldap instead
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyldap
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyldap
+  cfe-purls:
+    - pkg:conda/pyldap@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyldap@${{ version }}
+  cfe-upstream-repo: https://github.com/pyldap/pyldap/
+  cfe-upstream-homepage: https://github.com/pyldap/pyldap/
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:25:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:25:04Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

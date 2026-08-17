@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: environs
+  version: "15.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 268597f56e74d3304b8724db3d3d94db54427d7a7f17153e6b22520a6f0cfb9e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - flit
+  run:
+    - typing_extensions
+    - python >=${{ python_min }}
+    - marshmallow >=4.0.0
+    - python-dotenv
+
+tests:
+  - python:
+      imports:
+        - environs
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Simplified environment variable parsing
+  homepage: https://github.com/sloria/environs
+  repository: https://github.com/sloria/environs
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - mcs07

@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: temporalio
+  version: "1.31.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/temporalio-${{ version }}.tar.gz
+  sha256: 2993f4b880170825414116dec7d7159a5d199efc279f29570be6b5c4a9f6edd5
+
+build:
+  number: 0
+  skip: win
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    - cd temporalio/bridge
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - maturin >=1.0,<2.0
+    - ${{ compiler('rust') }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - libprotobuf
+    - cargo-bundle-licenses
+  host:
+    - python
+    - maturin >=1.0,<2.0
+    - pip
+  run:
+    - python
+    - nexus-rpc ==1.4.0
+    - protobuf >=3.20,<8.0.0
+    - if: match(python, "<3.11")
+      then: python-dateutil >=2.8.2,<3
+    - types-protobuf >=3.20,<8.0.0
+    - typing_extensions >=4.2.0,<5
+tests:
+  - python:
+      imports:
+        - temporalio
+      pip_check: true
+
+about:
+  summary: Temporal.io Python SDK
+  license: MIT
+  license_file:
+    - LICENSE
+    - temporalio/bridge/THIRDPARTY.yml
+    - temporalio/bridge/sdk-core/LICENSE.txt
+    - temporalio/bridge/sdk-core/crates/protos/protos/api_cloud_upstream/LICENSE
+    - temporalio/bridge/sdk-core/crates/protos/protos/api_upstream/LICENSE
+  homepage: https://github.com/temporalio/sdk-python
+  repository: https://github.com/temporalio/sdk-python
+
+extra:
+  recipe-maintainers:
+    - chrisjryan
+    - dgasmith
+    - nic-chira
+    - fzding
+    - chrisdeutsch

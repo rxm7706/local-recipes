@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: msoffcrypto-tool
+  version: 6.0.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 9a5ebc4c0096b42e5d7ebc2350afdc92dc511061e935ca188468094fdd032bbe
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - msoffcrypto-tool = msoffcrypto.__main__:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - poetry
+  run:
+    - cryptography >=2.3
+    - olefile >=0.45
+    - python >=${{ python_min }},<4.0
+
+tests:
+  - python:
+      imports:
+        - msoffcrypto
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+      - msoffcrypto-tool --help
+
+about:
+  summary: Python tool and library for decrypting MS Office files with passwords or other keys
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/nolze/msoffcrypto-tool
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

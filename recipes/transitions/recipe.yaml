@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.9.3"
+
+package:
+  name: transitions
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/transitions/transitions-${{ version }}.tar.gz
+  sha256: 881fb75bb1654ed55d86060bb067f2c716f8e155f57bb73fd444e53713aafec8
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - six
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - six
+
+tests:
+  - python:
+      imports: transitions
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - 3.13.*
+  - files:
+      source:
+        - examples/
+        - tests/
+    requirements:
+      run:
+        - dill
+        - mock
+        - pip
+        - pycodestyle
+        - pygraphviz
+        - pytest
+        - pytest-cov
+        - python ${{ python_min }}.*
+        - python-graphviz
+    script:
+      - coverage run --source=transitions --branch -m pytest -vv --tb=long --color=yes -k "not conformance"
+      - coverage report --show-missing --skip-covered --fail-under=98
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A lightweight, object-oriented finite state machine implementation in Python
+  homepage: https://github.com/pytransitions/transitions
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

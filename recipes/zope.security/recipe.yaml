@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "8.3"
+
+package:
+  name: zope.security
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/z/zope.security/zope_security-${{ version }}.tar.gz
+  sha256: fb35ae07165a8fe8699e98482f5f4d81a60540ceaaef71353bcaf976c899d936
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - zope.proxy
+  run:
+    - python
+    - zope.component
+    - zope.i18nmessageid
+    - zope.interface
+    - zope.location
+    - zope.proxy >=6.1
+    - zope.schema >=4.2.0
+
+tests:
+  - python:
+      imports:
+        - zope.security
+      pip_check: true
+
+about:
+  homepage: https://pypi.org/project/zope.security/
+  license: ZPL-2.1
+  license_file: LICENSE.txt
+  summary: Zope Security Framework
+  description: |
+    Zope Security Framework
+  repository: https://github.com/zopefoundation/zope.security
+  documentation: https://zopesecurity.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: zope.security
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: zope.security
+  cfe-purls:
+    - pkg:conda/zope.security@${{ version }}?channel=conda-forge
+    - pkg:pypi/zope.security@${{ version }}
+  cfe-upstream-repo: https://github.com/zopefoundation/zope.security
+  cfe-upstream-homepage: https://pypi.org/project/zope.security/
+  cfe-import-names: [zope.security]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: false
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:24:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:24:12Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4 Create-recipe local-only. zope.security.
+####

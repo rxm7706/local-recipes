@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: daff
   version: "1.4.2"
 
 package:
-  name: daff
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/daff/daff-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/daff-${{ version }}.tar.gz
   sha256: 47f0391eda7e2b5011f7ccac006b9178accb465bcb94a2c9f284257fff5d2686
 
 build:
@@ -32,16 +33,14 @@ tests:
   - python:
       imports:
         - daff
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
+  summary: Diff and patch tables
   license: MIT
   license_file: LICENSE.md
   homepage: https://github.com/paulfitz/daff
-  summary: Diff and patch tables
 
 extra:
   recipe-maintainers:

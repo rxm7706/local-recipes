@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: grpcio-status
+  version: 1.83.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/grpcio_status-${{ version }}.tar.gz
+  sha256: 837219c6de9afdccb6f6f72b34bc71e151a2011ef04040e3faaca746a57e54ae
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - protobuf >=6.33.5,<8.0.0
+    - grpcio >=1.83.0
+    - googleapis-common-protos >=1.5.5
+tests:
+  - python:
+      imports:
+        - grpc_status
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  summary: Status proto mapping for gRPC
+  license: Apache-2.0
+  license_file: LICENSE
+  description: |
+    Reference package for GRPC Python status proto mapping.
+
+    gRPC Python: https://grpc.io/docs/languages/python/quickstart/
+    gRPC Python API: https://grpc.github.io/grpc/python/
+
+    PyPI: [https://pypi.org/project/grpcio-status](https://pypi.org/project/grpcio-status)
+
+  homepage: https://grpc.io
+  repository: https://github.com/grpc/grpc/tree/master/src/python/grpcio_status
+  documentation: https://grpc.io/docs/languages/python/quickstart/
+
+extra:
+  recipe-maintainers:
+    - sugatoray
+    - xylar

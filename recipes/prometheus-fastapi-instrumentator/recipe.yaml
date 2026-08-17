@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: prometheus-fastapi-instrumentator
+  version: "8.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/prometheus_fastapi_instrumentator-${{ version }}.tar.gz
+  sha256: b77f3043665e8d28e2bbd21017506195a43d9adf1d402d01bf95b494b7e560e1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - starlette <2.0.0,>=1.0.0
+    - prometheus_client <1.0.0,>=0.8.0
+
+tests:
+  - python:
+      imports:
+        - prometheus_fastapi_instrumentator
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Instrument your FastAPI with Prometheus metrics.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/trallnag/prometheus-fastapi-instrumentator
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - lsetiawan

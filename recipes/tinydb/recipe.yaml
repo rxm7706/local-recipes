@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.8.2"
+
+package:
+  name: tinydb
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/tinydb/tinydb-${{ version }}.tar.gz
+  sha256: f7dfc39b8d7fda7a1ca62a8dbb449ffd340a117c1206b68c50b1a481fb95181d
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - poetry
+    - pip
+    - python ${{ python_min }}
+    - pytest-runner
+    - conda-verify
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - tinydb
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  # license file is not included. Should raise this on upstream.
+  #license_file: LICENCE
+  summary: TinyDB is a tiny, document oriented database optimized for your happiness :)
+  description: |
+    TinyDB is a lightweight document oriented database optimized for your
+    happiness :) It's written in pure Python and has no external
+    dependencies. The target are small apps that would be blown away by a
+    SQL-DB or an external database server.
+
+
+  homepage: https://github.com/msiemens/tinydb
+
+extra:
+  recipe-maintainers:
+    - ericdill
+    - licode
+    - msiemens
+    - tacaswell
+    - ericmjl

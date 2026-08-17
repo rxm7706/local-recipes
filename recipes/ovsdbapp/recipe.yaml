@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.18.0"
+
+package:
+  name: ovsdbapp
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/ovsdbapp/ovsdbapp-${{ version }}.tar.gz
+  sha256: afb3cf5cc4a0fd64ee2e206813ef20fd55737f06c3ee1f7f218975fa13848d98
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - pbr >=6.1.1
+  run:
+    - python >=${{ python_min }}
+    - fixtures >=3.0.0
+    - netaddr >=0.10.0
+    - ovs >=2.10.0
+    - pbr !=2.1.0,>=2.0.0
+
+tests:
+  - python:
+      imports:
+        - ovsdbapp
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://docs.openstack.org/ovsdbapp/latest/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A library for creating OVSDB applications
+  description: |
+    A library for creating OVSDB applications
+  repository: https://opendev.org/openstack/ovsdbapp
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ovsdbapp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ovsdbapp
+  cfe-purls:
+    - pkg:conda/ovsdbapp@${{ version }}?channel=conda-forge
+    - pkg:pypi/ovsdbapp@${{ version }}
+  cfe-upstream-repo: https://opendev.org/openstack/ovsdbapp
+  cfe-upstream-homepage: https://docs.openstack.org/ovsdbapp/latest/
+  cfe-import-names: [ovsdbapp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:28:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:28:21Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

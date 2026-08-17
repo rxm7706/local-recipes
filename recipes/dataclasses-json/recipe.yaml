@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+context:
+  name: dataclasses-json
+  version: 0.6.7
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dataclasses_json-${{ version }}.tar.gz
+  sha256: b6b3e528266ea45b9535223bc53ca645f5208833c29229e847b3f26a1cc55fc0
+build:
+  number: 2
+  noarch: python
+  script: python -m pip install . -vv --no-deps --no-build-isolation
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core >=1.2.0
+    - poetry-dynamic-versioning
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0.0
+    - typing_inspect >=0.4.0,<1
+    - marshmallow >=3.18.0,<4.0.0
+tests:
+  - python:
+      python_version: ${{ python_min }}.*
+      imports:
+        - dataclasses_json
+      pip_check: true
+about:
+  homepage: https://github.com/lidatong/dataclasses-json
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Easily serialize dataclasses to and from JSON
+  documentation: https://lidatong.github.io/dataclasses-json/
+  repository: https://github.com/lidatong/dataclasses-json
+extra:
+  recipe-maintainers:
+    - oblute
+    - rluria14
+    - ndmaxar
+    - mxr-conda
+    - rxm7706

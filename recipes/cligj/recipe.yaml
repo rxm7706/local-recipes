@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.7.2"
+
+package:
+  name: cligj
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/cligj/cligj-${{ version }}.tar.gz
+  sha256: a4bc13d623356b373c2c27c53dbd9c68cae5d526270bfa71f6c6fa69669c6b27
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - click >=4.0
+
+tests:
+  - python:
+      imports:
+        - cligj
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Click params for commmand line interfaces to GeoJSON
+  homepage: https://github.com/mapbox/cligj
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

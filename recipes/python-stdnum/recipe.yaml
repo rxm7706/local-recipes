@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-stdnum
+  version: "2.2"
+  python_min: "3.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: e95fcfa858a703d4a40130cb3eaac133c60d8808a7f3c98efeedac968c2479b9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python 3.8.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - stdnum
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: LGPL-2.1-or-later
+  license_file: LICENSE
+  summary: A Python module to parse, validate and reformat standard numbers and codes in different formats.
+  description: |
+    A Python module to parse, validate and reformat standard numbers and codes in different formats. It contains a large collection of number formats.
+    Basically any number or code that has some validation mechanism available or some common formatting is eligible for inclusion in this library.
+
+  homepage: https://pypi.org/project/python-stdnum/
+  repository: https://arthurdejong.org/python-stdnum/
+  documentation: https://arthurdejong.org/python-stdnum/
+
+extra:
+  recipe-maintainers:
+    - kcemenike
+    - kj55-dev

@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "84.0.0.20260812"
+
+package:
+  name: types-setuptools
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/t/types-setuptools/types_setuptools-${{ version }}.tar.gz
+    sha256: 09bedc248ebbb7a232c9419dfcdca329706e61bf2aa5743e9424d027f1d956b4
+  - url: https://raw.githubusercontent.com/python/typeshed/main/LICENSE
+    sha256: 295f8538c94ae5c3043301cf7cff1c852dab6a786a8ddee471e061b40d5ecabe
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+  run_constraints:
+    # https://github.com/python/typeshed/blob/main/stubs/setuptools/METADATA.toml#L4C54-L4C62
+    - setuptools >=71.1
+
+tests:
+  - package_contents:
+      strict: true
+      site_packages:
+        - distutils-stubs/**
+        - distutils-stubs/__init__.pyi
+        - setuptools-stubs/**
+        - setuptools-stubs/__init__.pyi
+        - types_setuptools-*.dist-info/**
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+  - requirements:
+      run:
+        - mypy
+        - python ${{ python_min }}.*
+        - setuptools
+    script:
+      - mypy -p setuptools -p distutils --exclude "/tests/" --exclude "/compilers/C/" --exclude "/compilers/platform/detect.py"
+
+about:
+  summary: Typing stubs for setuptools
+  license: Apache-2.0 AND MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/types-setuptools
+  repository: https://github.com/python/typeshed
+
+extra:
+  recipe-maintainers:
+    - fhoehle
+    - conda-forge/mypy
+    - wolfv

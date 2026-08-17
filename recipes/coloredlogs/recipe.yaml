@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "15.0.1"
+
+package:
+  name: coloredlogs
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/coloredlogs/coloredlogs-${{ version }}.tar.gz
+  sha256: 7c991aa71a4577af2f82600d8f8f3a89f936baeaf9b50a9c197da014e5bf16b0
+
+build:
+  number: 4
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - coloredlogs = coloredlogs.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+    - humanfriendly >=9.1
+  run:
+    - python >=${{ python_min }}
+    - humanfriendly >=9.1
+
+tests:
+  - python:
+      imports:
+        - coloredlogs
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Colored terminal output for Python's logging module
+  homepage: https://coloredlogs.readthedocs.org
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - andfoy
+    - ccordoba12

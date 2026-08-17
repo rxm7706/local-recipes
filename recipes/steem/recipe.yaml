@@ -1,0 +1,115 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: steem
+  version: "1.0.1"
+  sha256: 925442170798783c909786437e2172dd2bad3218f9936f282a2b1d3b12eb4526
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256|lower }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - piston = steem.cli:legacyentry
+      - steempy = steem.cli:legacyentry
+      - steemtail = steem.cli:steemtailentry
+
+requirements:
+  build:
+    - python
+    - pip
+    - sphinx
+    - autopep8
+    - yapf
+    - sphinxcontrib-restbuilder
+    - sphinxcontrib-programoutput
+    - recommonmark
+    - pypandoc
+    - pytest-pylint
+    - pep8
+    - twine
+  run:
+    - python
+    - setuptools
+    - scrypt >=0.8.0
+    - appdirs
+    - certifi
+    - ecdsa >=0.13
+    - pycrypto >=1.9.1
+    - pylibscrypt >=1.6.1
+    - toolz
+    - urllib3
+    - w3lib
+    - langdetect
+    - prettytable
+    - voluptuous
+    - ujson
+    - funcy
+    - requests
+    - future
+
+tests:
+  - python:
+      imports:
+        - steem
+        - steem.account
+        - steem.amount
+        - steem.post
+        - steem.dex
+        - steem.aes
+        - steem.block
+        - steem.blockchain
+        - steem.cli
+        - steem.commit
+        - steem.converter
+        - steem.instance
+        - steem.profile
+        - steem.steem
+        - steem.steemd
+        - steem.transactionbuilder
+        - steem.utils
+        - steem.wallet
+        - steem.witness
+        - steembase
+        - steembase.account
+        - steembase.base58
+        - steembase.bip38
+        - steembase.chains
+        - steembase.exceptions
+        - steembase.http_client
+        - steembase.operationids
+        - steembase.operations
+        - steembase.storage
+        - steembase.transactions
+        - steembase.types
+      pip_check: false
+  - script:
+      - if: not win
+        then: conda inspect linkages -p $PREFIX steem
+      - if: osx
+        then: conda inspect objects -p $PREFIX steem
+      - steemtail --help
+      - steempy --help
+      - piston --help
+
+about:
+  license: MIT
+  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE
+  summary: Official python steem library
+  homepage: https://github.com/steemit/steem-python
+  repository: https://github.com/steemit/steem-python
+  documentation: https://github.com/steemit/steem-python
+
+extra:
+  recipe-maintainers:
+    - holgern

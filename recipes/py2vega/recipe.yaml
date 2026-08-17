@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: py2vega
+  version: "0.7.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 56e7f7c338db8014658e728fa4c698d316b6ca2513d5ce9cc91007617e6aba90
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - gast  >=0.7,<0.8
+
+tests:
+  - python:
+      imports:
+        - py2vega
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: A Python to Vega-expression transpiler.
+  homepage: http://github.com/QuantStack/py2vega
+  repository: https://github.com/QuantStack/py2vega
+
+extra:
+  recipe-maintainers:
+    - martinRenou

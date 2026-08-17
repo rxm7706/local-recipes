@@ -2,24 +2,25 @@
 schema_version: 1
 
 context:
+  name: wagtail-metadata
   version: "5.0.0"
 
 package:
-  name: wagtail-metadata
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/w/wagtail-metadata/wagtail-metadata-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail-metadata-${{ version }}.tar.gz
   sha256: 3b9109928bad53306b21b64cf9205d84cbb88fc625bac0a38305bebb9c26e64a
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
@@ -31,20 +32,13 @@ tests:
       imports:
         - wagtailmetadata
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: A tool to assist with metadata for social media.
   license: BSD-3-Clause
   license_file: LICENSE
   homepage: https://github.com/neon-jungle/wagtail-metadata
-  repository: https://github.com/neon-jungle/wagtail-metadata
-  description: |
-    Wagtail Metadata is a tool to assist with metadata for social media,
-    providing a model mixin and template tags for adding Open Graph and
-    Twitter Card metadata to Wagtail pages.
 
 extra:
   recipe-maintainers:

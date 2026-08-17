@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: Keras-Applications
+  version: "1.0.8"
+  sha256: 7c37f9e9ef93efac9b4956301cb21ce46c474ce9da41fac9a46753bab6823dfc
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/keras-team/${{ name }}/archive/${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  patches:
+    # - 0001-correct-version-number.patch
+
+build:
+  number: 1
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - numpy >=1.9.1
+    - h5py
+  # avoid a direct requirement on keras to prevent a circular dependency
+  run_constraints:
+    - keras >=2.1.6
+
+tests:
+  - python:
+      imports:
+        - keras_applications
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Applications module of the Keras deep learning library.
+  description: |
+    Keras Applications is the applications module of the Keras deep learning
+    library. It provides model definitions and pre-trained weights for a
+    number of popular archictures, such as VGG16, ResNet50, Xception,
+    MobileNet, and more.
+  homepage: https://github.com/keras-team/keras-applications
+  repository: https://github.com/keras-team/keras-applications
+  documentation: https://keras.io/applications/
+
+extra:
+  recipe-maintainers:
+    - CurtLH

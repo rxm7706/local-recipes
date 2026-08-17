@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: wagtail-grapple
   version: "0.31.0"
 
 package:
-  name: wagtail-grapple
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/w/wagtail-grapple/wagtail_grapple-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail_grapple-${{ version }}.tar.gz
   sha256: 5a70e88dca5188181e42306b207b1e38cf5df4452aa62e764b9e997e2ea19797
 
 build:
@@ -19,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - flit-core >=3.2,<4
     - pip
   run:
@@ -33,21 +34,13 @@ tests:
       imports:
         - grapple
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: A Wagtail package that speeds up and simplifies implementing a GraphQL endpoint!
   license: BSD-3-Clause
   license_file: LICENSE
   homepage: https://github.com/torchbox/wagtail-grapple
-  repository: https://github.com/torchbox/wagtail-grapple
-  description: |
-    Grapple is a Wagtail app that speeds up and simplifies implementing a
-    GraphQL endpoint for your Wagtail site. It builds on top of
-    graphene-django to expose your Wagtail pages, models, snippets, images,
-    documents and settings through a configurable GraphQL API.
 
 extra:
   recipe-maintainers:

@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.518"
+
+package:
+  name: omsdk
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py2.py3/o/omsdk/omsdk-1.2.518-py2.py3-none-any.whl
+  sha256: d0ae3ada1182ca2b03acdd5acb3c73d730bf7e26262bb4ed5cffad7289d1a571
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - requests >=2.12.3
+    - pyyaml >=3.12
+    - future >=0.16.0
+    - pysnmp-mibs >=0
+    - ipaddress >=0
+    - enum34
+
+tests:
+  - python:
+      imports:
+        - omsdk
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://support.dell.com
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Dell OpenManage SDK
+  description: |
+    Dell OpenManage SDK
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: omsdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: omsdk
+  cfe-purls:
+    - pkg:conda/omsdk@${{ version }}?channel=conda-forge
+    - pkg:pypi/omsdk@${{ version }}
+  cfe-upstream-repo: https://support.dell.com
+  cfe-upstream-homepage: https://support.dell.com
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:34:14Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:34:14Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.1"
+
+package:
+  name: fastapi-websocket-pubsub
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/fastapi-websocket-pubsub/fastapi_websocket_pubsub-${{ version }}.tar.gz
+  sha256: df7f64c7b034a2d7ed99fd7b61c4f3c2befd4dd45c5f8fa5bc0a33a7a080e4bd
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - fastapi-websocket-rpc <1,>=0.1.25
+    - packaging >=20.4
+    - pydantic >=1.9.1
+    - websockets >=14.0
+    - permit-broadcaster <1,>=0.2.5
+
+tests:
+  - python:
+      imports:
+        - fastapi_websocket_pubsub
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/permitio/fastapi_websocket_pubsub
+  license: MIT
+  license_file: LICENSE
+  summary: A fast and durable PubSub channel over Websockets (using fastapi-websockets-rpc).
+  description: |
+    A fast and durable PubSub channel over Websockets (using fastapi-websockets-rpc).
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: fastapi-websocket-pubsub
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: fastapi-websocket-pubsub
+  cfe-purls:
+    - pkg:conda/fastapi-websocket-pubsub@${{ version }}?channel=conda-forge
+    - pkg:pypi/fastapi-websocket-pubsub@${{ version }}
+  cfe-upstream-repo: https://github.com/permitio/fastapi_websocket_pubsub
+  cfe-upstream-homepage: https://github.com/permitio/fastapi_websocket_pubsub
+  cfe-import-names: [fastapi_websocket_pubsub]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:59:39Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:59:39Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

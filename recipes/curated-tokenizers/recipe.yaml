@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.9"
+
+package:
+  name: curated-tokenizers
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/curated-tokenizers/curated-tokenizers-${{ version }}.tar.gz
+  sha256: c93d47e54ab3528a6db2796eeb4bdce5d44e8226c671e42c2f23522ab1d0ce25
+  patches:
+    - patches/0001-use-our-own-sentencepiece-abseil.patch
+
+build:
+  number: 6
+  script: python -m pip install . -vv
+
+requirements:
+  build:
+    - ${{ stdlib("c") }}
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+  host:
+    - python
+    - pip
+    - setuptools
+    - cython
+    - libprotobuf
+    - libsentencepiece
+  run:
+    - python
+    - regex
+
+tests:
+  - python:
+      imports:
+        - curated_tokenizers
+      pip_check: true
+
+about:
+  summary: Lightweight piece tokenization library
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/explosion/curated-transformers
+  repository: https://github.com/explosion/curated-tokenizers
+
+extra:
+  recipe-maintainers:
+    - h-vetinari
+    - conda-forge/spacy

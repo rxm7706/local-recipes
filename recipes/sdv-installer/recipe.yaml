@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.1"
+
+package:
+  name: sdv-installer
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sdv-installer/sdv_installer-${{ version }}.tar.gz
+  sha256: 0e8cc8dae39464ea57f244490978d1bbd879ef081b1db5b880fbd281d355e303
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.0
+    - python-build
+    - wheel
+    - cython >=3.0.8
+  run:
+    - python >=${{ python_min }}
+    - requests
+    - platformdirs
+    - pip >=22.3
+    - packaging
+
+tests:
+  - python:
+      imports:
+        - sdv_installer
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/sdv-installer/
+  license: MIT
+  license_file: LICENSE
+  summary: Package to install SDV Enterprise packages.
+  description: |
+    Package to install SDV Enterprise packages.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sdv-installer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sdv-installer
+  cfe-purls:
+    - pkg:conda/sdv-installer@${{ version }}?channel=conda-forge
+    - pkg:pypi/sdv-installer@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/sdv-installer/
+  cfe-upstream-homepage: https://pypi.org/project/sdv-installer/
+  cfe-import-names: [sdv_installer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:45:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:45:24Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

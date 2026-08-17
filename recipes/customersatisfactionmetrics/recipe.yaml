@@ -2,20 +2,21 @@
 schema_version: 1
 
 context:
+  name: customersatisfactionmetrics
   version: "1.0.9"
 
 package:
-  name: customersatisfactionmetrics
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/c/customersatisfactionmetrics/customersatisfactionmetrics-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/customersatisfactionmetrics-${{ version }}.tar.gz
   sha256: 3074b61bee2775b3221c5b0dbfc759a955e983e8c7c47e923d9843477bc3c66e
 
 build:
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 1
 
 requirements:
   host:
@@ -23,24 +24,21 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
     - django >=3.0
 
 tests:
   - python:
       imports:
         - customersatisfactionmetrics
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
+  summary: This Django package allows you to create and manage surveys including CSAT, NPS, CES, and Generic Surveys. It supports both anonymous and logged-in user responses with user metadata tracking.
   license: MIT
   license_file: LICENSE
   homepage: http://github.com/pescheckit/customersatisfactionmetrics
-  repository: http://github.com/pescheckit/customersatisfactionmetrics
-  summary: This Django package allows you to create and manage surveys including CSAT, NPS, CES, and Generic Surveys. It supports both anonymous and logged-in user responses with user metadata tracking.
 
 extra:
   recipe-maintainers:

@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pypyodbc
+  version: 1.3.6
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 23d353c67bfcd7cb200074f2788f97969dd8084855e47e548ec6ec08d17d38fb
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - setuptools
+    - if: unix
+      then: 
+      - unixodbc
+      - __unix
+    - if: win
+      then:
+      - __win
+
+tests:
+  - python:
+      imports:
+        - pypyodbc
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  license: MIT
+  # https://github.com/jiangwen365/pypyodbc/issues/58
+  license_file: LICENSE.txt
+  summary: PyPyODBC - A Pure Python ODBC module by ctypes
+  homepage: https://github.com/pypyodbc/pypyodbc
+  repository: https://github.com/pypyodbc/pypyodbc
+
+extra:
+  recipe-maintainers:
+    - nwani
+    - synapticarbors

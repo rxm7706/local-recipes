@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pprintpp
+  version: "0.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ea826108e2c7f49dc6d66c752973c3fc9749142a798d6b254e1e301cfdbc6403
+  patches:
+    - 0001-setup.py-Do-not-use-deprecated-U-mode.patch
+
+build:
+  number: 6
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - pypprint = pprintpp:console
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pprintpp
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - if: unix
+        then: "echo \"{'hello': 'world'}\" | pypprint"
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE.txt
+  summary: "pprint++: a drop-in replacement for pprint that's actually pretty"
+  homepage: https://github.com/wolever/pprintpp
+  repository: https://github.com/wolever/pprintpp
+
+extra:
+  recipe-maintainers:
+    - scopatz
+    - synapticarbors

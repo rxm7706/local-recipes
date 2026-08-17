@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.11.1"
+
+package:
+  name: pyqt6-webengine-qt6
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/p/PyQt6-WebEngine-Qt6/pyqt6_webengine_qt6-6.11.1-py3-none-macosx_10_14_x86_64.whl
+  sha256: a20fccfa6d345b804fa718ae2b4db3cda4a66bb5ea83b14a6266b8c6d168477c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pyqt6_webengine_qt6
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://www.riverbankcomputing.com/software/pyqt/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: The subset of a Qt installation needed by PyQt6-WebEngine.
+  description: |
+    The subset of a Qt installation needed by PyQt6-WebEngine.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyqt6-webengine-qt6
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: PyQt6-WebEngine-Qt6
+  cfe-purls:
+    - pkg:conda/pyqt6-webengine-qt6@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyqt6-webengine-qt6@${{ version }}
+  cfe-upstream-repo: https://www.riverbankcomputing.com/software/pyqt/
+  cfe-upstream-homepage: https://www.riverbankcomputing.com/software/pyqt/
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:06:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:06:29Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

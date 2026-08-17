@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "25.7.0"
+
+package:
+  name: keyring
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/k/keyring/keyring-${{ version }}.tar.gz
+  sha256: fe01bd85eb3f8fb3dd0405defdeac9a5b4f6f0439edbb3149577f244a2e8245b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - keyring = keyring.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools_scm >=3.4.1
+    - setuptools >=56
+    - toml
+  run:
+    - python >=${{ python_min }}
+    - if: win
+      then: pywin32-ctypes >=0.2.0
+    - if: linux
+      then: secretstorage >=3.2
+    - if: linux
+      then: jeepney >=0.4.2
+    - importlib-metadata >=4.11.4
+    - jaraco.classes
+    - importlib_resources
+    - jaraco.functools
+    - jaraco.context
+    - if: linux
+      then: __linux
+    - if: win
+      then: __win
+    - if: osx
+      then: __osx
+
+tests:
+  - python:
+      imports:
+        - keyring
+        - keyring.backends
+        - keyring.util
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - keyring --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Store and access your passwords safely
+  homepage: https://github.com/jaraco/keyring
+  repository: https://github.com/jaraco/keyring
+  documentation: https://pypi.org/project/keyring/
+
+extra:
+  recipe-maintainers:
+    - xylar
+    - licode
+    - tacaswell
+    - ccordoba12

@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: graphrag
+  version: 3.1.1
+  python_min: "3.11"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/graphrag-${{ version }}.tar.gz
+  sha256: 3e7d82f1036340da209e5a630d04d398263d2a522eb1b2630b067cfa0055580b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - typer >=0.16,<1.dev0
+    - typing_extensions >=4.12,<5.dev0
+    - pandas >=3.0,<4.dev0
+    - pyarrow >=25.0,<26.dev0
+    - json-repair >=0.30,<1.dev0
+    - python >=${{ python_min }},<3.13
+    - azure-search-documents >=12.0,<13.dev0
+    - nltk >=3.9,<4.dev0
+    - numpy >=2.1,<3.dev0
+    - networkx >=3.4,<4.dev0
+    - pydantic >=2.10,<3.dev0
+    - azure-storage-blob >=12.24,<13.dev0
+    - azure-identity >=1.25,<2.dev0
+    - tqdm >=4.67,<5.dev0
+    - spacy >=3.8,<4.dev0
+    - graphrag-cache ==3.1.1
+    - graphrag-input ==3.1.1
+    - graphrag-storage ==3.1.1
+    - graspologic-native >=1.2,<1.3
+    - graphrag-chunking ==3.1.1
+    - graphrag-llm ==3.1.1
+    - graphrag-common ==3.1.1
+    - devtools >=0.12,<1.dev0
+    - textblob >=0.18,<1.dev0
+    - cython-blis >=1.0,<2.dev0
+    - graphrag-vectors ==3.1.1
+tests:
+  - python:
+      imports:
+        - graphrag
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A modular graph-based Retrieval-Augmented Generation (RAG) system
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/microsoft/graphrag
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.2"
+
+package:
+  name: pymssql-utils
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pymssql-utils/pymssql-utils-${{ version }}.tar.gz
+  sha256: 7a14bf15f0a1b7d928d6f6fef8d3f197c9714e36ce2bb9c44fe833c34a4ff04e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=1.0.0
+  run:
+    - python >=${{ python_min }}
+    - pymssql
+
+tests:
+  - python:
+      imports:
+        - pymssqlutils
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/invokermain/pymssql-utils
+  license: MIT
+  license_file: LICENSE
+  summary: pymssql-utils is a small library that wraps pymssql to make your life easier.
+  description: |
+    pymssql-utils is a small library that wraps pymssql to make your life easier.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pymssql-utils
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pymssql-utils
+  cfe-purls:
+    - pkg:conda/pymssql-utils@${{ version }}?channel=conda-forge
+    - pkg:pypi/pymssql-utils@${{ version }}
+  cfe-upstream-repo: https://github.com/invokermain/pymssql-utils
+  cfe-upstream-homepage: https://github.com/invokermain/pymssql-utils
+  cfe-import-names: [pymssqlutils]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:43:55Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:43:55Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4/P5 Create-recipe local-only. pymssql-utils.
+####

@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sphinx-autoapi
+  version: "3.8.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 9f8ac7d43baf28a0831ac0e392fab6a095b875af07e52d135a5f716cc3cf1142
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - flit-core >=3.2,<4
+  run:
+    - python >=${{ python_min }}
+    - astroid >=3.0
+    - jinja2
+    - pyyaml
+    - sphinx >=7.4.0
+    - stdlib-list
+
+tests:
+  - python:
+      imports:
+        - autoapi
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE.mit
+  summary: Sphinx auto API documentation generator
+  homepage: http://github.com/rtfd/sphinx-autoapi
+  repository: https://github.com/rtfd/sphinx-autoapi
+  documentation: http://sphinx-autoapi.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - timkpaine
+    - honnorat
+    - CurtLH
+    - ChrisBarker-NOAA
+    - bjlittle

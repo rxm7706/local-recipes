@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.20"
+
+package:
+  name: langchainplus-sdk
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/langchainplus-sdk/langchainplus_sdk-${{ version }}.tar.gz
+  sha256: 3d300e2e3290f68cc9d842c059f9458deba60e776c9e790309688cad1bfbb219
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - pydantic
+    - requests
+    - tenacity
+
+tests:
+  - python:
+      imports:
+        - langchainplus_sdk
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/langchainplus-sdk/
+  license: MIT
+  license_file: LICENSE
+  summary: Client library to connect to the LangSmith LLM Tracing and Evaluation Platform.
+  description: |
+    Client library to connect to the LangSmith LLM Tracing and Evaluation Platform.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langchainplus-sdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langchainplus-sdk
+  cfe-purls:
+    - pkg:conda/langchainplus-sdk@${{ version }}?channel=conda-forge
+    - pkg:pypi/langchainplus-sdk@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/langchainplus-sdk/
+  cfe-upstream-homepage: https://pypi.org/project/langchainplus-sdk/
+  cfe-import-names: [langchainplus_sdk]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:31:46Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:31:46Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

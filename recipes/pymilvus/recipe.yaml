@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.0.1"
+  python_check_max: "3.14"
+
+package:
+  name: pymilvus
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pymilvus/pymilvus-${{ version }}.tar.gz
+  sha256: c02389059088b18d6e598cd175541e445c772fab4926c5e527c4913be34887f1
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling >=1.27,<1.28
+    - setuptools-scm >=8
+    - vcs_versioning <2
+  run:
+    - python >=${{ python_min }}
+    - cachetools >=5.0.0
+    # stricted constraint for python >=3.14
+    - grpcio >=1.75.1
+    - orjson >=3.10.15
+    - pandas >=1.2.4
+    - protobuf >=5.27.2
+    - python-dotenv >=1.0.1,<2.0.0
+    - requests >=2.20.0
+
+tests:
+  - python:
+      imports: pymilvus
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+
+about:
+  homepage: https://pypi.org/project/pymilvus
+  repository: https://github.com/milvus-io/pymilvus
+  summary: Python Sdk for Milvus
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - ndmaxar
+    - oblute
+    - rluria14
+    - xylar
+    - bollwyvl

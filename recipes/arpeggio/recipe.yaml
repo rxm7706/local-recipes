@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: Arpeggio
+  version: 2.0.3
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/Arpeggio-${{ version }}.tar.gz
+  sha256: 9e85ad35cfc6c938676817c7ae9a1000a7c72a34c71db0c687136c460d12b85e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - pytest-runner
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - arpeggio
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - files:
+      source:
+        - perf-tests
+    requirements:
+      run:
+        - memory_profiler
+        - psutil
+        - pytest
+        - python ${{ python_min }}.*
+    script:
+      - cd perf-tests
+      - python test_speed.py
+      - python test_memory_nomemoization.py
+      - python test_memory_memoization.py
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Parser interpreter based on PEG grammars written in Python
+  homepage: http://textx.github.io/Arpeggio
+  repository: https://github.com/textX/Arpeggio
+
+extra:
+  recipe-maintainers:
+    - raivivek
+    - thewchan

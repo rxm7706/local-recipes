@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: textattack
+  version: "0.3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/QData/${{ name|title }}/archive/v${{ version }}.tar.gz
+  sha256: 7b97f0aad76b48e195ce9c344ec2e5abdea76e35a99dd6f21a8dc05d5d3beeb4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -v
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - bert_score
+    - editdistance
+    - filelock
+    - language_tool_python
+    - lru-dict
+    # - nlp
+    - numpy <1.19.0
+    - pandas
+    # - scikit-learn
+    - scipy
+    - pytorch
+    # - sentence-transformers
+    - transformers
+    # - tensorflow
+    # - tensorflow-hub
+    # - tensorboardX
+    - terminaltables
+    # - torchfile
+    - tokenizers
+    - tqdm
+    - visdom
+    # - wandb
+    - python-flair
+    - more-itertools
+    - lemminflect
+    - num2words
+    - word2number
+    - datasets
+    - nltk
+
+tests:
+  - script:
+      - textattack --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Generating adversarial examples for NLP models
+  homepage: https://github.com/QData/textattack
+  repository: https://github.com/QData/textattack
+  documentation: https://textattack.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - rluria14
+    - oblute
+    - ndmaxar

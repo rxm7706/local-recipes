@@ -2,28 +2,29 @@
 schema_version: 1
 
 context:
+  name: inertia-django
   version: "1.2.0"
 
 package:
-  name: inertia-django
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/i/inertia-django/inertia_django-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/inertia_django-${{ version }}.tar.gz
   sha256: 36511038caf2cbb6f54a08f17dc18fe1dd1b30c712a616672704e395b984f250
 
 build:
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - poetry-core >=1.0.0
     - pip
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0.0
     - django >=4
     - requests >=2.0.0,<3.0.0
 
@@ -32,16 +33,13 @@ tests:
       imports:
         - inertia
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
-  homepage: https://github.com/inertiajs/inertia-django
-  repository: https://github.com/inertiajs/inertia-django
   summary: Django adapter for the InertiaJS framework
   license: MIT
   license_file: LICENSE
+  homepage: https://github.com/inertiajs/inertia-django
 
 extra:
   recipe-maintainers:

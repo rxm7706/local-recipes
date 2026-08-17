@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.10"
+
+package:
+  name: deepagents-acp
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/d/deepagents-acp/deepagents_acp-${{ version }}.tar.gz
+    sha256: 7dd3961cbe3ecfd721ef856db221aa06ef855f2641050b31027a30a0f6834830
+  - url: https://raw.githubusercontent.com/langchain-ai/deepagents/refs/tags/deepagents-acp%3D%3D${{ version }}/LICENSE
+    sha256: 4ec67e4ca6e6721dba849b2ca82261597c86a61ee214bbf21416006b7b2d0478
+    file_name: LICENSE
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - agent-client-protocol >=0.10.1
+    - deepagents
+    - python-dotenv >=1.2.2
+tests:
+  - python:
+      python_version:
+        - ${{ python_min }}.*
+        - '*'
+      imports:
+        - deepagents_acp
+      pip_check: true
+
+about:
+  summary: Agent Client Protocol integration for Deep Agents
+  repository: https://github.com/langchain-ai/deepagents
+  license: MIT
+  license_file: LICENSE
+  homepage: https://docs.langchain.com/oss/python/deepagents/overview
+  documentation: https://reference.langchain.com/python/deepagents/
+
+extra:
+  recipe-maintainers:
+    - xhochy

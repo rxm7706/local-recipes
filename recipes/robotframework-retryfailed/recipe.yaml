@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.0"
+
+package:
+  name: robotframework-retryfailed
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/robotframework-retryfailed/robotframework-retryfailed-${{ version }}.tar.gz
+  sha256: c134a924f480e2666916bcb019a7e255d7229bc51a3747e849bd1e7931ed6eb3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - robotframework
+
+tests:
+  - python:
+      imports:
+        - RetryFailed
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/MarketSquare/robotframework-retryfailed
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A listener to automatically retry tests or tasks based on flags.
+  description: |
+    A listener to automatically retry tests or tasks based on flags.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: robotframework-retryfailed
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: robotframework-retryfailed
+  cfe-purls:
+    - pkg:conda/robotframework-retryfailed@${{ version }}?channel=conda-forge
+    - pkg:pypi/robotframework-retryfailed@${{ version }}
+  cfe-upstream-repo: https://github.com/MarketSquare/robotframework-retryfailed
+  cfe-upstream-homepage: https://github.com/MarketSquare/robotframework-retryfailed
+  cfe-import-names: [RetryFailed]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:16:11Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:16:11Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

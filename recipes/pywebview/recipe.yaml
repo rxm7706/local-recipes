@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pywebview
+  version: "4.2.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/pywebview-${{ version }}.tar.gz
+  sha256: 85be4215cd65ceacca5c7faef9d271e10bfe3ca25d2498c1c6d2e59a4d56e86c
+
+build:
+  number: 0
+  skip: match(python, "<3.7")
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.7
+    - setuptools
+    - setuptools-scm
+    - py2app
+    - pip
+  run:
+    - python >=3.7
+    - if: win
+      then: pythonnet
+    - if: darwin
+      then: pyobjc-core
+    - if: darwin
+      then: pyobjc-framework-cocoa
+    - if: darwin
+      then: pyobjc-framework-webkit
+    - if: darwin
+      then: pyobjc-framework-security
+    - if: openbsd
+      then: qtpy
+    - proxy-tools
+    - bottle
+    - typing-extensions
+
+tests:
+  - python:
+      imports:
+        - pywebview
+      pip_check: true
+
+about:
+  summary: Build GUI for your Python program with JavaScript, HTML, and CSS
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

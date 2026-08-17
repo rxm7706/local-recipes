@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: Flask-HTTPAuth
+  version: 4.8.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') | lower }}-${{ version }}.tar.gz
+  sha256: 88499b22f1353893743c3cd68f2ca561c4ad9ef75cd6bcc7f621161cd0e80744
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . -vv --no-build-isolation --no-deps
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - flask
+
+tests:
+  - python:
+      imports:
+        - flask_httpauth
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Basic and Digest HTTP authentication for Flask routes
+  homepage: http://github.com/miguelgrinberg/flask-httpauth/
+  repository: http://github.com/miguelgrinberg/flask-httpauth/
+  documentation: http://flask-httpauth.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - synapticarbors

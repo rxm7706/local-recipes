@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: laces
   version: "0.1.2"
 
 package:
-  name: laces
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/l/laces/laces-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/laces-${{ version }}.tar.gz
   sha256: 3218e09c1889ae5cf3fc7a82f5bb63ec0c7879889b6a9760bfc42323c694b84d
 
 build:
@@ -19,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - flit-core >=3.2,<4
     - pip
   run:
@@ -31,20 +32,13 @@ tests:
       imports:
         - laces
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Django components that know how to render themselves.
   license: BSD-3-Clause
   license_file: LICENSE
   homepage: https://github.com/tbrlpld/laces
-  repository: https://github.com/tbrlpld/laces
-  documentation: https://github.com/tbrlpld/laces/blob/main/README.md
-  description: |
-    Laces provides a way to define Django components that know how to render
-    themselves, encapsulating template and context logic into reusable objects.
 
 extra:
   recipe-maintainers:

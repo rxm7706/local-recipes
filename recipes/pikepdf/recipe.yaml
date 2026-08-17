@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pikepdf
+  version: "10.11.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 4bebc59ac74411064e7c97a4036174023e22ccbecd22b78750ab76551eb38988
+
+build:
+  number: 0
+  script:
+    - if: win
+      then:
+        - set "CMAKE_GENERATOR=Ninja"
+        - set CMAKE_GENERATOR_PLATFORM=
+        - set CMAKE_GENERATOR_TOOLSET=
+        - set "INCLUDE=%LIBRARY_PREFIX%\include;%INCLUDE%"
+        - set "LIB=%LIBRARY_PREFIX%\lib;%LIB%"
+        - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+      else:
+        - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ stdlib("c") }}
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - cmake
+    - if: unix
+      then:
+        - make
+    - if: win
+      then:
+        - ninja
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - nanobind >=2.0
+  host:
+    - python
+    - pip
+    - scikit-build-core >=0.10
+    - nanobind >=2.0
+    - qpdf >=12.2.0
+  run:
+    - python
+    - pillow >=10.0.1
+    - lxml >=4.8
+    - packaging
+
+tests:
+  - python:
+      imports:
+        - pikepdf
+      pip_check: true
+
+about:
+  license: MPL-2.0
+  license_file: LICENSE.txt
+  summary: A Python library for reading and writing PDF, powered by qpdf
+  homepage: https://github.com/pikepdf/pikepdf
+  repository: https://github.com/pikepdf/pikepdf
+  documentation: https://pikepdf.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - thewchan
+    - carlodri

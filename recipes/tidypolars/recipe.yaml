@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: tidypolars
+  version: "0.2.19"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/tidypolars-${{ version }}.tar.gz
+  sha256: 344e7abe3a973b0320a27d7eea48ffaf4efb5dd6f3d5441a2dfd835f6342ee93
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - poetry
+  run:
+    - python >=${{ python_min }},<3.11
+    - polars >=0.14.18
+
+tests:
+  - python:
+      imports:
+        - tidypolars
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Tidy interface to polars
+  license: MIT
+  license_file:
+    - LICENSE
+  homepage: https://pypi.org/project/tidypolars/
+
+extra:
+  recipe-maintainers:
+    - markfairbanks
+    - nsandau

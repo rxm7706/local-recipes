@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.0"
+
+package:
+  name: pyark
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pyark/pyark-${{ version }}.tar.gz
+  sha256: 5d87a1b9e96d261d07e37cb21a3db6c94a3f4ac4f6482445a90f525680302bad
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pyark
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/adfinis-sygroup/pyark
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: Pyark is a small python-based CLI tool, which allows you to interact with the CyberArk Enterprise Password Vault API.
+  description: |
+    Pyark is a small python-based CLI tool, which allows you to interact with the CyberArk Enterprise Password Vault API.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyark
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyark
+  cfe-purls:
+    - pkg:conda/pyark@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyark@${{ version }}
+  cfe-upstream-repo: https://github.com/adfinis-sygroup/pyark
+  cfe-upstream-homepage: https://github.com/adfinis-sygroup/pyark
+  cfe-import-names: [pyark]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:23:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:23:25Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

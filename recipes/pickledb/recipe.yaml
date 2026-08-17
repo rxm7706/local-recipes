@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pickleDB
+  version: "1.6"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name | lower }}/${{ name | lower }}-${{ version }}.tar.gz
+  sha256: 0a1311e932d92fb66ce6eeb7f6a9af56852dffa2054b6021ba3563402d5219e2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - flit-core >=3.9,<4
+  run:
+    - python >=${{ python_min }}
+    - orjson
+    - aiofiles
+
+tests:
+  - python:
+      imports:
+        - pickledb
+      python_version: 
+        - ${{ python_min }}.*
+        - '*'
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A lightweight and simple database using json.
+  homepage: http://github.com/patx/pickledb
+
+extra:
+  recipe-maintainers:
+    - xhochy

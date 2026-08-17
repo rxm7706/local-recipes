@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytest-custom-exit-code
+  version: "0.3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/p/pytest-custom-exit-code/pytest-custom_exit_code-${{ version }}.tar.gz
+  sha256: 51ffff0ee2c1ddcc1242e2ddb2a5fd02482717e33a2326ef330e3aa430244635
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - pytest >=4.0.2
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pytest_custom_exit_code
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Exit pytest test session with custom exit code in different scenarios
+  homepage: https://github.com/yashtodi94/pytest-custom_exit_code
+
+extra:
+  recipe-maintainers:
+    - marcelotrevisani

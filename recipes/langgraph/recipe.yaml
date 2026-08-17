@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: langgraph
+  version: "1.2.11"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/langgraph-${{ version }}.tar.gz
+  sha256: 9ecfe11e50d338b34b15cf4d8a442642de103e8ae6971320efba84e4542eb363
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - pydantic >=2.7.4
+    - python-xxhash >=3.5.0
+    - langgraph-prebuilt >=1.1.0,<1.2.0
+    - langgraph-sdk >=0.4.2,<0.5.0
+    - langgraph-checkpoint >=4.1.0,<5.0.0
+    - python >=${{ python_min }},<4.0
+    - langchain-core >=1.4.7,<2
+
+tests:
+  - python:
+      imports:
+        - langgraph
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: langgraph
+  license: MIT
+  license_file: LICENSE
+  homepage: https://www.github.com/langchain-ai/langgraph
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

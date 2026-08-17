@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "25.10.0"
+
+package:
+  name: webcolors
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/webcolors/webcolors-${{ version }}.tar.gz
+  sha256: 62abae86504f66d0f6364c2a8520de4a0c47b80c03fc3a5f1815fedbef7c19bf
+  file_name: webcolors-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - pdm-backend
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - webcolors
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Library for working with HTML/CSS color formats in Python.
+  homepage: https://github.com/ubernostrum/webcolors
+
+extra:
+  recipe-maintainers:
+    - jakirkham

@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "4.40.0"
+
+package:
+  name: logfire-api
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/l/logfire-api/logfire_api-${{ version }}.tar.gz
+    sha256: f4631d5ca6af95e9d4dadc4f63619ebb8f2300eecfca0ca99c84403d6ea605de
+  - url: https://raw.githubusercontent.com/pydantic/logfire/refs/heads/main/LICENSE
+    sha256: 035507b8a1e787a16c7f138f092557a30a8ee9cc9cef6e84d11546ee3b9a45cd
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install .
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      python_version: ${{ python_min }}.*
+      imports:
+        - logfire_api
+      pip_check: true
+
+about:
+  homepage: https://github.com/pydantic/logfire
+  license: MIT
+  license_file: LICENSE
+  summary: Shim for the Logfire SDK which does nothing unless Logfire is installed
+
+extra:
+  recipe-maintainers:
+    - moritzwilksch

@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "7.0"
+
+package:
+  name: zope.tales
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/z/zope.tales/zope_tales-${{ version }}.tar.gz
+  sha256: 8f09b52085334fd8e4195e40b766d5eef2021dba4a254c397ec5f2d5ccc1b677
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - setuptools
+    - zope.interface
+
+tests:
+  - python:
+      imports:
+        - zope.tales
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/zopefoundation/zope.tales
+  license: ZPL-2.1
+  license_file: LICENSE.txt
+  summary: Zope Template Application Language Expression Syntax (TALES)
+  description: |
+    Zope Template Application Language Expression Syntax (TALES)
+  documentation: https://zopetales.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: zope.tales
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: zope.tales
+  cfe-purls:
+    - pkg:conda/zope.tales@${{ version }}?channel=conda-forge
+    - pkg:pypi/zope.tales@${{ version }}
+  cfe-upstream-repo: https://github.com/zopefoundation/zope.tales
+  cfe-upstream-homepage: https://github.com/zopefoundation/zope.tales
+  cfe-import-names: [zope.tales]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:16:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:16:04Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4 Create-recipe local. Conda name keeps zope.* (CF convention).
+####

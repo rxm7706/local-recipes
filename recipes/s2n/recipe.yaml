@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: s2n
+  version: "1.7.7"
+
+recipe:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/awslabs/${{ name }}/archive/v${{ version }}.tar.gz
+  sha256: a6f77d2e3343b554bfc2cce27e0407b3c758bb105533c8f0a56e233036b7541d
+
+build:
+  number: 0
+  skip: win
+
+requirements:
+  run_exports:
+    - ${{ pin_subpackage("s2n", upper_bound="x.x.x") }}
+
+outputs:
+  - package:
+      name: s2n
+    build:
+      activate_in_script: true
+      script:
+        file: |
+          build-shared.sh  # [unix]
+          bld-shared.bat  # [win]
+    requirements:
+      build:
+        - cmake
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
+        - ninja
+      host:
+        - openssl
+      run_exports:
+        - ${{ pin_subpackage("s2n", upper_bound="x.x.x") }}
+    tests:
+      - script:
+          - if: unix
+            then: test -f $PREFIX/lib/libs2n${SHLIB_EXT}
+          - if: unix
+            then: test ! -f $PREFIX/lib/libs2n.a
+          - if: unix
+            then: test -f $PREFIX/include/s2n.h
+  - package:
+      name: s2n-static
+    build:
+      activate_in_script: true
+      script:
+        file: |
+          build-static.sh  # [unix]
+          bld-static.bat  # [win]
+    requirements:
+      build:
+        - cmake
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
+        - ninja
+      host:
+        - libopenssl-static
+        - ${{ pin_subpackage("s2n", exact=True) }}
+    tests:
+      - script:
+          - if: unix
+            then: test -f $PREFIX/lib/libs2n.a
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: an implementation of the TLS/SSL protocols
+  homepage: https://github.com/awslabs/s2n
+
+extra:
+  recipe-maintainers:
+    - xhochy
+    - davidbrochart

@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: txaio
+  version: "26.6.1"
+  python_min: "3.11"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 3ee900b2331c93457530fddbccc1a320c4e2d7ac8f9073d01c3fbe87762ccb35
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+  run_constraints:
+    - zope.interface >=5.2.0
+    - twisted >=22.10.0
+
+tests:
+  - python:
+      imports:
+        - txaio
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Compatibility API between asyncio/Twisted/Trollius
+  homepage: https://github.com/crossbario/txaio
+  repository: https://github.com/crossbario/txaio
+  documentation: http://txaio.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - synapticarbors

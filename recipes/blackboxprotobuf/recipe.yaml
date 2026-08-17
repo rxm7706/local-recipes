@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.1"
+
+package:
+  name: blackboxprotobuf
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/blackboxprotobuf/blackboxprotobuf-${{ version }}.tar.gz
+  sha256: 233b714e6c24ce9d1c20b871462a220af9177e4fec01c1b797ac5ab86a1e1cea
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - blackboxprotobuf
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/ydkhatri/blackboxprotobuf
+  license: MIT
+  license_file: LICENSE
+  summary: Library for reading protobuf buffers without .proto definitions
+  description: |
+    Library for reading protobuf buffers without .proto definitions
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: blackboxprotobuf
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: blackboxprotobuf
+  cfe-purls:
+    - pkg:conda/blackboxprotobuf@${{ version }}?channel=conda-forge
+    - pkg:pypi/blackboxprotobuf@${{ version }}
+  cfe-upstream-repo: https://github.com/ydkhatri/blackboxprotobuf
+  cfe-upstream-homepage: https://github.com/ydkhatri/blackboxprotobuf
+  cfe-import-names: [blackboxprotobuf]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:49:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:49:16Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

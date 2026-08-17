@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: asyncpg
+  version: 0.31.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: c989386c83940bfbd787180f2b1519415e2d3d6277a70d9d0f0145ac73500735
+
+build:
+  number: 1
+  script:
+    - if: win
+      then: del asyncpg\pgproto\pgproto.c asyncpg\protocol\protocol.c
+    - if: unix
+      then: rm asyncpg/pgproto/pgproto.c asyncpg/protocol/protocol.c
+    - ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - cython
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - cython
+    - setuptools
+    - pip
+  run:
+    - python
+    - async-timeout >=4.0.3
+
+tests:
+  - python:
+      imports:
+        - asyncpg
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A fast PostgreSQL Database Client Library for Python/asyncio.
+  description: |
+    asyncpg is a database interface library designed specifically for
+    PostgreSQL and Python/asyncio. asyncpg is an efficient, clean
+    implementation of PostgreSQL server binary protocol for use with Python's
+    asyncio framework.
+  homepage: https://github.com/MagicStack/asyncpg
+  repository: https://github.com/MagicStack/asyncpg
+  documentation: https://magicstack.github.io/asyncpg
+
+extra:
+  recipe-maintainers:
+    - nehaljwani
+    - xhochy

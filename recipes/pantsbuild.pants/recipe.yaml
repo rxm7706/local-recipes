@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.17.1"
+
+package:
+  name: pantsbuild.pants
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/cp37/p/pantsbuild.pants/pantsbuild.pants-2.17.1-cp37-cp37m-macosx_10_15_x86_64.whl
+  sha256: dde7acc6010388ac59e9b50406a2f72a1dc6aa0b2523cb70c5e64e88c7a986c5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pyyaml
+    - ansicolors
+    - chevron
+    - fasteners
+    - ijson
+    - importlib_resources
+    - python-node-semver
+    - packaging
+    - pex
+    - psutil
+    - python-lsp-jsonrpc
+    - setproctitle
+    - setuptools
+    - toml
+    - types-pyyaml
+    - types-setuptools
+    - types-toml
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - pantsbuild.pants
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/pantsbuild/pants
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: The ergonomic and hermetic software build system for Python, Java, Scala, Go, and Shell. Pants lets you fearlessly scale up your codebase.
+  description: |
+    The ergonomic and hermetic software build system for Python, Java, Scala, Go, and Shell. Pants lets you fearlessly scale up your codebase.
+  repository: https://github.com/pantsbuild/pants
+  documentation: https://www.pantsbuild.org/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pantsbuild.pants
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pantsbuild.pants
+  cfe-purls:
+    - pkg:conda/pantsbuild.pants@${{ version }}?channel=conda-forge
+    - pkg:pypi/pantsbuild.pants@${{ version }}
+  cfe-upstream-repo: https://github.com/pantsbuild/pants
+  cfe-upstream-homepage: https://github.com/pantsbuild/pants
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:28:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:28:58Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

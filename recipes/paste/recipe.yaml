@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.10.1"
+
+package:
+  name: paste
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/P/Paste/paste-${{ version }}.tar.gz
+  sha256: 1c3d12065a5e8a7a18c0c7be1653a97cf38cc3e9a5a0c8334a9dd992d3a05e4a
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - setuptools
+    - six >=1.4.0
+
+tests:
+  - python:
+      imports:
+        - paste
+        - paste.auth
+        - paste.cowbell
+        - paste.debug
+        - paste.evalexception
+        - paste.exceptions
+        - paste.util
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Tools for using a Web Server Gateway Interface stack
+  license: MIT
+  license_file: docs/license.txt
+  homepage: https://pythonpaste.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - kwilcox
+    - daf

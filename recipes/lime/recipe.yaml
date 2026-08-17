@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: lime
+  version: "0.2.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/lime-${{ version }}.tar.gz
+  sha256: 76960e4f055feb53e89b5022383bafc87b63f25bac6265984b0a333d1a57f781
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - matplotlib-base
+    - numpy
+    - scipy
+    - tqdm
+    - scikit-learn >=0.18
+    - scikit-image >=0.12
+
+tests:
+  - python:
+      imports:
+        - lime
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Explaining the predictions of any machine learning classifier
+  homepage: https://github.com/marcotcr/lime
+  repository: https://github.com/marcotcr/lime
+  documentation: https://lime-ml.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - proinsias
+    - ocefpaf

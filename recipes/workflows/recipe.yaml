@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: workflows
+  version: "3.7"
+  python_min: "3.12"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 30ebf61e206e84ce687aa2ab43a3037ce66e7db78e5caa9ad12f9489acc097ba
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - workflows.validate_recipe = workflows.recipe.validate:main
+
+requirements:
+  host:
+    - pip
+    - python 3.12.*
+    - setuptools
+  run:
+    - bidict
+    - opentelemetry-api
+    - opentelemetry-exporter-otlp-proto-http
+    - opentelemetry-sdk
+    - pika
+    - python >=${{ python_min }}
+    - setuptools
+    - stomp.py >=7.0
+
+tests:
+  - python:
+      imports:
+        - workflows
+        - workflows.contrib
+        - workflows.frontend
+        - workflows.logging
+        - workflows.recipe
+        - workflows.services
+        - workflows.transport
+        - workflows.util
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - workflows.validate_recipe --help
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Data processing in distributed environments
+  homepage: https://pypi.python.org/pypi/workflows
+  repository: https://github.com/DiamondLightSource/python-workflows
+  documentation: https://github.com/DiamondLightSource/python-workflows
+
+extra:
+  recipe-maintainers:
+    - anthchirp
+    - ndevenish
+    - rjgildea

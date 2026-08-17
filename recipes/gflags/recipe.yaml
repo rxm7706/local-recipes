@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.3.1"
+
+package:
+  name: gflags
+  version: ${{ version }}
+
+source:
+  url: https://github.com/gflags/gflags/archive/v${{ version }}.tar.gz
+  sha256: 1b5e0648d7b94021895086e65479b4eaca7935eecfffd7dd9512eb576181c53d
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - cmake
+    - make
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+  run_exports:
+    - ${{ pin_subpackage('gflags', upper_bound='x.x') }}
+
+tests:
+  - script:
+      - if: osx
+        then:
+          - test -f ${PREFIX}/lib/libgflags.dylib
+          - test -f ${PREFIX}/lib/libgflags_nothreads.dylib
+      - if: linux
+        then:
+          - test -f ${PREFIX}/lib/libgflags.so
+          - test -f ${PREFIX}/lib/libgflags_nothreads.so
+      - if: unix
+        then:
+          - test ! -f ${PREFIX}/lib/libgflags.a
+          - test ! -f ${PREFIX}/lib/libgflags_nothreads.a
+        else:
+          - if not exist %PREFIX%\\Library\\bin\\gflags.dll exit 1
+          - if not exist %PREFIX%\\Library\\lib\\gflags.lib exit 1
+          - if exist %PREFIX%\\Library\\lib\\gflags_static.lib exit 1
+
+about:
+  license: BSD-3-Clause
+  license_file: COPYING.txt
+  summary: A C++ library that implements commandline flags processing.
+  homepage: https://github.com/gflags/gflags
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - wesm
+    - xhochy

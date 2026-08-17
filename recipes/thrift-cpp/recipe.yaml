@@ -1,0 +1,164 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.22.0"
+
+recipe:
+  name: thrift-split
+  version: ${{ version }}
+
+source:
+  - url: http://archive.apache.org/dist/thrift/${{ version }}/thrift-${{ version }}.tar.gz
+    sha256: 794a0e455787960d9f27ab92c38e34da27e8deeda7a5db0e59dc64a00df8a1e5
+    patches:
+      - if: win
+        then: patches/0001-windows-fixes.patch
+      - if: win
+        then: patches/0002-Add-boost-throw_exception-implementation.patch
+      - if: win
+        then: patches/0003-Thrift-itself-needs-GlobalOutput.patch
+
+build:
+  number: 2
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("cxx") }}
+    - cmake
+    - ninja
+    - pkg-config
+    - if: unix
+      then: bison
+    - if: unix
+      then: flex
+    - if: win
+      then: winflexbison
+  host:
+    - libboost-headers
+    - libevent
+    - openssl
+    - zlib
+  run:
+  run_exports:
+    - ${{ pin_subpackage("libthrift", upper_bound="x.x.x") }}
+  ignore_run_exports:
+    from_package:
+      - winflexbison
+
+outputs:
+  - package:
+      name: libthrift
+    build:
+      script:
+        file: ${{ 'install.sh' if unix else 'install.bat' if win else '' }}
+    requirements:
+      build:
+        - ${{ compiler("c") }}
+        - ${{ stdlib("c") }}
+        - ${{ compiler("cxx") }}
+        - cmake
+        - ninja
+      host:
+        - libboost-headers
+        - libevent
+        - openssl
+        - zlib
+      run_exports:
+        - ${{ pin_subpackage("libthrift", upper_bound="x.x.x") }}
+    tests:
+      - files:
+          recipe:
+            - cmake_test/
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake
+            - ninja
+            - pkg-config
+            - if: linux or win
+              then: zlib
+        script:
+          - if: linux
+            then: test -f $PREFIX/lib/lib${{ each }}.so
+          - if: osx
+            then: test -f $PREFIX/lib/lib${{ each }}.dylib
+          - if: win
+            then: if not exist %LIBRARY_LIB%\${{ each }}md.lib exit 1
+          - if: win
+            then: if not exist %LIBRARY_BIN%\${{ each }}md.dll exit 1
+          - if: unix
+            then: test ! -f $PREFIX/lib/lib${{ each }}.a
+          - if: unix
+            then: test ! -f $PREFIX/bin/thrift
+          - if: win
+            then: if exist %LIBRARY_BIN%\thrift.exe exit 1
+          - if: unix
+            then: test -f $PREFIX/include/thrift/Thrift.h
+          - if: win
+            then: if not exist %LIBRARY_INC%\thrift\Thrift.h exit 1
+          - pkg-config --print-errors --exact-version "${{ version }}" ${{ each }}
+          - cd cmake_test
+          - if: unix
+            then: cmake -GNinja $CMAKE_ARGS .
+          - if: win
+            then: cmake -GNinja %CMAKE_ARGS% .
+  - package:
+      name: thrift-compiler
+    build:
+      script:
+        file: ${{ 'install.sh' if unix else 'install.bat' if win else '' }}
+    requirements:
+      build:
+        # for strong run-exports
+        - ${{ compiler("c") }}
+        - ${{ stdlib("c") }}
+        - ${{ compiler("cxx") }}
+        - cmake
+        - ninja
+      host:
+        - ${{ pin_subpackage("libthrift", exact=true) }}
+      run:
+        - ${{ pin_subpackage("libthrift", exact=true) }}
+      run_exports:
+        - ${{ pin_subpackage("libthrift", upper_bound="x.x.x") }}
+    tests:
+      - script:
+          - if: unix
+            then: test -f $PREFIX/bin/thrift
+          - if: win
+            then: if not exist %LIBRARY_BIN%\thrift.exe exit 1
+  - package:
+      name: thrift-cpp
+    build:
+    requirements:
+      host:
+        - ${{ pin_subpackage("libthrift", exact=true) }}
+        - ${{ pin_subpackage("thrift-compiler", exact=true) }}
+      run:
+        - ${{ pin_subpackage("libthrift", exact=true) }}
+        - ${{ pin_subpackage("thrift-compiler", exact=true) }}
+      run_exports:
+        - ${{ pin_subpackage("libthrift", upper_bound="x.x.x") }}
+    tests:
+      - script:
+          - echo "tested in other outputs"
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: >-
+    Compiler and C++ libraries and headers for the Apache Thrift RPC system
+  homepage: http://thrift.apache.org
+  repository: https://github.com/apache/thrift
+
+extra:
+  recipe-maintainers:
+    - wesm
+    - msarahan
+    - jakirkham
+    - xhochy
+    - h-vetinari
+  feedstock-name: thrift-cpp

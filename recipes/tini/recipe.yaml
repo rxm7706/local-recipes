@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.19.0"
+  sha256: 0fd35a7030052acd9f58948d1d900fe1e432ee37103c5561554408bdac6bbf0d
+
+package:
+  name: tini
+  version: ${{ version }}
+
+source:
+  url: https://github.com/krallin/tini/archive/v${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 2
+  skip: not linux
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - cmake
+    - make
+
+tests:
+  - script:
+      - tini -h
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A tiny but valid `init` for containers
+  homepage: https://github.com/krallin/tini
+
+extra:
+  recipe-maintainers:
+    - jakirkham

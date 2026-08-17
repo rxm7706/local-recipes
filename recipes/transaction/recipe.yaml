@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: transaction
+  version: "5.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/transaction-${{ version }}.tar.gz
+  sha256: f6ca8639a3e54f6991de0d9c0983a7cd91acb21a825cb544c168269be956bd41
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - zope.interface
+
+tests:
+  - python:
+      imports:
+        - transaction
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license_file: LICENSE.txt
+  license: ZPL-2.1
+  summary: Transaction management for Python
+  homepage: https://github.com/zopefoundation/transaction
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - jan-janssen

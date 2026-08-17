@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytest-randomly
+  version: "4.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 47f1d9746c3bc3efabd53ae1ebfb8bb385cf3d4df4b505b6d58d9c97a3dfe70f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools >=77
+  run:
+    - python >=${{ python_min }}
+    - pytest
+
+tests:
+  - python:
+      imports:
+        - pytest_randomly
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Pytest plugin to randomly order tests and control random.seed
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/pytest-dev/pytest-randomly
+
+extra:
+  recipe-maintainers:
+    - cpcloud
+    - soapy1

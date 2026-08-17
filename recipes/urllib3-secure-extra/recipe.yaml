@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: urllib3-secure-extra
+  version: "0.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/urllib3-secure-extra-${{ version }}.tar.gz
+  sha256: ee9409cbfeb4b8609047be4c32fb4317870c602767e53fd8a41005ebe6a41dff
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - flit-core >=3.2,<4
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - urllib3_secure_extra
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Marker library to detect whether urllib3 was installed with the deprecated [secure] extra
+  license: MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/urllib3-secure-extra/
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

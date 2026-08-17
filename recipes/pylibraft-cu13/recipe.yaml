@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.8.0"
+  python_min: "3.11"
+
+package:
+  name: pylibraft-cu13
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/cp311/p/pylibraft-cu13/pylibraft_cu13-26.8.0-cp311-abi3-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl
+  sha256: 70dd2994b29b3044131f4be18ca07e0572fccdc212894892f4b27544d7662cf6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - cuda-bindings <14.0,>=13.0.1
+    - libraft-cu13 ==26.8.*
+    - numpy <3.0,>=2.0
+    - rmm-cu13 ==26.8.*
+
+tests:
+  - python:
+      imports:
+        - pylibraft_cu13
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/rapidsai/raft
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: RAFT: Reusable Algorithms Functions and other Tools
+  description: |
+    RAFT: Reusable Algorithms Functions and other Tools
+  documentation: https://docs.rapids.ai/api/raft/stable/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pylibraft-cu13
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pylibraft-cu13
+  cfe-purls:
+    - pkg:conda/pylibraft-cu13@${{ version }}?channel=conda-forge
+    - pkg:pypi/pylibraft-cu13@${{ version }}
+  cfe-upstream-repo: https://github.com/rapidsai/raft
+  cfe-upstream-homepage: https://github.com/rapidsai/raft
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:06:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:06:09Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

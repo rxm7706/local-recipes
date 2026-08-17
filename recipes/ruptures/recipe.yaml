@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ruptures
+  version: "1.1.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 76b998f10709045e91a5f44173dc574bf98a106fd3bf22ec3c63b298a02df031
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - if: build_platform != target_platform
+      then: numpy
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - pip
+    - python
+    - cython
+    - numpy
+    - setuptools_scm[toml] >=3.4
+  run:
+    - numpy
+    - python
+    - scipy
+
+tests:
+  - python:
+      imports:
+        - ruptures
+        - ruptures.costs
+        - ruptures.datasets
+        - ruptures.detection
+        - ruptures.metrics
+        - ruptures.show
+        - ruptures.utils
+      pip_check: false
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Change point detection for signals, in Python
+  homepage: https://github.com/deepcharles/ruptures
+  documentation: http://ctruong.perso.math.cnrs.fr/ruptures-docs/build/html/index.html
+
+extra:
+  recipe-maintainers:
+    - rpanai
+    - deepcharles
+    - oboulant

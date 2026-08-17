@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.7"
+
+package:
+  name: genie.libs.sdk
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/g/genie.libs.sdk/genie_libs_sdk-26.7-py3-none-any.whl
+  sha256: bc3bd20dbd7a5150611e22d71f66bf44e9d39afdaa864ae73981ed9d8c4dfecb
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - ruamel.yaml
+    - yang.connector <26.8.0,>=26.7.0
+    - rest.connector <26.8.0,>=26.7.0
+    - pysnmp ==7.1.22
+    - pyasn1 >=0.6.4
+    - ruamel.yaml.clib <0.2.15
+    - pyvmomi
+
+tests:
+  - python:
+      imports:
+        - genie.libs.sdk
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://developer.cisco.com/site/pyats/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: "Genie libs sdk: Libraries containing all Triggers and Verifications"
+  description: |
+    Genie libs sdk: Libraries containing all Triggers and Verifications
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: genie.libs.sdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: genie.libs.sdk
+  cfe-purls:
+    - pkg:conda/genie.libs.sdk@${{ version }}?channel=conda-forge
+    - pkg:pypi/genie.libs.sdk@${{ version }}
+  cfe-upstream-repo: https://developer.cisco.com/site/pyats/
+  cfe-upstream-homepage: https://developer.cisco.com/site/pyats/
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:37:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:37:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

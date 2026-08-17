@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "15.10.0.21"
+
+package:
+  name: teradata
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/teradata/teradata-${{ version }}.tar.gz
+  sha256: 6b8c5ebc7de3bc859626a31648810061542ce6af9ab8bf3af1d2f059fa4f18d6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - teradata
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://github.com/teradata/PyTd
+  license: MIT
+  license_file: LICENSE
+  summary: The Teradata python module for DevOps enabled SQL scripting for Teradata UDA.
+  description: |
+    The Teradata python module for DevOps enabled SQL scripting for Teradata UDA.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: teradata
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: teradata
+  cfe-purls:
+    - pkg:conda/teradata@${{ version }}?channel=conda-forge
+    - pkg:pypi/teradata@${{ version }}
+  cfe-upstream-repo: http://github.com/teradata/PyTd
+  cfe-upstream-homepage: http://github.com/teradata/PyTd
+  cfe-import-names: [teradata]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:48:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:48:58Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

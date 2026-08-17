@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.0.7"
+
+package:
+  name: nautobot-golden-config
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/nautobot-golden-config/nautobot_golden_config-${{ version }}.tar.gz
+  sha256: 854955651eec35ac23cbfd50e889fe3c06f3a759e78d083579aa756e959e8bfa
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=2.0.0,<3.0.0
+  run:
+    - python >=${{ python_min }}
+    - deepdiff <9.0.0,>=8.6.1
+    - django-pivot <1.10.0,>=1.9.0
+    - hier-config <4.0.0,>=3.4.1
+    - nautobot <4.0.0,>=3.0.0
+    - nautobot-capacity-metrics <5.0.0,>=4.0.0
+    - nautobot-plugin-nornir <4.0.0,>=3.0.0
+    - netutils <2.0.0,>=1.17.0
+    - toml <0.11.0,>=0.10.2
+    - xmldiff <3.0.0,>=2.6.3
+
+tests:
+  - python:
+      imports:
+        - nautobot_golden_config
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/nautobot/nautobot-app-golden-config
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: An app for configuration on nautobot
+  description: |
+    An app for configuration on nautobot
+  repository: https://github.com/nautobot/nautobot-app-golden-config
+  documentation: https://docs.nautobot.com/projects/golden-config/en/latest/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nautobot-golden-config
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: nautobot-golden-config
+  cfe-purls:
+    - pkg:conda/nautobot-golden-config@${{ version }}?channel=conda-forge
+    - pkg:pypi/nautobot-golden-config@${{ version }}
+  cfe-upstream-repo: https://github.com/nautobot/nautobot-app-golden-config
+  cfe-upstream-homepage: https://github.com/nautobot/nautobot-app-golden-config
+  cfe-import-names: [nautobot_golden_config]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:19:49Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:19:49Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

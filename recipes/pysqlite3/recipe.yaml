@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pysqlite3
+  version: "0.6.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pysqlite3-${{ version }}.tar.gz
+  sha256: ecf5112b62a4e6c04438957e343fe9672707bd3191f789ecae6c95b226aa6bb6
+
+build:
+  number: 0
+  noarch: generic
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - sqlite
+  host:
+    - pip
+    - python >=3.8
+    - sqlite
+    - setuptools
+  run:
+    - python >=3.8
+    - sqlite
+
+tests:
+  - python:
+      imports:
+        - pysqlite3
+      pip_check: true
+
+about:
+  summary: DB-API 2.0 interface for Sqlite 3.x
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/coleifer/pysqlite3
+
+extra:
+  recipe-maintainers:
+    - psortos
+    - rxm7706
+    - mxr-conda

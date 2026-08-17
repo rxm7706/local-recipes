@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.8"
+
+package:
+  name: percy-appium-app
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/percy-appium-app/percy_appium_app-${{ version }}.tar.gz
+  sha256: 8cac542df49929f1e2022ff123879c1f87cba98985fdd3b9f743a2d7c963ec36
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - appium-python-client
+    - requests
+
+tests:
+  - python:
+      imports:
+        - percy
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/percy/percy-appium-python
+  license: MIT
+  license_file: LICENSE
+  summary: Python client for visual testing with Percy for mobile apps
+  description: |
+    Python client for visual testing with Percy for mobile apps
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: percy-appium-app
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: percy-appium-app
+  cfe-purls:
+    - pkg:conda/percy-appium-app@${{ version }}?channel=conda-forge
+    - pkg:pypi/percy-appium-app@${{ version }}
+  cfe-upstream-repo: https://github.com/percy/percy-appium-python
+  cfe-upstream-homepage: https://github.com/percy/percy-appium-python
+  cfe-import-names: [percy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:30:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:30:32Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

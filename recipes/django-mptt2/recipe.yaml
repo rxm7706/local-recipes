@@ -2,20 +2,21 @@
 schema_version: 1
 
 context:
+  name: django-mptt2
   version: "0.2.1"
 
 package:
-  name: django-mptt2
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-mptt2/django_mptt2-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: 54c3d829ec961d4c40bf2d2094225ac49cd22d1b1e52a28ada1492015b05b47b
 
 build:
-  number: 0
+  number: 1
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
@@ -23,27 +24,21 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }}
     - django
+    - python >=${{ python_min }},<4.0
 
 tests:
   - python:
       imports:
         - mptt2
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
   summary: Utilities for implementing Modified Preorder Tree Traversal with your Django Models and working with trees of Model instances.
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/jokiefer/django-mptt2/
-  repository: https://github.com/jokiefer/django-mptt2/
-  description: |
-    Utilities for implementing Modified Preorder Tree Traversal with your
-    Django Models and working with trees of Model instances.
 
 extra:
   recipe-maintainers:

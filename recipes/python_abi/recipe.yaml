@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  build_num: 8
+  python_impl_version: "3.8"
+  python_version: "3.8"
+  python_minor: ${{ python_version.split(".")[1]|int }}
+
+package:
+  name: python_abi
+  version: ${{ python_version }}
+
+build:
+  number: ${{ build_num }}
+  string: ${{ build_num }}_${{ python_abi_tag }}
+  noarch: generic
+  track_features:
+    - if: python_implementation == "pypy"
+      then: pypy
+    - if: python_implementation == "graalpy"
+      then: native_graalpy
+    - if: python_abi_tag == "cp313t"
+      then: freethreading
+
+requirements:
+  run_constraints:
+    - if: python_implementation == "cpython"
+      then: python ${{ python_version }}.* *_${{ python_abi_tag }}
+    - if: python_implementation == "cpython"
+      then: python ${{ python_version }}.* *_cpython
+    - if: python_implementation == "pypy"
+      then: python ${{ python_version }}.* *_${{ python_impl_version | replace('.', '') }}_pypy
+    - if: python_implementation == "graalpy"
+      then: python ${{ python_version }}.* *_native${{ python_impl_version | replace('.', '') }}_graalpy
+
+tests:
+  - script:
+      - echo "hello"
+
+about:
+  summary: Metapackage to select python implementation
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/conda-forge/python_abi-feedstock
+
+extra:
+  recipe-maintainers:
+    - chrisburr
+    - isuruf
+    - xhochy

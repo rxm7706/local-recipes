@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.1.0"
+
+package:
+  name: pystemmer
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pystemmer/pystemmer-${{ version }}.tar.gz
+  sha256: 083cc3ed90f4c3b0668f8e31c2925cbb4db3bf0fd6d710e0ad0914f33685f7df
+
+build:
+  number: 1
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+  host:
+    - pip
+    - python
+    - setuptools >=18.0
+    - cython >=0.28.5
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - Stemmer
+      pip_check: true
+
+about:
+  summary: Snowball stemming algorithms, for information retrieval
+  license: MIT AND BSD-3-Clause
+  license_file:
+    - LICENSE
+  homepage: https://github.com/snowballstem/pystemmer/
+
+extra:
+  recipe-maintainers:
+    - thewchan

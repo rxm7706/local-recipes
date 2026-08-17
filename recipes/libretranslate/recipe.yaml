@@ -1,0 +1,102 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.9.6"
+
+package:
+  name: libretranslate
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/libretranslate/libretranslate-${{ version }}.tar.gz
+  sha256: 5efaf8632d5ce83652b67c505459ea3693c8f0334128daf0840d1450dbbd2185
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - apscheduler ==3.11.2
+    - argos-translate-files ==1.4.4
+    - argos-translate-lt ==1.12.1
+    - expiringdict ==1.2.2
+    - flask-babel ==3.1.0
+    - flask-limiter ==2.6.3
+    - flask-swagger-ui ==4.11.1
+    - flask-swagger ==0.2.14
+    - flask ==2.2.5
+    - itsdangerous ==2.1.2
+    - langdetect ==1.0.9
+    - lexilang ==1.0.7
+    - minisbd ==0.9.5
+    - numpy <2
+    - packaging ==23.1
+    - polib ==1.1.1
+    - prometheus_client ==0.15.0
+    - redis-py ==4.4.4
+    - requests ==2.31.0
+    - waitress ==2.1.2
+    - werkzeug ==2.3.8
+
+tests:
+  - python:
+      imports:
+        - libretranslate
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://libretranslate.com
+  license: AGPL-3.0-only
+  license_file: LICENSE
+  summary: Free and Open Source Machine Translation API. Self-hosted, no limits, no ties to proprietary services.
+  description: |
+    Free and Open Source Machine Translation API. Self-hosted, no limits, no ties to proprietary services.
+  repository: https://github.com/LibreTranslate/LibreTranslate
+  documentation: https://github.com/LibreTranslate/LibreTranslate
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: libretranslate
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: libretranslate
+  cfe-purls:
+    - pkg:conda/libretranslate@${{ version }}?channel=conda-forge
+    - pkg:pypi/libretranslate@${{ version }}
+  cfe-upstream-repo: https://github.com/LibreTranslate/LibreTranslate
+  cfe-upstream-homepage: https://libretranslate.com
+  cfe-import-names: [libretranslate]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:42:49Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:42:49Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

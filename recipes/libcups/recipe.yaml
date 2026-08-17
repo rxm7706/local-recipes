@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: libcups
+  version: "2.3.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/apple/cups/releases/download/v${{ version }}/cups-${{ version }}-source.tar.gz
+  sha256: 261fd948bce8647b6d5cb2a1784f0c24cc52b5c4e827b71d726020bcc502f3ee
+
+build:
+  number: 6
+  skip: not linux
+
+requirements:
+  build:
+    - ${{ stdlib('c') }}
+    - if: unix
+      then: gnuconfig
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - make
+  host:
+    - krb5
+    - zlib
+  run_exports:
+    - ${{ pin_subpackage('libcups', upper_bound='x.x') }}
+
+tests:
+  - script:
+      - if: unix
+        then: test -f ${PREFIX}/lib/libcups${SHLIB_EXT}
+      - if: unix
+        then: test -f ${PREFIX}/include/cups/cups.h
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: CUPS is the standards-based, open source printing system
+  description: |
+    CUPS is the standards-based, open source printing system developed by
+    Apple Inc. for macOS® and other UNIX®-like operating systems. CUPS uses the Internet
+    Printing Protocol (IPP) to support printing to local and network printers.
+  homepage: https://www.cups.org/
+  repository: https://github.com/apple/cups
+  documentation: https://www.cups.org/documentation.html
+
+extra:
+  recipe-maintainers:
+    - isuruf
+    - hmaarrfk

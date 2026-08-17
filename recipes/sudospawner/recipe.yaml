@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0"
+
+package:
+  name: sudospawner
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sudospawner/sudospawner-${{ version }}.tar.gz
+  sha256: 0f80ee90f4fb8927ee5b09ffbda354e730bef75759ff47e62010168a3b6a20b8
+  file_name: sudospawner-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: pip install --no-deps .
+  python:
+    entry_points:
+      - sudospawner = sudospawner.mediator:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - jupyterhub-base >=4
+
+tests:
+  - python:
+      imports:
+        - sudospawner
+      pip_check: false
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - test -f $PREFIX/bin/sudospawner
+      - sudospawner --help
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Enables JupyterHub to spawn single-user notebook servers without being root
+  homepage: https://github.com/jupyterhub/sudospawner
+
+extra:
+  recipe-maintainers:
+    - minrk
+    - parente

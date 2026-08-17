@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: simple-websocket
+  version: "1.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/simple_websocket-${{ version }}.tar.gz
+  sha256: 7939234e7aa067c534abdab3a9ed933ec9ce4691b0713c78acb195560aa52ae4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.6
+    - setuptools >=61.2
+    - pip
+  run:
+    - python >=3.7
+    - wsproto
+
+tests:
+  - python:
+      imports:
+        - simple_websocket
+      pip_check: true
+
+about:
+  summary: Simple WebSocket server and client for Python
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/miguelgrinberg/simple-websocket
+
+extra:
+  recipe-maintainers:
+    - woutdenolf

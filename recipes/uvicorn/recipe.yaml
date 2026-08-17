@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.52.3"
+  python_check_max: "3.14"
+
+recipe:
+  name: uvicorn
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/u/uvicorn/uvicorn-${{ version }}.tar.gz
+  sha256: 18857b9e6579300be55c91c0a1cfd37d9a2cf0cabea33b88275f199eb73b8b58
+
+build:
+  number: 0
+  noarch: python
+
+outputs:
+  - package:
+      name: uvicorn
+    build:
+      noarch: python
+      script:
+        - ${{ PYTHON }} -m pip install . -vv --no-deps --ignore-installed --disable-pip-version-check
+      python:
+        entry_points:
+          - uvicorn = uvicorn.main:main
+    requirements:
+      host:
+        - hatchling
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - __${{ noarch_platform }}
+        - click >=7.0
+        - h11 >=0.8
+        - python >=${{ python_min }}
+        - typing_extensions >=4.0
+    tests:
+      - python:
+          imports: uvicorn
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+      - requirements:
+          run:
+            - pip
+            - python ${{ python_min }}.*
+        script:
+          - uvicorn --help
+
+  - package:
+      name: uvicorn-standard
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - __${{ noarch_platform }}
+        - ${{ pin_subpackage("uvicorn", exact=True) }}
+        - websockets >=10.4
+        - httptools >=0.6.3
+        - watchfiles >=0.20
+        - python-dotenv >=0.13
+        - pyyaml >=5.1
+        - if: noarch_platform == "win"
+          then:
+            - colorama >=0.4
+          else:
+            - uvloop >=0.15.1
+    tests:
+      - python:
+          imports: uvicorn.supervisors.watchfilesreload
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.md
+  summary: The lightning-fast ASGI server.
+  description: |
+    Uvicorn is a lightning-fast ASGI server implementation,
+    using [uvloop](https://github.com/MagicStack/uvloop) and
+    [httptools](https://github.com/MagicStack/httptools).
+  homepage: https://pypi.org/project/uvicorn
+  repository: https://github.com/Kludex/uvicorn
+  documentation: https://uvicorn.dev
+
+extra:
+  feedstock-name: uvicorn
+  recipe-maintainers:
+    - carlodri
+    - ocefpaf
+    - xhochy

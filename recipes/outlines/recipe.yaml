@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: outlines
+  version: "1.3.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/outlines-${{ version }}.tar.gz
+  sha256: b8002329cdc63736147b7e16641f8649521c61ea7f7891103322b9300ab3b09e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=45
+    - setuptools-scm >=6.2
+    - pip
+  run:
+    - python >=${{ python_min }},<3.14
+    - jinja2
+    - cloudpickle
+    - diskcache
+    - pydantic >=2.0
+    - jsonschema
+    - pillow
+    - typing_extensions
+    - outlines-core ==0.2.14
+    - genson
+    - jsonpath-ng
+tests:
+  - python:
+      imports:
+        - outlines
+      python_version:
+        - ${{ python_min }}.*
+        - '*'
+
+about:
+  summary: Probabilistic Generative Model Programming
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/outlines-dev/outlines
+  documentation: https://outlines-dev.github.io/outlines
+
+extra:
+  recipe-maintainers:
+    - maresb
+    - pavelzw

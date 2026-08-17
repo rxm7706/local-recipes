@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ecdsa
+  version: "0.19.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 62635b0ac1ca2e027f82122b5b81cb706edc38cd91c63dda28e4f3455a2bf930
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - gmpy2
+    - python >=${{ python_min }}
+    - six >=1.9.0
+
+tests:
+  - python:
+      imports:
+        - ecdsa
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: ECDSA cryptographic signature library (pure python)
+  homepage: http://github.com/warner/python-ecdsa
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk
+    - m-rossi

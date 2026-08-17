@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: giturlparse
+  version: "0.15.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/giturlparse-${{ version }}.tar.gz
+  sha256: 9af3f1fd5c4a0cac94ddb283593635005646393ee0debbe330d1bdff8866bf2c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=40.6.0
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - giturlparse
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: A Git URL parsing module (supports parsing and rewriting)
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/nephila/giturlparse
+
+extra:
+  recipe-maintainers:
+    - thewchan

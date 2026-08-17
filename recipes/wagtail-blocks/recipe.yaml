@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: wagtail-blocks
+  version: "1.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail_blocks-${{ version }}.tar.gz
+  sha256: 211b1b5331ce75be3c3bc50a3a797f332ceba60b58f97c8c7e3f8310efe2e141
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - wagtail >=4.1,<6.0
+    - wagtail-font-awesome-svg
+
+tests:
+  - python:
+      imports:
+        - wagtail_blocks
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A Collection of awesome Wagtail CMS stream-field blocks and Charts
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/ibrahimawadhamid/wagtail_blocks/
+
+extra:
+  recipe-maintainers:
+    - rxm7706

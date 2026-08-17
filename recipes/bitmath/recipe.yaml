@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: bitmath
+  version: "2.1.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/bitmath-${{ version }}.tar.gz
+  sha256: 56f2cda86b1f0aa6470f4aaa90f82ef029f0e16c31b66f0fdd9d67613bc5e9f0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - bitmath = bitmath:cli_script
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - bitmath
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - bitmath --help
+
+about:
+  summary: Pythonic module for representing and manipulating file sizes with different prefix notations (file size unit conversion)
+  license: MIT
+  license_file: LICENSE
+  description: |
+    `bitmath` simplifies many facets of interacting with file sizes in various units. Originally focusing on file size unit conversion, functionality now includes
+
+
+  homepage: https://github.com/tbielawa/bitmath
+  repository: https://github.com/tbielawa/bitmath
+  documentation: http://bitmath.readthedocs.org/
+
+extra:
+  recipe-maintainers:
+    - HeavyTony2

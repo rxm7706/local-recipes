@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-otlp-log-exporter
+  version: "1.0.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django-otlp-log-exporter-${{ version }}.tar.gz
+  sha256: 6e6473e21c36898c6d74e3b7d1c5b69461044a5a79331350b416cda7a746eb84
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - opentelemetry-sdk >=1.16.0
+    - opentelemetry-api >=1.16.0
+    - opentelemetry-exporter-otlp >=1.16.0
+    - django >=3.2
+
+tests:
+  - python:
+      imports:
+        - otlp_exporter
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  summary: integrate Django & SDK provided by OpenTelemetry and directly forward the logs from the application to OpenTelemetry.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/mojtabaakbari221b/django_otlp_log_exporter
+
+extra:
+  recipe-maintainers:
+    - rxm7706

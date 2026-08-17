@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pylibscrypt
+  version: "2.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 5afffc2cf056de86a000c13627ddca87fac14380939694aa6fbf4875926c0146
+
+build:
+  number: 2
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - if: not win
+      then: openssl
+    - scrypt
+    - setuptools
+  run:
+    - if: not win
+      then: openssl
+    - python
+    - scrypt
+    - libsodium
+
+tests:
+  - python:
+      imports:
+        - pylibscrypt
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - if: not osx
+        then: python -m pylibscrypt.tests
+      - if: not osx
+        then: python -m pylibscrypt.pylibsodium
+
+about:
+  license: ISC
+  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE
+  summary: Scrypt for Python
+  homepage: https://github.com/jvarho/pylibscrypt
+  repository: https://github.com/jvarho/pylibscrypt
+  documentation: https://github.com/jvarho/pylibscrypt
+
+extra:
+  recipe-maintainers:
+    - holgern

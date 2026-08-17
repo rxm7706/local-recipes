@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2025.1.30"
+
+package:
+  name: nornir-scrapli
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/nornir-scrapli/nornir_scrapli-${{ version }}.tar.gz
+  sha256: b36bbfcf3678e695d54c0df673f9cf662dbd737d9e13170893cd4ed833c7b410
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - nornir >=3.0.0
+    - nornir-utils >=0.1.0
+    - ntc-templates >=1.1.0
+    - scrapli >=2022.01.30
+    - scrapli-cfg >=2022.01.30
+    - scrapli-community >=2021.01.30
+    - scrapli-netconf >=2022.01.30
+    - textfsm >=1.1.0
+
+tests:
+  - python:
+      imports:
+        - nornir_scrapli
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/scrapli/nornir_scrapli
+  license: MIT
+  license_file: LICENSE
+  summary: Scrapli's plugin for Nornir
+  description: |
+    Scrapli's plugin for Nornir
+  documentation: https://scrapli.github.io/nornir_scrapli/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nornir-scrapli
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: nornir-scrapli
+  cfe-purls:
+    - pkg:conda/nornir-scrapli@${{ version }}?channel=conda-forge
+    - pkg:pypi/nornir-scrapli@${{ version }}
+  cfe-upstream-repo: https://github.com/scrapli/nornir_scrapli
+  cfe-upstream-homepage: https://github.com/scrapli/nornir_scrapli
+  cfe-import-names: [nornir_scrapli]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:23:13Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:23:13Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

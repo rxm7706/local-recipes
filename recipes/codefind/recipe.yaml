@@ -4,6 +4,7 @@ schema_version: 1
 context:
   name: codefind
   version: "0.1.7"
+  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}

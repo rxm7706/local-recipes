@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: types-pywin32
+  version: "312.0.0.20260724"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 0ab44f2eaf24879929a934d4e989c6fbb4aa1df9e44e38eca6d47c680d7c1397
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python 3.10.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - requirements:
+      run:
+        - python ${{ python_min }}
+        - pip
+    script:
+      - pip check
+      - if: unix
+        then: test -f $SP_DIR/win32-stubs/__init__.pyi
+      - if: win
+        then: if not exist %SP_DIR%\\win32-stubs\\__init__.pyi exit 1
+
+about:
+  summary: Typing stubs for pywin32
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/python/typeshed
+  repository: https://github.com/python/typeshed/tree/main/stubs/pywin32
+  documentation: https://github.com/python/typeshed
+
+extra:
+  recipe-maintainers:
+    - sobolevn
+    - Ubadub

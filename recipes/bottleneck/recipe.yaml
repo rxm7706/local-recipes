@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.6.0"
+
+package:
+  name: bottleneck
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/B/Bottleneck/bottleneck-${{ version }}.tar.gz
+  sha256: 028d46ee4b025ad9ab4d79924113816f825f62b17b87c9e1d0d8ce144a4a0e31
+
+build:
+  number: 3
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - numpy
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - versioneer
+    - numpy
+  run:
+    - numpy
+    - python
+
+tests:
+  - python:
+      imports:
+        - bottleneck
+        - bottleneck.slow
+        - bottleneck.tests
+        - bottleneck.reduce
+        - bottleneck.nonreduce
+        - bottleneck.nonreduce_axis
+        - bottleneck.move
+      pip_check: true
+  - requirements:
+      run:
+        - pytest
+    script:
+      - python -c "import bottleneck; bottleneck.test()"
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Fast NumPy array functions written in Cython.
+  description: |
+    Bottleneck is a collection of fast NumPy array functions written in
+    Cython.
+  homepage: https://github.com/pydata/bottleneck
+  repository: https://github.com/pydata/bottleneck
+  documentation: https://bottleneck.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - msarahan
+    - wesm
+    - ocefpaf
+    - qwhelan

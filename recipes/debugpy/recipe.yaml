@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: debugpy
+  version: "1.8.21"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: a3c53278e84c94e11bd87c53970ec391d1a67396c8b22609fcac576520e611a6
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - debugpy
+        - debugpy.adapter
+        - debugpy.common
+        - debugpy.launcher
+        - debugpy.server
+  - requirements:
+      run:
+        - pip
+    script:
+      - pip check
+
+about:
+  license: MIT
+  license_file:
+    - LICENSE
+    - ThirdPartyNotices.txt
+  summary: An implementation of the Debug Adapter Protocol for Python
+  homepage: https://github.com/Microsoft/debugpy
+  repository: https://github.com/microsoft/debugpy
+
+extra:
+  recipe-maintainers:
+    - jtilly
+    - xhochy

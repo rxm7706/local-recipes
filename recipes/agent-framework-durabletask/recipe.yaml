@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0b260730"
+
+package:
+  name: agent-framework-durabletask
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/agent-framework-durabletask/agent_framework_durabletask-${{ version }}.tar.gz
+  sha256: 4c6ed98f7fedbd7733f110991a8eea9fe7254ca56d12e5198efd8991251698f2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core >=3.11,<4.0
+  run:
+    - python >=${{ python_min }}
+    - agent-framework-core <2,>=1.13.0
+    - durabletask <2,>=1.5.0
+    - durabletask-azuremanaged <2,>=1.4.0
+    - python-dateutil <3,>=2.8.0
+
+tests:
+  - python:
+      imports:
+        - agent_framework_durabletask
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://aka.ms/agent-framework
+  license: MIT
+  license_file: LICENSE
+  summary: Durable Task integration for Microsoft Agent Framework.
+  description: |
+    Durable Task integration for Microsoft Agent Framework.
+  repository: https://github.com/microsoft/agent-framework/tree/main/python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: agent-framework-durabletask
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: agent-framework-durabletask
+  cfe-purls:
+    - pkg:conda/agent-framework-durabletask@${{ version }}?channel=conda-forge
+    - pkg:pypi/agent-framework-durabletask@${{ version }}
+  cfe-upstream-repo: https://github.com/microsoft/agent-framework/tree/main/python
+  cfe-upstream-homepage: https://aka.ms/agent-framework
+  cfe-import-names: [agent_framework_durabletask]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:47:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:47:59Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

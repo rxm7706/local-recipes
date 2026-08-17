@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.6.0"
+  python_check_max: "3.14"
+
+package:
+  name: binaryornot
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/binaryornot/binaryornot-${{ version }}.tar.gz
+  sha256: cc8d57cfa71d74ff8c28a7726734d53a851d02fad9e3a5581fb807f989f702f0
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
+  python:
+    entry_points:
+      - binaryornot = binaryornot.check:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports: binaryornot
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - binaryornot --help
+      - python -c "v=__import__('importlib.metadata').metadata.version('binaryornot'); print(v); assert v == '${{ version }}'"
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Ultra-lightweight pure Python package to check if a file is binary or text.
+  homepage: https://pypi.org/project/binaryornot
+  repository: https://github.com/audreyr/binaryornot
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

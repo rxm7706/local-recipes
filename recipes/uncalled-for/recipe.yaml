@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: uncalled-for
+  version: "0.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 335b95bd2422332ec210d518f314a16e4c640921c39fc8bf2ad095bd3538f4af
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+    - hatch-vcs
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - uncalled_for
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Async dependency injection for Python functions
+  description: |
+    A small, focused dependency injection toolkit for async Python functions,
+    extracted from the common bits of Docket and FastMCP.
+  homepage: https://github.com/chrisguidry/uncalled-for
+  repository: https://github.com/chrisguidry/uncalled-for
+  documentation: https://github.com/chrisguidry/uncalled-for
+
+extra:
+  recipe-maintainers:
+    - chrisguidry
+    - zzstoatzz

@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.4.4"
+
+package:
+  name: tzlocal
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/tzlocal/tzlocal-${{ version }}.tar.gz
+  sha256: 8dbb8660838688a7b6ba4fed31d18dedf842afb4d47ca050d6d891c2c15f3be4
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . -vv --no-build-isolation --no-deps
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=64
+  run:
+    - python >=${{ python_min }}
+    - if: win
+      then:
+        - python-tzdata
+        - __win
+      else:
+        - __unix
+
+tests:
+  - python:
+      imports:
+        - tzlocal
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: tzinfo object for the local timezone
+  homepage: https://github.com/regebro/tzlocal
+  repository: https://github.com/regebro/tzlocal
+
+extra:
+  recipe-maintainers:
+    - ericdill
+    - licode
+    - tacaswell
+    - synapticarbors

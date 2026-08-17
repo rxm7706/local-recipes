@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: rpy2
+  version: "3.6.7"
+  version_tag: ${{ version | replace('.', '_') }}
+  posix: "'m2-' if win else ''"
+
+package:
+  name: rpy2
+  version: ${{ version | replace('_', '.') }}
+
+source:
+  # the tag on github has the format RELEASE_x_x_x
+  url: https://github.com/rpy2/rpy2/archive/refs/tags/RELEASE_${{ version_tag }}.tar.gz
+  sha256: 5630570aad60fdb9974bf4b5258112c2292c91d1c2c91c67100ad0a6fa8b3d4c
+
+build:
+  number: 0
+  skip: win
+  dynamic_linking:
+    rpaths:
+      - lib/R/lib/
+      - lib/
+    missing_dso_allowlist:
+      - if: win
+        then: "*/R.dll"
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cffi
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+    - if: build_platform != target_platform
+      then: liblzma-devel
+    - if: build_platform != target_platform
+      then: zlib
+    - ${{ posix }}make
+    - if: win
+      then: ${{ posix }}base
+  host:
+    - python
+    - pip
+    - setuptools >=77
+    - jinja2
+    - tzlocal
+    - r-base
+    - cffi >=1.15.1
+    - if: not win
+      then: liblzma-devel
+    - if: not win
+      then: zlib
+  run:
+    - python
+    - jinja2
+    - tzlocal
+    - r-base
+    - cffi >=1.15.1
+    - packaging
+
+tests:
+  - files:
+      source:
+        - ./
+    requirements:
+      run:
+        - if: not win
+          then: r-cairo
+        - r-ggplot2 >=2.2.1
+        - r-survival
+        - ipython
+        - numpy
+        - pandas
+        - pytest <9
+        - if: win
+          then: ${{ posix }}make
+    script:
+      - pytest -s -rxs -v rpy2-rinterface/
+      - if: not win
+        then: pytest -s -rxs -v rpy2-robjects/ -k "not test_svg_plotting_args and not test_POSIXct_datetime_from_timestamp and not test_ri2pandas"
+
+about:
+  license: GPL-2.0-or-later
+  license_file: gpl-2.0.txt
+  summary: Python interface to the R language (embedded R)
+  homepage: https://github.com/rpy2/rpy2
+  documentation: https://rpy2.github.io/
+
+extra:
+  recipe-maintainers:
+    - flaviomartins
+    - conda-forge/r
+    - ceholden
+    - ocefpaf

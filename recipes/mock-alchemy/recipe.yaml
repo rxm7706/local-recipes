@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.6"
+
+package:
+  name: mock-alchemy
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mock-alchemy/mock_alchemy-${{ version }}.tar.gz
+  sha256: 807cc2bd7f658fb98292900052eaa6eeb4a65b2d62364e639462480a275299ef
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=1.0.0
+  run:
+    - python >=${{ python_min }}
+    - sqlalchemy
+
+tests:
+  - python:
+      imports:
+        - mock_alchemy
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/rajivsarvepalli/mock-alchemy
+  license: MIT
+  license_file: LICENSE
+  summary: SQLAlchemy mock helpers.
+  description: |
+    SQLAlchemy mock helpers.
+  repository: https://github.com/rajivsarvepalli/mock-alchemy
+  documentation: https://mock-alchemy.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mock-alchemy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mock-alchemy
+  cfe-purls:
+    - pkg:conda/mock-alchemy@${{ version }}?channel=conda-forge
+    - pkg:pypi/mock-alchemy@${{ version }}
+  cfe-upstream-repo: https://github.com/rajivsarvepalli/mock-alchemy
+  cfe-upstream-homepage: https://github.com/rajivsarvepalli/mock-alchemy
+  cfe-import-names: [mock_alchemy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:53:36Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:53:36Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

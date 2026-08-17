@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.7"
+
+package:
+  name: strict-rfc3339
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/s/strict-rfc3339/strict-rfc3339-${{ version }}.tar.gz
+    sha256: 5cad17bedfc3af57b399db0fed32771f18fc54bbd917e85546088607ac5e1277
+    target_directory: dist
+  - url: https://github.com/danielrichman/strict-rfc3339/archive/refs/tags/version-${{ version }}.tar.gz
+    sha256: a78941333384514bb6d60b789b7bf6d1d628215e9e22b7d93411701b244217bb
+    target_directory: src
+
+build:
+  number: 2
+  noarch: python
+  script:
+    - cd dist && ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - strict_rfc3339
+      pip_check: true
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - src/test_*
+    requirements:
+      run:
+        - coverage
+        - pip
+        - pytest
+        - python ${{ python_min }}
+    script:
+      - coverage run --source=strict_rfc3339 --branch -m pytest -vv --color=yes --tb=long src
+      - coverage report --show-missing --skip-covered --fail-under 98
+
+about:
+  license: GPL-3.0-or-later
+  license_file: dist/LICENSE
+  summary: Strict, simple, lightweight RFC3339 functions
+  description: |
+    strict-rfc3339 is a simple & light python module to validate, parse and
+    generate RFC3339 time strings. It was initially created as a part of
+    habitat in response to difficulty using other libraries.
+
+    It can convert UNIX timestamps to and from RFC3339, either producing
+    strings with a UTC offset (Z) or with the offset that the C time module
+    reports is the local timezone offset. It has minimal dependencies (none
+    beyond those that come with Python) and avoids the error-prone act of
+    dealing with timezones as much as possible. Besides that, it's designed to
+    be strict and stick closely to RFC3339, with a couple of very small
+    caveats. It's also fully unit tested.
+  homepage: https://github.com/danielrichman/strict-rfc3339
+  documentation: https://github.com/danielrichman/strict-rfc3339/blob/master/README.md
+
+extra:
+  recipe-maintainers:
+    - kynan
+    - bollwyvl

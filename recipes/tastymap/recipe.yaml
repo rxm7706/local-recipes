@@ -2,18 +2,19 @@
 schema_version: 1
 
 context:
+  name: tastymap
   version: "0.4.1"
 
 package:
-  name: tastymap
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/t/tastymap/tastymap-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/tastymap-${{ version }}.tar.gz
   sha256: c1ca63c4a0ac93147db8fde11d7aee79a4d4aa14dbe15287482bdf67dd63a76c
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
@@ -22,7 +23,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - hatchling
     - hatch-regex-commit
     - pip
@@ -43,21 +44,18 @@ tests:
       imports:
         - tastymap
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
   - requirements:
       run:
         - pip
-        - python ${{ python_min }}.*
         - panel
         - param
         - requests
         - xarray
         - netcdf4
         - pooch
+        - python ${{ python_min }}
     script:
-      - pip check
       - tastymap --help
 
 about:
@@ -66,7 +64,6 @@ about:
   license_file: LICENSE
   homepage: https://github.com/ahuang11/tastymap
   repository: https://github.com/ahuang11/tastymap
-  documentation: https://ahuang11.github.io/tastymap/
 
 extra:
   recipe-maintainers:

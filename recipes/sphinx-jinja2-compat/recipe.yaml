@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sphinx-jinja2-compat
+  version: "0.4.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sphinx_jinja2_compat-${{ version }}.tar.gz
+  sha256: 0188f0802d42c3da72997533b55a00815659a78d3f81d4b4747b1fb15a5728e6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - whey >=0.0.20
+    - whey-pth >=0.0.4
+  run:
+    - jinja2 >=2.10
+    - markupsafe >=1
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - sphinx_jinja2_compat
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Patches Jinja2 v3 to restore compatibility with earlier Sphinx versions.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/sphinx-toolbox/sphinx-jinja2-compat
+
+extra:
+  recipe-maintainers:
+    - domdfcoding

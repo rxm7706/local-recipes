@@ -1,0 +1,102 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: opentelemetry-instrumentation-pymysql
+  version: 0.65b0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_pymysql-${{ version }}.tar.gz
+  sha256: 8262bded9d678d05e585ab11a62867c6fdf6599a9c2bec2a2387ec6c5e749e14
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - opentelemetry-api ~=1.12
+    - opentelemetry-instrumentation-dbapi ==0.65b0
+    - opentelemetry-instrumentation ==0.65b0
+    # - pymysql <2
+    # - opentelemetry-test-utils ==0.37b0
+    # - opentelemetry-instrumentation-pymysql
+    # - pymysql <2
+    # - opentelemetry-test-utils ==0.38b0
+    # - opentelemetry-instrumentation-pymysql
+    # - pymysql <2
+    # - opentelemetry-test-utils ==0.39b0
+    # - opentelemetry-instrumentation-pymysql
+    # - pymysql <2
+    # - opentelemetry-test-utils ==0.40b0
+    # - opentelemetry-instrumentation-pymysql
+    # - pymysql <2
+    # - opentelemetry-test-utils ==0.41b0
+    # - opentelemetry-instrumentation-pymysql
+    # - pymysql <2
+    # - opentelemetry-test-utils ==0.42b0
+    # - opentelemetry-instrumentation-pymysql
+    # - pymysql <2
+    # - opentelemetry-test-utils ==0.43b0
+    # - opentelemetry-instrumentation-pymysql
+    # - pymysql <2
+    # - opentelemetry-test-utils ==0.44b0
+    # - opentelemetry-instrumentation-pymysql
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+    # - pymysql <2
+
+tests:
+  - python:
+      imports:
+        - opentelemetry
+        - opentelemetry.instrumentation
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: OpenTelemetry PyMySQL instrumentation
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-pymysql
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk

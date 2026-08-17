@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.1.2"
+
+package:
+  name: nautobot-design-builder
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/nautobot-design-builder/nautobot_design_builder-${{ version }}.tar.gz
+  sha256: 5defd34c03312acf2d2b279b7a19528b958bbc4e7af378fb49ca8782a55cbf9f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=2.0.0,<3.0.0
+  run:
+    - python >=${{ python_min }}
+    - nautobot <4.0.0,>=3.0.0
+
+tests:
+  - python:
+      imports:
+        - nautobot_design_builder
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/nautobot/nautobot-app-design-builder
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Nautobot app that uses design templates to easily create data objects in Nautobot with minimal input from a user
+  description: |
+    Nautobot app that uses design templates to easily create data objects in Nautobot with minimal input from a user
+  repository: https://github.com/nautobot/nautobot-app-design-builder
+  documentation: https://docs.nautobot.com/projects/design-builder/en/latest/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nautobot-design-builder
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: nautobot-design-builder
+  cfe-purls:
+    - pkg:conda/nautobot-design-builder@${{ version }}?channel=conda-forge
+    - pkg:pypi/nautobot-design-builder@${{ version }}
+  cfe-upstream-repo: https://github.com/nautobot/nautobot-app-design-builder
+  cfe-upstream-homepage: https://github.com/nautobot/nautobot-app-design-builder
+  cfe-import-names: [nautobot_design_builder]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:25:18Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:25:18Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

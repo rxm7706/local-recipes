@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.82"
+  python_min: "3.11"
+
+package:
+  name: beeai-framework
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/beeai-framework/beeai_framework-${{ version }}.tar.gz
+  sha256: 4aebb8831998f80a2187697ce983027268fe576d5f477bfcb0c1205b4170b92b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=2.0.0,<3.0.0
+  run:
+    - python >=${{ python_min }}
+    - aiofiles <25.0.0,>=24.1.0
+    - cachetools >=5.5.2
+    - chevron <0.15.0,>=0.14.0
+    - json-repair <0.53.0,>=0.52.5
+    - jsonref <2.0.0,>=1.1.0
+    - litellm <2.0.0,>=1.84.0
+    - pydantic <3.0.0,>=2.12.4
+    - pydantic-settings <3.0.0,>=2.14.2
+    - requests <3.0.0,>=2.34.2
+    - deprecated <2.0.0,>=1.2.18
+    - if: osx
+      then:
+        - pytorch
+        - pytorch
+        - transformers
+        - transformers
+
+tests:
+  - python:
+      imports:
+        - beeai_framework
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://framework.beeai.dev/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+  description: |
+    REPLACE_DESCRIPTION
+  repository: https://github.com/i-am-bee/beeai-framework
+  documentation: https://i-am-bee.github.io/beeai-framework/#/python/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: beeai-framework
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: beeai-framework
+  cfe-purls:
+    - pkg:conda/beeai-framework@${{ version }}?channel=conda-forge
+    - pkg:pypi/beeai-framework@${{ version }}
+  cfe-upstream-repo: https://github.com/i-am-bee/beeai-framework
+  cfe-upstream-homepage: https://framework.beeai.dev/
+  cfe-import-names: [beeai_framework]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:49:07Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:49:07Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

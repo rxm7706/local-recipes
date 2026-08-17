@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3.6"
+
+package:
+  name: pytest-reporter-plus
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pytest-reporter-plus/pytest_reporter_plus-${{ version }}.tar.gz
+  sha256: 23823476e440e6ba7ba56a657e676b0b735444325aed43bc3bca7d70fa1c9f61
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - keyring <26.0.0,>=25.6.0
+    - yagmail <0.16.0,>=0.15.293
+
+tests:
+  - python:
+      imports:
+        - pytest_reporter_plus
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/reporterplus/pytest-report-plus
+  license: MIT
+  license_file: LICENSE
+  summary: Lightweight enhanced HTML reporter for Pytest
+  description: |
+    Lightweight enhanced HTML reporter for Pytest
+  repository: https://github.com/reporterplus/pytest-report-plus
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-reporter-plus
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-reporter-plus
+  cfe-purls:
+    - pkg:conda/pytest-reporter-plus@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-reporter-plus@${{ version }}
+  cfe-upstream-repo: https://github.com/reporterplus/pytest-report-plus
+  cfe-upstream-homepage: https://github.com/reporterplus/pytest-report-plus
+  cfe-import-names: [pytest_reporter_plus]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:44:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:44:53Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

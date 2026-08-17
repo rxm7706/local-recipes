@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.53"
+
+package:
+  name: deta
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/deta/deta-${{ version }}.tar.gz
+  sha256: 0c42c107b0fffc36450414b5ca90ba46d638f46785d0675a63e1e90bcf00a7b3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=45
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - ruamel.yaml >=0.17.0
+    - pyyaml >=6.0
+    - pydantic >=2.0
+    - httpx >=0.24.0
+    - watchfiles >=0.20.0
+    - networkx >=3.0
+    - rich >=13.0
+    - typer >=0.9.0
+
+tests:
+  - python:
+      imports:
+        - deta
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/semcod/deta
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Infrastructure anomaly detection and monitoring tool
+  description: |
+    Infrastructure anomaly detection and monitoring tool
+  repository: https://github.com/semcod/deta
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: deta
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: deta
+  cfe-purls:
+    - pkg:conda/deta@${{ version }}?channel=conda-forge
+    - pkg:pypi/deta@${{ version }}
+  cfe-upstream-repo: https://github.com/semcod/deta
+  cfe-upstream-homepage: https://github.com/semcod/deta
+  cfe-import-names: [deta]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:52:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:52:58Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

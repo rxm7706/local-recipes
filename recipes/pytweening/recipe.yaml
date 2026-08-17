@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytweening
+  version: "1.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytweening-${{ version }}.tar.gz
+  sha256: 243318b7736698066c5f362ec5c2b6434ecf4297c3c8e7caa8abfe6af4cac71b
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pytweening
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A collection of tweening / easing functions.
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE.txt
+  homepage: https://github.com/asweigart/pytweening
+
+extra:
+  recipe-maintainers:
+    - jschueller
+    - thewchan

@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytest-astropy-header
+  version: "0.2.2"
+  git_url: https://github.com/astropy/pytest-astropy-header
+  sha256: 77891101c94b75a8ca305453b879b318ab6001b370df02be2c0b6d1bb322db10
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - pytest >=4.6
+    - setuptools_scm
+  run:
+    - python >=${{ python_min }}
+    - pytest >=4.6
+
+tests:
+  - python:
+      imports:
+        - pytest_astropy_header
+        - pytest_astropy_header.display
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.rst
+  summary: Pytest plugin to add diagnostic information to the header of the test output
+  homepage: ${{ git_url }}
+  repository: ${{ git_url }}
+  documentation: ${{ git_url }}
+
+extra:
+  recipe-maintainers:
+    - mwcraig
+    - astrofrog
+    - bsipocz

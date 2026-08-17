@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.0a3"
+
+package:
+  name: dbt-graph-loader
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/dbt-graph-loader/dbt_graph_loader-${{ version }}.tar.gz
+  sha256: b0a7a56822aecdb9d8214ebe83ffa40dfe5662666ecd5299e3da8fa093b8cb0c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=1.0.0
+  run:
+    - python >=${{ python_min }}
+    - click >=8.0.0
+    - falkordb >=1.0.0
+    - neo4j >=5.0.0
+
+tests:
+  - python:
+      imports:
+        - dbt_graph_loader
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/dbt-graph-loader/
+  license: MIT
+  license_file: LICENSE
+  summary: Load DBT metadata into graph databases (Neo4j and FalkorDB)
+  description: |
+    Load DBT metadata into graph databases (Neo4j and FalkorDB)
+  repository: https://github.com/ponderedw/dbt-kg
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dbt-graph-loader
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dbt-graph-loader
+  cfe-purls:
+    - pkg:conda/dbt-graph-loader@${{ version }}?channel=conda-forge
+    - pkg:pypi/dbt-graph-loader@${{ version }}
+  cfe-upstream-repo: https://github.com/ponderedw/dbt-kg
+  cfe-upstream-homepage: https://pypi.org/project/dbt-graph-loader/
+  cfe-import-names: [dbt_graph_loader]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:52:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:52:40Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

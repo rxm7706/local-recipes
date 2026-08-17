@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.3"
+
+package:
+  name: setuptools-zig
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/setuptools-zig/setuptools_zig-${{ version }}.tar.gz
+  sha256: 95a4ca3946d33370f22e176194713ad0fffb786399a0703d10de840f58c03eb5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - distutils
+
+tests:
+  - python:
+      imports:
+        - setuptools_zig
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://sourceforge.net/p/setuptools-zig/code/ref/default/
+  license: MIT
+  license_file: LICENSE
+  summary: A setuptools extension, for building cpython extensions in Zig or C with the Zig compiler
+  description: |
+    A setuptools extension, for building cpython extensions in Zig or C with the Zig compiler
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: setuptools-zig
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: setuptools-zig
+  cfe-purls:
+    - pkg:conda/setuptools-zig@${{ version }}?channel=conda-forge
+    - pkg:pypi/setuptools-zig@${{ version }}
+  cfe-upstream-repo: https://sourceforge.net/p/setuptools-zig/code/ref/default/
+  cfe-upstream-homepage: https://sourceforge.net/p/setuptools-zig/code/ref/default/
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:43:36Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:43:36Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

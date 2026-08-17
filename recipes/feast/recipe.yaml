@@ -20,17 +20,13 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - pybindgen >=0.22.0
-    - setuptools >=60,<81
-    - setuptools-scm >=6.2
-    - sphinx !=4.0.0
-    - wheel
     - pip
+    - flit-core
   run:
     - python >=${{ python_min }}
     - click <9.0.0,>=7.0.0
     - colorama <1,>=0.3.9
-    - dill >=0.3.0,<0.4
+    - dill ~=0.3.0
     - protobuf >=4.24.0
     - jinja2 <4,>=2
     - jsonschema
@@ -49,7 +45,6 @@ requirements:
     - tqdm >=4,<5
     - typeguard >=4.0.0
     - fastapi >=0.68.0
-    - starlette >=1.0.1
     - uvicorn >=0.30.6,<=0.34.0
     - uvicorn-worker
     - gunicorn

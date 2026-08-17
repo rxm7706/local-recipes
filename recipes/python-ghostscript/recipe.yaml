@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-ghostscript
+  version: "0.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://gitlab.com/pdftools/python-ghostscript/-/archive/v${{ version }}/${{ name }}-v${{ version }}.tar.bz2
+  sha256: 4132929c7fd26a05ce2e874d3e22987770973d3c5c60c189c92f31da19ebda65
+  patches:
+    # hardcode dllpath on windows
+    - windll_path.patch
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - ghostscript
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - ghostscript
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - ghostscript
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Interface to the Ghostscript C-API, both high- and low-level, based on ctypes
+  license: GPL-3.0-or-later
+  license_file: COPYING
+  homepage: https://gitlab.com/pdftools/python-ghostscript
+
+extra:
+  recipe-maintainers:
+    - akrherz

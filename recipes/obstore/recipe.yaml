@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.11.0"
+
+package:
+  name: obstore
+  version: ${{ version }}
+
+source:
+  url: https://github.com/developmentseed/obstore/archive/refs/tags/py-v${{ version }}.tar.gz
+  sha256: bf7a2cd8f067f2209b71fae7e0d3c7146ff4db7ea589bc435b2520a90789bf5c
+
+build:
+  # Build issue https://github.com/conda-forge/obstore-feedstock/pull/21
+  number: 0
+  skip: ppc64le
+  script:
+    - ${{ PYTHON }} -m pip install ./obstore -vv
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: maturin >=1.7.0,<2.0
+    - ${{ stdlib("c") }}
+    - ${{ compiler("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - maturin >=1.4.0,<2.0
+    - pip
+  run:
+    - python
+    - if: match(python, "<3.13")
+      then: typing_extensions >=4.0.0
+
+tests:
+  - python:
+      imports:
+        - obstore
+      pip_check: true
+
+about:
+  summary: Simple, fast integration with Amazon S3, Google Cloud Storage, Azure Storage, and S3-compliant APIs like Cloudflare R2.
+  license: MIT
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  homepage: https://github.com/developmentseed/obstore
+  repository: https://github.com/developmentseed/obstore
+  documentation: https://developmentseed.org/obstore/latest/
+
+extra:
+  recipe-maintainers:
+    - kylebarron

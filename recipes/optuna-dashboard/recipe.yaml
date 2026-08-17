@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: optuna-dashboard
+  version: "0.20.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 52a6da480a2500b6993c8fa61c81063b0dbe730edbd9f651c81b318393cca71d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - optuna-dashboard = optuna_dashboard._cli:main
+
+requirements:
+  host:
+    - pip
+    - setuptools
+    - python ${{ python_min }}
+  run:
+    - bottle >=0.13.0
+    - optuna >=3.6.0
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - optuna_dashboard
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - optuna-dashboard --help
+
+about:
+  summary: Real-time dashboard for Optuna.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/optuna/optuna-dashboard
+
+extra:
+  recipe-maintainers:
+    - nabenabe0928
+    - c-bata
+    - g-votte
+    - HideakiImamura
+    - hvy
+    - iwiwi
+    - not522
+    - sile
+    - smly
+    - toshihikoyanase
+    - ytsmiling

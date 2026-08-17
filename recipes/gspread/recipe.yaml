@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.2.1"
+
+package:
+  name: gspread
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/gspread/gspread-${{ version }}.tar.gz
+  sha256: 2c7c99f7c32ebea6ec0d36f2d5cbe8a2be5e8f2a48bde87ad1ea203eff32bd03
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - flit >=3.2,<4
+  run:
+    - python >=${{ python_min }}
+    - google-auth >=1.12.0
+    - google-auth-oauthlib >=0.4.1
+
+tests:
+  - python:
+      imports:
+        - gspread
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Google Spreadsheets Python API
+  homepage: https://github.com/burnash/gspread
+  repository: https://github.com/burnash/gspread
+  documentation: http://gspread.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - akashvyom
+    - burnash

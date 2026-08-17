@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: wagtailstreamforms
   version: "5.2.6"
 
 package:
-  name: wagtailstreamforms
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/w/wagtailstreamforms/wagtailstreamforms-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtailstreamforms-${{ version }}.tar.gz
   sha256: 2b8d8215a49f4e593d3ffc2465ca197d8d4818a4bdd05a65a44b9a7aae1679f6
 
 build:
@@ -19,39 +20,32 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }}
     - django
     - django-recaptcha >=4.0.0
     - psycopg >=3.2.9
     - tox >=4.26.0
-    - wagtail >=6.0,<8.0
     - wagtail-modeladmin >=2.2.0
-    - wagtail-generic-chooser >=0.7.0
+    - python >=${{ python_min }}
+    - wagtail >=6.0,<8.0
     - unidecode >=0.04.14,<2.0
+    - wagtail-generic-chooser >=0.7.0
 
 tests:
   - python:
       imports:
         - wagtailstreamforms
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Wagtail forms in a streamfield
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/AccentDesign/wagtailstreamforms/
-  repository: https://github.com/AccentDesign/wagtailstreamforms/
-  description: |
-    A Wagtail CMS package providing a StreamField block to build and embed
-    user-submittable forms within page content, with field choosers and
-    submission handling.
 
 extra:
   recipe-maintainers:

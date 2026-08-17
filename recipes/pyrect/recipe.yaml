@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyrect
+  version: "0.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/PyRect-${{ version }}.tar.gz
+  sha256: f65155f6df9b929b67caffbd57c0947c5ae5449d3b580d178074bffb47a09b78
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pyrect
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: PyRect is a simple module with a Rect class for Pygame-like rectangular areas.
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE.txt
+  homepage: https://github.com/asweigart/pyrect
+
+extra:
+  recipe-maintainers:
+    - thewchan

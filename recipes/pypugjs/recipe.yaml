@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pypugjs
+  version: "5.13.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pypugjs-${{ version }}.tar.gz
+  sha256: d5fc9436ed9064f1adff8877149954bb8c364453de6ea57f04d6fc35fdbbd09f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - pypugjs = pypugjs.convert:convert_file
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - charset-normalizer >=2.1.0,<3.0.0
+    - six >=1.15.0,<2.0.0
+
+tests:
+  - python:
+      imports:
+        - pypugjs
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+        - pip
+    script:
+      - pypugjs --help
+
+about:
+  summary: PugJS syntax template adapter for Django, Jinja2, Mako and Tornado templates
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/kakulukia/pypugjs
+
+extra:
+  recipe-maintainers:
+    - kiwi0fruit
+    - mfansler

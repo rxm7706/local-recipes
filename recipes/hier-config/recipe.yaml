@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.7.0"
+
+package:
+  name: hier-config
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/hier-config/hier_config-${{ version }}.tar.gz
+  sha256: 5e5d26437b53d5d2744f796422a5994e913deba4d3e86c929ca2954d75004518
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=2.3.2
+  run:
+    - python >=${{ python_min }}
+    - pydantic <3.0,>=2.9
+
+tests:
+  - python:
+      imports:
+        - hier_config
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/hier-config/
+  license: MIT
+  license_file: LICENSE
+  summary: A network configuration query and comparison library, used to build remediation configurations.
+  description: |
+    A network configuration query and comparison library, used to build remediation configurations.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: hier-config
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: hier-config
+  cfe-purls:
+    - pkg:conda/hier-config@${{ version }}?channel=conda-forge
+    - pkg:pypi/hier-config@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/hier-config/
+  cfe-upstream-homepage: https://pypi.org/project/hier-config/
+  cfe-import-names: [hier_config]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:16:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:16:40Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

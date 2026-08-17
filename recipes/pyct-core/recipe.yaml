@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyct-core
+  version: "0.5.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/p/pyct/pyct-${{ version }}.tar.gz
+  sha256: dd9f4ac5cbd8e37c352c04036062d3c5f67efec76d404761ef16b0cbf26aa6a0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - pyct=pyct.__main__:main
+
+requirements:
+  host:
+    - python >=3.7
+    - param >=1.7.0
+    - setuptools >=61.0
+    - pip
+  run:
+    - python >=3.7
+    - param >=1.7.0
+    # cli
+    - pyyaml
+    - requests
+  run_constraints:
+    - pyct 0.5.0.*
+
+tests:
+  - python:
+      imports:
+        - pyct
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - pyct --help
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Common tasks for package building (e.g. bundle examples)
+  homepage: https://github.com/pyviz/pyct
+  repository: https://github.com/pyviz/pyct
+  documentation: https://github.com/pyviz/pyct#pyctbuild
+
+extra:
+  recipe-maintainers:
+    - ceball

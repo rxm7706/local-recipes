@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: fastapi-mcp
+  version: "0.4.0"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fastapi_mcp-${{ version }}.tar.gz
+  sha256: d4ca9410996f4c7b8ea0d7b20fdf79878dc359ebf89cbf3b222e0b675a55097d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.10.*
+    - hatchling
+    - tomli
+    - pydantic
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - fastapi >=0.100.0
+    - typer >=0.9.0
+    - rich >=13.0.0
+    - mcp >=1.12.0
+    - pydantic >=2.0.0
+    - pydantic-settings >=2.5.2
+    - uvicorn >=0.20.0
+    - httpx >=0.24.0
+    - requests >=2.25.0
+    - tomli >=2.2.1
+
+tests:
+  - python:
+      imports:
+        - fastapi_mcp
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Automatic MCP server generator for FastAPI applications - converts FastAPI endpoints to MCP tools for LLM integration
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/tadata-org/fastapi_mcp
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

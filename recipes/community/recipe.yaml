@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0b1"
+
+package:
+  name: community
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/community/community-${{ version }}.tar.gz
+  sha256: a7511f105ed04d28f2df09f4bab465592405eca3b6c625b19b112c4f15e78505
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - community
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/ewdurbin/community
+  license: MIT
+  license_file: LICENSE
+  summary: merge together wellness checks to unify your shit
+  description: |
+    merge together wellness checks to unify your shit
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: community
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: community
+  cfe-purls:
+    - pkg:conda/community@${{ version }}?channel=conda-forge
+    - pkg:pypi/community@${{ version }}
+  cfe-upstream-repo: https://github.com/ewdurbin/community
+  cfe-upstream-homepage: https://github.com/ewdurbin/community
+  cfe-import-names: [community]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:51:06Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:51:06Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

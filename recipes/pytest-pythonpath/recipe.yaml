@@ -2,24 +2,25 @@
 schema_version: 1
 
 context:
+  name: pytest-pythonpath
   version: "0.7.4"
 
 package:
-  name: pytest-pythonpath
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/p/pytest-pythonpath/pytest-pythonpath-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytest-pythonpath-${{ version }}.tar.gz
   sha256: 64e195b23a8f8c0c631fb16882d9ad6fa4137ed1f2961ddd15d52065cd435db6
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
@@ -31,18 +32,13 @@ tests:
       imports:
         - pytest_pythonpath
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: pytest plugin for adding to the PYTHONPATH from command line or configs.
   license: MIT
   license_file: LICENSE.txt
   homepage: https://github.com/bigsassy/pytest-pythonpath
-  repository: https://github.com/bigsassy/pytest-pythonpath
-  description: |
-    pytest plugin for adding to the PYTHONPATH from command line or configs.
 
 extra:
   recipe-maintainers:

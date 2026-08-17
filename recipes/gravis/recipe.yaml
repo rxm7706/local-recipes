@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: gravis
+  version: "0.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/gravis-${{ version }}.tar.gz
+  sha256: a36342602aa7da3bbd674c970439717926a8f7ca0678aa82cc5d756e8c2a529b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.5
+    - pip
+  run:
+    - python >=3.5
+    - setuptools >=40.0
+
+tests:
+  - python:
+      imports:
+        - gravis
+      pip_check: true
+
+about:
+  summary: Interactive graph visualizations with Python and HTML/CSS/JS.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://robert-haas.github.io/gravis-docs/
+
+extra:
+  recipe-maintainers:
+    - julian-belina

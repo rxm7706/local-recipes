@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-simple-history
+  version: "3.13.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_simple_history-${{ version }}.tar.gz
+  sha256: ca3c1e4ccd5f16f45fbbef6015ee2a246465fd9bd924100df8e9dfb368c4f26c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatch-fancy-pypi-readme
+    - hatch-vcs
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=5.2
+
+tests:
+  - python:
+      imports:
+        - simple_history
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Store model history and view/revert changes from admin site.
+  description: django-simple-history stores Django model state on every create/update/delete.
+  homepage: https://github.com/treyhunner/django-simple-history
+  repository: https://github.com/treyhunner/django-simple-history
+  documentation: https://django-simple-history.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - rxm7706
+    - sannykr

@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: azure-core-tracing-opentelemetry
-  version: "1.0.0b12"
+  version: 1.0.0b13
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/azure_core_tracing_opentelemetry-${{ version }}.tar.gz
-  sha256: bb454142440bae11fd9d68c7c1d67ae38a1756ce808c5e4d736730a7b4b04144
+  sha256: 6cb2f8dfd5dee6c11843db0205fc92e2434e1a272c169c953afe92483aafc7eb
 
 build:
   number: 0
@@ -20,33 +20,29 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }},<4.0
-    - opentelemetry-api >=1.12.0
-    - azure-core >=1.24.0
+    - python >=${{ python_min }}
+    - opentelemetry-api <2.0.0,>=1.12.0
+    - azure-core <2.0.0,>=1.24.0
 
 tests:
   - python:
       imports:
         - azure.core.tracing.ext.opentelemetry_span
+        - azure.core.tracing
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version: ${{ python_min }}
 
 about:
   summary: Microsoft Azure Azure Core OpenTelemetry plugin Library for Python
-  homepage: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/core/azure-core-tracing-opentelemetry
-  description: |
-       Microsoft Azure Azure Core OpenTelemetry plugin Library for Python.
-  repository: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/core/azure-core-tracing-opentelemetry
-  documentation: https://github.com/Azure/azure-sdk-for-python/blob/main/sdk/core/azure-core-tracing-opentelemetry/README.md
   license: MIT
   license_file: LICENSE
+  homepage: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/core/azure-core-tracing-opentelemetry
 
 extra:
   recipe-maintainers:
     - rxm7706
     - conda-forge/opentelemetry-api
-    - conda-forge/opentelemetry-sdk

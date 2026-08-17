@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.7.5"
+
+package:
+  name: pytest-forked
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pytest-forked/pytest_forked-${{ version }}.tar.gz
+  sha256: 00f2bee51612f29b8e6b81eed2c3b2975e824c2693394f5bdaf7a1369078ba5f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+    - setuptools_scm
+  run:
+    - python >=${{ python_min }}
+    - pytest >=3.10
+    - py
+
+tests:
+  - python:
+      imports:
+        - pytest_forked
+      pip_check: false
+      python_version: ${{ python_min }}
+  - files:
+      recipe:
+        - dummy_test.py
+    requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - pytest --forked dummy_test.py
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: run tests in isolated forked subprocesses
+  homepage: https://github.com/pytest-dev/pytest-forked
+  repository: https://github.com/pytest-dev/pytest-forked
+
+extra:
+  recipe-maintainers:
+    - nicoddemus

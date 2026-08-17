@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.3.0"
+
+package:
+  name: pysnmp-lextudio
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pysnmp-lextudio/pysnmp_lextudio-${{ version }}.tar.gz
+  sha256: e946c9a80b48af4cfe3c8281eecb396be48cfa47c14107696aff6d10d7fa5be1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=1.0.0
+  run:
+    - python >=${{ python_min }}
+    - pyasn1 !=0.5.0,<0.6.1,>=0.4.8
+    - pysnmpcrypto <0.0.5,>=0.0.4
+    - pysmi-lextudio <2.0.0,>=1.3.0
+    - pytest-cov <5.0.0,>=4.0.0
+
+tests:
+  - python:
+      imports:
+        - pysnmp
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/lextudio/pysnmp
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: A deprecated package. Please use 'pysnmp' instead.
+  description: |
+    A deprecated package. Please use 'pysnmp' instead.
+  repository: https://github.com/lextudio/pysnmp
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pysnmp-lextudio
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pysnmp-lextudio
+  cfe-purls:
+    - pkg:conda/pysnmp-lextudio@${{ version }}?channel=conda-forge
+    - pkg:pypi/pysnmp-lextudio@${{ version }}
+  cfe-upstream-repo: https://github.com/lextudio/pysnmp
+  cfe-upstream-homepage: https://github.com/lextudio/pysnmp
+  cfe-import-names: [pysnmp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:38:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:38:12Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

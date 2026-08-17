@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: argcomplete
+  version: "3.7.2"
+
+package:
+  name: argcomplete
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/argcomplete-${{ version }}.tar.gz
+  sha256: aad8b69a0b9969edb62db0d1752354c0d50717b10e0cbb00e2a958381b9fc6b9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - hatch-vcs
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - argcomplete
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  license: Apache-2.0
+  summary: Bash tab completion for argparse
+  license_file:
+    - LICENSE.rst
+    - NOTICE
+  homepage: https://github.com/kislyuk/argcomplete
+  repository: https://github.com/kislyuk/argcomplete
+  documentation: https://argcomplete.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - asmeurer
+    - xylar

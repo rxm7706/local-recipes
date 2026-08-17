@@ -1,0 +1,123 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: unicorn
+  version: "2.1.2"
+
+recipe:
+  name: ${{ name|lower }}-split
+  version: ${{ version }}
+
+source:
+  url: https://github.com/unicorn-engine/unicorn/archive/${{ version | replace("rc", "-rc") }}.tar.gz
+  sha256: 98687aac94bdfeeed17f80af980b3baafd79f1c3be3aec2e913905d5988f7c4a
+  target_directory: source
+
+build:
+  number: 0
+  skip: win
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - pkg-config
+    - cmake
+    - if: unix
+      then: make
+    - if: win
+      then: ninja
+  host:
+  run_exports:
+    - ${{ pin_subpackage('unicorn', upper_bound='x.x.x') }}
+
+outputs:
+  - package:
+      name: unicorn
+    build:
+      script:
+        - cmake --install source/build
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
+        - pkg-config
+        - cmake
+        - if: unix
+          then: make
+        - if: win
+          then: ninja
+    tests:
+      - script:
+          - if: unix
+            then: test -f $PREFIX/lib/libunicorn$SHLIB_EXT
+          - if: win
+            then: if not exist %LIBRARY_BIN%\\unicorn.dll exit 1
+  - package:
+      name: python-unicorn
+    build:
+      skip: win
+      script:
+        - export LIBUNICORN_PATH="${PREFIX}/lib"
+        - cd source/bindings/python
+        - ${PYTHON} -m pip install . -vv
+    requirements:
+      build:
+        - if: build_platform != target_platform
+          then: python
+        - if: build_platform != target_platform
+          then: cross-python_${{ target_platform }}
+      host:
+        - ${{ pin_subpackage("unicorn", exact=True) }}
+        - pip
+        - python
+        - setuptools
+      run:
+        - python
+        - ${{ pin_subpackage("unicorn", exact=True) }}
+        - setuptools
+    tests:
+      - python:
+          imports:
+            - unicorn
+          pip_check: true
+
+about:
+  license: LGPL-2.0-only AND GPL-2.0-only AND GPL-2.0-or-later
+  license_file:
+    - source/COPYING
+    - source/COPYING_GLIB
+    - source/COPYING.LGPL2
+    - source/qemu/LICENSE
+  summary: Unicorn CPU emulator framework (ARM, AArch64, M68K, Mips, Sparc, X86)
+  description: |
+    Unicorn is a lightweight, multi-platform, multi-architecture CPU emulator framework
+    based on [QEMU](http://qemu.org).
+
+    Unicorn offers some unparalleled features:
+
+    - Multi-architecture: ARM, ARM64 (ARMv8), M68K, MIPS, SPARC, and X86 (16, 32, 64-bit)
+    - Clean/simple/lightweight/intuitive architecture-neutral API
+    - Implemented in pure C language, with bindings for Crystal, Clojure, Visual Basic, Perl,
+    Rust, Ruby, Python, Java, .NET, Go, Delphi/Free Pascal, Haskell, Pharo, and Lua.
+    - Native support for Windows & *nix (with Mac OSX, Linux, *BSD & Solaris confirmed)
+    - High performance via Just-In-Time compilation
+    - Support for fine-grained instrumentation at various levels
+    - Thread-safety by design
+    - Distributed under free software license GPLv2
+  homepage: https://www.unicorn-engine.org/
+  repository: https://github.com/unicorn-engine/unicorn
+  documentation: https://www.unicorn-engine.org/docs/
+
+extra:
+  feedstock-name: unicorn
+  recipe-maintainers:
+    - chrisburr
+    - pavelzw
+    - 48762
+    - GZTimeWalker

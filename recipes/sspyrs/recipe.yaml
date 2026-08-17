@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3"
+
+package:
+  name: sspyrs
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sspyrs/sspyrs-${{ version }}.tar.gz
+  sha256: c460b9ec63cf72fc0e96983e53bf1e1c1fb2d275cc8e1f49010efffc8ad20ba9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - sspyrs
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.python.org/pypi/sspyrs
+  license: MIT
+  license_file: LICENSE
+  summary: Lightweight interface for SSRS reports to python
+  description: |
+    Lightweight interface for SSRS reports to python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sspyrs
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sspyrs
+  cfe-purls:
+    - pkg:conda/sspyrs@${{ version }}?channel=conda-forge
+    - pkg:pypi/sspyrs@${{ version }}
+  cfe-upstream-repo: https://pypi.python.org/pypi/sspyrs
+  cfe-upstream-homepage: https://pypi.python.org/pypi/sspyrs
+  cfe-import-names: [sspyrs]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:11:28Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:11:28Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

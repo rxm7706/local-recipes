@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3.5"
+
+package:
+  name: langchain-writer
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/langchain-writer/langchain_writer-${{ version }}.tar.gz
+  sha256: 8e1049228908215bbe911cfa9f485d929fcd7f4d65f2dfb3f7b847b91fe41a3e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=1.0.0
+  run:
+    - python >=${{ python_min }}
+    - langchain-core <0.4.0,>=0.3.76
+    - langchain-text-splitters <0.4.0,>=0.3.5
+    - writer-sdk <3.0,>=2.3.0
+
+tests:
+  - python:
+      imports:
+        - langchain_writer
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://www.writer.com
+  license: MIT
+  license_file: LICENSE
+  summary: An integration package connecting Writer and LangChain (includes deprecated features such as PDFParser and WriterTextSplitter)
+  description: |
+    An integration package connecting Writer and LangChain (includes deprecated features such as PDFParser and WriterTextSplitter)
+  repository: https://github.com/writer/langchain-writer
+  documentation: https://dev.writer.com
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langchain-writer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langchain-writer
+  cfe-purls:
+    - pkg:conda/langchain-writer@${{ version }}?channel=conda-forge
+    - pkg:pypi/langchain-writer@${{ version }}
+  cfe-upstream-repo: https://github.com/writer/langchain-writer
+  cfe-upstream-homepage: https://www.writer.com
+  cfe-import-names: [langchain_writer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:52:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:52:54Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

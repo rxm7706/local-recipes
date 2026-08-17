@@ -1,0 +1,114 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: rattler-build
+  version: "0.73.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/prefix-dev/rattler-build/archive/refs/tags/v${{ version }}.tar.gz
+
+  sha256: dd5f7c716bf77d621f5a987d789f9d02072d456f1733f2aecbd16556bdc68054
+
+build:
+  number: 0
+  script:
+    env:
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      # Use cmake to build aws-lc-sys, because conda's CFLAGS inject -O2 which
+      # overrides the -O0 required by jitterentropy-base.c, causing a build failure.
+      AWS_LC_SYS_CMAKE_BUILDER: "1"
+      CARGO_PROFILE_RELEASE_LTO: ${{ "fat" if not linux and (aarch64 or ppc64le) else "thin" }}
+      JEMALLOC_SYS_WITH_LG_PAGE: ${{ '16' if (aarch64 or ppc64le) else '' }}
+      MACOSX_SDK_VERSION: ${{ MACOSX_SDK_VERSION | default("") }}
+    content:
+      - if: osx and x86_64
+        then:
+          - if [[ "${MACOSX_SDK_VERSION}" != "11.0" ]]; then exit 1; fi
+          # use the default linker for macOS as we are hitting a bug with the conda-forge linker
+          - unset CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER
+      - if: unix
+        then:
+          # Unix recipe
+          - set -x
+          - export OPENSSL_DIR="$PREFIX"
+          - if: ppc64le
+            then:
+              # Rust 1.90 uses lld by default and has issue linking to conda libraries
+              # compiled with newer gcc
+              - export RUSTFLAGS="$RUSTFLAGS -C link-arg=-fuse-ld=bfd"
+              - cargo auditable install --locked --no-default-features --features native-tls,recipe-generation --bin rattler-build --root ${PREFIX} --path . --no-track
+            else:
+              - cargo auditable install --locked --no-default-features --features native-tls,recipe-generation,s3,sigstore,performance --bin rattler-build --root ${PREFIX} --path . --no-track
+          - cargo-bundle-licenses --format yaml --output ${SRC_DIR}/THIRDPARTY.yml
+          - if: not ppc64le
+            then:
+              - mkdir -p $PREFIX/share/zsh/site-functions
+              - $PREFIX/bin/rattler-build completion --shell zsh > $PREFIX/share/zsh/site-functions/_rattler-build
+              - mkdir -p $PREFIX/share/bash-completion/completions
+              - $PREFIX/bin/rattler-build completion --shell bash > $PREFIX/share/bash-completion/completions/rattler-build
+              - mkdir -p $PREFIX/share/fish/vendor_completions.d
+              - $PREFIX/bin/rattler-build completion --shell fish > $PREFIX/share/fish/vendor_completions.d/rattler-build.fish
+        else:
+          # Win recipe
+          # hack: path too long for pixi_config subpackage, https://github.com/prefix-dev/pixi/issues/3691
+          - set CARGO_HOME=C:\.cargo
+          - md %CARGO_HOME%
+          - cargo auditable install --locked --no-default-features --features native-tls,recipe-generation,s3,sigstore,performance --bin rattler-build --root %PREFIX% --path . --no-track
+          - cargo-bundle-licenses --format yaml --output %SRC_DIR%/THIRDPARTY.yml
+
+requirements:
+  build:
+    - ${{ compiler('rust') }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - if: unix
+      then: make
+    - cargo-auditable
+    - cargo-bundle-licenses
+  host:
+    - ${{ "openssl" if linux }}
+  run:
+    - ${{ "patchelf" if linux }}
+
+tests:
+  - package_contents:
+      bin:
+        - rattler-build
+      files:
+        - if: unix and not ppc64le
+          then:
+            - share/zsh/site-functions/_rattler-build
+            - share/bash-completion/completions/rattler-build
+            - share/fish/vendor_completions.d/rattler-build.fish
+      strict: true
+  - script:
+      - rattler-build --help
+
+
+about:
+  homepage: https://github.com/prefix-dev/rattler-build
+  summary: rattler-build is the universal conda package builder for Windows, macOS and Linux
+  description: |
+    The rattler-build tooling and library creates cross-platform relocatable binaries / packages
+    from a simple recipe format.
+    The recipe format is heavily inspired by conda-build and boa, and the output of a regular
+    rattler-build run is a package that can be installed using mamba, conda or rattler.
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+    - CONDA_BUILD_LICENSE.txt
+  documentation: https://rattler.build
+
+extra:
+  recipe-maintainers:
+    - Hofer-Julian
+    - nichmor
+    - wolfv
+    - pavelzw
+    - '0xbe7a'

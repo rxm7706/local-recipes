@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: microsoft-kiota-http
+  version: 1.11.9
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/microsoft_kiota_http-${{ version }}.tar.gz
+  sha256: a7254df64665cadb1ff081f6c8c4df86b98d2e901985b56e746ab91bfa516d75
+
+build:
+  noarch: python
+  script: python -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core >=3.2,<5
+  run:
+    - python >=${{ python_min }},<4.0
+    - microsoft-kiota-abstractions >=1.11.1,<2.0.0
+    - opentelemetry-api >=1.27.0
+    - opentelemetry-sdk >=1.27.0
+    - httpx >=0.25,<1.0.0
+    # start httpx[http2]
+    - h2 >=3,<5
+    # end httpx[http2]
+tests:
+  - python:
+      imports:
+        - kiota_http
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  homepage: https://github.com/microsoft/kiota-python/tree/main/packages/http/httpx
+  summary: Kiota http request adapter implementation for httpx library
+  license: MIT
+  license_file: LICENSE
+  documentation: https://github.com/microsoft/kiota-python/blob/main/packages/http/httpx/README.md
+  repository: https://github.com/microsoft/kiota-python/tree/main/packages/http/httpx
+
+extra:
+  recipe-maintainers:
+    - xylar

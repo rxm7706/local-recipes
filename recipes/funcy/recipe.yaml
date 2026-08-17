@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: funcy
+  version: "2.0"
+  sha256: 3963315d59d41c6f30c04bc910e10ab50a3ac4a225868bfa96feed133df075cb
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vvv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - funcy
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A collection of fancy functional tools focused on practicality.
+  homepage: https://github.com/Suor/funcy
+  repository: https://github.com/Suor/funcy
+  documentation: http://funcy.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - synapticarbors

@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.70.19"
+
+package:
+  name: multiprocess
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/multiprocess/multiprocess-${{ version }}.tar.gz
+  sha256: 952021e0e6c55a4a9fe4cd787895b86e239a40e76802a789d6305398d3975897
+  patches:
+    - 0001-add-packaging.patch
+    - 0002-unpin-py313.patch
+
+build:
+  number: 0
+  skip: match(python, "<3.8")
+  script:
+    # Temp fix:
+    # Upstream included the wrong tag in the setup.cfg
+    # during the source upload. This deletes it to allow it to be regenerated
+    # https://github.com/uqfoundation/multiprocess/pull/197
+    - if: unix
+      then: rm setup.cfg
+    - if: win
+      then: del setup.cfg
+    - ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+  host:
+    - pip
+    - python
+    - setuptools >=42
+    - dill >=0.4.1
+    - packaging
+  run:
+    - python
+    - dill >=0.4.1
+
+tests:
+  - python:
+      imports:
+        - multiprocess
+        - multiprocess.dummy
+      pip_check: true
+
+about:
+  license: BSD-3-Clause
+  license_file: COPYING
+  summary: better multiprocessing and multithreading in python
+  homepage: https://github.com/uqfoundation/multiprocess
+  documentation: https://multiprocess.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - jschueller
+    - synapticarbors
+    - thewchan

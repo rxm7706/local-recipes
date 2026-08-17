@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.16.1"
+
+package:
+  name: django-python3-ldap
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-python3-ldap/django_python3_ldap-${{ version }}.tar.gz
+  sha256: a0ed9fb3cdff52599fd89c18521928f24dbc27f1e878528a160a2cd9542071da
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - asgiref >=2.0.0
+    - ldap3 <3,>=2.5
+    - pyasn1 <0.7,>=0.4.6
+
+tests:
+  - python:
+      imports:
+        - django_python3_ldap
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/etianen/django-python3-ldap
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Django LDAP user authentication backend for Python 3.
+  description: |
+    Django LDAP user authentication backend for Python 3.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-python3-ldap
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-python3-ldap
+  cfe-purls:
+    - pkg:conda/django-python3-ldap@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-python3-ldap@${{ version }}
+  cfe-upstream-repo: https://github.com/etianen/django-python3-ldap
+  cfe-upstream-homepage: https://github.com/etianen/django-python3-ldap
+  cfe-import-names: [django_python3_ldap]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:53:48Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:53:48Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

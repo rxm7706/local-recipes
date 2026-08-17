@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4.0"
+
+package:
+  name: myst-nb
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/myst-nb/myst_nb-${{ version }}.tar.gz
+  sha256: c145598de62446a6fd009773dd071a40d3b76106ace780de1abdfc6961f614c2
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --ignore-installed --no-build-isolation
+  python:
+    entry_points:
+      - mystnb-docutils-html = myst_nb.docutils_:cli_html
+      - mystnb-docutils-html5 = myst_nb.docutils_:cli_html5
+      - mystnb-docutils-latex = myst_nb.docutils_:cli_latex
+      - mystnb-docutils-pseudoxml = myst_nb.docutils_:cli_pseudoxml
+      - mystnb-docutils-xml = myst_nb.docutils_:cli_xml
+      - mystnb-quickstart = myst_nb.cli:quickstart
+      - mystnb-to-jupyter = myst_nb.cli:md_to_nb
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - flit-core >=3.11,<4
+  run:
+    - importlib-metadata
+    - ipykernel
+    - ipython
+    - jupyter-cache >=0.5
+    - myst-parser >=1.0.0
+    - nbclient
+    - nbformat >=5.0
+    - python >=${{ python_min }}
+    - pyyaml
+    - sphinx >=5
+    - typing_extensions
+
+tests:
+  - python:
+      pip_check: true
+      python_version: ${{ python_min }}.*
+      imports:
+        - myst_nb
+        - myst_nb.ext.glue
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - mystnb-docutils-html --help
+      - mystnb-docutils-html5 --help
+      - mystnb-docutils-latex --help
+      - mystnb-docutils-pseudoxml --help
+      - mystnb-docutils-xml --help
+      - mystnb-quickstart --help
+      - mystnb-to-jupyter --help
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A Jupyter Notebook Sphinx reader built on top of the MyST markdown parser.
+  homepage: https://github.com/executablebooks/MyST-NB
+  documentation: https://myst-nb.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - mmcky
+    - conda-forge/jupyter-book

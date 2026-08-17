@@ -2,8 +2,8 @@
 schema_version: 1
 
 context:
-  name: prometheus-client
-  version: "0.24.1"
+  name: prometheus_client
+  version: "0.26.0"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/prometheus_client-${{ version }}.tar.gz
-  sha256: 7e0ced7fbbd40f7b84962d5d2ab6f17ef88a72504dcf7c0b40737b43b2a461f9
+  sha256: 04a91bcf94e2cf74a44a1a874d651a2e853ed354b6e822f3b7487751465d5c2b
 
 build:
   number: 0
@@ -20,29 +20,30 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - setuptools >=77.0.0
+    - python ${{ python_min }}
+    - setuptools
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
 
 tests:
   - python:
       imports:
         - prometheus_client
+        - prometheus_client.bridge
       pip_check: true
-      python_version:
-      - ${{ python_min }}.*
-      - "*"
+      python_version: ${{ python_min }}
 
 about:
-  summary: Python client for the Prometheus monitoring system.
-  license: BSD-2-Clause AND Apache-2.0
+  license: Apache-2.0
+  summary: Python client for the Prometheus monitoring system
   license_file:
-    - LICENSE
     - NOTICE
+    - LICENSE
   homepage: https://github.com/prometheus/client_python
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - jessicaaustin
+    - kwilcox
+    - ocefpaf

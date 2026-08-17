@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyfiglet
+  version: "1.0.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyfiglet-${{ version }}.tar.gz
+  sha256: db9c9940ed1bf3048deff534ed52ff2dafbbc2cd7610b17bb5eca1df6d4278ef
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - pyfiglet = pyfiglet:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=68.0.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pyfiglet
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - pyfiglet --help
+
+about:
+  summary: Pure-python FIGlet implementation
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/pwaller/pyfiglet
+
+extra:
+  recipe-maintainers:
+    - thewchan
+    - pmlandwehr

@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: red-black-tree-mod
+  version: "1.22"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/red-black-tree-mod-${{ version }}.tar.gz
+  sha256: 38e3652903a2bf96379c27c2082ca0b7b905158662dd7ef0c97f4fd93a9aa908
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - red_black_dict_mod
+        - red_black_set_mod
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  summary: Flexible python implementation of red black trees
+  license: MIT
+  license_file: COPYING
+  homepage: http://stromberg.dnsalias.org/~strombrg/red-black-tree-mod/
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jsonpath-rw
+  version: 1.4.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jsonpath-rw-${{ version }}.tar.gz
+  sha256: 05c471281c45ae113f6103d1268ec7a4831a2e96aa80de45edc89b11fac4fbec
+
+build:
+  number: 3
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - jsonpath = jsonpath_rw.bin.jsonpath:entry_point
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - ply
+    - decorator
+    - six
+
+tests:
+  - python:
+      imports:
+        - jsonpath_rw
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+      - jsonpath --help
+
+about:
+  summary: A robust and significantly extended implementation of JSONPath for Python, with a clear AST for metaprogramming.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/kennknowles/python-jsonpath-rw
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

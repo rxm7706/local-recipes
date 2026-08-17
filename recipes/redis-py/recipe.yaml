@@ -2,16 +2,15 @@
 schema_version: 1
 
 context:
-  name: redis-py
-  version: "6.0.0"
+  version: "8.1.0"
 
 package:
-  name: ${{ name|lower }}
+  name: redis-py
   version: ${{ version }}
 
 source:
   url: https://github.com/redis/redis-py/archive/v${{ version }}.tar.gz
-  sha256: 5ebdb60dc099960106d40e132d4a5d3454eae2ad318bacc4f0c2b6739589548a
+  sha256: 1f71accd16bb24383bd89fc213f901c04718d31ade0229f754d7ba37111c0661
 
 build:
   number: 0
@@ -20,11 +19,11 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - hatchling
+    - python ${{ python_min }}
     - pip
+    - hatchling
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - async-timeout >=4.0.3
 
 tests:
@@ -32,19 +31,18 @@ tests:
       imports:
         - redis
       pip_check: true
+      python_version: ${{ python_min }}
 
 about:
-  summary: Python client for Redis database and key-value store
-  homepage: https://redis.io/
+  license: MIT
+  license_file: LICENSE
+  summary: Python client for Redis key-value store
   description: |
     The Python interface to the Redis key-value store. Requires a running
     Redis server.
-  repository: https://github.com/redis/redis-py
-  documentation: https://redis.io/docs/latest/
-  license: MIT
-  license_file: LICENSE
-  license_family: MIT
-  license_url: https://github.com/redis/redis-py/blob/master/LICENSE
+  homepage: https://github.com/redis/redis-py/
+  repository: https://github.com/redis/redis-py/
+  documentation: https://pypi.python.org/pypi/redis
 
 extra:
   recipe-maintainers:

@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pymongo-search-utils
+  version: 0.3.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/pymongo_search_utils/pymongo_search_utils-${{ version }}.tar.gz
+  sha256: 56148987ce9ff191eb1cd0f56c01d3dae497a3cb6d7b7db75ec894a9afcbe418
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pymongo >=4.12.0
+
+tests:
+  - python:
+      imports:
+        - pymongo_search_utils
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  summary: Utility library for working with vector search in MongoDB using PyMongo
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/mongodb-labs/pymongo-search-utils
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4.2"
+
+package:
+  name: partd
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/p/partd/partd-${{ version }}.tar.gz
+  sha256: d022c33afbdc8405c226621b015e8067888173d85f7f5ecebb3cafed9a20f02c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.9
+    - setuptools >=61.2
+    - versioneer =0.29
+    - tomli
+  run:
+    - python >=3.9
+    - locket
+    - toolz
+
+tests:
+  - python:
+      imports:
+        - partd
+      pip_check: true
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Data structure for on-disk shuffle operations
+  homepage: https://github.com/dask/partd
+
+extra:
+  recipe-maintainers:
+    - jcrist
+    - mrocklin
+    - TomAugspurger
+    - jrbourbeau

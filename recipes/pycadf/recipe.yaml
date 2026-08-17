@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.1.0"
+  python_min: "3.11"
+
+package:
+  name: pycadf
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pycadf/pycadf-${{ version }}.tar.gz
+  sha256: 7f9be03e774ce3cc97675aac7c807c017cad6775961da7e9508f75bcc9f43267
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - pbr >=6.1.1
+  run:
+    - python >=${{ python_min }}
+    - oslo.config >=5.2.0
+    - oslo.serialization !=2.19.1,>=2.18.0
+
+tests:
+  - python:
+      imports:
+        - pycadf
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://docs.openstack.org/pycadf
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: CADF Library
+  description: |
+    CADF Library
+  repository: https://opendev.org/openstack/pycadf
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pycadf
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pycadf
+  cfe-purls:
+    - pkg:conda/pycadf@${{ version }}?channel=conda-forge
+    - pkg:pypi/pycadf@${{ version }}
+  cfe-upstream-repo: https://opendev.org/openstack/pycadf
+  cfe-upstream-homepage: https://docs.openstack.org/pycadf
+  cfe-import-names: [pycadf]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:23:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:23:59Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

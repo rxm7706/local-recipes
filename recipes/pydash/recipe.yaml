@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "8.0.6"
+
+package:
+  name: pydash
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pydash/pydash-${{ version }}.tar.gz
+  sha256: b2821547e9723f69cf3a986be4db64de41730be149b2641947ecd12e1e11025a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - pydash
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.rst
+  summary: The kitchen sink of Python utility libraries for doing "stuff" in a functional way.
+  description: The kitchen sink of Python utility libraries for doing stuff in a functional way. Based on Lo-Dash JS library
+  homepage: https://github.com/dgilland/pydash
+  repository: https://github.com/dgilland/pydash
+  documentation: https://pydash.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - souravsingh
+    - dbast

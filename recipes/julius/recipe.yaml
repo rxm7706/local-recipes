@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.7"
+
+package:
+  name: julius
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/julius/julius-${{ version }}.tar.gz
+  sha256: 3c0f5f5306d7d6016fcc95196b274cae6f07e2c9596eed314e4e7641554fbb08
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pytorch >=1.7.0
+
+tests:
+  - python:
+      imports:
+        - julius
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: "Nice DSP sweets: resampling, FFT Convolutions. All with PyTorch, differentiable and with CUDA support."
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/adefossez/julius
+
+extra:
+  recipe-maintainers:
+    - fitzgeralddp

@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: toml
+  version: 0.10.2
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: b3bda1d108d5dd99f4a20d24d9c348e91c4db7ab1b749200bded2f839ccbe68f
+
+build:
+  number: 3
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      python_version: ${{ python_min }}.*
+      imports:
+        - toml
+      pip_check: true
+
+about:
+  homepage: https://github.com/uiri/toml
+  repository: https://github.com/uiri/toml
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: Python lib for TOML.
+
+extra:
+  recipe-maintainers:
+    - rlaverde
+    - holgern

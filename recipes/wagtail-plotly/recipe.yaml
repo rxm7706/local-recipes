@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: wagtail-plotly
   version: "0.0.4"
 
 package:
-  name: wagtail-plotly
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/w/wagtail-plotly/wagtail_plotly-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail_plotly-${{ version }}.tar.gz
   sha256: be6b866941ca9024749243028231238de3e2a0dab5fc6fa825452b2c2adbefd2
 
 build:
@@ -19,13 +20,13 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
     - plotly >=4.14.3
-    - wagtail >=3.0
+    - wagtail >=2.13
     - wagtail-json-widget >=0.0.1
 
 tests:
@@ -33,22 +34,13 @@ tests:
       imports:
         - wagtail_plotly
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Plotly for Wagtail CMS
-  description: |
-    Provides tabular data input for interactive visualisations in Wagtail.
-    Developers manage plot availability and styling in code with an option to
-    allow users to apply further styling via JSON in the admin. It uses
-    Plotly.py, so any of Plotly's supported visualisations can be hoisted into
-    Wagtail easily.
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/cursive-works/wagtail-plotly
-  repository: https://github.com/cursive-works/wagtail-plotly
 
 extra:
   recipe-maintainers:

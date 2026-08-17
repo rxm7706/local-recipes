@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: unearth
+  version: "0.18.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/unearth-${{ version }}.tar.gz
+  sha256: 14067cf1141c906f787d6d9d070cbcfdd443fd1058aecaa650ce9519aa10dbdc
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - unearth = unearth.__main__:cli
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - pdm-backend
+    - setuptools
+  run:
+    - cached-property >=1.5.2
+    - packaging >=20
+    - python >=${{ python_min }}
+    - requests >=2.25
+    - httpx
+
+tests:
+  - python:
+      imports:
+        - unearth
+      pip_check: false
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - pip
+        - pytest >=6.1
+        - pytest-mock
+        - pytest-httpserver >=1.0.4
+        - flask >=2.1.2
+        - requests-wsgi-adapter >=0.4.1
+        - trustme >=0.9.0
+        - keyring
+        - openssl <3.0.0
+        - python ${{ python_min }}
+    script:
+      - pytest tests
+
+about:
+  summary: A utility to fetch and download python packages
+  license: MIT
+  license_file:
+    - LICENSE
+  homepage: https://pypi.org/project/unearth/
+
+extra:
+  recipe-maintainers:
+    - theAeon

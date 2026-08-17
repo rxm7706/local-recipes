@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: azure-mgmt-managementgroups
+  version: "2.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 02d008fadfd7610b1c7059e3c3a8a33dedaef4b654749b81978b437baf264f1d
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  noarch: python
+
+requirements:
+  host:
+    - setuptools
+    - python ${{ python_min }}.*
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - azure-mgmt-core >=1.6.0
+    - isodate >=0.6.1
+    - typing_extensions >=4.6.0
+tests:
+  - python:
+      imports:
+        - azure.mgmt.managementgroups
+        - azure.mgmt.managementgroups.aio
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Microsoft Azure Management Groups Client Library for Python
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  homepage: https://github.com/Azure/azure-sdk-for-python
+
+extra:
+  recipe-maintainers:
+    - janjagusch

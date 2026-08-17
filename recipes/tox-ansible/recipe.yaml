@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.8.0"
+
+package:
+  name: tox-ansible
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/tox-ansible/tox_ansible-${{ version }}.tar.gz
+  sha256: 44d5d08aab3bc471eef78fdb8e19eb81b347b70e0c75b728bfa9c0a1841c05e4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pytest >=8.4.1
+    - pytest-ansible >=3.1.0
+    - pytest-xdist >=3.8.0
+    - pyyaml >=6.0.1
+    - tomli >=1.1.0
+    - tox >=4.47.3
+
+tests:
+  - python:
+      imports:
+        - tox_ansible
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/ansible/tox-ansible
+  license: MIT
+  license_file: LICENSE
+  summary: A radical approach to testing ansible content
+  description: |
+    A radical approach to testing ansible content
+  documentation: https://ansible.readthedocs.io/projects/tox-ansible/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tox-ansible
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tox-ansible
+  cfe-purls:
+    - pkg:conda/tox-ansible@${{ version }}?channel=conda-forge
+    - pkg:pypi/tox-ansible@${{ version }}
+  cfe-upstream-repo: https://github.com/ansible/tox-ansible
+  cfe-upstream-homepage: https://github.com/ansible/tox-ansible
+  cfe-import-names: [tox_ansible]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:55:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:55:16Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

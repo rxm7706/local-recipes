@@ -34,7 +34,6 @@ requirements:
     - aiohttp >=3.8.0
     - openai >=1.0.0
     - anthropic >=0.3.0
-    - tokenizers >=0.13.0
     - boto3 >=1.26.0
     - botocore >=1.29.0
     - httpx >=0.23.0

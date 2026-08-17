@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.1"
+
+package:
+  name: inflection
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/i/inflection/inflection-${{ version }}.tar.gz
+  sha256: 1a29730d366e996aaacffb2f1f1cb9593dc38e2ddd30c91250c6dde09ea9b417
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - inflection
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A port of Ruby on Rails inflector to Python
+  homepage: https://github.com/jpvanhal/inflection
+  repository: https://github.com/jpvanhal/inflection
+  documentation: https://inflection.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - abloemert

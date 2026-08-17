@@ -1,0 +1,113 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: opentelemetry-instrumentation-pyramid
+  version: 0.65b0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_pyramid-${{ version }}.tar.gz
+  sha256: cb9f86cf25814700ad3246b81cf2f79a05fc011921896970f650ec5dbabd4a84
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - opentelemetry-api ~=1.12
+    - opentelemetry-instrumentation-wsgi ==0.65b0
+    - opentelemetry-instrumentation ==0.65b0
+    - opentelemetry-semantic-conventions ==0.65b0
+    - opentelemetry-util-http ==0.65b0
+    - wrapt <3.0.0,>=1.0.0
+    # - werkzeug ==0.16.1
+    # - pyramid >=1.7
+    # - opentelemetry-test-utils ==0.37b0
+    # - opentelemetry-instrumentation-pyramid
+    # - werkzeug ==0.16.1
+    # - pyramid >=1.7
+    # - opentelemetry-test-utils ==0.38b0
+    # - opentelemetry-instrumentation-pyramid
+    # - werkzeug ==0.16.1
+    # - pyramid >=1.7
+    # - opentelemetry-test-utils ==0.39b0
+    # - opentelemetry-instrumentation-pyramid
+    # - werkzeug ==0.16.1
+    # - pyramid >=1.7
+    # - opentelemetry-test-utils ==0.40b0
+    # - opentelemetry-instrumentation-pyramid
+    # - werkzeug ==0.16.1
+    # - pyramid >=1.7
+    # - opentelemetry-test-utils ==0.41b0
+    # - opentelemetry-instrumentation-pyramid
+    # - werkzeug ==0.16.1
+    # - pyramid >=1.7
+    # - opentelemetry-test-utils ==0.42b0
+    # - opentelemetry-instrumentation-pyramid
+    # - werkzeug ==0.16.1
+    # - pyramid >=1.7
+    # - opentelemetry-test-utils ==0.43b0
+    # - opentelemetry-instrumentation-pyramid
+    # - werkzeug ==0.16.1
+    # - pyramid >=1.7
+    # - opentelemetry-test-utils ==0.44b0
+    # - opentelemetry-instrumentation-pyramid
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+    # - pyramid >=1.7
+
+tests:
+  - python:
+      imports:
+        - opentelemetry
+        - opentelemetry.instrumentation
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: OpenTelemetry Pyramid instrumentation
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-pyramid
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk

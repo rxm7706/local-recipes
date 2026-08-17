@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: google-cloud-os-login
+  version: "2.22.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/google_cloud_os_login-${{ version }}.tar.gz
+  sha256: c720d4136ff906f005e272aa1f5b0d71fb33abf7cc1a5af4a22681ed949db7e2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - google-api-core >=2.17.1,<3.0.0
+    - google-api-core-grpc
+    - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
+    # more restrictive constraint for python >=3.14
+    - grpcio >=1.75.1,<2.0.0
+    # more restrictive constraint for python >=3.13
+    - proto-plus >=1.25.0,<2.0.0
+    - protobuf >=4.25.8,<8.0.0
+
+tests:
+  - python:
+      imports:
+        - grpc
+        - google.cloud.oslogin
+        - google.cloud.oslogin_v1
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+      pip_check: true
+
+about:
+  summary: Google Cloud Os Login API client library
+  license: Apache-2.0
+  license_file: LICENSE
+  description: "Google Cloud OS Login API is a Google Cloud service that lets you manage SSH access to your instances using IAM without having to create and manage individual SSH keys. OS Login maintains a consistent Linux user identity across VM instances and is the recommended way to manage many users across multiple instances::
+    - or projects.\nSee the [quick start guide](https://googleapis.dev/python/oslogin/latest/index.html#quick-start)."
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-os-login
+  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-os-login
+  documentation: https://googleapis.dev/python/oslogin/latest/index.html
+
+extra:
+  recipe-maintainers:
+    - parthea
+    - xylar

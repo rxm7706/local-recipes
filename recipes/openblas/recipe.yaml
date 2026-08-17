@@ -1,0 +1,163 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# ensure INTERFACE64 variable gets detected by conda-build
+# [INTERFACE64 == "foobar"]
+schema_version: 1
+
+context:
+  version: "0.3.34"
+  build_number: 0
+
+recipe:
+  name: openblas-split
+  version: ${{ version }}
+
+source:
+  url: https://github.com/OpenMathLib/OpenBLAS/archive/v${{ version }}.tar.gz
+  sha256: cd7e129868320cc2d033afa920e31202dfe0b8066a5b66661900ccc0f197dfed
+  patches:
+    # don't run test_fork in emulation, it has a tendency to hang indefinitely
+    - if: build_platform != target_platform
+      then: patches/0001-don-t-run-test_fork-in-cross-compilation.patch
+
+build:
+  number: ${{ build_number }}
+  string: ${{ 'pthreads_h${{ PKG_HASH }}_${{ build_number }}' if USE_OPENMP == 0 else 'openmp_h${{ PKG_HASH }}_${{ build_number }}' if USE_OPENMP == 1 else '' }}
+
+requirements:
+  build:
+    - ${{ stdlib("c") }}
+    - ${{ compiler("c") }}
+    - ${{ compiler("fortran") }}
+    - perl
+    - if: not win
+      then: make
+    - if: win
+      then: cmake
+    - if: win
+      then: ninja
+    - if: osx
+      then: objconv
+    - if: USE_OPENMP == 1
+      then: llvm-openmp
+    # Following is needed because the Fortran compiler add an rpath to the BUILD_PREFIX
+    - if: linux and USE_OPENMP == 1
+      then: _openmp_mutex * *_llvm
+  host:
+    - if: win and USE_OPENMP == 1
+      then: llvm-openmp-fortran
+  run:
+
+outputs:
+  - package:
+      name: libopenblas${{ name_suffix }}
+    files:
+      # Include files like
+      #   - libopenblasp-r0.3.5.so
+      #   - libopenblas_vortexp-r0.3.5.so
+      #   - libopenblas.so.0
+      # Avoid files
+      #   - libopenblas.so
+      - if: not win
+        then: lib/libopenblas${{ SYMBOLSUFFIX }}*p*${{ SHLIB_EXT }}
+      - if: linux
+        then: lib/libopenblas${{ SYMBOLSUFFIX }}.so.*
+      - if: osx
+        then: lib/libopenblas${{ SYMBOLSUFFIX }}.*.dylib
+      - if: win
+        then: Library/bin/openblas${{ SYMBOLSUFFIX }}.dll
+    build:
+      string: ${{ 'pthreads_h${{ PKG_HASH }}_${{ build_number }}' if USE_OPENMP == 0 else 'openmp_h${{ PKG_HASH }}_${{ build_number }}' if USE_OPENMP == 1 else '' }}
+      track_features:
+        # On Windows and Linux, pthreads was the original threading model,
+        # so we use it as a default by weighing down the openmp variant.
+        - if: (not osx) and USE_OPENMP == 1
+          then: openblas_threading_openmp
+        # On macOS, OpenMP was the original threading model,
+        # so we use it as a default by weighing down the pthreads variant.
+        - if: osx and USE_OPENMP == 0
+          then: openblas_threading_pthreads
+    requirements:
+      build:
+        - ${{ stdlib("c") }}
+        - ${{ compiler("c") }}
+        - ${{ compiler("fortran") }}
+        - if: USE_OPENMP == 1
+          then: llvm-openmp
+      run_exports:
+        - ${{ pin_subpackage("libopenblas" ~ name_suffix) }}
+      run_constraints:
+        - ${{ pin_subpackage("openblas" ~ name_suffix, upper_bound="x.x.x") }}
+    tests:
+      - requirements:
+          run:
+            - python *
+        script:
+          - if: not win
+            then: test -f ${PREFIX}/lib/libopenblas${{ SYMBOLSUFFIX }}p-r${{ version }}${{ SHLIB_EXT }}
+          - if: osx and build_platform=="osx-64"
+            then: nm -g ${PREFIX}/lib/libopenblas${{ SYMBOLSUFFIX }}p-r${{ version }}${{ SHLIB_EXT }} | grep dsecnd
+          - if: not win
+            then: python -c "import ctypes; ctypes.cdll['${PREFIX}/lib/libopenblas${{ SYMBOLSUFFIX }}p-r${{ version }}${{ SHLIB_EXT }}']"
+          - if: win
+            then: if not exist %PREFIX%\\Library\\bin\\openblas${{ SYMBOLSUFFIX }}.dll exit 1
+  - package:
+      name: openblas${{ name_suffix }}
+    files:
+      - if: not win
+        then: include/*.h
+      - if: not win
+        then: lib/libopenblas${{ SYMBOLSUFFIX }}*.a
+      - if: not win
+        then: lib/libopenblas${{ SYMBOLSUFFIX }}${{ SHLIB_EXT }}
+      - if: not win
+        then: lib/pkgconfig/openblas.pc
+      - if: not win
+        then: lib/cmake/openblas/*
+      - if: win
+        then: Library/include/openblas
+      - if: win
+        then: Library/lib/openblas${{ SYMBOLSUFFIX }}.lib
+      - if: win
+        then: Library/lib/pkgconfig/openblas.pc
+      - if: win
+        then: Library/share/cmake/OpenBLAS
+    build:
+      string: ${{ 'pthreads_h${{ PKG_HASH }}_${{ build_number }}' if USE_OPENMP == 0 else 'openmp_h${{ PKG_HASH }}_${{ build_number }}' if USE_OPENMP == 1 else '' }}
+      track_features:
+        # On Windows and Linux, pthreads was the original threading model,
+        # so we use it as a default by weighing down the openmp variant.
+        - if: (not osx) and USE_OPENMP == 1
+          then: openblas_threading_openmp
+        # On macOS, OpenMP was the original threading model,
+        # so we use it as a default by weighing down the pthreads variant.
+        - if: osx and USE_OPENMP == 0
+          then: openblas_threading_pthreads
+    requirements:
+      run:
+        - ${{ pin_subpackage("libopenblas" ~ name_suffix, exact=True) }}
+    tests:
+      - script:
+          - if: not win
+            then: test -f ${PREFIX}/lib/libopenblas${{ SYMBOLSUFFIX }}.a
+          - if: not win
+            then: test -f ${PREFIX}/lib/libopenblas${{ SYMBOLSUFFIX }}${{ SHLIB_EXT }}
+          - if: win
+            then: if not exist %PREFIX%\\Library\\lib\\openblas${{ SYMBOLSUFFIX }}.lib exit 1
+
+about:
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE
+    - lapack-netlib/LICENSE
+  summary: ${{ 'An optimized BLAS library (ILP64 interface) based on GotoBLAS2 1.13 BSD version' if SYMBOLSUFFIX == "64_" else 'An optimized BLAS library based on GotoBLAS2 1.13 BSD version' if SYMBOLSUFFIX != "64_" else '' }}
+  homepage: http://www.openblas.net/
+  repository: https://github.com/OpenMathLib/OpenBLAS
+
+extra:
+  recipe-maintainers:
+    - gillins
+    - groutr
+    - jakirkham
+    - isuruf
+    - h-vetinari
+  feedstock-name: openblas

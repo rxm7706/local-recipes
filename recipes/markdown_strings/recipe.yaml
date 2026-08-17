@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: markdown_strings
+  version: "3.1.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 141e55d48742d6c19b09500bb71760f3aa04b6532c5d7725b9a030ce90663708
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - markdown_strings
+      pip_check: false
+  - requirements:
+      run:
+        - pytest
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: This package allows the creation of markdown-compliant strings.
+  description: |
+    Markdown is a markup language with plain text formatting syntax. This
+    package allows the creation of markdown-compliant strings.
+
+
+  homepage: https://github.com/awesmubarak/markdown_strings/
+
+extra:
+  recipe-maintainers:
+    - pvanheus

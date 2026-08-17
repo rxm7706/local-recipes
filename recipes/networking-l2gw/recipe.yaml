@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "22.0.0"
+
+package:
+  name: networking-l2gw
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/networking-l2gw/networking_l2gw-${{ version }}.tar.gz
+  sha256: 78f5fd0d91b6b60b5d4011bf7f2c3b8d35e54d755a263bb12802cd90659a1d8c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pbr >=4.0.0
+    - neutron-lib >=3.1.0
+    - python-neutronclient >=7.8.0
+    - ovsdbapp >=1.16.0
+    - neutron >=26.0.0
+
+tests:
+  - python:
+      imports:
+        - networking_l2gw
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://opendev.org/x/networking-l2gw
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: APIs and implementations to support L2 Gateways in Neutron.
+  description: |
+    APIs and implementations to support L2 Gateways in Neutron.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: networking-l2gw
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: networking-l2gw
+  cfe-purls:
+    - pkg:conda/networking-l2gw@${{ version }}?channel=conda-forge
+    - pkg:pypi/networking-l2gw@${{ version }}
+  cfe-upstream-repo: https://opendev.org/x/networking-l2gw
+  cfe-upstream-homepage: https://opendev.org/x/networking-l2gw
+  cfe-import-names: [networking_l2gw]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:32:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:32:24Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

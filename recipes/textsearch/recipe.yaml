@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.24"
+
+package:
+  name: textsearch
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/textsearch/textsearch-${{ version }}.tar.gz
+  sha256: 2d23b5c3116715b65bccc18bc870ecc236ec8480d48cd5f257cc60bf66bb241a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - anyascii
+    - pyahocorasick
+
+tests:
+  - python:
+      imports:
+        - textsearch
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/kootenpv/textsearch
+  license: MIT
+  license_file: LICENSE
+  summary: Find strings/words in text; convenience and C speed
+  description: |
+    Find strings/words in text; convenience and C speed
+
+  repository: https://github.com/kootenpv/textsearch
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: textsearch
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: textsearch
+  cfe-purls:
+    - pkg:conda/textsearch@${{ version }}?channel=conda-forge
+    - pkg:pypi/textsearch@${{ version }}
+  cfe-upstream-repo: https://github.com/kootenpv/textsearch
+  cfe-upstream-homepage: https://github.com/kootenpv/textsearch
+  cfe-import-names: [textsearch]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T16:24:35Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T16:24:35Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-16T16:25:50Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # MIT noarch wrapper over anyascii + pyahocorasick (both on conda-forge).
+#    # LICENSE not in sdist or GitHub tree; pattern (2) in-recipe MIT file
+#    # (setup.py license='MIT', author Pascal van Kooten).
+####

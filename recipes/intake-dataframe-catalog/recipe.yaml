@@ -2,56 +2,52 @@
 schema_version: 1
 
 context:
+  name: intake-dataframe-catalog
   version: "0.5.1"
+  python_min: "3.10"
 
 package:
-  name: intake-dataframe-catalog
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/i/intake-dataframe-catalog/intake_dataframe_catalog-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/intake_dataframe_catalog-${{ version }}.tar.gz
   sha256: 4e4d6d542cf8c9afc88bf480ffc685826541b2d94d8c1a6c91427afc1920f980
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python 3.10.*
     - setuptools >=61.0.0
     - versioneer
     - pip
   run:
-    - python >=${{ python_min }}
-    - intake >=0.7.0
     - itables
-    - pandas
     - polars >=1.12,<1.33
     - fsspec
     - numpy
     - pyyaml
     - toolz
+    - python >=${{ python_min }}
+    - intake >=0.7.0
+    - pandas
 
 tests:
   - python:
       imports:
         - intake_dataframe_catalog
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: An intake driver for a searchable table of intake sources and associated metadata
   license: Apache-2.0
   license_file: LICENSE
   homepage: https://github.com/ACCESS-NRI/intake-dataframe-catalog
-  repository: https://github.com/ACCESS-NRI/intake-dataframe-catalog
-  description: |
-    An intake driver for a searchable table of intake sources and associated
-    metadata.
 
 extra:
   recipe-maintainers:

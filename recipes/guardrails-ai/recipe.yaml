@@ -1,0 +1,106 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.11.0"
+
+package:
+  name: guardrails-ai
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/guardrails-ai/guardrails_ai-${{ version }}.tar.gz
+  sha256: e49d20be90c0b87a7b58bd767523504b2b01f033cce4b4cdff07ef0e142e6096
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core ==2.4.1
+  run:
+    - python >=${{ python_min }}
+    - click <9.0.0
+    - diff-match-patch <20241101,>=20230430
+    - faker <38.0.0,>=25.2.0
+    - guardrails-ai-types >=0.4.0
+    - guardrails-hub-types <0.1.0,>=0.0.4
+    - jsonref <2.0.0,>=1.0.0
+    - jsonschema <5.0.0,>=4.18.0
+    - langchain-core <2.0,>=1.0.0
+    - litellm <2.0.0,>=1.82.5
+    - lxml <7.0.0,>=5.0.0
+    - openai <3.0.0,>=2.0.0
+    - opentelemetry-exporter-otlp-proto-grpc <2.0.0,>=1.24.0
+    - opentelemetry-exporter-otlp-proto-http <2.0.0,>=1.24.0
+    - opentelemetry-sdk <2.0.0,>=1.24.0
+    - pip >=26.1.2
+    - pydantic <3.0,>=2.4.2
+    - pydash <9.0.0,>=8.0.0
+    - pyjwt <3.0.0,>=2.4.0
+    - python-dateutil <3.0.0,>=2.8.2
+    - requests <3.0.0,>=2.31.0
+    - rich <15.0.0,>=13.6.0
+    - rstr <4.0.0,>=3.0.0
+    - semver <4.0.0,>=3.0.0
+    - tenacity <10.0.0,>=8.2.0
+    - tiktoken <1.0.0,>=0.13.0
+    - typer <0.20,>=0.9.0
+    - typing_extensions <5.0.0,>=4.8.0
+
+tests:
+  - python:
+      imports:
+        - guardrails
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/guardrails-ai/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Adding guardrails to large language models.
+  description: |
+    Adding guardrails to large language models.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: guardrails-ai
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: guardrails-ai
+  cfe-purls:
+    - pkg:conda/guardrails-ai@${{ version }}?channel=conda-forge
+    - pkg:pypi/guardrails-ai@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/guardrails-ai/
+  cfe-upstream-homepage: https://pypi.org/project/guardrails-ai/
+  cfe-import-names: [guardrails]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:45:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:45:04Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

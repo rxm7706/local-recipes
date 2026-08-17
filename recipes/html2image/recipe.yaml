@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: html2image
+  version: "2.0.7"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/html2image-${{ version }}.tar.gz
+  sha256: 8644fd424cff2805977f4583f965b0235733f9eb08569e4c02f6befe6e7fafcc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - hti = html2image:main
+      - html2image = html2image:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0.0
+    - websocket-client >=1.0,<2.dev0
+    - requests
+
+tests:
+  - python:
+      imports:
+        - html2image
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - hti --help
+      - html2image --help
+
+about:
+  summary: Package acting as a wrapper around the headless mode of existing web browsers to generate images from URLs and from HTML+CSS strings or files.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/vgalin/html2image
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

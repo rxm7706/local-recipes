@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: xlutils
+  version: "2.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/python-excel/xlutils/archive/${{ version }}.tar.gz
+  sha256: daa748a0021610bb8d4224efd18ac091ffeaa2224e7185ba186369a9948305d3
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - margins = xlutils.margins:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+    - xlrd >=0.7.2
+    - xlwt >=0.7.4
+
+tests:
+  - python:
+      imports:
+        - xlutils
+        - xlutils.tests
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - margins --help
+
+about:
+  license: MIT
+  license_file: docs/license.rst
+  summary: Utilities for working with Excel files that require both xlrd and xlwt
+  homepage: http://www.python-excel.org
+  repository: https://github.com/python-excel/xlutils
+  documentation: http://www.python-excel.org
+
+extra:
+  recipe-maintainers:
+    - looooo

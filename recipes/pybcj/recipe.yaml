@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pybcj
+  version: "1.0.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 6818270692912d47e81ccd777b7d0ed2ad3a19ef7aaead3735b38048c80bf368
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - pip
+    - python
+    - setuptools >=42.0
+    - setuptools-scm >=3.5.0
+  run:
+    - if: match(python, "<3.8")
+      then: importlib-metadata
+    - python
+
+tests:
+  - python:
+      imports:
+        - bcj
+      pip_check: true
+
+about:
+  summary: bcj filter library
+  license: LGPL-2.1-or-later
+  license_file: LICENSE
+  homepage: http://github.com/miurahr/pybcj
+
+extra:
+  recipe-maintainers:
+    - sarthakpati

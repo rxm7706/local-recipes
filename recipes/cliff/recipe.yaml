@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cliff
+  version: "4.15.0"
+  bundle: tar.gz
+  hash: eca699f6b390c755e6ed1816a76cdfc1abf5f5ef7d1cee19f3833667a3a1fe39
+  python_min: "3.11"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
+  sha256: ${{ hash }}
+  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python 3.11.*
+    - pip
+    - setuptools
+    - pbr !=2.1.0,>=2.0.0
+  run:
+    - python >=${{ python_min }}
+    - autopage >=0.4.0
+    - cmd2 >=1.0.0
+    - importlib-metadata >=4.4
+    - prettytable >=0.7.2
+    - stevedore >=2.0.1
+    - pyyaml >=3.12
+
+tests:
+  - python:
+      imports:
+        - cliff
+        - cliff.app
+        - cliff.commandmanager
+        - cliff.command
+        - cliff.interactive
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Command Line Interface Formulation Framework
+  homepage: https://github.com/openstack/cliff
+  repository: http://git.openstack.org/cgit/openstack/cliff
+  documentation: http://docs.openstack.org/developer/cliff
+
+extra:
+  recipe-maintainers:
+    - anguslees
+    - amatthies
+    - tschoonj

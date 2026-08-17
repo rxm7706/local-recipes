@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: statsforecast
+  version: "2.1.1"
+  build: 0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/statsforecast-${{ version }}.tar.gz
+  sha256: 3b4c91ac4e2a51a614596226df3cb210f99a152601f8235e0459248d05a42045
+
+build:
+  number: ${{ build }}
+  skip: match(python, "<3.8")
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - pybind11
+    - setuptools
+  run:
+    - python
+    - cloudpickle
+    - coreforecast >=0.0.17
+    - fugue >=0.9.4
+    - numpy >=1.21.6
+    - pandas <3.0.0
+    - scipy >=1.7.3
+    - statsmodels >=0.14.5
+    - threadpoolctl >=3
+    - tqdm
+    - utilsforecast >=0.1.4
+
+tests:
+  - python:
+      imports:
+        - statsforecast
+      pip_check: true
+
+about:
+  summary: Time series forecasting suite using statistical models
+  license: Apache-2.0
+  license_file: LICENSE
+  description: |
+    **StatsForecast** offers a collection of widely used univariate time series forecasting
+    models, including exponential smoothing and automatic `ARIMA` modeling optimized for
+    high performance using `numba`.
+
+    - [Getting started](https://nixtlaverse.nixtla.io/statsforecast/docs/getting-started/getting_started_short.html)
+    - [Installation](https://nixtlaverse.nixtla.io/statsforecast/docs/getting-started/installation.html)
+
+    PyPI: [https://pypi.org/project/statsforecast/](https://pypi.org/project/statsforecast/)
+
+  homepage: https://github.com/Nixtla/statsforecast/
+  repository: https://github.com/Nixtla/statsforecast/
+  documentation: https://nixtlaverse.nixtla.io/statsforecast/index.html
+
+extra:
+  recipe-maintainers:
+    - sugatoray
+    - AzulGarza
+    - jmoralez
+    - cchallu
+    - mergenthaler
+    - marcopeix
+    - elephaint
+    - JQGoh
+    - nasaul
+    - MMenchero
+    - goodwanghan

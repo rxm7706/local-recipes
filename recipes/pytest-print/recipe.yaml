@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.3.0"
+
+package:
+  name: pytest-print
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pytest-print/pytest_print-${{ version }}.tar.gz
+  sha256: a507008f50d8190842aaf71c8e979b5bc7787839f4bd3140f47a62200b5d5b62
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatch-vcs >=0.5
+    - hatchling >=1.28
+  run:
+    - python >=${{ python_min }}
+    - pytest >=9.0.2
+
+tests:
+  - python:
+      imports:
+        - pytest_print
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/pytest-dev/pytest-print
+  license: MIT
+  license_file: LICENSE
+  summary: pytest-print adds the printer fixture you can use to print messages to the user (directly to the pytest runner, not stdout)
+  description: |
+    pytest-print adds the printer fixture you can use to print messages to the user (directly to the pytest runner, not stdout)
+  repository: https://github.com/pytest-dev/pytest-print
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytest-print
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytest-print
+  cfe-purls:
+    - pkg:conda/pytest-print@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytest-print@${{ version }}
+  cfe-upstream-repo: https://github.com/pytest-dev/pytest-print
+  cfe-upstream-homepage: https://github.com/pytest-dev/pytest-print
+  cfe-import-names: [pytest_print]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:38:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:38:19Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4/P5 Create-recipe local-only. pytest-print.
+####

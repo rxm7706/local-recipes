@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dict2xml
+  version: "1.7.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dict2xml-${{ version }}.tar.gz
+  sha256: 6638da9ad32b0f8be8336d16e0f36a9c3821145e34ed3ef4889822a9b980fb28
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - dict2xml
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Small utility to convert a python dictionary into an XML string
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/delfick/python-dict2xml/
+  repository: https://github.com/delfick/python-dict2xml/
+
+extra:
+  recipe-maintainers:
+    - manics

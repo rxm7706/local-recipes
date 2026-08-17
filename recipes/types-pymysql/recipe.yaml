@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: types-PyMySQL
+  version: "1.2.0.20260807"
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/types_pymysql-${{ version }}.tar.gz
+  sha256: 7fd4a7767925dbb0fd3e73fd488184fcd98b7612f8066cda280453b17864264f
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - setuptools
+    - python ${{ python_min }}.*
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - package_contents:
+      site_packages:
+        - pymysql-stubs/__init__.pyi
+  - python:
+      imports: []
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  homepage: https://github.com/python/typeshed
+  summary: Typing stubs for PyMySQL
+  license: Apache-2.0 AND MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - fhoehle
+    - conda-forge/mypy

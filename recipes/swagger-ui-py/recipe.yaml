@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "25.7.1"
+
+package:
+  name: swagger-ui-py
+  version: ${{ version }}
+
+source:
+  url: https://github.com/PWZER/swagger-ui-py/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: e66b406bea30632aee697725d79ab9a7934e3405af98242d533adadba0d7937c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - jinja2 >=2.0
+    - packaging >=20.0
+    - pyyaml >=5.0
+
+tests:
+  - python:
+      imports:
+        - swagger_ui
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/PWZER/swagger-ui-py
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Swagger UI for Python web framework, such as Tornado, Flask, Quart, Sanic and Falcon.
+  description: |
+    Swagger UI for Python web framework, such as Tornado, Flask, Quart, Sanic and Falcon.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: swagger-ui-py
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: swagger-ui-py
+  cfe-purls:
+    - pkg:conda/swagger-ui-py@${{ version }}?channel=conda-forge
+    - pkg:pypi/swagger-ui-py@${{ version }}
+  cfe-upstream-repo: https://github.com/PWZER/swagger-ui-py
+  cfe-upstream-homepage: https://github.com/PWZER/swagger-ui-py
+  cfe-import-names: [swagger_ui]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:40:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:40:50Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P5 Create-recipe local-only. swagger-ui-py.
+####

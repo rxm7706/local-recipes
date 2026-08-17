@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: microsoft-kiota-serialization-multipart
+  version: "1.10.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/microsoft_kiota_serialization_multipart-${{ version }}.tar.gz
+  sha256: c6adcf3eebc822e340008baac39d4e6bec770b77ce5c77259ba5d23e744966bf
+
+build:
+  noarch: python
+  script: python -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=1.0.0
+  run:
+    - python >=${{ python_min }},<4.0
+    - microsoft-kiota-abstractions ${{ version }}.*
+
+tests:
+  - python:
+      imports:
+        - kiota_serialization_multipart
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  homepage: https://github.com/microsoft/kiota-python/tree/main/packages/serialization/multipart
+  summary: Core abstractions for kiota generated libraries in Python
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - xylar

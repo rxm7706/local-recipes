@@ -1,0 +1,93 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.6.1"
+
+package:
+  name: ms-fabric-cli
+  version: ${{ version }}
+
+source:
+  url: https://github.com/microsoft/fabric-cli/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: e3536a3e42e4734366248933ff60d5077d1dfbd500424b2520fc93db4ba8f2a9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=65.5.1
+  run:
+    - python >=${{ python_min }}
+    - msal <2,>=1.34
+    - msal-extensions
+    - azure-core >=1.29.0
+    - questionary
+    - prompt-toolkit >=3.0.41
+    - cachetools >=5.5.0
+    - jmespath
+    - pyyaml ==6.0.2
+    - argcomplete >=3.6.2
+    - psutil ==7.0.0
+    - requests
+    - cryptography
+    - fabric-cicd >=0.3.1
+
+tests:
+  - python:
+      imports:
+        - fabric_cli
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/ms-fabric-cli/
+  license: MIT
+  license_file: LICENSE
+  summary: Command-line tool for Microsoft Fabric
+  description: |
+    Command-line tool for Microsoft Fabric
+  repository: https://github.com/microsoft/fabric-cli.git
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ms-fabric-cli
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ms-fabric-cli
+  cfe-purls:
+    - pkg:conda/ms-fabric-cli@${{ version }}?channel=conda-forge
+    - pkg:pypi/ms-fabric-cli@${{ version }}
+  cfe-upstream-repo: https://github.com/microsoft/fabric-cli.git
+  cfe-upstream-homepage: https://pypi.org/project/ms-fabric-cli/
+  cfe-import-names: [fabric_cli]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:20:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:20:19Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: 8.4.0
+  python_min: "3.9"
+
+package:
+  name: natsort
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/natsort/natsort-${{ version }}.tar.gz
+  sha256: 45312c4a0e5507593da193dedd04abb1469253b601ecaf63445ad80f0a1ea581
+
+build:
+  number: 2
+  noarch: python
+  script: python -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - natsort = natsort.__main__:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - natsort
+        - natsort.compat
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - script:
+      - natsort -h
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Sort lists naturally
+  description: |
+    natsort is a general utility for sorting lists naturally either as numbers
+    or as versions.
+  homepage: https://github.com/SethMMorton/natsort
+  repository: https://github.com/SethMMorton/natsort
+  documentation: http://natsort.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - holtgrewe
+    - synapticarbors

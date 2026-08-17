@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: datasette-dashboards
+  version: "0.8.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/datasette_dashboards-${{ version }}.tar.gz
+  sha256: 5da852457203a3553b52cde36ad228af63de8f68f7a3e6556d3532a5d916cfff
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - datasette
+    - datasette-leaflet
+    - datasette-render-markdown
+
+tests:
+  - python:
+      imports:
+        - datasette_dashboards
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Datasette plugin providing data dashboards from metadata
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/rclement/datasette-dashboards
+
+extra:
+  recipe-maintainers:
+    - rxm7706

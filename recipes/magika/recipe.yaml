@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: magika
+  version: "1.0.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/magika-${{ version }}.tar.gz
+  sha256: ad3216012f6dd337be34c23ae3dfab36f0623bc62fbfb329f9a1852c9ad40304
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - magika-python-client = magika.cli.magika_client:main
+      - magika = magika.cli.magika_rust_client_not_found_warning:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - click >=8.1.7
+    - onnxruntime >=1.17.0
+    - numpy >=1.24
+    - python-dotenv >=1.0.1
+
+tests:
+  - python:
+      imports:
+        - magika
+      # Skip pip check due to upstream very strict pins for onnxruntime
+      pip_check: false
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      # Don't run this as it produces an intended error message
+      # - magika --help
+      - magika-python-client --help
+
+about:
+  summary: A tool to determine the content type of a file with deep-learning
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/google/magika
+  repository: https://github.com/google/magika/tree/main/python
+  documentation: https://github.com/google/magika
+
+extra:
+  recipe-maintainers:
+    - thewchan

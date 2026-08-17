@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: google-auth-oauthlib
+  version: "1.4.0"
+  sha256: 18b5e28880eb8eba9065c436becdc0ee8e4b59117a73a510679c82f70cd363d2
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - google-oauthlib-tool = google_auth_oauthlib.tool.__main__:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - google-auth >=2.15.0,<3.0.0,!=2.43.0,!=2.44.0,!=2.45.0
+    - requests-oauthlib >=0.7.0
+    - click >=6.0.0  # not shown as depdendency by grayskull
+
+tests:
+  - python:
+      imports:
+        - google_auth_oauthlib
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+        - pip
+    script:
+      - google-oauthlib-tool --help
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Google Authentication Library, oauthlib integration with google-auth
+  description: This library provides oauthlib integration with google-auth.
+  homepage: https://github.com/googleapis/google-auth-library-python-oauthlib
+  repository: https://github.com/googleapis/google-auth-library-python-oauthlib
+  documentation: http://google-auth-oauthlib.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - cpcloud
+    - jreback
+    - parthea
+    - tswast

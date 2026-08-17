@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  python_min: "3.10"
+  name: bokeh_sampledata
+  version: "2025.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/bokeh_sampledata-${{ version }}.tar.gz
+  sha256: 6b874af5b878e70f16133695ac07e15de38642fa9fadfdf723f7d42333967af4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.10.*
+    - setuptools >=69.5.1
+    - setuptools-git-versioning
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - icalendar
+    - pandas >=1.2
+
+tests:
+  - python:
+      imports:
+        - bokeh_sampledata
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Sample datasets for Bokeh examples
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  homepage: https://bokeh.org/
+
+extra:
+  recipe-maintainers:
+    - hoxbro

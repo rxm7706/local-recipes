@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: click-default-group
+  version: "1.2.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: eb3f3c99ec0d456ca6cd2a7f08f7d4e91771bef51b01bdd9580cc6450fe1251e
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - flit-core >=3.2,<4
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - click
+
+tests:
+  - python:
+      imports:
+        - click_default_group
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Extends click.Group to invoke a command without explicit subcommand name.
+  homepage: https://github.com/click-contrib/click-default-group
+
+extra:
+  recipe-maintainers:
+    - ericmjl
+    - mariusvniekerk
+    - thewchan

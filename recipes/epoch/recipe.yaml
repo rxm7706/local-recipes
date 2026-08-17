@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.5"
+
+package:
+  name: epoch
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/e/epoch/epoch-${{ version }}.tar.gz
+  sha256: c6109e6a11d68fec9bd3107cf41cce16967800c546108c82edb97c423559d709
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - epoch
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://github.com/metagriffin/epoch
+  license: GPLv3+
+  license_file: LICENSE
+  summary: A utility library to manage and manipulate UNIX epoch timestamps.
+  description: |
+    A utility library to manage and manipulate UNIX epoch timestamps.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: epoch
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: epoch
+  cfe-purls:
+    - pkg:conda/epoch@${{ version }}?channel=conda-forge
+    - pkg:pypi/epoch@${{ version }}
+  cfe-upstream-repo: http://github.com/metagriffin/epoch
+  cfe-upstream-homepage: http://github.com/metagriffin/epoch
+  cfe-import-names: [epoch]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:53:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:53:26Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

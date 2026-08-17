@@ -2,10 +2,11 @@
 schema_version: 1
 
 context:
+  name: collectfasta
   version: "3.3.3"
 
 package:
-  name: collectfasta
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
@@ -23,31 +24,23 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }}
-    - django >=4.2
-    - django-storages >=1.13.2
+    - python >=${{ python_min }},<4.0
+    - django >=4.2,<5.1
+    - django-storages >=1.6
     - typing-extensions
 
 tests:
   - python:
       imports:
         - collectfasta
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
   summary: A fasta collectstatic command.
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/jasongi/collectfasta/
-  repository: https://github.com/jasongi/collectfasta
-  description: |
-    Collectfasta is a Django collectstatic command accelerator. It speeds up
-    the collectstatic management command by only copying files that have
-    changed, using remote storage backends (S3, Google Cloud Storage, etc.)
-    via django-storages.
 
 extra:
   recipe-maintainers:

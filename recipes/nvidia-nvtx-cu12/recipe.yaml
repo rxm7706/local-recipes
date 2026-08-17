@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "12.9.79"
+
+package:
+  name: nvidia-nvtx-cu12
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/n/nvidia-nvtx-cu12/nvidia_nvtx_cu12-12.9.79-py3-none-manylinux1_x86_64.manylinux_2_5_x86_64.whl
+  sha256: fec150986817f2b4e7eed72ed059f2dcb9ba3856b9a96134e448eac946a6952f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - nvidia_nvtx_cu12
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://developer.nvidia.com/cuda-zone
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: NVIDIA Tools Extension
+  description: |
+    NVIDIA Tools Extension
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nvidia-nvtx-cu12
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: nvidia-nvtx-cu12
+  cfe-purls:
+    - pkg:conda/nvidia-nvtx-cu12@${{ version }}?channel=conda-forge
+    - pkg:pypi/nvidia-nvtx-cu12@${{ version }}
+  cfe-upstream-repo: https://developer.nvidia.com/cuda-zone
+  cfe-upstream-homepage: https://developer.nvidia.com/cuda-zone
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:03:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:03:43Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

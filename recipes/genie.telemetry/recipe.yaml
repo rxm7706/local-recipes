@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.7"
+
+package:
+  name: genie.telemetry
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/g/genie.telemetry/genie_telemetry-26.7-py3-none-any.whl
+  sha256: c4528bd4cb2b28459d56cded16ee602c547f40cb2a6d7cc969da3eae46234a39
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - genie
+
+tests:
+  - python:
+      imports:
+        - genie.telemetry
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://developer.cisco.com/pyats
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: "Genie libs Telemetry: Genie Telemetry Libraries"
+  description: |
+    Genie libs Telemetry: Genie Telemetry Libraries
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: genie.telemetry
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: genie.telemetry
+  cfe-purls:
+    - pkg:conda/genie.telemetry@${{ version }}?channel=conda-forge
+    - pkg:pypi/genie.telemetry@${{ version }}
+  cfe-upstream-repo: https://developer.cisco.com/pyats
+  cfe-upstream-homepage: https://developer.cisco.com/pyats
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:51:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:51:54Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

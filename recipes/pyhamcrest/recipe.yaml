@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.1.0"
+
+package:
+  name: pyhamcrest
+  version: ${{ version }}
+
+source:
+  url: https://pypi.python.org/packages/source/p/pyhamcrest/pyhamcrest-${{ version }}.tar.gz
+  sha256: c6acbec0923d0cb7e72c22af1926f3e7c97b8e8d69fc7498eabacaf7c975bd9c
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - hatchling
+    - hatch-vcs
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - hamcrest
+      pip_check: true
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - pip
+        - pytest-cov
+        - pytest-sugar
+        - pytest-xdist
+        - python ${{ python_min }}
+    script:
+      - pytest -vv --cov=hamcrest --no-cov-on-fail --cov-report=term-missing:skip-covered --cov-fail-under=95
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Hamcrest framework for matcher objects
+  homepage: https://github.com/hamcrest/PyHamcrest
+
+extra:
+  recipe-maintainers:
+    - duncanwp
+    - stuertz

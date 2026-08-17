@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.8"
+
+package:
+  name: orbax-export
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/orbax-export/orbax_export-${{ version }}.tar.gz
+  sha256: 544eef564e2a6f17cd11b1167febe348b7b7cf56d9575de994a33d5613dd568a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core >=3.5,<4
+  run:
+    - python >=${{ python_min }}
+    - tensorflow
+    - absl-py
+    - dataclasses-json
+    - etils
+    - jax >=0.4.34
+    - jaxlib
+    - jaxtyping
+    - numpy
+    - protobuf
+    - orbax-checkpoint >=0.9.0
+
+tests:
+  - python:
+      imports:
+        - orbax.export
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://github.com/google/orbax
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Orbax Export
+  description: |
+    Orbax Export
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: orbax-export
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: orbax-export
+  cfe-purls:
+    - pkg:conda/orbax-export@${{ version }}?channel=conda-forge
+    - pkg:pypi/orbax-export@${{ version }}
+  cfe-upstream-repo: http://github.com/google/orbax
+  cfe-upstream-homepage: http://github.com/google/orbax
+  cfe-import-names: [orbax.export]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:51:44Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:51:44Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: haversine
+  version: "2.9.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/haversine-${{ version }}.tar.gz
+  sha256: 1103d7e1f0f108c25b31b63452c54d9d6f29389a70de7dd75fd4b908329b6fcf
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - haversine
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Calculate the distance between 2 points on Earth.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/mapado/haversine
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

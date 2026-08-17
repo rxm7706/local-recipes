@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.28.2"
+
+package:
+  name: pymupdf4llm
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pymupdf4llm/pymupdf4llm-${{ version }}.tar.gz
+  sha256: 02681698ef67bda9a2acd5d9e1115d4e88be0eb9c5d68926e5e3cd98cd351874
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - pipcl
+  run:
+    - python >=${{ python_min }}
+    - pymupdf ==1.28.2
+    - pymupdf-layout ==1.28.2
+    - tabulate
+    - psutil
+
+tests:
+  - python:
+      imports:
+        - ocr
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/pymupdf4llm/
+  license: AGPL-3.0
+  license_file: LICENSE
+  summary: PyMuPDF Utilities for LLM/RAG
+  description: |
+    PyMuPDF Utilities for LLM/RAG
+  repository: https://github.com/pymupdf/pymupdf4llm
+  documentation: https://pymupdf.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pymupdf4llm
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pymupdf4llm
+  cfe-purls:
+    - pkg:conda/pymupdf4llm@${{ version }}?channel=conda-forge
+    - pkg:pypi/pymupdf4llm@${{ version }}
+  cfe-upstream-repo: https://github.com/pymupdf/pymupdf4llm
+  cfe-upstream-homepage: https://pypi.org/project/pymupdf4llm/
+  cfe-import-names: [ocr]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:30:20Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:30:20Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4.1"
+
+package:
+  name: setuptools_scm_git_archive
+  version: ${{ version }}
+
+source:
+  url: https://pypi.python.org/packages/source/s/setuptools_scm_git_archive/setuptools_scm_git_archive-${{ version }}.tar.gz
+  sha256: c418bc77b3974d3ac65f268f058f23e01dc5f991f2233128b0e16a69de227b09
+  file_name: setuptools_scm_git_archive-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+    - setuptools_scm <8
+  run:
+    - python >=${{ python_min }}
+    - setuptools_scm <8
+
+tests:
+  - python:
+      imports:
+        - setuptools_scm_git_archive
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: setuptools_scm plugin for git archives
+  homepage: https://github.com/Changaco/setuptools_scm_git_archive/
+
+extra:
+  recipe-maintainers:
+    - thewchan
+    - wesm
+    - xhochy

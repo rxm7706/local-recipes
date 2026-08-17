@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sqlean.py
+  version: "3.50.4.5"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sqlean.py/sqlean_py-${{ version }}.tar.gz
+  sha256: 9764b565e7ab430ab6e9e43cb2816199c2b39926dffc93c212a52f0019278459
+  patches:
+    - 0001-remove-sqlean-ipaddr-c-from-win.patch
+    - 0002-fix-constans-in-sqlean-time-c.patch
+
+build:
+  number: 0
+  script:
+    - if: win
+      then:
+        # this file is a glitch not-found HTML file in the source, so I had to
+        # replace it manually -- seems cleaner than a patch
+        - copy %RECIPE_DIR%\test_windirent.h sqlite\test_windirent.h
+    - python -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - sqlean
+      pip_check: true
+
+about:
+  homepage: https://github.com/nalgeon/sqlean.py
+  license: Zlib
+  license_file: LICENSE
+  summary: sqlite3 with extensions
+  repository: https://github.com/nalgeon/sqlean.py
+
+extra:
+  recipe-maintainers:
+    - anticorrelator
+    - axiomofjoy
+    - mikeldking
+    - RogerHYang
+    - xylar

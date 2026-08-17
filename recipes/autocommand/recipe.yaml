@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: autocommand
+  version: 2.2.2
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 878de9423c5596491167225c2a455043c3130fb5b7286ac83443d45e74955f34
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+      - python -c "from autocommand import autocommand"
+
+about:
+  summary: A library to automatically generate and run simple argparse parsers from function signatures.
+  description: |
+    Autocommand turns a function into a command-line program. It converts
+    the function's parameter signature into command-line arguments, and
+    automatically runs the function if the module was called as ``__main__``.
+  license: LGPL-3.0-only
+  license_file: LICENSE
+  homepage: https://github.com/Lucretiel/autocommand
+  documentation: https://github.com/Lucretiel/autocommand
+
+extra:
+  recipe-maintainers:
+    - carlodri

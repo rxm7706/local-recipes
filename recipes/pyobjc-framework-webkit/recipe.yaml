@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyobjc-framework-webkit
+  version: "12.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/pyobjc-framework-WebKit/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: a65a33d7057aed8d096672be4a53a7ea49a7c74a0b4bc9cb216d4773ebfed6d2
+
+build:
+  number: 2
+  skip: not osx or match(python, ">=2,<3") or python_impl == 'pypy' or (arm64 and match(python, "<3.9"))
+  script:
+    # force pyobjc to use conda-forge's chosen SDK
+    - export CFLAGS="${CFLAGS} -isysroot ${SDKROOT:-$CONDA_BUILD_SYSROOT}"
+    # force ignoring invalid compiler flag (-Wl,-export-dynamic)
+    - if: match(python, "==3.7") or match(python, "==3.8")
+      then: export CFLAGS="${CFLAGS} -Wno-unused-command-line-argument"
+    - ${{ PYTHON }} -m pip install --no-deps . -vv
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - libffi
+  run:
+    - python
+    - pyobjc-core 12.0.*
+    - pyobjc-framework-cocoa 12.0.*
+    - libffi
+
+tests:
+  - python:
+      imports:
+        - WebKit
+        - JavaScriptCore
+      pip_check: true
+
+about:
+  summary: Wrappers for the framework Webkit on macOS
+  license: MIT
+  license_file: License.txt
+  homepage: https://github.com/ronaldoussoren/pyobjc
+  repository: https://github.com/ronaldoussoren/pyobjc/tree/master/pyobjc-framework-Webkit
+  documentation: https://pyobjc.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - traversaro

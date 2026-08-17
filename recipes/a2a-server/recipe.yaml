@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.6.1"
+  python_min: "3.11"
+
+package:
+  name: a2a-server
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/a2a-server/a2a_server-${{ version }}.tar.gz
+  sha256: cc3d5f5f48068cb116366b1ed5ad60c33d5e4b7c5e77aaa95e5c6eee93330c1c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.0
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - a2a-json-rpc >=0.3
+    - asyncio >=3.4.3
+    - pydantic >=2.11.3
+    - fastapi >=0.115.12
+    - uvicorn >=0.34.1
+    - httpx >=0.28.1
+    - pyyaml >=6.0.2
+    - google-adk >=0.2.0
+    - litellm >=1.66.3
+    - python-json-logger >=3.3.0
+    - prometheus_client >=0.22.0
+    - opentelemetry-sdk >=1.32.1
+    - opentelemetry-exporter-otlp >=1.33.1
+    - opentelemetry-exporter-prometheus >=0.54b1
+    - aiofiles >=24.1.0
+    - chuk-ai-session-manager >=0.7.1
+    - httptools >=0.6.4
+    - chuk-llm >=0.8.13
+    - chuk-tool-processor >=0.6.4
+
+tests:
+  - python:
+      imports:
+        - a2a_server
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/a2a-server/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: In-memory FSM for the A2A Protocol with Pydantic v2 models
+  description: |
+    In-memory FSM for the A2A Protocol with Pydantic v2 models
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: a2a-server
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: a2a-server
+  cfe-purls:
+    - pkg:conda/a2a-server@${{ version }}?channel=conda-forge
+    - pkg:pypi/a2a-server@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/a2a-server/
+  cfe-upstream-homepage: https://pypi.org/project/a2a-server/
+  cfe-import-names: [a2a_server]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:47:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:47:53Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

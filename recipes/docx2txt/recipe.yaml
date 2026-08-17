@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: docx2txt
+  version: "0.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/docx2txt-${{ version }}.tar.gz
+  sha256: 18013f6229b14909028b19aa7bf4f8f3d6e4632d7b089ab29f7f0a4d1f660e28
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - docx2txt
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - docx2txt -h
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: A pure python-based utility to extract text and images from docx files.
+  homepage: https://github.com/ankushshah89/python-docx2txt
+  repository: https://github.com/ankushshah89/python-docx2txt
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - rxm7706
+    - nikicc

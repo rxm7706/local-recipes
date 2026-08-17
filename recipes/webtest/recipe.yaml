@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: WebTest
+  version: "3.0.7"
+  python_min: "3.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name|lower }}-${{ version }}.tar.gz
+  sha256: 7aeab50f970d46c068e7a36dd162cb242591edf72a1d04efd21374772b931741
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  host:
+    - pip
+    - setuptools
+    - python 3.9.*
+  run:
+    - beautifulsoup4
+    - python >=${{ python_min }}
+    - waitress >=3.0.2
+    - webob >=1.2
+
+tests:
+  - python:
+      imports:
+        - webtest
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: license.rst
+  summary: helper to test WSGI applications
+  description: |
+    Webtest tests any application that has a WSGI interface, including an application written
+    in a framework that supports WSGI.
+  homepage: https://docs.pylonsproject.org/projects/webtest/en/latest/
+  repository: https://github.com/Pylons/webtest
+  documentation: http://webtest.pythonpaste.org/
+
+extra:
+  recipe-maintainers:
+    - nehaljwani

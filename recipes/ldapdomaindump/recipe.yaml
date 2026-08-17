@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.10.0"
+
+package:
+  name: ldapdomaindump
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/ldapdomaindump/ldapdomaindump-${{ version }}.tar.gz
+  sha256: cbc66b32a7787473ffd169c5319acde46c02fdc9d444556e6448e0def91d3299
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=42
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - dnspython
+    - ldap3 !=2.5.0,!=2.5.2,!=2.6,>=2.5
+
+tests:
+  - python:
+      imports:
+        - ldapdomaindump
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/dirkjanm/ldapdomaindump/
+  license: MIT
+  license_file: LICENSE
+  summary: Active Directory information dumper via LDAP
+  description: |
+    Active Directory information dumper via LDAP
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ldapdomaindump
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ldapdomaindump
+  cfe-purls:
+    - pkg:conda/ldapdomaindump@${{ version }}?channel=conda-forge
+    - pkg:pypi/ldapdomaindump@${{ version }}
+  cfe-upstream-repo: https://github.com/dirkjanm/ldapdomaindump/
+  cfe-upstream-homepage: https://github.com/dirkjanm/ldapdomaindump/
+  cfe-import-names: [ldapdomaindump]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:29:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:29:32Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

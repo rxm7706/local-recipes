@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: coreschema
+  version: 0.0.4
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 9503506007d482ab0867ba14724b93c18a33b22b6d19fb419ef2d239dd4a1607
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - jinja2
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - coreschema
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  summary: Core Schema.
+  license: BSD-1-Clause
+  license_file: LICENSE.md
+  homepage: https://github.com/core-api/python-coreschema
+
+extra:
+  recipe-maintainers:
+    - hadim

@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pydivert
+  version: "3.1.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pydivert-${{ version }}.tar.gz
+  sha256: e5cba087f3f17eb66cf50965cf9670c55691c580f81dcad20549a0ef49af8e06
+
+build:
+  number: 0
+  skip: not win
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - hatchling
+    - python
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - pydivert
+      pip_check: true
+
+about:
+  summary: Python binding to windivert driver
+  license: LGPL-3.0-or-later
+  license_file:
+    - LICENSE
+  homepage: https://github.com/ffalcinelli/pydivert
+  documentation: https://pythonhosted.org/pydivert/
+
+extra:
+  recipe-maintainers:
+    - jonashaag
+    - AdrianFreundQC
+    - freundTech

@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: anywidget
+  version: "0.11.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/anywidget-${{ version }}.tar.gz
+  sha256: 6695fbef9449cf8c27f421b96c5837aa37f909ec1f60cfa33add333e1b70b169
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - hatch-jupyter-builder
+    - jupyterlab
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - ipywidgets >=7.6.0
+    - typing_extensions >=4.2.0
+    - psygnal >=0.8.1
+
+tests:
+  - python:
+      imports:
+        - anywidget
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: simple, custom Jupyter widgets
+  description: |
+    anywidget is a new Python library that greatly simplifies creating and publishing
+    custom Jupyter Widgets. Unlike the traditional (cookiecutter) approach, with
+    anywidget you 1) avoid fiddling with build steps and bundlers, 2) can prototype
+    widgets from within a notebook, and 3) get a modern front-end developer experience.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/anywidget/
+  repository: https://github.com/manzt/anywidget
+
+extra:
+  recipe-maintainers:
+    - manzt
+    - giswqs

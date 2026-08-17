@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.6.7"
+
+package:
+  name: receptorctl
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/receptorctl/receptorctl-${{ version }}.tar.gz
+  sha256: 66ba58135c21120615aa5f285e7831a1e8a84e0e4efe635813d4d1669e4b07f9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=75.3.2
+    - setuptools-scm >=7.1.0
+  run:
+    - python >=${{ python_min }}
+    - python-dateutil >=2.8.1
+    - click <8.4.0,>=8.3.3
+    - pyyaml >=5.4.1
+
+tests:
+  - python:
+      imports:
+        - receptorctl
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://ansible.readthedocs.io/projects/receptor/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Receptorctl is a front-end CLI and importable Python library that interacts with Receptor over its control socket interface.
+  description: |
+    Receptorctl is a front-end CLI and importable Python library that interacts with Receptor over its control socket interface.
+  repository: https://github.com/ansible/receptor
+  documentation: https://ansible.readthedocs.io/projects/receptor/en/latest/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: receptorctl
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: receptorctl
+  cfe-purls:
+    - pkg:conda/receptorctl@${{ version }}?channel=conda-forge
+    - pkg:pypi/receptorctl@${{ version }}
+  cfe-upstream-repo: https://github.com/ansible/receptor
+  cfe-upstream-homepage: https://ansible.readthedocs.io/projects/receptor/
+  cfe-import-names: [receptorctl]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:34:49Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:34:49Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

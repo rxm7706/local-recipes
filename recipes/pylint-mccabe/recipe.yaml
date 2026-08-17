@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.3"
+
+package:
+  name: pylint-mccabe
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pylint-mccabe/pylint-mccabe-${{ version }}.tar.gz
+  sha256: f3628affbc6064c08477243915f6752f3ef59fb82803b00be92f30d0ef7bbf29
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pylint
+    - mccabe
+
+tests:
+  - python:
+      imports:
+        - pylint_mccabe
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://pypi.python.org/pypi/pylint-mccabe/
+  license: MIT
+  license_file: LICENSE
+  summary: McCabe complexity checker as a PyLint plugin
+  description: |
+    McCabe complexity checker as a PyLint plugin
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pylint-mccabe
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pylint-mccabe
+  cfe-purls:
+    - pkg:conda/pylint-mccabe@${{ version }}?channel=conda-forge
+    - pkg:pypi/pylint-mccabe@${{ version }}
+  cfe-upstream-repo: http://pypi.python.org/pypi/pylint-mccabe/
+  cfe-upstream-homepage: http://pypi.python.org/pypi/pylint-mccabe/
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:47:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:47:25Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

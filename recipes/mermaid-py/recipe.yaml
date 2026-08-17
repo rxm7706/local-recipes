@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mermaid-py
+  version: "0.8.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/mermaid_py-${{ version }}.tar.gz
+  sha256: 4676246ad32c4e9206d60af569f68ba7eab81e425d071fba01355b1cc6bba8f5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - codecov >=2.1.13
+    - coverage >=7.10.7
+    - pre-commit >=4.3.0
+    - pytest >=8.4.2
+    - pytest-cov >=7.0.0
+    - requests >=2.32.5
+    - ruff >=0.14.14
+
+tests:
+  - python:
+      imports:
+        - mermaid
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: A simple interface for the the famous lib mermaid-js to create diagrams.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://mermaidpy.vercel.app
+  repository: https://github.com/ouhammmourachid/mermaid-py
+
+extra:
+  recipe-maintainers:
+    - thewchan

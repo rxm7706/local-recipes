@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: flashtext
+  version: "2.7"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: a1be2b93e09d4f0deee4aad72b91a7127b61fb8b8034ca9a9c78ea745d8b05cf
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - flashtext
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: This module can be used to replace keywords in sentences or extract keywords from sentences. It is based on the FlashText algorithm.
+  homepage: https://github.com/vi3k6i5/flashtext
+
+extra:
+  recipe-maintainers:
+    - ftm13

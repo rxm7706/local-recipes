@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: marshmallow3-annotations
+  version: "1.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/marshmallow3-annotations-${{ version }}.tar.gz
+  sha256: aa804dc43a0f5fa7314724bdef31ecd22391b45d53f7aff5100cc5964e86cd20
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - marshmallow >=3.0.0
+
+tests:
+  - python:
+      imports:
+        - marshmallow3_annotations
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Marrying marshmallow3 and annotations
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/dkunitsk/marshmallow3-annotations
+
+extra:
+  recipe-maintainers:
+    - rxm7706

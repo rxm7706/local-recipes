@@ -2,51 +2,47 @@
 schema_version: 1
 
 context:
+  name: pyobjc-framework-applicationservices
   version: "12.2.1"
 
 package:
-  name: pyobjc-framework-applicationservices
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: 
-    https://pypi.org/packages/source/p/pyobjc-framework-applicationservices/pyobjc_framework_applicationservices-${{
-    version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: 048ea663c9ac75c44a15dc7d5b8d78cbb4c97bf1c76e83835e8d5498e184001f
 
 build:
-  number: 0
+  number: 1
   skip: not osx
-  script:
-    # force pyobjc to use conda-forge's chosen SDK
-    - export CFLAGS="${CFLAGS} -isysroot ${SDKROOT:-$CONDA_BUILD_SYSROOT}"
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   build:
     - if: build_platform != target_platform
-      then:
-        - python
-        - cross-python_${{ target_platform }}
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
     - ${{ compiler('c') }}
-    - ${{ stdlib('c') }}
+    - ${{ stdlib("c") }}
   host:
     - python
-    - pip
     - setuptools
     - wheel
+    - pip
   run:
     - python
     - pyobjc-core >=${{ version }}
     - pyobjc-framework-cocoa >=${{ version }}
     - pyobjc-framework-quartz >=${{ version }}
-    - pyobjc-framework-coretext >=${{ version }}
+    - pyobjc-framework-CoreText >=${{ version }}
 
 tests:
   - python:
       imports:
-        - ApplicationServices
         - PyObjCTools
+        - ApplicationServices
       pip_check: true
 
 about:
@@ -54,7 +50,7 @@ about:
   license: MIT
   license_file: License.txt
   homepage: https://github.com/ronaldoussoren/pyobjc
-  repository: https://github.com/ronaldoussoren/pyobjc
+
 extra:
   recipe-maintainers:
     - rxm7706

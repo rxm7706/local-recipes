@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.2"
+
+package:
+  name: timeloop
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/timeloop/timeloop-${{ version }}.tar.gz
+  sha256: 4e716c67fe6bcadcee7ddb91e2520792426818a70f27e630cfbbbd9becc48a13
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - timeloop
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/sankalpjonn/timeloop
+  license: MIT
+  license_file: LICENSE
+  summary: An elegant way to run period tasks.
+  description: |
+    An elegant way to run period tasks.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: timeloop
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: timeloop
+  cfe-purls:
+    - pkg:conda/timeloop@${{ version }}?channel=conda-forge
+    - pkg:pypi/timeloop@${{ version }}
+  cfe-upstream-repo: https://github.com/sankalpjonn/timeloop
+  cfe-upstream-homepage: https://github.com/sankalpjonn/timeloop
+  cfe-import-names: [timeloop]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:21:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:21:26Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

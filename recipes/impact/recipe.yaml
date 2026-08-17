@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.0"
+
+package:
+  name: impact
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/i/impact/impact-${{ version }}.tar.gz
+  sha256: 75042b7a5ff3ad993e715f2209a56ecdb33d235fdae415fce28fe39d0b9bfd2c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=68
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - opentelemetry-api <2,>=1.30
+    - opentelemetry-sdk <2,>=1.30
+    - opentelemetry-exporter-otlp-proto-http <2,>=1.30
+    - opentelemetry-instrumentation-threading <1,>=0.50b0
+    - opentelemetry-instrumentation-asgi <1,>=0.50b0
+    - opentelemetry-instrumentation-httpx <1,>=0.50b0
+    - opentelemetry-instrumentation-google-genai >=0.4b0
+    - opentelemetry-instrumentation-openai-agents-v2 >=0.1.0
+    - opentelemetry-instrumentation-openai >=0.52.0
+    - opentelemetry-instrumentation-bedrock >=0.49.0
+    - opentelemetry-instrumentation-anthropic >=0.50.0
+    - opentelemetry-instrumentation-cohere >=0.50.0
+    - opentelemetry-instrumentation-mistralai >=0.50.0
+    - opentelemetry-instrumentation-watsonx >=0.50.0
+    - opentelemetry-instrumentation-groq >=0.50.0
+    - opentelemetry-instrumentation-together >=0.50.0
+    - opentelemetry-instrumentation-ollama >=0.50.0
+    - opentelemetry-instrumentation-langchain >=0.50.0
+    - opentelemetry-instrumentation-llamaindex >=0.50.0
+    - opentelemetry-instrumentation-crewai >=0.50.0
+    - opentelemetry-instrumentation-agno >=0.49.0
+    - opentelemetry-instrumentation-azure-aisearch >=0.1.0
+    - opentelemetry-instrumentation-mcp >=0.50.0
+    - opentelemetry-instrumentation-vertexai >=0.46.0
+
+tests:
+  - python:
+      imports:
+        - impact
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/impact/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Impact AI SDK (OTel-native, GenAI semantic conventions)
+  description: |
+    Impact AI SDK (OTel-native, GenAI semantic conventions)
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: impact
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: impact
+  cfe-purls:
+    - pkg:conda/impact@${{ version }}?channel=conda-forge
+    - pkg:pypi/impact@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/impact/
+  cfe-upstream-homepage: https://pypi.org/project/impact/
+  cfe-import-names: [impact]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:56:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:56:12Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

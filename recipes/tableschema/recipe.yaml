@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  python_min: "3.7"
+  name: tableschema
+  version: "1.21.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/tableschema-${{ version }}.tar.gz
+  sha256: d834130e4e9fcc912b0e4694592acf7b7fe99bea1d16c872e823ee30fd5e5fa4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - tableschema = tableschema.__main__:cli
+
+requirements:
+  host:
+    - python 3.7.*
+    - pip
+    - setuptools
+  run:
+    - dataflows-tabulator >=1.54.1
+    - python >=${{ python_min }}
+    - six >=1.9
+    - click >=3.3
+    - requests >=2.5
+    - cached-property >=1.5
+    - python-dateutil >=2.4
+    - jsonschema >=2.5
+    - unicodecsv >=0.14
+    - isodate >=0.5.4
+    - rfc3986 >=1.1.0
+    - tabulator >=1.51.3
+
+tests:
+  - python:
+      imports:
+        - tableschema
+        - tableschema.constraints
+        - tableschema.plugins
+        - tableschema.types
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+        - pylama
+        - tox
+        - pip
+    script:
+      - tableschema --help
+
+about:
+  license: MIT
+  license_file: LICENSE.md
+  summary: A utility library for working with Table Schema in Python
+  homepage: https://github.com/frictionlessdata/tableschema-py
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - roll

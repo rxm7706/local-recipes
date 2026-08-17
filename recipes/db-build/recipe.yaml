@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: db-build
+  version: "0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/db-build-${{ version }}.tar.gz
+  sha256: dee5b26c92e31239ff5a7bfd2adfc7816063b880cba578f28e4c2b73c467e2db
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - db-build = db_build.cli:cli
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - click
+    - sqlite-utils
+
+tests:
+  - python:
+      imports:
+        - db_build
+      python_version: ${{ python_min }}.*
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+      - db-build --help
+
+about:
+  summary: Tools for building SQLite databases from files and directories
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/simonw/db-build
+
+extra:
+  recipe-maintainers:
+    - rxm7706

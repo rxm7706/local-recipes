@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: exchange-calendars
+  version: "4.8"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/exchange_calendars-${{ version }}.tar.gz
+  sha256: 70d1f2dce712fb193aa56f67df17a292221a4c24589a0077fac3f41aaf5e0a29
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - ecal = exchange_calendars.ecal:main
+
+requirements:
+  host:
+    - pip
+    - python 3.10.*
+    - setuptools
+    - setuptools_scm >=6.2
+  run:
+    - korean_lunar_calendar
+    - numpy
+    - pandas >=1.1
+    - pyluach
+    - python >=${{ python_min }}
+    - tzdata
+    - toolz
+
+tests:
+  - python:
+      imports:
+        - exchange_calendars
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - ecal XNYS 2020
+
+about:
+  summary: exchange_calendars is a Python library with securities exchange calendars
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/gerrymanoim/exchange_calendars
+
+extra:
+  recipe-maintainers:
+    - stefan-jansen
+    - yehoshuadimarsky

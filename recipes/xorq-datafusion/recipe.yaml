@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.2.10"
+  version: "0.2.11"
 
 package:
   name: xorq-datafusion
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/x/xorq-datafusion/xorq_datafusion-${{ version }}.tar.gz
-  sha256: 4db745babcc717440cfb4dedf8f8b973a3f5ebfe54696dd9057bc88224eef2d7
+  sha256: 0c7b0a7b91f3cee0ec6f56cfcb84ae4b7a08eaad59fc10df06c8039fdf8366c9
   patches:
     # Upstream caps pyarrow at <22 defensively; conda-forge's global pyarrow
     # pin already constrains the ABI, and pyarrow 22/23/24 are out and

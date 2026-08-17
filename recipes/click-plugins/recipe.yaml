@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.1.2"
+
+package:
+  name: click-plugins
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/click-plugins/click_plugins-${{ version }}.tar.gz
+  sha256: d7af3984a99d243c131aa1a828331e7630f4a88a9741fd05c927b204bcf92261
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - click >=4.0
+
+tests:
+  - python:
+      imports:
+        - click_plugins
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: An extension module for click to enable registering CLI commands via setuptools entry-points
+  homepage: https://github.com/click-contrib/click-plugins
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

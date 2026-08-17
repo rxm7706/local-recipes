@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: respx
+  version: "0.23.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 242dcc6ce6b5b9bf621f5870c82a63997e8e82bc7c947f9ffe272b8f3dd5a780
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . -vv --no-build-isolation --no-deps
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - httpx >=0.25.0
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - respx
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: A utility for mocking out the Python HTTPX library.
+  license: BSD-3-Clause
+  license_file: LICENSE.md
+  homepage: https://lundberg.github.io/respx
+  repository: https://github.com/lundberg/respx
+  documentation: https://lundberg.github.io/respx
+
+extra:
+  recipe-maintainers:
+    - synapticarbors

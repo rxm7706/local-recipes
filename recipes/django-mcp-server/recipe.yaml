@@ -2,14 +2,16 @@
 schema_version: 1
 
 context:
+  name: django-mcp-server
   version: "0.5.7"
+  python_min: '3.10'
 
 package:
-  name: django-mcp-server
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-mcp-server/django_mcp_server-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_mcp_server-${{ version }}.tar.gz
   sha256: 5077f8fabf5fb621b5ce490afd0db60f21e57b3a451ed14a9f44aef545ea4eee
 
 build:
@@ -23,7 +25,7 @@ requirements:
     - poetry-core
     - pip
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
     - mcp >=1.8.0
     - django >=4.0
     - djangorestframework >=3.15.0
@@ -33,30 +35,23 @@ requirements:
 tests:
   - script:
       - python -c "import django; from django.conf import settings; settings.configure(DEBUG=True,INSTALLED_APPS=['mcp_server']); django.setup(); import mcp_server;"
-  # CFEP-25-justified: Django app — `import mcp_server` raises
-  # ImproperlyConfigured without DJANGO_SETTINGS_MODULE configured (the
-  # module imports django.db.models at top level). The script test above
-  # exercises the real import after settings.configure; this block keeps
-  # pip_check on the dependency graph.
+
   - python:
+      imports:
+        - django
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
-  - package_contents:
-      site_packages:
-        - mcp_server
+      python_version: ${{ python_min }}.*
 
 about:
-  homepage: https://github.com/omarbenhamid/django-mcp-server
+  summary: Django MCP Server is a Django extensions to easily enable AI Agents to interact with Django Apps through the Model Context Protocol it works equally well on WSGI and ASGI
+  homepage: hhttps://github.com/omarbenhamid/django-mcp-server
+  description: |
+    Django MCP Server is an implementation of the Model Context Protocol (MCP) extension for Django. 
+    This module allows MCP Clients and AI agents to interact with any Django application seamlessly.
   repository: https://github.com/omarbenhamid/django-mcp-server
   documentation: https://github.com/omarbenhamid/django-mcp-server/blob/main/README.md
   license: MIT
   license_file: LICENCE.md
-  summary: Django MCP Server is a Django extensions to easily enable AI Agents to interact with Django Apps through the Model Context Protocol it works equally well on WSGI and ASGI
-  description: |
-    Django MCP Server is an implementation of the Model Context Protocol (MCP) extension for Django.
-    This module allows MCP Clients and AI agents to interact with any Django application seamlessly.
 
 extra:
   recipe-maintainers:

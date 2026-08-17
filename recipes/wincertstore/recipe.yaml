@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2"
+  pip_version: "20.2.3"
+  setuptools_version: "49.6.0"
+
+package:
+  name: wincertstore
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/w/wincertstore/wincertstore-${{ version }}.zip
+    sha256: 780bd1557c9185c15d9f4221ea7f905cb20b93f7151ca8ccaed9714dce4b327a
+    target_directory: wincertstore
+  # bootstrap pip and setuptools to avoid circular dependency
+  # but without losing metadata
+  - url: https://pypi.org/packages/py2.py3/p/pip/pip-${{ pip_version }}-py2.py3-none-any.whl
+    sha256: 0f35d63b7245205f4060efe1982f5ea2196aa6e5b26c07669adcf800e2542026
+    target_directory: pip_wheel
+  - url: https://pypi.org/packages/py3/s/setuptools/setuptools-${{ setuptools_version }}-py3-none-any.whl
+    sha256: 4dd5bb0a0a0cff77b46ca5dd3a84857ee48c83e8223886b556613c724994073f
+    target_directory: setuptools_wheel
+
+build:
+  number: 1010
+  noarch: python
+
+requirements:
+  host:
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+    - __win
+
+tests:
+  - python:
+      imports:
+        - wincertstore
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: PSF-2.0
+  license_file: wincertstore/LICENSE
+  summary: Python module to extract CA and CRL certs from Windows' cert store (ctypes based).
+  homepage: https://pypi.org/project/wincertstore/
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - patricksnape
+    - ocefpaf

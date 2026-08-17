@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: 1.9.2
+
+package:
+  name: ansi2html
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/ansi2html/ansi2html-${{ version }}.tar.gz
+  sha256: 3453bf87535d37b827b05245faaa756dbab4ec3d69925e352b6319c3c955c0a5
+
+build:
+  number: 3
+  noarch: python
+  script:
+    env:
+      # We need to patch the version seen by setuptools_scm,
+      # otherwise it will default to 0.0.0 which will be picked up by pip.
+      # https://conda-forge.org/docs/maintainer/knowledge_base/#using-setuptools_scm
+      SETUPTOOLS_SCM_PRETEND_VERSION: ${{ version }}
+    content:
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  python:
+    entry_points:
+      - ansi2html = ansi2html.__main__:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools-scm >=7.0.0
+    - setuptools >=45.0.0
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports: ansi2html
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - 3.13.*
+  - files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pytest-cov
+    script:
+      - ansi2html --version
+      - ansi2html --help
+      - coverage run --source=ansi2html --branch -m pytest -vv --tb=long --color=yes
+      - coverage report --show-missing --skip-covered --fail-under=89
+
+about:
+  license: LGPL-3.0-or-later
+  license_file: LICENSE
+  summary: Convert text with ANSI color codes to HTML or to LaTeX.
+  description: |
+    ansi2html allows users to convert text with ANSI color codes
+    to HTML or to Latex.
+  homepage: https://pypi.python.org/pypi/ansi2html
+  repository: https://github.com/pycontribs/ansi2html
+  documentation: https://pypi.python.org/pypi/ansi2html/
+
+extra:
+  recipe-maintainers:
+    - nehaljwani

@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.11.833"
+
+package:
+  name: aws-sdk-cpp
+  version: ${{ version }}
+
+source:
+  url: https://github.com/aws/aws-sdk-cpp/archive/${{ version }}.tar.gz
+  sha256: 673325c6400258fafbed120144b1673a74193d85110671358a0c69ad56994c57
+
+build:
+  number: 9
+
+requirements:
+  build:
+    - cmake >=3.5
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+    - ninja
+    - if: unix
+      then: make
+  host:
+    - aws-c-common
+    - aws-c-event-stream
+    - aws-crt-cpp
+    - if: not win
+      then: libcurl
+    - zlib
+  run_exports:
+    - ${{ pin_subpackage("aws-sdk-cpp", upper_bound="x.x.x") }}
+
+tests:
+  - files:
+      recipe:
+        - test.cpp
+        - CMakeLists.txt
+        - run_test${{ ".bat" if win else ".sh" }}
+    script: ./run_test${{ ".bat" if win else ".sh" }}
+    requirements:
+      run:
+        - cmake >=3.5
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ninja
+        - if: unix
+          then: make
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: C++ library that makes it easy to integrate C++ applications with AWS services
+  description: |
+    The AWS SDK for C++ provides a modern C++ (version C++ 11 or later) interface for Amazon Web Services (AWS).
+    It is meant to be performant and fully functioning with low- and high-level SDKs,
+    while minimizing dependencies and providing platform portability (Windows, OSX, Linux, and mobile).
+  homepage: https://github.com/aws/aws-sdk-cpp
+  repository: https://github.com/aws/aws-sdk-cpp
+  documentation: https://aws.amazon.com/documentation/sdk-for-cpp/
+
+extra:
+  recipe-maintainers:
+    - tkelman
+    - pitrou
+    - ihnorton
+    - xhochy

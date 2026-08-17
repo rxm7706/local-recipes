@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.64b0"
+  version: "0.65b0"
 
 package:
   name: opentelemetry-instrumentation-kafka-python
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/o/opentelemetry-instrumentation-kafka-python/opentelemetry_instrumentation_kafka_python-${{ version }}.tar.gz
-  sha256: 0b2b58ba1fc38fac7124306d541be04e8c4441b2973961261037d84fa268a7e4
+  sha256: e909be2bfacfd5d271bb3249b3f393348bbe4ebbc57e87983345cb253d419c4b
 
 build:
   number: 0
@@ -50,7 +50,6 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
-    - conda-forge/opentelemetry-api
 
 #### CFE metadata AND comments
 # CFE metadata

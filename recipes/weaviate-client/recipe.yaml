@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: weaviate-client
+  version: "4.23.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/weaviate_client-${{ version }}.tar.gz
+  sha256: 19cc336b4c9e58f06cf01cb9aff8f6d8c0fe747f2e80192a9871c63823e8b18d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=65
+    # setuptools_scm[toml] needs nothing extra on conda-forge
+    - setuptools-scm >6.2
+    - wheel >=0.38.1
+  run:
+    - python >=${{ python_min }}
+    - httpx >=0.26.0,<0.29.0
+    - validators >=0.34.0,<1.0.0
+    - authlib >=1.6.7,<2.0.0
+    - pydantic >=2.12.0,<3.0.0
+    - grpcio >=1.59.5,<1.80.0
+    - protobuf >=4.21.6,<7.0.0
+    - packaging >=21.0
+tests:
+  - python:
+      imports:
+        - weaviate
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A python native Weaviate client
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/weaviate/weaviate-python-client
+  repository: https://github.com/weaviate/weaviate-python-client
+  documentation: https://weaviate.io/developers/weaviate/client-libraries/python
+
+extra:
+  recipe-maintainers:
+    - xylar

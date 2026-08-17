@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: poetry-plugin-export
+  version: 1.10.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/poetry_plugin_export-${{ version }}.tar.gz
+  sha256: 26ef9df924cd874a825d92d6bc01a5a869a4a28d2f2ebba61d3b5b19c60120f0
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=2.0
+  run:
+    - python >=${{ python_min }},<4.0
+    - poetry >=2.1.0,<3.0.0
+    - poetry-core >=2.1.0,<3.0.0
+    - tomlkit >=0.11.4,<1.0.0
+
+tests:
+  - python:
+      imports:
+        - poetry_plugin_export
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - python -c "import pathlib, poetry_plugin_export; p = pathlib.Path(poetry_plugin_export.__file__); assert p.exists(), p"
+      - python -c "from importlib.metadata import version as _v; assert _v('poetry-plugin-export') == '${{ version }}'"
+
+about:
+  summary: Poetry plugin to export the dependencies to various formats
+  license: MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/poetry-plugin-export/
+  repository: https://github.com/python-poetry/poetry-plugin-export
+
+extra:
+  recipe-maintainers:
+    - xylar
+    - maresb

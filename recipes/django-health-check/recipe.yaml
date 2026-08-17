@@ -2,15 +2,16 @@
 schema_version: 1
 
 context:
-  version: "4.4.2"
+  name: django-health-check
+  version: 4.5.0
 
 package:
-  name: django-health-check
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-health-check/django_health_check-${{ version }}.tar.gz
-  sha256: ad6669bab773ef74714bb45b9cea692da2054dd68c197282db56709afd6d55bf
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_health_check-${{ version }}.tar.gz
+  sha256: 7917436a29acf1500d7623928ed3d3c659fa660b00fadb2fc38b357c9c8c4e61
 
 build:
   number: 0
@@ -28,11 +29,13 @@ requirements:
     - python >=${{ python_min }},<4.0
     - django >=5.2
     - dnspython >=2.0.0
-    - psutil
-
+    - python-confluent-kafka
+    - feedparser
+    - celery
+    - redis-py
+    - httpx
+    - aio-pika
 tests:
-  # CFEP-25-justified: Django web-app backend — `import health_check` raises
-  # ImproperlyConfigured without DJANGO_SETTINGS_MODULE configured.
   - requirements:
       run:
         - pip
@@ -42,10 +45,10 @@ tests:
       - pip check
 
 about:
+  summary: Monitor the health of your Django app and its connected services.
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/codingjoe/django-health-check
-  summary: Monitor the health of your Django app and its connected services.
 
 extra:
   recipe-maintainers:

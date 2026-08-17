@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.3"
+
+package:
+  name: sequence-mining
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sequence-mining/sequence_mining-${{ version }}.tar.gz
+  sha256: aef3bed4dc44dfdac064671d56b1241e741e64271368ec4563ad33b635cd48ca
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - bitarray ==2.6.0
+    - bitmap ==0.0.7
+    - future ==0.18.2
+
+tests:
+  - python:
+      imports:
+        - sequence_mining
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/adyachok/sequence-mining
+  license: MIT
+  license_file: LICENSE
+  summary: Sequence mining SPAM algorithm implementation
+  description: |
+    Sequence mining SPAM algorithm implementation
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sequence-mining
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sequence-mining
+  cfe-purls:
+    - pkg:conda/sequence-mining@${{ version }}?channel=conda-forge
+    - pkg:pypi/sequence-mining@${{ version }}
+  cfe-upstream-repo: https://github.com/adyachok/sequence-mining
+  cfe-upstream-homepage: https://github.com/adyachok/sequence-mining
+  cfe-import-names: [sequence_mining]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:40:06Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:40:06Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

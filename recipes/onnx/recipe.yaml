@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: onnx
+  version: "1.22.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/onnx/onnx/archive/v${{ version }}.tar.gz
+  sha256: 70bb8b25cf31ea9b1d9f94baacfdc8c4fa27a760f9a10f5d93881bc9eede5fbc
+  patches:
+    - patches/0001-Patch-Python-and-nanobind-cmake-config.patch
+    - patches/0002-Link-protobuf-and-abseil-privately.patch
+
+build:
+  number: 1
+  python:
+    entry_points:
+      - check-model = onnx.bin.checker:check_model
+      - check-node = onnx.bin.checker:check_node
+      - backend-test-tools = onnx.backend.test.cmd_tools:main
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - nanobind
+        - libprotobuf
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+  host:
+    - python
+    - libprotobuf
+    - pip
+    - protobuf
+    - nanobind
+    - scikit-build-core
+  run:
+    - python
+    - ml_dtypes
+    - protobuf
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - onnx
+  - requirements:
+      run:
+        - pip
+    script:
+      - pip check
+      - check-model --help
+      - check-node --help
+      - backend-test-tools --help
+      - if: unix
+        then:
+          - grep -q protobuf "${PREFIX}/lib/cmake/ONNX/ONNXTargets.cmake" && exit 1 || true
+  - package_contents:
+      lib:
+        - if: unix
+          then:
+            - onnx
+            - onnx_proto
+      files:
+        - if: unix
+          then:
+            - lib/cmake/ONNX/ONNXConfig.cmake
+            - lib/cmake/ONNX/ONNXTargets.cmake
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Open Neural Network Exchange library
+  description: |
+    Open Neural Network Exchange (ONNX) is the first step toward an open
+    ecosystem that empowers AI developers to choose the right tools as their
+    project evolves. ONNX provides an open source format for AI models. It
+    defines an extensible computation graph model, as well as definitions of
+    built-in operators and standard data types. Initially we focus on the
+    capabilities needed for inferencing (evaluation).
+
+
+  homepage: https://github.com/onnx/onnx/
+
+extra:
+  recipe-maintainers:
+    - marcelotrevisani
+    - xhochy
+    - janjagusch
+    - cbourjau

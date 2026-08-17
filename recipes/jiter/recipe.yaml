@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jiter
+  version: "0.15.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jiter-${{ version }}.tar.gz
+  sha256: 4251acc80e2b7c9b7b8823456ea0fceeb0734dac2df7636d3c711b38476b5a76
+
+build:
+  number: 0
+  skip: python.endswith("t")
+  script:
+    env:
+      PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
+    content: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('rust') }}
+    - maturin
+    - cargo-bundle-licenses
+  host:
+    - python
+    - maturin >=1,<2
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - jiter
+      pip_check: true
+
+about:
+  summary: Fast iterable JSON parser.
+  license: MIT
+  license_file: crates/jiter/LICENSE
+  homepage: https://crates.io/crates/jiter
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

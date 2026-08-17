@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: azure-graphrbac
+  version: "0.61.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.zip
+  sha256: 53e98ae2ca7c19b349e9e9bb1b6a824aeae8dcfcbe17190d20fe69c0f185b2e2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - azure-common >=1.1,<2
+    - msrest >=0.5.0
+    - msrestazure >=0.4.32,<2.0.0
+    - python
+
+tests:
+  - python:
+      imports:
+        - azure.graphrbac
+        - azure.graphrbac.models
+        - azure.graphrbac.operations
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Microsoft Azure Graph RBAC Client Library for Python
+  homepage: https://github.com/Azure/azure-sdk-for-python
+  repository: https://github.com/Azure/azure-sdk-for-python
+  documentation: https://docs.microsoft.com/en-us/python/api/overview/azure/activedirectory?view=azure-python
+
+extra:
+  recipe-maintainers:
+    - andreyz4k

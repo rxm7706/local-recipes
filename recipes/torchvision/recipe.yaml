@@ -1,0 +1,242 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "0.28.0"
+  build_number: 1
+  # see github.com/conda-forge/conda-forge.github.io/issues/1059 for naming discussion
+  # torchvision requires that CUDA major and minor versions match with pytorch
+  # https://github.com/pytorch/vision/blob/fa99a5360fbcd1683311d57a76fcc0e7323a4c1e/torchvision/extension.py#L79C1-L85C1
+  torch_proc_type: ${{ "cuda" if cuda_compiler_version != "None" else "cpu" }}
+  build_string_prefix: ${{ ("cuda" ~ (cuda_compiler_version | replace(".", ""))) if cuda_compiler_version != "None" else "cpu" }}
+
+recipe:
+  name: torchvision
+  version: ${{ version }}
+
+source:
+  url: https://github.com/pytorch/vision/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: ecc4451241c8eeadc0c88213bd65c7932c9622d1d0034254b938f25362283ee9
+  patches:
+    # Our newer conda-forge clang compilers complain about this for OSX
+    # https://github.com/pytorch/vision/pull/8406/files#r1730151047
+    - patches/0001-Use-system-giflib.patch
+    - patches/0002-Force-nvjpeg-and-force-failure.patch
+    # 2024/08 hmaarrfk
+    # known flaky test https://github.com/pytorch/vision/blob/9e78fe29e0851b10eb8fba0b88cc521ad67cf322/test/test_image.py#L840
+    - patches/0003-Skip-OSS-CI-in-conda-forge-as-well.patch
+    # scipy 1.18 shortcuts the "norm" cdf in kstest to scipy.special.ndtr, which
+    # does not accept loc/scale, so the documented `args=` tuple now raises
+    # TypeError. The args torchvision passes, (0, 1), are just the standard
+    # normal defaults, so drop them.
+    - patches/0004-Fix-kstest-call-for-scipy-1.18.patch
+
+build:
+  number: ${{ build_number }}
+  string: ${{ build_string_prefix }}_py${{ python | version_to_buildstring }}_h${{ hash }}_${{ build_number }}
+
+outputs:
+  - package:
+      name: torchvision
+    build:
+      script:
+        # `file` is required: with only `env` set, rattler-build (>=0.65) no
+        # longer falls back to running build.sh/build.bat, producing an empty
+        # package. `file: build` resolves to build.sh on unix / build.bat on win.
+        file: build
+        env:
+          BUILD_VERSION: ${{ version }}
+    requirements:
+      build:
+        - ${{ stdlib('c') }}
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - if: cuda_compiler_version != "None"
+          then:
+            - ${{ compiler('cuda') }}
+            # windows looks in build prefix apparently; c.f.
+            # https://github.com/conda-forge/libnvjpeg-feedstock/issues/27
+            - libnvjpeg-dev
+        # When on linux-aarch64 with CUDA, we need to build for the correct arm variant;
+            - if: linux and aarch64
+              then:
+                - arm-variant * ${{ arm_variant_type }}
+        # avoid nested conditions because of
+        # https://github.com/conda-forge/conda-smithy/issues/2165
+        - if: build_platform != host_platform
+          then:
+            - if: cuda_compiler_version != "None"
+              then:
+                - libcublas-dev
+                - libcudnn-dev
+                - libcusolver-dev
+                - libcusparse-dev
+                - libnvjpeg-dev
+            - python
+            - cross-python_${{ host_platform }}
+            - numpy
+            - pytorch
+            - pytorch * [build=${{ torch_proc_type }}*]
+      host:
+        - python
+        - numpy
+        - pip
+        - setuptools <82
+        - if: cuda_compiler_version != "None"
+          then:
+            - cuda-version ==${{ cuda_compiler_version }}
+            - libcublas-dev
+            - libcudnn-dev
+            - libcusolver-dev
+            - libcusparse-dev
+            - libnvjpeg-dev
+        - libjpeg-turbo
+        - libpng
+        - libwebp
+        # https://github.com/pytorch/vision/pull/8406/files#r1730151047
+        - giflib
+        # Specify lgpl version of ffmpeg so that there are
+        # no questions about the license of the resulting binary
+        # hmaarrfk: 2022/07, I think that torchvision just has bugs with ffmpeg
+        # - ffmpeg {{ ffmpeg }} [build=lgpl_*]
+        # exclude 8.3.0 and 8.3.1 specifically due to pytorch/vision#4146, python-pillow/Pillow#5571
+        - pillow >=5.3.0,!=8.3.0,!=8.3.1
+        - libtorch
+        - libtorch * [build=${{ torch_proc_type }}*]
+        - pytorch
+        - pytorch * [build=${{ torch_proc_type }}*]
+        - requests
+      run:
+        - python
+        - pytorch * [build=${{ torch_proc_type }}*]
+        - pillow >=5.3.0,!=8.3.0,!=8.3.1
+    tests:
+      - python:
+          imports:
+            - torchvision
+            - torchvision.datasets
+            - torchvision.models
+            - torchvision.transforms
+            - torchvision.utils
+          pip_check: true
+      - requirements:
+          run:
+            - pip
+        script:
+          - pip list
+          - if: unix
+            then: pip list | grep torchvision | grep ${{ version }}
+
+  - package:
+      name: torchvision-tests
+    build:
+      script: ${{ 'true' if unix else 'exit /b 0' }}
+      # Seems like we are running out of space on aarch due to the cross compilation tooling
+      skip: ${{ 'true' if aarch64 else 'false' }}
+    requirements:
+      run:
+        - ${{ pin_subpackage('torchvision', exact=True) }}
+    tests:
+      - files:
+          source:
+            - test/
+            - references/
+            - pytest.ini
+        requirements:
+          run:
+            - pytest
+            - requests
+            - av
+            - expecttest
+            - scipy
+            - pytest-mock
+            - pytest-socket
+            - pycocotools
+        script:
+          interpreter: python
+          content:
+            - 'import pytest, sys'
+            - 'tests_to_skip = "_not_a_real_test"'
+            # skip test_url_is_accessible instead of hitting 20+ servers per run, since
+            # each server might be occasionally unresponsive and end up failing our CI
+            - 'tests_to_skip += " or test_url_is_accessible"'
+            # test_decode_gif[*-earth] downloads earth.gif from wikipedia at test
+            # time; wikimedia blocks the default requests User-Agent and returns a
+            # non-gif body, so the decoder raises "DGifOpenFileName() failed - 103".
+            # Upstream skips this under IN_OSS_CI, but rattler-build's sanitized test
+            # env doesn't carry the CI var that patch 0003 keys on, so skip it here.
+            # (The other test_decode_gif assets come from giflib and pass.)
+            - 'tests_to_skip += " or (test_decode_gif and earth)"'
+            # skip classes inheriting from `datasets_utils.VideoDatasetTestCase`, which
+            # are very prone to hanging, especially on osx & windows; see
+            # https://github.com/pytorch/vision/blob/v0.25.0/test/test_datasets.py
+            - 'tests_to_skip += " or HMDB51TestCase"'
+            - 'tests_to_skip += " or KineticsTestCase"'
+            - 'tests_to_skip += " or UCF101TestCase"'
+            # likewise; seems to be sensitive to fork method (3.14 with different default always fails)
+            - 'tests_to_skip += " or TestVideo"'
+            - 'tests_to_skip += " or test_video_model"'
+            # UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated
+            - 'tests_to_skip += " or TestHandleLegacyInterface"'
+            # still deadly for our CI agents as of Jan. 2026, even with a swapfile;
+            # the effect appears to be cumulative, where predominantly the last tests (in order)
+            # under (mostly) `test{,_jit}_forward_backward` run out of memory at some point;
+            # skip the tail end of the model fixtures alphabetically (which fails most often)
+            - 'tests_to_skip += " or (test_classification_model and (vgg or vit or wide))"'
+            # minor tolerance violation in quantized model, flaky behavior.
+            - 'tests_to_skip += " or test_quantized_classification_model[resnext101_32x8d]"'
+            - if: linux or win
+              then:
+                - 'tests_to_skip += " or test_jit_forward_backward[convnext_large]"'
+                # these tend to fail almost always on windows, but it regularly happens on linux too
+                - 'tests_to_skip += " or (("'
+                - 'tests_to_skip += "      test_forward_backward"'
+                - 'tests_to_skip += "      or test_jit_forward_backward"'
+                - 'tests_to_skip += "     ) and (vgg or vit or wide))"'
+                # these may segfault
+                - 'tests_to_skip += " or test_fasterrcnn_double"'
+                - 'tests_to_skip += " or test_segmentation_model"'
+            - if: not linux
+              then:
+                # hangs, then fails on both osx and windows
+                - 'tests_to_skip += " or test_transforms_v2_wrapper_spawn"'
+            - if: match(python, "==3.14")
+              then:
+                # unclear why, but 3.14 does not like these tests
+                - 'tests_to_skip += " or test_classification_model"'
+                - 'tests_to_skip += " or test_detection_model"'
+                # this one seems to segfault on linux and 3.14
+                - 'tests_to_skip += " or test_build_fx_feature_extractor"'
+                # only linux
+                - 'tests_to_skip += " or test_forward_negative_sample_ssd"'
+                # TestFxFeatureExtraction builds+JITs an FX feature extractor for
+                # every model within a single process; on 3.14 (less headroom) the
+                # memory accumulates and OOM-kills the runner early in
+                # test_backbone_utils (status 137). Reproduced locally under a 16 GB
+                # cap (== a CI agent); skipping the class lets the suite finish.
+                - 'tests_to_skip += " or TestFxFeatureExtraction"'
+            - if: win
+              then:
+                # minor tolerance violation
+                - 'tests_to_skip += " or test_detection_model[cpu-maskrcnn_resnet50_fpn]"'
+
+            - if: build_platform == host_platform
+              then:
+                - 'modules = ["test/"]'
+              else:
+                # reduce modules in emulation
+                - 'modules = ["test/test_functional_tensor.py", "test/test_image.py"]'
+            - 'sys.exit(pytest.main(["-v", *modules, "-k", f"not ({tests_to_skip})", "--durations=50"]))'
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Image and video datasets and models for torch deep learning
+  homepage: http://pytorch.org/
+  repository: https://github.com/pytorch/vision
+
+extra:
+  recipe-maintainers:
+    - nehaljwani
+    - hmaarrfk
+    - h-vetinari
+    - ruben-arts # special interest in Jetson/Tegra builds
+  feedstock-name: torchvision

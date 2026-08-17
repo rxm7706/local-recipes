@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: striprtf
+  version: "0.0.32"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/striprtf-${{ version }}.tar.gz
+  sha256: 7f375a375d99a2700842173168c90c9b545cb244241ffc5d868ed9f6baf9155f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - twine
+
+tests:
+  - python:
+      imports:
+        - striprtf
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A simple library to convert rtf to text
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/joshy/striprtf
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

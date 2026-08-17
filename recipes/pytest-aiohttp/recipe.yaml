@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytest-aiohttp
+  version: "1.1.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 3aa9c9fe26e543eaccc7eb0add381c685ba3ed3e2fed0af74540f63bcd31458d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools >=51.0
+    - setuptools_scm >=6.2
+  run:
+    - python >=${{ python_min }}
+    - pytest >=6.1.0
+    - aiohttp >=3.8.1
+    - pytest-asyncio >=0.17.2
+
+tests:
+  - python:
+      imports:
+        - pytest_aiohttp
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: pytest plugin for aiohttp support
+  homepage: https://github.com/aio-libs/pytest-aiohttp
+  repository: https://github.com/aio-libs/pytest-aiohttp
+  documentation: https://docs.aiohttp.org/en/stable/testing.html
+
+extra:
+  recipe-maintainers:
+    - klauer
+    - asmeurer

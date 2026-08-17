@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mcp
+  version: "2.0.0"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/mcp-${{ version }}.tar.gz
+  sha256: 0f440e735c13ece8bb19bc62cf0b86f4313448432fbb77d35e14034f4e050728
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - mcp = mcp.cli:app
+
+requirements:
+  host:
+    - python 3.10.*
+    - hatchling
+    - uv-dynamic-versioning =0.14.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - anyio >=4.5
+    - cryptography >=3.4.0
+    - httpx2 >=2.5.0
+    - jsonschema >=4.20.0
+    - opentelemetry-api >=1.28.0
+    - pydantic >=2.12.0,<3.0.0
+    - pydantic-settings >=2.5.2
+    - pyjwt >=2.10.1
+    - python-dotenv >=1.0.0
+    - python-multipart >=0.0.9
+    - pywin32-on-windows
+    - rich >=13.9.4
+    - sse-starlette >=3.0.0
+    - starlette >=0.48
+    - typer >=0.16.0
+    - typing-extensions >=4.13.0
+    - typing-inspection >=0.4.1
+    - uvicorn >=0.31.1
+    - mcp-types =${{ version }}
+  run_constraints:
+    - pywin32 >=311
+
+tests:
+  - python:
+      imports:
+        - mcp
+        - mcp.os.win32.utilities
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - mcp --help
+
+about:
+  summary: Model Context Protocol SDK
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/modelcontextprotocol/python-sdk
+
+extra:
+  recipe-maintainers:
+    - dbast
+    - pb01ka

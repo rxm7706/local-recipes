@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.3.0"
+
+package:
+  name: nbgitpuller
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/nbgitpuller/nbgitpuller-${{ version }}.tar.gz
+  sha256: 0f3f0905959a47c6583d9991cd9812a98177d136b9abd670b4fc021404c4bce9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - gitpuller = nbgitpuller.pull:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+    # pyproject.toml doesn't seem to be respected, due to this, we need to
+    # explicitly make our build dependency jupyter-packaging available. This
+    # could be resolved also by wrapping the setup.py's use of jupyter-packaging
+    # within a try/catch block.
+    #
+    # See https://github.com/conda/conda-build/issues/3507 and
+    # https://github.com/jupyter/jupyter-packaging#as-a-build-requirement for
+    # more relevant details.
+    #
+    - jupyter-packaging
+  run:
+    - python >=${{ python_min }}
+    - jupyter_server >=1.10.1
+    - notebook >=5.5.0
+    - tornado
+
+tests:
+  - python:
+      imports:
+        - nbgitpuller
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - gitpuller --help
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Notebook Extension to do one-way synchronization of git repositories
+  homepage: https://github.com/data-8/nbgitpuller
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - consideratio

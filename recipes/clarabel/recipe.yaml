@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: clarabel
+  version: "0.11.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.python.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: e7c41c47f0e59aeab99aefff9e58af4a8753ee5269bbeecbd5526fc6f41b9598
+
+build:
+  number: 2
+  skip: match(python, "<3.7")
+  script:
+    - ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: crossenv
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: maturin
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('rust') }}
+    - cargo-bundle-licenses
+  host:
+    - maturin
+    - python
+    - pip
+  run:
+    - python
+    - numpy
+    - scipy
+    - cffi
+
+tests:
+  - python:
+      imports:
+        - clarabel
+      pip_check: true
+  - files:
+      recipe:
+        - example_qp.py
+        - example_sdp.py
+    requirements:
+      run:
+        - pip
+        - numpy
+        - scipy
+        - python
+        - cffi
+    script:
+      - python example_qp.py
+      - python example_sdp.py
+
+about:
+  license: Apache-2.0
+  license_file:
+    - LICENSE.md
+    - THIRDPARTY.yml
+  summary: "Python interface for Clarabel: Interior Point Conic Optimization Solver"
+  description: |
+    Clarabel is an interior point numerical solver for convex optimization problems implemented
+    in Rust.  It solves linear programs (LPs), quadratic programs (QPs), second-order cone programs
+    (SOCPs) and semidefinite programs (SDPs). It also solves problems with exponential, power
+    cone and generalized power cone constraints.
+  homepage: https://oxfordcontrol.github.io/ClarabelDocs/
+  repository: https://github.com/oxfordcontrol/Clarabel.rs
+  documentation: https://oxfordcontrol.github.io/ClarabelDocs/
+
+extra:
+  recipe-maintainers:
+    - goulart-paul

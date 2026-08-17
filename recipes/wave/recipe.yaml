@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: h2o-wave
+  version: "1.6.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/h2oai/wave/archive/v${{ version }}.tar.gz
+  sha256: 41bd5f803c3bd45851b4e8cf680abfb87ad325f6592d1801e7fb18386b4e9bcf
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install ./py/h2o_wave -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - wave = h2o_wave.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - click
+    - httpx >=0.16.1
+    - inquirer
+    - starlette >=0.13.8
+    - uvicorn >=0.17.6
+
+tests:
+  - python:
+      imports:
+        - h2o_wave
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  description: H2O Wave is a lightweight software stack for programming interactive web applications entirely in Python (no HTML/Javascript/CSS required).
+  summary: Python driver for H2O Wave Realtime Apps
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+    - university/LICENSE
+    - py/h2o_lightwave_web/LICENSE
+    - py/h2o_lightwave/LICENSE
+    - py/h2o_wave/LICENSE
+    - tools/vscode-extension/LICENSE
+  homepage: https://wave.h2o.ai/
+  repository: https://github.com/h2oai/wave
+  documentation: https://wave.h2o.ai/
+
+extra:
+  recipe-maintainers:
+    - rxm7706

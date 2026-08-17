@@ -1,0 +1,1824 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  # source-of-truth
+  version: "0.29.18"
+  python_max: "3.14"
+  # to be adjusted to match `conda-forge-pinning` per Python EOL
+  real_python_min: "3.10"
+  # derived
+  patch_version: ${{ (version | split('.'))[2] }}
+  dagster_version: 1.13.${{ patch_version }}
+  dagster: dagster ${{ dagster_version }}.*
+  # snowflake
+  ## see https://github.com/conda-forge/snowflake-snowpark-python-feedstock/pull/95
+  python_snowflake_max: "3.13"
+  ## see https://github.com/conda-forge/dagster-libs-feedstock/issues/203
+  python_snowflake_pyspark_max: "3.12"
+  # utility
+  pip_install: -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+recipe:
+  name: dagster-libs
+  # the epoch is due to a historic issue with `conda-build` outputs
+  # https://github.com/conda-forge/dagster-feedstock/issues/301
+  version: 1!${{ version }}
+
+build:
+  number: 1
+
+outputs:
+  # A
+  - package:
+      name: dagster-airbyte
+    source:
+      url: https://pypi.org/packages/source/d/dagster-airbyte/dagster_airbyte-${{ version }}.tar.gz
+      sha256: c25d9f7444e8422b58e80c8ea22c34cda95f0103171150d655df4ddef6c7bb67
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+      python:
+        entry_points:
+          - dagster-airbyte = dagster_airbyte.cli:main
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - python >=${{ python_min }}
+        - python-dateutil
+        - requests
+    tests:
+      - python:
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+          imports:
+            - dagster_airbyte
+      - requirements:
+          run:
+            - python ${{ python_min }}.*
+        script: dagster-airbyte --help
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/dagster-airbyte
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for integrating Airbyte with Dagster.
+
+  - package:
+      name: dagster-aws
+    source:
+      url: https://pypi.org/packages/source/d/dagster-aws/dagster_aws-${{ version }}.tar.gz
+      sha256: a2103b2d1f86a59b55d2d43a52f972a3ba27d9fbb349738ab2b19512310e3e74
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - boto3
+        - packaging
+        - python >=${{ python_min }}
+        - requests
+    tests:
+      - python:
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+          imports:
+            - dagster_aws
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/dagster-aws
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for AWS-specific Dagster framework solid and resource components.
+  # B
+  # C
+  - package:
+      name: dagster-celery
+    source:
+      url: https://pypi.org/packages/source/d/dagster-celery/dagster_celery-${{ version }}.tar.gz
+      sha256: 81371afb4b0835d62241698c0b0dcef17e88aff2dc29244988968fb7b29382f6
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+      python:
+        entry_points:
+          - dagster-celery = dagster_celery.cli:main
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - celery >=4.3.0
+        - click >=5.0,<9.0
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+          imports:
+            - dagster_celery
+      - requirements:
+          run:
+            - python ${{ python_min }}.*
+        script: dagster-celery --help
+
+    about:
+      homepage: https://github.com/dagster-io/dagster/blob/master/python_modules/dagster-celery
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for using Celery as Dagster's execution engine.
+
+  - package:
+      name: dagster-celery-docker
+    source:
+      url: https://pypi.org/packages/source/d/dagster-celery-docker/dagster_celery_docker-${{ version }}.tar.gz
+      sha256: 4ca71cffa0e33c185e2d33becc64e4f1a3d1438bc07731814cf25ae7b1326a36
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - ${{ pin_subpackage("dagster-celery", upper_bound="x.x.x") }}
+        - dagster-graphql ${{ dagster_version }}.*
+        - docker-py
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+          imports:
+            - dagster_celery_docker
+    about:
+      homepage: https://github.com/dagster-io/dagster/blob/master/python_modules/dagster-celery-docker
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: A Dagster integration for celery-docker
+
+  - package:
+      name: dagster-celery-k8s
+    source:
+      url: https://pypi.org/packages/source/d/dagster-celery-k8s/dagster_celery_k8s-${{ version }}.tar.gz
+      sha256: ca7a606c5f6faeb96ef3ebfa27718746af4e09e1a326006237046827d66a2aea
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - ${{ pin_subpackage("dagster-celery", upper_bound="x.x.x") }}
+        - ${{ pin_subpackage("dagster-k8s", upper_bound="x.x.x") }}
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+          imports:
+            - dagster_celery_k8s
+    about:
+      homepage: https://github.com/dagster-io/dagster/blob/master/python_modules/dagster-celery-k8s
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: A Dagster integration for celery-k8s-executor
+
+  - package:
+      name: dagster-census
+    source:
+      url: https://pypi.org/packages/source/d/dagster-census/dagster_census-${{ version }}.tar.gz
+      sha256: 5a7523329ade4b66306679a3b13ac44ae69b6959778ae64b4cf32ee483b050c9
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+          imports:
+            - dagster_census
+    about:
+      homepage: https://github.com/dagster-io/dagster/blob/master/python_modules/dagster-census
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for integrating Census with Dagster.
+
+  # D
+  - package:
+      name: dagster-dask
+    source:
+      url: https://pypi.org/packages/source/d/dagster-dask/dagster_dask-${{ version }}.tar.gz
+      sha256: 1a78c2ad015659685ec0511c73388ca1cc2ab41a247498d34ba0c73c5f5adc5d
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - bokeh
+        - dask >=1.2.2
+        - distributed >=1.28.1
+        - python >=${{ python_min }}
+      run_constraints:
+        # https://github.com/conda-forge/dagster-libs-feedstock/pull/217
+        # vs dask 2023.3.0
+        #    File "$PREFIX/lib/python3.14/site-packages/dask/array/einsumfuncs.py", line 2, in <module>
+        #      from numpy.compat import basestring
+        #  ModuleNotFoundError: No module named 'numpy.compat'
+        - dask >=2024
+    tests:
+      - python:
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+          imports:
+            - dagster_dask
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/dagster-dask
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for using Dask as Dagster's execution engine.
+
+  - package:
+      name: dagster-datadog
+    source:
+      url: https://pypi.org/packages/source/d/dagster-datadog/dagster_datadog-${{ version }}.tar.gz
+      sha256: c47104b1c39de77b189aabfa40fd6e9c1981f0c472f22f64ae9101a327ee568a
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - datadog
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+          imports:
+            - dagster_datadog
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-datadog
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for datadog Dagster framework components.
+
+  - package:
+      name: dagster-dbt
+    source:
+      url: https://pypi.org/packages/source/d/dagster-dbt/dagster_dbt-${{ version }}.tar.gz
+      sha256: 0ac32f7cd38458cdca23c2867d6811cdd64ad8727e84f1d2e91598021c18b19e
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+      python:
+        entry_points:
+          - dagster-dbt = dagster_dbt.cli.app:app
+          - dagster-dbt-cloud = dagster_dbt.cloud.cli:app
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - dbt-core >=1.7,<1.12
+        - gitpython
+        - jinja2
+        - networkx
+        - orjson
+        - packaging
+        - python >=${{ python_min }}
+        - requests
+        - rich
+        - sqlglot-rs <28.1.0
+        - typer >=0.9.0
+    tests:
+      - python:
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - 3.13.*
+          imports:
+            - dagster_dbt
+      - requirements:
+          run:
+            - python ${{ python_min }}.*
+        script:
+          - dagster-dbt-cloud --help
+          - dagster-dbt --help
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/dagster-dbt
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: A Dagster integration for dbt
+
+  - package:
+      name: dagster-deltalake
+    source:
+      url: https://pypi.org/packages/source/d/dagster-deltalake/dagster_deltalake-${{ version }}.tar.gz
+      sha256: f93ae4629d7516ca198954aac86ffb5ec49e590386579e86fbb6868b8b3bc2e7
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - deltalake >=1.0.0
+        - pyarrow
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports: dagster_deltalake
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/dagster-deltalake
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for Deltalake-specific Dagster framework op and resource components.
+
+  - package:
+      name: dagster-deltalake-pandas
+    source:
+      url: https://pypi.org/packages/source/d/dagster-deltalake-pandas/dagster_deltalake_pandas-${{ version }}.tar.gz
+      sha256: ef04d5c618d4becf52a2478fb8e9779e2e8f1a20ffdf5fa34a90fa378b0c296f
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - ${{ pin_subpackage("dagster-deltalake", upper_bound="x.x.x") }}
+        - pandas <3.0.0
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports: dagster_deltalake_pandas
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/dagster-deltalake-pandas
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for storing Pandas DataFrames in Delta tables
+
+  - package:
+      name: dagster-deltalake-polars
+    source:
+      url: https://pypi.org/packages/source/d/dagster-deltalake-polars/dagster_deltalake_polars-${{ version }}.tar.gz
+      sha256: 4de44f86ebc58ffca33a5116504dd365eb41ac2382b80364144ae51299d63a8a
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - ${{ pin_subpackage("dagster-deltalake", upper_bound="x.x.x") }}
+        - polars
+        - pyarrow
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports: dagster_deltalake_polars
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/dagster-deltalake-polars
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for storing Polars DataFrames in Delta tables.
+
+  - package:
+      name: dagster-dlt
+    source:
+      url: https://pypi.org/packages/source/d/dagster-dlt/dagster_dlt-${{ version }}.tar.gz
+      sha256: a75af2594902d8dae945382a53ad89673aa8027187db2e07976c70d0f9e8aa62
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - dlt >=0.4
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports: dagster_dlt
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - 3.13.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-dlt
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: This library provides a Dagster integration with dlt
+
+  - package:
+      name: dagster-docker
+    source:
+      url: https://pypi.org/packages/source/d/dagster-docker/dagster_docker-${{ version }}.tar.gz
+      sha256: b0325cf0c924d7be8978d1dc07557d9a3a444204bb5dc14b354fd32f43db4b75
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - docker-image-py
+        - docker-py
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports: dagster_docker
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-docker
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: A Dagster integration for docker
+
+  - package:
+      name: dagster-duckdb
+    source:
+      url: https://pypi.org/packages/source/d/dagster-duckdb/dagster_duckdb-${{ version }}.tar.gz
+      sha256: 9f24863df2083599dbac1e973c2b7266f6f8b42675814c9a8e215cf1408dcfe9
+    build:
+      noarch: python
+      # used by dagster-duckdb-pyspark
+      # skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - python >=${{ python_min }}
+        - python-duckdb
+    tests:
+      - python:
+          imports: dagster_duckdb
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/blob/master/python_modules/dagster-duckdb
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for DuckDB-specific Dagster framework op and resource components.
+
+  - package:
+      name: dagster-duckdb-pandas
+    source:
+      url: https://pypi.org/packages/source/d/dagster-duckdb-pandas/dagster_duckdb_pandas-${{ version }}.tar.gz
+      sha256: 5bc6ecbb7a758029d330cdf8205b72a11c2e0235d86f6d28f283228ff400e576
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - ${{ pin_subpackage("dagster-duckdb", upper_bound="x.x.x") }}
+        - pandas <3.0.0
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports: dagster_duckdb_pandas
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/blob/master/python_modules/dagster-duckdb-pandas
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for storing Pandas DataFrames in DuckDB.
+
+  - package:
+      name: dagster-duckdb-polars
+    source:
+      url: https://pypi.org/packages/source/d/dagster-duckdb-polars/dagster_duckdb_polars-${{ version }}.tar.gz
+      sha256: 3ecf9635202b9685a099ccea245500e9bfacd46d7700651cf6f23c1f49f4a74a
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - ${{ pin_subpackage("dagster-duckdb", upper_bound="x.x.x") }}
+        - polars
+        - pyarrow
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports: dagster_duckdb_polars
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/blob/master/python_modules/dagster-duckdb-polars
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for storing Polars DataFrames in DuckDB.
+
+  - package:
+      name: dagster-duckdb-pyspark
+    source:
+      url: https://pypi.org/packages/source/d/dagster-duckdb-pyspark/dagster_duckdb_pyspark-${{ version }}.tar.gz
+      sha256: b88f4927d98826132d038672071514299253e821c69c32ae258fb0a4c41bbe16
+    build:
+      noarch: python
+      # skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - ${{ pin_subpackage("dagster-duckdb", upper_bound="x.x.x") }}
+        - pandas <3.0.0
+        - pyarrow
+        - python >=${{ python_min }}
+        - if: match(python_min, "<3.14")
+          then: pyspark >=3.5,<4
+        - if: match(python_min, ">=3.14")
+          then: pyspark >=4.1
+    tests:
+      - python:
+          imports: dagster_duckdb_pyspark
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/blob/master/python_modules/dagster-duckdb-pyspark
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for storing PySpark DataFrames in DuckDB.
+
+  # E
+  # F
+  - package:
+      name: dagster-fivetran
+    source:
+      url: https://pypi.org/packages/source/d/dagster-fivetran/dagster_fivetran-${{ version }}.tar.gz
+      sha256: d46c72067d7b621a4315ef617ad29b96970aced6ae2e99301343e13d4fe60938
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+      python:
+        entry_points:
+          - dagster-fivetran = dagster_fivetran.cli:main
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports: dagster_fivetran
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+      - requirements:
+          run:
+            - python ${{ python_min }}.*
+        script:
+          - dagster-fivetran --help
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-fivetran
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for integrating Fivetran with Dagster.
+
+  # G
+  - package:
+      name: dagster-gcp
+    source:
+      url: https://pypi.org/packages/source/d/dagster-gcp/dagster_gcp-${{ version }}.tar.gz
+      sha256: 5fe1ac61606a349f45b07ea6bf88ad5a6eb1f6c9c3b9ff1efb3406a3f3791087
+    build:
+      noarch: python
+      # needed by dagster-gcp-pyspark
+      # skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - ${{ pin_subpackage("dagster-pandas", upper_bound="x.x.x") }}
+        - db-dtypes
+        - google-api-python-client
+        - google-cloud-bigquery-core >=1.28.3
+        - google-cloud-storage
+        - oauth2client
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports:
+            - dagster_gcp
+            - dagster_gcp.bigquery
+            - dagster_gcp.dataproc
+            - dagster_gcp.gcs
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-gcp
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for GCP-specific Dagster framework solid and resource components.
+
+  - package:
+      name: dagster-gcp-pandas
+    source:
+      url: https://pypi.org/packages/source/d/dagster-gcp-pandas/dagster_gcp_pandas-${{ version }}.tar.gz
+      sha256: df9f6a79414f6457110c4736aba99fd2eb0bcf7601a10363ae6b28923c21e919
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - ${{ pin_subpackage("dagster-gcp", upper_bound="x.x.x") }}
+        - pandas <3.0.0
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports: dagster_gcp_pandas
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-gcp-pandas
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for storing Pandas DataFrames in GCP.
+
+  - package:
+      name: dagster-gcp-pyspark
+    source:
+      url: https://pypi.org/packages/source/d/dagster-gcp-pyspark/dagster_gcp_pyspark-${{ version }}.tar.gz
+      sha256: 2a56a656e1431ecd7f2e7b4faa6611293b05cbff7813f269599ad75485c91738
+    build:
+      noarch: python
+      # skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - ${{ pin_subpackage("dagster-gcp", upper_bound="x.x.x") }}
+        - python >=${{ python_min }}
+        - if: match(python_min, "<3.14")
+          then: pyspark >=3.5,<4
+        - if: match(python_min, ">=3.14")
+          then: pyspark >=4.1
+    tests:
+      - python:
+          imports: dagster_gcp_pyspark
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-gcp-pyspark
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for storing PySpark DataFrames in GCP
+
+  - package:
+      name: dagster-ge
+    source:
+      url: https://pypi.org/packages/source/d/dagster-ge/dagster_ge-${{ version }}.tar.gz
+      sha256: 5ef1febb212ea33b8a2806225610a9ba2285b2915aee28ed38df06b63fd52f0c
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - ${{ pin_subpackage("dagster-pandas", upper_bound="x.x.x") }}
+        - great-expectations >=0.17.15,<1.0.0
+        - pandas <3.0.0
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports: dagster_ge
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - 3.12.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-ge
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for GE-specific Dagster framework solid and resource components.
+
+  - package:
+      name: dagster-github
+    source:
+      url: https://pypi.org/packages/source/d/dagster-github/dagster_github-${{ version }}.tar.gz
+      sha256: c625f2817609243c91d70dbb910c59065b69826b52c3e0dd10080914d62080ec
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - cryptography >=1.4
+        - pyjwt
+        - python >=${{ python_min }}
+        - requests
+    tests:
+      - python:
+          imports: dagster_github
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-github
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Github plugin for Dagster
+
+  # H
+  # I
+  # J
+  # K
+  - package:
+      name: dagster-k8s
+    source:
+      url: https://pypi.org/packages/source/d/dagster-k8s/dagster_k8s-${{ version }}.tar.gz
+      sha256: a095d573cafc52db40cf1728cfca0362b469429e4939e4eab961bc32af8e57a8
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - google-auth !=2.23.1
+        - python >=${{ python_min }}
+        - python-kubernetes <37
+    tests:
+      - python:
+          imports: dagster_k8s
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-k8s
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: A Dagster integration for k8s
+
+  # L
+  - package:
+      name: dagster-looker
+    source:
+      url: https://pypi.org/packages/source/d/dagster-looker/dagster_looker-${{ version }}.tar.gz
+      sha256: 1578e75e276306468e65946615321376b26a017f8ae3713a6ea8f68f5a520ee8
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - cattrs <23.2
+        - lkml
+        - looker-sdk <24.18.0
+        - python >=${{ python_min }}
+        - python-liquid <2
+        - sqlglot >=25.19.0
+    tests:
+      - python:
+          imports: dagster_looker
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-looker
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Looker with Dagster.
+
+  # M
+  - package:
+      name: dagster-managed-elements
+    source:
+      url: https://pypi.org/packages/source/d/dagster-managed-elements/dagster_managed_elements-${{ version }}.tar.gz
+      sha256: 5792c7b2b38c95888a574004245e07e2849c985d7bd2a5533baf9334767dda92
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+      python:
+        entry_points:
+          - dagster-managed-elements = dagster_managed_elements.cli:main
+          - dagster-me = dagster_managed_elements.cli:main
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - click-spinner
+        - python >=${{ python_min }}
+        - requests
+    tests:
+      - python:
+          imports: dagster_managed_elements
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+      - requirements:
+          run:
+            - python ${{ python_min }}.*
+        script:
+          - dagster-managed-elements --help
+          - dagster-me --help
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-managed-elements
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for Managed elements with Dagster.
+
+  - package:
+      name: dagster-mlflow
+    source:
+      url: https://pypi.org/packages/source/d/dagster-mlflow/dagster_mlflow-${{ version }}.tar.gz
+      sha256: ffdec533e0438b17b81f109176d1c11ebccfa9d024d653982d2b6931b6b02286
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - mlflow
+        - pandas <3.0.0
+        - protobuf !=5.29.0
+        - python >=${{ python_min }}
+      run_constraints:
+        # https://github.com/conda-forge/dagster-libs-feedstock/pull/217
+        # fails with mlflow 1.26.1
+        #    File "$SRC_DIR_env/lib/python3.10/site-packages/mlflow/protos/service_pb2.py", line 11, in <module>
+        #      from google.protobuf import service as _service
+        #    ImportError: cannot import name 'service' from 'google.protobuf' ($SRC_DIR_env/lib/python3.10/site-packages/google/protobuf/__init__.py)
+        - mlflow >=2
+    tests:
+      - python:
+          # as of #60, see `dagster-mlflow X requires mlflow, which is not installed``
+          # due to some "clever" packaging tricks with mlflow(-skinny)
+          # pip_check: true
+          imports: dagster_mlflow
+          pip_check: false
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-mlflow
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for mlflow Dagster framework components
+
+  - package:
+      name: dagster-msteams
+    source:
+      url: https://pypi.org/packages/source/d/dagster-msteams/dagster_msteams-${{ version }}.tar.gz
+      sha256: 1708c8a950dc649f19b68b458edb89b0ed151ca04852660986f1bbe0abbdb0e1
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - python >=${{ python_min }}
+        - requests >=2,<3
+    tests:
+      - python:
+          imports: dagster_msteams
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-msteams
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: A Microsoft Teams client resource for posting to Microsoft Teams
+
+  - package:
+      name: dagster-mysql
+    source:
+      url: https://pypi.org/packages/source/d/dagster-mysql/dagster_mysql-${{ version }}.tar.gz
+      sha256: 7eabbe4dbdd9085612c15c51381519882a01d27c05a0569bed590e301ec048fc
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - mysql-connector-python
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports: dagster_mysql
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-mysql
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: A Dagster integration for MySQL
+
+  # N
+  # O
+  - package:
+      name: dagster-omni
+    source:
+      url: https://pypi.org/packages/source/d/dagster-omni/dagster_omni-${{ version }}.tar.gz
+      sha256: 2c546c1c43da7844f2439eda5147b50b2de1da189f24b2099e3e92fa129bc3d4
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - aiohttp
+        - python >=${{ python_min }}
+        - python-dateutil
+    tests:
+      - python:
+          imports: dagster_omni
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-omni
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for integrating Omni with Dagster.
+
+  - package:
+      name: dagster-openai
+    source:
+      url: https://pypi.org/packages/source/d/dagster-openai/dagster_openai-${{ version }}.tar.gz
+      sha256: f5ba5c124ab315bafae4e0f166c952d6220b6955e354352200c7c75f6f90d7f1
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - openai
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports: dagster_openai
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-openai
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: A Open AI client resource for interacting with Open AI API
+
+  # P
+  - package:
+      name: dagster-pagerduty
+    source:
+      url: https://pypi.org/packages/source/d/dagster-pagerduty/dagster_pagerduty-${{ version }}.tar.gz
+      sha256: ff19b604385002fac5692d207d9bd1d1e72341a7ecdd797e02f56ce55243dba3
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - pypd
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          # │ │ + pip check
+          # │ │ pypd 1.1.0 is not supported on this platform
+          pip_check: false
+          imports: dagster_pagerduty
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-pagerduty
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for pagerduty Dagster framework components.
+
+  - package:
+      name: dagster-pandas
+    source:
+      url: https://pypi.org/packages/source/d/dagster-pandas/dagster_pandas-${{ version }}.tar.gz
+      sha256: f15266acf4178aa531eab8cc8377e71a0664abc86398c539b7e3fa112a904fd0
+    build:
+      noarch: python
+      # needed by dagster-gcp
+      # skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - pandas <3.0.0
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports: dagster_pandas
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Utilities and examples for working with pandas and dagster, an opinionated framework for expressing data pipelines
+
+  - package:
+      name: dagster-pandera
+    source:
+      url: https://pypi.org/packages/source/d/dagster-pandera/dagster_pandera-${{ version }}.tar.gz
+      sha256: 7cd68b082bd863109dfe9e003a435674416ee2d45f23a33967e1785662920760
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - pandas <3.0.0
+        - pandera >=0.24.0
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports: dagster_pandera
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-pandera
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Integration layer for dagster and pandera.
+
+  - package:
+      name: dagster-papertrail
+    source:
+      url: https://pypi.org/packages/source/d/dagster-papertrail/dagster_papertrail-${{ version }}.tar.gz
+      sha256: 8a256610311061a6c8cfdf9fb035d432dcbd96dfc796229f7e6e0ca6e5b2ee09
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports: dagster_papertrail
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-papertrail
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for papertrail Dagster framework components.
+
+  - package:
+      name: dagster-postgres
+    source:
+      url: https://pypi.org/packages/source/d/dagster-postgres/dagster_postgres-${{ version }}.tar.gz
+      sha256: bdba1b9860c524b558b70a11b4cccf1836006058ecc6051700829e5d4f1ad824
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - psycopg2-binary
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports: dagster_postgres
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-postgres
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: A Dagster integration for postgres
+
+  - package:
+      name: dagster-powerbi
+    source:
+      url: https://pypi.org/packages/source/d/dagster-powerbi/dagster_powerbi-${{ version }}.tar.gz
+      sha256: afccc5cf25ca91d815d4a559fa26beffd4727ecda2f80dd985ed23cd7a6c8f51
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports: dagster_powerbi
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-powerbi
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Build assets representing Power BI dashboards and reports.
+
+  - package:
+      name: dagster-prometheus
+    source:
+      url: https://pypi.org/packages/source/d/dagster-prometheus/dagster_prometheus-${{ version }}.tar.gz
+      sha256: 2aaad78ba091cfdc239e1a5dbf4cb1dbabc96728de978449ad8d03ce0205a077
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - prometheus_client
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports: dagster_prometheus
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-prometheus
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: A Dagster integration for prometheus
+
+  - package:
+      name: dagster-pyspark
+    source:
+      url: https://pypi.org/packages/source/d/dagster-pyspark/dagster_pyspark-${{ version }}.tar.gz
+      sha256: 0a1458af49728c1ca8ed1fca25ef15649f3449b0d22a14c09e55913c75454215
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - ${{ pin_subpackage("dagster-spark", upper_bound="x.x.x") }}
+        - pyspark >=3,<5
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports: dagster_pyspark
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-pyspark
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for PySpark Dagster framework components.
+
+  # Q
+  # R
+  # S
+  - package:
+      name: dagster-sigma
+    source:
+      url: https://pypi.org/packages/source/d/dagster-sigma/dagster_sigma-${{ version }}.tar.gz
+      sha256: 4c2aca08953cb4a4e58aa30f654392bee07d953a4195e05624e70a9a7f9fad83
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+      python:
+        entry_points:
+          - dagster-sigma = dagster_sigma.cli:app
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - aiohttp
+        - python >=${{ python_min }}
+        - sqlglot
+    tests:
+      - python:
+          imports: dagster_sigma
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+      - requirements:
+          run:
+            - python ${{ python_min }}.*
+        script:
+          - which dagster-sigma || where dagster-sigma
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-sigma
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Build assets representing Sigma dashboards.
+
+  - package:
+      name: dagster-slack
+    source:
+      url: https://pypi.org/packages/source/d/dagster-slack/dagster_slack-${{ version }}.tar.gz
+      sha256: 23e4daa4d1ab31c6868a16bbbb320bb581a69ea49002c049d5691536f3f455e1
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - python >=${{ python_min }}
+        - slack-sdk
+    tests:
+      - python:
+          imports: dagster_slack
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-slack
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: A Slack client resource for posting to Slack
+
+  - package:
+      name: dagster-snowflake
+    source:
+      url: https://pypi.org/packages/source/d/dagster-snowflake/dagster_snowflake-${{ version }}.tar.gz
+      sha256: 6606130c013b35b742f8cee1018ae0df69778bb0df84bdb532dd60dfbcc53fb7
+    build:
+      skip: python_min != real_python_min
+      noarch: python
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - pyopenssl >=22.1.0
+        - python >=${{ python_min }}
+        - snowflake-connector-python >=3.4.0
+        - snowflake-snowpark-python >=1.24.0
+        - snowflake.core >=1.8.0
+    tests:
+      - python:
+          imports: dagster_snowflake
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_snowflake_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-snowflake
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for Snowflake Dagster framework components.
+
+  - package:
+      name: dagster-snowflake-pandas
+    source:
+      url: https://pypi.org/packages/source/d/dagster-snowflake-pandas/dagster_snowflake_pandas-${{ version }}.tar.gz
+      sha256: dfc2ec62335b79a8000dc1a06a59f10c52f3018d8ea9b2654d8dac5332edf375
+    build:
+      skip: python_min != real_python_min
+      noarch: python
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - ${{ pin_subpackage("dagster-snowflake", upper_bound="x.x.x") }}
+        - pandas
+        - pandas <3.0.0
+        - python >=${{ python_min }}
+        - requests
+        - snowflake-connector-python
+        - snowflake-sqlalchemy >=1.2
+        - sqlalchemy !=1.4.42
+    tests:
+      - python:
+          imports: dagster_snowflake_pandas
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_snowflake_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-snowflake-pandas
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for integrating Snowflake and Pandas with Dagster.
+
+  - package:
+      name: dagster-snowflake-pyspark
+    source:
+      url: https://pypi.org/packages/source/d/dagster-snowflake-pyspark/dagster_snowflake_pyspark-${{ version }}.tar.gz
+      sha256: 5662b08d5e8537af21bd42b80eb5f6900db19c9bd46ca0f164b7190680f4deb4
+    build:
+      skip: python_min != real_python_min
+      noarch: python
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - ${{ pin_subpackage("dagster-snowflake", upper_bound="x.x.x") }}
+        - pyspark !=2.4.4
+        - pyspark <4
+        - python >=${{ python_min }}
+        - requests
+        - snowflake-sqlalchemy >=1.2
+        - sqlalchemy !=1.4.42
+    tests:
+      - python:
+          imports: dagster_snowflake_pyspark
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_snowflake_pyspark_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-snowflake-pyspark
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for integrating Snowflake and PySpark with Dagster.
+
+  - package:
+      name: dagster-spark
+    source:
+      url: https://pypi.org/packages/source/d/dagster-spark/dagster_spark-${{ version }}.tar.gz
+      sha256: b9f80747434dda72dbfdc9c0558b7a6fa0c6798fc9673ada8b25fc07e1c4fca1
+    build:
+      noarch: python
+      # used by other dagster-*-pyspark
+      # skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports: dagster_spark
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-spark
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for Spark Dagster framework components.
+
+  - package:
+      name: dagster-ssh
+    source:
+      url: https://pypi.org/packages/source/d/dagster-ssh/dagster_ssh-${{ version }}.tar.gz
+      sha256: 287657f0b85252a9245a8156774ff348b6cc8a75e6947b7fdd3579940ddbeb19
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - paramiko
+        - python >=${{ python_min }}
+        - sshtunnel
+    tests:
+      - python:
+          imports: dagster_ssh
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-ssh
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for ssh Dagster framework components.
+
+  # T
+  - package:
+      name: dagster-tableau
+    source:
+      url: https://pypi.org/packages/source/d/dagster-tableau/dagster_tableau-${{ version }}.tar.gz
+      sha256: 716f0b1b741ddfca94cbb71f490ff73debbdc49928d08ae9fe17917b69c83778
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - cryptography >=1.4
+        - pyjwt
+        - python >=${{ python_min }}
+        - tableauserverclient >=0.32
+    tests:
+      - python:
+          imports: dagster_tableau
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-tableau
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Build assets representing Tableau workbooks and sheets.
+
+  - package:
+      name: dagster-twilio
+    source:
+      url: https://pypi.org/packages/source/d/dagster-twilio/dagster_twilio-${{ version }}.tar.gz
+      sha256: dfb35fa9ba5da26d4019a33cf2ca21fce8ee14bb5973e1818b4f884c9637a994
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - python >=${{ python_min }}
+        - twilio
+    tests:
+      - python:
+          imports: dagster_twilio
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/libraries/dagster-twilio
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: A Dagster integration for twilio
+
+  # U
+  # V
+  # W
+  - package:
+      name: dagster-wandb
+    source:
+      url: https://pypi.org/packages/source/d/dagster-wandb/dagster_wandb-${{ version }}.tar.gz
+      sha256: de0b397e888374137644fc19d5fc6ea87c41fd3905fca42c202f7b330afeaa9e
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - python >=${{ python_min }}
+        - wandb >=0.15.11,<1.0
+    tests:
+      - python:
+          imports: dagster_wandb
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/dagster-wandb
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Package for wandb Dagster components.
+
+  # X
+  # Y
+  # Z
+
+  # not hyphenated
+
+  - package:
+      name: dagstermill
+    source:
+      url: https://pypi.org/packages/source/d/dagstermill/dagstermill-${{ version }}.tar.gz
+      sha256: 9664f53e752c8d91335d177d0ce13515a0edbe9c42f98a278c05e4e0c75c1126
+    build:
+      noarch: python
+      skip: python_min != real_python_min
+      script: ${{ PYTHON }} ${{ pip_install }}
+      python:
+        entry_points:
+          - dagstermill = dagstermill.cli:main
+    requirements:
+      host:
+        - hatchling >=1.19.0
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - ${{ dagster }}
+        - ipykernel >=4.9.0,!=5.4.0,!=5.4.1
+        - ipython_genutils >=0.2.0
+        - jupyter_client <8
+        - nbconvert
+        - packaging >=20.9
+        - papermill >=2.0.0
+        - python >=${{ python_min }}
+        - scrapbook >=0.5.0
+    tests:
+      - python:
+          imports: dagstermill
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_max }}.*
+      - requirements:
+          run:
+            - python ${{ python_min }}.*
+        script:
+          - dagstermill --help
+    about:
+      homepage: https://github.com/dagster-io/dagster/tree/master/python_modules/dagstermill
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: A Dagster integration for papermill
+
+about:
+  homepage: https://github.com/dagster-io
+  summary: The data orchestration platform built for productivity.
+  license: Apache-2.0
+  license_file: LICENSE
+  documentation: https://docs.dagster.io
+  description: >-
+    Dagster is a system for building modern data applications. Combining an elegant programming model and beautiful tools, Dagster allows infrastructure engineers, data engineers, and data scientists to seamlessly collaborate to process and produce the trusted, reliable data needed in today's world.
+
+extra:
+  feedstock-name: dagster-libs
+  recipe-maintainers:
+    - bollwyvl
+    - conda-forge/dagster

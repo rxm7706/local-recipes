@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0"
+
+package:
+  name: kutil
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/k/kutil/kutil-${{ version }}.tar.gz
+  sha256: 42b5f5797def3f5a3223a9bc9fd26ff7449e05760778d8e483318a733a7db884
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - kutil
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/qtc-de/kutil
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: A command line utility to work with Kerberos credential caches (MIT format)
+  description: |
+    A command line utility to work with Kerberos credential caches (MIT format)
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: kutil
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: kutil
+  cfe-purls:
+    - pkg:conda/kutil@${{ version }}?channel=conda-forge
+    - pkg:pypi/kutil@${{ version }}
+  cfe-upstream-repo: https://github.com/qtc-de/kutil
+  cfe-upstream-homepage: https://github.com/qtc-de/kutil
+  cfe-import-names: [kutil]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:41:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:41:59Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

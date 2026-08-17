@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: robocorp-vault
-  version: 1.4.0
+  version: "1.4.0"
 
 package:
   name: ${{ name|lower }}
@@ -16,15 +16,20 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    - if: win
+      then: echo f | xcopy /f /y /S %RECIPE_DIR%\README.md %SRC_DIR%\README.md
+    - if: unix
+      then: cp -R ${{ RECIPE_DIR }}/README.md ${{ SRC_DIR }}/README.md
+    - ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python >=3.10,<4.0
+    - python ${{ python_min }}
     - poetry-core
     - pip
   run:
-    - python >=3.10.0,<4.0.0
+    - python >=${{ python_min }},<4.0.0
     - cryptography >=46.0.5
     - requests >=2.28.2
     - pyyaml >=6.0.0,<7.0.0
@@ -33,13 +38,15 @@ requirements:
 tests:
   - python:
       imports:
-        - robocorp_vault
+        - robocorp.vault
       pip_check: true
+      python_version: ${{ python_min }}
 
 about:
   summary: Robocorp Control Room Vault API integration library
   license: Apache-2.0
-  license_file: PLEASE_ADD_LICENSE_FILE
+  license_file: LICENSE
+  homepage: https://github.com/robocorp/robo/
 
 extra:
   recipe-maintainers:

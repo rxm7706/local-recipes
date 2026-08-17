@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: filelock
+  version: "3.32.3"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 0ffa185a3540854c95caa7fa76b76cb219d907415e2c5dc9af25fd970563487f
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install --no-deps .
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - hatchling >=1.11.1
+    - hatch-vcs >=0.3
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - filelock
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: Unlicense
+  license_file: LICENSE
+  summary: A platform independent file lock.
+  homepage: https://github.com/tox-dev/py-filelock
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - mariusvniekerk
+    - nicoddemus

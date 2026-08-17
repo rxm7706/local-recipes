@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pycares
+  version: 5.0.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 5a3c249c830432631439815f9a818463416f2a8cbdb1e988e78757de9ae75081
+
+build:
+  number: 0
+  script:
+    - if: unix
+      then: export PYCARES_USE_SYSTEM_LIB=1
+      else: set PYCARES_USE_SYSTEM_LIB=1
+    - ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - cffi
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - cffi >=1.5.0
+    - setuptools
+    - c-ares
+  run:
+    - python
+    - cffi >=1.5.0
+
+tests:
+  - python:
+      imports:
+        - pycares
+  - script:
+      - python -m pycares google.com
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Python interface for c-ares
+  description: |
+    pycares is a Python module which provides an interface to c-ares. c-ares
+    is a C library that performs DNS requests and name resolutions
+    asynchronously.
+  homepage: https://pypi.org/project/pycares/
+  repository: https://github.com/saghul/pycares
+  documentation: http://readthedocs.org/docs/pycares/
+
+extra:
+  recipe-maintainers:
+    - CurtLH
+    - xhochy
+    - rfiorella

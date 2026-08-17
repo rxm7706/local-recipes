@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.16.0"
+
+package:
+  name: liboqs-python
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/liboqs-python/liboqs_python-${{ version }}.tar.gz
+  sha256: ee01445ccfbeab8dced956a642ce1eb5ba69438caba7ec291eea14083627d5c0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - tomli >=2
+
+tests:
+  - python:
+      imports:
+        - oqs
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/open-quantum-safe/liboqs-python
+  license: MIT
+  license_file: LICENSE
+  summary: Python bindings for liboqs, providing post-quantum public key cryptography algorithms
+  description: |
+    Python bindings for liboqs, providing post-quantum public key cryptography algorithms
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: liboqs-python
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: liboqs-python
+  cfe-purls:
+    - pkg:conda/liboqs-python@${{ version }}?channel=conda-forge
+    - pkg:pypi/liboqs-python@${{ version }}
+  cfe-upstream-repo: https://github.com/open-quantum-safe/liboqs-python
+  cfe-upstream-homepage: https://github.com/open-quantum-safe/liboqs-python
+  cfe-import-names: [oqs]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:42:45Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:42:45Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

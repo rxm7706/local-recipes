@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: grafana-client
+  version: "5.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/grafana_client-${{ version }}.tar.gz
+  sha256: 1022bb7893b54fff59d9c76e28c7eb48e4d5b34f174c17ba860ebd25a97fb5b9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip >=20.0
+    - setuptools >=40.0
+    - setuptools-scm >=4.0,<8
+    - wheel
+  run:
+    - importlib-metadata
+    - urllib3
+    - python >=${{ python_min }}
+    - niquests >=3.4.0,<4
+    - verlib2 <0.4
+
+tests:
+  - python:
+      imports:
+        - grafana_client
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A client library for accessing the Grafana HTTP API, written in Python
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/panodata/grafana-client
+  repository: https://github.com/panodata/grafana-client
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - marie59

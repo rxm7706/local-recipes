@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dpath
+  version: "2.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 34f7e630dc55ea3f219e555726f5da4b4b25f2200319c8e6902c394258dd6a3e
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - dpath
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Filesystem-like pathing and searching for dictionaries
+  description: |
+    A python library for accessing and searching dictionaries via /slashed/paths
+    ala xpath. Basically it lets you glob over a dictionary as if it were a filesystem.
+    It allows you to specify globs (ala the bash eglob syntax, through some advanced
+    fnmatch.fnmatch magic) to access dictionary elements, and provides some
+    facility for filtering those results.
+  homepage: https://www.github.com/akesterson/dpath-python
+  repository: https://github.com/akesterson/dpath-python
+  documentation: https://github.com/akesterson/dpath-python
+
+extra:
+  recipe-maintainers:
+    - matthieujung
+    - asford
+    - xhochy

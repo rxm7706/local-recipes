@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-weasyprint
+  version: "2.5.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 362956b650d2a053967471c0ce15857f08e30253a3eeb746aef7c459d3ee9cf9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - wheel
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=3.2
+    - weasyprint >=68
+
+tests:
+  - python:
+      imports:
+        - django_weasyprint
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Django WeasyPrint CBV
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/fdemmer/django-weasyprint
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: albucore
+  version: "0.2.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/albucore-${{ version }}.tar.gz
+  sha256: c7d94e902371a533237cf4894b42881229b64e3afb8780d0de4ba254ace445a3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - numpy >=1.24.4
+    - typing-extensions >=4.9.0
+    - opencv >=4.9.0
+    - stringzilla >=3.10.4
+    - numkong >=7.0.0
+
+tests:
+  - python:
+      imports:
+        - albucore
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A high-performance image processing library designed to optimize and extend the Albumentations library with specialized functions for advanced image transformations. Perfect for developers working in computer vision who require efficient and scalable image augmentation.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/albumentations-team/albucore
+
+extra:
+  recipe-maintainers:
+    - mukhery
+    - mdraw
+    - ternaus

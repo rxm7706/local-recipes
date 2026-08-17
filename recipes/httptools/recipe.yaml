@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: httptools
+  version: "0.8.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/MagicStack/httptools/archive/refs/tags/v${{ version }}.tar.gz
+    sha256: d1d8bfcbbbbec64469f6592f89bd0d7cbf718233d3282f29acde4b2957dc96e5
+  - url: https://github.com/nodejs/http-parser/archive/2343fd6b5214b2ded2cdcf76de2bf60903bb90cd.tar.gz
+    sha256: 23c94c21959a94fcd71f7bfb161700d0e06541a7bd238f88d8819e6087fd2117
+    target_directory: vendor/http-parser
+  - url: https://github.com/nodejs/llhttp/archive/610a87d755f6bae466cd871c2ba97574ccac5483.tar.gz
+    sha256: fd0c4232a2cba3e741d0a14b02cfb9f1cf37869d7a318cc33373668a0fe1db28
+    target_directory: vendor/llhttp
+
+build:
+  number: 0
+  script:
+    - ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - cython
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - httptools
+      pip_check: true
+
+about:
+  summary: Fast HTTP parser
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/MagicStack/httptools
+
+extra:
+  recipe-maintainers:
+    - kszucs
+    - xhochy
+    - carlodri

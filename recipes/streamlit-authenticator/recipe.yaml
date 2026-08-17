@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.2"
+
+package:
+  name: streamlit-authenticator
+  version: ${{ version }}
+
+source:
+  url: https://github.com/mkhorasani/Streamlit-Authenticator/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: ca156de88830bf53dc69f690f57b4ef75dd18c6f72b819c197672110570ff34f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - bcrypt >=3.1.7
+    - captcha >=0.5.0
+    - cryptography >=42.0.5
+    - extra-streamlit-components >=0.1.70
+    - pyjwt >=2.3.0
+    - pyyaml >=5.3.1
+    - streamlit >=1.37.0
+
+tests:
+  - python:
+      imports:
+        - streamlit_authenticator
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/mkhorasani/Streamlit-Authenticator
+  license: MIT
+  license_file: LICENSE
+  summary: A secure authentication module to manage user access in a Streamlit application.
+  description: |
+    A secure authentication module to manage user access in a Streamlit application.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: streamlit-authenticator
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: streamlit-authenticator
+  cfe-purls:
+    - pkg:conda/streamlit-authenticator@${{ version }}?channel=conda-forge
+    - pkg:pypi/streamlit-authenticator@${{ version }}
+  cfe-upstream-repo: https://github.com/mkhorasani/Streamlit-Authenticator
+  cfe-upstream-homepage: https://github.com/mkhorasani/Streamlit-Authenticator
+  cfe-import-names: [streamlit_authenticator]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:22:38Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:22:38Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

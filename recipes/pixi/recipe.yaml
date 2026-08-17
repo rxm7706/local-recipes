@@ -1,0 +1,118 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.76.2"
+
+package:
+  name: pixi
+  version: ${{ version }}
+
+source:
+  url: https://github.com/prefix-dev/pixi/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 09c0a8b9b7fdadab7b38bb6190d1e72b061a565c03e16177e2053197de4df607
+
+build:
+  number: 0
+  script:
+    env:
+      # This env var  specifies the base 2 log of the allocator page size
+      JEMALLOC_SYS_WITH_LG_PAGE: ${{ "16" if target_platform == "linux-aarch64" }} # or target_platform == "linux-ppc64le" }}
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      # Use cmake to build aws-lc-sys, because conda's CFLAGS inject -O2 which
+      # overrides the -O0 required by jitterentropy-base.c, causing a build failure.
+      AWS_LC_SYS_CMAKE_BUILDER: "1"
+    interpreter: nu
+    content: |
+      $env.OPENSSL_DIR = $env.PREFIX
+
+      if $nu.os-info.name == "windows" {
+        # Avoid long path issues
+        let drive = ($env.SRC_DIR | path split | first)  # e.g. "D:"
+        $env.CARGO_TARGET_DIR = $"($drive)\\cb"  # D:\cb
+        $env.CARGO_HOME = $"($drive)\\ch"        # D:\ch
+      }
+
+      if $nu.os-info.name == "linux" {
+        # This flag is needed for tree-sitter on linux
+        $env.CFLAGS = $"($env.CFLAGS) -D_BSD_SOURCE"
+      }
+      cargo auditable install --locked --no-default-features --features native-tls --root $env.PREFIX --no-track --path crates/pixi --bin pixi
+      cargo-bundle-licenses --format yaml --output $"($env.SRC_DIR)/THIRDPARTY.yml"
+
+      if $nu.os-info.name != "windows" {
+        # Generate shell completions for unix shells
+        let pixi = $"($env.PREFIX)/bin/pixi"
+        mkdir $"($env.PREFIX)/share/bash-completion/completions"
+        mkdir $"($env.PREFIX)/share/zsh/site-functions"
+        mkdir $"($env.PREFIX)/share/fish/vendor_completions.d"
+        ^$pixi completion --shell bash | save --force $"($env.PREFIX)/share/bash-completion/completions/pixi"
+        ^$pixi completion --shell zsh | save --force $"($env.PREFIX)/share/zsh/site-functions/_pixi"
+        ^$pixi completion --shell fish | save --force $"($env.PREFIX)/share/fish/vendor_completions.d/pixi.fish"
+      }
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - ${{ compiler("rust") }}
+    - ${{ stdlib("c") }}
+    - cargo-auditable
+    - cargo-bundle-licenses
+    - cmake
+    - nushell
+    - pkg-config
+    - if: unix
+      then: make
+    - if: osx
+      then: ld64
+  host:
+    # native-tls links openssl on linux (macOS uses Security.framework,
+    # Windows uses schannel, neither needs a host dependency)
+    - if: linux
+      then: openssl
+
+tests:
+  - script:
+      - pixi --help
+  - package_contents:
+      strict: true
+      bin:
+        - pixi
+      files:
+        - if: unix
+          then:
+            - share/bash-completion/completions/pixi
+            - share/zsh/site-functions/_pixi
+            - share/fish/vendor_completions.d/pixi.fish
+
+about:
+  summary: pixi is a cross-platform, multi-language package manager and workflow tool build on the shoulders of the conda ecosystem.
+  description: |
+    pixi is a cross-platform, multi-language package manager and workflow tool build on the shoulders of the conda ecosystem.
+
+    pixi provides all developers the exceptional experience that is usually found with package managers like cargo or yarn but for any language.
+
+    # Highlights
+
+    - Support for multiple languages like Python, C++ and R using Conda packages
+    - All OS's: Linux, Windows, macOS (including Apple Silicon)
+    - A lockfile is always included and always up-to-date.
+    - A clean and simple Cargo-like command-line interface.
+    - Install tools per-project or system-wide.
+    - Completely written in Rust and build on top of the rattler library.
+
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  homepage: https://pixi.prefix.dev
+  repository: https://github.com/prefix-dev/pixi
+
+extra:
+  recipe-maintainers:
+    - wolfv
+    - baszalmstra
+    - tdejager
+    - ruben-arts
+    - Hofer-Julian

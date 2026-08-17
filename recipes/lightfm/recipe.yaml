@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.17"
+
+package:
+  name: lightfm
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/l/lightfm/lightfm-${{ version }}.tar.gz
+  sha256: 2b77ada182ccd768a8d7643ab3cfcd8b6e855db09087f7cc7329bd63316697a8
+
+build:
+  number: 2
+  script:
+    # LIGHTFM_NO_CFLAGS is set to build without -march=nativ and -ffast-math as defined in setup.py
+    - if: unix
+      then: export LIGHTFM_NO_CFLAGS=1 && ${{ PYTHON }} -m pip install . --no-deps -vv
+    - if: win
+      then: set LIGHTFM_NO_CFLAGS=1 && ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - if: build_platform != target_platform
+      then: numpy
+    - ${{ compiler('c') }}
+  host:
+    - python
+    - pip
+    - cython
+    - numpy
+    - scipy >=0.17
+    - requests
+  run:
+    - python
+    - ${{ pin_compatible('numpy') }}
+    - scipy >=0.17
+    - requests
+
+tests:
+  - python:
+      imports:
+        - if: linux
+          then: lightfm._lightfm_fast_openmp
+        - lightfm
+        - lightfm.lightfm
+      pip_check: false
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A Python implementation of LightFM, a hybrid recommendation algorithm.
+  description: |
+    LightFM is a Python implementation of a number of popular recommendation
+    algorithms for both implicit and explicit feedback, including efficient
+    implementation of BPR and WARP ranking losses. It's easy to use,
+    fast (via multithreaded model estimation), and produces high quality results.
+  homepage: https://github.com/lyst/lightfm
+  repository: https://github.com/lyst/lightfm
+  documentation: http://lyst.github.io/lightfm/docs/home.html
+
+extra:
+  recipe-maintainers:
+    - SimonCW
+    - maciejkula
+    - rth

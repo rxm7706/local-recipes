@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: executing
+  version: "2.2.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 3632cc370565f6648cc328b32435bd120a1e4ebb20c77e3fdde9a13cd1e533c4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+    - setuptools_scm
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - executing
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Get the currently executing AST node of a frame, and other information
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://pypi.org/project/executing
+  repository: https://github.com/alexmojaki/executing
+
+extra:
+  recipe-maintainers:
+    - alexmojaki
+    - anthchirp

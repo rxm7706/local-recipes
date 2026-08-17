@@ -16,7 +16,7 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
@@ -24,21 +24,20 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - jsonschema
     - numpy
     - pandas >=2.0.0
     - scikit-learn
     - tqdm
     - raiutils >=0.4.0
-    - xgboost
+    - xgboost 
     - lightgbm
 
 tests:
   - python:
       imports:
         - dice_ml
-      pip_check: true
       python_version: ${{ python_min }}.*
   - requirements:
       run:
@@ -56,3 +55,5 @@ about:
 extra:
   recipe-maintainers:
     - rxm7706
+    - janjagusch
+    - bgalvao

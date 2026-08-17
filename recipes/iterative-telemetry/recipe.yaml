@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: iterative-telemetry
+  version: "0.0.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 7fde6111de6fa4acf5a95a6190cc9cc5d17d835a815f0a18ece201f6031f4ed6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools_scm >=6.3.1
+  run:
+    - python >=${{ python_min }}
+    - requests
+    - appdirs
+    - filelock
+    - distro
+
+tests:
+  - python:
+      imports:
+        - iterative_telemetry
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Common library to send usage telemetry
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/iterative/telemetry-python
+
+extra:
+  recipe-maintainers:
+    - pmrowla
+    - shcheklein
+    - casperdcl
+    - mike0sv

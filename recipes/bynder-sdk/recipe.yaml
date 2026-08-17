@@ -2,18 +2,19 @@
 schema_version: 1
 
 context:
+  name: bynder-sdk
   version: "2.0.2"
 
 package:
-  name: bynder-sdk
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/b/bynder-sdk/bynder-sdk-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/bynder-sdk-${{ version }}.tar.gz
   sha256: 586775fdb14945a6ff8096127a1f84e9bd6c506b3ea507eb2d408c6ad370d37f
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -23,7 +24,7 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
     - requests >=2.20.0,<=3.0.0
     - requests-oauthlib >=1.1.0,<=2.0.0
 
@@ -31,21 +32,14 @@ tests:
   - python:
       imports:
         - bynder_sdk
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
   summary: Bynder SDK can be used to speed up the integration of Bynder in Python
   license: MIT
   license_file: LICENSE
   homepage: https://bynder.com
-  description: |
-    The Bynder Python SDK speeds up the integration of Bynder in Python
-    applications. It wraps the Bynder REST API and handles OAuth
-    authentication so developers can interact with the Bynder digital
-    asset management platform from Python.
 
 extra:
   recipe-maintainers:

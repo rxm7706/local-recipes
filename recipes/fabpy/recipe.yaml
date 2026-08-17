@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.3"
+
+package:
+  name: fabpy
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/fabpy/fabpy-${{ version }}.tar.gz
+  sha256: 393448c928b36d9a1a7ddafbe94bd08cca0b22c3ba88f5bc002868d41a6c5de2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - numpy >=1.21.0
+    - sympy >=1.9
+
+tests:
+  - python:
+      imports:
+        - fabpy
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/SerKin0/fabpy
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Python library for calculating and formatting errors in LaTeX in lab work.
+  description: |
+    Python library for calculating and formatting errors in LaTeX in lab work.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: fabpy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: fabpy
+  cfe-purls:
+    - pkg:conda/fabpy@${{ version }}?channel=conda-forge
+    - pkg:pypi/fabpy@${{ version }}
+  cfe-upstream-repo: https://github.com/SerKin0/fabpy
+  cfe-upstream-homepage: https://github.com/SerKin0/fabpy
+  cfe-import-names: [fabpy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:27:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:27:59Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  conda_forge_name: python-annoy
+  pypi_name: annoy
+  version: "1.17.3"
+  bundle_type: tar.gz
+
+package:
+  name: ${{ conda_forge_name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ pypi_name[0] }}/${{ pypi_name }}/${{ pypi_name }}-${{ version }}.${{ bundle_type }}
+  sha256: 9cbfebefe0a5f843eba29c6be4c84d601f4f41ad4ded0486f1b88c3b07739c15
+
+build:
+  number: 3
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+    - pip
+    - nose >=1.0
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - annoy
+      pip_check: true
+
+about:
+  license_file: LICENSE
+  license: Apache-2.0
+  summary: Approximate Nearest Neighbors in C++/Python optimized for memory usage and loading/saving to disk.
+  homepage: https://github.com/spotify/annoy
+  repository: https://github.com/spotify/annoy
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - xhochy

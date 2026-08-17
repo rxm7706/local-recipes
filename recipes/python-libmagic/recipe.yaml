@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.0"
+
+package:
+  name: python-libmagic
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/python-libmagic/python-libmagic-${{ version }}.tar.gz
+  sha256: fd42e14fca5f346e36b6a8e984f0798f02f38e5eb1b4868424b1480293baacb1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - cffi
+
+tests:
+  - python:
+      imports:
+        - magic
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/dveselov/python-libmagic
+  license: MIT
+  license_file: LICENSE
+  summary: Python bindings to libmagic
+  description: |
+    Python bindings to libmagic
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-libmagic
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-libmagic
+  cfe-purls:
+    - pkg:conda/python-libmagic@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-libmagic@${{ version }}
+  cfe-upstream-repo: https://github.com/dveselov/python-libmagic
+  cfe-upstream-homepage: https://github.com/dveselov/python-libmagic
+  cfe-import-names: [magic]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:20:36Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:20:36Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sqlalchemy-migrate
+  version: "0.13.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 0bc02e292a040ade5e35a01d3ea744119e1309cdddb704fdb99bac13236614f8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python
+    - setuptools
+    - pbr
+  run:
+    - python
+    - pbr
+    - sqlalchemy
+    - decorator
+    - six
+    - sqlparse
+    - tempita
+
+tests:
+  - python:
+      imports:
+        - migrate
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: COPYING
+  summary: Database schema migration for SQLAlchemy
+  description: |
+    Inspired by Ruby on Rails' migrations, Migrate provides a way to deal with
+    database schema changes in SQLAlchemy projects.
+
+    Migrate extends SQLAlchemy to have database changeset handling. It provides
+    a database change repository mechanism which can be used from the command
+    line as well as from inside python code.
+  homepage: https://github.com/openstack/sqlalchemy-migrate
+  repository: https://github.com/openstack/sqlalchemy-migrate
+  documentation: https://sqlalchemy-migrate.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk

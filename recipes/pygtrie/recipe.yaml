@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pygtrie
+  version: "2.5.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 203514ad826eb403dab1d2e2ddd034e0d1534bbe4dbe0213bb0593f66beba4e2
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - packaging
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pygtrie
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python library implementing a trie data structure.
+  homepage: https://github.com/google/pygtrie
+  repository: https://github.com/google/pygtrie
+  documentation: https://pygtrie.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - Suor
+    - shcheklein

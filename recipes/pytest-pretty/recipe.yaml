@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytest-pretty
+  version: 1.3.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytest_pretty-${{ version }}.tar.gz
+  sha256: 97e9921be40f003e40ae78db078d4a0c1ea42bf73418097b5077970c2cc43bf3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - hatchling
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - pytest >=7
+    - python >=${{ python_min }}
+    - rich >=12
+
+tests:
+  - python:
+      imports:
+        - pytest_pretty
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Pytest plugin for pretty printing the test summary.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/samuelcolvin/pytest-pretty
+
+extra:
+  recipe-maintainers:
+    - thewchan

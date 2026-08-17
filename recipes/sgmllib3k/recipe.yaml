@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sgmllib3k
+  version: "1.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sgmllib3k-${{ version }}.tar.gz
+  sha256: 7868fb1c8bfa764c1ac563d3cf369c381d1325d36124933a726f29fcdaa812e9
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - setuptools
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - sgmllib
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Py3k port of sgmllib.
+  license: BSD-1-Clause
+  license_file: LICENSE
+  homepage: http://hg.hardcoded.net/sgmllib
+
+extra:
+  recipe-maintainers:
+    - step21

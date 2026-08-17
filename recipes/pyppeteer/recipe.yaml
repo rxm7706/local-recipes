@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.2"
+
+package:
+  name: pyppeteer
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pyppeteer/pyppeteer-${{ version }}.tar.gz
+  sha256: ddb0d15cb644720160d49abb1ad0d97e87a55581febf1b7531be9e983aad7742
+
+build:
+  number: 1
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  python:
+    entry_points:
+      - pyppeteer-install = pyppeteer.command:install
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - poetry-core
+  run:
+    - appdirs >=1.4.3,<2.0.0
+    - certifi >=2021
+    - importlib-metadata >=1.4
+    - pyee >=8.1.0,<9.0.0
+    - python >=${{ python_min }}
+    - tqdm >=4.42.1,<5.0.0
+    - urllib3 >=1.25.8,<2.0.0
+    - websockets >=10.0,<11.0
+
+tests:
+  - python:
+      imports:
+        - pyppeteer
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - export PYPPETEER_HOME=$(pwd)/tmp || set PYPPETEER_HOME=%CD%\tmp
+      - pyppeteer-install
+
+about:
+  summary: Headless chrome/chromium automation library (unofficial port of puppeteer)
+  license: MIT
+  license_file: LICENSE
+  summary: Headless chrome/chromium automation library (unofficial port of puppeteer)
+  homepage: https://github.com/pyppeteer/pyppeteer
+  repository: https://github.com/pyppeteer/pyppeteer
+  documentation: https://pyppeteer.github.io/pyppeteer
+
+extra:
+  recipe-maintainers:
+    - kiwi0fruit
+    - bollwyvl
+    - SylvainCorlay

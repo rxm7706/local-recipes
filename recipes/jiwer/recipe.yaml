@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jiwer
+  version: "4.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jiwer-${{ version }}.tar.gz
+  sha256: ae9c051469102a61ef0927100baeeb4546f78d180c9b0948281d08eaf44c191e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatch
+  run:
+    - python >=${{ python_min }},<4.0
+    - rapidfuzz >=3.9.7,<4.0.0
+    - click >=8.1.8,<9.0.0
+
+tests:
+  - python:
+      imports:
+        - jiwer
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  summary: Evaluate your speech-to-text system with similarity measures such as word error rate (WER)
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/jitsi/jiwer
+
+extra:
+  recipe-maintainers:
+    - janjagusch

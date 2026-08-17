@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.2"
+  python_min: "3.11"
+
+package:
+  name: deepagents-cli
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/deepagents-cli/deepagents_cli-${{ version }}.tar.gz
+  sha256: 5446dc68970fabd43225be396168262f943d3ea6fa2904025d5fc29e2c7b693f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - deepagents >=0.6.8
+    - httpx <1.0.0,>=0.28.1
+    - langchain <2.0.0,>=1.3.4
+    - langgraph-sdk <1.0.0,>=0.4.2
+    - langgraph <2.0.0,>=1.2.4
+    - langsmith >=0.8.9
+    - python-dotenv <2.0.0,>=1.2.2
+
+tests:
+  - python:
+      imports:
+        - deepagents_cli
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://docs.langchain.com/oss/python/deepagents/overview
+  license: MIT
+  license_file: LICENSE
+  summary: Deployment tooling for Deep Agents - bundle, run, and ship agents to LangGraph Platform.
+  description: |
+    Deployment tooling for Deep Agents - bundle, run, and ship agents to LangGraph Platform.
+  repository: https://github.com/langchain-ai/deepagents
+  documentation: https://reference.langchain.com/python/deepagents/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: deepagents-cli
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: deepagents-cli
+  cfe-purls:
+    - pkg:conda/deepagents-cli@${{ version }}?channel=conda-forge
+    - pkg:pypi/deepagents-cli@${{ version }}
+  cfe-upstream-repo: https://github.com/langchain-ai/deepagents
+  cfe-upstream-homepage: https://docs.langchain.com/oss/python/deepagents/overview
+  cfe-import-names: [deepagents_cli]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:01:35Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:01:35Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

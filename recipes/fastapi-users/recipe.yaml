@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: fastapi-users
+  version: "15.0.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 097f69701894e650c346df89b1cdb0a09cf139234f4cb9a8ece275af4e98e202
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - hatchling
+    - hatch-regex-commit
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - python >=${{ python_min }}
+    - fastapi >=0.65.2
+    - pwdlib ==0.3.0
+    - email-validator >=1.1.0,<2.4
+    - pyjwt >=2.12.0,<3.0.0
+    - python-multipart >=0.0.22,<0.1.0
+    - makefun >=1.11.2,<2.0.0
+    # For pwdlib[argon2, bcrypt]
+    - bcrypt >=4.1.2,<5
+    - argon2-cffi >=23.1.0,<24
+    # For pyjwt[crypto]
+    - cryptography >=3.4.0
+
+tests:
+  - python:
+      imports:
+        - fastapi_users
+        - fastapi_users.authentication
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Ready-to-use and customizable users management for FastAPI.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/fastapi-users/fastapi-users
+  documentation: https://fastapi-users.github.io/fastapi-users/
+
+extra:
+  recipe-maintainers:
+    - thewchan
+    - davidbrochart

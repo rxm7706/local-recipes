@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.1"
+
+package:
+  name: nsx-policy-python-sdk
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/nsx-policy-python-sdk/nsx-policy-python-sdk-${{ version }}.tar.gz
+  sha256: 697db3329a13e067aa4c825c81fe19fcfef22c1892e16c1745968eabd50abe22
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - nsx_policy_python_sdk
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/vmware/vsphere-automation-sdk-python
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: nsx-policy-python-sdk
+  description: |
+    nsx-policy-python-sdk
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nsx-policy-python-sdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: nsx-policy-python-sdk
+  cfe-purls:
+    - pkg:conda/nsx-policy-python-sdk@${{ version }}?channel=conda-forge
+    - pkg:pypi/nsx-policy-python-sdk@${{ version }}
+  cfe-upstream-repo: https://github.com/vmware/vsphere-automation-sdk-python
+  cfe-upstream-homepage: https://github.com/vmware/vsphere-automation-sdk-python
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:49:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:49:41Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

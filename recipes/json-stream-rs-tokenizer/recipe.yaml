@@ -2,15 +2,16 @@
 schema_version: 1
 
 context:
-  version: "0.5.1"
+  name: json-stream-rs-tokenizer
+  version: "0.5.3"
 
 package:
-  name: json-stream-rs-tokenizer
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/j/json-stream-rs-tokenizer/json_stream_rs_tokenizer-${{ version }}.tar.gz
-  sha256: a07f1aae5915adc431e9dd61dd636a333c46b52f34ab6dccf98b2c65eae269f8
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 88828b11ecd24692473728f237e19d6a48b20cb6472c64a029c734b6d616fbc4
 
 build:
   number: 0
@@ -21,12 +22,12 @@ build:
 requirements:
   build:
     - if: build_platform != target_platform
-      then:
-        - python
-        - cross-python_${{ target_platform }}
-    - ${{ compiler("cxx") }}
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('cxx') }}
     - ${{ stdlib("c") }}
-    - ${{ compiler("rust") }}
+    - ${{ compiler('rust') }}
     - cargo-bundle-licenses
   host:
     - python
@@ -44,12 +45,12 @@ tests:
       pip_check: true
 
 about:
-  homepage: https://github.com/smheidrich/py-json-stream-rs-tokenizer
   summary: A faster tokenizer for the json-stream Python library
   license: MIT
   license_file:
     - LICENSE
     - THIRDPARTY.yml
+  homepage: https://github.com/smheidrich/py-json-stream-rs-tokenizer
 
 extra:
   recipe-maintainers:

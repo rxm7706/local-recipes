@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: flexcache
+  version: "0.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/flexcache-${{ version }}.tar.gz
+  sha256: 18743bd5a0621bfe2cf8d519e4c3bfdf57a269c15d1ced3fb4b64e0ff4600656
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=61
+    - wheel
+    - setuptools-scm >=3.4.3
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - typing-extensions
+
+tests:
+  - python:
+      imports:
+        - flexcache
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Saves and loads to the cache a transformed versions of a source object.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/hgrecco/flexcache
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

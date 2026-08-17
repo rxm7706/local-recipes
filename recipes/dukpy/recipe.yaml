@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dukpy
+  version: "0.6.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/amol-/${{ name }}/archive/${{ version }}.tar.gz
+  sha256: e25e582b45165bf272e14bab0f9ac52c01d941ad59a2ad73f3efd9a7c76acc92
+
+build:
+  number: 1
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - dukpy-install = dukpy.install:main
+      - dukpy = dukpy.cli:main
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - webassets
+    - setuptools
+  run:
+    - python
+    - webassets
+
+tests:
+  - python:
+      imports:
+        - dukpy
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - dukpy-install --help
+      - dukpy --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A simple javascript interpreter for Python
+  description: |
+    DukPy is a simple javascript interpreter for Python built on top of duktape engine without any external dependency.
+  homepage: https://github.com/amol-/dukpy
+  repository: https://github.com/amol-/dukpy
+  documentation: https://github.com/amol-/dukpy
+
+extra:
+  recipe-maintainers:
+    - pvanheus
+    - HeavyTony2

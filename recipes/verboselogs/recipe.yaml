@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.7"
+
+package:
+  name: verboselogs
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/v/verboselogs/verboselogs-${{ version }}.tar.gz
+  sha256: e33ddedcdfdafcb3a174701150430b11b46ceb64c2a9a26198c76a156568e427
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - verboselogs
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Verbose logging level for Python's logging module.
+  homepage: https://verboselogs.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

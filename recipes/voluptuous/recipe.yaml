@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: voluptuous
+  version: "0.16.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/voluptuous-${{ version }}.tar.gz
+  sha256: 006535e22fed944aec17bef6e8725472476194743c87bd233e912eb463f8ff05
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - voluptuous
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Python data validation library
+  license: BSD-3-Clause
+  license_file: COPYING
+  homepage: https://github.com/alecthomas/voluptuous
+
+extra:
+  recipe-maintainers:
+    - tusharmakkar08
+    - vamega
+    - jan-janssen

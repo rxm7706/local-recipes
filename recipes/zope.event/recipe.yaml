@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.2"
+  python_check_max: "3.14"
+
+package:
+  name: zope.event
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/z/zope.event/zope_event-${{ version }}.tar.gz
+  sha256: b97d5d6327067ee6b9dfcbdf606ade9ade70991e19c162e808ea39e5fcf0f8d3
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools >=78.1.1,<81
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports: zope.event
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - requirements:
+      run:
+        - pytest
+        - python ${{ python_min }}.*
+    script:
+      - pytest -vv --tb=long --color=yes --pyargs zope.event.tests
+
+about:
+  summary: Very basic event publishing system
+  license: ZPL-2.1
+  license_file:
+    - LICENSE.txt
+    - COPYRIGHT.txt
+  homepage: https://pypi.org/project/zope.event
+  repository: https://github.com/zopefoundation/zope.event
+  documentation: https://zopeevent.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

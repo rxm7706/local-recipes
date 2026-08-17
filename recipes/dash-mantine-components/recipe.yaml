@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dash-mantine-components
+  version: "2.8.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dash_mantine_components-${{ version }}.tar.gz
+  sha256: 8891dd8042c93697f673f30df9ea34e5a4e9a0486d6f42499e16825a2a07784a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - dash >=2
+  run_constraints:
+    - dash-html-components >=2.0.0
+    - dash-core-components >=2.0.0
+    - dash_table >=5.0.0
+
+tests:
+  - python:
+      imports:
+        - dash_mantine_components
+        - dash_mantine_components.Card
+        - dash_mantine_components.Image
+        - dash_mantine_components.Center
+        - dash_mantine_components.Tooltip
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+        - pip
+    script:
+      - conda install -c conda-forge dash-html-components dash-core-components dash-table -y
+
+about:
+  summary: Custom dash components based on Mantine React Components library
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/snehilvj/dash-mantine-components
+  repository: https://github.com/snehilvj/dash-mantine-components
+  documentation: https://www.dash-mantine-components.com/
+
+extra:
+  recipe-maintainers:
+    - ludaavics
+    - snehilvj
+    - 48762

@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-storages
+  version: "1.14.6"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 7a25ce8f4214f69ac9c7ce87e2603887f7ae99326c316bc8d2d75375e09341c9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=3.2
+  run_constraints:
+    - azure-storage-blob >=12.0.0
+    - boto3 >=1.4.4
+    - dropbox >=7.2.1
+    - google-cloud-storage >=1.27.0
+
+tests:
+  - python:
+      imports:
+        - storages
+        - storages.backends
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Support for many storage backends in Django
+  license: BSD-3-Clause
+  license_file: LICENSE
+  description: |
+    django-storages is a project to provide a variety of storage backends in a single library.
+
+    This library is usually compatible with the currently supported versions of Django.
+    Check the Trove classifiers in setup.py to be sure.
+  homepage: https://github.com/jschneier/django-storages
+  repository: https://github.com/jschneier/django-storages
+  documentation: https://django-storages.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - BastianZim
+    - cshaley
+    - sannykr

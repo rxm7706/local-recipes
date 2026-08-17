@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jsonschema2md
+  version: "1.7.0"
+  sha256: d69a5b011bf355c005e3c18be4515ae46d2689b38b593ced8d03c5ab66ddbaf3
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+  python:
+    entry_points:
+      - jsonschema2md = jsonschema2md:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - poetry >=1.5
+    - babel =2.17.0
+  run:
+    - python >=${{ python_min }},<4
+    - PyYAML =6.0.3
+    - markdown =3.9
+    - babel =2.17.0
+
+tests:
+  - python:
+      imports:
+        - jsonschema2md
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - jsonschema2md --help
+
+about:
+  summary: Convert JSON Schema to human-readable Markdown documentation
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/sbrunner/jsonschema2md
+
+extra:
+  recipe-maintainers:
+    - ollyhensby
+    - brynpickering

@@ -3,10 +3,10 @@ schema_version: 1
 
 context:
   name: cookiecutter-django
-  version: "2026.07.02"
-  python_min: '3.14'
-  python_max: '3.15'
-  python_test_max: '3.14'
+  version: "2025.07.27"
+  python_min: '3.12'
+  python_max: '4.0'
+  python_test_max: '3.13'
   cookiecutter: "{{cookiecutter"
   project_slug: "project_slug}}"
 
@@ -16,7 +16,7 @@ package:
 
 source:
   url: https://github.com/cookiecutter/cookiecutter-django/archive/${{ version }}.tar.gz
-  sha256: cdd71ff0014b8d4de6ebac7aafb655cd2aa8a3b88db13731809994260ffa57d1
+  sha256: 84c782f59cd34ca90adc59097707589980c6cbd049adad2bf34c36c4ccd2ba08
 
 build:
   number: 0
@@ -33,32 +33,32 @@ requirements:
     - __${{ noarch_platform }}
     # https://github.com/cookiecutter/cookiecutter-django/blob/master/pyproject.toml
     # ------------------------------------------------------------------------------
-    - cookiecutter >=2.7.1
+    - cookiecutter >=2.6.0
     - if: noarch_platform != "win"
       then:
-        - sh >=2.3.0
-    - binaryornot >=0.6.0
+        - sh >=2.1
+    - binaryornot >=0.4.4
     # Code quality
     # ------------------------------------------------------------------------------
-    - ruff >=0.15.20
-    - django-upgrade >=1.31.1
-    - djlint >=1.40.1
-    - pre-commit >=4.6.0
+    - ruff >=0.12.5
+    - django-upgrade >=1.22.2
+    - djlint >=1.36.4
+    - pre-commit >=4.1.0
     # Testing
     # ------------------------------------------------------------------------------
-    - tox >=4.56.1
+    - tox >=4.23.2
     - tox-uv >=1.17.0
-    - pytest >=9.1.1
-    - pytest-xdist >=3.8.0
+    - pytest >=8.3.4
+    - pytest-xdist >=3.6.1
     - pytest-cookies >=0.7.0
     - pytest-instafail >=0.5.0
-    - pyyaml >=6.0.3
+    - pyyaml >=6.0.2
     # Scripting
     # ------------------------------------------------------------------------------
-    - pygithub >=2.9.1
-    - gitpython >=3.1.50
-    - jinja2 >=3.1.6
-    - requests >=2.34.2
+    - pygithub >=2.5.0
+    - gitpython >=3.1.43
+    - jinja2 >=3.1.5
+    - requests >=2.32.3
     # Base Not Optional ; Limit to Django LTS and Include DRF, Redis and Asyc
     # https://github.com/cookiecutter/cookiecutter-django/blob/master/%7B%7Bcookiecutter.project_slug%7D%7D/requirements/base.txt
     - python-slugify >=8.0.4  # https://github.com/un33k/python-slugify
@@ -151,39 +151,39 @@ tests:
           then:
             - python >=${{ python_min }},<${{ python_max }}
             - pip
-            - django-upgrade ==1.31.1
-            - gitpython ==3.1.50
-            - jinja2 ==3.1.6
-            - pre-commit ==4.6.0
-            - pygithub ==2.9.1
-            - pytest ==9.1.1
-            - pytest-xdist ==3.8.0
-            - ruff ==0.15.20
+            - django-upgrade ==1.22.2
+            - gitpython ==3.1.43
+            - jinja2 ==3.1.5
+            - pre-commit ==4.1.0
+            - pygithub ==2.5
+            - pytest ==8.3.4
+            - pytest-xdist ==3.6.1
+            - ruff ==0.12.5
             - if: noarch_platform != "win"
               then:
-                - sh ==2.3.0
-            - tox ==4.56.1
-            - tox-uv >=1.17
-            - cryptography >=2.6,!=35
-            - requests ==2.34.2
+                - sh ==2.1
+            - tox ==4.23.2
+            - tox-uv ==1.19.1
+            - cryptography >=2.6,!=35,<45
+            - requests ==2.32.3
           else:
             - python >=${{ python_min }},<${{ python_max }}
             - pip
-            - django-upgrade ==1.31.1
-            - gitpython ==3.1.50
-            - jinja2 ==3.1.6
-            - pre-commit ==4.6.0
-            - pygithub ==2.9.1
-            - pytest ==9.1.1
-            - pytest-xdist ==3.8.0
-            - ruff ==0.15.20
+            - django-upgrade ==1.22.2
+            - gitpython ==3.1.43
+            - jinja2 ==3.1.5
+            - pre-commit ==4.1.0
+            - pygithub ==2.5
+            - pytest ==8.3.4
+            - pytest-xdist ==3.6.1
+            - ruff ==0.12.5
             - if: noarch_platform != "win"
               then:
-                - sh ==2.3.0
-            - tox ==4.56.1
-            - tox-uv >=1.17
-            - cryptography >=2.6,!=35
-            - requests ==2.34.2
+                - sh ==2.1
+            - tox ==4.23.2
+            - tox-uv ==1.19.1
+            - cryptography >=2.6,!=35,<45
+            - requests ==2.32.3
   - python:
       imports:
         - cookiecutter

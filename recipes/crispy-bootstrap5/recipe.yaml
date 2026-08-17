@@ -2,47 +2,48 @@
 schema_version: 1
 
 context:
+  name: crispy-bootstrap5
   version: "2026.3"
 
 package:
-  name: crispy-bootstrap5
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/c/crispy-bootstrap5/crispy_bootstrap5-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/crispy_bootstrap5-${{ version }}.tar.gz
   sha256: e7f5adb36acfbb456444c46e82c436931c796c539e9c620be4fa9dc9c9d6679c
 
 build:
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=77.0.3
     - pip
+    - setuptools >61
   run:
-    - python >=${{ python_min }}
-    - django >=4.2
+    - python >=${{ python_min }},<4.0
     - django-crispy-forms >=2.3
+    - django >=4.2
+    # - pytest-django
+    # - pytest
+    # - pytest-django
+    # - pytest
 
 tests:
   - python:
       imports:
         - crispy_bootstrap5
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
+  summary: Bootstrap5 template pack for django-crispy-forms
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/django-crispy-forms/crispy-bootstrap5
-  repository: https://github.com/django-crispy-forms/crispy-bootstrap5
-  documentation: https://github.com/django-crispy-forms/crispy-bootstrap5
-  summary: Bootstrap5 template pack for django-crispy-forms
 
 extra:
   recipe-maintainers:

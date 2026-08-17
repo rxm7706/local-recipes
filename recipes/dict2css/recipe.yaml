@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dict2css
+  version: "0.6.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dict2css-${{ version }}.tar.gz
+  sha256: 143e55cb71c98a88c79f2c41e08a5fa4d875659275756f794e31ccd69936ce88
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - whey >=0.0.20
+  run:
+    - domdf-python-tools >=2.2.0
+    - tinycss2 >=1.2.1
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - dict2css
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A μ-library for constructing cascading style sheets from Python dictionaries.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/sphinx-toolbox/dict2css
+  documentation: https://dict2css.readthedocs.io/en/latest
+
+extra:
+  recipe-maintainers:
+    - domdfcoding

@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  provider: prometheus
+  goname: ${{ "github.com/prometheus/"+provider | lower }}
+  version: "2.34.0"
+  name: ${{ goname.split('/')[-1] }}
+  pkg_src: "'('src/'+goname) | replace(\"/\",os.sep)'"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://${{ goname }}/archive/v${{ version }}.tar.gz
+    sha256: 76bb5afff1a9be179b99afe624fae73d5c23a27976f2bcb2dc663d1942e87e22
+    target_directory: ${{ pkg_src }}
+
+build:
+  number: 0
+  skip: win
+  script:
+    - pushd ${{ pkg_src }}/cmd/${{ name }}
+    - if: not win
+      then: GOBIN=$(go env GOBIN)
+    - if: unix
+      then: go build -v -o $GOBIN/${{ name }} .
+    - if: win
+      then: go build -v -o %GOBIN%\${{ name }}.exe .
+
+requirements:
+  build:
+    - ${{ compiler('go') }}
+
+tests:
+  - requirements:
+      run:
+        - if: win
+          then: m2-bash
+        - if: win
+          then: m2-coreutils
+    script:
+      - prometheus --version
+
+about:
+  license: Apache-2.0
+  license_file: ${{ pkg_src }}/LICENSE
+  summary: Prometheus, a Cloud Native Computing Foundation project, is a systems and service monitoring system.
+  homepage: https://prometheus.io/
+  repository: https://github.com/prometheus/${{ name }}
+  documentation: https://prometheus.io/docs/introduction/overview/
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - rluria14
+    - adbeda
+    - mwilson8
+    - oblute

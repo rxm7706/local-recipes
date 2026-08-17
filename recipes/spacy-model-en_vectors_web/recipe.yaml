@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  prefix: spacy-model-
+  name: en_vectors_web
+  version: "2.1.0"
+
+recipe:
+  name: ${{ prefix }}${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/explosion/spacy-models/releases/download/${{ name }}_lg-${{ version }}/${{ name }}_lg-${{ version }}.tar.gz
+    sha256: 24bd1f5f192bdcf5ba8fe3b9f517ec24024ea22dbd8c89b470250870f20d04eb
+    target_directory: lg
+  - url: https://creativecommons.org/licenses/by-sa/3.0/legalcode.txt
+    sha256: 3f941b3b89cf7b8370ceb83cc76d2120d471b58735d8ca60238a751a48d7f72f
+
+build:
+  number: 0
+  noarch: python
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - setuptools
+    - python
+
+outputs:
+  - package:
+      name: ${{prefix}}${{ name }}_${{ size }}
+    build:
+      number: 0
+      noarch: python
+      script: cd ${{ size }} && ${{ PYTHON }} -m pip install . --no-deps -vv
+    requirements:
+      host:
+        - pip
+        - python
+      run:
+        - python
+        - setuptools
+    tests:
+      - python:
+          imports:
+            - ${{ name }}_${{ size }}
+          pip_check: false
+      - requirements:
+          run:
+            - spacy ${{ version.split('.')[0] }}.*
+        script:
+          - python -c "__import__('${{ name }}_${{ size }}').load()"
+          - python -c "__import__('spacy').load('${{ name }}_${{ size }}')"
+
+tests:
+  - script:
+      - echo "make lint happy"
+
+about:
+  license: CC-BY-SA-3.0
+  summary: English multi-task CNN trained on OntoNotes, with GloVe vectors trained on Common Crawl.
+  license_file: legalcode.txt
+  homepage: https://spacy.io
+  repository: https://github.com/explosion/spacy-models
+  documentation: https://spacy.io/models/en
+
+extra:
+  recipe-maintainers:
+    - sodre

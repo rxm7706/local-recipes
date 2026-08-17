@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyOutlook
+  version: "5.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | lower }}-${{ version }}.tar.gz
+  sha256: 1e4d9b3e2ade410f79cb9d976d02a8dc8d69232f051d6e553225aed31698f828
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - python-dateutil
+    - requests
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - python-dateutil
+    - requests
+
+tests:
+  - python:
+      imports:
+        - pyOutlook
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A Python module for connecting to the Outlook REST API
+  description: |
+    pyOutlook was created after I found myself attempting to connect to
+    the Outlook REST API in multiple projects. This provided some much
+    needed uniformity. It’s easier to deal with than the win32com package
+    by Microsoft, but obviously has a far smaller scope.
+  homepage: https://gitlab.com/jensastrup/pyOutlook
+  repository: https://gitlab.com/jensastrup/pyOutlook
+  documentation: https://pyoutlook.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: questionary
+  version: "2.1.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 3d7e980292bb0107abaa79c68dd3eee3c561b83a0f89ae482860b181c8bd412d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - poetry >=1.0.5
+  run:
+    - python >=${{ python_min }}
+    - prompt_toolkit >=2.0,<4.0
+
+tests:
+  - python:
+      imports:
+        - questionary
+        - questionary.prompts
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Python library to build pretty command line prompts.
+  description: Easy to use multi-select lists, confirmations, free text prompts...
+  homepage: https://github.com/tmbo/questionary
+  repository: https://github.com/tmbo/questionary
+  documentation: https://github.com/tmbo/questionary#documentation
+
+extra:
+  recipe-maintainers:
+    - apeltzer
+    - ewels

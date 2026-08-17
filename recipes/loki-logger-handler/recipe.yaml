@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: loki-logger-handler
   version: "1.1.2"
 
 package:
-  name: loki-logger-handler
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/l/loki-logger-handler/loki_logger_handler-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/loki_logger_handler-${{ version }}.tar.gz
   sha256: b3b588903420197ac9bb477f9c8fd6c18edf3e475b94f3d27d2aeed3930eb5d1
 
 build:
@@ -19,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
@@ -30,20 +31,13 @@ tests:
       imports:
         - loki_logger_handler
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Handler designed for transmitting logs to Grafana Loki in JSON format.
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/xente/loki-logger-handler
-  repository: https://github.com/xente/loki-logger-handler
-  description: |
-    A logging handler that sends Python log records to Grafana Loki in JSON
-    format, with support for structured fields, labels, and asynchronous
-    buffered transmission.
 
 extra:
   recipe-maintainers:

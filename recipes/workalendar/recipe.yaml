@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: workalendar
+  version: "17.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: b82d6024aed452505b01baf06dbe8d6309a3135ff1d39dee07c31b21ece853b4
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+    - python-dateutil
+    - lunardate
+    - backports.zoneinfo
+    - tzdata
+    - convertdate
+    - pyluach
+    - importlib-metadata
+
+tests:
+  - python:
+      imports:
+        - workalendar
+        - workalendar.africa
+        - workalendar.america
+        - workalendar.asia
+        - workalendar.europe
+        - workalendar.europe.scotland
+        - workalendar.europe.scotland.mixins
+        - workalendar.oceania
+        - workalendar.usa
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Worldwide holidays and working days helper and toolkit.
+  homepage: https://github.com/peopledoc/workalendar
+
+extra:
+  recipe-maintainers:
+    - Matt-BF

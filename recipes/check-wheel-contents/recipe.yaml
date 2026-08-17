@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: 0.6.3
+
+package:
+  name: check-wheel-contents
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/check-wheel-contents/check_wheel_contents-${{ version }}.tar.gz
+  sha256: 10e6939e2fe4e6ce1edf2ff6ec6157808677e80782e78021ae139dd88473a442
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+  python:
+    entry_points:
+      - check-wheel-contents = check_wheel_contents.__main__:main
+
+requirements:
+  host:
+    - hatchling
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - attrs >=18.1
+    - click >=8.2,<9.0,!=8.2.2
+    - packaging
+    - pydantic >=2.0,<3.0
+    - python >=${{ python_min }}
+    - tomli >=1.2,<3.0
+    - wheel-filename >=1.1,<2.0
+
+tests:
+  - python:
+      imports: check_wheel_contents
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - 3.13.*
+  - files:
+      source:
+        - test/
+    requirements:
+      run:
+        - pip
+        - pytest-cov
+        - pytest-mock
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+      - check-wheel-contents --version
+      - check-wheel-contents --help
+      - check-wheel-contents --version | python -c "import sys; v = sys.stdin.read().strip(); print(v); assert v.endswith('${{ version }}');"
+      - pytest -vv --color=yes --tb=long --cov=check_wheel_contents --cov-report=term-missing:skip-covered --no-cov-on-fail -k "not from_local_tree" --cov-fail-under=99
+
+about:
+  summary: Check your wheels have the right contents
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/jwodder/check-wheel-contents
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: autodocsumm
+  version: "0.2.15"
+  sha256: eaf431e7a5a39e41a215311173c8b95e83859059df1ccf3b79c64bf3d5582b3c
+  python_min: "3.7"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python 3.7.*
+    - versioneer
+    - setuptools
+    - tomli
+  run:
+    - python >=${{ python_min }}
+    - sphinx >=2.2,<10.0
+
+tests:
+  - python:
+      imports:
+        - autodocsumm
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Extending your autodoc API docs with a summary
+  description: |
+    This sphinx extension provides some useful extensions to the Sphinxs
+    autodoc_ extension. Those include automatic and grouped summary tables for
+    modules and classes, as well as documenting the __call__ method
+  homepage: https://github.com/Chilipp/autodocsumm
+  repository: https://github.com/Chilipp/autodocsumm
+  documentation: http://autodocsumm.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - Chilipp

@@ -1,0 +1,111 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+#
+# See the guidelines for updating this recipe for new releases:
+# https://github.com/scrapy/scrapy/wiki/Scrapy-release-procedure#conda-packages
+#
+# The requirements below shall match the requirements from the target package
+# version (check setup.py for changes).
+schema_version: 1
+
+context:
+  name: Scrapy
+  version: "2.17.0"
+  sha256: b536d14166b05e2183b19ae105a7af849cd14d4c1f70d3009d9b1828c0ab3d92
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | lower }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - scrapy = scrapy.cmdline:execute
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    # pywin32 exists for unix as a noop package
+    - pywin32
+    # Same order as setup.py:
+    - twisted >=21.7.0
+    - cryptography >=37.0.0
+    - cssselect >=0.9.1
+    - defusedxml >=0.7.1
+    - itemadapter >=0.1.0
+    - itemloaders >=1.0.1
+    - lxml >=4.6.4
+    - packaging
+    - parsel >=1.5.0
+    - protego >=0.1.15
+    - pyOpenSSL >=22.0.0
+    - queuelib >=1.4.2
+    - service_identity >=23.1.0
+    - tldextract
+    - w3lib >=1.17.0
+    - zope.interface >=5.1.0
+    - pydispatcher >=2.0.5
+
+tests:
+  - files:
+      source:
+        - conftest.py
+        - pyproject.toml
+        - scrapy
+        - tests
+    requirements:
+      run:
+        - python ${{ python_min }}
+        - attrs
+        - botocore
+        - brotli >=1.2.0
+        - if: not win
+          then: bpython
+        - httpx
+        - ipython
+        - google-cloud-storage
+        - pip
+        - jmespath
+        - pexpect
+        - pillow
+        - pyftpdlib
+        - pytest >=8.4.1
+        - pytest-twisted
+        - testfixtures
+        - priority >=1.1.0,<2.0
+        - sybil
+        - setuptools-scm
+    script:
+      - scrapy version -v
+      - mv scrapy _scrapy
+      - pytest _scrapy tests
+
+about:
+  license: BSD-3-Clause-Clear
+  license_file: LICENSE
+  summary: A high-level Python Screen Scraping framework
+  description: |
+    Scrapy is an open source and collaborative framework for extracting the
+    data you need from websites in a fast, simple, yet extensible way.
+  homepage: https://scrapy.org/
+  repository: https://github.com/scrapy/scrapy
+  documentation: https://docs.scrapy.org
+
+extra:
+  recipe-maintainers:
+    - rmax
+    - kmike
+    - Gallaecio
+    - wRAR
+    - dangra

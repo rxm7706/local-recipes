@@ -1,0 +1,116 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.7.1"
+
+package:
+  name: super-gradients
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/s/super-gradients/super_gradients-3.7.1-py3-none-any.whl
+  sha256: f4ebf2f551399f77070609da15efb2cfaf90392a38be4be8b1d4eab0d9c47381
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pytorch >=1.9.0
+    - tqdm >=4.57.0
+    - boto3 >=1.17.15
+    - jsonschema >=3.2.0
+    - deprecated >=1.2.11
+    - scipy >=1.6.1
+    - matplotlib-base >=3.3.4
+    - psutil >=5.8.0
+    - tensorboard >=2.4.1
+    - setuptools >=65.5.1
+    - coverage ~=5.3.1
+    - torchvision >=0.10.0
+    - sphinx ~=4.0.2
+    - sphinx-rtd-theme
+    - torchmetrics ==0.8
+    - hydra-core >=1.2.0
+    - omegaconf
+    - onnxruntime ==1.15.0
+    - onnx ==1.15.0
+    - pillow >=10.2.0
+    - pip-tools >=6.12.1
+    - einops ==0.3.2
+    - protobuf ==3.20.3
+    - treelib ==1.6.1
+    - termcolor ==1.1.0
+    - packaging >=20.4
+    - wheel >=0.38.0
+    - pygments >=2.7.4
+    - stringcase >=1.2.0
+    - numpy <=1.23
+    - rapidfuzz
+    - json_tricks ==3.16.1
+    - onnxsim <1.0,>=0.4.3
+    - data-gradients ~=0.3.1
+    - albumentations ~=1.3
+    - fonttools >=4.43.0
+    - werkzeug >=2.3.8
+
+tests:
+  - python:
+      imports:
+        - super_gradients
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://docs.deci.ai/super-gradients/documentation/source/welcome.html
+  license: MIT
+  license_file: LICENSE
+  summary: SuperGradients
+  description: |
+    SuperGradients
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: super-gradients
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: super-gradients
+  cfe-purls:
+    - pkg:conda/super-gradients@${{ version }}?channel=conda-forge
+    - pkg:pypi/super-gradients@${{ version }}
+  cfe-upstream-repo: https://docs.deci.ai/super-gradients/documentation/source/welcome.html
+  cfe-upstream-homepage: https://docs.deci.ai/super-gradients/documentation/source/welcome.html
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:14:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:14:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: idna_ssl
+  version: "1.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/idna-ssl-${{ version }}.tar.gz
+  sha256: a933e3bb13da54383f9e8f35dc4f9cb9eb9b3b78c6b36f311254d6d0d92c6c7c
+
+build:
+  number: 1002
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - idna >=2.0
+
+tests:
+  - python:
+      imports:
+        - idna_ssl
+      pip_check: true
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Patch ssl.match_hostname for Unicode(idna) domains support
+  homepage: https://github.com/aio-libs/idna-ssl
+  repository: https://github.com/aio-libs/idna-ssl
+
+extra:
+  recipe-maintainers:
+    - sodre

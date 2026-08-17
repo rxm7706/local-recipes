@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pynessie
+  version: "0.67.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pynessie-${{ version }}.tar.gz
+  sha256: cb46e072542e5978d4a27e2115294e3828414d1527fca70d84b6f0f585f6ac1a
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - nessie=pynessie.cli:cli
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - attrs
+    - botocore
+    - click <9.0.0,>6.0.0
+    - confuse ==2.0.1
+    - desert
+    - marshmallow
+    - marshmallow-oneofschema
+    - python-dateutil
+    - requests
+    - requests-aws4auth
+    - simplejson
+
+tests:
+  - python:
+      imports:
+        - pynessie
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - nessie --help
+
+about:
+  summary: "Project Nessie: Transactional Catalog for Data Lakes with Git-like semantics"
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+  homepage: https://github.com/projectnessie/nessie
+
+extra:
+  recipe-maintainers:
+    - rxm7706

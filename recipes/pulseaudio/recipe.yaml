@@ -1,0 +1,198 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "17.0"
+  build: 3
+
+recipe:
+  name: pulseaudio-split
+  version: ${{ version }}
+
+source:
+  url: https://www.freedesktop.org/software/pulseaudio/releases/pulseaudio-${{ version }}.tar.xz
+  sha256: 053794d6671a3e397d849e478a80b82a63cb9d8ca296bd35b73317bb5ceb87b5
+  patches:
+    - 0001-tests-Skip-tests-that-fail-for-release-build-when-pa.patch
+    - 0002-libiconv.patch
+    - 0003-tests-Don-t-run-volume-tests-with-impossible-alignme.patch
+
+build:
+  number: ${{ build }}
+  skip: not linux
+
+outputs:
+  - package:
+      name: pulseaudio-client
+    build:
+      script:
+        file: build-client.sh
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+        - ${{ compiler('cxx') }}
+        - m4
+        - meson
+        - ninja
+        - perl-xml-parser
+        - pkg-config
+      host:
+        - check
+        - dbus
+        - dbus >=1.4.12
+        - fftw
+        - fftw >=3.0
+        - glib
+        - glib >=2.28.0
+        - libiconv
+        - libsndfile
+        - libsndfile >=1.0.20
+        - libsystemd
+        - libxcb
+        - xorg-libx11
+        - xorg-xorgproto
+        - zlib
+      run_exports:
+        - ${{ pin_subpackage('pulseaudio-client', upper_bound='x.x') }}
+      ignore_run_exports:
+        from_package:
+          - ${{ compiler('cxx') }}
+          - fftw
+          - xorg-libx11
+          - zlib
+      run_constraints:
+        - pulseaudio 17.0 *_3.*
+    tests:
+      - script:
+          - test -f ${PREFIX}/include/pulse/version.h
+          - test -f ${PREFIX}/lib/libpulse.so
+          - test -f ${PREFIX}/lib/pkgconfig/libpulse.pc
+          - padsp -h
+          - pacat --help
+          - pactl --help
+    about:
+      license: LGPL-2.1-or-later
+      license_file: LGPL
+      summary: Client library for pulseaudio, a networked sound server
+      homepage: https://www.freedesktop.org/wiki/Software/PulseAudio/
+      documentation: https://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/
+  - package:
+      name: pulseaudio-daemon
+    build:
+      script:
+        file: build-daemon.sh
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+        - ${{ compiler('cxx') }}
+        - gstreamer-orc
+        - m4
+        - meson
+        - ninja
+        - perl-xml-parser
+        - pkg-config
+      host:
+        - alsa-lib
+        - alsa-lib >=1.0.24
+        - check
+        - dbus
+        - dbus >=1.4.12
+        - fftw
+        - fftw >=3.0
+        - glib
+        - glib >=2.28.0
+        - gstreamer-orc
+        - jack
+        - libcap
+        - libltdl
+        - libsndfile
+        - libsndfile >=1.0.20
+        - libsystemd
+        - libtool
+        - libtool >=2.4
+        - libudev
+        - openssl
+        - soxr
+        - libxcb
+        - xorg-libx11
+        - xorg-libice
+        - xorg-libsm
+        - xorg-libxtst
+        - xorg-xorgproto
+        - zlib
+        - ${{ pin_subpackage('pulseaudio-client', exact=True) }}
+      run:
+        - ${{ pin_compatible('gstreamer-orc', upper_bound='x.x') }}
+        - ${{ pin_compatible('libtool', upper_bound='x') }}
+        - ${{ pin_subpackage('pulseaudio-client', exact=True) }}
+      run_exports:
+        - ${{ pin_subpackage('pulseaudio-daemon', upper_bound='x.x') }}
+      ignore_run_exports:
+        from_package:
+          - ${{ compiler('cxx') }}
+          - glib
+          - zlib
+      run_constraints:
+        - pulseaudio 17.0 *_3.*
+    tests:
+      - requirements:
+          run:
+            - pkg-config
+        script:
+          - test -f `pkg-config --variable=modlibexecdir --dont-define-prefix libpulse`/libprotocol-native.so
+          - pulseaudio --version
+          - pulseaudio --check && pulseaudio --kill
+          - pulseaudio --start --daemonize
+          - pulseaudio --check
+          - pacmd stat
+          - pamon --version
+          - paplay --version
+          - parec --version
+          - parecord --version
+          - pasuspender --help
+          - pactl info
+          - pactl list
+    about:
+      license: GPL-2.0-or-later
+      license_file: GPL
+      summary: A networked sound server
+      homepage: https://www.freedesktop.org/wiki/Software/PulseAudio/
+      documentation: https://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/
+  - package:
+      name: pulseaudio
+    build:
+    requirements:
+      build:
+        # Add these so the build string gets generated correctly
+        - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+        - ${{ compiler('cxx') }}
+      run:
+        - ${{ pin_subpackage('pulseaudio-client', exact=True) }}
+        - ${{ pin_subpackage('pulseaudio-daemon', exact=True) }}
+      run_exports:
+        - ${{ pin_subpackage('pulseaudio-client', upper_bound='x.x') }}
+      ignore_run_exports:
+        from_package:
+          - ${{ compiler('cxx') }}
+    tests:
+      - script:
+          - pactl --help
+          - pulseaudio --help
+
+about:
+  license: LGPL-2.1-or-later
+  license_file: LGPL
+  summary: A networked sound server
+  homepage: https://www.freedesktop.org/wiki/Software/PulseAudio/
+  documentation: https://www.freedesktop.org/wiki/Software/PulseAudio/Documentation/
+
+extra:
+  feedstock-name: pulseaudio
+  recipe-maintainers:
+    - andfoy
+    - ryanvolz
+    - scopatz
+    - ehfd

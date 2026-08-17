@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: about-time
+  version: "4.2.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 3562885d528d66a40e02be0bc0e893920e2396a9f4b632eb9148e0c8ff47078f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+
+tests:
+  - python:
+      imports:
+        - about_time
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Easily measure timing and throughput of code blocks, with beautiful human friendly representations.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/rsalmei/about-time
+
+extra:
+  recipe-maintainers:
+    - Brainor

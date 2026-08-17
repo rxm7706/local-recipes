@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: datasette-gunicorn
+  version: "0.1.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/datasette-gunicorn-${{ version }}.tar.gz
+  sha256: 3dabced1e00ed60e0cb85133f04836a355e9ce0ced9fc174a229b5deb27de27e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - datasette >0.63.2
+    - gunicorn
+
+tests:
+  - python:
+      imports:
+        - datasette_gunicorn
+      pip_check: true
+
+about:
+  summary: Run a Datasette server using Gunicorn
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/simonw/datasette-gunicorn
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "5.6.1"
+
+package:
+  name: flask-socketio
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/flask-socketio/flask_socketio-${{ version }}.tar.gz
+  sha256: fe5bd995c3ed4da9a98f335d0d830fa1a19d84a64789f6265642a671fdacaeac
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.2
+  run:
+    - python >=${{ python_min }}
+    - blinker
+    - click
+    - flask >=2.1.0
+    - jinja2
+    - python-socketio >=5.12.0
+    - werkzeug
+
+tests:
+  - python:
+      imports:
+        - flask_socketio
+        - flask_socketio.namespace
+        - flask_socketio.test_client
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Socket.IO integration for Flask applications
+  homepage: https://github.com/miguelgrinberg/Flask-SocketIO/
+  repository: https://github.com/miguelgrinberg/Flask-SocketIO/
+  documentation: https://flask-socketio.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - synapticarbors
+    - jan-janssen

@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: opentelemetry-exporter-zipkin
+  version: "1.44.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_exporter_zipkin-${{ version }}.tar.gz
+  sha256: 536dedebf6d735190b6f3a3fafef83530ace2b6472d14fc31fe65c4f515acf5e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - opentelemetry-exporter-zipkin-json ==1.44.0
+    - opentelemetry-exporter-zipkin-proto-http ==1.44.0
+
+tests:
+  - python:
+      imports:
+        - opentelemetry
+        - opentelemetry.exporter.zipkin
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Zipkin Span Exporters for OpenTelemetry
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/exporter/opentelemetry-exporter-zipkin
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk

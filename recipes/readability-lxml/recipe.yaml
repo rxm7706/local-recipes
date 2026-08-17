@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: readability-lxml
+  version: "0.8.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/readability-lxml-${{ version }}.tar.gz
+  sha256: e51fea56b5909aaf886d307d48e79e096293255afa567b7d08bca94d25b1a4e1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python
+  run:
+    - chardet
+    - cssselect
+    - lxml
+    - python
+
+tests:
+  - python:
+      imports:
+        - readability
+        - readability.compat
+      pip_check: true
+
+about:
+  summary: fast html to text parser (article readability tool) with python 3 support
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: http://github.com/buriy/python-readability
+
+extra:
+  recipe-maintainers:
+    - ickc

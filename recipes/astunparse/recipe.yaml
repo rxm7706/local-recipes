@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.6.3"
+
+package:
+  name: astunparse
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/astunparse/astunparse-${{ version }}.tar.gz
+  sha256: 5ad93a8456f0d084c3456d059fd9a92cce667963232cbf763eac3bc5b7940872
+  patches:
+    - 0000-no-wheel-run-dep.patch
+
+build:
+  number: 3
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - six >=1.6.1,<2.0
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - astunparse
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - python -m astunparse --help
+      - echo "print('hello world')" > hello.py
+      - python -m astunparse hello.py
+
+about:
+  license: BSD-3-Clause AND PSF-2.0
+  license_file: LICENSE
+  summary: An AST unparser for Python.
+  description: |
+    This is a factored out version of unparse found in the Python source
+    distribution; under Demo/parser in Python 2 and under Tools/parser in
+    Python 3.
+  homepage: https://github.com/simonpercivall/astunparse
+  repository: https://github.com/simonpercivall/astunparse
+  documentation: http://astunparse.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - goanpeca
+    - hoechenberger

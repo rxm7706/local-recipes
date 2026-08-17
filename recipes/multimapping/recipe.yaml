@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.1"
+
+package:
+  name: multimapping
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/MultiMapping/multimapping-${{ version }}.tar.gz
+  sha256: 1b22334fcd4da12206283492e27f62857a1a3d329204e9890e0dfa5117907f9c
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - extensionclass
+  run:
+    - python
+    - extensionclass
+
+tests:
+  - python:
+      imports:
+        - MultiMapping
+      pip_check: true
+
+about:
+  homepage: https://pypi.org/project/MultiMapping/
+  license: ZPL-2.1
+  license_file: LICENSE.txt
+  summary: Special MultiMapping objects used in Zope.
+  description: |
+    Special MultiMapping objects used in Zope.
+  repository: https://github.com/zopefoundation/MultiMapping
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: multimapping
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: MultiMapping
+  cfe-purls:
+    - pkg:conda/multimapping@${{ version }}?channel=conda-forge
+    - pkg:pypi/multimapping@${{ version }}
+  cfe-upstream-repo: https://github.com/zopefoundation/MultiMapping
+  cfe-upstream-homepage: https://pypi.org/project/MultiMapping/
+  cfe-import-names: [MultiMapping]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: false
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:25:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:25:53Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4 Create-recipe local-only. multimapping.
+####

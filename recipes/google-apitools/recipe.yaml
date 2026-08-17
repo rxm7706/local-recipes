@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: google-apitools
+  version: "0.5.35"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 911bc3698686c74187414c610ae30bd6e3c0a7404178fc6479ead6c420d2dd94
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - gen_client = apitools.gen.gen_client:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - fasteners >=0.14
+    - httplib2 >=0.8
+    - oauth2client >=1.4.12
+    - python >=${{ python_min }}
+    - six >=1.12.0
+
+tests:
+  - python:
+      imports:
+        - apitools
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - gen_client --help
+
+about:
+  summary: client libraries for humans
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://pypi.org/project/google-apitools/
+
+extra:
+  recipe-maintainers:
+    - xhochy

@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyrsistent
+  version: "0.20.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyrsistent-${{ version }}.tar.gz
+  sha256: 4c48f78f62ab596c679086084d0dd13254ae4f3d6c72a83ffdf5ebdef8f265a4
+
+build:
+  number: 2
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - setuptools
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - pyrsistent
+      pip_check: true
+
+about:
+  license: MIT
+  license_file: LICENSE.mit
+  summary: Persistent/Functional/Immutable data structures
+  homepage: http://github.com/tobgu/pyrsistent/
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

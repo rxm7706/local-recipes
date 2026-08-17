@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.9.72"
+  version: "0.9.76"
 
 package:
   name: bce-python-sdk
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/b/bce-python-sdk/bce_python_sdk-${{ version }}.tar.gz
-  sha256: d9db568698792d74db4245252d98776eae8c9c5225fc0ba86548dfc52d478fcc
+  sha256: 01c630ce8dcbf8be0563d65f18b5201eaac6bd954b3dc776040aec268f81b6ff
 
 build:
   number: 0
@@ -21,6 +21,7 @@ requirements:
   host:
     - python ${{ python_min }}.*
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
     - pycryptodome >=3.8.0

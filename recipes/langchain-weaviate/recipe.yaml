@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.0.7"
+  version: "0.0.8"
 
 package:
   name: langchain-weaviate
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/l/langchain-weaviate/langchain_weaviate-${{ version }}.tar.gz
-  sha256: e62b3178d68237e1b933f808ceeb085238e1af9dd0f07813b0de7879bb0fd851
+  sha256: cdea3762f40e9b40c3cd7173f19ffda4c6806849fdfe86c53bfa72a2d3d9ac80
 
 build:
   number: 0
@@ -23,7 +23,7 @@ requirements:
     - poetry-core
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - langchain-core >=1.4.7,<2.0
     - weaviate-client >=4.0.0,<5.0.0
     - numpy >=1.26.2,<3.0
@@ -51,7 +51,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - pb01ka
 
 #### CFE metadata AND comments
 # CFE metadata

@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: towncrier
+  version: "25.8.0"
+  sha256: eef16d29f831ad57abb3ae32a0565739866219f1ebfbdd297d32894eb9940eb1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - towncrier = towncrier._shell:cli
+
+requirements:
+  host:
+    - hatchling
+    - pip
+    - python ${{ python_min }}
+  run:
+    - click
+    - importlib-resources >=5.0
+    - importlib-metadata >=4.6
+    - jinja2
+    - python >=${{ python_min }}
+    - tomli
+
+tests:
+  - python:
+      imports:
+        - towncrier
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - towncrier --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Building newsfiles for your project
+  description: |
+    towncrier is a utility to produce useful, summarised news files for your project.
+    Rather than reading the Git history as some newer tools to produce it, or having one single
+    file which developers all write to, towncrier reads "news fragments" which contain
+    information useful to end users.
+
+
+  homepage: https://github.com/twisted/towncrier
+
+extra:
+  recipe-maintainers:
+    - kain88-de
+    - ericpre

@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pdftext
+  version: "0.4.1"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pdftext-${{ version }}.tar.gz
+  sha256: ae06f3c0844e7cc631af86b844f4af06b72da2b67d7450441ead258a64e98660
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - pdftext = extract_text:main
+
+requirements:
+  host:
+    - python 3.10.*
+    - poetry-core
+    - pip
+  run:
+    - onnxruntime >=1.19.2,<2.0.0
+    - python >=${{ python_min }},<3.13
+    - pypdfium2 =4.30.0
+    - scikit-learn >=1.4.2,<2.0.0
+    - pydantic >=2.7.1,<3.0.0
+    - pydantic-settings >=2.2.1,<3.0.0
+
+tests:
+  - python:
+      imports:
+        - pdftext
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pdftext --help
+
+about:
+  summary: Extract structured text from pdfs quickly
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/VikParuchuri/pdftext
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

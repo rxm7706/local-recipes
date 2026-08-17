@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: anthropic
+  version: "0.122.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/anthropics/anthropic-sdk-python/archive/v${{ version }}.tar.gz
+  sha256: c3f0ff4a7000f81d2b25d5e4fbd30230690dbf1496e88e6d4e853afb744cc246
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core >=1.0.0
+    - hatch-fancy-pypi-readme
+    - hatchling
+    - pip
+  run:
+    - docstring_parser >=0.15,<1
+    - typing_extensions >=4.14,<5
+    - python >=${{ python_min }},<4.0.0
+    - httpx >=0.25.0,<1
+    - pydantic >=1.9.0,<3
+    - typing-extensions >=4.7,<5
+    - anyio >=3.5.0,<5
+    - distro >=1.7.0,<2
+    - sniffio >=1,<2
+    - cached-property
+    - tokenizers >=0.13.0
+    - jiter >=0.4.0,<1
+
+tests:
+  - python:
+      imports:
+        - anthropic
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Library for accessing the anthropic API
+  homepage: https://github.com/anthropics/anthropic-sdk-python
+  documentation: https://console.anthropic.com/docs
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - mikelambert
+    - moritzwilksch
+    - siboehm
+    - x5a

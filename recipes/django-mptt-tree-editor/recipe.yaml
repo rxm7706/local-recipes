@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-mptt-tree-editor
+  version: "0.1.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django-mptt-tree-editor-${{ version }}.tar.gz
+  sha256: 6f2db74b9fa3a592dd69f952138ad2470610a8e50ea2184a08f2a0c5a0911c0f
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - django >=1.4
+    - django-mptt >=0.4
+
+tests:
+  - python:
+      imports:
+        - mptt_tree_editor
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  summary: Provides FeinCMS's mptt admin tree editor as a separate app
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: http://bitbucket.org/san/django-mptt-tree-editor
+
+extra:
+  recipe-maintainers:
+    - rxm7706

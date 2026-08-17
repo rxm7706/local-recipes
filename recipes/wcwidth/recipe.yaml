@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.8.2"
+
+package:
+  name: wcwidth
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wcwidth/wcwidth-${{ version }}.tar.gz
+  sha256: 91fbef97204b96a3d4d421609b80340b760cf33e26da123ff243d76b1fda8dda
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - wcwidth
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Measures number of Terminal column cells of wide-character codes.
+  homepage: https://github.com/jquast/wcwidth
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jinja_partials
+  version: "0.2.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jinja_partials-${{ version }}.tar.gz
+  sha256: 5b32cc035ee93f372ddfcecf96c4837450d8561d0e2ff26c89dc0d0bd071128b
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - jinja2
+
+tests:
+  - python:
+      imports:
+        - jinja_partials
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Simple reuse of partial HTML page templates in the Jinja template language for Python web frameworks.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/mikeckennedy/jinja_partials
+
+extra:
+  recipe-maintainers:
+    - Colelyman

@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: opentelemetry-exporter-otlp
+  version: "1.44.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_exporter_otlp-${{ version }}.tar.gz
+  sha256: af1cde7c33ea8ed624bf04ac49a885730fe44c1f1ad698656e592c38f70ce106
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - opentelemetry-exporter-otlp-proto-grpc ==1.44.0
+    - opentelemetry-exporter-otlp-proto-http ==1.44.0
+
+tests:
+  - python:
+      imports:
+        - opentelemetry
+        - opentelemetry.exporter.otlp
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: OpenTelemetry Collector Exporters
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/exporter/opentelemetry-exporter-otlp
+
+extra:
+  recipe-maintainers:
+    - pb01ka
+    - mariusvniekerk
+    - rxm7706
+    - conda-forge/opentelemetry-api
+    - conda-forge/opentelemetry-proto
+    - conda-forge/opentelemetry-sdk
+    - conda-forge/opentelemetry-exporter-otlp-proto-common
+    - conda-forge/opentelemetry-exporter-otlp-proto-grpc
+    - conda-forge/opentelemetry-exporter-otlp-proto-http

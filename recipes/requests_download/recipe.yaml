@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.2"
+
+package:
+  name: requests_download
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/r/requests_download/requests_download-${{ version }}.tar.gz
+  sha256: 92d895a6ca51ea51aa42bab864bddaee31b5601c7e7e1ade4c27b0eb6695d846
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - requests
+
+tests:
+  - python:
+      imports:
+        - requests_download
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Download files using requests and save them to a target path
+  homepage: https://github.com/takluyver/requests_download
+
+extra:
+  recipe-maintainers:
+    - Carreau
+    - minrk
+    - takluyver
+    - ocefpaf

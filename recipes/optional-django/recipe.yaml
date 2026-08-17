@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: optional-django
+  version: "0.3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/optional-django-${{ version }}.tar.gz
+  sha256: 2cd56b864ecf88e420aa882209ca7849114f38bc7089344cc9e476ea91aeb010
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - optional_django
+      pip_check: true
+
+about:
+  summary: Utils for providing optional support for django
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/markfinger/optional-django
+
+extra:
+  recipe-maintainers:
+    - rxm7706

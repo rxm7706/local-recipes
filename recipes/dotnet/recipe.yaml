@@ -1,0 +1,209 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  sdk_version: "10.0.302"
+  runtime_version: "10.0.10"
+  framework: ${{ '.'.join(sdk_version | split('.')[:2]) }}
+
+recipe:
+  name: dotnet
+  version: ${{ sdk_version }}
+
+source:
+  url: https://dotnetcli.azureedge.net/dotnet/Sdk/${{ sdk_version }}/dotnet-sdk-${{ sdk_version }}-${{ platform }}.${{ ext }}
+  sha256: ${{ sha256 }}
+  target_directory: dotnet
+
+build:
+  number: 2
+  dynamic_linking:
+    binary_relocation: ${{ true if osx }}
+
+outputs:
+  - package:
+      name: dotnet
+      version: ${{ sdk_version }}
+    requirements:
+      run:
+        - dotnet-aspnetcore =${{ runtime_version }}
+        - if: win
+          then: dotnet-desktop =${{ runtime_version }}
+        - dotnet-runtime =${{ runtime_version }}
+        - dotnet-sdk =${{ sdk_version }}
+    tests:
+      - script:
+          - if: unix
+            then: test "${DOTNET_ROOT}" = "${CONDA_PREFIX}/lib/dotnet"
+          - if: unix
+            then: test "${DOTNET_TOOLS}" = "${CONDA_PREFIX}/lib/dotnet/tools"
+          - if: win
+            then: if not defined DOTNET_ROOT exit 1
+          - if: win
+            then: if not defined DOTNET_TOOLS exit 1
+          - if: win
+            then: if /I not "%DOTNET_ROOT%"=="%CONDA_PREFIX%\dotnet" exit 1
+          - if: win
+            then: if /I not "%DOTNET_TOOLS%"=="%CONDA_PREFIX%\dotnet\tools" exit 1
+  - package:
+      name: dotnet-runtime
+      version: ${{ runtime_version }}
+    build:
+      # Repeated per output on purpose: conda-build does NOT inherit top-level
+      # build settings into outputs, so the top-level `binary_relocation: False`
+      # never covered the files these outputs actually ship.
+      script:
+        env:
+          DOTNET_RUNTIME_VERSION: ${{ runtime_version }}
+        file: ${{ 'build-runtime.sh' if not win else 'build-runtime.bat' if win else '' }}
+      dynamic_linking:
+        binary_relocation: ${{ true if osx }}
+    requirements:
+      build:
+        - if: linux
+          then: ${{ compiler('cxx') }}
+        - if: linux
+          then: ${{ stdlib('c') }}
+        - if: win
+          then: posix
+      run:
+        - if: unix
+          then: icu
+        # <4 is required, not cosmetic. openssl 4.x ships only libssl.so.4 /
+        # libcrypto.so.4 with no .so.3 compatibility symlink, and .NET's crypto
+        # shim dlopens a fixed list of sonames topping out at libssl.so.3. An
+        # unpinned openssl resolves to 4.x and every crypto call aborts with
+        # "No usable version of libssl was found".
+        - if: aarch64
+          then: openssl <4
+    tests:
+      - requirements:
+          run:
+            - if: linux
+              then: cf-nvidia-tools 1.*
+        script:
+          - dotnet --list-runtimes
+          - if: linux
+            then: test $(find $PREFIX/lib/dotnet -name '*.so' | wc -l) -ge 10
+          - if: linux
+            then: c_stdlib_version=${{ c_stdlib_version }} check-glibc $PREFIX/lib/dotnet/dotnet $(find $PREFIX/lib/dotnet -name '*.so')
+    about:
+      license: MIT
+      license_file: dotnet/LICENSE.txt
+      summary: |
+        .NET Core is a free and open-source managed computer software
+        framework for the Windows, Linux, and macOS operating systems.
+
+      homepage: https://github.com/dotnet/runtime
+  - package:
+      name: dotnet-sdk
+      version: ${{ sdk_version }}
+    build:
+      dynamic_linking:
+        binary_relocation: ${{ true if osx }}
+      script:
+        file: ${{ 'build-sdk.sh' if not win else 'build-sdk.bat' if win else '' }}
+    requirements:
+      build:
+        - if: linux
+          then: ${{ compiler('cxx') }}
+        - if: linux
+          then: ${{ stdlib('c') }}
+        - if: win
+          then: posix
+      run:
+        - dotnet-runtime =${{ runtime_version }}
+    tests:
+      - script:
+          - if: unix
+            then: test -d $PREFIX/lib/dotnet/packs
+          - if: unix
+            then: test -d $PREFIX/lib/dotnet/sdk
+          - if: unix
+            then: test -d $PREFIX/lib/dotnet/templates
+          - if: win
+            then: if not exist %PREFIX%\\dotnet\\packs exit 1
+          - if: win
+            then: if not exist %PREFIX%\\dotnet\\sdk exit 1
+          - if: win
+            then: if not exist %PREFIX%\\dotnet\\templates exit 1
+          - dotnet --version
+          - if: unix
+            then: mkdir self-test && cd self-test && dotnet new console && dotnet clean && dotnet build
+          - if: unix
+            then: dotnet exec bin/Debug/net${{ framework }}/self-test.dll > self-test.txt
+          - if: unix
+            then: grep "Hello, World!" self-test.txt
+          - if: win
+            then: mkdir self-test && cd self-test && dotnet new console && dotnet build && dotnet exec "bin/Debug/net${{ framework }}/self-test.dll" | findstr "Hello, World!"
+    about:
+      license: MIT
+      license_file: dotnet/LICENSE.txt
+      summary: |
+        .NET Core is a free and open-source managed computer software
+        framework for the Windows, Linux, and macOS operating systems.
+
+      homepage: https://github.com/dotnet/sdk
+  - package:
+      name: dotnet-aspnetcore
+      version: ${{ runtime_version }}
+    build:
+      dynamic_linking:
+        binary_relocation: ${{ true if osx }}
+      script:
+        file: ${{ 'build-aspnetcore.sh' if not win else 'build-aspnetcore.bat' if win else '' }}
+    requirements:
+      run:
+        - dotnet-runtime =${{ runtime_version }}
+    tests:
+      - script:
+          - if: not win
+            then: test -d $PREFIX/lib/dotnet/shared/Microsoft.AspNetCore.App
+          - if: win
+            then: if not exist %PREFIX%\\dotnet\\shared\\Microsoft.AspNetCore.App exit 1
+    about:
+      license: MIT
+      license_file: dotnet/LICENSE.txt
+      summary: |
+        .NET Core is a free and open-source managed computer software
+        framework for the Windows, Linux, and macOS operating systems.
+
+      homepage: https://github.com/dotnet/aspnetcore
+  - package:
+      name: ${{ 'dotnet-desktop' if win else '' }}
+      version: ${{ runtime_version if win else '' }}
+    build:
+      script:
+        file: ${{ 'build-desktop.bat' if win else '' }}
+    requirements:  # [win]
+      build:  # [win]
+        - if: win
+          then: posix
+      run:  # [win]
+        - if: win
+          then: dotnet-runtime =${{ runtime_version }}
+    tests:
+      - script:
+          - if: win
+            then: if not exist %PREFIX%\\dotnet\\shared\\Microsoft.WindowsDesktop.App exit 1
+    about:  # [win]
+      license: ${{ 'MIT' if win else '' }}
+      license_file: ${{ 'dotnet/LICENSE.txt' if win else '' }}
+      summary: ${{ '.NET Core is a free and open-source managed computer software framework for the Windows, Linux, and macOS operating systems.' if win else '' }}
+      homepage: ${{ 'https://github.com/dotnet/desktop' if win else '' }}
+
+about:
+  license: MIT
+  license_file: dotnet/LICENSE.txt
+  summary: |
+    .NET Core is a free and open-source managed computer software
+    framework for the Windows, Linux, and macOS operating systems.
+
+
+  homepage: https://github.com/dotnet/core
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - ZimmerA
+    - acesnik

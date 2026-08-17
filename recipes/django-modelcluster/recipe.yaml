@@ -24,7 +24,6 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }}
-    #- pytz >=2022.4
     - django >=4.2
 
 tests:
@@ -52,6 +51,7 @@ about:
 
 extra:
   recipe-maintainers:
-    - darynwhite
     - cshaley
+    - darynwhite
+    - rxm7706
     - sannykr

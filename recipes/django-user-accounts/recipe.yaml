@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.3.2"
+
+package:
+  name: django-user-accounts
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-user-accounts/django-user-accounts-${{ version }}.tar.gz
+  sha256: aeeab93b5715f950f9c1edbc03b41438d0927b68232c40ba1f19538d6eb3fb59
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.2
+  run:
+    - python >=${{ python_min }}
+    - django >=3.2
+    - django-appconf >=1.0.4
+    - pytz >=2020.4
+
+tests:
+  - python:
+      imports:
+        - account
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://github.com/pinax/django-user-accounts
+  license: MIT
+  license_file: LICENSE
+  summary: a Django user account app
+  description: |
+    a Django user account app
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: django-user-accounts
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: django-user-accounts
+  cfe-purls:
+    - pkg:conda/django-user-accounts@${{ version }}?channel=conda-forge
+    - pkg:pypi/django-user-accounts@${{ version }}
+  cfe-upstream-repo: http://github.com/pinax/django-user-accounts
+  cfe-upstream-homepage: http://github.com/pinax/django-user-accounts
+  cfe-import-names: [account]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:54:11Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:54:11Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

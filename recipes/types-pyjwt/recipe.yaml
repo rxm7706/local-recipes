@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.7.1"
+
+package:
+  name: types-pyjwt
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/types-PyJWT/types-PyJWT-${{ version }}.tar.gz
+  sha256: 99c1a0d94d370951f9c6e57b1c369be280b2cbfab72c0f9c0998707490f015c9
+
+build:
+  number: 2
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - types-cryptography
+
+tests:
+  - package_contents:
+      site_packages:
+        - jwt-stubs/__init__.pyi
+  - python:
+      imports: []
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  homepage: https://github.com/python/typeshed
+  repository: https://github.com/python/typeshed
+  summary: Typing stubs for PyJWT
+  license: Apache-2.0 AND MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - fhoehle
+    - conda-forge/mypy

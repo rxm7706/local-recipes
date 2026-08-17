@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: versioneer
+  version: "0.29"
+  sha256: 5ab283b9857211d61b53318b7c792cf68e798e765ee17c27ade9f6c924235731
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - versioneer = versioneer:main
+
+requirements:
+  host:
+    - pip
+    - python >=3.7
+    - setuptools
+    - tomli
+  run:
+    - python >=3.7
+
+tests:
+  - requirements:
+      run:
+        - pip
+    script:
+      - pip check
+      - versioneer version
+
+about:
+  license: Unlicense
+  license_file: LICENSE
+  summary: Easy VCS-based management of project version strings
+  homepage: https://github.com/python-versioneer/python-versioneer
+
+extra:
+  recipe-maintainers:
+    - jakirkham

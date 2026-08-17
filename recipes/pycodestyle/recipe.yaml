@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pycodestyle
+  version: "2.14.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pycodestyle-${{ version }}.tar.gz
+  sha256: c4b5b517d278089ff9d0abdec919cd97262a3367449ea1c8b49b91529167b783
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - pycodestyle = pycodestyle:_main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pycodestyle
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pycodestyle --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Python style guide checker
+  homepage: https://pycodestyle.readthedocs.io/
+  repository: https://github.com/PyCQA/pycodestyle
+  documentation: https://pycodestyle.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - jjhelmus
+    - pmlandwehr
+    - jakirkham
+    - sigmavirus24
+    - dopplershift
+    - ocefpaf

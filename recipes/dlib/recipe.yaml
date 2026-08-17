@@ -1,0 +1,155 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dlib
+  version: "20.0.1"
+  tag: ${{ "v" ~ ".".join(version | split(".")[:2]) }}
+
+recipe:
+  name: ${{ name }}-split
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 7cb2a09467de032332c743bc967007f016598c66c9c9ebc54a5b66d3d9e46d54
+  patches:
+    - if: unix
+      then: lapack_sgetrf.patch
+    - setup_cmake_args.patch
+    - if: osx
+      then: fix_libtools_error.patch
+    - unvendor_pybind11.patch
+    - allow_any_generator.patch
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: ${{ name }}
+    build:
+      # weigh down cpu implementation and give cuda preference
+      string: ${{ 'cpu_py${{ CONDA_PY }}h${{ PKG_HASH }}_${{ PKG_BUILDNUM }}' if cuda_compiler_version == "None" else "cuda${{ cuda_compiler_version | replace('.', '') }}py${{ CONDA_PY }}h${{ PKG_HASH }}_${{ PKG_BUILDNUM }}" if cuda_compiler_version != "None" else '' }}
+      track_features:
+        - if: cuda_compiler_version == "None"
+          then: dlib-cpu
+      script:
+        file: ${{ 'bld-pkg.bat' if win else 'build-pkg.sh' if not win else '' }}
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
+        - ${{ compiler('cxx') }}
+        - if: cuda_compiler_version != "None"
+          then: ${{ compiler('cuda') }}
+        - cmake
+        - ninja
+        - pkg-config
+        - if: build_platform != target_platform
+          then: python
+        - if: build_platform != target_platform
+          then: cross-python_${{ target_platform }}
+        - if: build_platform != target_platform
+          then: numpy
+        - if: build_platform != target_platform
+          then: pybind11
+      host:
+        - if: (cuda_compiler_version or "None") != "None"
+          then: cuda-version ${{ cuda_compiler_version }}
+        - if: cuda_compiler_version != "None"
+          then: cudnn
+        - if: cuda_compiler_version != "None" and linux
+          then: nccl
+        - libjpeg-turbo
+        - if: not win
+          then: libcblas
+        - if: not win
+          then: liblapack
+        - libpng
+        - numpy
+        - pip
+        - setuptools
+        - pybind11
+        - python
+        - if: not win
+          then: sqlite
+        - if: cuda_compiler_version != "None"
+          then: cuda-cudart-dev
+        - if: cuda_compiler_version != "None"
+          then: libcublas-dev
+        - if: cuda_compiler_version != "None"
+          then: libcurand-dev
+        - if: cuda_compiler_version != "None"
+          then: libcusolver-dev
+      run:
+        - python
+        - if: cuda_compiler_version != "None"
+          then: __cuda
+      run_exports:
+        - ${{ pin_subpackage('dlib', upper_bound='x.x') }}
+    tests:
+      - python:
+          imports:
+            - if: not (aarch64 and cuda_compiler_version != "None")
+              then: dlib
+          pip_check: true
+      - files:
+          recipe:
+            - test_data/face.jpg
+            - test_data/face.png
+            - test_data/images.xml
+            - setup.cfg
+          source:
+            - tools/python/test
+        requirements:
+          run:
+            - more-itertools
+            - pillow
+            - pip
+            - pytest >=7
+            - pytest-azurepipelines
+            - tqdm
+        script:
+          - if: not (aarch64 and cuda_compiler_version != "None")
+            then: python -m pytest tools/python/test
+  # Help the linter to avoid errors on a package not having tests.
+    # aarch64 test fails because of the GLIBC 2.28 issue, which only appears at test time.
+    # xref https://github.com/conda-forge/conda-forge.github.io/issues/1941
+    package:
+      name: ${{ dlib_cpu_gpu }}
+    build:
+      string: ${{ 'cpu_py${{ CONDA_PY }}h${{ PKG_HASH }}_${{ PKG_BUILDNUM }}' if cuda_compiler_version == "None" else "cuda${{ cuda_compiler_version | replace('.', '') }}py${{ CONDA_PY }}h${{ PKG_HASH }}_${{ PKG_BUILDNUM }}" if cuda_compiler_version != "None" else '' }}
+    requirements:
+      host:
+        - if: (cuda_compiler_version or "None") != "None"
+          then: cuda-version ${{ cuda_compiler_version }}
+        - python
+      run:
+        - python
+        - ${{ pin_subpackage('dlib', exact=True) }}
+    tests:
+      - python:
+          imports:
+            - if: not (aarch64 and cuda_compiler_version != "None")
+              then: dlib
+          pip_check: false
+
+about:
+  license: BSL-1.0
+  license_file: dlib/LICENSE.txt
+  summary: toolkit for making real world machine learning and data analysis applications
+  description: |-
+    Dlib is a modern C++ toolkit containing machine learning algorithms and tools
+    for creating complex software in C++ to solve real world problems. See
+    http://dlib.net for the main project documentation and API reference.
+
+
+  homepage: http://dlib.net
+  repository: https://github.com/davisking/dlib
+
+extra:
+  recipe-maintainers:
+    - patricksnape
+    - aldanor
+    - Tobias-Fischer

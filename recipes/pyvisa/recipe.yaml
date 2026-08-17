@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: PyVISA
+  version: "1.16.2"
+  sha256: 75beb93eeafe20a50be5726fa4e3a645948c93d86819f9c1f8c542efa4085a38
+
+package:
+  name: pyvisa
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0]|lower }}/${{ name|lower }}/${{ name | lower }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir --no-build-isolation -vvv
+  python:
+    entry_points:
+      - pyvisa-info = pyvisa.cmd_line_tools:visa_info
+      - pyvisa-shell = pyvisa.cmd_line_tools:visa_shell
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+    - setuptools_scm
+  run:
+    - python >=${{ python_min }}
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - pyvisa
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - pyvisa-info
+      - pyvisa-shell -h
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Control your instruments with Python.
+  description: |
+    PyVISA is a Python package that enables you to control all kinds of measurement devices
+    independently of the interface (e.g. GPIB, RS232, USB, Ethernet). As an example, reading
+    self-identification from a Keithley Multimeter with GPIB number 12 is as easy as three
+    lines of Python code:
+  homepage: https://github.com/hgrecco/pyvisa
+  repository: https://github.com/hgrecco/pyvisa
+  documentation: https://pyvisa.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - jjerphan
+    - melund
+    - ddale
+    - cjermain
+    - MatthieuDartiailh

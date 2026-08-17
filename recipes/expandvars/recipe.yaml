@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: expandvars
+  version: "1.1.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/expandvars-${{ version }}.tar.gz
+  sha256: 6c5822b7b756a99a356b915dd1267f52ab8a4efaa135963bd7f4bd5d368f71d7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - expandvars
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Expand system variables Unix style
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/sayanarijit/expandvars
+
+extra:
+  recipe-maintainers:
+    - tierriminator
+    - soapy1

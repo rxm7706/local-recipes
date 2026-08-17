@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: datefinder
+  version: "0.7.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/akoumjian/datefinder/archive/v${{ version }}.tar.gz
+  sha256: c0eec1097d05c793892c46465206c23f87eb1419a683c2fad587cad89be61a31
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - regex >=2017.02.08
+    - python-dateutil >=2.4.2
+    - pytz
+
+tests:
+  - python:
+      imports:
+        - datefinder
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A python module for locating dates inside text.
+  homepage: https://github.com/akoumjian/datefinder
+  repository: https://github.com/akoumjian/datefinder
+  documentation: https://github.com/akoumjian/datefinder
+
+extra:
+  recipe-maintainers:
+    - kellend-git

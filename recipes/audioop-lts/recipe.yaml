@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: audioop-lts
+  version: "0.2.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/audioop_lts-${{ version }}.tar.gz
+  sha256: 64d0c62d88e67b98a1a5e71987b7aa7b5bcffc7dcee65b635823dbdd0a8dbbd0
+
+build:
+  number: 2
+  script:
+    - if: match(python, ">=3.13")
+      then: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+  host:
+    - python
+    - setuptools
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - audioop
+  - requirements:
+      run:
+        - pip
+    script:
+      - pip check
+      - python -c "import audioop; assert list(audioop.reverse(bytes([1,2,4,8]), 2)) == [4, 8, 1, 2]"
+
+about:
+  summary: LTS Port of Python audioop
+  license: EPL-2.0
+  license_file: LICENSE
+  homepage: https://github.com/AbstractUmbra/audioop
+
+extra:
+  recipe-maintainers:
+    - bmcfee
+    - IzerOnadimQC
+    - xhochy

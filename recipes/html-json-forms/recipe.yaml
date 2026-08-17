@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: html-json-forms
+  version: "1.1.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/html-json-forms-${{ version }}.tar.gz
+  sha256: 16dc413dc858fcc53602ad509c1aef735534838e1bae888bf429e210a9c48f6b
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools-scm
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - html_json_forms
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Implementation of the HTML JSON Forms spec for use with the Django REST Framework.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/wq/html-json-forms
+
+extra:
+  recipe-maintainers:
+    - rxm7706

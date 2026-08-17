@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.3.7"
+
+package:
+  name: code-review-graph
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/code-review-graph/code_review_graph-${{ version }}.tar.gz
+  sha256: 5a44440fd87607761b2fb06341aaab48ad1767c14b3eb98aa7ee2e357da867b8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - fastmcp <4,>=3.2.4
+    - mcp <2,>=1.0.0
+    - networkx <4,>=3.2
+    - pyyaml <7,>=6.0
+    - tomli <3,>=2.0.0
+    - tree-sitter-language-pack <1,>=0.3.0
+    - tree-sitter <1,>=0.23.0
+    - watchdog <7,>=4.0.0
+
+tests:
+  - python:
+      imports:
+        - code_review_graph
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://code-review-graph.com
+  license: MIT
+  license_file: LICENSE
+  summary: Local-first knowledge graph for token-efficient code review through MCP and CLI
+  description: |
+    Local-first knowledge graph for token-efficient code review through MCP and CLI
+  repository: https://github.com/tirth8205/code-review-graph
+  documentation: https://github.com/tirth8205/code-review-graph/blob/main/docs/INDEX.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: code-review-graph
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: code-review-graph
+  cfe-purls:
+    - pkg:conda/code-review-graph@${{ version }}?channel=conda-forge
+    - pkg:pypi/code-review-graph@${{ version }}
+  cfe-upstream-repo: https://github.com/tirth8205/code-review-graph
+  cfe-upstream-homepage: https://code-review-graph.com
+  cfe-import-names: [code_review_graph]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:44:10Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:44:10Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

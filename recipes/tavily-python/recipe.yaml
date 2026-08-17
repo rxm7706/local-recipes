@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.7.27"
+
+package:
+  name: tavily-python
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/tavily-python/tavily_python-${{ version }}.tar.gz
+  sha256: 3fbbee7fc7e252479b264835e6f943b4a81395429c1bd419e8024d11bf2c1831
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - requests
+    - tiktoken >=0.5.1
+    - httpx
+
+tests:
+  - python:
+      python_version:
+        - ${{ python_min }}
+        - '*'
+      imports:
+        - tavily
+      pip_check: true
+
+about:
+  summary: Python wrapper for the Tavily API
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/tavily-ai/tavily-python
+
+extra:
+  recipe-maintainers:
+    - xhochy

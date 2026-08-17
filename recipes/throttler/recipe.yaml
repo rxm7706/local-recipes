@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.2"
+
+package:
+  name: throttler
+  version: ${{ version }}
+
+source:
+  url: https://github.com/uburuntu/throttler/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 753bf1954f8580ca6ea7a9787dbacbe29f0da8fb32598a2386a3f04497d00ad9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+
+tests:
+  - python:
+      imports:
+        - throttler
+      pip_check: true
+
+about:
+  summary: Easy throttling with asyncio support
+  description: |
+    Zero-dependency Python package for easy throttling with asyncio support.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/uburuntu/throttler
+  repository: https://github.com/uburuntu/throttler
+  documentation: https://github.com/uburuntu/throttler
+
+extra:
+  recipe-maintainers:
+    - johanneskoester

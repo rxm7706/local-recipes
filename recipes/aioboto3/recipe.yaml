@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: aioboto3
+  version: "15.5.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ea8d8787d315594842fbfcf2c4dce3bac2ad61be275bc8584b2ce9a3402a6979
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install --no-deps .
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools >=68.2.0
+    - setuptools-scm >=8.0.0
+  run:
+    - python >=${{ python_min }}
+    - aiobotocore ==2.25.1
+    - aiofiles >=23.2.1
+    - boto3 >=1.21.21
+    - cryptography >=44.0.1
+    - idna >=3.3.0
+
+tests:
+  - python:
+      imports:
+        - aioboto3
+        - aioboto3.s3
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  summary: Wrapper to use boto3 resources with the aiobotocore async backend
+  description: |
+    aiobotocore allows you to use near enough all of the boto3 client commands in an async manner just by prefixing the command with await.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/terrycain/aioboto3
+  repository: https://github.com/terrycain/aioboto3
+  documentation: https://aioboto3.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - peterbygrave
+    - dgasmith
+    - skrsna
+    - markllama

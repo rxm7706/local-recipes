@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0"
+
+package:
+  name: powerplatform-dataverse-client
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/PowerPlatform-Dataverse-Client/powerplatform_dataverse_client-${{ version }}.tar.gz
+  sha256: 8d0c6b200805e31679c292953e37cf15012015d65f044520d5f5ff101eb77614
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=64
+  run:
+    - python >=${{ python_min }}
+    - azure-identity >=1.17.0
+    - azure-core >=1.30.2
+    - requests >=2.32.0
+    - pandas >=2.0.0
+
+tests:
+  - python:
+      imports:
+        - PowerPlatform
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/microsoft/PowerPlatform-DataverseClient-Python
+  license: MIT
+  license_file: LICENSE
+  summary: Python SDK for Microsoft Dataverse
+  description: |
+    Python SDK for Microsoft Dataverse
+  repository: https://github.com/microsoft/PowerPlatform-DataverseClient-Python.git
+  documentation: https://github.com/microsoft/PowerPlatform-DataverseClient-Python#readme
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: powerplatform-dataverse-client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: PowerPlatform-Dataverse-Client
+  cfe-purls:
+    - pkg:conda/powerplatform-dataverse-client@${{ version }}?channel=conda-forge
+    - pkg:pypi/powerplatform-dataverse-client@${{ version }}
+  cfe-upstream-repo: https://github.com/microsoft/PowerPlatform-DataverseClient-Python.git
+  cfe-upstream-homepage: https://github.com/microsoft/PowerPlatform-DataverseClient-Python
+  cfe-import-names: [PowerPlatform]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:33:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:33:15Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

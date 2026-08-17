@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.8.44"
+
+package:
+  name: hdbscan
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/hdbscan/hdbscan-${{ version }}.tar.gz
+  sha256: 1ac6196fabdd42072284b60c9be7b9b504b5f4f25cf7a551a8af29a3c7963a4d
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython <4
+    - if: build_platform != target_platform
+      then: numpy <3
+    # Keep unconstrained for conda-smithy re-rendering
+    - if: build_platform != target_platform
+      then: numpy
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - wheel
+    - cython <4
+    - numpy <3
+    # Keep unconstrained for conda-smithy re-rendering
+    - numpy
+  run:
+    - python
+    # Match upstream's `numpy` requirement and constraint
+    - numpy >=1.20,<3
+    - scipy >=1.0
+    - scikit-learn >=1.6
+    - joblib >=1.0
+
+tests:
+  - python:
+      imports:
+        - hdbscan
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - python run_test.py
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Clustering based on density with variable density clusters
+  homepage: http://github.com/scikit-learn-contrib/hdbscan
+
+extra:
+  recipe-maintainers:
+    - johnlees
+    - lmcinnes

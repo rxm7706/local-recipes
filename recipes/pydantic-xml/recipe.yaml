@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pydantic-xml
+  version: "2.21.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pydantic_xml-${{ version }}.tar.gz
+  sha256: 43488d244375d9fbaa593d8c0435f8b0a940d7e594fded647383ff223af2baac
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pydantic >=2.6.0,!=2.10.0b1
+    - pydantic-core >=2.15.0
+  run_constraints:
+    - lxml >=4.9.0
+
+tests:
+  - python:
+      imports:
+        - pydantic_xml
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: pydantic xml extension
+  license: Unlicense
+  license_file: LICENSE
+  homepage: https://github.com/dapper91/pydantic-xml
+
+extra:
+  recipe-maintainers:
+    - synapticarbors

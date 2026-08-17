@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.1"
+
+package:
+  name: clint
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/c/clint/clint-${{ version }}.tar.gz
+  md5: 8afd569f077886e2f4e6cca377da2623
+  file_name: clint-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  host:
+    - pip
+    - python
+    - setuptools
+    - args
+  run:
+    - python
+    - args
+
+tests:
+  - python:
+      imports:
+        - clint
+        - clint.packages
+        - clint.packages.colorama
+        - clint.textui
+      pip_check: false
+
+about:
+  license: ISC
+  summary: Python Command Line Interface Tools
+  homepage: https://github.com/kennethreitz/clint
+
+extra:
+  recipe-maintainers:
+    - SylvainCorlay

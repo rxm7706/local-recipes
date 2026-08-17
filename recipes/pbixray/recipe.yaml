@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.15.4"
+
+package:
+  name: pbixray
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pbixray/pbixray-${{ version }}.tar.gz
+  sha256: e9d78af2487bc5ee26c9f79e30ac89ebbbdbfe1509a3ee725c937011e4ba05e0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - xpress8
+    - xpress9
+    - xmhuffman >=0.3.0
+    - kaitaistruct
+    - numpy
+    - pandas
+    - apsw
+
+tests:
+  - python:
+      imports:
+        - pbixray
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/Hugoberry/pbixray
+  license: MIT
+  license_file: LICENSE
+  summary: A Python library to parse and analyze PBIX files used with Microsoft Power BI and Excel PowerPivot.
+  description: |
+    A Python library to parse and analyze PBIX files used with Microsoft Power BI and Excel PowerPivot.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pbixray
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pbixray
+  cfe-purls:
+    - pkg:conda/pbixray@${{ version }}?channel=conda-forge
+    - pkg:pypi/pbixray@${{ version }}
+  cfe-upstream-repo: https://github.com/Hugoberry/pbixray
+  cfe-upstream-homepage: https://github.com/Hugoberry/pbixray
+  cfe-import-names: [pbixray]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:03:35Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:03:35Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

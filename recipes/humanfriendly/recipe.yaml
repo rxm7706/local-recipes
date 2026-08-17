@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "10.0"
+
+package:
+  name: humanfriendly
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/humanfriendly/humanfriendly-${{ version }}.tar.gz
+  sha256: 6b0b831ce8f15f7300721aa49829fc4e83921a9a301cc7f606be6686a2288ddc
+
+build:
+  number: 8
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - humanfriendly = humanfriendly.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - if: win
+      then: pyreadline3
+    - if: unix
+      then: __unix
+    - if: win
+      then: __win
+
+tests:
+  - python:
+      imports:
+        - humanfriendly
+      pip_check: true
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Human friendly output for text interfaces using Python.
+  homepage: https://humanfriendly.readthedocs.org
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - ccordoba12

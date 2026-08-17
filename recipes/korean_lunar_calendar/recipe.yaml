@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.0"
+
+package:
+  name: korean_lunar_calendar
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/k/korean_lunar_calendar/korean_lunar_calendar-${{ version }}.tar.gz
+  sha256: be56f27bc0594fdbbdf7bbe00f504a9f929a31e311bd7d9bb93561b645afade7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+
+requirements:
+  host:
+    - pip
+    - setuptools >=77.0
+    - python ${{ python_min }}.*
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - korean_lunar_calendar
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Korean Lunar Calendar
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/usingsky/korean_lunar_calendar_py
+  repository: https://github.com/usingsky/korean_lunar_calendar_py
+
+extra:
+  recipe-maintainers:
+    - synapticarbors

@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pfzy
+  version: "0.3.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pfzy-${{ version }}.tar.gz
+  sha256: 717ea765dd10b63618e7298b2d98efd819e0b30cd5905c9707223dceeb94b3f1
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - poetry
+  run:
+    - python >=${{ python_min }},<4.0
+
+tests:
+  - python:
+      imports:
+        - pfzy
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Python port of the fzy fuzzy string matching algorithm
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/kazhala/pfzy
+
+extra:
+  recipe-maintainers:
+    - avsthiago

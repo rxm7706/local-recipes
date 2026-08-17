@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: wagtail-footnotes
   version: "0.15.0"
 
 package:
-  name: wagtail-footnotes
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/w/wagtail-footnotes/wagtail_footnotes-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail_footnotes-${{ version }}.tar.gz
   sha256: be37c78598d3a40f6f2b5a6b291c2733e41441d9fceb24f1c5ddf1f481a7847e
 
 build:
@@ -19,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - flit-core >=3.2,<4
     - pip
   run:
@@ -32,20 +33,13 @@ tests:
       imports:
         - wagtail_footnotes
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Add footnotes to rich text in your Wagtail pages
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/torchbox/wagtail-footnotes
-  repository: https://github.com/torchbox/wagtail-footnotes
-  description: |
-    Wagtail Footnotes adds the ability to insert footnotes into rich text
-    fields in your Wagtail pages, rendering a numbered reference inline and a
-    collected list of footnotes for the page.
 
 extra:
   recipe-maintainers:

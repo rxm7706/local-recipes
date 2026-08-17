@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "8.3.13"
+
+package:
+  name: thinc
+  version: ${{ version }}
+
+source:
+  url: https://github.com/explosion/thinc/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: c3b9f3bb0302e6c792356af22779f19f34f723e32f47c481963b82f86693554e
+
+build:
+  # missing cython-blis for ppc
+  number: 0
+  skip: ppc64le
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - if: build_platform != target_platform
+      then: numpy
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+  host:
+    - cython
+    - python
+    - pip
+    - numpy
+    - setuptools
+    - wheel
+    - cymem >=2.0.2,<2.1.0
+    - cython-blis >=1.3.0,<1.4.0
+    - murmurhash >=1.0.2,<1.1.0
+    - preshed >=3.0.2,<3.1.0
+  run:
+    - python
+    # explosion deps
+    - catalogue >=2.0.4,<2.1.0
+    - confection >=1.1.0,<2.0.0
+    - cymem >=2.0.2,<2.1.0
+    - cython-blis >=1.3.0,<1.4.0
+    - murmurhash >=1.0.2,<1.1.0
+    - preshed >=3.0.2,<3.1.0
+    - srsly >=2.4.0,<3.1.0
+    - wasabi >=0.8.1,<1.2.0
+    # third-party (numpy via run-export)
+    - packaging >=20.0
+    - pydantic >=2.0.0,<3.0.0
+
+tests:
+  - python:
+      imports:
+        - thinc
+        - thinc.api
+        - thinc.extra
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+        - hypothesis
+        - pytest
+        - mock
+        - pathy >=0.3.5
+    script:
+      - if: match(python, "==3.14") and unix
+        then: rm -f $SP_DIR/thinc/tests/test_config.py
+      - if: match(python, "==3.14") and win
+        then: del %SP_DIR%\thinc\tests\test_config.py
+      - if: not ppc64le
+        then: python -m pytest --tb=native --pyargs thinc
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: "thinc: a lightweight deep learning library"
+  description: |
+    A refreshing functional take on deep learning, compatible with your
+    favorite libraries
+
+
+  homepage: https://github.com/explosion/thinc/
+
+extra:
+  recipe-maintainers:
+    - rmax
+    - h-vetinari
+    - conda-forge/spacy

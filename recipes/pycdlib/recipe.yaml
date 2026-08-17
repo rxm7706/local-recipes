@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pycdlib
+  version: "1.12.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pycdlib-${{ version }}.tar.gz
+  sha256: 6549f29f8d9b4ba6933b309c51ff6a4dc79ef5831a81e065cb6cc385c1ba7fe2
+
+build:
+  number: 3
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - pycdlib
+      pip_check: true
+
+about:
+  summary: Pure python ISO manipulation library
+  license: LGPL-2.1-only
+  license_file: COPYING
+  homepage: http://github.com/clalancette/pycdlib
+
+extra:
+  recipe-maintainers:
+    - ajaypnair09

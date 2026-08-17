@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2"
+
+package:
+  name: merlion
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/merlion/merlion-${{ version }}.tar.gz
+  sha256: 2ef99815b8be92c6d45651511e44fa435a44c0d72f54540290b1ec4e2f7ca7d4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - lightgbm
+    - pandas
+    - optuna
+
+tests:
+  - python:
+      imports:
+        - merlion
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/thufirtan/merlion
+  license: MIT
+  license_file: LICENSE
+  summary: Machine Learning Package
+  description: |
+    Machine Learning Package
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: merlion
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: merlion
+  cfe-purls:
+    - pkg:conda/merlion@${{ version }}?channel=conda-forge
+    - pkg:pypi/merlion@${{ version }}
+  cfe-upstream-repo: https://github.com/thufirtan/merlion
+  cfe-upstream-homepage: https://github.com/thufirtan/merlion
+  cfe-import-names: [merlion]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:38:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:38:26Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

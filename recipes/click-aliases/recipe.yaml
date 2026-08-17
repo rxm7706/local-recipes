@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: click-aliases
+  version: "1.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: f48012077e0788eb02f4f8ee458fef3601873fec6c998e9ea8b4554394e705a3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - click
+    - pip
+    - python >=3
+  run:
+    - click
+    - python >=3
+
+tests:
+  - python:
+      imports:
+        - click_aliases
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Enable aliases for Click
+  homepage: https://github.com/click-contrib/click-aliases
+
+extra:
+  recipe-maintainers:
+    - tedil

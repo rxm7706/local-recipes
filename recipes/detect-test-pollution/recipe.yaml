@@ -2,20 +2,21 @@
 schema_version: 1
 
 context:
+  name: detect-test-pollution
   version: "1.2.0"
 
 package:
-  name: detect-test-pollution
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/detect-test-pollution/detect_test_pollution-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/detect_test_pollution-${{ version }}.tar.gz
   sha256: 94f383759bbab309771ceedb8dd526a62fa59607e5f7e41f5b33bbc656bfcea9
 
 build:
-  number: 0
+  number: 2
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv
   python:
     entry_points:
       - detect-test-pollution = detect_test_pollution:main
@@ -26,26 +27,26 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }}
-    - pytest
+    - python >=${{ python_min }},<4.0
 
 tests:
-  - python:
-      imports:
-        - detect_test_pollution
-      pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
-  - script:
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+        - pytest
+    script:
+      - pip check
       - detect-test-pollution --help
+      - python -c "import detect_test_pollution"
+      - python -c "import importlib.metadata; assert importlib.metadata.version('detect_test_pollution') == '${{ version }}'"
+      #- python -c "assert __import__('detect_test_pollution').__version__ == '${{ version }}'"
 
 about:
   summary: a tool to detect test pollution
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/asottile/detect-test-pollution
-  repository: https://github.com/asottile/detect-test-pollution
 
 extra:
   recipe-maintainers:

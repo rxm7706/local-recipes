@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.3"
+
+package:
+  name: torch-stoi
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/torch-stoi/torch_stoi-${{ version }}.tar.gz
+  sha256: 228207b8d63548336c5520b156f1e6b30d3ae3db1fb3c41999f01aee087c5f85
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - numpy
+    - pytorch
+    - pystoi
+    - torchaudio
+
+tests:
+  - python:
+      imports:
+        - torch_stoi
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/mpariente/pytorch_stoi
+  license: MIT
+  license_file: LICENSE
+  summary: Computes Short Term Objective Intelligibility in PyTorch
+  description: |
+    Computes Short Term Objective Intelligibility in PyTorch
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: torch-stoi
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: torch-stoi
+  cfe-purls:
+    - pkg:conda/torch-stoi@${{ version }}?channel=conda-forge
+    - pkg:pypi/torch-stoi@${{ version }}
+  cfe-upstream-repo: https://github.com/mpariente/pytorch_stoi
+  cfe-upstream-homepage: https://github.com/mpariente/pytorch_stoi
+  cfe-import-names: [torch_stoi]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:03:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:03:59Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

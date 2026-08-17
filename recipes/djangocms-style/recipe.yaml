@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: djangocms-style
+  version: "3.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/djangocms-style-${{ version }}.tar.gz
+  sha256: 2f28dfc299615b51b57cdc92ccdd3db1aba706d42d7038335b25f893fabfa1c5
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django-cms >=3.7
+    - djangocms-attributes-field >=1
+
+tests:
+  - python:
+      imports:
+        - djangocms_style
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Adds style plugin to django CMS
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/django-cms/djangocms-style
+
+extra:
+  recipe-maintainers:
+    - rxm7706

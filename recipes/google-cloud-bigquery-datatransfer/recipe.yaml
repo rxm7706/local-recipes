@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: google-cloud-bigquery-datatransfer
+  version: "3.23.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/google_cloud_bigquery_datatransfer-${{ version }}.tar.gz
+  sha256: 2d0100a93f6e89a115d668d4fc2abc0f0c223ea099f5b7c736bce0102ba623f9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - google-api-core >=2.17.1,<3.0.0
+    - google-api-core-grpc
+    - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
+    # more restrictive constraint for python >=3.14
+    - grpcio >=1.75.1,<2.0.0
+    # more restrictive constraint for python >=3.13
+    - proto-plus >=1.25.0,<2.0.0
+    - protobuf >=4.25.8,<8.0.0
+
+tests:
+  - python:
+      imports:
+        - google.cloud.bigquery_datatransfer
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  summary: Google Cloud Bigquery Datatransfer API client library
+  license: Apache-2.0
+  license_file: LICENSE
+  description: |
+    BigQuery Data Transfer API is a Google Cloud service that lets client applications transfer data from partner SaaS applications to Google BigQuery on a scheduled, managed basis.
+    See the [quick start guide](https://googleapis.dev/python/bigquerydatatransfer/latest/index.html#quick-start).
+
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-bigquery-datatransfer
+  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-bigquery-datatransfer
+  documentation: https://googleapis.dev/python/bigquerydatatransfer/latest/index.html
+
+extra:
+  recipe-maintainers:
+    - parthea
+    - xylar

@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dash-editor-components
+  version: "0.0.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/dash_editor_components-${{ version }}.tar.gz
+  sha256: 06ddf8efcf9da36dd237cad7caef40cc3296a300412849d3f2c373200cef6d65
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.7,<3.11
+    - pip
+    - setuptools
+    - nodejs
+  run:
+    - python >=3.7,<3.11
+    - dash >=1.0.2
+    - pyyaml
+    - dash-core-components
+    - dash-html-components
+    - dash-table
+
+tests:
+  - python:
+      imports:
+        - dash_editor_components
+      pip_check: true
+
+about:
+  summary: Code Editor components for Dash
+  license: MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/dash-editor-components/
+
+extra:
+  recipe-maintainers:
+    - rxm7706

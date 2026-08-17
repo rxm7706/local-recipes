@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: segment-anything
+  version: "1.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/segment-anything-py/segment_anything_py-${{ version }}.tar.gz
+  sha256: 91d7d65804dd3a9030e26cd269991c4d24099008fb82e5ae98c9f6d9163b4b75
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pytorch >=1.7
+    - torchvision >=0.8
+    - opencv
+    - pycocotools
+    - matplotlib-base
+    - onnxruntime
+    - onnx
+
+tests:
+  - python:
+      imports:
+        - segment_anything
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: An unofficial Python package for Meta AI's Segment Anything Model
+  description: An unofficial Python package for Meta AI's Segment Anything Model
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/opengeos/segment-anything
+
+extra:
+  recipe-maintainers:
+    - giswqs

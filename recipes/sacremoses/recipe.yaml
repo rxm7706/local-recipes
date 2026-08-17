@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sacremoses
+  version: "0.0.53"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 43715868766c643b35de4b8046cce236bfe59a7fa88b25eaf6ddf02bacf53a7a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+  python:
+    entry_points:
+      - sacremoses=sacremoses.cli:cli
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - click
+    - joblib
+    - python >=3.6
+    - regex
+    - six
+    - tqdm
+
+tests:
+  - python:
+      imports:
+        - sacremoses
+      pip_check: false
+  - script:
+      - sacremoses --help
+
+about:
+  license: LGPL-2.1-or-later
+  license_file: LICENSE
+  summary: SacreMoses
+  homepage: https://github.com/alvations/sacremoses
+
+extra:
+  recipe-maintainers:
+    - roccqqck

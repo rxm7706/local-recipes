@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.0"
+
+package:
+  name: tf_slim
+  version: ${{ version }}.post20231128
+
+source:
+  url: https://github.com/google-research/tf-slim/archive/refs/heads/r${{ version }}.zip
+  sha256: f9f6f04c9852bd6bc76bc11e1090ae44ff1dea31a5d7ef4f5feeaa20ae55cdb2
+  patches:
+    # Find the commit after the latest release 1.1.0
+    # https://github.com/google-research/tf-slim/pull/21
+    # git checkout remove_layer_apply
+    # git format-patch 8f0215e924996d7287392241bc8d8b1133d0c5ca
+    - patches/0001-Internal-change.patch
+    - patches/0002-Set-the-default-value-for-the-use_gpu-param-to-True-.patch
+    - patches/0003-Fix-a-NaN-issue-with-streaming_covariance.patch
+    - patches/0004-Remove-the-private-TF-API-usage-of-layers.patch
+    - patches/0005-Internal-Google-change.patch
+    - patches/0006-Fix-TensorFlow-checkpoint-and-trackable-imports.patch
+    - patches/0007-NumPy-Fix-NumPy-1.23-compatibility-problems-in-tf_sl.patch
+    - patches/0008-Fix-tests-broken-by-previous-change-list-due-to-smal.patch
+    - patches/0009-NumPy-Remove-references-to-deprecated-NumPy-type-ali.patch
+    - patches/0010-NumPy-Remove-references-to-deprecated-NumPy-type-ali.patch
+    - patches/0011-Remove-legacy-references-from-ops.py.patch
+    - patches/0012-Redirect-references-to-stack-and-unstack-to-their-ne.patch
+    - patches/0013-Refactor-case-and-case_v2-out-of-control_flow_ops.py.patch
+    - patches/0014-Move-control_flow_ops.Assert-into-its-own-file-contr.patch
+    - patches/0015-Move-control_flow_ops.while_loop-into-its-own-file-w.patch
+    - patches/0016-Redirect-references-from-control_flow_ops.cond-to-co.patch
+    - patches/0017-Update-some-isinstance-checks-of-tf.compat.v1.Variab.patch
+    - patches/0018-Update-references-from-variables.VariableV1-to-its-n.patch
+    - patches/0019-Update-references-from-tensorflow.python.platform-to.patch
+    - patches/0020-Update-legacy-reference-to-variable_scope.variable-i.patch
+    - patches/0021-Internal-Code-Change.patch
+    - patches/0022-Delete-remnants-of-toollog-removal.patch
+    - patches/0023-NumPy-Fix-uses-of-functions-deprecated-in-NumPy-1.25.patch
+    - patches/0024-Use-ExitStack-and-call-ops.device-device-only-when-d.patch
+    - patches/0025-Fix-streaming_concat-crashes-on-specific-and-relativ.patch
+    - patches/0026-Update-ops.Tensor-references-to-third_party-tensorfl.patch
+    - patches/0027-Update-legacy-references-to-tensor.Tensor.patch
+    - patches/0028-Move-references-to-TF-resource-variable-toggle-funct.patch
+    - patches/0029-Update-outdated-references-to-functions-imported-by-.patch
+    # https://github.com/google-research/tf-slim/pull/21
+    - patches/0030-Remove-call-to-layer.apply-and-just-use-__call__.patch
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - tensorflow >=2.13
+  run_constraints:
+    - keras <3.0a
+
+tests:
+  - python:
+      imports:
+        - tf_slim
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: "TF-Slim: A framework for flexible Reinforcement Learning research"
+  description: |
+    TF-slim is a new lightweight high-level API of TensorFlow
+    for defining, training and evaluating complex models. This
+    directory contains code for training and evaluating several
+    widely used Convolutional Neural Network (CNN) image
+    classification models using TF-slim.
+
+
+
+  homepage: https://github.com/Maxar-Corp/ratpac/tree/tf_slim/TF-slim
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - rluria14
+    - oblute
+    - ndmaxar
+    - hmaarrfk

@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: django-vite
   version: "3.1.0"
 
 package:
-  name: django-vite
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-vite/django_vite-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_vite-${{ version }}.tar.gz
   sha256: 8b4ffe4a9fa81ff568bfb195e74dde8694aaf13fd4b656ae60bf59cce08b85e8
 
 build:
@@ -19,32 +20,27 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
     - django >=3.2
+    # - black
+    # - Django >=3.2
 
 tests:
   - python:
       imports:
         - django_vite
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Integration of Vite in a Django project.
   license: Apache-2.0
   license_file: LICENSE
   homepage: https://github.com/MrBin99/django-vite
-  repository: https://github.com/MrBin99/django-vite
-  description: |
-    django-vite integrates the Vite frontend build tool into a Django
-    project, providing template tags that emit the correct asset links
-    in both Vite dev-server mode and production (manifest) mode.
 
 extra:
   recipe-maintainers:

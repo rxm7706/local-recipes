@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.8"
+
+package:
+  name: sqlagent
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sqlagent/sqlagent-${{ version }}.tar.gz
+  sha256: 473c8e5e00552e5cca917a295b01fa5f50d8b506bf0812a8e33598242451b381
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - llama-index <0.11.0,>=0.10.00
+    - python-dotenv <2.0.0,>=1.0.0
+    - pymysql <2.0.0,>=1.1.0
+    - llama-index-embeddings-openai <0.2.0,>=0.1.00
+    - pinecone <5.0.0,>=4.0.0
+    - llama-index-vector-stores-pinecone <0.2.0,>=0.1.0
+    - llmtext ==1.0.0
+
+tests:
+  - python:
+      imports:
+        - sqlagent
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/sqlagent/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: SQL agent, query your database
+  description: |
+    SQL agent, query your database
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sqlagent
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sqlagent
+  cfe-purls:
+    - pkg:conda/sqlagent@${{ version }}?channel=conda-forge
+    - pkg:pypi/sqlagent@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/sqlagent/
+  cfe-upstream-homepage: https://pypi.org/project/sqlagent/
+  cfe-import-names: [sqlagent]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:52:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:52:21Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

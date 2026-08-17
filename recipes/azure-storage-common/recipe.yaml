@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: azure-storage-common
+  version: "2.1.0"
+  sha256: ccedef5c67227bc4d6670ffd37cec18fb529a1b7c3a5e53e4096eb0cf23dc73f
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 9
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python
+    - setuptools
+    - pip
+  run:
+    - python
+    - azure-common >=1.1.5
+    - cryptography
+    - python-dateutil
+    - requests
+    - if: match(python, ">=2,<3")
+      then: azure-storage-nspkg
+
+tests:
+  - python:
+      imports:
+        - azure
+        - azure.storage
+        - azure.storage.common
+      pip_check: false
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  summary: Microsoft Azure Storage Common Client Library for Python
+  homepage: https://github.com/Azure/azure-storage-python
+
+extra:
+  recipe-maintainers:
+    - xhochy

@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "7.1.0"
+
+package:
+  name: traits
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/traits/traits-${{ version }}.tar.gz
+  sha256: af4775747e11e05ffe13d3ba463d92f67f1f3d1a9e4f46ba33a44ea22b0c9644
+  file_name: traits-${{ version }}.tar.gz
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+  run_constraints:
+    - traitsui >=7.0
+
+tests:
+  - python:
+      imports:
+        - traits
+      pip_check: false
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: traits - explicitly typed attributes for Python
+  homepage: https://docs.enthought.com/traits
+
+extra:
+  recipe-maintainers:
+    - grlee77
+    - ericpre

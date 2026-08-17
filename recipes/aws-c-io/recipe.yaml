@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.27.6"
+
+package:
+  name: aws-c-io
+  version: ${{ version }}
+
+source:
+  url: https://github.com/awslabs/aws-c-io/archive/v${{ version }}.tar.gz
+  sha256: 2a6890715ccecaa0df6e9d074b186a7156b35360ded9db973064e2e00d45fcc3
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - cmake !=3.19.0,!=3.19.1
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ninja
+  host:
+    - aws-c-common
+    - aws-c-cal
+    - if: unix
+      then: s2n
+  run_exports:
+    - ${{ pin_subpackage("aws-c-io", upper_bound="x.x.x") }}
+
+tests:
+  - script:
+      - if: unix
+        then:
+          - test -f $PREFIX/lib/libaws-c-io${SHLIB_EXT}
+          - test -f $PREFIX/include/aws/io/io.h
+      - if: win
+        then:
+          - if not exist %LIBRARY_INC%\\aws\\io\\io.h exit 1
+          - if not exist %PREFIX%\\Library\\bin\\aws-c-io.dll exit 1
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: This is a module for the AWS SDK for C. It handles all IO and TLS work for application protocols.
+  homepage: https://github.com/awslabs/aws-c-io
+  repository: https://github.com/awslabs/aws-c-io
+
+extra:
+  recipe-maintainers:
+    - xhochy
+    - conda-forge/aws-sdk-cpp

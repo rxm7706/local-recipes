@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sqlalchemy-stubs
+  version: "0.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sqlalchemy-stubs-${{ version }}.tar.gz
+  sha256: c665d6dd4482ef642f01027fa06c3d5e91befabb219dc71fc2a09e7d7695f7ae
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - mypy >=0.790
+    - python >=${{ python_min }}
+    - typing-extensions >=3.7.4
+
+tests:
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pip check
+
+about:
+  summary: SQLAlchemy stubs and mypy plugin
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/dropbox/sqlalchemy-stubs
+
+extra:
+  recipe-maintainers:
+    - thewchan

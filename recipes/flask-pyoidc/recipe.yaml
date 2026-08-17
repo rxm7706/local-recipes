@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.14.3"
+
+package:
+  name: flask-pyoidc
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/Flask-pyoidc/Flask-pyoidc-${{ version }}.tar.gz
+  sha256: 4a42589f76733c3968ac5f99595c1525a682754916c34f7c029acee6c8ce3bb7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - oic ==1.6.1
+    - flask
+    - requests
+    - importlib_resources
+
+tests:
+  - python:
+      imports:
+        - flask_pyoidc
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/zamzterz/flask-pyoidc
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Flask extension for OpenID Connect authentication.
+  description: |
+    Flask extension for OpenID Connect authentication.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flask-pyoidc
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: Flask-pyoidc
+  cfe-purls:
+    - pkg:conda/flask-pyoidc@${{ version }}?channel=conda-forge
+    - pkg:pypi/flask-pyoidc@${{ version }}
+  cfe-upstream-repo: https://github.com/zamzterz/flask-pyoidc
+  cfe-upstream-homepage: https://github.com/zamzterz/flask-pyoidc
+  cfe-import-names: [flask_pyoidc]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:35:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:35:40Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

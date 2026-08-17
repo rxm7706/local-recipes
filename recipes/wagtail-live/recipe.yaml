@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: wagtail-live
+  version: "1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail-live-${{ version }}.tar.gz
+  sha256: 6b82a6df2850dee888cbd0a52086ec27ae218fc599a0b672a0a50454d1a612d9
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - wagtail >=2.12
+
+tests:
+  - python:
+      imports:
+        - wagtail_live
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: An app for high speed content publishing from a messaging app to a Wagtail site.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/wagtail/wagtail-live/
+  repository: https://github.com/wagtail/wagtail-live/
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -27,7 +27,7 @@ requirements:
   run:
     - python >=${{ python_min }},<3.15
     - category_encoders >=2.6.0
-    - dash-bootstrap-components >=1.1.0 ,<2.0.0 # Note <2.0.0 added for conda-forge resolution
+    - dash-bootstrap-components >=1.1.0,<2.0.0 # Note <2.0.0 added for conda-forge resolution
     # Import Error without dash-bootstrap-components >=1.1.0 ,<2.0.0 - dash-bootstrap-components 2.0.3 has requirement dash>=3.0.4, but you have dash 2.18.2.
     - dash-core-components >=2.0.0
     - dash-daq >=0.5.0
@@ -46,7 +46,6 @@ requirements:
     - scipy >=1.13.0
     - shap >=0.46.0
     - shapely >=2.0.0
-    # This list should be identical to the list in shapash/report/__init__.py
   run_constraints:
     # https://github.com/MAIF/shapash/blob/v2.9.0/pyproject.toml#L54
     - jinja2 >=3.1.0
@@ -61,7 +60,6 @@ requirements:
     - catboost >=1.2.8
     - lightgbm >=4.4.0
     - lime >=0.2.0.0
-    #- acv-exp >=1.2.0  # Not available on conda-forge  "https://github.com/salimamoukou/acv00"
 
 tests:
   - python:

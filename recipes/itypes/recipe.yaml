@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: itypes
+  version: "1.2.0"
+  sha256: af886f129dea4a2a1e3d36595a2d139589e4dd287f5cab0b40e799ee81570ff1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - itypes
+      pip_check: false
+
+about:
+  license: 0BSD
+  # No license provided, though setup.py lists as BSD. Issue opened on repo
+  #license_file: LICENSE.txt
+  summary: Basic immutable container types for Python.
+  homepage: https://github.com/tomchristie/itypes
+
+extra:
+  recipe-maintainers:
+    - scopatz

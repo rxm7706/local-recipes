@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "14.6.2"
+
+package:
+  name: spire-doc
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/s/spire-doc/spire_doc-14.6.2-py3-none-macosx_10_7_universal.whl
+  sha256: 1d32bfaf8fa1a46d455268bd93d26dc55dfe76b6342d3498fd03f707a6bfd2f4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - plum-dispatch ==1.7.4
+
+tests:
+  - python:
+      imports:
+        - spire_doc
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://www.e-iceblue.com
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: A 100% standalone Word Python API for Processing Word Files
+  description: |
+    A 100% standalone Word Python API for Processing Word Files
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: spire-doc
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: spire-doc
+  cfe-purls:
+    - pkg:conda/spire-doc@${{ version }}?channel=conda-forge
+    - pkg:pypi/spire-doc@${{ version }}
+  cfe-upstream-repo: https://www.e-iceblue.com
+  cfe-upstream-homepage: https://www.e-iceblue.com
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:09:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:09:03Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

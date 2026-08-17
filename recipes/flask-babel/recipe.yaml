@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: flask-babel
+  version: "4.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/flask_babel-${{ version }}.tar.gz
+  sha256: dbeab4027a3f4a87678a11686496e98e1492eb793cbdd77ab50f4e9a2602a593
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0.0
+    - pytz >=2022.7
+    - flask >=2.0.0
+    - babel >=2.12.0
+    - jinja2 >=3.1
+
+tests:
+  - python:
+      imports:
+        - flask_babel
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license_file: LICENSE
+  license: BSD-3-Clause
+  summary: Adds i18n/l10n support to Flask applications
+  homepage: https://github.com/python-babel/flask-babel
+  repository: https://github.com/python-babel/flask-babel
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - xylar

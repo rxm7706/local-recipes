@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-crispy-forms
+  version: "2.6"
+  sha256: 4921a1087c6cd4f9fa3c139654c1de1c1c385f8bd6729aaee530bc0121ab4b93
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.5
+    - setuptools
+  run:
+    - python >=3.5
+    - django >=2.2
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: The best way to have DRY Django forms. The app provides a tag and filter that lets you quickly render forms in a div format while providing an enormous amount of capability to configure and control the rendered HTML.
+  description: |
+    Build programmatic reusable layouts out of components, having full control of the rendered
+    HTML without writing HTML in templates. All this without breaking the standard way of doing
+    things in Django, so it plays nice with any other form application.
+    django-crispy-forms supports Python 2.7/Python 3.2+ and Django 1.8+
+    Django-crispy-forms supports several frontend frameworks, such as Twitter Bootstrap (versions 2 and 3),
+    Uni-form and Foundation. You can also easily adapt your custom company's one, creating your own, see
+    the docs for more information. You can easily switch among them using CRISPY_TEMPLATE_PACK setting variable.
+  homepage: https://github.com/django-crispy-forms/django-crispy-forms
+  repository: https://github.com/django-crispy-forms/django-crispy-forms
+  documentation: https://readthedocs.org/projects/django-crispy-forms/
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - sannykr
+    - smithdc1

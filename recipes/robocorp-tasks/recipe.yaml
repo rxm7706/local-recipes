@@ -3,7 +3,8 @@ schema_version: 1
 
 context:
   name: robocorp-tasks
-  version: 4.1.0
+  version: "4.1.1"
+  python_min: "3.10"
 
 package:
   name: ${{ name|lower }}
@@ -11,36 +12,44 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robocorp_tasks-${{ version }}.tar.gz
-  sha256: 4780880cba1b265dc8e436d0e5dac13e15f957777c80e169a18e91fcd6930866
+  sha256: fb254020133c89b4a5015ad0f4a13dfceeb6f68eb2459d5291fe8ce975307c94
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    - if: win
+      then: echo f | xcopy /f /y /S %RECIPE_DIR%\README.md %SRC_DIR%\README.md
+    - if: unix
+      then: cp -R ${{ RECIPE_DIR }}/README.md ${{ SRC_DIR }}/README.md
+    - ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python >=3.10,<4.0
+    - python 3.10.*
     - poetry-core
     - pip
   run:
-    - python >=3.10.0,<4.0.0
-    - robocorp-log >=2.4,<4
-    - psutil >=5.0.0,<6.0.0
-    - docstring_parser_fork >=0.0.5,<0.0.6
-    - packaging >=24.0.0,<25.0.0
+    - python >=${{ python_min }},<4.0.0
+    - robocorp-log <4,>=2.4
+    - psutil >=5.0,<8.0
+    - docstring_parser_fork <0.0.6,>=0.0.5
+    - packaging <25.0,>=24.0
 
 tests:
   - python:
       imports:
-        - robocorp_tasks
+        - robocorp.tasks
       pip_check: true
+      python_version: ${{ python_min }}
 
 about:
   summary: The automation framework for Python
   license: Apache-2.0
-  license_file: PLEASE_ADD_LICENSE_FILE
+  license_file: LICENSE
+  homepage: https://github.com/robocorp/robo/
 
 extra:
   recipe-maintainers:
     - rxm7706
+    - zaigner

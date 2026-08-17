@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "11.5.0"
+
+package:
+  name: chilkat2
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/cp310/c/chilkat2/chilkat2-11.5.0-cp310-cp310-macosx_10_14_x86_64.whl
+  sha256: 771c07cb99d1445b7005e9383c702e005b0e837ee44a402df991fb587a9ef278
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - chilkat2
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://www.chilkatsoft.com
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Chilkat2 Python Module
+  description: |
+    Chilkat2 Python Module
+  documentation: https://www.chilkatsoft.com/refdoc/python.asp
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: chilkat2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: chilkat2
+  cfe-purls:
+    - pkg:conda/chilkat2@${{ version }}?channel=conda-forge
+    - pkg:pypi/chilkat2@${{ version }}
+  cfe-upstream-repo: https://www.chilkatsoft.com
+  cfe-upstream-homepage: https://www.chilkatsoft.com
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:50:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:50:22Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

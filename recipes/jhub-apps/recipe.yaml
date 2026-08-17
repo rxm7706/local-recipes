@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: jhub-apps
-  version: "2025.8.1"
+  version: "2026.8.1"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jhub_apps-${{ version }}.tar.gz
-  sha256: 6fd9b1da7426a177354eea25616081f6bfe81ec5f2371fc7c45707600a03afc6
+  sha256: 0b3da184008e00e864b5d203d6d2e76b8188ecfbab1296af8692b9f1666d9647
 
 build:
   number: 0
@@ -38,23 +38,23 @@ requirements:
     - jupyter
     - plotlydash-tornado-cmd
     - bokeh-root-cmd
-    - jhsingle-native-proxy ==0.8.3
     - panel
     - bokeh
     - traitlets
     - python-slugify
     - cachetools
     - structlog
-    - pyjwt <2.10.0
+    - pyjwt >=2.10.0
     - gitpython
     - conda-project ==0.4.2
-
 tests:
   - python:
       imports:
         - jhub_apps
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - 3.*
   - requirements:
       run:
         - pip
@@ -72,4 +72,7 @@ about:
 
 extra:
   recipe-maintainers:
+    - aktech
+    - dcmcand
+    - costrouc
     - rxm7706

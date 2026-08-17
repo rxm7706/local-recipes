@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.8.0"
+  python_min: "3.11"
+
+package:
+  name: oslo.upgradecheck
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/oslo.upgradecheck/oslo_upgradecheck-${{ version }}.tar.gz
+  sha256: 7656ecc54a08191f86d9a21eb9bdf43fb7dc305b9cef4c9aa577a027f2ee3740
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - pbr >=6.1.1
+  run:
+    - python >=${{ python_min }}
+    - oslo.config >=5.2.0
+    - oslo.i18n >=3.15.3
+    - prettytable >=0.7.1
+    - oslo.utils >=4.5.0
+    - oslo.policy >=2.0.0
+
+tests:
+  - python:
+      imports:
+        - oslo_upgradecheck
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://docs.openstack.org/oslo.upgradecheck
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Common code for writing OpenStack upgrade checks
+  description: |
+    Common code for writing OpenStack upgrade checks
+  repository: https://opendev.org/openstack/oslo.upgradecheck
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: oslo.upgradecheck
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: oslo.upgradecheck
+  cfe-purls:
+    - pkg:conda/oslo.upgradecheck@${{ version }}?channel=conda-forge
+    - pkg:pypi/oslo.upgradecheck@${{ version }}
+  cfe-upstream-repo: https://opendev.org/openstack/oslo.upgradecheck
+  cfe-upstream-homepage: https://docs.openstack.org/oslo.upgradecheck
+  cfe-import-names: [oslo_upgradecheck]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:28:01Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:28:01Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

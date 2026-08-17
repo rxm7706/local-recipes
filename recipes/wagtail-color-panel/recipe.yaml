@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: wagtail-color-panel
   version: "1.8.1"
 
 package:
-  name: wagtail-color-panel
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/w/wagtail-color-panel/wagtail_color_panel-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: aca26f8b7178ff596aa2eac8982167396bbbc222fadbae4b6b1f18291b33473a
 
 build:
@@ -19,10 +20,14 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
+    - setuptools-scm
+    - pytest-runner
     - pip
     - setuptools
   run:
+    - python-dotenv
+    - django
     - python >=${{ python_min }}
     - wagtail >=6.3
 
@@ -31,21 +36,13 @@ tests:
       imports:
         - wagtail_color_panel
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: A package that adds new panels for selecting colors, works both on regular page fields and stream field.
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/marteinn/wagtail-color-panel
-  repository: https://github.com/marteinn/wagtail-color-panel
-  description: |
-    Wagtail-Color-Panel introduces panels for selecting colors in Wagtail.
-    It provides a NativeColorPanel for edit handlers, a NativeColorBlock for
-    StreamFields, a custom DB field with improved validation, and a
-    PolyfillColorPanel for environments that require IE11 support.
 
 extra:
   recipe-maintainers:

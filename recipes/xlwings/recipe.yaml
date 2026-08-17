@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: xlwings
+  version: "0.36.14"
+  sha256: b864970bd16a0f36beb5b452d6600de4c2075af3cf62563029b597fbead3f887
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  skip: match(python, "<3.9")
+  script:
+    env:
+      XLWINGS_LICENSE_KEY: noncommercial
+      BUILD_RUST: 1
+    content:
+      - if: win
+        then: del pyproject.toml
+      - ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - xlwings = xlwings.cli:main
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: maturin >=1,<2
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - if: not win
+      then: maturin >=1,<2
+    - if: win
+      then: setuptools-rust
+  run:
+    - python
+    - if: win
+      then: pywin32
+    - if: osx
+      then: psutil >=2.0
+    - if: osx
+      then: appscript >=1.0.1
+
+tests:
+  - python:
+      imports:
+        - xlwings
+        - xlwings.conversion
+      pip_check: false
+  - script:
+      - xlwings -h
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Interact with Excel from Python and vice versa
+  description: |
+    xlwings is a BSD-licensed Python library that makes it easy to call Python from Excel and vice versa.
+  homepage: https://www.xlwings.org/
+  repository: https://github.com/xlwings/xlwings
+  documentation: http://docs.xlwings.org/en/stable/index.html
+
+extra:
+  recipe-maintainers:
+    - fzumstein

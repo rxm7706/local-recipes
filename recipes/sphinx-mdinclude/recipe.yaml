@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.6.2"
+
+package:
+  name: sphinx-mdinclude
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sphinx_mdinclude/sphinx_mdinclude-${{ version }}.tar.gz
+  sha256: 447462e82cb8be61404a2204227f920769eb923d2f57608e3325f3bb88286b4c
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - flit-core
+    - mistune >=3.0,<4.0
+    - docutils >=0.16,<1.0
+    - pygments >=2.8
+  run:
+    - python >=${{ python_min }}
+    - mistune >=3.0,<4.0
+    - docutils >=0.16,<1.0
+    - pygments >=2.8
+    # They depend on sphinx, they just don't know it
+    - sphinx
+
+tests:
+  - python:
+      imports:
+        - sphinx_mdinclude
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Sphinx extension for including or writing pages in Markdown format.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/omnilib/sphinx-mdinclude
+  repository: https://github.com/omnilib/sphinx-mdinclude
+  documentation: https://sphinx-mdinclude.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - hmaarrfk
+    - tdegeus

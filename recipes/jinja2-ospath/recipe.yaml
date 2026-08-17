@@ -4,7 +4,6 @@ schema_version: 1
 context:
   name: jinja2-ospath
   version: "0.3.0"
-  python_check_max: "3.14"
 
 package:
   name: ${{ name|lower }}

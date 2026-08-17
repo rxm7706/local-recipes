@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: wagtail-advanced-form-builder
+  version: "1.0.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail-advanced-form-builder-${{ version }}.tar.gz
+  sha256: 7f4af61d9d531a9adf8e29fdf77246785999ab5fc14dc2e41737d7afff7765d9
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - django >=3.2
+    - wagtail >=4
+    - wagtailextraicons
+
+tests:
+  - python:
+      imports:
+        - wagtail_advanced_form_builder
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Wagtail Advanced Form Builder
+  license: BSD-3-Clause
+  license_file: LICENCE
+  homepage: https://github.com/octavenz/wagtail-advanced-form-builder
+
+extra:
+  recipe-maintainers:
+    - rxm7706

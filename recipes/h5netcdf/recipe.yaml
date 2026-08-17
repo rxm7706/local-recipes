@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  python_min: "3.9"
+  version: "1.8.1"
+
+package:
+  name: h5netcdf
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/h5netcdf/h5netcdf-${{ version }}.tar.gz
+  sha256: 9b396a4cc346050fc1a4df8523bc1853681ec3544e0449027ae397cb953c7a16
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.9.*
+    - setuptools >=42
+    - setuptools-scm >=7.0
+    - pip
+  run:
+    - numpy
+    - python >=${{ python_min }}
+    - h5py
+    - packaging
+
+tests:
+  - python:
+      imports:
+        - h5netcdf
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Pythonic interface to netCDF4 via h5py
+  homepage: https://github.com/h5netcdf/h5netcdf
+
+extra:
+  recipe-maintainers:
+    - hmaarrfk
+    - jhamman
+    - ocefpaf
+    - shoyer
+    - kmuehlbauer

@@ -1,0 +1,38 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "3.0.5"
+
+package:
+  name: pkgconf
+  version: ${{ version }}
+
+source:
+  url: https://github.com/pkgconf/pkgconf/archive/pkgconf-${{ version }}.tar.gz
+  sha256: 245d441b9d8f7b74390e060cb9db1a326c26f1b96b1a6c3216b54a5d5439367a
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - meson
+    - ninja
+  run_exports:
+    - ${{ pin_subpackage('pkgconf') }}
+
+tests:
+  - script:
+      - pkgconf --help
+
+about:
+  license: MIT
+  license_file: COPYING
+  summary: package compiler and linker metadata toolkit
+  homepage: https://github.com/pkgconf/pkgconf
+  repository: https://github.com/pkgconf/pkgconf
+
+extra:
+  recipe-maintainers:
+    - danielnachun

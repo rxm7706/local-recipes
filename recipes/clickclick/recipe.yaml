@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: clickclick
+  version: "20.10.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/clickclick-${{ version }}.tar.gz
+  sha256: 4efb13e62353e34c5eef7ed6582c4920b418d7dedc86d819e22ee089ba01802c
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - six
+    - flake8
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - click >=4.0
+    - pyyaml >=3.11
+
+tests:
+  - python:
+      imports:
+        - clickclick
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  summary: Click utility functions
+  license_file: LICENSE
+  homepage: https://codeberg.org/hjacobs/python-clickclick
+  repository: https://github.com/zalando/python-clickclick
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - rvalieris

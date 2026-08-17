@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: compress_json
+  version: "1.0.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/compress_json-${{ version }}.tar.gz
+  sha256: 2d49517417bdbf102c18aafe0d6d621971605bbc13689205e042dbcc5e87c38f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+
+tests:
+  - python:
+      imports:
+        - compress_json
+      pip_check: true
+
+about:
+  summary: The missing Python utility to read and write large compressed JSONs.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/LucaCappelletti94/compress_json
+
+extra:
+  recipe-maintainers:
+    - isuruf
+    - dillonroach

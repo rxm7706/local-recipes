@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: coreapi
+  version: 2.3.3
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 46145fcc1f7017c076a2ef684969b641d18a2991051fddec9458ad3f78ffc1cb
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - coreschema
+    - itypes
+    - requests
+    - uritemplate
+
+tests:
+  - python:
+      imports:
+        - coreapi
+      pip_check: true
+      python_version: ${{ python_min }}.*
+      
+about:
+  summary: Python client library for Core API.
+  license: BSD-3-Clause
+  license_file: LICENSE.md
+  homepage: https://github.com/core-api/python-client
+
+extra:
+  recipe-maintainers:
+    - hadim

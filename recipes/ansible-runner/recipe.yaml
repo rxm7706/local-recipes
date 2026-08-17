@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.4.3"
+  python_check_max: "3.14"
+
+package:
+  name: ansible-runner
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/ansible-runner/ansible_runner-${{ version }}.tar.gz
+  sha256: 5f3025529bb968fdc3b627457dd8d418dbf9d53bc73735d50e69c28544d53031
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps --disable-pip-version-check
+  python:
+    entry_points:
+      - ansible-runner = ansible_runner.__main__:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools >=45,<=70.0.0
+    - setuptools-scm >=6.2,<=8.1.0
+  run:
+    - packaging
+    - pexpect >=4.5
+    - python >=${{ python_min }}
+    - python-daemon
+    - pyyaml
+
+tests:
+  - python:
+      imports: ansible_runner
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - files:
+      source:
+        - test/
+      recipe:
+        - run_test.py
+    requirements:
+      run:
+        - ansible
+        - ansible-core
+        - coverage
+        - pytest
+        - pytest-mock
+        - pytest-timeout
+        - python ${{ python_min }}.*
+    script:
+      - ansible-runner --version
+      - ansible-runner --help
+      - ansible-runner --version | grep -iE "${{ version | replace('.', '\\.') }}"
+      - python run_test.py
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE.md
+  summary: |
+    A tool and python library that helps when interfacing with Ansible directly
+    or as part of another system whether that be through a container image
+    interface, as a standalone tool, or as a Python module that can be
+    imported. The goal is to provide a stable and consistent interface
+    abstraction to Ansible.
+  homepage: https://pypi.org/project/ansible-runner
+  repository: https://github.com/ansible/ansible-runner
+  documentation: https://ansible-runner.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

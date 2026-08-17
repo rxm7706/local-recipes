@@ -2,20 +2,18 @@
 schema_version: 1
 
 context:
+  name: rjsmin
   version: "1.2.5"
 
 package:
-  name: rjsmin
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/r/rjsmin/rjsmin-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/rjsmin-${{ version }}.tar.gz
   sha256: a3f8040b0273dec773e0e807e86a4d0a9535516c0a0a35aa1bb6de6e15bb1f09
 
 build:
-  # build.number 1 supersedes the broken *_0 noarch:generic builds (C extension
-  # compiled for one CPython, published noarch — installable anywhere, working
-  # only on the build-time Python). This recipe restores per-python builds.
   number: 1
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -37,11 +35,10 @@ tests:
       pip_check: true
 
 about:
-  homepage: https://github.com/ndparker/rjsmin
+  summary: Javascript Minifier
   license: Apache-2.0
   license_file: LICENSE
-  summary: Javascript Minifier
-  repository: https://github.com/ndparker/rjsmin
+  homepage: https://github.com/ndparker/rjsmin
 
 extra:
   recipe-maintainers:

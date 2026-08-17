@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: wkhtmltopdf
+  major_minor: "0.12"
+  version: ${{ major_minor + ".4" }}
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: ${{ 'https://github.com/${{ name }}/${{ name }}/releases/download/${{ version }}/wkhtmltox-${{ version }}_msvc2015-win64.exe' if win else 'https://github.com/${{ name }}/${{ name }}/releases/download/${{ version }}/wkhtmltox-${{ version }}_linux-generic-amd64.tar.xz' if linux else '' }}
+  sha256: ${{ '14a5996adc77dc606944dbc0dc682bff104cd38cc1bec19253444cb87f259797' if win else '049b2cdec9a8254f0ef8ac273afaf54f7e25459a273e27189591edc7d7cf29db' if linux else '' }}
+  file_name: ${{ 'wkhtmltox-${{ version }}_msvc2015-win64.exe' if win else 'wkhtmltox-${{ version }}_linux-generic-amd64.tar.xz' if linux else '' }}
+
+build:
+  number: 1
+  skip: osx
+
+requirements:
+  build:
+    - if: win
+      then: 7zip
+  run:
+    - if: linux
+      then: fontconfig
+    - if: linux
+      then: xorg-libxrender
+    - if: linux
+      then: xorg-libxext
+    - if: win
+      then: vc >=14
+
+tests:
+  - script:
+      - wkhtmltopdf -h
+
+about:
+  license: LGPL-3.0-or-later
+  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE
+  summary: Command line tools to render HTML into PDF and various image formats.
+  description: |
+    wkhtmltopdf and wkhtmltoimage are open source (LGPLv3) command line tools
+    to render HTML into PDF and various image formats using the Qt WebKit rendering engine.
+
+
+  homepage: http://wkhtmltopdf.org/
+
+extra:
+  recipe-maintainers:
+    - scopatz

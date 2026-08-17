@@ -1,0 +1,204 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "0.12.11"
+
+recipe:
+  name: mitmproxy-rs
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/mitmproxy/mitmproxy_rs/archive/refs/tags/v${{ version }}.tar.gz
+    sha256: bafce53ae27a370a78e9bf19a33df8c691ac75d2a12003391d0709e3261b4134
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: mitmproxy-linux
+    build:
+      skip:
+        - not linux
+        - match(python, "<3.12")
+      script:
+        - mkdir -p ./custom-build-tools
+        - cp "${RECIPE_DIR}/cargo" ./custom-build-tools/cargo
+        - cp "${RECIPE_DIR}/rustup" ./custom-build-tools/rustup
+        - chmod +x ./custom-build-tools/rustup
+        - export PATH="$(pwd)/custom-build-tools:${PATH}"
+        - export CARGO_BUILD_RUSTFLAGS=""
+        - export LDFLAGS=""
+        - env
+        - ${{ PYTHON }} -m pip install ./mitmproxy-linux
+        - cargo-bundle-licenses --format yaml --output ./THIRDPARTY.yml
+    requirements:
+      build:
+        - if: build_platform != host_platform
+          then:
+            - python
+            - cross-python_${{ host_platform }}
+        - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+        - ${{ compiler('rust') }}
+        - rust-src
+        - if: build_platform != target_platform
+          then:
+            - maturin >=1.10.1,<2
+        - cargo-bundle-licenses
+        # Pin to 0.9.15 to match upstream:
+        # https://github.com/mitmproxy/mitmproxy_rs/blob/7e7cc99f8b1d71edad1558ab090e95ebd174fec9/.github/actions/setup/action.yml
+        - bpf-linker ==0.9.15
+      host:
+        - python
+        - hatchling
+        - pip
+        - maturin >=1.10.1,<2
+      run:
+        - python
+    tests:
+      - python:
+          imports:
+            - mitmproxy_linux
+          pip_check: true
+  - package:
+      name: mitmproxy-macos
+    build:
+      skip:
+        - not osx
+        - match(python, "<3.12")
+      script:
+        file: build_mitmproxy_macos
+    requirements:
+      build:
+        - if: build_platform != host_platform
+          then:
+            - python
+            - cross-python_${{ host_platform }}
+        - ${{ stdlib('c') }}
+        - ${{ compiler('rust') }}
+        - if: build_platform != target_platform
+          then:
+            - maturin >=1.10.1,<2
+        - cargo-auditable
+        - cargo-bundle-licenses
+      host:
+        - python
+        - hatchling
+        - pip
+        - maturin >=1.10.1,<2
+      run:
+        - python
+    tests:
+      - python:
+          imports:
+            - mitmproxy_macos
+          pip_check: true
+      - package_contents:
+          site_packages:
+            - "mitmproxy_macos/Mitmproxy Redirector.app.tar"
+            - mitmproxy_macos/macos-certificate-truster.app/*
+  - package:
+      name: mitmproxy-windows
+    build:
+      skip:
+        - not win
+        - match(python, "<3.12")
+      script:
+        # Upstream's pyproject.toml expects target/release/windows-redirector.exe.
+        - set CARGO_BUILD_TARGET=
+        - cargo auditable build --release --package windows-redirector
+        - ${{ PYTHON }} -m pip install ./mitmproxy-windows
+        - cargo-bundle-licenses --format yaml --output ./THIRDPARTY.yml
+    requirements:
+      build:
+        - ${{ stdlib('c') }}
+        - ${{ compiler('rust') }}
+        - if: build_platform != target_platform
+          then:
+            - maturin >=1.10.1,<2
+        - cargo-auditable
+        - cargo-bundle-licenses
+      host:
+        - python
+        - hatchling
+        - pip
+        - maturin >=1.10.1,<2
+      run:
+        - python
+    tests:
+      - python:
+          imports:
+            - mitmproxy_windows
+          pip_check: true
+  - package:
+      name: mitmproxy-rs
+    build:
+      skip: match(python, "<3.12")
+      script:
+        - if: linux
+          then:
+            # fix: enable BSD extensions to provide le16toh/be16toh
+            # required by tree-sitter 0.25.6
+            # https://github.com/tree-sitter/tree-sitter/issues/4271
+            - export CFLAGS="$CFLAGS -D_BSD_SOURCE"
+        - ${{ PYTHON }} -m pip install ./mitmproxy-rs
+        - cargo-bundle-licenses --format yaml --output ./THIRDPARTY.yml
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+        - ${{ compiler('rust') }}
+        - if: build_platform != target_platform
+          then:
+            - maturin >=1.10.1,<2
+        - if: build_platform != host_platform
+          then:
+            - python
+            - cross-python_${{ host_platform }}
+        - cargo-bundle-licenses
+      host:
+        - python
+        - hatchling
+        - pip
+        - maturin >=1.10.1,<2
+      run:
+        - python
+        - if: win
+          then:
+            - ${{ pin_subpackage('mitmproxy-windows', exact=True) }}
+        - if: linux
+          then:
+            - ${{ pin_subpackage('mitmproxy-linux', exact=True) }}
+        - if: osx
+          then:
+            - ${{ pin_subpackage('mitmproxy-macos', exact=True) }}
+
+    tests:
+      - python:
+          imports:
+            - mitmproxy_rs
+          pip_check: true
+
+about:
+  summary: This package contains mitmproxy's Rust bits.
+  description: |+
+    # mitmproxy_rs
+
+    This package contains mitmproxy's Rust bits.
+
+    [![dev documentation](https://shields.mitmproxy.org/badge/docs-Python%20API-blue.svg)](https://mitmproxy.github.io/mitmproxy_rs/)
+
+    https://github.com/mitmproxy/mitmproxy_rs
+
+  license: MIT
+  homepage: https://github.com/mitmproxy/mitmproxy_rs
+  repository: https://github.com/mitmproxy/mitmproxy-rs
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+
+extra:
+  feedstock-name: mitmproxy-rs
+  recipe-maintainers:
+    - moritzwilksch
+    - ytausch

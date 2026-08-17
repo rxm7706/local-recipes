@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: setuptools-git
+  version: "1.2"
+  compress_type: tar.gz
+  hash_val: ff64136da01aabba76ae88b050e7197918d8b2139ccbf6144e14d472b9c40445
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ compress_type }}
+  sha256: ${{ hash_val }}
+  file_name: ${{ name }}-${{ version }}.${{ compress_type }}
+
+build:
+  number: 1
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+  preserve_egg_dir: true
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - setuptools
+
+tests:
+  - python:
+      imports:
+        - setuptools_git
+      pip_check: false
+
+about:
+  license: BSD-3-Clause
+  summary: Setuptools revision control system plugin for Git
+  homepage: https://github.com/msabramo/setuptools-git
+  repository: https://github.com/msabramo/setuptools-git
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr

@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.1.2"
+
+package:
+  name: shapely
+  version: ${{ version.split('.post')[0] }}
+
+source:
+  url: https://pypi.org/packages/source/S/Shapely/shapely-${{ version }}.tar.gz
+  sha256: 2ed4ecb28320a433db18a5bf029986aa8afcfd740745e78847e330d5d94922a9
+
+build:
+  number: 2
+  skip: match(python, "<3.10")
+  script:
+    - if: win
+      then: set GEOS_INCLUDE_PATH=%LIBRARY_INC%
+    - if: win
+      then: set GEOS_LIBRARY_PATH=%LIBRARY_LIB%
+    - ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - if: build_platform != target_platform
+      then: numpy
+    - if: build_platform != target_platform
+      then: geos
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - cython
+    - numpy
+    - geos
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - shapely
+      pip_check: false
+  - requirements:
+      run:
+        - pytest <8
+    script:
+      - if: not win
+        then: python -m pytest --pyargs shapely.tests
+      - if: win
+        then: python -m pytest -k "not (test_frechet_distance_densify or test_dump_binary_load_hex)" --pyargs shapely.tests
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Python package for manipulation and analysis of geometric objects in the Cartesian plane
+  homepage: https://github.com/shapely/shapely
+
+extra:
+  recipe-maintainers:
+    - akrherz
+    - ocefpaf
+    - pelson
+    - phobson
+    - xylar
+    - jorisvandenbossche
+    - mwtoews

@@ -1,0 +1,120 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.60.0"
+  python_check_max: "3.14"
+
+package:
+  name: tox
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/t/tox/tox-${{ version }}.tar.gz
+    sha256: 6f93bb580d35e00fc69cfec1116eecbe21155f747753ca5019374f7c69b2eac9
+  - url: https://raw.githubusercontent.com/tox-dev/tox/refs/tags/${{ version }}/docs/man/tox.1.rst
+    sha256: 3ffddef1478ff599043487582415dea91024d14e624a210a7fd33e4aa0ccdabc
+    target_directory: docs/man
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  python:
+    entry_points:
+      - tox = tox.run:run
+
+requirements:
+  host:
+    - docutils >=0.21
+    - hatch-vcs >=0.5
+    - hatchling >=1.29
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - cachetools >=7.0.3
+    - colorama >=0.4.6
+    - filelock >=3.25
+    - packaging >=26
+    - platformdirs >=4.9.4
+    - pluggy >=1.6
+    - pyproject-api >=1.10
+    - python >=${{ python_min }}
+    - python-discovery >=1.4.4
+    - tomli >=2.4
+    - tomli-w >=1.2
+    - typing_extensions >=4.15
+    - virtualenv >=21.1
+  run_constraints:
+    - argcomplete >=3.6.3
+
+tests:
+  - python:
+      imports: tox
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - files:
+      recipe:
+        - run_test.py
+      source:
+        - src/tox/tox.schema.json
+        - src/tox/config/loader/toml/_replace.py
+        - tox.toml
+        - tests/
+    requirements:
+      run:
+        - pytest-timeout
+        - python ${{ python_min }}.*
+        # actual test deps
+        - argcomplete
+        - covdefaults >=2.3
+        - detect-test-pollution >=1.2
+        - devpi-process >=1.1.1
+        - diff-cover >=10.2
+        - distlib >=0.4
+        - docutils >=0.21
+        - flaky >=3.8.1
+        - hatch-vcs >=0.5
+        - hatchling >=1.29
+        - pdm-backend >=2.4.7
+        - pip
+        - psutil >=7.2.2
+        - pytest >=9.0.2
+        - pytest-cov >=7
+        - pytest-mock >=3.15.1
+        - pytest-xdist >=3.8
+        - python-build >=1.4
+        - re-assert >=1.1
+        - setuptools >=81,<82
+        - time-machine >=3.2
+        - tombi >=0.11.3
+        - wheel >=0.46.3
+    script:
+      - tox --version
+      - tox --help
+      - python run_test.py
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: virtualenv-based automation of test activities
+  description: |
+    Tox is a generic virtualenv management and test command line tool you can use for
+    - checking your package installs correctly with different Python versions and interpreters
+    - running your tests in each of the environments, configuring your test tool of choice
+    - acting as a frontend to Continuous Integration servers, greatly reducing boilerplate
+    and merging CI and shell-based testing.
+  homepage: https://pypi.org/project/tox
+  repository: https://github.com/tox-dev/tox
+  documentation: https://tox.readthedocs.org
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - cshaley
+    - kalefranz
+    - sannykr
+    - bollwyvl

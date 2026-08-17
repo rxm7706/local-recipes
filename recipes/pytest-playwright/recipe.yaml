@@ -2,15 +2,16 @@
 schema_version: 1
 
 context:
-  version: "0.8.0"
+  name: pytest-playwright
+  version: "0.9.0"
 
 package:
-  name: pytest-playwright
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/p/pytest-playwright/pytest_playwright-${{ version }}.tar.gz
-  sha256: 7888d4a2443160c82e0c506c437076679f86b36d1910427250d90fbf1843a981
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytest_playwright-${{ version }}.tar.gz
+  sha256: bd44daa852b0fb8b0e55a2f88b727507dedda0e350bea5d09420647252f2454b
 
 build:
   number: 0
@@ -19,10 +20,10 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - pip
-    - setuptools
+    - python ${{ python_min }}
     - setuptools-scm
+    - setuptools
+    - pip
   run:
     - python >=${{ python_min }}
     - playwright-python >=1.18
@@ -35,20 +36,13 @@ tests:
       imports:
         - pytest_playwright
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: A pytest wrapper with fixtures for Playwright to automate web browsers
   license: Apache-2.0
   license_file: LICENSE
   homepage: https://github.com/microsoft/playwright-pytest
-  repository: https://github.com/microsoft/playwright-pytest
-  description: |
-    A pytest wrapper with fixtures for Playwright to automate web browsers.
-    Provides context-managed Playwright fixtures (page, browser, context)
-    so end-to-end browser tests can be written as ordinary pytest functions.
 
 extra:
   recipe-maintainers:

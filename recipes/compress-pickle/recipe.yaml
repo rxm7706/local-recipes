@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: compress-pickle
+  version: "2.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/compress_pickle-${{ version }}.tar.gz
+  sha256: 3e944ce0eeab5b6331324d62351c957d41c9327c8417d439843e88fe69b77991
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - compress_pickle
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Standard pickle, wrapped with standard compression libraries
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/lucianopaz/compress_pickle
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - cshaley

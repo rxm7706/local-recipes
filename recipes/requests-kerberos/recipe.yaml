@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: requests-kerberos
+  version: "0.15.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 437512e424413d8113181d696e56694ffa4259eb9a5fc4e803926963864eaf4e
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools >=61.0.0
+  run:
+    - if: unix
+      then: __unix
+    - if: win
+      then: __win
+    - cryptography >=1.3
+    - pyspnego
+    - if: not win
+      then: pykrb5 >=0.3.0
+    - if: not win
+      then: python-gssapi >=1.6.0
+    - python >=${{ python_min }}
+    - requests >=1.1.0
+
+tests:
+  - files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - pip
+        - pytest
+        - pytest-mock
+        - python ${{ python_min }}
+    script:
+      - python -m pip check
+      - python -m pip show requests-kerberos
+      - python -m pytest -ra -v tests/
+
+about:
+  license: ISC
+  license_file: LICENSE
+  summary: A Kerberos authentication handler for python-requests
+  description: |
+    Requests is an HTTP library, written in Python, for human beings.
+    This library adds optional Kerberos/GSSAPI authentication support
+    and supports mutual authentication.
+
+
+  homepage: https://github.com/requests/requests-kerberos
+  repository: https://github.com/requests/requests-kerberos
+  documentation: https://pypi.org/project/requests-kerberos/
+
+extra:
+  recipe-maintainers:
+    - duncanmmacleod

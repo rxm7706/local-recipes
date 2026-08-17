@@ -16,7 +16,7 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -42,13 +42,11 @@ tests:
 
 about:
   summary: HTML formatter for Behave
-  homepage: https://github.com/behave-contrib/behave-html-formatter
-  description: |
-     HTML formatter for Behave
-  repository: https://github.com/behave-contrib/behave-html-formatter
-  documentation: https://github.com/behave-contrib/behave-html-formatter
   license: GPL-3.0-only
   license_file: LICENSE
+  homepage: https://github.com/behave-contrib/behave-html-formatter
+  description: |
+     HTML formatter for Behave 
 
 extra:
   recipe-maintainers:

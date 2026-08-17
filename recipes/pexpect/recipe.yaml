@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pexpect
+  version: "4.9.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pexpect-${{ version }}.tar.gz
+  sha256: ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - ptyprocess >=0.5
+
+tests:
+  - python:
+      imports:
+        - pexpect
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Pexpect allows easy control of interactive console applications.
+  license: ISC
+  license_file: LICENSE
+  homepage: https://pexpect.readthedocs.io/
+  repository: https://github.com/pexpect/pexpect
+
+extra:
+  recipe-maintainers:
+    - jquast
+    - pelson
+    - takluyver
+    - ocefpaf

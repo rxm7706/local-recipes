@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.10"
+
+package:
+  name: dulwich
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/d/dulwich/dulwich-${{ version }}.tar.gz
+  sha256: 106546960f592216315e56d32a92e72e67f1e86671335722f833f5ecd5b73314
+
+build:
+  number: 1
+  script:
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - dulwich = dulwich.cli:main
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('rust') }}
+    - ${{ stdlib("c") }}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - setuptools >=77.0.0
+    - setuptools-rust
+    - pip
+  run:
+    - python
+    - urllib3 >=2.2.2
+    - if: match(python, ">=3.12")
+      then: setuptools
+    - if: match(python, "<=3.11")
+      then: typing_extensions >=4.6.0
+
+tests:
+  - python:
+      imports:
+        - dulwich
+        - dulwich.tests
+        - dulwich.archive
+        - dulwich.client
+        - dulwich.config
+        - dulwich.diff_tree
+        - dulwich.errors
+        - dulwich.file
+        - dulwich.hooks
+        - dulwich.ignore
+        - dulwich.index
+        - dulwich.object_store
+        - dulwich.objects
+        - dulwich.objectspec
+        - dulwich.pack
+        - dulwich.patch
+        - dulwich.protocol
+        - dulwich.reflog
+        - dulwich.refs
+        - dulwich.repo
+        - dulwich.server
+        - dulwich.walk
+        - dulwich.web
+      pip_check: true
+  - script:
+      - dulwich help --all
+
+about:
+  license: Apache-2.0
+  license_file:
+    - COPYING
+    - THIRDPARTY.yml
+  summary: Python Git Library
+  description: |
+    Python implementation of the Git file formats and protocols, without the need to have git installed.
+    All functionality is available in pure Python. Optional C extensions can be built for improved performance.
+    The project is named after the part of London that Mr. and Mrs. Git live in in the particular Monty Python sketch.
+  homepage: https://www.dulwich.io/
+  repository: https://github.com/jelmer/dulwich
+  documentation: https://www.dulwich.io/docs/
+
+extra:
+  recipe-maintainers:
+    - mikofski
+    - xylar
+    - mgorny

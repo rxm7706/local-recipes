@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ffmpeg-python
+  version: "0.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+    sha256: 65225db34627c578ef0e11c8b1eb528bb35e024752f6f10b78c011f6f64c4127
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - pytest-runner
+  run:
+    - python >=${{ python_min }}
+    - ffmpeg
+    - future
+
+tests:
+  - python:
+      imports:
+        - ffmpeg
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python bindings for FFmpeg - with complex filtering support
+  homepage: https://github.com/kkroening/ffmpeg-python
+  repository: https://github.com/kkroening/ffmpeg-python
+  documentation: https://kkroening.github.io/ffmpeg-python/
+
+extra:
+  recipe-maintainers:
+    - HeavyTony2
+    - Faylixe

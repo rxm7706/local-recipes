@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.17.2"
+
+package:
+  name: google-cloud-documentai-toolbox
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/google-cloud-documentai-toolbox/google_cloud_documentai_toolbox-${{ version }}.tar.gz
+  sha256: dc6f4fe636eddeb4ec1f4e396052dc4777302fb027f2e6cc8e115645fe05c535
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - google-api-core <3.0.0,>=2.25.0
+    - pandas <3.0.0,>=2.0.0
+    - pyarrow <23.0.0,>=15.0.0
+    - tabulate <1.0.0,>=0.9.0
+    - proto-plus <2.0.0,>=1.26.1
+    - grpc-google-iam-v1 <1.0.0,>=0.14.2
+    - google-cloud-bigquery <4.0.0,>=3.14.0
+    - google-cloud-documentai <4.0.0,>=3.2.1
+    - google-cloud-storage <4.0.0,>=2.3.0
+    - google-cloud-vision <4.0.0,>=3.10.1
+    - numpy <3.0.0,>=1.23.5
+    - intervaltree >=3.0.0
+    - pikepdf <11.0.0,>=8.0.0
+    - immutabledict <5.0.0,>=2.0.0
+    - pillow <13.0.0,>=10.0.0
+    - jinja2 <4.0.0,>=3.1.0
+
+tests:
+  - python:
+      imports:
+        - google.cloud.documentai_toolbox
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-documentai-toolbox
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+  description: |
+    REPLACE_DESCRIPTION
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-cloud-documentai-toolbox
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-cloud-documentai-toolbox
+  cfe-purls:
+    - pkg:conda/google-cloud-documentai-toolbox@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-cloud-documentai-toolbox@${{ version }}
+  cfe-upstream-repo: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-documentai-toolbox
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-documentai-toolbox
+  cfe-import-names: [google.cloud.documentai_toolbox]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:25:57Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:25:57Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

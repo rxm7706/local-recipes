@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-levenshtein
+  camelName: python-Levenshtein
+  version: "0.27.4"
+  hash_val: 0ae9deae0b0cdf4439bcc39d1408de1fb663aa3632a00264e9b2ff8ea878b38c
+  python_min: "3.10"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name.replace('-', '_') | lower }}-${{ version }}.tar.gz
+  sha256: ${{ hash_val }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - python >=3.10
+  host:
+    - python 3.10.*
+    - pip
+    - setuptools
+    - levenshtein ==${{ version }}
+  run:
+    - python >=${{ python_min }}
+    - levenshtein ==${{ version }}
+
+tests:
+  - python:
+      imports:
+        - Levenshtein
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - python -c "import sys; from Levenshtein import distance as d; assert 3==d('Good', 'Bad')"
+
+about:
+  license: GPL-2.0-or-later
+  license_file: LICENSE
+  summary: Python extension for computing string edit distances and similarities.
+  description: |
+    A Python extension written in C for fast computation of: Levenshtein (edit)
+    distance and edit sequence manipulation; string similarity; approximate median
+    strings, and generally string averaging; string sequence and set similarity.
+    Levenshtein has a some overlap with difflib (SequenceMatcher). It supports
+    only strings, not arbitrary sequence types, but on the other hand it's much
+    faster. Note the project was renamed, and python-Levenshtein is now just a
+    metapackage installing the Levenshtein package.
+  homepage: https://github.com/maxbachmann/python-Levenshtein
+  repository: https://github.com/maxbachmann/python-Levenshtein
+  documentation: https://github.com/maxbachmann/Levenshtein
+
+extra:
+  recipe-maintainers:
+    - maxbachmann
+    - pmlandwehr
+    - peterjc

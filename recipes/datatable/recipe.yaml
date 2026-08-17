@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: datatable
+  version: "1.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/datatable-${{ version }}.tar.gz
+  sha256: 8a9f6953ef6b02ede3d7c490f17d5c18c9b1bf2d58dd5451a8cac40ed887d775
+
+build:
+  number: 0
+  skip: match(python, ">3.12") or win
+  script: |
+    ${{ PYTHON }} ci/ext.py build
+    ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - datatable
+      pip_check: false
+  - files:
+      recipe:
+        - setup.cfg
+      source:
+        - src
+        - tests
+        - tests_random
+        - LICENSE
+    requirements:
+      run:
+        - pip
+        - numpy <2.0
+        - pandas
+        - pyarrow
+        - xlrd <=1.2.0
+        - docutils >=0.15
+        - pygments >=2.6
+        - sphinx >=4.0,<5.0
+        - sphinx_rtd_theme >=0.5
+        - nbsphinx >=0.5
+        - pytest >=3.1
+        - pytest-cov
+    script:
+      - rm tests/test-docs.py
+      - pytest tests -k 'not test_fread_from_cmd2 and not test_dt_version and not test_random_attack'
+
+about:
+  summary: Python library for fast multi-threaded data manipulation and munging.
+  license: MPL-2.0
+  license_file: LICENSE
+  homepage: https://github.com/h2oai/datatable
+
+extra:
+  recipe-maintainers:
+    - xylar

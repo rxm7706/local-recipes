@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dill
+  version: "0.4.1"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 423092df4182177d4d8ba8290c8a5b640c66ab35ec7da59ccfa00f6fa3eea5fa
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=42
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      python_version: ${{ python_min }}.*
+      imports:
+        - dill
+      pip_check: true
+
+about:
+  homepage: https://github.com/uqfoundation/dill
+  summary: serialize all of Python
+  license: BSD-3-Clause
+  license_file: LICENSE
+  description: |
+    `dill` extends Python's `pickle` module for serializing and
+    de-serializing Python objects to the majority of the built-in
+    Python types.
+  documentation: http://trac.mystic.cacr.caltech.edu/project/pathos/wiki/dill.html
+  repository: https://github.com/uqfoundation/dill
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - xylar

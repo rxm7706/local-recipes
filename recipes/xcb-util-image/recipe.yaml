@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: xcb-util-image
+  version: "0.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://xcb.freedesktop.org/dist/xcb-util-image-${{ version }}.tar.bz2
+  sha256: 2db96a37d78831d643538dd1b595d7d712e04bdccf8896a5e18ce0f398ea2ffc
+
+build:
+  number: 2
+  skip: not linux
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - make
+    - pkg-config
+  host:
+    - libxcb
+    - xcb-util
+    - xorg-xproto
+  run_exports:
+    - ${{ pin_subpackage('xcb-util-image', upper_bound='x.x') }}
+
+tests:
+  - script:
+      - test -f ${PREFIX}/lib/libxcb-image.so
+
+about:
+  license: MIT
+  license_file: COPYING
+  summary: Port of Xlib XImage and XShmImage functions
+  homepage: https://xcb.freedesktop.org/
+
+extra:
+  recipe-maintainers:
+    - erykoff

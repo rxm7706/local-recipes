@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.0.5"
+  python_check_max: "3.14"
+
+package:
+  name: flask-cors
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/flask-cors/flask_cors-${{ version }}.tar.gz
+  sha256: 30c5031552cd59f620ac0c8211dac45b345d3b2df310e7721879e4f46ef9c601
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+    - setuptools-scm >=8
+  run:
+    - flask >=0.9
+    - python >=${{ python_min }}
+    - typing_extensions >=4.6.0
+    - werkzeug >=0.7
+
+tests:
+  - python:
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+      imports:
+        - flask_cors
+        - flask_cors.core
+        - flask_cors.decorator
+        - flask_cors.extension
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pytest-cov
+    files:
+      source:
+        - tests/
+    script:
+      - python -c "from importlib import metadata as md; v = md.version('flask-cors'); print(v); assert v == '${{ version }}'"
+      - coverage run --source=flask_cors --branch -m pytest -vv --tb=long --color=yes
+      - coverage report --show-missing --skip-covered --fail-under=95
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A Flask extension adding a decorator for CORS support
+  homepage: https://pypi.org/project/flask-cors
+  repository: https://github.com/corydolphin/flask-cors
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - jan-janssen
+    - bollwyvl

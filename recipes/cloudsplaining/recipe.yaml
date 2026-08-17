@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cloudsplaining
+  version: "0.8.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/cloudsplaining-${{ version }}.tar.gz
+  sha256: 733085a7648e45714a24e629d05d3dfd592d2925b21fe001c19f55a6d6c1581a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - cloudsplaining=cloudsplaining.bin.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - boto3
+    - botocore
+    - cached-property
+    - click
+    - click-option-group
+    - jinja2
+    - markdown
+    - policy_sentry >=0.14.0,<0.15
+    - pyyaml
+    - schema
+
+tests:
+  - python:
+      imports:
+        - cloudsplaining
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - cloudsplaining --help
+
+about:
+  summary: AWS IAM Security Assessment tool that identifies violations of least privilege and generates a risk-prioritized HTML report.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/salesforce/cloudsplaining
+
+extra:
+  recipe-maintainers:
+    - borchero
+    - nick-harmening

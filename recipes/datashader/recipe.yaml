@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.19.1"
+  python_min: "3.10"
+
+package:
+  name: datashader
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/datashader/datashader-${{ version }}.tar.gz
+  sha256: f62d880a4a431813f9bb3959e565feda79c1634f889aaadcf948cb0d0c114cdd
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python 3.10.*
+    - pip
+    - hatchling
+    - hatch-vcs
+  run:
+    - python >=${{ python_min }}
+    - colorcet
+    - multipledispatch
+    - numba
+    - numpy
+    - packaging
+    - pandas
+    - param
+    - pyct
+    - requests
+    - scipy
+    - toolz
+    - xarray
+
+tests:
+  - python:
+      imports:
+        - datashader
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - fastparquet
+        - flake8
+        - nbsmoke >=0.5.0
+        - pytest
+        - pytest-benchmark
+        - holoviews >=1.14.1
+        - netcdf4
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Data visualization toolchain based on aggregating into a grid
+  description: |
+    Datashader is a data rasterization pipeline for automating the process of
+    creating meaningful representations of large amounts of data.
+  homepage: https://datashader.org
+  repository: https://github.com/holoviz/datashader
+  documentation: https://datashader.org
+
+extra:
+  recipe-maintainers:
+    - maximlt
+    - jbednar
+    - ocefpaf
+    - philippjfr
+    - hoxbro
+    - amaloney

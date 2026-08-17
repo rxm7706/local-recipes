@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.18.0"
+
+package:
+  name: tensorflow-intel
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/cp310/t/tensorflow-intel/tensorflow_intel-2.18.0-cp310-cp310-win_amd64.whl
+  sha256: 34701c988f3e20415a8e450a1384339e9f013950db70fa0361b79cddd1e8431b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - absl-py >=1.0.0
+    - astunparse >=1.6.0
+    - flatbuffers >=24.3.25
+    - gast !=0.5.0,!=0.5.1,!=0.5.2,>=0.2.1
+    - google-pasta >=0.1.1
+    - libclang >=13.0.0
+    - opt-einsum >=2.3.2
+    - packaging
+    - protobuf !=4.21.0,!=4.21.1,!=4.21.2,!=4.21.3,!=4.21.4,!=4.21.5,<6.0.0dev,>=3.20.3
+    - requests <3,>=2.21.0
+    - setuptools
+    - six >=1.12.0
+    - termcolor >=1.1.0
+    - typing_extensions >=3.6.6
+    - wrapt >=1.11.0
+    - grpcio <2.0,>=1.24.3
+    - tensorboard <2.19,>=2.18
+    - keras >=3.5.0
+    - numpy <2.1.0,>=1.26.0
+    - h5py >=3.11.0
+    - ml-dtypes <0.5.0,>=0.4.0
+    - tensorflow-io-gcs-filesystem >=0.23.1
+
+tests:
+  - python:
+      imports:
+        - tensorflow_intel
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://www.tensorflow.org/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: TensorFlow is an open source machine learning framework for everyone.
+  description: |
+    TensorFlow is an open source machine learning framework for everyone.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tensorflow-intel
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tensorflow-intel
+  cfe-purls:
+    - pkg:conda/tensorflow-intel@${{ version }}?channel=conda-forge
+    - pkg:pypi/tensorflow-intel@${{ version }}
+  cfe-upstream-repo: https://www.tensorflow.org/
+  cfe-upstream-homepage: https://www.tensorflow.org/
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:38:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:38:23Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

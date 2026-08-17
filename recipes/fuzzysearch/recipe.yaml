@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: fuzzysearch
+  version: "0.8.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/taleinat/fuzzysearch/archive/v${{ version }}.tar.gz
+  sha256: 6d07e005ea102b120862c9ff77c0cebb3f0578c56e0307f99967b4940f413596
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+    - pip
+    - cython
+    - setuptools
+  run:
+    - python
+    - attrs >=19.3
+
+tests:
+  - python:
+      imports:
+        - fuzzysearch
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Easy fuzzy search that just works, fast!
+  homepage: https://github.com/taleinat/fuzzysearch
+  repository: https://github.com/taleinat/fuzzysearch
+
+extra:
+  recipe-maintainers:
+    - klauer

@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.29"
+
+package:
+  name: ir
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/i/ir/ir-${{ version }}.tar.gz
+  sha256: b92f9fda09f972e2ae1f60920fd3bff13d923ba4606502c6bf6ad8bdf567499f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - argh
+    - dol
+    - ef
+    - numpy
+    - vd
+
+tests:
+  - python:
+      imports:
+        - ir
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://i2mint.github.io/ir/
+  license: MIT
+  license_file: LICENSE
+  summary: An information-retrieval substrate for agentic systems
+  description: |
+    An information-retrieval substrate for agentic systems
+  repository: https://github.com/i2mint/ir
+  documentation: https://i2mint.github.io/ir
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ir
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ir
+  cfe-purls:
+    - pkg:conda/ir@${{ version }}?channel=conda-forge
+    - pkg:pypi/ir@${{ version }}
+  cfe-upstream-repo: https://github.com/i2mint/ir
+  cfe-upstream-homepage: https://i2mint.github.io/ir/
+  cfe-import-names: [ir]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:36:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:36:31Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

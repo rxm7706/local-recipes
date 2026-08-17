@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: tblib
+  version: "3.2.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/tblib-${{ version }}.tar.gz
+  sha256: e9a652692d91bf4f743d4a15bc174c0b76afc750fe8c7b6d195cc1c1d6d2ccec
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      python_version: ${{ python_min }}.*
+      imports:
+        - tblib
+
+about:
+  summary: Traceback serialization library.
+  license: BSD-2-Clause
+  license_file: LICENSE
+  homepage: https://github.com/ionelmc/python-tblib
+  documentation: https://python-tblib.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - jrbourbeau
+    - xhochy

@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: autocorrect
+  version: "2.6.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/autocorrect-${{ version }}.tar.gz
+  sha256: 2bc68192dc645b44bece2613caac338e93548c3dac9c563095b27224c7fd4391
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - autocorrect
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Spelling Corrector
+  license: LGPL-3.0-or-later
+  license_file:
+    - LICENSE
+  homepage: https://github.com/fsondej/autocorrect
+
+extra:
+  recipe-maintainers:
+    - thewchan

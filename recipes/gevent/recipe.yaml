@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.8.0"
+  # should agree in `setup.py` and `pyproject.toml`
+  cffi_min: "2.1.1"
+  cython_min: "3.2.4"
+  greenlet_min: "3.2.2"
+
+package:
+  name: gevent
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/gevent/gevent-${{ version }}.tar.gz
+  sha256: 96039f41bbde6dcd72559e5ffbd408a04f46774b47d991d4cf032da8fa79e5a0
+
+build:
+  number: 0
+  script:
+    - if: unix
+      then: export GEVENTSETUP_EMBED=0
+    - ${{ PYTHON }} -m pip install . -vvv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then:
+        - cffi >=${{ cffi_min }}
+        - cross-python_${{ target_platform }}
+        - cython >=${{ cython_min }}
+        - greenlet >=${{ greenlet_min }}
+        - python
+    - if: unix
+      then: make
+  host:
+    - cffi >=${{ cffi_min }}
+    - cython >=${{ cython_min }}
+    - greenlet >=${{ greenlet_min }}
+    - pip
+    - python
+    - setuptools >=40.8.0
+    - if: unix
+      then:
+        - c-ares
+        - libev
+        - libuv
+  run:
+    - cffi >=${{ cffi_min }}
+    - greenlet >=${{ greenlet_min }}
+    - python
+    - zope.event
+    - zope.interface
+
+tests:
+  - python:
+      pip_check: true
+      imports:
+        - gevent
+        - gevent.libev
+        - gevent.libuv
+        - gevent.resolver
+  - script:
+      - python -m gevent.tests test__util.py test__monkey.py test__thread.py
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Coroutine-based network library
+  description: |
+    Gevent uses greenlet to provide a high-level synchronous API on top of the libev event loop.
+  homepage: https://www.gevent.org
+  repository: https://github.com/gevent/gevent
+  documentation: https://www.gevent.org/contents.html
+
+extra:
+  recipe-maintainers:
+    - beenje
+    - nehaljwani

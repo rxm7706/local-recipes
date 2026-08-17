@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: timelib
+  version: "0.3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/timelib-${{ version }}.tar.gz
+  sha256: d1b22706557186e6058da88ba0f85837401b2ae9de157f59353dc978d825187a
+
+build:
+  number: 2
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+  host:
+    - python
+    - setuptools
+    - cython
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - timelib
+      pip_check: true
+
+about:
+  summary: parse english textual date descriptions
+  license: PHP-3.01
+  license_file: 3_01.txt
+  homepage: https://github.com/pediapress/timelib/
+
+extra:
+  recipe-maintainers:
+    - rxm7706

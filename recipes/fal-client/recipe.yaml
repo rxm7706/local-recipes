@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0"
+
+package:
+  name: fal-client
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/fal-client/fal_client-${{ version }}.tar.gz
+  sha256: ba62cc008a4bbfae2c3cbade6c7a691093e42cfb5a79f7fca4dd61acbd87372a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - aiofiles <26,>=24.1.0
+    - asyncstdlib <4,>=3.12.5
+    - httpx <1,>=0.21.0
+    - httpx-sse <0.5,>=0.4.0
+    - msgpack <2,>=1.0.7
+    - websockets >=12.0
+
+tests:
+  - python:
+      imports:
+        - fal_client
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://fal.ai
+  license: MIT
+  license_file: LICENSE
+  summary: Python client for fal.ai
+  description: |
+    Python client for fal.ai
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: fal-client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: fal-client
+  cfe-purls:
+    - pkg:conda/fal-client@${{ version }}?channel=conda-forge
+    - pkg:pypi/fal-client@${{ version }}
+  cfe-upstream-repo: https://fal.ai
+  cfe-upstream-homepage: https://fal.ai
+  cfe-import-names: [fal_client]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:48:35Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:48:35Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

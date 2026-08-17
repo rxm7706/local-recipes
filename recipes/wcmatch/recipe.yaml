@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "11.0.1"
+
+package:
+  name: wcmatch
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/wcmatch/wcmatch-${{ version }}.tar.gz
+  sha256: 1ea2b4fa678b8ca268253798d5963935df39132d47c3e241c0a0732224005e7d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling >=0.21.1
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - bracex >=3.0
+tests:
+  - python:
+      imports:
+        - wcmatch
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - '*'
+
+about:
+  summary: Wildcard/glob file name matcher.
+  license: MIT
+  license_file: LICENSE.md
+  homepage: https://github.com/facelessuser/wcmatch
+
+extra:
+  recipe-maintainers:
+    - asford
+    - ocefpaf

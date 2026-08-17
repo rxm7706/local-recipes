@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: brunsli
+  version: "0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/google/brunsli/archive/v${{ version }}.tar.gz
+  sha256: 62762dc740f9fcc9706449c078f12c2a366416486d2882be50a9f201f99ac0bc
+  patches:
+    # https://github.com/google/brunsli/issues/91
+    - use_conda_forge_shared_libraries.patch
+
+build:
+  # Windows builds seem too experimental upstream
+  # https://github.com/google/brunsli/issues/51
+  # https://github.com/google/brunsli/issues/62
+  # https://github.com/google/brunsli/issues/93
+  number: 2
+  skip: win
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+    - cmake <4
+    - if: unix
+      then: make
+    - if: win
+      then: ninja
+  host:
+    - brotli
+  run_exports:
+    - ${{ pin_subpackage( name | lower ) }}
+
+tests:
+  - script:
+      - if: unix
+        then: test -f $PREFIX/include/brunsli/encode.h
+      - if: unix
+        then: test -f $PREFIX/include/brunsli/decode.h
+      - if: unix
+        then: test -f $PREFIX/lib/libbrunslienc-c${SHLIB_EXT}
+      - if: unix
+        then: test -f $PREFIX/lib/libbrunslidec-c${SHLIB_EXT}
+      - if: unix
+        then: which cbrunsli
+      - if: unix
+        then: which dbrunsli
+      - if: win
+        then: if not exist %LIBRARY_INC%\brunsli\encode.h exit 1
+      - if: win
+        then: if not exist %LIBRARY_INC%\brunsli\decode.h exit 1
+      - if: win
+        then: if not exist %LIBRARY_LIB%\brunslienc-c.lib exit 1
+      - if: win
+        then: if not exist %LIBRARY_LIB%\brunslidec-c.lib exit 1
+      - if: win
+        then: if not exist %LIBRARY_BIN%\brunslienc-c.dll exit 1
+      - if: win
+        then: if not exist %LIBRARY_BIN%\brunslidec-c.dll exit 1
+      - if: win
+        then: where cbrunsli
+      - if: win
+        then: where dbrunsli
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Practical JPEG Repacker
+  description: |
+    Brunsli is a lossless JPEG repacking library.
+
+    Brunsli allows for a 22% decrease in file size while
+    allowing the original JPEG to be recovered byte-by-byte.
+
+
+  homepage: https://github.com/google/brunsli
+
+extra:
+  recipe-maintainers:
+    - hmaarrfk

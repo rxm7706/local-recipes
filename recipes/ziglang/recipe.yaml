@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.16.0"
+
+package:
+  name: ziglang
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/z/ziglang/ziglang-0.16.0-py3-none-macosx_12_0_arm64.whl
+  sha256: b61e5413c49508d9d62e5dcea543e3af491594154d74a00ff52f84ed508260cc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - ziglang
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://ziglang.org
+  license: MIT
+  license_file: LICENSE
+  summary: Zig is a general-purpose programming language and toolchain for maintaining robust, optimal, and reusable software.
+  description: |
+    Zig is a general-purpose programming language and toolchain for maintaining robust, optimal, and reusable software.
+  repository: https://github.com/ziglang/zig-pypi
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ziglang
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ziglang
+  cfe-purls:
+    - pkg:conda/ziglang@${{ version }}?channel=conda-forge
+    - pkg:pypi/ziglang@${{ version }}
+  cfe-upstream-repo: https://github.com/ziglang/zig-pypi
+  cfe-upstream-homepage: https://ziglang.org
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:51:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:51:25Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

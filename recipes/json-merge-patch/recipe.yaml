@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: json-merge-patch
+  version: "0.3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 4a022d78fc2f09cb49d96c646efc380d3b5ead2b5c7dabe22c3928c2c2e9c4e0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - json_merge_patch
+        - json_merge_patch.cli
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: JSON Merge Patch library (https://tools.ietf.org/html/rfc7386)
+  license: BSD-3-Clause
+  license_file: LICENSE
+  description: |
+    json-merge-patch library provides functions to merge json in
+    accordance with https://tools.ietf.org/html/rfc7386
+  homepage: https://github.com/OpenDataServices/json-merge-patch
+  repository: https://github.com/OpenDataServices/json-merge-patch
+  documentation: https://tools.ietf.org/html/rfc7386
+
+extra:
+  recipe-maintainers:
+    - BrentDorsey
+    - xylar

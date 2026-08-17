@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "7.1"
+  test_skips: (test_boundingbox_image.py and test_image) or (test_image.py and ImageTest)
+  python_check_max: "3.14"
+
+package:
+  name: svg.path
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/s/svg.path/svg_path-${{ version }}.tar.gz
+    sha256: 1cd254c974dc96cbee3a0cfc6528356866356b712f241b4e9066043ab8703d9b
+    target_directory: dist
+  - url: https://github.com/regebro/svg.path/archive/refs/tags/${{ version }}.tar.gz
+    sha256: e3745f9741aefe017f2580a09dbf759eccf0972867a60ba7f8b8c0973bd7be94
+    target_directory: src
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - cd dist
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - svg
+        - svg.path
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - files:
+      source:
+        - src/tests
+        - src/README.rst
+    requirements:
+      run:
+        - pillow
+        - pytest-cov
+        - python ${{ python_min }}.*
+    script:
+      - cd src
+      - coverage run --source=svg.path --branch -m pytest -vv --tb=long --color=yes -k "not (${{ test_skips }})"
+      - coverage report --show-missing --skip-covered --fail-under=78
+
+about:
+  summary: SVG path objects and parser
+  license: MIT
+  license_file: dist/LICENSE.txt
+  homepage: https://pypi.org/project/svg.path
+  repository: https://github.com/regebro/svg.path
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

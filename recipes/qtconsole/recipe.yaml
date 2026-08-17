@@ -1,0 +1,102 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.7.2"
+  python_min: "3.10"
+
+recipe:
+  name: qtconsole-base
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/q/qtconsole/qtconsole-${{ version }}.tar.gz
+  sha256: 27b485b9161925924c1d8e78e66bb342e6e3bc49bf675d0a67b49bad9c291521
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - jupyter-qtconsole = qtconsole.qtconsoleapp:main
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - traitlets
+    - jupyter_core
+    - jupyter_client >=4.1
+    - pygments
+    - ipykernel >=4.1  # not a real dependency, but require the reference kernel
+    - ipython_pygments_lexers
+    - qtpy >=2.4.0
+    - packaging
+
+outputs:
+  - package:
+      name: qtconsole-base
+  - package:
+      name: qtconsole
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python ${{ python_min }}
+        - ${{ pin_subpackage('qtconsole-base', upper_bound='x.x.x') }}
+      run:
+        - python >=${{ python_min }}
+        - ${{ pin_subpackage('qtconsole-base', upper_bound='x.x.x') }}
+        - pyqt
+    tests:
+      - requirements:
+          run:
+            - python ${{ python_min }}
+        script:
+          - DISPLAY=localhost:1.0 xvfb-run -a bash -c 'jupyter qtconsole --help'
+
+tests:
+  - python:
+      imports:
+        - qtconsole
+        - qtconsole.tests
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Jupyter Qt console
+  description: |
+    A rich Qt-based console for working with Jupyter kernels, supporting rich
+    media output, session export, and more. The Qt console is a very
+    lightweight application that largely feels like a terminal, but provides
+    a number of enhancements only possible in a GUI, such as inline figures,
+    proper multiline editing with syntax highlighting, graphical calltips, and
+    more.
+  homepage: http://jupyter.org
+  repository: https://github.com/jupyter/qtconsole
+  documentation: https://qtconsole.readthedocs.org/en/stable/
+
+extra:
+  recipe-maintainers:
+    - dalthviz
+    - Carreau
+    - ccordoba12
+    - jakirkham
+    - minrk
+    - takluyver
+    - ocefpaf
+  feedstock-name: qtconsole

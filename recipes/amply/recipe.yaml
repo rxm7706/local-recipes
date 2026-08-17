@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: amply
+  version: "0.1.7"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 675b73b7d76113ddb6cf743cc16ed925bccc4e72ef66991f0c7372064632b3c9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+    - setuptools_scm
+  run:
+    - python >=${{ python_min }}
+    - docutils >=0.3
+    - pyparsing
+
+tests:
+  - python:
+      imports:
+        - amply
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Amply allows you to load and manipulate AMPL/GLPK data as Python data structures
+  license: EPL-2.0
+  license_file: LICENSE
+  homepage: http://github.com/willu47/amply
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3.10"
+  PYTHON: PYTHON | default("$PYTHON")
+
+recipe:
+  name: universal_pathlib
+  version: ${{ version }}
+
+source:
+  # If getting the source from GitHub, remove the line above,
+  # uncomment the line below, and modify as needed. Use releases if available:
+  url: https://pypi.org/packages/source/u/universal_pathlib/universal_pathlib-${{ version }}.tar.gz
+  sha256: 4487cbc90730a48cfb64f811d99e14b6faed6d738420cd5f93f59f48e6930bfb
+
+build:
+  number: 0
+  noarch: python
+
+outputs:
+  - package:
+      name: universal_pathlib
+    build:
+      script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    requirements:
+      host:
+        - pip
+        - python ${{ python_min }}
+        - setuptools >=64
+        - setuptools-scm >=8
+      run:
+        - python >=${{ python_min }}
+        - fsspec >=2024.5.0
+        - pathlib-abc >=0.5.1,<0.6.0
+    tests:
+      - python:
+          imports:
+            - upath
+            - upath.types
+            - upath.registry
+          pip_check: false
+          python_version: ${{ python_min }}
+      - requirements:
+          run:
+            - python ${{ python_min }}
+  - package:
+      name: universal-pathlib
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('universal_pathlib', upper_bound="x.x.x") }}
+    tests:
+      - python:
+          imports:
+            - upath
+            - upath.types
+            - upath.registry
+          pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: pathlib api extended to use fsspec backends
+  homepage: https://github.com/fsspec/universal_pathlib
+  repository: https://github.com/fsspec/universal_pathlib
+
+extra:
+  recipe-maintainers:
+    - ap--
+    - andrewfulton9

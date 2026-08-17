@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: fastapi-cli
+  version: "0.0.32"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fastapi_cli-${{ version }}.tar.gz
+  sha256: 38024d2345275e1b37ce8848727a580d84901b570e96b3256d9d36a9a5039424
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - fastapi = fastapi_cli.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pdm-backend
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - rich-toolkit >=0.14.8
+    - tomli >=2.0.0
+    - typer >=0.16
+    - uvicorn-standard >=0.15.0
+tests:
+  - python:
+      imports:
+        - fastapi_cli
+  - requirements:
+      run:
+        - fastapi
+        - python ${{ python_min }}.*
+    script:
+      - fastapi --help
+
+about:
+  summary: Run and manage FastAPI apps from the command line with FastAPI CLI. 🚀
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/tiangolo/fastapi-cli
+
+extra:
+  recipe-maintainers:
+    - synapticarbors

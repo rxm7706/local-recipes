@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2024.7.3.1"
+
+package:
+  name: ratteil
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/ratteil/ratteil-${{ version }}.tar.gz
+  sha256: cbf1b9d9cff3f5d282afa5fcf1572dfb22d6d9fd3c7694670496ad4465d9ae0b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - google-api-python-client ==1.7.2
+    - google-auth ==1.8.0
+    - google-auth-httplib2 ==0.0.3
+    - google-auth-oauthlib ==0.4.1
+    - oauth2client
+
+tests:
+  - python:
+      imports:
+        - ratteil
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/ratteil/
+  license: MIT
+  license_file: LICENSE
+  summary: Livestreaming the Holly Quran to youtube
+  description: |
+    Livestreaming the Holly Quran to youtube
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ratteil
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ratteil
+  cfe-purls:
+    - pkg:conda/ratteil@${{ version }}?channel=conda-forge
+    - pkg:pypi/ratteil@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/ratteil/
+  cfe-upstream-homepage: https://pypi.org/project/ratteil/
+  cfe-import-names: [ratteil]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:54:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:54:34Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

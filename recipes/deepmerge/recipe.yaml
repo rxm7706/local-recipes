@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: deepmerge
+  version: "2.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/deepmerge-${{ version }}.tar.gz
+  sha256: 07ca7a7b8935df596c512fa8161877c0487ac61f691c07766e7d71d2b23bdd2f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+    - setuptools-scm
+  run:
+    - python >=${{ python_min }}
+    - typing-extensions
+
+tests:
+  - python:
+      imports:
+        - deepmerge
+        - deepmerge.strategy
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: a toolset to deeply merge python dictionaries.
+  license: MIT
+  license_file: LICENSE
+  homepage: http://deepmerge.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - asford

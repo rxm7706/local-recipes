@@ -2,62 +2,66 @@
 schema_version: 1
 
 context:
-  version: "2.12"
+  name: import-linter
+  version: "2.13"
 
 package:
-  name: import-linter
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/i/import-linter/import_linter-${{ 
-    version }}.tar.gz
-  sha256: 217f0f0f0890b8625389765039d52c215f4c6d4a047f42ea78b6d00ceba1900e
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/import_linter-${{ version }}.tar.gz
+  sha256: 13af4a1d6b06044c58ea784e8732fd7fe48eec821a75feb4d6a1a2de36dd5c27
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - lint-imports = importlinter.cli:lint_imports_command
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - pip
+    - python ${{ python_min }}
     - hatchling
+    - pip
   run:
+    - nox
+    - fastapi
+    - uvicorn
+    - rich >=14.2.0
     - python >=${{ python_min }}
     - click >=6
     - grimp >=3.14
-    - rich >=14.2.0
     - tomli >=1.2.1
+    - typing-extensions >=3.10.0.0
     - typing_extensions >=3.10.0.0
 
 tests:
   - python:
       imports:
+        - importlinter
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - lint-imports --help
 
 about:
-  homepage: https://pypi.org/project/import-linter/
+  summary: Enforces rules for the imports within and between Python packages.
   license: BSD-2-Clause
   license_file: LICENSE
-  summary: Lint your Python architecture
-  description: |
-    Lint your Python architecture
-  documentation: https://import-linter.readthedocs.io/
+  homepage: https://pypi.org/project/import-linter/
 
 extra:
   recipe-maintainers:
-    - rxm7706
     - millsks
+    - rxm7706
     - cshaley
-####
-# CFE comments
-# Header:
-#    # 2026-07-03 punch-list full-gate pass (tracker issue -> local verification).
-####
 
 #### CFE metadata AND comments
 # CFE metadata

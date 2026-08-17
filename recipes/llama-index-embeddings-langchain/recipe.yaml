@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.0"
+
+package:
+  name: llama-index-embeddings-langchain
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/llama-index-embeddings-langchain/llama_index_embeddings_langchain-${{ version }}.tar.gz
+  sha256: 4252ca25b838eba2b6614476b99aa2008e466feffefbdf8d72f80155f1be29f4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - llama-index-core <0.15,>=0.13.0
+
+tests:
+  - python:
+      imports:
+        - llama_index.embeddings.langchain
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/llama-index-embeddings-langchain/
+  license: MIT
+  license_file: LICENSE
+  summary: llama-index embeddings langchain integration
+  description: |
+    llama-index embeddings langchain integration
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: llama-index-embeddings-langchain
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: llama-index-embeddings-langchain
+  cfe-purls:
+    - pkg:conda/llama-index-embeddings-langchain@${{ version }}?channel=conda-forge
+    - pkg:pypi/llama-index-embeddings-langchain@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/llama-index-embeddings-langchain/
+  cfe-upstream-homepage: https://pypi.org/project/llama-index-embeddings-langchain/
+  cfe-import-names: [llama_index.embeddings.langchain]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:04:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:04:54Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

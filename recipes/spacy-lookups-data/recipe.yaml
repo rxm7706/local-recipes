@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: spacy-lookups-data
+  version: "1.0.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/spacy_lookups_data-${{ version }}.tar.gz
+  sha256: 6f935c81f145bdcc84fc6115f648764285c7ff3e8ff246295046814e96dad63c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+    - setuptools
+    - srsly >=0.1.0,<1.1.0
+  run:
+    - python >=3.6
+    - setuptools
+
+tests:
+  - python:
+      imports:
+        - spacy_lookups_data
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Additional lookup tables and data resources for spaCy
+  # The remaining entries in this section are optional, but recommended.
+  description: |
+    This package contains additional data files to be used with spaCy v2.2+.
+    When it's installed in the same environment as spaCy, this package makes
+    the resources for each language available as an entry point, which spaCy
+    checks when setting up the Vocab and Lookups.
+  homepage: https://github.com/explosion/spacy-lookups-data
+  repository: https://github.com/explosion/spacy-lookups-data
+  documentation: https://spacy.io/
+
+extra:
+  recipe-maintainers:
+    - conda-forge/spacy

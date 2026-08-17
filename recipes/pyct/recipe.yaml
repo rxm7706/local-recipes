@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.6.0"
+  python_min: "3.8"
+
+package:
+  name: pyct
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pyct/pyct-${{ version }}.tar.gz
+  sha256: d4e513b2cf35b6165605ae5fce5f2a49985bc67473c579de85134b8c71d374a8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps
+  python:
+    entry_points:
+      - pyct=pyct.__main__:main
+
+requirements:
+  host:
+    - python 3.8.*
+    - pip
+    - hatchling
+    - hatch-vcs
+  run:
+    - python >=${{ python_min }}
+    - param >=1.7.0
+    # cli
+    - pyyaml
+    - requests
+  run_constraints:
+    - pyct-core <0
+
+tests:
+  - python:
+      imports:
+        - pyct
+        - pyct.cmd
+      pip_check: true
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - pyproject.toml
+    requirements:
+      run:
+        - pytest
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pytest -v --pyargs pyct
+      - pyct --help
+      - pyct --version
+      - pyct report --help
+      - pyct report pyct python
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Python package common tasks for users (e.g. copy examples, fetch data, ...)
+  homepage: https://github.com/holoviz-dev/pyct
+  repository: https://github.com/holoviz-dev/pyct
+  documentation: https://github.com/holoviz-dev/pyct#pyctbuild
+
+extra:
+  recipe-maintainers:
+    - hoxbro
+    - maximlt
+    - ocefpaf
+    - apmorton

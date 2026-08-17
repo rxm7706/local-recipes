@@ -2,24 +2,25 @@
 schema_version: 1
 
 context:
+  name: wagtail-dynamic-dropdown
   version: "0.0.5"
 
 package:
-  name: wagtail-dynamic-dropdown
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/w/wagtail-dynamic-dropdown/wagtail-dynamic-dropdown-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail-dynamic-dropdown-${{ version }}.tar.gz
   sha256: 3d18e405afeefacc9b9b908ad72919c8482a8973ebc6c8243bcdb786888d4c0a
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
@@ -30,20 +31,13 @@ tests:
       imports:
         - wagtail_dynamic_dropdown
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: A Django application which allow to use dynamically defined choices that will be updated every time the user opens edit/create page. Moreover, the choices are not migrated to the database.
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/LilJack118/wagtail-dynamic-dropdown
-  repository: https://github.com/LilJack118/wagtail-dynamic-dropdown
-  description: |
-    A Wagtail/Django application which allows the use of dynamically defined
-    choices that are updated every time the user opens an edit/create page.
-    The choices are not migrated to the database.
 
 extra:
   recipe-maintainers:

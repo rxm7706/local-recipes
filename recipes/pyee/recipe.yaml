@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyee
+  version: "13.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 0b931f7c14535667ed4c7e0d531716368715e860b988770fc7eb8578d1f67fc8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools-scm
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - pyee
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A port of node.js's EventEmitter to python.
+  homepage: https://github.com/jfhbrook/pyee
+  repository: https://github.com/jfhbrook/pyee
+  documentation: https://pyee.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - mxschmitt
+    - kiwi0fruit

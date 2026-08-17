@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.3.3"
+  suitesparse_for_win_version: "7.12.2"
+
+package:
+  name: cvxopt
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/c/cvxopt/cvxopt-${{ version }}.tar.gz
+    sha256: 8059cef41f1f115c87bc9b75fec9f86db95e7f0afcf03a52d619ba433e443bcb
+  # on windows, building suitesparse in directly works much better than trying to build it separately and link it in
+  - url: ${{ 'https://github.com/DrTimothyAldenDavis/SuiteSparse/archive/v${{ suitesparse_for_win_version }}.tar.gz' if win else '' }}
+    sha256: ${{ '679412daa5f69af96d6976595c1ac64f252287a56e98cc4a8155d09cc7fd69e8' if win else '' }}
+    target_directory: ${{ 'suitesparse' if win else '' }}
+
+build:
+  number: 2
+  skip: match(python, "<3.5")
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - libblas
+    - liblapack
+    - python
+    - setuptools
+    - setuptools_scm
+    - gsl
+    - fftw
+    - dsdp
+    - glpk
+    # suitesparse is linked against on windows, and compiled-in on windows, because yeah, windows.
+    - if: not win
+      then: suitesparse
+  run:
+    - python
+    - gsl
+    - fftw
+    - dsdp
+    - glpk
+    - if: not win
+      then: suitesparse
+
+tests:
+  - python:
+      imports:
+        - cvxopt
+        - cvxopt.base
+        - cvxopt.blas
+        - cvxopt.cholmod
+        - cvxopt.lapack
+        - cvxopt.misc_solvers
+        - cvxopt.umfpack
+        - cvxopt.glpk
+        - cvxopt.fftw
+      pip_check: false
+  - files:
+      source:
+        - tests/*
+        - examples/*
+    requirements:
+      run:
+        - pytest
+        - pip
+        - if: win
+          then: m2-grep
+    script:
+      - pip list | grep cvxopt | grep ${{ version }}
+
+about:
+  license: GPL-3.0-or-later
+  license_file: LICENSE
+  summary: Convex optimization package
+  homepage: https://cvxopt.org
+  repository: https://github.com/cvxopt/cvxopt
+  documentation: https://cvxopt.org/userguide
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - martinandersen

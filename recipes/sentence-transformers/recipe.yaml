@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sentence-transformers
+  version: "5.7.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: fd8c8fc35e6323631dff9f3760969ebf7980dc3cfda0ab1354bc6a774cc0e5d8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - numpy
+    - scipy
+    - scikit-learn
+    - tqdm
+    - pytorch >=1.11.0
+    - transformers >=4.41.0,<6.0.0
+    - huggingface_hub >=0.23.0
+    - typing_extensions >=4.5.0
+    - pillow
+
+tests:
+  - python:
+      imports:
+        - sentence_transformers
+        - sentence_transformers.datasets
+        - sentence_transformers.evaluation
+        - sentence_transformers.losses
+        - sentence_transformers.models
+        - sentence_transformers.models.tokenizer
+        - sentence_transformers.readers
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Sentence Embeddings using BERT / RoBERTa / XLNet
+  description: |
+    ## Sentence Transformers: Multilingual Sentence, Paragraph, and Image Embeddings using BERT & Co.
+
+    This framework provides an easy method to compute dense vector representations for sentences,
+    paragraphs, and images. The models are based on transformer networks like
+    BERT / RoBERTa / XLM-RoBERTa etc. and achieve state-of-the-art performance in various task.
+    Text is embedding in vector space such that similar text is close and can efficiently be
+    found using cosine similarity.
+
+    PyPI: [https://pypi.org/project/sentence-transformers/](https://pypi.org/project/sentence-transformers/)
+
+  homepage: https://github.com/UKPLab/sentence-transformers
+  repository: https://github.com/UKPLab/sentence-transformers
+  documentation: https://pypi.org/project/sentence-transformers/
+
+extra:
+  recipe-maintainers:
+    - rluria14
+    - oblute
+    - ndmaxar
+    - sugatoray
+    - glemaitre

@@ -2,15 +2,17 @@
 schema_version: 1
 
 context:
-  version: "2.5.6"
+  python_min: "3.11"
+  name: django-todo
+  version: "2.6.2"
 
 package:
-  name: django-todo
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-todo/django_todo-${{ version }}.tar.gz
-  sha256: 6dc00b23dc976c3136b5254ce046932adc692ba0d6403e66beafd882f60405ce
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 00807def8fc6552f35560b39d2b8499c764f2efe83e70302e94980cb2330c8db
 
 build:
   number: 0
@@ -19,13 +21,14 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - setuptools >=61
+    - python 3.11.*
+    - setuptools >=40.8.0
     - wheel
     - pip
   run:
+    - faker
     - python >=${{ python_min }}
-    - django >=4.0
+    - django >=5.2
     - factory_boy
     - titlecase
     - bleach
@@ -37,16 +40,13 @@ tests:
       imports:
         - todo
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: A multi-user, multi-group task management and assignment system for Django.
   license: BSD-3-Clause
   license_file: LICENSE
   homepage: http://django-todo.org
-  repository: https://github.com/shacker/django-todo
 
 extra:
   recipe-maintainers:

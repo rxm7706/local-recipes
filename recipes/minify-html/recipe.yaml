@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: minify-html
+  version: "0.18.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/minify_html-${{ version }}.tar.gz
+  sha256: 43998530ef537701f003a8e908b756d78eff303c86b041a95855e290518ba79c
+
+build:
+  number: 0
+  script:
+    env:
+      PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
+    content: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - python
+    - ${{ stdlib("c") }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('rust') }}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - maturin >=0.13
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - minify_html
+      pip_check: true
+
+about:
+  summary: Extremely fast and smart HTML + JS + CSS minifier
+  license: MIT
+  license_file: minify-html/LICENSE
+  homepage: https://github.com/wilsonzlin/minify-html
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

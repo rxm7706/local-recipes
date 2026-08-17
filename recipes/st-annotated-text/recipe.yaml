@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: st-annotated-text
+  version: "4.0.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: b0134dcf734697cc3dbdb11862c4174071e7fb6f365af55a37c710d357fd88a5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - setuptools
+    - python ${{ python_min }}
+  run:
+    - htbuilder
+    - streamlit
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - annotated_text
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A simple component to display annotated text in Streamlit apps.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/tvst/st-annotated-text
+
+extra:
+  recipe-maintainers:
+    - xhochy

@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2025.1.30"
+
+package:
+  name: scrapli-cfg
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/scrapli-cfg/scrapli_cfg-${{ version }}.tar.gz
+  sha256: 7ed3b5743116d35d7d65f86d06dd7e74fcc509e1c8df6ddebffdeb7cebed13e8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - scrapli >=2022.01.30a2
+
+tests:
+  - python:
+      imports:
+        - scrapli_cfg
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/scrapli/scrapli_cfg
+  license: MIT
+  license_file: LICENSE
+  summary: Network device configuration management with scrapli
+  description: |
+    Network device configuration management with scrapli
+  documentation: https://scrapli.github.io/scrapli_cfg/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: scrapli-cfg
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: scrapli-cfg
+  cfe-purls:
+    - pkg:conda/scrapli-cfg@${{ version }}?channel=conda-forge
+    - pkg:pypi/scrapli-cfg@${{ version }}
+  cfe-upstream-repo: https://github.com/scrapli/scrapli_cfg
+  cfe-upstream-homepage: https://github.com/scrapli/scrapli_cfg
+  cfe-import-names: [scrapli_cfg]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:23:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:23:32Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

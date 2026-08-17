@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: logfire
+  version: "4.40.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/logfire-${{ version }}.tar.gz
+  sha256: f50f9637f9b5cc3eb5f8526e473effa1992d45056c89adc7c821ee7ab2520c75
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - logfire = logfire.cli:main
+
+requirements:
+  host:
+    - python >=3.8
+    - hatchling
+    - pip
+  run:
+    - typing_extensions >=4.1.0
+    - executing >=2.0.1
+    - python >=3.8
+    - opentelemetry-sdk >=1.39.0,<1.45.0
+    - opentelemetry-exporter-otlp-proto-http >=1.39.0,<1.45.0
+    - opentelemetry-instrumentation >=0.41b0
+    - rich >=13.4.2
+    - protobuf >=4.23.4
+    - typing-extensions >=4.1.0
+    - tomli >=2.0.1
+
+tests:
+  - python:
+      imports:
+        - logfire
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - logfire --help
+
+about:
+  summary: The best Python observability tool! 🪵🔥
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/pydantic/logfire
+  repository: https://github.com/pydantic/logfire
+  documentation: https://docs.pydantic.dev/logfire
+
+extra:
+  recipe-maintainers:
+    - Kludex
+    - samuelcolvin

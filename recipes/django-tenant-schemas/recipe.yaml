@@ -2,52 +2,47 @@
 schema_version: 1
 
 context:
-  version: "2.0.0"
+  name: django-tenant-schemas
+  version: 2.0.0
 
 package:
-  name: django-tenant-schemas
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-tenant-schemas/django_tenant_schemas-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: 5696fab7090b00e6b4935cd37f4581ee9d3914f0d838306149c84fd4cf6624cc
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
+    - setuptools-scm
     - pip
-    - setuptools >=45
-    - setuptools-scm >=6.2
-    - wheel
+    - setuptools
   run:
     - python >=${{ python_min }}
     - django >=4.2
     - ordered-set
+    - psycopg2-binary
+    - six
 
 tests:
   - python:
       imports:
         - tenant_schemas
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
   summary: Tenant support for Django using PostgreSQL schemas.
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/bcarneiro/django-tenant-schemas
-  repository: https://github.com/bcarneiro/django-tenant-schemas
-  description: |
-    A Django app that adds multitenancy support to Django projects using
-    PostgreSQL schemas. Each tenant gets its own PostgreSQL schema, providing
-    data isolation while sharing a single database.
 
 extra:
   recipe-maintainers:

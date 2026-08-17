@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: geomet
+  version: "1.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 51e92231a0ef6aaa63ac20c443377ba78a303fd2ecd179dc3567de79f3c11605
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - geomet = geomet.tool:cli
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - six
+    - click
+
+tests:
+  - python:
+      imports:
+        - geomet
+      pip_check: false
+  - script:
+      - geomet -h
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: GeoMet - Convert GeoJSON to WKT/WKB, and vice versa
+  description: |
+    Convert GeoJSON to WKT/WKB (Well-Known Text/Binary) or GeoPackage Binary,
+    and vice versa. Extended WKB/WKT are also supported.
+    Conversion functions are exposed through idiomatic load/loads/dump/dumps
+    interfaces.
+    The name "GeoMet" was inspired by "met", the German word for mead.
+    It is also a shortened version of the word "geometry".
+    GeoMet is intended to cover all common use cases for dealing with 2D,
+    3D, and 4D geometries (including 'Z', 'M', and 'ZM').
+  homepage: https://github.com/geomet/geomet
+  repository: https://github.com/geomet/geomet
+
+extra:
+  recipe-maintainers:
+    - avalentino

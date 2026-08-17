@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: robocorp
+  version: "3.1.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robocorp-${{ version }}.tar.gz
+  sha256: 8365686b0bf93b2fe21e205cdc9c1bb783c0e4075ad2196f9d882cb225ccc502
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - if: win
+      then: echo f | xcopy /f /y /S %RECIPE_DIR%\README.md %SRC_DIR%\README.md
+    - if: unix
+      then: cp -R ${{ RECIPE_DIR }}/README.md ${{ SRC_DIR }}/README.md
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0.0
+    - robocorp-tasks >=4.1.1,<5.0.0
+    - robocorp-log >=3.1.2,<4.0.0
+    - robocorp-workitems >=1.5.0,<2.0.0
+    - robocorp-vault >=1.4.0,<2.0.0
+    - robocorp-storage >=1.1.0,<2.0.0
+
+tests:
+  - python:
+      imports:
+        - robocorp
+        - robocorp.tasks
+        - robocorp.log
+        - robocorp.workitems
+        - robocorp.vault
+        - robocorp.storage
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Robocorp core libraries for Python automation
+  description: This is a metapackage for installing the core libraries of Robocorp Python automation framework. The following packages are currently included robocorp-tasks robocorp-log robocorp-workitems robocorp-vault robocorp-storage
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/robocorp/robocorp/
+  repository: https://github.com/robocorp/robo#libraries
+  documentation: https://robocorp.com/docs/python/robocorp
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - zaigner
+    - conda-forge/robocorp-tasks
+    - conda-forge/robocorp-log
+    - conda-forge/robocorp-workitems
+    - conda-forge/robocorp-vault
+    - conda-forge/robocorp-storage

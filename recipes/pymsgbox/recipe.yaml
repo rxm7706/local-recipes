@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pymsgbox
+  version: "2.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 98d055c49a511dcc10fa08c3043e7102d468f5e4b3a83c6d3c61df722c7d798d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pymsgbox
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  summary: A simple, cross-platform, pure Python module for JavaScript-like message boxes.
+  license_file:
+    - LICENSE.txt
+  homepage: https://github.com/asweigart/PyMsgBox
+
+extra:
+  recipe-maintainers:
+    - jschueller
+    - thewchan

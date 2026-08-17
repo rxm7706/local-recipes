@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyeda
+  version: "0.29.0"
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: efd4d3e548079ca059f44f9babb9bd67b332ec1762897324fcceb8da1d0f5fed
+
+build:
+  number: 2
+  script:
+    env:
+      CFLAGS: "-Wno-incompatible-pointer-types"
+    content: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then: crossenv
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: python
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - pyeda
+      pip_check: true
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Python Electronic Design Automation
+  homepage: https://github.com/cjdrake/${{ name }}
+
+extra:
+  recipe-maintainers:
+    - lorenzleutgeb

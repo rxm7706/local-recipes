@@ -1,0 +1,165 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: nghttp2
+  version: "1.68.1"
+
+recipe:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/nghttp2/${{ name }}/releases/download/v${{ version }}/nghttp2-${{ version }}.tar.gz
+  sha256: ceb434c1f9dfe2a9d305b6b797786fb9227484dfa88508d14ca1c50263db55d3
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - if: unix
+      then: libtool
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib('c') }}
+    - if: win
+      then: cmake
+    - if: win
+      then: ninja
+    - if: unix
+      then: make
+    - if: unix
+      then: pkg-config
+  host:
+    - if: unix
+      then: zlib
+    - if: unix
+      then: openssl
+    # Use one dependency without any constraints to help the
+    # libev migrator set the right global pinning
+    - if: unix
+      then: libev
+    - if: unix
+      then: libev >=4.11
+    # Use one dependency without any constraints to help the
+    # c-ares migrator set the right global pinning
+    - if: unix
+      then: c-ares
+    - if: unix
+      then: c-ares >=1.7.5
+
+outputs:
+  - package:
+      name: libnghttp2
+    files:  # [unix]
+      - if: unix
+        then: include/nghttp2/nghttp2*
+      - if: unix
+        then: lib/libnghttp2*
+      - if: unix
+        then: lib/nghttp2*
+      - if: unix
+        then: lib/pkgconfig/libnghttp2*
+      - if: unix
+        then: bin/nghttp*
+    build:
+      script:
+        file: ${{ 'install.bat' if win else 'install.sh' if unix else '' }}
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib('c') }}
+        - if: win
+          then: cmake
+        - if: win
+          then: ninja
+        - if: unix
+          then: make
+        - if: unix
+          then: pkg-config
+      host:
+        - if: unix
+          then: zlib
+        - if: unix
+          then: openssl
+        # Use one dependency without any constraints to help the
+        # libev migrator set the right global pinning
+        - if: unix
+          then: libev
+        - if: unix
+          then: libev >=4.11
+        # Use one dependency without any constraints to help the
+        # c-ares migrator set the right global pinning
+        - if: unix
+          then: c-ares
+        - if: unix
+          then: c-ares >=1.7.5
+      run:
+        # https://github.com/conda-forge/libev-feedstock/pull/14
+        - if: unix
+          then: ${{ pin_compatible('libev') }}
+      run_exports:
+        - ${{ pin_subpackage('libnghttp2') }}
+    tests:
+      - script:
+          - if: unix
+            then: nghttp -nv https://nghttp2.org
+          - if: unix
+            then: test ! -f ${PREFIX}/lib/lib${{ name }}.a
+          - if: linux
+            then: test -f ${PREFIX}/lib/lib${{ name }}.so
+          - if: win
+            then: if not exist %PREFIX%\\Library\\bin\\nghttp2.dll exit 1
+          - if: win
+            then: if not exist %PREFIX%\\Library\\lib\\nghttp2.lib exit 1
+  - package:
+      name: libnghttp2-static
+    build:
+      skip: not unix
+      script:
+        file: ${{ 'install.sh' if unix else '' }}
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib('c') }}
+        - make
+      host:
+        - ${{ pin_subpackage('libnghttp2', exact=True) }}
+        # we need to add openssl to generate all appropriate versions
+        - if: unix
+          then: openssl
+        # zlib does not have a dedicated static package, rather
+        # this pulls in both static and dynamically linked development
+        # dependencies
+        - zlib
+      run:
+        - ${{ pin_subpackage('libnghttp2', exact=True) }}
+        - libev-static
+        - c-ares-static
+    tests:
+      - script:
+          - if: unix
+            then: test -f ${PREFIX}/lib/lib${{ name }}.a
+
+about:
+  license: MIT
+  license_file: COPYING
+  summary: This is an implementation of Hypertext Transfer Protocol version 2.
+  description: |
+    This is an implementation of the Hypertext Transfer Protocol version 2 in C.
+
+    The framing layer of HTTP/2 is implemented as a reusable C library. On top
+    of that, we have implemented an HTTP/2 client, server and proxy. We have
+    also developed load test and benchmarking tools for HTTP/2.
+  homepage: http://github.com/nghttp2/nghttp2
+  repository: https://github.com/nghttp2/nghttp2
+  documentation: https://nghttp2.org/documentation/
+
+extra:
+  recipe-maintainers:
+    - cpaulik
+    - mariusvniekerk
+    - wolfv

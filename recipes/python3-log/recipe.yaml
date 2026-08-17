@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.2"
+
+package:
+  name: python3-log
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/python3-log/python3_log-${{ version }}.tar.gz
+  sha256: a13b5097835cbcbacd9c8013d5b33915aac7196ed6daac791790796dc65f1f42
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - concurrent-log-handler
+
+tests:
+  - python:
+      imports:
+        - log
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://gitee.com/devops_dev/log
+  license: MIT
+  license_file: LICENSE
+  summary: used to print log for any app or platform
+  description: |
+    used to print log for any app or platform
+  documentation: https://gitee.com/devops_dev/log/README.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python3-log
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python3-log
+  cfe-purls:
+    - pkg:conda/python3-log@${{ version }}?channel=conda-forge
+    - pkg:pypi/python3-log@${{ version }}
+  cfe-upstream-repo: https://gitee.com/devops_dev/log
+  cfe-upstream-homepage: https://gitee.com/devops_dev/log
+  cfe-import-names: [log]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:20:51Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:20:51Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

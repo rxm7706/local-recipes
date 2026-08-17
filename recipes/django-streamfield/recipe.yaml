@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: django-streamfield
   version: "2.4.0"
 
 package:
-  name: django-streamfield
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-streamfield/django_streamfield-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: f561b7048055d748b3697fdc15721ba0dbdc9b7b437f884cc8e4ed11bcbffba7
 
 build:
@@ -23,7 +24,7 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
     - django >=4.2
     - setuptools
 
@@ -31,17 +32,14 @@ tests:
   - python:
       imports:
         - streamfield
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
   summary: StreamField for native Django Admin or with Grappelli
   license: BSD-2-Clause
   license_file: LICENSE
   homepage: https://github.com/raagin/django-streamfield
-  repository: https://github.com/raagin/django-streamfield
 
 extra:
   recipe-maintainers:

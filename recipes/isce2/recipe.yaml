@@ -1,0 +1,105 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: isce2
+  version: "2.6.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/isce-framework/isce2/archive/v${{ version }}.tar.gz
+    sha256: e33cddfc142f86f26eb8aa1b1b9b21c770ecdebe98b67a20de78b644204543dc
+    target_directory: isce2
+    patches:
+      # Use LDFLAGS from conda build environment
+      - env-ldflags.patch
+      # Allow argument missmatch for gfortran
+      - argument-missmatch.patch
+      # Fix ` ld: in .../libs/libcosar.a(Cosar.hh), archive member 'Cosar.hh' with length 440 is not mach-o or llvm bitcode file`
+      - cosar-sources.patch
+
+build:
+  number: 0
+  skip: win or match(python, ">3.12")
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('fortran') }}
+  host:
+    - python
+    - numpy  # Pinned in conda_build_config.yml
+    - cython
+    - scons
+    - hdf5
+    - libgdal  # Pinned in conda_build_config.yml
+    - fftw
+    - opencv
+    - if: linux
+      then: libacl
+    - if: linux
+      then: libgl-devel
+    - openmotif-dev
+    - xorg-libxt
+    - xorg-libxft
+    - xorg-libxmu
+  run:
+    - python
+    - scikit-image
+    - scipy
+    - h5py
+    - gdal
+    - xorg-libxt
+    - xorg-libxft
+    - xorg-libxmu
+    - xorg-libxdmcp
+    - openmotif
+    - requests
+    - if: osx
+      then: zstd
+
+tests:
+  - python:
+      imports:
+        - isce
+      pip_check: false
+  - script:
+      - ISCEHOME=`$PYTHON -c "import isce, os; print(os.path.dirname(isce.__file__))" | tail -n 1`
+      - ${ISCEHOME}/applications/topsApp.py --help --steps
+      - ${ISCEHOME}/applications/stripmapApp.py --help --steps
+      - ${ISCEHOME}/applications/dem.py --help
+      - ${ISCEHOME}/applications/isce2gis.py -h
+      - ${ISCEHOME}/applications/imageMath.py -h
+      - ${ISCEHOME}/applications/alos2App.py --help --steps
+      - ${ISCEHOME}/applications/alos2burstApp.py --help --steps
+      - python ${{ RECIPE_DIR }}/run_test.py
+      - if: not osx
+        then: ${ISCEHOME}/bin/mdx
+
+about:
+  license: Apache-2.0
+  license_file: isce2/LICENSE-2.0.txt
+  summary: InSAR Scientific Computing Environment
+  description: |
+    InSAR Scientific Computing Environment (ISCE) is a framework designed
+    for processing Synthetic Aperture Radar (SAR) And Interferometric SAR
+    (InSAR) data. Currently, ISCE supports processing of data acquired by
+    following platforms - ALOS, ALOS2, COSMO-SkyMed, EnviSAT, ERS,
+    KOMPSAT5,  RadarSAT2, RISAT1, Sentinel1, TerraSAR-X, Tandem-X,
+    and UAVSAR. ISCE can also read some SICD format data.
+
+  homepage: http://github.com/isce-framework/isce2
+  repository: https://github.com/isce-framework/isce2
+  documentation: https://github.com/isce-framework/isce2-docs
+
+extra:
+  recipe-maintainers:
+    - jhkennedy
+    - bryanvriel
+    - piyushrpt
+    - rtburns-jpl

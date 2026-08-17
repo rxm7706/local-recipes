@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: GPUtil
+  version: "1.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+    sha256: 099e52c65e512cdfa8c8763fca67f5a5c2afb63469602d5dcb4d296b3661efb9
+  - url: https://raw.githubusercontent.com/anderskm/gputil/master/LICENSE.txt
+    sha256: 96393a5bcbaa64a621997a88a51b336e686d5eaa6996aaa830b170e15b198e6b
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - GPUtil
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: GPUtil is a Python module for getting the GPU status from NVIDA GPUs using nvidia-smi.
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://pypi.org/project/GPUtil/
+
+extra:
+  recipe-maintainers:
+    - sodre

@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mailbits
+  version: "0.2.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/mailbits-${{ version }}.tar.gz
+  sha256: 13140be94825d440986dee0a6e653d81d3b4df4b0059fbdb6d78ba8ccb0c4ec0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - hatchling
+  run:
+    - attrs >=18.1
+    - python >=${{ python_min }}
+    - typing-extensions
+
+tests:
+  - python:
+      imports:
+        - mailbits
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Assorted e-mail utility functions
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/jwodder/mailbits
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

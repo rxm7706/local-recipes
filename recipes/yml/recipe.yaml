@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.1"
+
+package:
+  name: yml
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/y/yml/yml-${{ version }}.tar.gz
+  sha256: 5168010f8cfd91fbcda1d0bffae869a1117050bf8cf0e909d4f00ccd9bd80ab9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - jaml
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/kislyuk/jaml
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A fast, safe, pure Python YAML and JSON parser
+  description: |
+    A fast, safe, pure Python YAML and JSON parser
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: yml
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: yml
+  cfe-purls:
+    - pkg:conda/yml@${{ version }}?channel=conda-forge
+    - pkg:pypi/yml@${{ version }}
+  cfe-upstream-repo: https://github.com/kislyuk/jaml
+  cfe-upstream-homepage: https://github.com/kislyuk/jaml
+  cfe-import-names: [jaml]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:41:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:41:05Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

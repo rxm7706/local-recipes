@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Keep increasing this until we get a new version, python_version and cffi_version. Do not reset
+schema_version: 1
+
+context:
+  version: "7.3.15"
+  python_version: "3.9.18"
+  cffi_version: "1.16.0"
+  python_maj_min: ${{ ".".join(python_version | split(".")[:2]) }}
+  build_num: 1
+  pypy_abi: ${{ "".join(version | split(".")[:2]) }}
+
+recipe:
+  name: pypy-meta
+  version: ${{ version }}
+
+build:
+  number: ${{ build_num }}
+
+outputs:
+  - package:
+      name: python
+      version: ${{ python_version }}
+    build:
+      number: ${{ build_num }}
+      string: ${{ build_num }}_${{ pypy_abi }}_pypy
+      track_features:
+        - pypy
+    requirements:
+      host:
+        - pypy${{ python_maj_min }} ${{ version }}
+      run:
+        - pypy${{ python_maj_min }} ${{ version }}
+        - python_abi ${{ python_maj_min }} *_pypy${{ python_maj_min | replace(".", "") }}_pp${{ pypy_abi }}
+      run_exports:
+        - weak:
+            - pypy${{ python_maj_min }} >=${{ version }}
+            - python_abi ${{ python_maj_min }} *_pypy${{ python_maj_min | replace(".", "") }}_pp${{ pypy_abi }}
+          noarch:
+            - ${{ pin_subpackage("python", upper_bound="x.x", lower_bound="x.x") }}
+    tests:
+      - script:
+          - python --version
+          - if: unix
+            then: test $(python -c "import sys;print('.'.join(str(i) for i in sys.version_info[:3]))") == "${{ python_version }}"
+  - package:
+      name: pypy
+      version: ${{ version }}
+    build:
+      number: ${{ build_num }}
+      string: ${{ build_num }}_pypy${{ python_maj_min | replace(".", "") }}
+      noarch: generic
+    requirements:
+      run:
+        - python ${{ python_version }} ${{ build_num }}_${{ pypy_abi }}_pypy
+    tests:
+      - script:
+          - pypy --version
+  - package:
+      name: cffi
+      version: ${{ cffi_version }}
+    build:
+      number: ${{ build_num }}
+      string: ${{ build_num }}_pypy${{ python_maj_min | replace(".", "") }}
+      noarch: generic
+    requirements:
+      run:
+        - pypy${{ python_maj_min }} ${{ version }}
+        - python ${{ python_version }} ${{ build_num }}_${{ pypy_abi }}_pypy
+        - python_abi ${{ python_maj_min }} *_pypy${{ python_maj_min | replace(".", "") }}_pp${{ pypy_abi }}
+    tests:
+      - script:
+          - if: unix
+            then: test $(python -c "import cffi;print(cffi.__version__)") == "${{ cffi_version }}"
+
+about:
+  summary: Metapackage to select pypy as python implementation
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/conda-forge/pypy-meta-feedstock
+
+extra:
+  recipe-maintainers:
+    - isuruf
+    - mattip

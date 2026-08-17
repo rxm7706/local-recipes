@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: randomname
+  version: "0.2.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/randomname-${{ version }}.tar.gz
+  sha256: b79b98302ba4479164b0a4f87995b7bebbd1d91012aeda483341e3e58ace520e
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - randomname=randomname:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - fire
+
+tests:
+  - python:
+      imports:
+        - randomname
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - randomname --help
+
+about:
+  summary: Generate random adj-noun names like docker and github.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/beasteers/randomname
+
+extra:
+  recipe-maintainers:
+    - thewchan

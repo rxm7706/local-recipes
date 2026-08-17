@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.0"
+
+package:
+  name: zope.browserpage
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/z/zope.browserpage/zope_browserpage-${{ version }}.tar.gz
+  sha256: 058b825dc6661f5b2c3683b3b65fbfda511d08159c6847831cd1ff67ffb0a45d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - setuptools
+    - zope.tal >=4.2.0
+    - zope.pagetemplate
+    - zope.component >=3.7
+    - zope.configuration
+    - zope.interface
+    - zope.publisher >=3.8
+    - zope.schema
+    - zope.security
+    - zope.traversing
+
+tests:
+  - python:
+      imports:
+        - zope.browserpage
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/zopefoundation/zope.browserpage
+  license: ZPL-2.1
+  license_file: LICENSE.txt
+  summary: ZCML directives for configuring browser views for Zope.
+  description: |
+    ZCML directives for configuring browser views for Zope.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: zope.browserpage
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: zope.browserpage
+  cfe-purls:
+    - pkg:conda/zope.browserpage@${{ version }}?channel=conda-forge
+    - pkg:pypi/zope.browserpage@${{ version }}
+  cfe-upstream-repo: https://github.com/zopefoundation/zope.browserpage
+  cfe-upstream-homepage: https://github.com/zopefoundation/zope.browserpage
+  cfe-import-names: [zope.browserpage]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:34:14Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:34:14Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4 Create-recipe local-only. zope.browserpage.
+####

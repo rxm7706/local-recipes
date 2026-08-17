@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dash-daq
+  version: "0.6.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dash_daq-${{ version }}.tar.gz
+  sha256: ae2568aca470b186d6805ff2317a932a6c1a5ed879fe33e525e43810fc354dce
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - dash >=1.6.1
+
+tests:
+  - python:
+      imports:
+        - dash_daq
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Control components for Dash
+  homepage: https://www.dashdaq.io/
+  repository: https://github.com/plotly/dash-daq
+  documentation: https://dash.plot.ly/dash-daq
+
+extra:
+  recipe-maintainers:
+    - moorepants

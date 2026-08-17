@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.0"
+
+package:
+  name: img2table
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/i/img2table/img2table-${{ version }}.tar.gz
+  sha256: 584334b46c898d733a2a44941df96bed2fefb2cd5e89ae57830614e6119be06f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=80
+  run:
+    - python >=${{ python_min }}
+    - numpy
+    - pypdfium2 >=4.30.0
+    - opencv-contrib-python >=4
+    - beautifulsoup4
+    - xlsxwriter >=3.0.6
+
+tests:
+  - python:
+      imports:
+        - img2table
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/xavctn/img2table
+  license: MIT
+  license_file: LICENSE
+  summary: img2table is a table identification and extraction Python Library for PDF and images, based on OpenCV image processing
+  description: |
+    img2table is a table identification and extraction Python Library for PDF and images, based on OpenCV image processing
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: img2table
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: img2table
+  cfe-purls:
+    - pkg:conda/img2table@${{ version }}?channel=conda-forge
+    - pkg:pypi/img2table@${{ version }}
+  cfe-upstream-repo: https://github.com/xavctn/img2table
+  cfe-upstream-homepage: https://github.com/xavctn/img2table
+  cfe-import-names: [img2table]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:45:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:45:54Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-tables2
+  version: "3.0.0"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/jieter/django-tables2/archive/v${{ version }}.tar.gz
+  sha256: cf39a68df4a688e805e91b0aaf0470dc2ec8806d04a2b39a67331ad39870d501
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python 3.10.*
+    - setuptools
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+
+tests:
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pip check
+      - python -c "import django; from django.conf import settings; settings.configure(); django.setup(); import django_tables2;"
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: django-tables2 simplifies the task of turning sets of data into HTML tables.
+  homepage: https://github.com/jieter/django-tables2
+  repository: https://github.com/jieter/django-tables2
+  documentation: https://django-tables2.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - gscoppino
+    - miguelgomezgomez

@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: allpairspy
+  version: "2.5.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/allpairspy-${{ version }}.tar.gz
+  sha256: f69d31a3b56eee119d1ec6063e9c732dd44fbba352ef738cb22d9699fc4009fe
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=61.0
+    - releasecmd
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - allpairspy
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Pairwise test combinations generator
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/thombashi/allpairspy
+  repository: https://github.com/thombashi/allpairspy
+
+extra:
+  recipe-maintainers:
+    - apmorton

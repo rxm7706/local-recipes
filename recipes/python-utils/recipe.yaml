@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-utils
+  version: "4.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 51d84b297d9877205a76e65f970e3275d1aa9c1cf3d508af2c459247eb4fe701
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - uv-build >=0.11,<0.12
+  run:
+    - python >=${{ python_min }}
+    - typing_extensions >3.10.0.2
+
+tests:
+  - python:
+      imports:
+        - python_utils
+        - python_utils.aio
+        - python_utils.containers
+        - python_utils.converters
+        - python_utils.decorators
+        - python_utils.formatters
+        - python_utils.generators
+        - python_utils.import_
+        - python_utils.logger
+        - python_utils.time
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Python Utils is a collection of small Python functions and classes which make common patterns shorter and easier.
+  description: |
+    Python Utils is a collection of small Python functions and classes which
+    make common patterns shorter and easier. It is by no means a complete
+    collection but it has served me quite a bit in the past and I will keep
+    extending it.  One of the libraries using Python Utils is Django Utils.
+  homepage: https://github.com/WoLpH/python-utils
+  repository: https://github.com/WoLpH/python-utils
+  documentation: https://python-utils.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - maartenbreddels
+    - WoLpH
+    - stuertz

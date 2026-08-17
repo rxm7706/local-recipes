@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: docker
+  version: "20.10.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://dockermsft.blob.core.windows.net/dockercontainer/docker-${{ version | replace('.', '-') }}.zip
+  sha256: b854d3a3efc159877f8c7e740268f8c4cfdfa6b746e7b331f39ebd2ec91e259f
+  target_directory: docker
+
+build:
+  number: 0
+  skip: not win
+
+requirements:
+  run:
+    - vs2015_runtime
+
+tests:
+  - script:
+      - docker --version
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  summary: Docker Engine - Enterprise enables native Docker containers on Windows Server.
+  homepage: https://github.com/moby/moby
+  repository: https://dockermsft.blob.core.windows.net/dockercontainer/DockerMsftIndex.json
+  documentation: https://docs.docker.com/ee/docker-ee/windows/docker-ee/
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld

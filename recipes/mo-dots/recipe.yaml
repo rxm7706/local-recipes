@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mo-dots
+  version: "10.685.25166"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: bd045742d11289fc9b48e1211e30a54119cbf5b97f1f558be0c8d812db2e2336
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - mo-future ==7.685.25166
+    - mo-imports ==7.685.25166
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - mo_dots
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: More Dots! Dot-access to Python dicts like Javascript
+  license: MPL-2.0
+  license_file: LICENSE
+  homepage: https://github.com/klahnakoski/mo-dots
+
+extra:
+  recipe-maintainers:
+    - xhochy

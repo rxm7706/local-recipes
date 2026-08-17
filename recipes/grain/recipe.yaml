@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Bazel version is specified upstream, file .bazelversion
+schema_version: 1
+
+context:
+  name: Grain
+  version: "0.2.16"
+  sha256: af139803cba8ff6d96d7bfdfbfc88f37c22ca42a07e81d9b1eed7222293201da
+  bazel_version: "7.2.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/google/grain/archive/v${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  skip: osx
+  skip: true  # [win]
+  skip: true  # [osx]
+
+requirements:
+  build:
+    - if: target_platform != build_platform
+      then: python
+    - if: target_platform != build_platform
+      then: pip
+    - if: target_platform != build_platform
+      then: numpy
+    - if: target_platform != build_platform
+      then: setuptools
+    - if: target_platform != build_platform
+      then: wheel
+    - bazel 7.2.1.*
+    - rsync
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+    - pip
+    - numpy
+    - setuptools
+    - wheel
+  run:
+    - python
+    - etils
+    - absl-py
+    - cloudpickle
+    - dm-tree
+    - more-itertools >=9.1.0
+    - numpy
+    # Upper bound version required by python-specific guarantees for protobuf
+    # https://protobuf.dev/support/cross-version-runtime-guarantee/#python
+    - protobuf >=5.28.3,<8.0dev0
+    - array-record >=0.8.1
+    - typing_extensions
+    - importlib_resources
+    - zipp
+    - fsspec
+    - jax >=0.6.0
+    - jaxlib >=0.6.0
+
+tests:
+  - python:
+      imports:
+        - grain
+        - grain.proto.execution_summary_pb2
+      pip_check: false
+
+about:
+  summary: Library for reading and processing ML training data.
+  description: |
+    Grain is a library for reading data for training and evaluating JAX models.
+    It's open source, fast and deterministic.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://pypi.org/project/grain/
+  repository: https://github.com/google/grain/
+  documentation: https://google-grain.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - iindyk
+    - mtsokol

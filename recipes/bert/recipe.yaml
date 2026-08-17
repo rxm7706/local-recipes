@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.2.0"
+
+package:
+  name: bert
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/bert/bert-${{ version }}.tar.gz
+  sha256: c8192fb7abd7fb112ad13b08b46f7d390a671cba5b2c43e9c519e06caa8da732
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - erlastic
+
+tests:
+  - python:
+      imports:
+        - bert
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/samuel/python-bert
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: BERT Serialization Library
+  description: |
+    BERT Serialization Library
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bert
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: bert
+  cfe-purls:
+    - pkg:conda/bert@${{ version }}?channel=conda-forge
+    - pkg:pypi/bert@${{ version }}
+  cfe-upstream-repo: https://github.com/samuel/python-bert
+  cfe-upstream-homepage: https://github.com/samuel/python-bert
+  cfe-import-names: [bert]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:49:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:49:27Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

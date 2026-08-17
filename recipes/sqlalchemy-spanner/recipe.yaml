@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sqlalchemy-spanner
+  version: "1.19.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sqlalchemy_spanner-${{ version }}.tar.gz
+  sha256: 834cec66fb418e5085a44c68cee570c594c66dd8535b67dd5e8be3571d172136
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - sqlalchemy >=1.1.13
+    - google-cloud-spanner >=3.55.0
+    - alembic
+
+tests:
+  - python:
+      imports:
+        - google.cloud.sqlalchemy_spanner
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+    script:
+      - pip check
+
+about:
+  summary: SQLAlchemy dialect integrated into Cloud Spanner database
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/sqlalchemy-spanner
+
+extra:
+  recipe-maintainers:
+    - xylar

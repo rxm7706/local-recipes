@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: commentjson
+  version: "0.9.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 42f9f231d97d93aff3286a4dc0de39bfd91ae823d1d9eba9fa901fe0c7113dd4
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - lark-parser <0.8.0,>=0.7.1
+
+tests:
+  - python:
+      imports:
+        - commentjson
+        - commentjson.tests
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.rst
+  summary: Helps you create JSON files with Python and JavaScript style inline comments
+  description: |
+    commentjson (Comment JSON) is a Python package that helps you create
+    JSON files with Python and JavaScript style inline comments. Its API is
+    very similar to the Python standard library's json module.
+  homepage: https://github.com/vaidik/commentjson
+  repository: https://github.com/vaidik/commentjson
+  documentation: https://commentjson.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - etcet

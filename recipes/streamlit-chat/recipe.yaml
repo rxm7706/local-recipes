@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.1"
+
+package:
+  name: streamlit-chat
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/streamlit-chat/streamlit-chat-${{ version }}.tar.gz
+  sha256: e5911c8e3d5bbdd444782a0eb46a5f0cf24247124eb165bcc2e759540767ac3c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - streamlit
+
+tests:
+  - python:
+      imports:
+        - streamlit_chat
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/AI-Yash/st-chat
+  license: MIT
+  license_file: LICENSE
+  summary: A streamlit component, to make chatbots
+  description: |
+    A streamlit component, to make chatbots
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: streamlit-chat
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: streamlit-chat
+  cfe-purls:
+    - pkg:conda/streamlit-chat@${{ version }}?channel=conda-forge
+    - pkg:pypi/streamlit-chat@${{ version }}
+  cfe-upstream-repo: https://github.com/AI-Yash/st-chat
+  cfe-upstream-homepage: https://github.com/AI-Yash/st-chat
+  cfe-import-names: [streamlit_chat]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:12:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:12:37Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4 Create-recipe local. LICENSE copied from GitHub (not in sdist).
+####

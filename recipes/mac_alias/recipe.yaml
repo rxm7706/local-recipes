@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mac_alias
+  version: "2.2.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/mac_alias-${{ version }}.tar.gz
+  sha256: c99c728eb512e955c11f1a6203a0ffa8883b26549e8afe68804031aa5da856b7
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - pytest
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - mac_alias
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Generate and parse Mac OS Alias records from Python
+  license: MIT
+  license_file:
+    - LICENSE
+  homepage: http://alastairs-place.net/projects/mac_alias
+  documentation: https://mac-alias.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - thewchan

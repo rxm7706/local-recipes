@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: prometheus_flask_exporter
+  version: "0.23.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 41fc9bbd7d48cc958ed8384aacf60c3621d9e903768be61c4e7f0c63872eaf1a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+    - flask
+    - prometheus_client
+
+tests:
+  - python:
+      imports:
+        - prometheus_flask_exporter
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Prometheus metrics exporter for Flask
+  homepage: https://github.com/rycus86/prometheus_flask_exporter
+
+extra:
+  recipe-maintainers:
+    - xhochy

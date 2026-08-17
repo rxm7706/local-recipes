@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: parsedatetime
+  version: "2.6"
+  bundle: tar.gz
+  hash: 4cb368fbb18a0b7231f4d76119165451c8d2e35951455dfee97c62a87b04d455
+  build: 1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
+  sha256: ${{ hash }}
+  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+
+build:
+  number: ${{ build }}
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+    - setuptools
+    - pytest-runner
+  run:
+    - python >=3.6
+
+tests:
+  - python:
+      imports:
+        - parsedatetime
+        - parsedatetime.pdt_locales
+      pip_check: false
+
+about:
+  license_file: LICENSE.txt
+  license: Apache-2.0
+  summary: Parse human-readable date/time text.
+  homepage: https://github.com/bear/parsedatetime
+  repository: https://github.com/bear/parsedatetime
+  documentation: https://bear.im/code/parsedatetime/docs/index.html
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr

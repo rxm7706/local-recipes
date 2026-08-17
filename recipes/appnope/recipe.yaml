@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: appnope
+  version: "0.1.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/appnope-${{ version }}.tar.gz
+  sha256: 1de3860566df9caf38f01f86f65e0e13e379af54f9e4bee1e66b48f2efffd1ee
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - appnope
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Disable App Nap on macOS >=10.9
+  homepage: http://github.com/minrk/appnope
+  repository: http://github.com/minrk/appnope
+  documentation: https://github.com/minrk/appnope
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - minrk
+    - ocefpaf

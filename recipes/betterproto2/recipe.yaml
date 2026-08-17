@@ -1,0 +1,94 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.9.1"
+
+package:
+  name: betterproto2
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/b/betterproto2/betterproto2-${{ version }}.tar.gz
+    sha256: 59d518cfbdd316e216c3d7f53448a6956432c7bd86ab9918fd8793c88c623cce
+  # PyPI sdist omits LICENSE; fetch from monorepo tag lib-v0.9.1.
+  - url: https://raw.githubusercontent.com/betterproto/python-betterproto2/lib-v${{ version }}/LICENSE.md
+    sha256: 3e0976a51794fb6cb0da6886790e79505972cea019fc4a585726769d68f046fe
+    file_name: LICENSE
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - python-dateutil >=2.9.0
+    - typing_extensions >=4.14.0
+    # betterproto2[all] extras — required by envoy-data-plane
+    - grpclib >=0.4.8
+    - grpcio >=1.72.1
+    - protobuf >=5.29.3
+    - pydantic >=2.11.5
+
+tests:
+  - python:
+      imports:
+        - betterproto2
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/betterproto2/
+  license: MIT
+  license_file: LICENSE
+  summary: A better Protobuf / gRPC generator & library
+  description: |
+    A better Protobuf / gRPC generator & library
+  repository: https://github.com/betterproto/python-betterproto2
+  documentation: https://betterproto.github.io/python-betterproto2/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: betterproto2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: betterproto2
+  cfe-purls:
+    - pkg:conda/betterproto2@${{ version }}?channel=conda-forge
+    - pkg:pypi/betterproto2@${{ version }}
+  cfe-upstream-repo: https://github.com/betterproto/python-betterproto2
+  cfe-upstream-homepage: https://pypi.org/project/betterproto2/
+  cfe-import-names: [betterproto2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:03:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:03:23Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4 Create-recipe dep of envoy-data-plane. Pin 0.9.1 because
+#    # envoy-data-plane 2.2.0 requires betterproto2[all]<0.10,>=0.9.0.
+#    # [all] extras included as run deps. python-dateutil pin loosened
+#    # off the PyPI `.post0` (not a conda version).
+####

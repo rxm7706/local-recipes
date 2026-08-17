@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.8.1"
+
+package:
+  name: onnxtr
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/onnxtr/onnxtr-${{ version }}.tar.gz
+  sha256: 669f299790fabe99dd8db2c96ffe70659ff362b63ef4884182fc7bcfab537fa1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - numpy <3.0.0,>=1.16.0
+    - scipy <2.0.0,>=1.4.0
+    - pypdfium2 <6.0.0,>=4.11.0
+    - pyclipper <2.0.0,>=1.2.0
+    - rapidfuzz <4.0.0,>=3.0.0
+    - langdetect <2.0.0,>=1.0.9
+    - huggingface-hub <2.0.0,>=0.23.0
+    - pillow >=9.2.0
+    - defusedxml >=0.7.0
+    - anyascii >=0.3.2
+    - tqdm >=4.30.0
+
+tests:
+  - python:
+      imports:
+        - onnxtr
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/onnxtr/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: "Onnx Text Recognition (OnnxTR): docTR Onnx-Wrapper for high-performance OCR on documents."
+  description: |
+    Onnx Text Recognition (OnnxTR): docTR Onnx-Wrapper for high-performance OCR on documents.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: onnxtr
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: onnxtr
+  cfe-purls:
+    - pkg:conda/onnxtr@${{ version }}?channel=conda-forge
+    - pkg:pypi/onnxtr@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/onnxtr/
+  cfe-upstream-homepage: https://pypi.org/project/onnxtr/
+  cfe-import-names: [onnxtr]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:56:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:56:23Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: window-ops
+  version: "0.0.15"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/window_ops-${{ version }}.tar.gz
+  sha256: 3c762d35a38d562f34cda33a272ced2c8d5dd88bd050c13bc82a592cf668a535
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - numba
+    - numpy
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - window_ops
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  summary: Implementations of window operations such as rolling and expanding.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/jose-moralez/window_ops
+  repository: https://github.com/jose-moralez/window_ops
+  documentation: https://jose-moralez.github.io/window_ops/
+
+extra:
+  recipe-maintainers:
+    - jmoralez

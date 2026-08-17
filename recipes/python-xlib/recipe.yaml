@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-xlib
+  version: "0.33"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/python-xlib-${{ version }}.tar.gz
+  sha256: 55af7906a2c75ce6cb280a584776080602444f75815a7aff4d287bb2d7018b32
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools >=30.3.0
+    - setuptools_scm
+  run:
+    - python >=${{ python_min }}
+    - six >=1.10.0
+
+tests:
+  - python:
+      imports:
+        - Xlib
+        - Xlib.ext
+        - Xlib.keysymdef
+        - Xlib.protocol
+        - Xlib.support
+        - Xlib.xobject
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: LGPL-2.1-or-later
+  license_file: LICENSE
+  summary: XLib in pure Python
+  homepage: https://github.com/python-xlib/python-xlib
+
+extra:
+  recipe-maintainers:
+    - thewchan
+    - jschueller

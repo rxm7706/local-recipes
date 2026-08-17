@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: factor-analyzer
+  version: "0.5.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/factor_analyzer-${{ version }}.tar.gz
+  sha256: 03703cd128ee9f91c9bd191a452b06e4a28296b5a24d11823ebb5d8250e8fdf6
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - numpy
+    - pandas
+    - pre-commit
+    - python >=${{ python_min }}
+    - scikit-learn
+    - scipy
+
+tests:
+  - python:
+      imports:
+        - factor_analyzer
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A Factor Analysis tool written in Python
+  license: GPL-2.0-or-later
+  license_file: LICENSE
+  homepage: https://github.com/EducationalTestingService/factor_analyzer
+  repository: https://github.com/EducationalTestingService/factor_analyzer
+  documentation: https://factor-analyzer.readthedocs.io/en/latest/index.html
+
+extra:
+  recipe-maintainers:
+    - kellend-git

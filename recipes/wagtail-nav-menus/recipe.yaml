@@ -2,29 +2,30 @@
 schema_version: 1
 
 context:
+  name: wagtail-nav-menus
   version: "3.14.0"
   python_min: "3.11"
 
 package:
-  name: wagtail-nav-menus
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/w/wagtail-nav-menus/wagtail_nav_menus-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail_nav_menus-${{ version }}.tar.gz
   sha256: bd6754b3f46852beae3f4680b37dc4ae9f545beeeeaa594a0756d31a548af9b2
 
 build:
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python 3.11.*
     - pip
     - hatchling
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
     - wagtail >=7.0
     - wagtail-modeladmin >=2.3.0,<3
 
@@ -33,16 +34,13 @@ tests:
       imports:
         - wagtail_nav_menus
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Wagtail Nav Menus is a app to provide highly customizable menus in wagtail by leveraging StreamFields.
-  license: ISC
+  license: MIT
   license_file: LICENSE
   homepage: https://gitlab.com/thelabnyc/wagtail-nav-menus
-  repository: https://gitlab.com/thelabnyc/wagtail-nav-menus
 
 extra:
   recipe-maintainers:

@@ -3,57 +3,61 @@ schema_version: 1
 
 context:
   name: openlineage-airflow
-  version: "1.41.0"
+  version: "1.14.0"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://github.com/OpenLineage/OpenLineage/archive/refs/tags/${{ version }}.tar.gz
-  sha256: fb188ea7ea7316900f5bb67959d95070255d5d8f69d8ba426dc9719003267780
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 6e9b987445f0e1c143ef4b14d3a1f05aa9e2909d28ee10c73d91d04cc588cd1d
 
 build:
-  number: 0
+  number: 1
   noarch: python
-  script:
-    - cd integration/airflow
-    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
-    - uv-build >=0.9.4,<0.10.0
+    - setuptools
   run:
-    - python >=${{ python_min }},<4.0
-    - attrs >=20.0
-    - openlineage-integration-common ==1.40.0
-    - openlineage-sql ==1.40.0
-    - openlineage-python ==1.40.0
-
+    - python >=${{ python_min }}
+    - attrs >=20.3
+    - requests >=2.20.0
+    - openlineage-integration-common ==${{ version }}
+    - openlineage-python ==${{ version }}
   run_constraints:
     - apache-airflow >=2.3
 
 tests:
-  - requirements:
-      run:
-        - python ${{ python_min }}.*
-        - apache-airflow >=2.3
-        - pip
-    script:
-      - python -c "import openlineage.airflow, openlineage.airflow.extractors"
-      - pip check
+  - python:
+      imports:
+        - openlineage.airflow
+        - openlineage.airflow.extractors
+        - openlineage.lineage_backend
+      pip_check: true
+      python_version: ${{ python_min }}
 
 about:
   summary: OpenLineage integration with Airflow
-  homepage: https://github.com/OpenLineage/OpenLineage
+  description: "Starting from Airflow version 2.7.0 OpenLineage integration is included in Airflow repository as a provider. The apache-airflow-providers-openlineage package significantly ease lineage tracking in Airflow, ensuring stability by embedding the functionality directly into each provider and simplifying the process
+    for users to select and manage lineage collection consumers.As a result, starting from Airflow 2.7.0 one should use the native Airflow Openlineage provider package."
   license: Apache-2.0
   license_file: LICENSE
+  homepage: https://github.com/OpenLineage/OpenLineage
+  repository: https://github.com/OpenLineage/OpenLineage/tree/main/integration/airflow
+  documentation: https://openlineage.io/docs/integrations/airflow/
 
 extra:
   recipe-maintainers:
     - rxm7706
+    - millsks
+    - conda-forge/openlineage-integration-common
+    - conda-forge/openlineage-sql
+    - conda-forge/openlineage-python
 
 #### CFE metadata AND comments
 # CFE metadata

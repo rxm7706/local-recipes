@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.5.7"
+
+package:
+  name: github-mcp-server
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/github-mcp-server/github_mcp_server-${{ version }}.tar.gz
+  sha256: 282e83ffe19526cb064fbacb15efc794e056dd2ada30b1ab206728973fb9e62c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=68
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - mcp <2.0.0,>=1.0.0
+    - httpx >=0.25.0
+    - pydantic >=2.0.0
+    - pyjwt >=2.8.0
+    - click >=8.0.0
+
+tests:
+  - python:
+      imports:
+        - github_mcp
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/crypto-ninja/mcp-server-for-Github
+  license: AGPL-3.0-or-later
+  license_file: LICENSE
+  summary: "The most AI-optimized GitHub MCP server: 112 tools, code-first architecture (98% token reduction), compact responses (80-97% smaller). Built for efficient AI development."
+  description: |
+    The most AI-optimized GitHub MCP server: 112 tools, code-first architecture (98% token reduction), compact responses (80-97% smaller). Built for efficient AI development.
+  repository: https://github.com/crypto-ninja/mcp-server-for-Github
+  documentation: https://github.com/crypto-ninja/mcp-server-for-Github#readme
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: github-mcp-server
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: github-mcp-server
+  cfe-purls:
+    - pkg:conda/github-mcp-server@${{ version }}?channel=conda-forge
+    - pkg:pypi/github-mcp-server@${{ version }}
+  cfe-upstream-repo: https://github.com/crypto-ninja/mcp-server-for-Github
+  cfe-upstream-homepage: https://github.com/crypto-ninja/mcp-server-for-Github
+  cfe-import-names: [github_mcp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:52:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:52:09Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: databricks-sdk
+  version: "0.130.0"
+  sha256: 1ea962d1fd10a0e8eb3b405d6f9023cdb7ef1942b34eaeb02ecf14c84131d4e8
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+    - protobuf
+  run:
+    - python >=${{ python_min }}
+    - requests >=2.28.1,<3
+    - google-auth >=2.0,<3
+    - protobuf >=4.25.8,!=5.26.*,!=5.27.*,!=5.28.*,!=5.29.0,!=5.29.1,!=5.29.2,!=5.29.3,!=5.29.4,!=6.30.0,!=6.30.1,!=6.31.0,<7.0
+
+tests:
+  - python:
+      imports:
+        - databricks
+        - databricks.sdk
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Databricks SDK for Python (Experimental)
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+  homepage: https://github.com/databricks/databricks-sdk-py
+
+extra:
+  recipe-maintainers:
+    - jasongrout-db
+    - nfx
+    - monaldoj

@@ -1,0 +1,142 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: black
+  version: "26.5.1"
+
+recipe:
+  name: black-recipe
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/black/black-${{ version }}.tar.gz
+  sha256: dd321f668053961824bcc1be1cc1df748b2d7e4fa28086b08331e577b0100a73
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: black
+    build:
+      noarch: python
+      python:
+        entry_points:
+          - black = black:patched_main
+          - blackd = blackd:patched_main
+      script:
+        file: build_base.sh
+    requirements:
+      host:
+        - if: not py_lt_311
+          then: python >=3.11
+        - if: py_lt_311
+          then: python ${{ python_min }}
+        - pip
+        - hatchling >=1.27.0
+        - hatch-vcs >=0.3.0
+        - hatch-fancy-pypi-readme
+      run:
+        - click >=8.0.0
+        - platformdirs >=2
+        - packaging >=22.0
+        - pathspec >=0.9
+        - mypy_extensions >=0.4.3
+        - pytokens >=0.4
+        - if: py_lt_311
+          then: tomli >=1.1.0
+        - if: py_lt_311
+          then: typing_extensions >=4.0.1
+        - if: py_lt_311
+          then: python >=${{ python_min }},<3.11
+        - if: not py_lt_311
+          then: python >=3.11
+    tests:
+      - requirements:
+          run:
+            - if: py_lt_311
+              then: python ${{ python_min }}
+            - if: not py_lt_311
+              then: python 3.11
+            - pip
+        script:
+          - black --help
+          - pip check
+          - which blackd || where blackd
+  - package:
+      name: blackd
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('black', upper_bound='x.x.x') }}
+        - aiohttp >=3.10
+    tests:
+      - requirements:
+          run:
+            - if: py_lt_311
+              then: python ${{ python_min }}
+            - if: not py_lt_311
+              then: python 3.11
+        script:
+          - black --help
+          - blackd --help
+  - package:
+      name: black-colorama
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('black', upper_bound='x.x.x') }}
+        - colorama >=0.4.3
+    tests:
+      - requirements:
+          run:
+            - if: py_lt_311
+              then: python ${{ python_min }}
+            - if: not py_lt_311
+              then: python 3.11
+        script:
+          - black --help
+  - package:
+      name: black-jupyter
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('black', upper_bound='x.x.x') }}
+        - ipython >=7.8.0
+        - tokenize-rt >=3.2.0
+    tests:
+      - requirements:
+          run:
+            - if: py_lt_311
+              then: python ${{ python_min }}
+            - if: not py_lt_311
+              then: python 3.11
+        script:
+          - black --help
+          - python -c "import black.handle_ipynb_magics; assert black.handle_ipynb_magics.jupyter_dependencies_are_installed(warn=True) == True"
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: The uncompromising code formatter.
+  description: |
+    Black is the uncompromising Python code formatter. By using it, you agree
+    to cease control over minutiae of hand-formatting. In return, Black gives
+    you speed, determinism, and freedom from pycodestyle nagging about
+    formatting. You will save time and mental energy for more important matters.
+  homepage: https://github.com/psf/black
+  repository: https://github.com/psf/black
+  documentation: https://black.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - raybellwaves
+    - seanlaw
+    - carlodri
+    - ambv
+    - mariusvniekerk
+    - xhochy

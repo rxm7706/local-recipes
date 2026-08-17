@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3"
+
+package:
+  name: logger-config
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/logger-config/logger-config-${{ version }}.tar.gz
+  sha256: 840f729ffe1c1b860c1056ae8ef034aeeb1e7453f086e6db24c3576fcdc8ba01
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - arrow
+
+tests:
+  - python:
+      imports:
+        - logger_config
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/insigmo/simple_logger
+  license: MIT
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+  description: |
+    REPLACE_DESCRIPTION
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: logger-config
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: logger-config
+  cfe-purls:
+    - pkg:conda/logger-config@${{ version }}?channel=conda-forge
+    - pkg:pypi/logger-config@${{ version }}
+  cfe-upstream-repo: https://github.com/insigmo/simple_logger
+  cfe-upstream-homepage: https://github.com/insigmo/simple_logger
+  cfe-import-names: [logger_config]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:47:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:47:03Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

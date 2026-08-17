@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.2.3"
+
+package:
+  name: missforest
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/MissForest/missforest-${{ version }}.tar.gz
+  sha256: 5b754a6ff98ff11c578dbddf7ce4fa1fa73b7f7d65847cf50de6bec067fb7a5a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.0
+  run:
+    - python >=${{ python_min }}
+    - lightgbm
+    - pandas
+    - numpy
+
+tests:
+  - python:
+      imports:
+        - missforest
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/yuenshingyan/MissForest
+  license: MIT
+  license_file: LICENSE
+  summary: Best imputation method.
+  description: |
+    Best imputation method.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: missforest
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: MissForest
+  cfe-purls:
+    - pkg:conda/missforest@${{ version }}?channel=conda-forge
+    - pkg:pypi/missforest@${{ version }}
+  cfe-upstream-repo: https://github.com/yuenshingyan/MissForest
+  cfe-upstream-homepage: https://github.com/yuenshingyan/MissForest
+  cfe-import-names: [missforest]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:39:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:39:40Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

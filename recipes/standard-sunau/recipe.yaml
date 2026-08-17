@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: standard-sunau
+  version: "3.13.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/standard_sunau-${{ version }}.tar.gz
+  sha256: b319a1ac95a09a2378a8442f403c66f4fd4b36616d6df6ae82b8e536ee790908
+
+build:
+  number: 3
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: setuptools >=75.0
+  host:
+    - python
+    - setuptools >=75.0
+    - pip
+  run:
+    - python
+    - if: match(python, ">=3.13")
+      then: audioop-lts
+
+tests:
+  - python:
+      imports:
+        - sunau
+      pip_check: true
+
+about:
+  summary: Standard library sunau redistribution. "dead battery".
+  license: BSD-4-Clause
+  license_file: LICENSE
+  homepage: https://github.com/youknowone/python-deadlib
+
+extra:
+  recipe-maintainers:
+    - bmcfee

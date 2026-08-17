@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: flask-swagger-ui
+  version: "5.32.12"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 51673e53b52d5d6b88469b02c3132bc16f05541a779abaabb88adf77452dd8c7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - flask
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - flask_swagger_ui
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Swagger UI blueprint for Flask
+  license: MIT
+  license_file: flask_swagger_ui/LICENSE
+  homepage: https://github.com/sveint/flask-swagger-ui
+
+extra:
+  recipe-maintainers:
+    - xhochy

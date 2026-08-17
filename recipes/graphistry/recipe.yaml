@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: graphistry
+  version: "0.58.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/graphistry-${{ version }}.tar.gz
+  sha256: 5ca4f2eb3052fadf62b91eae66b59d5a8f8d3ad7d3771cfa4d4e70124e87b321
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - numpy
+    - packaging >=20.1
+    - palettable >=3.0
+    - pandas
+    - pyarrow >=0.15.0
+    - requests
+    - setuptools
+    - squarify
+    - typing_extensions
+    - lark >=1.1,<2
+
+tests:
+  - python:
+      imports:
+        - graphistry
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: A visual graph analytics library.
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  homepage: https://github.com/graphistry/pygraphistry
+  documentation: https://pythonhosted.org/graphistry/
+
+extra:
+  recipe-maintainers:
+    - thewchan

@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  prefix: spacy-model-
+  lang: es
+  version: "3.1.0"
+
+recipe:
+  name: ${{ prefix }}${{ lang|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/explosion/spacy-models/releases/download/es_core_news_sm-${{ version }}/es_core_news_sm-${{ version }}.tar.gz
+    sha256: 86e3a750e5fd7cd8362df2cf7e2d4bdeb31d00d97af335333693051cd85b71f8
+    target_directory: sm
+  - url: https://github.com/explosion/spacy-models/releases/download/es_core_news_md-${{ version }}/es_core_news_md-${{ version }}.tar.gz
+    sha256: 83b4003ebccf8e55ec6f06320a3ce55481577e9aa07f0093d3b9043f474b9474
+    target_directory: md
+  - url: https://github.com/explosion/spacy-models/releases/download/es_core_news_lg-${{ version }}/es_core_news_lg-${{ version }}.tar.gz
+    sha256: b1b700d60a21d24198ae2042b745c6e7a9defa4c0d576af8e67b726201ea33cb
+    target_directory: lg
+  - url: https://github.com/explosion/spacy-models/releases/download/es_dep_news_trf-${{ version }}/es_dep_news_trf-${{ version }}.tar.gz
+    sha256: 839e72fdf38a27eebf216f4314171cc3a41e97ceb9e4e898eb319e81ceb387dc
+    target_directory: trf
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: ${{ prefix }}${{ name }}_${{ size }}
+    build:
+      script:
+        file: ${{ 'build.bat' if win else 'build.sh' if unix else '' }}
+    requirements:
+      host:
+        - python
+        - pip
+      run:
+        - python
+        - setuptools
+        - if: unix
+          then: spacy-transformers
+    tests:
+      - python:
+          imports:
+            - ${{ name }}_${{ size }}
+          pip_check: false
+      - requirements:
+          run:
+            - spacy ${{ version.split('.')[0] }}.*
+            - if: unix
+              then: spacy-transformers
+        script:
+          - if: unix
+            then: python -c "import ${{ name }}_${{ size }} as m; m.load()"
+          - python -c "import ${{ name }}_${{ size }} as m; m.load()"
+          - python -c "import spacy; spacy.load('${{ name }}_${{ size }}')"
+
+tests:
+  - script:
+      - echo "make lint happy"
+
+about:
+  license: CC-BY-SA-3.0
+  summary: Spanish multi-task CNN trained on the AnCora and WikiNER corpus
+  license_file: LICENSE
+  homepage: https://spacy.io
+  documentation: https://spacy.io/models/es
+
+extra:
+  recipe-maintainers:
+    - FernandezMathieu
+    - JennaLipscomb
+    - sodre
+    - mxr-conda

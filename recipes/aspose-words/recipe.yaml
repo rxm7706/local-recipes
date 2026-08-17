@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.7.0"
+
+package:
+  name: aspose-words
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/a/aspose-words/aspose_words-26.7.0-py3-none-macosx_10_14_x86_64.whl
+  sha256: 6176ba8e086a46e0094d2345b967e826cc9e762f6bc0d090e5661b08f17d96c3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - aspose_words
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://products.aspose.com/words/python-net/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Aspose.Words for Python is a Document Processing library that allows developers to work with documents in many popular formats without needing Office Automation.
+  description: |
+    Aspose.Words for Python is a Document Processing library that allows developers to work with documents in many popular formats without needing Office Automation.
+  documentation: https://docs.aspose.com/words/python-net/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: aspose-words
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: aspose-words
+  cfe-purls:
+    - pkg:conda/aspose-words@${{ version }}?channel=conda-forge
+    - pkg:pypi/aspose-words@${{ version }}
+  cfe-upstream-repo: https://products.aspose.com/words/python-net/
+  cfe-upstream-homepage: https://products.aspose.com/words/python-net/
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:31Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

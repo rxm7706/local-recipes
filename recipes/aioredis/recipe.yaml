@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: aioredis
+  version: "2.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: eaa51aaf993f2d71f54b70527c440437ba65340588afeb786cd87c55c89cd98e
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - async-timeout
+    - typing-extensions
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - aioredis
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: asyncio (PEP 3156) Redis support
+  homepage: https://github.com/aio-libs/aioredis
+  documentation: http://aioredis.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - epruesse
+    - synapticarbors

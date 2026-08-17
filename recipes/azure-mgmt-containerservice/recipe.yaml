@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: azure-mgmt-containerservice
+  version: "41.5.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 6c1a1bf63ee0b20ed61438d63a8131de487bc7fbff0d4c9e074b33c2f8623f03
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - msrest >=0.7.1
+    - typing_extensions >=4.6.0
+    - typing-extensions >=4.6.0
+    - python >=${{ python_min }}
+    - azure-common >=1.1
+    - azure-mgmt-core >=1.6.0
+    - isodate >=0.6.1
+
+tests:
+  - python:
+      imports:
+        - azure
+        - azure.mgmt
+        - azure.mgmt.containerservice
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Microsoft Azure Container Service Management Client Library for Python.
+  homepage: https://github.com/Azure/azure-sdk-for-python
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - tim-werner

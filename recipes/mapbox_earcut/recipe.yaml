@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mapbox_earcut
+  version: "1.0.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: b6bac5d519d9947a6321a699c15d58e0b5740da61b9210ed229e05ad207c1c04
+
+build:
+  number: 2
+  skip: match(python, "<3.9")
+  skip: true  # [py<39]
+  script: ${{ PYTHON }} -m pip install -vv .
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: pybind11
+    - if: build_platform != target_platform
+      then: scikit-build-core
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib('c') }}
+    - cmake
+    - make
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: numpy
+  host:
+    - python
+    - numpy
+    - pip
+    - pybind11
+    - scikit-build-core
+  run:
+    - python
+    - ${{ pin_compatible('libgd') }}
+
+tests:
+  - python:
+      imports:
+        - mapbox_earcut
+      pip_check: false
+  - files:
+      recipe:
+        - test_earcut.py
+    requirements:
+      run:
+        - pytest
+    script:
+      - pytest test_earcut.py
+
+about:
+  license: ISC AND BSD-3-Clause
+  license_file:
+    - LICENSE.md
+    - include/mapbox/LICENSE
+  summary: "Python version of Mapbox Earcut library: fast and quite robust triangulation of 2D polygons."
+  description: |
+    The library implements a modified ear slicing algorithm, optimized by z-order
+    curve hashing and extended to handle holes, twisted polygons, degeneracies and
+    self-intersections in a way that doesn't guarantee correctness of triangulation,
+    but attempts to always produce acceptable results for practical data like
+    geographical shapes.
+  homepage: https://github.com/skogler/mapbox_earcut_python
+  repository: https://github.com/skogler/mapbox_earcut_python
+
+extra:
+  recipe-maintainers:
+    - ChrisBarker-NOAA
+    - jay-hennen
+    - JamesMakela-NOAA

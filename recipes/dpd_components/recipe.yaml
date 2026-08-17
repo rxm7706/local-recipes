@@ -20,13 +20,13 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - plotly
-    - dash >=3.0
+    - dash >=2.0
     - dash-bootstrap-components
 
 tests:
@@ -34,16 +34,17 @@ tests:
       imports:
         - dpd_components
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version: ${{ python_min }}
 
 about:
-  summary: React components for Django-Plotly-Dash
-  homepage: https://github.com/GibbsConsulting/dpd-components
+  summary: Django Plotly Dash component suite
   license: MIT
-  license_file: LICENSE
-  documentation: https://dash.plotly.com/plugins
+  license_file: LICENSE.txt
+  homepage: https://github.com/GibbsConsulting/dpd-components
   repository: https://github.com/GibbsConsulting/dpd-components
+  documentation: https://dash.plotly.com/plugins
 
 extra:
   recipe-maintainers:
+    - karthick1304
     - rxm7706

@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.15.1"
+
+package:
+  name: tomlkit
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/tomlkit/tomlkit-${{ version }}.tar.gz
+  sha256: e25bbf38843005246210a12982776f27f99cb9be67160e14434d0c0d21ee1e97
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - tomlkit
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Style preserving TOML library
+  license: MIT
+  license_file:
+    - LICENSE
+    - tests/toml-test/LICENSE
+  homepage: https://github.com/python-poetry/tomlkit
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

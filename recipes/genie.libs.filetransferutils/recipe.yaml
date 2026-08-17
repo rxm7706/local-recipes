@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.7"
+
+package:
+  name: genie.libs.filetransferutils
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/g/genie.libs.filetransferutils/genie_libs_filetransferutils-26.7-py3-none-any.whl
+  sha256: 6cd1af4b412c085fcadbbd49adb7b7ef5dbc9e46f5b652c5d51906a7f546c596
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - unicon
+    - pyftpdlib
+    - tftpy <0.8.1
+    - asyncssh
+
+tests:
+  - python:
+      imports:
+        - genie.libs.filetransferutils
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://developer.cisco.com/pyats
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: "Genie libs FileTransferUtils: Genie FileTransferUtils Libraries"
+  description: |
+    Genie libs FileTransferUtils: Genie FileTransferUtils Libraries
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: genie.libs.filetransferutils
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: genie.libs.filetransferutils
+  cfe-purls:
+    - pkg:conda/genie.libs.filetransferutils@${{ version }}?channel=conda-forge
+    - pkg:pypi/genie.libs.filetransferutils@${{ version }}
+  cfe-upstream-repo: https://developer.cisco.com/pyats
+  cfe-upstream-homepage: https://developer.cisco.com/pyats
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:38:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:38:47Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

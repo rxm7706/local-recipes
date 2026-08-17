@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dependency_injector
+  version: "4.49.1"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: b4614fa3731ffec00a381aebc1d17317b0a3a407aa679f164a3ea03c347de691
+
+build:
+  number: 0
+  skip: match(python, "<3.8")
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython >=3.1.1
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - cython >=3.1.1
+  run:
+    - python
+    - if: match(python, "<3.13")
+      then: typing-extensions
+
+tests:
+  - python:
+      imports:
+        - dependency_injector
+        - dependency_injector.ext
+      pip_check: false
+  - requirements:
+      run:
+        - pip
+    script:
+      - if: not (osx and arm64)
+        then: pip check
+
+about:
+  summary: Dependency injection framework for Python
+  license: BSD-3-Clause
+  license_file: LICENSE.rst
+  homepage: https://github.com/ets-labs/python-dependency-injector
+
+extra:
+  recipe-maintainers:
+    - gabrielcnr
+    - valfvo

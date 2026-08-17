@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: pandera
-  version: "0.32.0"
+  version: "0.32.1"
 
 recipe:
   name: pandera-suite
@@ -11,7 +11,7 @@ recipe:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 070c705eafbcfb4dd2ce494154d4bc0ce6d2b8e02a95ae15234040683bbab1f5
+  sha256: 72ecd74226847abf0f0437c05f7f10cc8368e306d88a2acc78fa93762c5a0a02
 
 build:
   number: 0
@@ -291,6 +291,22 @@ outputs:
             - pandera
             - pandera.xarray
             - pandera.typing.xarray
+          pip_check: true
+          python_version: ${{ python_min }}.*
+  - package:
+      name: pandera-narwhals
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage('pandera', exact=True) }}
+        - narwhals >= 1.26.0
+    tests:
+      - python:
+          imports:
+            - pandera
+            - pandera.api.narwhals
+            - pandera.backends.narwhals
           pip_check: true
           python_version: ${{ python_min }}.*
 

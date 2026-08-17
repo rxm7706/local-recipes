@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: lzstring
+  version: "1.0.4"
+  sha256: 1afa61e598193fbcc211e0899f09a9679e33f9102bccc37fbfda0b7fef4d9ea2
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+  patches:
+    - python312.patch
+
+build:
+  number: 1003
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - future
+
+tests:
+  - python:
+      imports:
+        - lzstring
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  summary: lz-string for python
+  license: MIT
+  license_file: LICENSE.md
+  homepage: https://github.com/gkovacs/lz-string-python
+
+extra:
+  recipe-maintainers:
+    - ewels

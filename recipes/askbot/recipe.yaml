@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: askbot
+  version: "0.11.7"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/askbot-${{ version }}.tar.gz
+  sha256: 1203312b0e6cd731dac69892c0159880483e75961a2720d98636bbc28aa7b5eb
+
+build:
+  number: 1
+  noarch: python
+  python:
+    entry_points:
+      - askbot-setup = askbot.deployment:askbot_setup
+
+requirements:
+  build:
+    - nodejs >=18
+    - pnpm
+    - pnpm-licenses
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - akismet ==1.0.1
+    - beautifulsoup4 ==4.7.1
+    - celery >=4.0,<5.0
+    - django >=1.11,<3.0
+    - django-appconf
+    - django-avatar >=4.0
+    - django-countries >=3.3
+    - django-followit ==0.4.1
+    - django-jinja >=2.0
+    - django-keyedcache3 >=1.5.1
+    - django-livesettings3 ==1.4.20
+    - django-picklefield >=1.0.0
+    - django-recaptcha ==1.4.0
+    - django-robots >=3.1
+    - django-tinymce >=2.8.0
+    - django_compressor >=2.0,<=2.4
+    - html5lib ==0.999999999
+    - jinja2 >=2.10
+    - jsonfield >=2.0.0
+    - markdown2 <=2.3.9
+    - oauth2 <=1.9.0.post1
+    - pyjwt <=1.7.1
+    - python >=3.6
+    - python_abi ==3.7
+    - python-cas >=1.4.0,<1.6
+    - python-openid2 ==3.2
+    - pytz
+    - regex
+    - requests-oauthlib >=1.2.0
+    - requirements-parser >=0.2.0
+    - responses >=0.9.0
+    - unidecode
+
+tests:
+  - python:
+      imports:
+        - askbot
+        - askbot.bin
+      pip_check: false
+  - script:
+      - python -c "from django.conf import settings; settings.configure()"
+      - python -c "import importlib.util; assert importlib.util.find_spec('askbot')"
+      - askbot-setup --help
+
+about:
+  summary: Question and Answer forum, like StackOverflow, written in python and Django
+  license: MIT AND LGPL-3.0-or-later AND BSD-3-Clause AND GPL-3.0-or-later AND Apache-2.0 AND BSD-2-Clause
+  license_file:
+    - LICENSE
+    - COPYING
+    - askbot/conf/license.py
+    - askbot/media/ThirdPartyLicenses.txt
+  homepage: http://askbot.org
+  documentation: https://pythonhosted.org/askbot/
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - rxm7706

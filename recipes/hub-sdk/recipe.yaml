@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.25"
+
+package:
+  name: hub-sdk
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/hub-sdk/hub_sdk-${{ version }}.tar.gz
+  sha256: 7c686d395a39b0cf826a9380be8349cbea109b4664cedaea58e92de422e42a58
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=70.0.0
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - requests
+
+tests:
+  - python:
+      imports:
+        - hub_sdk
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://ultralytics.com
+  license: AGPL-3.0-only
+  license_file: LICENSE
+  summary: Ultralytics HUB Client SDK.
+  description: |
+    Ultralytics HUB Client SDK.
+  repository: https://github.com/ultralytics/hub-sdk
+  documentation: https://docs.ultralytics.com
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: hub-sdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: hub-sdk
+  cfe-purls:
+    - pkg:conda/hub-sdk@${{ version }}?channel=conda-forge
+    - pkg:pypi/hub-sdk@${{ version }}
+  cfe-upstream-repo: https://github.com/ultralytics/hub-sdk
+  cfe-upstream-homepage: https://ultralytics.com
+  cfe-import-names: [hub_sdk]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:45:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:45:41Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

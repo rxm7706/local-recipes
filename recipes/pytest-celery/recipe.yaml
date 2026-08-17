@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytest-celery
+  version: "1.3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytest_celery-${{ version }}.tar.gz
+  sha256: bd9e5b0f594ec5de9ab97cf27e3a11c644718a761bab6b997d01800fd7394f64
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - celery
+    - pip
+    - poetry-core
+    - pytest
+    - python ${{ python_min }}.*
+  run:
+    - debugpy >=1.8.12,<2.0.0
+    - celery
+    - docker-py >=7.1.0,<8.0.0
+    - kombu
+    - psutil >=7.0.0
+    - pytest-docker-tools >=3.1.3
+    - python >=${{ python_min }},<4.0
+    - tenacity >=9.0.0
+  run_constraints:
+    - boto3 *
+    - botocore *
+    - pycurl >=7.43
+    - python-memcached *
+    - redis-py *
+    - urllib3 >=1.26.16,<2.0
+
+tests:
+  - python:
+      imports:
+        - pytest_celery
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - pytest --fixtures | grep 'plugins:.* celery'
+
+about:
+  summary: Pytest plugin for Celery
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/celery/pytest-celery
+
+extra:
+  recipe-maintainers:
+    - bouweandela
+    - igortg

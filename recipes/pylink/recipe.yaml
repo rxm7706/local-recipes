@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pylink
+  version: "0.3.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/PyLink-${{ version }}.tar.gz
+  sha256: c15fc96875297e97a8ffe83c8400d639f7b8713515a0a8d12899259a40bf536c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=2.7
+  run:
+    - pyserial
+    - python >=2.7
+
+tests:
+  - python:
+      imports:
+        - pylink
+      pip_check: true
+
+about:
+  summary: Universal communication interface using File-Like API
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/SalemHarrache/PyLink
+
+extra:
+  recipe-maintainers:
+    - rudispr

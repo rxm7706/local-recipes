@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: google-cloud-pubsublite
+  version: 1.13.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: cc56ca57755e7665a66f0c0025ca923f7bfeb39ba408859ffe87cb840c0e82b5
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    # we don't have grpcio >=1.75.1 on conda-forge yet, so we're not ready for python >=3.14
+    - python >=${{ python_min }},<3.14
+    - google-cloud-pubsub >=2.10.0,<3.0.0
+    # constraint for grpcio and grpcio-status for python <3.14
+    - grpcio >=1.38.1,<2.0.0
+    - grpcio-status >=1.38.1,<2.0.0
+    # more restrictive constraints for python >=3.12
+    - overrides >=7.0.1,<8.0.0
+    - google-api-core >=1.33.2,<3.0.0,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.*,!=2.4.*,!=2.5.*,!=2.6.*,!=2.7.*
+    - google-api-core-grpc
+    # use most restrictive constraints (for py>=313) that grayskull misses
+    - proto-plus >=1.25.0,<2.0.0
+
+tests:
+  - python:
+      imports:
+        - google
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  summary: Google Cloud Pubsublite API client library
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/googleapis/python-pubsublite
+
+extra:
+  recipe-maintainers:
+    - xylar

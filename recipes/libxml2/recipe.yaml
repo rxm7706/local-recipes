@@ -1,0 +1,217 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.15.3"
+  sover: 16
+
+recipe:
+  name: libxml2-split
+  version: ${{ version }}
+
+source:
+  url: https://gitlab.gnome.org/GNOME/libxml2/-/archive/v${{ version }}/libxml2-v${{ version }}.tar.gz
+  sha256: 0da50c1415f4ec0364569d2119b1436ba837b31df44af28569d234272c23cf1f
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - if: unix
+      then: libtool
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - if: not win
+      then: autoconf
+    - if: not win
+      then: automake
+    - if: not win
+      then: libtool
+    - if: not win
+      then: pkg-config
+    - if: not win
+      then: make
+    - if: win
+      then: cmake
+  host:
+    - libiconv
+    - if: with_icu == "yes"
+      then: icu
+    - liblzma-devel
+    - zlib
+
+outputs:
+  - package:
+      name: libxml2-${{ sover }}
+    files:
+      - etc/conda/activate.d/libxml2*
+      - if: linux
+        then: lib/libxml2.so.${{ sover }}*
+      - if: osx
+        then: lib/libxml2.${{ sover }}*.dylib
+      - if: win
+        then: Library/bin/libxml2.dll
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
+      host:
+        - libiconv
+        - if: with_icu == "yes"
+          then: icu
+        - liblzma-devel
+        - zlib
+      run_constraints:
+        - if: with_icu != "yes"
+          then: icu <0.0a0
+        - libxml2 2.15.3.*
+    tests:
+      - script:
+          - if: win
+            then: if not exist %LIBRARY_BIN%/libxml2.dll exit 1
+          - if: linux
+            then: test -f $PREFIX/lib/libxml2.so.${{ sover }}
+          - if: osx
+            then: test -f $PREFIX/lib/libxml2.${{ sover }}.dylib
+  - package:
+      name: libxml2
+    files:
+      - ${{ library_prefix }}bin/xmlcatalog*
+      - ${{ library_prefix }}bin/xmllint*
+    build:
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
+      host:
+        - libiconv
+        - if: with_icu == "yes"
+          then: icu
+        - liblzma-devel
+        - zlib
+        - ${{ pin_subpackage('libxml2-' ~ sover, exact=True) }}
+      run:
+        - ${{ pin_subpackage('libxml2-' ~ sover, exact=True) }}
+      run_exports:
+        - libxml2
+        - ${{ pin_subpackage('libxml2-' ~ sover, upper_bound=None) }}
+      run_constraints:
+        - if: with_icu != "yes"
+          then: icu <0.0a0
+    tests:
+      - files:
+          recipe:
+            - test.xml
+            - test_catalog.xml
+        requirements:
+          run:
+            - ripgrep
+        script:
+          - echo on
+          - xmllint test.xml
+          - if: win
+            then: rg \r %CONDA_PREFIX%\etc\conda\${{ task }}.d\libxml2_${{ task }}.sh & if %ERRORLEVEL% NEQ 1 (exit 0) else (exit 1)
+          - if: not win
+            then: mkdir -p "${PREFIX}/etc/xml"
+          - if: win
+            then: mkdir     "%PREFIX%\etc\xml"
+          - if: not win
+            then: cp   test_catalog.xml "${PREFIX}/etc/xml/catalog"
+          - if: win
+            then: copy test_catalog.xml  "%PREFIX%\etc\xml\catalog"
+          - if: not win
+            then: xmlcatalog "" "http://www.w3.org/2001/xml.xsd" | grep -x -F -e "file://test-uri-override"
+          - if: win
+            then: xmlcatalog "" "http://www.w3.org/2001/xml.xsd" | findstr /X "/C:file://test-uri-override"
+          - if: not win
+            then: rm  "${PREFIX}/etc/xml/catalog"
+          - if: win
+            then: del  "%PREFIX%\etc\xml\catalog"
+          - if: not win
+            then: xmlcatalog "" "test-id" | grep -x -F -e "No entry for URI test-id"
+          - if: win
+            then: xmlcatalog "" "test-id" | findstr /X "/C:No entry for URI test-id"
+          - if: not win
+            then: xmlcatalog "test_catalog.xml" "test-id" | grep -x -F -e "file://test-uri"
+          - if: win
+            then: xmlcatalog "test_catalog.xml" "test-id" | findstr /X "/C:file://test-uri"
+          - if: not win
+            then: export XML_CATALOG_FILES="file://$(pwd)/test_catalog.xml"
+          - if: win
+            then: set  "XML_CATALOG_FILES=file://%CD:\=/%/test_catalog.xml"
+          - if: not win
+            then: xmlcatalog "" "test-id" | grep -x -F -e "file://test-uri"
+          - if: win
+            then: xmlcatalog "" "test-id" | findstr /X "/C:file://test-uri"
+          - if: not win
+            then: xmlcatalog "" "http://www.w3.org/2009/01/xml.xsd" | grep -x -F -e "No entry for URI http://www.w3.org/2009/01/xml.xsd"
+          - if: win
+            then: xmlcatalog "" "http://www.w3.org/2009/01/xml.xsd" | findstr /X "/C:No entry for URI http://www.w3.org/2009/01/xml.xsd"
+  - package:
+      name: libxml2-devel
+    files:
+      - if: linux
+        then: lib/libxml2.so
+      - if: osx
+        then: lib/libxml2.dylib
+      - if: win
+        then: Library/lib/libxml2.lib
+      - if: win
+        then: Library/lib/xml2.lib
+      - ${{ library_prefix }}lib/pkgconfig/libxml-2.0.pc
+      - ${{ library_prefix }}lib/cmake/libxml2*
+      - ${{ library_prefix }}include/libxml2
+      - ${{ library_prefix }}bin/xml2-config*
+    build:
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
+      host:
+        - libiconv
+        - if: with_icu == "yes"
+          then: icu
+        - liblzma-devel
+        - zlib
+        - ${{ pin_subpackage('libxml2', exact=True) }}
+        - ${{ pin_subpackage('libxml2-' ~ sover, exact=True) }}
+      run:
+        - ${{ pin_subpackage('libxml2', exact=True) }}
+        - ${{ pin_subpackage('libxml2-' ~ sover, exact=True) }}
+      run_exports:
+        - libxml2
+        - ${{ pin_subpackage('libxml2-' ~ sover, upper_bound=None) }}
+      run_constraints:
+        - if: with_icu != "yes"
+          then: icu <0.0a0
+    tests:
+      - script:
+          - if: win
+            then: if not exist %LIBRARY_LIB%/libxml2.lib exit 1
+          - if: linux
+            then: test -f $PREFIX/lib/libxml2.so
+          - if: osx
+            then: test -f $PREFIX/lib/libxml2.dylib
+
+about:
+  license: MIT
+  license_file: Copyright
+  summary: The XML C parser and toolkit of Gnome
+  description: |
+    Though libxml2 is written in C a variety of language
+    bindings make it available in other environments.
+  homepage: http://xmlsoft.org/
+  repository: https://git.gnome.org/browse/libxml2/
+  documentation: http://xmlsoft.org/html/index.html
+
+extra:
+  feedstock-name: libxml2
+  recipe-maintainers:
+    - isuruf
+    - ocefpaf
+    - jakirkham
+    - gillins
+    - jschueller
+    - msarahan
+    - scopatz

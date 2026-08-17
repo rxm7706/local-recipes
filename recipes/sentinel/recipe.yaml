@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: sentinel
+  version: 1.0.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sentinel-${{ version }}.tar.gz
+  sha256: 190928f9951af6e94a1f84eefcaed791c28097dd152b88e988906be300451fd2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }}
+  run_constraints:
+    - varname >=0.1
+
+tests:
+  - python:
+      imports:
+        - sentinel
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Create sentinel objects, akin to None, NotImplemented, Ellipsis
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/eddieantonio/sentinel
+
+extra:
+  recipe-maintainers:
+    - BubblyOrca
+    - mxr-conda
+    - zbowling

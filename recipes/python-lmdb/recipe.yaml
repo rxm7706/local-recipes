@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.3.0"
+
+package:
+  name: python-lmdb
+  version: ${{ version }}
+
+source:
+  url: https://github.com/jnwatson/py-lmdb/archive/refs/tags/py-lmdb_${{ version }}.tar.gz
+  sha256: 674474011f9947c5b22b24e5cc8995d8c759d8e697cf273770dff3984f88a9ec
+  patches:
+    - 0001-typedef-pid_t-on-win.patch
+
+build:
+  number: 0
+  script:
+    - if: aarch64 or ppc64le
+      then: |
+        # Make sure the build picks up the pthread library on aarch64 and ppc64le,
+        # in particular that pthread_atfork is properly linked.
+        # On other platforms, pthreads are typically linked in by default.
+        # Notes:
+        #   - for ppc64le the problem is assumed, as we are not testing the build.
+        #   - an alternative solution is to build against glibc > 2.28
+        export CFLAGS="${CFLAGS} -pthread"
+    - ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('c') }}
+    - if: unix
+      then: patch
+  host:
+    - python
+    - setuptools
+    - if: win
+      then: patch-ng
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - lmdb
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - pytest
+    script:
+      - pytest -vvv
+
+about:
+  license: OLDAP-2.8
+  license_file: LICENSE
+  summary: Universal Python binding for the LMDB 'Lightning' Database
+  description: |
+    LMDB is a fast, memory-efficient, embedded key-value store (it does
+    not require running an external daemon).
+    With memory-mapped files, it has the read performance of a pure
+    in-memory database while retaining the persistence of standard
+    disk-based databases.
+    python-lmdb is a Python binding for LMDB including a bundled
+    version of LMDB.
+  homepage: https://lmdb.readthedocs.io/
+  repository: https://github.com/jnwatson/py-lmdb
+  documentation: https://lmdb.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - pitrou
+    - h-vetinari
+    - xhochy

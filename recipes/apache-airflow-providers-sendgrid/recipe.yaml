@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: apache-airflow-providers-sendgrid
+  version: "4.2.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/apache_airflow_providers_sendgrid-${{ version }}.tar.gz
+  sha256: b015cf056c0c1c5c24ce85d78871d148cdc42748a55ae35772acd40ae64c2aaa
+
+build:
+  noarch: python
+  script: python -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core ==3.12.0
+  run:
+    - python >=${{ python_min }}
+    - apache-airflow >=2.11.0
+    - apache-airflow-providers-common-compat >=1.8.0
+    - sendgrid >=6.12.5
+
+tests:
+  - python:
+      imports:
+        - airflow.providers.sendgrid
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/apache/airflow/
+  summary: Provider package apache-airflow-providers-sendgrid for Apache Airflow
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+  documentation: https://airflow.apache.org/docs/apache-airflow-providers-sendgrid/stable/index.html
+  repository: https://github.com/apache/airflow/
+
+extra:
+  recipe-maintainers:
+    - xylar

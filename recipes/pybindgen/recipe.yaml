@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pybindgen
+  version: "0.22.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/PyBindGen-${{ version }}.tar.gz
+  sha256: 8c7f22391a49a84518f5a2ad06e3a5b1e839d10e34da7631519c8a28fcba3764
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools-scm
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pybindgen
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Python Bindings Generator
+  license: LGPL-2.1-or-later
+  license_file: COPYING
+  homepage: https://github.com/gjcarneiro/pybindgen
+  documentation: https://pythonhosted.org/PyBindGen/
+
+extra:
+  recipe-maintainers:
+    - rxm7706

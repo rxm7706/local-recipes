@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: incremental
+  version: 24.11.0
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 87d3480dbb083c1d736222511a8cf380012a8176c2456d01ef483242abbbcf8c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling >=1.6.0
+  run:
+    - python >=${{ python_min }}
+    - packaging >=17.0
+    # remove after python_min hits 3.11
+    # keeping this noarch: python
+    - tomli
+
+tests:
+  - python:
+      imports:
+        - incremental
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Incremental is a small library that versions your Python projects.
+  homepage: https://github.com/twisted/incremental
+  repository: https://github.com/twisted/incremental
+
+extra:
+  recipe-maintainers:
+    - isuruf
+    - synapticarbors

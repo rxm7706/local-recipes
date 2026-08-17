@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.15.1"
+
+package:
+  name: astronomer-cosmos
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/astronomer-cosmos/astronomer_cosmos-${{ version }}.tar.gz
+  sha256: 32d04139831f21dc5880a4c41b3270405d492dae6616beef48ac1410e37dd9b7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - aenum
+    - airflow >=2.9.0
+    - attrs
+    - deprecation
+    - jinja2 >=3.0.0
+    - msgpack
+    - openlineage-integration-common
+    - packaging >=22.0
+    - virtualenv
+
+tests:
+  - python:
+      imports:
+        - cosmos
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/astronomer/astronomer-cosmos
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Orchestrate your dbt projects in Airflow
+  description: |
+    Orchestrate your dbt projects in Airflow
+  documentation: https://astronomer.github.io/astronomer-cosmos
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: astronomer-cosmos
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: astronomer-cosmos
+  cfe-purls:
+    - pkg:conda/astronomer-cosmos@${{ version }}?channel=conda-forge
+    - pkg:pypi/astronomer-cosmos@${{ version }}
+  cfe-upstream-repo: https://github.com/astronomer/astronomer-cosmos
+  cfe-upstream-homepage: https://github.com/astronomer/astronomer-cosmos
+  cfe-import-names: [cosmos]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:33Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:33Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

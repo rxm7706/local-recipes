@@ -2,15 +2,16 @@
 schema_version: 1
 
 context:
-  version: "0.1.3"
+  name: condense-json
+  version: "1.1"
 
 package:
-  name: condense-json
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/c/condense-json/condense_json-${{ version }}.tar.gz
-  sha256: 25fe8d434fdafd849e8d98f21a3e18f96ae2d6dbc2c17565f29e4843d039d2bc
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/condense_json-${{ version }}.tar.gz
+  sha256: c455b54bbbab89a69f598b09f2003a89b738df20d30e6aa341c495401ec5b349
 
 build:
   number: 0
@@ -23,31 +24,20 @@ requirements:
     - setuptools
     - pip
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
 
 tests:
   - python:
       imports:
         - condense_json
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
-  homepage: https://pypi.org/project/condense-json/
+  summary: Python function for condensing JSON using replacement strings
   license: Apache-2.0
   license_file: LICENSE
-  summary: Python function for condensing JSON using replacement strings
-  repository: https://github.com/simonw/condense-json
-  documentation: https://github.com/simonw/condense-json#readme
-  description: |
-    condense-json provides a condense_json function that searches a
-    JSON-like object for strings containing specified replacement
-    substrings and replaces them with a compact representation, making
-    the JSON more concise. A companion uncondense_json function reverses
-    the process. Strings consisting entirely of a replacement are encoded
-    as {"$": replacement_id}.
+  homepage: https://github.com/simonw/condense-json
 
 extra:
   recipe-maintainers:

@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.33.7"
+
+package:
+  name: mpg123
+  version: ${{ version }}
+
+source:
+  url: https://downloads.sourceforge.net/project/mpg123/mpg123/${{ version }}/mpg123-${{ version }}.tar.bz2
+  sha256: 31d0e35a4ca567ec9b5ebda6c3062bb4435d6d3eacd6ef0d95cadd7854dc03ee
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - if: unix
+      then: gnuconfig
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+    - if: not win
+      then: make
+    - if: win
+      then: cmake
+    - if: win
+      then: ninja
+    - if: win
+      then: yasm
+    - if: unix
+      then: pkg-config
+  host:
+  run_exports:
+    - ${{ pin_subpackage("mpg123", upper_bound="x.x") }}
+
+tests:
+  - script:
+      - if: not win
+        then: test -f $PREFIX/lib/libmpg123${SHLIB_EXT}
+      - if: not win
+        then: test -f $PREFIX/lib/libout123${SHLIB_EXT}
+      - if: win
+        then: if not exist %PREFIX%\\Library\\bin\\mpg123.dll exit 1
+      - if: win
+        then: if not exist %PREFIX%\\Library\\lib\\mpg123.lib exit 1
+      - if: win
+        then: if not exist %PREFIX%\\Library\\bin\\out123.dll exit 1
+      - if: win
+        then: if not exist %PREFIX%\\Library\\lib\\out123.lib exit 1
+
+about:
+  license: LGPL-2.1-only
+  license_file: COPYING
+  summary: mpg123 - fast console MPEG Audio Player and decoder library
+  homepage: https://www.mpg123.de/
+
+extra:
+  recipe-maintainers:
+    - hbredin
+    - thomasfillon
+    - bmcfee
+    - hmaarrfk

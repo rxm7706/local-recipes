@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.10.0"
+  python_min: "3.12"
+
+package:
+  name: mcf
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mcf/mcf-${{ version }}.tar.gz
+  sha256: 2de3c14e75d6fecedd9d3133fb1ac3b984fb83430054356f94a0a6e7bce5cf1a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - ray-core ==2.55.1
+    - pandas ==3.0.3
+    - matplotlib-base ==3.10.9
+    - numba ==0.65.1
+    - sympy ==1.14.0
+    - scikit-learn ==1.8.0
+    - scipy ==1.17.1
+    - pytorch ==2.12.0
+    - fpdf2 ==2.8.7
+    - seaborn-base ==0.13.2
+    - statsmodels ==0.14.6
+
+tests:
+  - python:
+      imports:
+        - mcf
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://mcfpy.github.io/mcf/#/
+  license: MIT
+  license_file: LICENSE
+  summary: Modified Causal Forest in Python
+  description: |
+    Modified Causal Forest in Python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mcf
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mcf
+  cfe-purls:
+    - pkg:conda/mcf@${{ version }}?channel=conda-forge
+    - pkg:pypi/mcf@${{ version }}
+  cfe-upstream-repo: https://mcfpy.github.io/mcf/#/
+  cfe-upstream-homepage: https://mcfpy.github.io/mcf/#/
+  cfe-import-names: [mcf]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:27:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:27:32Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

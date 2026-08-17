@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: openapi-pydantic
+  version: "0.5.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/openapi_pydantic-${{ version }}.tar.gz
+  sha256: ff6835af6bde7a459fb93eb93bb92b8749b754fc6e51b2f1590a19dc3005ee0d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pydantic >=1.8
+
+tests:
+  - python:
+      imports:
+        - openapi_pydantic
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Pydantic OpenAPI schema implementation
+  license: MIT
+  license_file:
+    - LICENSE
+  homepage: https://github.com/mike-oakley/openapi-pydantic
+
+extra:
+  recipe-maintainers:
+    - thewchan

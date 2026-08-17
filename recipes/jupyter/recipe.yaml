@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.1"
+
+package:
+  name: jupyter
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/jupyter/jupyter-${{ version }}.tar.gz
+  sha256: d55467bceabdea49d7e3624af7e33d59c37fff53ed3a350e1ac957bed731de7a
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - pip
+    - setuptools
+    - python ${{ python_min }}
+  run:
+    - ipykernel
+    - ipywidgets
+    - jupyter_console
+    - jupyterlab
+    - nbconvert-core
+    - notebook
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - jupyter
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - jupyter --help
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Jupyter metapackage. Install all the Jupyter components in one go.
+  homepage: https://jupyter.org
+  repository: https://github.com/jupyter/jupyter
+
+extra:
+  recipe-maintainers:
+    - minrk
+    - ocefpaf
+    - xylar

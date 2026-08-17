@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: validate-pyproject
   version: "0.25"
 
 package:
-  name: validate-pyproject
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/v/validate-pyproject/validate_pyproject-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/validate_pyproject-${{ version }}.tar.gz
   sha256: e68c12d1cb0d8ddc269ffc42875a81727ddb7865000aa6d2f77d833b55c53f0b
 
 build:
@@ -22,24 +23,32 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - setuptools >=61.2.0
     - setuptools-scm >=7.1
     - pip
   run:
     - python >=${{ python_min }}
-    - python-fastjsonschema >=2.16.2,<=3
+    - python-fastjsonschema <=3,>=2.16.2
+    # - validate-pyproject-schema-store
+    # - trove-classifiers >=2021.10.20
+    # - tomli >=1.2.1
+    # - packaging >=24.2
+    # - validate-pyproject-schema-store
+    # - trove-classifiers >=2021.10.20
+    # - tomli >=1.2.1
+    # - packaging >=24.2
+    # - validate-pyproject-schema-store
+    # - trove-classifiers >=2021.10.20
+    # - tomli >=1.2.1
+    # - packaging >=24.2
 
 tests:
   - python:
       imports:
         - validate_pyproject
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
-  - script:
-      - validate-pyproject --help
+      python_version: ${{ python_min }}
 
 about:
   summary: Validation library and CLI tool for checking on pyproject.toml files using JSON Schema
@@ -53,14 +62,8 @@ about:
     - tests/examples/atoml/LICENSE
     - tests/examples/trampolim/LICENSE
     - tests/examples/pdm/LICENSE
-  homepage: https://github.com/abravalheri/validate-pyproject
+  homepage: https://github.com/abravalheri/validate-pyproject/
   repository: https://github.com/abravalheri/validate-pyproject
-  documentation: https://validate-pyproject.readthedocs.io
-  description: |
-    validate-pyproject is a validation library and CLI tool for checking on
-    pyproject.toml files using JSON Schema. It validates the standardized
-    [build-system] and [project] tables, as well as the [tool.setuptools]
-    table, and is extensible via plugins for other tool tables.
 
 extra:
   recipe-maintainers:

@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.15.0"
+
+package:
+  name: aiortc
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/aiortc/aiortc-${{ version }}.tar.gz
+  sha256: ee6c0757ca070cf6d6bee441936d6ede24eef51211bbff6653409c540f72e625
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - aioice >=0.10.1
+    - av >=14.0.0,<17.0.0a0
+    - cffi >=1.0.0
+    - cryptography >=44.0.0
+    - google-crc32c >=1.1
+    - pyee >=13.0.0
+    - pylibsrtp >=0.10.0
+    - pyopenssl >=25.0.0
+
+tests:
+  - python:
+      imports:
+        - aiortc
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: An implementation of WebRTC and ORTC
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/aiortc/aiortc
+
+extra:
+  recipe-maintainers:
+    - hmaarrfk

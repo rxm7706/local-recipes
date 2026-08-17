@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "2.11.0"
+  version: "2.12.0"
   python_min: "3.11"
 
 package:
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://github.com/IBM/ibm-watsonx-orchestrate-adk/archive/refs/tags/${{ version }}.tar.gz
-  sha256: afb442be18de9452f3f0a00f420d74d81440287af436048c99e73468cc90cbbc
+  sha256: 9ad1264a017fbec6790f8e7d65f24f992a7e18669b454607c29c6f691aed6dbe
 
 build:
   number: 0
@@ -26,7 +26,7 @@ requirements:
   run:
     - python >=${{ python_min }},<3.15
     - ibm-cloud-sdk-core >=3.24.2
-    - ibm-watsonx-orchestrate-core ==2.11.0
+    - ibm-watsonx-orchestrate-core ==${{ version }}
     - websocket-client >=1.8.0,<2.0.0
 
 tests:

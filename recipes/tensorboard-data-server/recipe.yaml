@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Windows is currently unsupported, so we build an universal dummy wheel instead for Windows
+# See https://github.com/tensorflow/tensorboard/blob/348af4c/tensorboard/data/server/pip_package/build.py#L78-L86
+schema_version: 1
+
+context:
+  name: tensorboard-data-server
+  version: "0.7.0"
+  _name: tensorboard_data_server
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/tensorflow/tensorboard/archive/refs/tags/data-server-v${{ version }}.tar.gz
+  sha256: 47f0b4edf434cedea351f60ad7ebe63b575cfd103fa19555b404e0e108c364cd
+  patches:
+    - if: win
+      then: 0001-Do-not-try-to-remove-tmpdir-on-Windows.patch
+    - if: osx and arm64
+      then: 0002-do-not-use-platform-tag.patch
+
+build:
+  number: 4
+  script: {}
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: not win
+      then: ${{ compiler('c') }}
+    - if: not win
+      then: ${{ stdlib("c") }}
+    - if: not win
+      then: ${{ compiler('rust') }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - if: not win
+      then: openssl
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - tensorboard_data_server
+      pip_check: false
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Data server for TensorBoard
+  homepage: https://github.com/tensorflow/tensorboard
+  repository: https://github.com/tensorflow/tensorboard/tree/master/tensorboard/data/server
+
+extra:
+  recipe-maintainers:
+    - Carreau
+    - mdraw
+    - ngam

@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.6"
+  python_min: "3.11"
+
+package:
+  name: streamlit-pydantic-form
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/streamlit-pydantic-form/streamlit_pydantic_form-${{ version }}.tar.gz
+  sha256: d7152d7c1dd37b6a7a7449db6437c3bc0f2258792c443905ea3f53c300b5c8f5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - streamlit >=1.37.0
+    - pydantic >=2.5.3
+    - typing_extensions >=4.9.0
+
+tests:
+  - python:
+      imports:
+        - streamlit_pydantic_form
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/shunichironomura/streamlit-pydantic-form
+  license: MIT
+  license_file: LICENSE
+  summary: Streamlit form component defined by a Pydantic model
+  description: |
+    Streamlit form component defined by a Pydantic model
+  repository: https://github.com/shunichironomura/streamlit-pydantic-form
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: streamlit-pydantic-form
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: streamlit-pydantic-form
+  cfe-purls:
+    - pkg:conda/streamlit-pydantic-form@${{ version }}?channel=conda-forge
+    - pkg:pypi/streamlit-pydantic-form@${{ version }}
+  cfe-upstream-repo: https://github.com/shunichironomura/streamlit-pydantic-form
+  cfe-upstream-homepage: https://github.com/shunichironomura/streamlit-pydantic-form
+  cfe-import-names: [streamlit_pydantic_form]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:34:49Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:34:49Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

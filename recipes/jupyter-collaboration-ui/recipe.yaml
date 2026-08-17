@@ -2,43 +2,64 @@
 schema_version: 1
 
 context:
-  name: jupyter-collaboration-ui
-  version: 2.1.1
+  version: "3.0.0"
+  jupyterlab_min: "4.6.0"
+  jupyterlab_max: "4.7.0"
+  python_check_max: "3.14"
+  grep: ${{ 'grep -iE' if unix else 'findstr /c' }}
 
 package:
-  name: ${{ name|lower }}
+  name: jupyter-collaboration-ui
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jupyter_collaboration_ui-${{ version }}.tar.gz
-  sha256: 7aa3ecb1884540c3a2dcc74fc02a06ad820c2bc04de8769f406d86aba16d9fad
+  url: https://pypi.org/packages/source/j/jupyter-collaboration-ui/jupyter_collaboration_ui-${{ version }}.tar.gz
+  sha256: 70f47eb02bd7d51a8b4cb70fa90ebe4d2f0eac350d915c5c3b3018c928aa5f1d
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
 
 requirements:
   host:
-    - python >=3.8
+    - hatch-jupyter-builder >=0.5
     - hatchling >=1.4.0
-    - jupyterlab >=4.0.0
+    - jupyter-builder >=1.2.0
     - pip
+    - python ${{ python_min }}.*
   run:
-    - python >=3.8
+    - python >=${{ python_min }}
+  run_constraints:
+    - jupyterlab >=${{ jupyterlab_min }},<${{ jupyterlab_max }}
 
 tests:
   - python:
-      imports:
-        - jupyter_collaboration_ui
+      imports: jupyter_collaboration_ui
       pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - requirements:
+      run:
+        - jupyterlab
+    script:
+      - pip check
+      - jupyter labextension list --debug
+      - jupyter labextension list --debug 2>&1 | ${{ grep }} "collaboration-extension.*OK"
 
 about:
   summary: JupyterLab/Jupyter Notebook 7+ extension providing user interface integration for real time collaboration
   license: BSD-3-Clause
-  license_file: LICENSE
-  repository: https://github.com/jupyterlab/jupyter-collaboration/tree/main/packages/collaboration-extension
+  license_file:
+    - LICENSE
+    - jupyter_collaboration_ui/labextension/static/third-party-licenses.json
+  homepage: https://pypi.org/project/jupyter-collaboration-ui
+  repository: https://github.com/jupyterlab/jupyter-collaboration
+  documentation: https://jupyterlab-realtime-collaboration.readthedocs.io
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - conda-forge/jupyter-collaboration
+    - bollwyvl

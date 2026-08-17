@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: tslearn
+  version: "0.9.0"
+  sha256: eb7d32b6876a5606275ebecbf9e0b22075490a5fc8d1d09e4c13c884b30a45af
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  skip: match(python, ">=2,<3")
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - if: build_platform != target_platform
+      then: numpy
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - cython
+    - numpy
+  run:
+    - python
+    - scipy
+    - scikit-learn
+    - numba
+    - joblib
+    - statsmodels
+
+tests:
+  - python:
+      imports:
+        - tslearn
+        - tslearn.metrics
+      pip_check: false
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: A machine learning toolkit dedicated to time-series data
+  description: |
+    tslearn is a Python package that provides machine learning tools
+    for the analysis of time series. This package builds on
+    scikit-learn, numpy and scipy libraries.
+  homepage: http://tslearn.readthedocs.io/
+  repository: https://github.com/tslearn-team/tslearn
+  documentation: http://tslearn.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - rth
+    - rtavenar
+    - charavelg

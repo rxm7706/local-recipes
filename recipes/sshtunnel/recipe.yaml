@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sshtunnel
+  version: "0.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sshtunnel-${{ version }}.tar.gz
+  sha256: e7cb0ea774db81bf91844db22de72a40aae8f7b0f9bb9ba0f666d474ef6bf9fc
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - sshtunnel=sshtunnel:_cli_main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - paramiko >=2.7.2
+
+tests:
+  - python:
+      imports:
+        - sshtunnel
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - sshtunnel --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Pure Python SSH tunnels
+  homepage: https://github.com/pahaz/sshtunnel
+  repository: https://github.com/pahaz/sshtunnel
+  documentation: https://github.com/pahaz/sshtunnel
+
+extra:
+  recipe-maintainers:
+    - basnijholt
+    - pahaz
+    - fernandezcuesta
+    - BrentDorsey
+    - xylar

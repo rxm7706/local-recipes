@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.0"
+
+package:
+  name: roadrecon
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/roadrecon/roadrecon-${{ version }}.tar.gz
+  sha256: c33af427ab4686c65d8d30de21e4b30914eaba2c38899f05c6a1449757c2da25
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=42.0.0
+  run:
+    - python >=${{ python_min }}
+    - roadlib >=1.7
+    - flask <3
+    - sqlalchemy >=1.4
+    - marshmallow <4
+    - flask-sqlalchemy >=2.5
+    - flask-marshmallow
+    - flask_cors
+    - marshmallow-sqlalchemy >=0.29
+    - aiohttp
+    - openpyxl
+
+tests:
+  - python:
+      imports:
+        - roadtools.roadrecon
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/dirkjanm/ROADtools/
+  license: MIT
+  license_file: LICENSE
+  summary: Entra ID (Azure AD) recon for red and blue
+  description: |
+    Entra ID (Azure AD) recon for red and blue
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: roadrecon
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: roadrecon
+  cfe-purls:
+    - pkg:conda/roadrecon@${{ version }}?channel=conda-forge
+    - pkg:pypi/roadrecon@${{ version }}
+  cfe-upstream-repo: https://github.com/dirkjanm/ROADtools/
+  cfe-upstream-homepage: https://github.com/dirkjanm/ROADtools/
+  cfe-import-names: [roadtools.roadrecon]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:21:11Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:21:11Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

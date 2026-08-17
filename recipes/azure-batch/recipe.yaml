@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: azure-batch
+  version: "15.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 2f684d176b457b7213535e145180a914ed6844b2d1066fcc22ac88c3ac9e3fa5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - isodate >=0.6.1
+    - azure-core >=1.37.0
+    - typing-extensions >=4.6.0
+tests:
+  - python:
+      imports:
+        - azure.batch
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Microsoft Azure Batch Client Library for Python
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/Azure/azure-sdk-for-python
+  repository: https://github.com/Azure/azure-sdk-for-python
+  documentation: https://docs.microsoft.com/en-us/azure/developer/python/
+
+extra:
+  recipe-maintainers:
+    - xylar
+    - janjagusch

@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.49.9"
+  maturin_min: "1.0"
+  maturin_max: "2.0"
+  python_check_max: "3.14"
+  abi3_ext: ${{ "pyd" if win else "abi3.so" }}
+  unix_sp_dir: |-
+    $(python -c "print(__import__('site').getsitepackages()[-1])")/jsonschema_rs
+  win_sp_dir: |-
+    Lib\site-packages\jsonschema_rs
+  sp_dir: |-
+    ${{ "%PREFIX%\\" ~ win_sp_dir if win else unix_sp_dir }}
+  # test_annotation_suite.py: needs fixtures from `jsonschema` submodule (#28)
+  unlink_tests: |-
+    crates/jsonschema-py/tests-py/test_annotation_suite.py
+
+package:
+  name: jsonschema-rs
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/jsonschema-rs/jsonschema_rs-${{ version }}.tar.gz
+  sha256: fca929c842551c951e5227b64d965dea1b0671a20fc96871b8d581c12e0c4257
+
+build:
+  number: 0
+  skip: is_abi3 and not is_python_min
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+  python:
+    version_independent: ${{ is_abi3 }}
+
+requirements:
+  build:
+    - ${{ compiler("rust") }}
+    - ${{ stdlib("c") }}
+    - cargo-bundle-licenses
+  host:
+    - maturin >=${{ maturin_min }},<${{ maturin_max }}
+    - pip
+    - python
+    - if: is_abi3
+      then:
+        - python-abi3
+  run:
+    - python
+  ignore_run_exports:
+    by_name:
+      - if: is_abi3
+        then:
+          - python_abi
+
+tests:
+  - if: is_abi3
+    then:
+      - python:
+          imports: jsonschema_rs
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    else:
+      - python:
+          imports: jsonschema_rs
+          pip_check: true
+  - files:
+      source:
+        - crates/jsonschema-py/tests-py/
+    requirements:
+      run:
+        - flask >=2.2.5
+        - hypothesis >=6.79.4
+        - pytest >=7.4.4
+        - if: is_abi3
+          then:
+            - abi3audit
+    script:
+      - python -c "from pathlib import Path; [Path(p).unlink() for p in '${{ unlink_tests }}'.split()]"
+      - pytest -vv --tb=long --color=yes crates/jsonschema-py -k "not readme"
+      - if: is_abi3
+        then:
+          - cd ${{ sp_dir }}
+          - abi3audit -s -v --assume-minimum-abi3 ${{ python_min }} jsonschema_rs.${{ abi3_ext }}
+
+about:
+  summary: A high-performance JSON Schema validator for Python
+  license: MIT
+  license_file:
+    - THIRDPARTY.yml
+    - crates/jsonschema-referencing/LICENSE
+    - crates/jsonschema/LICENSE
+  homepage: https://pypi.org/project/jsonschema-rs
+  repository: https://github.com/Stranger6667/jsonschema
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

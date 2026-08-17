@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.5.1"
+
+package:
+  name: tinycss2
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/tinycss2/tinycss2-${{ version }}.tar.gz
+  sha256: d339d2b616ba90ccce58da8495a78f46e55d4d25f9fd71dfd526f07e7d53f957
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - flit-core >=3.2,<4
+    - python ${{ python_min }}.*
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - webencodings >=0.4
+
+tests:
+  - python:
+      imports:
+        - tinycss2
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Low-level CSS parser for Python
+  description: |
+    tinycss2 is a rewrite of tinycss with a simpler API, based on the more recent
+    CSS Syntax Level 3 Specification.
+  homepage: https://github.com/Kozea/tinycss2
+  repository: https://github.com/Kozea/tinycss2
+  documentation: http://tinycss2.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - johanneskoester
+    - mrandrewandrade
+    - thewchan

@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: azure-mgmt-msi
+  version: "7.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 1a01a089f1f66cb0d4b2886603d5ba415f360eff0be6f685737ecdd59c78225b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - azure-common >=1.1.0,<2.0.0
+    - azure-mgmt-core >=1.5.0,<2.0.0
+    - isodate >=0.6.1
+    - typing-extensions >=4.6.0
+
+tests:
+  - python:
+      imports:
+        - azure
+        - azure.mgmt
+        - azure.mgmt.msi
+        - azure.mgmt.msi.models
+      pip_check: false
+      python_version: ${{ python_min }}.*
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Microsoft Azure MSI Management Client Library for Python
+  homepage: https://github.com/Azure/azure-sdk-for-python
+  repository: https://github.com/Azure/azure-sdk-for-python
+  documentation: https://docs.microsoft.com/python/api/overview/azure/activedirectory
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - andreyz4k
+    - janjagusch

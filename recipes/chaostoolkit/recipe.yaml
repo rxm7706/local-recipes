@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.20.0"
+  python_min: "3.12"
+
+package:
+  name: chaostoolkit
+  version: ${{ version }}
+
+source:
+  url: https://github.com/chaostoolkit/chaostoolkit/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 03c8e81f474f8d5d206262bb4c4dd80ee63ea11c178a8d86c2b491595bbd316f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - click >=8.0
+    - click-plugins >=1.1
+    - chaostoolkit-lib >=1.42
+    - importlib-metadata >=6.0
+    - pyyaml >=6.0.1
+
+tests:
+  - python:
+      imports:
+        - chaostoolkit
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://chaostoolkit.org/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Chaos Engineering Toolkit for everyone
+  description: |
+    Chaos Engineering Toolkit for everyone
+  repository: https://github.com/chaostoolkit/chaostoolkit
+  documentation: https://chaostoolkit.org/reference/concepts/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: chaostoolkit
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: chaostoolkit
+  cfe-purls:
+    - pkg:conda/chaostoolkit@${{ version }}?channel=conda-forge
+    - pkg:pypi/chaostoolkit@${{ version }}
+  cfe-upstream-repo: https://github.com/chaostoolkit/chaostoolkit
+  cfe-upstream-homepage: https://chaostoolkit.org/
+  cfe-import-names: [chaostoolkit]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:56:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:56:42Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

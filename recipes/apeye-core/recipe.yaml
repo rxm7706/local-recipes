@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: apeye-core
+  version: "1.1.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/apeye_core-${{ version }}.tar.gz
+  sha256: 5de72ed3d00cc9b20fea55e54b7ab8f5ef8500eb33a5368bc162a5585e238a55
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - hatchling
+    - hatch-requirements-txt
+    - pip
+    - python ${{ python_min }}
+  run:
+    - domdf-python-tools >=2.6.0
+    - idna >=2.5
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - apeye_core
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Core (offline) functionality for the apeye library.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://pypi.org/project/apeye-core/
+
+extra:
+  recipe-maintainers:
+    - domdfcoding

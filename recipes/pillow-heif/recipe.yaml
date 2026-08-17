@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pillow-heif
+  version: "1.5.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pillow_heif-${{ version }}.tar.gz
+  sha256: 16b11a37b762ff42da2d36527bb5cb14bd9194c24c389ee911155d6e23c53065
+
+build:
+  number: 0
+  skip:
+    - match(python, "<3.10")
+  script:
+    - if: win
+      then: if not exist "%LIBRARY_LIB%\libheif.lib" copy "%LIBRARY_LIB%\heif.lib" "%LIBRARY_LIB%\libheif.lib"
+    - if: win
+      then: set "MSYS2_PREFIX=%LIBRARY_PREFIX%"
+    - python -m pip install . -vv --no-deps --no-build-isolation
+    - if: win
+      then: if exist "%LIBRARY_LIB%\libheif.lib" del "%LIBRARY_LIB%\libheif.lib"
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then:
+        - cross-python_${{ target_platform }}
+        - python
+  host:
+    - libheif
+    - pip
+    - python
+    - setuptools >=67.8
+    - wheel
+  run:
+    - pillow >=11.1.0
+    - python
+
+tests:
+  - python:
+      imports:
+        - pillow_heif
+  - script:
+      - pip check
+      - python run_test.py
+    files:
+      recipe:
+        - run_test.py
+    requirements:
+      run:
+        - pip
+        - python
+
+about:
+  homepage: https://github.com/bigcat88/pillow_heif
+  repository: https://github.com/bigcat88/pillow_heif
+  summary: Python interface for libheif library
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE.txt
+    - tests/images/heif_other/nokia/COPYRIGHT.txt
+
+extra:
+  recipe-maintainers:
+    - jeongseok-meta
+    - rxm7706

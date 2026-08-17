@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytest-dotenv
+  version: "0.5.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytest-dotenv-${{ version }}.tar.gz
+  sha256: 2dc6c3ac6d8764c71c6d2804e902d0ff810fa19692e95fe138aefc9b1aa73732
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - pytest >=5.0.0
+    - python >=${{ python_min }}
+    - python-dotenv >=0.9.1
+
+tests:
+  - python:
+      imports:
+        - pytest_dotenv
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A py.test plugin that parses environment files before running tests
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/quiqua/pytest-dotenv
+
+extra:
+  recipe-maintainers:
+    - hadim

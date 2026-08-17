@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: hjson-py
+  version: "3.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/hjson/hjson-${{ version }}.tar.gz
+  sha256: 55af475a27cf83a7969c808399d7bccdec8fb836a07ddbd574587593b9cdcf75
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - hjson
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Hjson, a user interface for JSON.
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  homepage: http://github.com/hjson/hjson-py
+
+extra:
+  recipe-maintainers:
+    - groodt
+    - weiji14

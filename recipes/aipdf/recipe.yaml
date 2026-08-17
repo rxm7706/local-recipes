@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.7.2"
+
+package:
+  name: aipdf
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/aipdf/aipdf-${{ version }}.tar.gz
+  sha256: b45a8a6472bc7087adf45e2578df9397a43c5d129742609c887ce1990cec884a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=45
+  run:
+    - python >=${{ python_min }}
+    - pymupdf ==1.27.2
+    - openai <3.0.0,>=2.0.0
+
+tests:
+  - python:
+      imports:
+        - aipdf
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/mindsdb/aipdf
+  license: MIT
+  license_file: LICENSE
+  summary: A tool to extract PDF files to markdown, or any other format using AI
+  description: |
+    A tool to extract PDF files to markdown, or any other format using AI
+  repository: https://github.com/mindsdb/aipdf.git
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: aipdf
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: aipdf
+  cfe-purls:
+    - pkg:conda/aipdf@${{ version }}?channel=conda-forge
+    - pkg:pypi/aipdf@${{ version }}
+  cfe-upstream-repo: https://github.com/mindsdb/aipdf.git
+  cfe-upstream-homepage: https://github.com/mindsdb/aipdf
+  cfe-import-names: [aipdf]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:08Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

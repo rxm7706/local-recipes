@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: docformatter
+  version: 1.7.8
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 6589b62a8f38c62c4c8c84cb1afa296af007c88c959e4c9d25c74c1f933c4dbf
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - docformatter = docformatter.__main__:main
+
+requirements:
+  host:
+    - pip
+    - poetry-core >=1.0.0
+    - python ${{ python_min }}.*
+  run:
+    - charset-normalizer >=3.0.0
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - docformatter
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - docformatter -h
+
+about:
+  homepage: https://github.com/PyCQA/docformatter
+  repository: https://github.com/PyCQA/docformatter
+  license: MIT
+  license_file: LICENSE
+  summary: Formats docstrings to follow `PEP 257 <https://www.python.org/dev/peps/pep-0257/>`_.
+  description: |
+    docformatter currently automatically formats docstrings to follow a subset of the PEP 257 conventions.
+
+extra:
+  recipe-maintainers:
+    - weiji14
+    - carlodri

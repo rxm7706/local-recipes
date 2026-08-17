@@ -1,0 +1,162 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cloudpathlib
+  version: "0.24.0"
+
+recipe:
+  name: cloudpathlib-meta
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: c521a984e77b47e656fe78e20a7e3e260e0ab45fc69e33ac01094227c979e34a
+
+build:
+  number: 0
+  noarch: python
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - flit-core >=3.2,<4
+
+outputs:
+  - package:
+      name: cloudpathlib
+    build:
+      noarch: python
+      script: ${{ PYTHON }} -m pip install . -vv
+    requirements:
+      host:
+        - pip
+        - python ${{ python_min }}
+        - flit-core >=3.2,<4
+      run:
+        - python >=${{ python_min }}
+        - typing_extensions
+    tests:
+      - python:
+          imports:
+            - cloudpathlib
+          pip_check: true
+          python_version: ${{ python_min }}
+  - package:
+      name: cloudpathlib-azure
+    build:
+      noarch: python
+    requirements:
+      host:
+        - pip
+        - python ${{ python_min }}
+        - flit-core >=3.2,<4
+      run:
+        - python >=${{ python_min }}
+        - ${{ pin_subpackage('cloudpathlib', exact=True) }}
+        - azure-storage-blob >=12
+        - azure-storage-file-datalake >=12
+    tests:
+      - python:
+          imports:
+            - cloudpathlib
+          pip_check: true
+          python_version: ${{ python_min }}
+      - requirements:
+          run:
+            - pip
+            - python ${{ python_min }}
+        script:
+          - python -c "from cloudpathlib.cloudpath import implementation_registry; implementation_registry['azure'].validate_completeness()"
+  - package:
+      name: cloudpathlib-gs
+    build:
+      noarch: python
+    requirements:
+      host:
+        - pip
+        - python ${{ python_min }}
+        - flit-core >=3.2,<4
+      run:
+        - python >=${{ python_min }}
+        - ${{ pin_subpackage('cloudpathlib', exact=True) }}
+        - google-cloud-storage
+    tests:
+      - python:
+          imports:
+            - cloudpathlib
+          pip_check: true
+          python_version: ${{ python_min }}
+      - requirements:
+          run:
+            - pip
+            - python ${{ python_min }}
+        script:
+          - python -c "from cloudpathlib.cloudpath import implementation_registry; implementation_registry['gs'].validate_completeness()"
+  - package:
+      name: cloudpathlib-s3
+    build:
+      noarch: python
+    requirements:
+      host:
+        - pip
+        - python ${{ python_min }}
+        - flit-core >=3.2,<4
+      run:
+        - python >=${{ python_min }}
+        - ${{ pin_subpackage('cloudpathlib', exact=True) }}
+        - boto3 >=1.34.0
+    tests:
+      - python:
+          imports:
+            - cloudpathlib
+          pip_check: true
+          python_version: ${{ python_min }}
+      - requirements:
+          run:
+            - pip
+            - python ${{ python_min }}
+        script:
+          - python -c "from cloudpathlib.cloudpath import implementation_registry; implementation_registry['s3'].validate_completeness()"
+  - package:
+      name: cloudpathlib-all
+    build:
+      noarch: python
+    requirements:
+      host:
+        - pip
+        - python ${{ python_min }}
+        - flit-core >=3.2,<4
+      run:
+        - python >=${{ python_min }}
+        - ${{ pin_subpackage('cloudpathlib-azure', exact=True) }}
+        - ${{ pin_subpackage('cloudpathlib-gs', exact=True) }}
+        - ${{ pin_subpackage('cloudpathlib-s3', exact=True) }}
+    tests:
+      - python:
+          imports:
+            - cloudpathlib
+          pip_check: true
+          python_version: ${{ python_min }}
+      - requirements:
+          run:
+            - pip
+            - python ${{ python_min }}
+        script:
+          - python -c "from cloudpathlib.cloudpath import implementation_registry; implementation_registry['azure'].validate_completeness()"
+          - python -c "from cloudpathlib.cloudpath import implementation_registry; implementation_registry['gs'].validate_completeness()"
+          - python -c "from cloudpathlib.cloudpath import implementation_registry; implementation_registry['s3'].validate_completeness()"
+
+about:
+  summary: pathlib.Path-style classes for interacting with files in different cloud storage services.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/drivendataorg/cloudpathlib
+  repository: https://github.com/drivendataorg/cloudpathlib
+  documentation: https://cloudpathlib.drivendata.org/
+
+extra:
+  feedstock-name: cloudpathlib
+  recipe-maintainers:
+    - jayqi

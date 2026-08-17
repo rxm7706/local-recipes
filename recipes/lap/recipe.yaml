@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.13"
+  name: lap
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/lap-${{ version }}.tar.gz
+  sha256: 9eff7169e3ca452995af0493cc20d35452c4bfd06122c36c06457119ffbd411b
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - if: build_platform != target_platform
+      then: numpy
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+    - setuptools >=67.8.0
+    - cython >=0.29.32
+    - numpy
+    - pip
+  run:
+    - python
+    - numpy >=1.21.6
+
+tests:
+  - python:
+      imports:
+        - lap
+      pip_check: true
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Linear Assignment Problem solver (LAPJV/LAPMOD)
+  homepage: https://github.com/gatagat/lap
+  repository: https://github.com/gatagat/lap
+
+extra:
+  recipe-maintainers:
+    - primozgodec

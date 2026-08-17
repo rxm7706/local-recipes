@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: uvx
+  version: "2.5.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/uvx-${{ version }}.tar.gz
+  sha256: 8c940376cc5b17b878c5e642674cc8d9ccae6a6b9cfb340f551acb010551f3c4
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python
+    - maturin >=1.5,<2.0
+    - if: not linux
+      then: please-use-uvx-v1-on-this-platform
+    - pip
+  run:
+    - python
+    - uv
+    - pip
+    - patchelf
+    - uvenv
+
+tests:
+  - python:
+      imports:
+        - uvx
+      pip_check: true
+
+about:
+  summary: "uvx: pipx for uv (🦀)"
+  license: MIT
+  license_file: PLEASE_ADD_LICENSE_FILE
+
+extra:
+  recipe-maintainers:
+    - rxm7706

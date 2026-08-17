@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.48"
+
+package:
+  name: xkeyboard-config
+  version: ${{ version }}
+
+source:
+  url: http://www.x.org/releases/individual/data/xkeyboard-config/xkeyboard-config-${{ version }}.tar.xz
+  sha256: b77041324f0109f77161ee43743fe04baa485866af8460d31e476ad3f7648fd5
+
+build:
+  number: 0
+  skip: win
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - meson
+    - make
+    - gawk
+    - libxslt
+  host:
+    - xorg-xorgproto
+    - xorg-libx11
+
+tests:
+  - script:
+      - test -f "${PREFIX}/share/X11/xkb/geometry/hp"
+
+about:
+  homepage: https://www.freedesktop.org/wiki/Software/XKeyboardConfig/
+  license: MIT
+  license_file: COPYING
+  summary: The non-arch keyboard configuration database for X Windows
+  description: |
+    The goal is to provide the consistent, well-structured, frequently
+    released open source of X keyboard configuration data for X Window
+    System implementations (free, open source and commercial).
+    The project is targeted to XKB-based systems.
+  documentation: https://www.freedesktop.org/wiki/Software/XKeyboardConfig/
+  repository: https://www.freedesktop.org/wiki/Software/XKeyboardConfig/Development/
+
+extra:
+  recipe-maintainers:
+    - scopatz
+    - hmaarrfk

@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.0a24"
+
+package:
+  name: superset-chat
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/superset-chat/superset_chat-${{ version }}.tar.gz
+  sha256: c2a87f2a5cd1eebbd76a26ff8d86f13981e1ab80d634e8c23468cd270ae57200
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=1.0.0
+  run:
+    - python >=${{ python_min }}
+    - flask >=2.0.0
+    - flask-appbuilder >=3.0.0
+    - sqlalchemy >=1.4.0
+    - langchain <0.4,>=0.3
+    - langchain-community ==0.3
+    - langchain-core
+    - langchain-text-splitters ==0.3
+    - langgraph ==0.5
+    - langgraph-checkpoint-postgres ==2.0
+    - langgraph-checkpoint-sqlite ==2.0
+    - langchain-aws ==0.2
+    - langchain-anthropic ==0.3
+    - langchain-openai ==0.3
+    - mcp
+    - httpx
+    - psycopg ==3.2
+    - langchain-mcp-adapters
+    - superset-mcp-server ==0.1.0a5
+    - langfuse
+    - pyjwt ==2.8.0
+    - dbt-graph-loader ==0.1.0a1
+    - langchain-neo4j <0.5.0,>=0.4.0
+
+tests:
+  - python:
+      imports:
+        - superset_chat.app
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/ponderedw/superset-mcp-plugins
+  license: MIT
+  license_file: LICENSE
+  summary: AI Assistant plugin for Apache Superset
+  description: |
+    AI Assistant plugin for Apache Superset
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: superset-chat
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: superset-chat
+  cfe-purls:
+    - pkg:conda/superset-chat@${{ version }}?channel=conda-forge
+    - pkg:pypi/superset-chat@${{ version }}
+  cfe-upstream-repo: https://github.com/ponderedw/superset-mcp-plugins
+  cfe-upstream-homepage: https://github.com/ponderedw/superset-mcp-plugins
+  cfe-import-names: [superset_chat.app]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:14:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:14:02Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: flake8-debugger
+  version: "4.1.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/flake8-debugger-${{ version }}.tar.gz
+  sha256: 52b002560941e36d9bf806fca2523dc7fb8560a295d5f1a6e15ac2ded7a73840
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core >=1.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - flake8 >=3.0
+    - pycodestyle
+
+tests:
+  - python:
+      imports:
+        - flake8_debugger
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: ipdb/pdb statement checker plugin for flake8
+  license: MIT
+  license_file: LICENCE
+  homepage: https://github.com/jbkahn/flake8-debugger
+
+extra:
+  recipe-maintainers:
+    - rxm7706

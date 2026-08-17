@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: matplotlib-venn
+  version: "1.1.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/matplotlib-venn-${{ version }}.tar.gz
+  sha256: 6f2b07a03e9bb5a62de2f32f965216739e175176f9d654dd19e7af2c22ec36e3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pytest
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - matplotlib-base
+    - numpy
+    - scipy
+
+tests:
+  - python:
+      imports:
+        - matplotlib_venn
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Functions for plotting area-proportional two- and three-way Venn diagrams in matplotlib.
+  homepage: https://github.com/konstantint/matplotlib-venn
+  repository: https://github.com/konstantint/matplotlib-venn
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - ocefpaf

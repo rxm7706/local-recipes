@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.0.11"
+
+package:
+  name: kafka-python
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/k/kafka-python/kafka_python-${{ version }}.tar.gz
+  sha256: a003d927e79c801d6cfd1e59ceaaf78807351e75cdb5b8ee9ce4262586f9780f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - kafka-python=kafka.cli:run_cli
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=77.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - kafka
+        - kafka.consumer
+        - kafka.coordinator
+        - kafka.coordinator.assignors
+        - kafka.metrics
+        - kafka.metrics.stats
+        - kafka.partitioner
+        - kafka.producer
+        - kafka.protocol
+        - kafka.serializer
+        - kafka.vendor
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      - kafka-python --help
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+
+about:
+  license_file: LICENSE
+  license: Apache-2.0
+  summary: Pure Python client for Apache Kafka
+  homepage: https://github.com/dpkp/kafka-python
+  repository: https://github.com/dpkp/kafka-python
+  documentation: https://kafka-python.readthedocs.io/en/master/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - synapticarbors

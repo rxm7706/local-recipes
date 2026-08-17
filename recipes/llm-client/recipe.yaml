@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.8.0"
+
+package:
+  name: llm-client
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/llm-client/llm_client-${{ version }}.tar.gz
+  sha256: a125fe0f107ef514163928ae0dd2ae97e9420e897c5e2ff03b57df94f094723e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - aiohttp <4.0.0,>=3.0.0
+    - dataclasses-json >=0.5.0
+
+tests:
+  - python:
+      imports:
+        - llm_client
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/uripeled2/llm-client-sdk
+  license: MIT
+  license_file: LICENSE
+  summary: SDK for using LLM
+  description: |
+    SDK for using LLM
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: llm-client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: llm-client
+  cfe-purls:
+    - pkg:conda/llm-client@${{ version }}?channel=conda-forge
+    - pkg:pypi/llm-client@${{ version }}
+  cfe-upstream-repo: https://github.com/uripeled2/llm-client-sdk
+  cfe-upstream-homepage: https://github.com/uripeled2/llm-client-sdk
+  cfe-import-names: [llm_client]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:44:07Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:44:07Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

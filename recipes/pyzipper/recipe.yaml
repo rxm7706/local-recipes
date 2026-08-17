@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyzipper
+  version: "0.3.6"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyzipper-${{ version }}.tar.gz
+  sha256: 0adca90a00c36a93fbe49bfa8c5add452bfe4ef85a1b8e3638739dd1c7b26bfc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pycryptodomex
+
+tests:
+  - python:
+      imports:
+        - pyzipper
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: AES encryption for zipfile.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/danifus/pyzipper
+
+extra:
+  recipe-maintainers:
+    - cml37

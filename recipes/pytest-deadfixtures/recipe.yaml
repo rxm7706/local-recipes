@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: pytest-deadfixtures
   version: "3.1.0"
 
 package:
-  name: pytest-deadfixtures
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/p/pytest-deadfixtures/pytest_deadfixtures-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: a8010e771183176fa9d918c8c49293ca5568597c8e1453ed2bbd41bcee67bde5
 
 build:
@@ -19,31 +20,25 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - pytest >=7.0.0
+    - pytest >=3.0.0
 
 tests:
   - python:
       imports:
         - pytest_deadfixtures
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: A simple plugin to list unused fixtures in pytest
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/jllorencetti/pytest-deadfixtures
-  repository: https://github.com/jllorencetti/pytest-deadfixtures
-  description: |
-    pytest-deadfixtures is a pytest plugin that lists fixtures that are
-    defined but never used in your test suite, helping keep fixtures tidy.
 
 extra:
   recipe-maintainers:

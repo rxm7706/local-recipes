@@ -13,12 +13,12 @@ source:
   sha256: 0e63a7e00a1f7108d4fa406511c779bed9c1eca7ded688a9af01706f33878a95
 
 build:
-  number: 0
+  number: 1
   script:
     env:
       PYTHONUTF8: "1"
+      # Strip debug symbols — conda-forge default for Rust builds.
       CARGO_PROFILE_RELEASE_STRIP: symbols
-      CARGO_PROFILE_RELEASE_LTO: fat
     content:
       - |
         cd bindings/python/lyric-py
@@ -46,8 +46,7 @@ requirements:
   run:
     - python
     - msgpack-python
-    - cloudpickle
-    - lyric-task >=0.1.7
+    - lyric-task >=${{ version }}
 
 tests:
   - python:

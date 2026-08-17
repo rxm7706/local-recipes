@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.9.0"
+
+package:
+  name: crank
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/crank/crank-${{ version }}.tar.gz
+  sha256: 823df091e2d694bb4fba83ff921e590be3c106494eaac9c8a8c150b617e8b827
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.0
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - webob >=1.8.0
+
+tests:
+  - python:
+      imports:
+        - crank
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/TurboGears/crank
+  license: MIT
+  license_file: LICENSE
+  summary: Generalization of dispatch mechanism for use across frameworks
+  description: |
+    Generalization of dispatch mechanism for use across frameworks
+  repository: https://github.com/TurboGears/crank
+  documentation: https://github.com/TurboGears/crank
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: crank
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: crank
+  cfe-purls:
+    - pkg:conda/crank@${{ version }}?channel=conda-forge
+    - pkg:pypi/crank@${{ version }}
+  cfe-upstream-repo: https://github.com/TurboGears/crank
+  cfe-upstream-homepage: https://github.com/TurboGears/crank
+  cfe-import-names: [crank]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:51:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:51:37Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

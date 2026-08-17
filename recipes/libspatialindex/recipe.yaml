@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.1.0"
+
+package:
+  name: libspatialindex
+  version: ${{ version }}
+
+source:
+  url: https://github.com/libspatialindex/libspatialindex/archive/${{ version }}.tar.gz
+  sha256: a04513cea04dd20ab2c9d153c14cc45692805ee496b30619103f7929f6fb81bf
+
+build:
+  number: 1
+  skip: win and vc<14
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib('c') }}
+    - cmake
+    - if: not win
+      then: make
+    - if: win
+      then: ninja
+  run_exports:
+    - ${{ pin_subpackage('libspatialindex', upper_bound='x.x.x') }}
+
+tests:
+  - script:
+      - if: not win
+        then: test -f ${PREFIX}/lib/libspatialindex_c${SHLIB_EXT}
+
+about:
+  license: MIT
+  license_file: COPYING
+  summary: Extensible framework for robust spatial indexing
+  homepage: http://libspatialindex.github.io
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - hobu

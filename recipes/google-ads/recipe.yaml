@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: google-ads
+  version: "31.3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/google_ads-${{ version }}.tar.gz
+  sha256: 8f42581e9db633562e2664fd0e583af7c6064d6a2e991a6910c4b5c9cd30b28d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - google-auth-oauthlib >=1.0.0,<2.0.0
+    # tightest of upstream's floors (python >=3.13)
+    - google-api-core >=2.22.0,<=3.0.0
+    # tightest of upstream's floors (python >=3.13)
+    - googleapis-common-protos >=1.63.2,<2.0.0
+    # tightest of upstream's floors (python >=3.14)
+    - grpcio >=1.75.1,<2.0.0
+    # tightest of upstream's floors (python >=3.14)
+    - grpcio-status >=1.75.1,<2.0.0
+    # tightest of upstream's floors (python >=3.13)
+    - proto-plus >=1.25.0,<2.0.0
+    - pyyaml >=5.1,<7.0
+    # tightest of upstream's floors (python >=3.13) and ceilings (python >=3.10)
+    - protobuf >=5.26.1,<8.0.0
+
+tests:
+  - python:
+      imports:
+        - google
+        - google.ads
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Client library for the Google Ads API
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/googleads/google-ads-python
+  repository: https://github.com/googleads/google-ads-python
+  documentation: https://developers.google.com/google-ads/api/docs/start
+
+extra:
+  recipe-maintainers:
+    - xylar

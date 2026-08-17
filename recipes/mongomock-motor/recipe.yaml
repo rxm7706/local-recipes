@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.36"
+
+package:
+  name: mongomock-motor
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mongomock-motor/mongomock_motor-${{ version }}.tar.gz
+  sha256: 3cf62352ece5af2f02e04d2f252393f88b5fe0487997da00584020cee4b8efba
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - mongomock <5.0.0,>=4.1.2
+    - motor >=2.5
+
+tests:
+  - python:
+      imports:
+        - mongomock_motor
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/michaelkryukov/mongomock_motor
+  license: MIT
+  license_file: LICENSE
+  summary: Library for mocking AsyncIOMotorClient built on top of mongomock.
+  description: |
+    Library for mocking AsyncIOMotorClient built on top of mongomock.
+  repository: https://github.com/michaelkryukov/mongomock_motor
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mongomock-motor
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mongomock-motor
+  cfe-purls:
+    - pkg:conda/mongomock-motor@${{ version }}?channel=conda-forge
+    - pkg:pypi/mongomock-motor@${{ version }}
+  cfe-upstream-repo: https://github.com/michaelkryukov/mongomock_motor
+  cfe-upstream-homepage: https://github.com/michaelkryukov/mongomock_motor
+  cfe-import-names: [mongomock_motor]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:52:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:52:12Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.3"
+
+package:
+  name: python-libarchive-c
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/libarchive-c/libarchive_c-${{ version }}.tar.gz
+  sha256: 5ddb42f1a245c927e7686545da77159859d5d4c6d00163c59daff4df314dae82
+  patches:
+    - 0001-Use-conda-provided-libarchive-always.patch
+
+build:
+  number: 1
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - setuptools
+    - python ${{ python_min }}.*
+  run:
+    - libarchive
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports: libarchive
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - 3.13.*
+  - files:
+      recipe:
+        - test/
+        - run_test.py
+      source:
+        - README.rst
+    requirements:
+      run:
+        - pytest-cov
+        - python ${{ python_min }}.*
+    script:
+      - python run_test.py
+
+about:
+  license: CC0-1.0
+  summary: Python interface to libarchive
+  homepage: https://github.com/Changaco/python-libarchive-c
+  license_file:
+    # this is just a link
+    - LICENSE.md
+    # .. to this
+    - cc0-1.0.txt
+
+extra:
+  recipe-maintainers:
+    - bollwyvl
+    - mingwandroid
+    - ocefpaf

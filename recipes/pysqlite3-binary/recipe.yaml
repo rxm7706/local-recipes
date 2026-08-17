@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.4.post2"
+
+package:
+  name: pysqlite3-binary
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/cp310/p/pysqlite3-binary/pysqlite3_binary-0.5.4.post2-cp310-cp310-manylinux2014_x86_64.manylinux_2_17_x86_64.whl
+  sha256: 7f8171c8dd11dfc6fe5321394903782df9610f51d457a3ebe8c972c0bc4606fb
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pysqlite3_binary
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/coleifer/pysqlite3
+  license: zlib/libpng
+  license_file: LICENSE
+  summary: DB-API 2.0 interface for Sqlite 3.x
+  description: |
+    DB-API 2.0 interface for Sqlite 3.x
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pysqlite3-binary
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pysqlite3-binary
+  cfe-purls:
+    - pkg:conda/pysqlite3-binary@${{ version }}?channel=conda-forge
+    - pkg:pypi/pysqlite3-binary@${{ version }}
+  cfe-upstream-repo: https://github.com/coleifer/pysqlite3
+  cfe-upstream-homepage: https://github.com/coleifer/pysqlite3
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:52:01Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:52:01Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

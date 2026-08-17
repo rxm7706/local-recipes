@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: wagtail-themes
+  version: "0.5.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail-themes-${{ version }}.tar.gz
+  sha256: 964fba136956a90760666342c90027ffa731476a02877be05c6f303c2c0ae645
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - wagtail >=5.0
+
+tests:
+  - python:
+      imports:
+        - wagtailthemes
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Site specific theme loader for Django Wagtail.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/moorinl/wagtail-themes
+
+extra:
+  recipe-maintainers:
+    - rxm7706

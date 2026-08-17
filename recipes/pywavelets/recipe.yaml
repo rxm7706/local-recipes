@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pywavelets
+  version: "1.9.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 148d12203377772bea452a59211d98649c8ee4a05eff019a9021853a36babdc8
+
+build:
+  number: 2
+  skip: match(python, "<3.11")
+  script:
+    - mkdir builddir
+    - if: unix
+      then: ${{ PYTHON }} -m mesonbuild.mesonmain setup $MESON_ARGS builddir
+    - if: win
+      then: ${{ PYTHON }} -m mesonbuild.mesonmain setup %MESON_ARGS% builddir
+    - ${{ PYTHON }} -m build --wheel --no-isolation --skip-dependency-check -Cbuilddir=builddir
+    - ${{ PYTHON }} -m pip install --find-links dist pywavelets
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython >=3.0.4
+    - if: build_platform != target_platform
+      then: numpy
+    - if: unix
+      then: ninja
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+  host:
+    - python
+    - python-build
+    - pip
+    - cython >=3.0.4
+    - numpy
+    - meson-python >=0.16.0
+  run:
+    - numpy >=1.25,<3
+    - python
+
+tests:
+  - python:
+      imports:
+        - pywt
+      pip_check: true
+  - requirements:
+      run:
+        - pytest
+        - pip
+    script:
+      - python -c "import sys; import pywt; sys.exit(not pywt.test(verbose=2, label=${{ label }}, tests=${{ tests }}, extra_argv=['--durations=50', '-k', 'not (test_mra_axis or test_mra2_axes or test_mra2_roundtrip or test_iswtn_mixed_dtypes or test_swt2_iswt2_integration or test_perfect_reconstruction)']))"
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Discrete Wavelet Transforms in Python
+  homepage: https://github.com/PyWavelets/pywt
+
+extra:
+  recipe-maintainers:
+    - grlee77
+    - jakirkham
+    - ocefpaf
+    - rgommers

@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: flask-restplus
+  version: "0.13.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: a66e442d0bca08f389fc3d07b4d808fc89961285d12fb8013f7cf15516fa9f5c
+
+build:
+  number: 3
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - flask >=0.8
+    - six >=1.3.0
+    - jsonschema
+    - pytz
+    - aniso8601 >=0.82
+    - if: match(python, ">=2,<3")
+      then: enum34
+    - werkzeug =0.16.0
+
+tests:
+  - python:
+      imports:
+        - flask_restplus
+      pip_check: false
+  - script:
+      - if: unix
+        then: test -f "${SP_DIR}/${{ name | replace('-', '_') }}/static/swagger-ui.js"
+      - if: unix
+        then: test -f "${SP_DIR}/${{ name | replace('-', '_') }}/static/swagger-ui.css"
+      - if: win
+        then: if not exist %SP_DIR%\\${{ name | replace('-', '_') }}\\static\\swagger-ui.js exit 1
+      - if: win
+        then: if not exist %SP_DIR%\\${{ name | replace('-', '_') }}\\static\\swagger-ui.css exit 1
+
+about:
+  license: MIT
+  license_file: ${{ RECIPE_DIR }}/LICENSE
+  summary: Fully featured framework for fast, easy and documented API development with Flask
+  description: |
+    Flask-RESTPlus is an extension for Flask that adds support for quickly
+    building REST APIs. Flask-RESTPlus encourages best practices with minimal
+    setup. If you are familiar with Flask, Flask-RESTPlus should be easy to
+    pick up. It provides a coherent collection of decorators and tools to
+    describe your API and expose its documentation properly using Swagger.
+  homepage: https://github.com/noirbizarre/flask-restplus
+  repository: https://github.com/noirbizarre/flask-restplus
+  documentation: http://flask-restplus.readthedocs.org/
+
+extra:
+  recipe-maintainers:
+    - frol

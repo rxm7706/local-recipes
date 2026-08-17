@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.3"
+
+package:
+  name: mcp-github
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mcp-github/mcp_github-${{ version }}.tar.gz
+  sha256: ef9de21869b6348bdac8c698aa5db505b3e8c3e129b95af4ce9964e447742771
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - mcp >=1.6.0
+    - pygithub >=2.1.1
+    - requests >=2.31.0
+
+tests:
+  - python:
+      imports:
+        - mcp_github
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/mcp-github/
+  license: MIT
+  license_file: LICENSE
+  summary: Github MCP Server for interacting with Github's API
+  description: |
+    Github MCP Server for interacting with Github's API
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mcp-github
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mcp-github
+  cfe-purls:
+    - pkg:conda/mcp-github@${{ version }}?channel=conda-forge
+    - pkg:pypi/mcp-github@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/mcp-github/
+  cfe-upstream-homepage: https://pypi.org/project/mcp-github/
+  cfe-import-names: [mcp_github]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:48:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:48:05Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

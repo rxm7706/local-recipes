@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: standard-chunk
+  version: "3.13.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/standard_chunk-${{ version }}.tar.gz
+  sha256: 4ac345d37d7e686d2755e01836b8d98eda0d1a3ee90375e597ae43aaf064d654
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=75.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - chunk
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Standard library chunk redistribution. "dead battery".
+  license: BSD-4-Clause
+  license_file: LICENSE
+  homepage: https://github.com/youknowone/python-deadlib
+
+extra:
+  recipe-maintainers:
+    - bmcfee

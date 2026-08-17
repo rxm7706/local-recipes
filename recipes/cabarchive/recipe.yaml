@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cabarchive
+  version: 0.2.5
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: b508b1cad890857e55f3f7a2027ca7bedb9dc05de5eff07f8289f9546200a7aa
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - cabarchive
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  summary: A pure-python library for creating and extracting cab files
+  license: LGPL-2.1-or-later
+  license_file: LICENSE
+  homepage: https://github.com/hughsie/python-cabarchive
+  documentation: https://python-cabarchive.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - marcelotduarte

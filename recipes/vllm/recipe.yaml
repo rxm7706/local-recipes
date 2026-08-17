@@ -1,0 +1,265 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "0.26.0"
+  build_number: 0
+  use_cuda: ${{ cuda_compiler_version != "None" }}
+  vllm_target_device: ${{ "cuda" if use_cuda else "cpu" }}
+  cuda_build_string: cuda${{ cuda_compiler_version | version_to_buildstring }}
+  string_prefix: ${{ cuda_build_string if cuda_compiler_version != "None" else "cpu" }}
+  is_cross_compiling: ${{ build_platform != host_platform }}
+
+package:
+  name: vllm
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/v/vllm/vllm-${{ version }}.tar.gz
+    sha256: 23e9fa19d7e20ce7dcc1c074d41503e2116d23f19e688f5d5ea91b741f958502
+    patches:
+      - patches/0001-Search-for-the-CUDA-package-in-CMakeLists.patch
+      - patches/0002-Remove-ninja-pip-requirement.patch
+      - if: aarch64 or arm64
+        then:
+          - patches/0003-Configure-build-to-target-aarch64-even-though-CMake-.patch
+      - patches/0004-pass-required-CUTLASS_NVCC_ARCHS-through-to-cutlass.patch
+      - patches/0005-Make-model-hosting-container-standards-optional.patch
+      - patches/0006-Fall-back-to-PREFIX-lib-for-libgomp-when-not-bundled.patch
+      - patches/0007-Allow-skipping-ACL-via-VLLM_SKIP_ACL-env-var.patch
+      - patches/0009-Use-PREFIX-for-CUDA-include-paths-in-DeepGEMM-build.patch
+  # Needs to be vendored because vLLM uses a modified version of the flash attention primitives that supports KV-caching.
+  # see https://github.com/vllm-project/vllm/blob/v{{ version }}/cmake/external_projects/vllm_flash_attn.cmake#L41
+  - url: https://github.com/vllm-project/flash-attention/archive/caaa4eb59845388a20b1f435ecaafb4bd9517ad8.tar.gz
+    sha256: bc680ffb076b7f0ea3ff851772622acea950e69f3731f9f5fdeb8887f7dabf2c
+    target_directory: flash-attention
+  # cutlass is a git submodule of flash-attention (not included in GitHub tarballs)
+  - url: https://github.com/NVIDIA/cutlass/archive/62750a2b75c802660e4894434dc55e839f322277.tar.gz
+    sha256: 78816d6c6d97793b5b59ef2a702174cb85b78dfcefc8fe2489964de2e42f17d2
+    target_directory: flash-attention/csrc/cutlass
+
+build:
+  number: ${{ build_number }}
+  string: ${{ string_prefix }}_py${{ python | version_to_buildstring }}h${{ hash }}_${{ build_number }}
+  script:
+    - sed -i.bak 's/set(TORCH_SUPPORTED_VERSION_CUDA "2.4.0")/set(TORCH_SUPPORTED_VERSION_CUDA "${{ libtorch }}")/g' flash-attention/CMakeLists.txt
+    - export VLLM_FLASH_ATTN_SRC_DIR=$SRC_DIR/flash-attention
+    - python use_existing_torch.py
+    - mkdir -p $SRC_DIR/third_party/NVTX/c
+    - ln -s $PREFIX/include $SRC_DIR/third_party/NVTX/c/include
+    - export VERBOSE=1
+    - export VLLM_TARGET_DEVICE=${{ vllm_target_device }}
+    - if: use_cuda
+      then:
+        - export TORCH_NVCC_FLAGS="-Xfatbin -compress-all"
+        # Building vLLM is memory-intensive: see https://github.com/Dao-AILab/flash-attention/issues/1043#issuecomment-2770635000
+        - if: aarch64
+          then: export MAX_JOBS=9
+          else: export MAX_JOBS=5
+        # Override the CUDA architectures configured in the conda-forge nvcc package: https://github.com/conda-forge/cuda-nvcc-feedstock/blob/7843e9f1b9ea6bc555cd70c247d774189fc34110/recipe/conda_build_config.yaml#L21-L28
+        - export CUDAARCHS="70-real;80-real;86-real;89-real;90a-real;100f-real;120a-real"
+        - export TORCH_CUDA_ARCH_LIST="7.0;8.0;8.6;8.9;9.0;10.0;12.0+PTX"
+        # not usable with pytorch: https://github.com/pytorch/pytorch/issues/172034
+        - export CMAKE_CUDA_ARCHITECTURES="70;80;86;89;90;100;120"
+        # for vendored cutlass, see https://github.com/NVIDIA/cutlass/blob/v4.0.0/CMakeLists.txt
+        - export CUTLASS_NVCC_ARCHS="70;80;86;89;90;100;120"
+    # ACL (Arm Compute Library) is not packaged in conda-forge; skip it
+    - if: aarch64
+      then:
+        - export VLLM_SKIP_ACL=1
+    # CMake is unable to automatically locate the Python include dir for aarch64 for some reason
+        - export CMAKE_ARGS="$CMAKE_ARGS -DPython_INCLUDE_DIR="$(python -c 'import sysconfig; print(sysconfig.get_path("include"))')""
+    - export CMAKE_BUILD_TYPE=Release
+    - ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+
+  python:
+    entry_points:
+      - vllm = vllm.entrypoints.cli.main:main
+
+  skip:
+    - win
+    - osx and x86_64
+    # CUDA builds require Python 3.11+ (some CUDA-only deps dropped 3.10 support)
+    - match(python, "<3.11") and cuda_compiler_version != "None"
+    # - not use_cuda  # Just build CUDA for now
+    # - match(python, "!=3.10")  # Until all the builds succeed
+    # See XXX on why we need this skip to distinguish runners for GPU builds vs CPU builds
+    - cuda_compiler_version == "None" and "default" != github_actions_labels  # skip CPU on large runners
+    - cuda_compiler_version != "None" and "default" == github_actions_labels  # skip GPU on GH-hosted
+
+requirements:
+  build:
+    - cmake >=3.26.1
+    - git
+    - ninja
+    - zlib
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - if: use_cuda
+      then:
+        - ${{ compiler('cuda') }}
+    - if: is_cross_compiling
+      then:
+        - python
+        - cross-python_${{ host_platform }}
+        - pytorch ${{ libtorch }}.*
+        - if: use_cuda
+          then:
+            - pytorch * [build=cuda*]
+  host:
+    - python
+    - jinja2
+    - packaging >=24.2
+    - pip
+    - pytorch ${{ libtorch }}.*
+    - regex
+    - setuptools >=77.0.3,<81.0.0
+    - setuptools-scm >=8
+    - setuptools-rust
+    - wheel
+    - if: linux
+      then:
+        - libgomp
+        - libnuma
+    - if: use_cuda
+      then:
+        - pytorch * [build=cuda*]
+        - cuda-cudart-dev
+        - cuda-nvrtc-dev
+        - cuda-nvrtc-static
+        - cuda-version ==${{ cuda_compiler_version }}
+        - libcurand-dev
+        - libcublas-dev
+        - libcusolver-dev
+        - libcusparse-dev
+        - nvtx-c
+  run:
+    - python
+    # see https://github.com/vllm-project/vllm/blame/v{{ version }}/requirements/common.txt
+    # can save raw content into multiline variable `reqs` and then preprocess with
+    # print("\n    - ".join(sorted([x.split("#")[0] for x in reqs.splitlines()])))
+    # if done like that, it obviously needs manual fix-ups though (check the diff!)
+    - aiohttp >=3.13.3
+    - anthropic >=0.71.0
+    - blake3
+    - cachetools
+    - cbor2
+    - cloudpickle
+    - compressed-tensors ==0.17.0
+    - depyf ==0.20.0
+    - einops
+    - fastapi >=0.133.0,<0.137
+    - filelock >=3.16.1
+    - ijson
+    - jsonschema >=4.23.0
+    - lark ==1.2.2
+    - llguidance >=1.7.0,<1.8.0
+    - lm-format-enforcer ==0.11.3
+    - mcp
+    - mistral-common >=1.11.5
+    # model-hosting-container-standards >=0.1.14,<1.0.0
+    - msgspec
+    - ninja
+    - numba ==0.65.0
+    - numpy
+    - openai >=2.0.0
+    - openai-harmony >=0.0.3
+    - opencv >=4.13.0
+    - opentelemetry-api >=1.27.0
+    - opentelemetry-exporter-otlp >=1.27.0
+    - opentelemetry-sdk >=1.27.0
+    - opentelemetry-semantic-conventions-ai >=0.4.1
+    - outlines-core ==0.2.14
+    - partial-json-parser
+    - pillow
+    - prometheus-fastapi-instrumentator >=8.0.0
+    - prometheus_client >=0.18.0
+    - protobuf >=5.29.6
+    - psutil
+    - py-cpuinfo
+    - pybase64
+    - pydantic >=2.12.0
+    - python-json-logger
+    - pytorch ${{ libtorch }}.*
+    - pyyaml
+    - pyzmq >=25.0.0
+    - regex
+    - requests >=2.26.0
+    - safetensors >=0.6.2
+    - sentencepiece
+    - setproctitle
+    - starlette >=1.0.1
+    - tiktoken >=0.6.0
+    - tokenizers >=0.21.1
+    - torchaudio
+    - torchvision
+    - tqdm
+    - transformers >=5.5.3
+    - typing_extensions >=4.10
+    - watchfiles
+    - xgrammar >=0.2.1,<1.0.0
+    - if: match(python, ">3.11")
+      then:
+        - six >=1.16.0
+        - setuptools >=77.0.3,<81
+    - if: use_cuda
+      then:
+        # see https://github.com/vllm-project/vllm/blame/v{{ version }}/requirements/cuda.txt
+        - pytorch ${{ libtorch }}.* [build=cuda*]
+      else:
+        # see https://github.com/vllm-project/vllm/blame/v{{ version }}/requirements/cpu.txt;
+        # some are in common already (py-cpuinfo), some move there because they're in both cpu&cuda (numba)
+        - packaging >=24.2
+  run_constraints:
+    # Fixes issue with incompatibility between old `datasets` versions and `pyarrow` v21+
+    # See https://github.com/apache/arrow/issues/47155 for more details.
+    # The required PR is: https://github.com/huggingface/datasets/pull/6404
+    - datasets >=2.15
+  ignore_run_exports:
+    from_package:
+      - cuda-nvrtc-dev
+      - libcublas-dev
+tests:
+  - python:
+      imports:
+        - vllm
+        - if: linux and use_cuda
+          then:
+            - vllm.vllm_flash_attn
+      pip_check: false
+  - script:
+    # As of vllm v0.9 and later, it seems like libcuda.so.1 is required for the CLI for CUDA builds (stub libraries don't work)
+    # We can't test this on the CPU runners, which is what we're using to build the wheel
+      - if: not use_cuda
+        then:
+          - vllm --version
+  - files:
+      source:
+        - tests/
+    requirements:
+      run:
+        # see https://github.com/vllm-project/vllm/blame/v{{ version }}/requirements/test.in
+        # currently just a small subset
+        - huggingface_hub
+        - pytest
+        - tblib
+    script:
+      # Pick an arbitrary test to run: some of the other ones rely on a bunch of external packages
+      - pytest ./tests/config/test_config_utils.py
+
+about:
+  homepage: https://github.com/vllm-project/vllm
+  summary: A high-throughput and memory-efficient inference and serving engine for LLMs
+  description: Easy, fast, and cheap LLM serving for everyone
+  license: Apache-2.0 AND BSD-3-Clause
+  license_file:
+    - LICENSE
+    - flash-attention/LICENSE
+    - LICENSE_CUTLASS.txt
+  documentation: https://vllm.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - maresb
+    - shermansiu
+    - h-vetinari
+    - xhochy

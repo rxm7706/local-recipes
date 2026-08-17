@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.8.1"
+  python_min: "3.11"
+
+package:
+  name: cuvs-cu13
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/cp311/c/cuvs-cu13/cuvs_cu13-26.8.1-cp311-abi3-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl
+  sha256: 84997a618b5045ebf88835699e245f331e4de998b8c992d3b1932bb568f462d6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - cuda-bindings <14.0,>=13.0.1
+    - libcuvs-cu13 ==26.8.*
+    - numpy <3.0,>=2.0
+    - pylibraft-cu13 ==26.8.*
+
+tests:
+  - python:
+      imports:
+        - cuvs_cu13
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/rapidsai/cuvs
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: cuVS: Vector Search on the GPU
+  description: |
+    cuVS: Vector Search on the GPU
+  documentation: https://docs.rapids.ai/api/cuvs/stable/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cuvs-cu13
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cuvs-cu13
+  cfe-purls:
+    - pkg:conda/cuvs-cu13@${{ version }}?channel=conda-forge
+    - pkg:pypi/cuvs-cu13@${{ version }}
+  cfe-upstream-repo: https://github.com/rapidsai/cuvs
+  cfe-upstream-homepage: https://github.com/rapidsai/cuvs
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:51:56Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:51:56Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

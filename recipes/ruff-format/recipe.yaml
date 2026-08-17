@@ -1,0 +1,107 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Generated from python-maturin path; PyO3/maturin detected via sdist
+# pyproject.toml [build-system].requires. Modelled on phonors PR pattern
+# (modal 27-PR PyO3 sample, Mar 2020 – May 2026). Recipe shape follows the
+# 2026 grayskull / conda-forge convention: literal ``package.name``, literal
+# ``source.url`` (only ``${ version }`` templated), no ``name`` in context.
+schema_version: 1
+
+context:
+  version: "0.5.4"
+
+package:
+  name: ruff-format
+  version: ${{ version }}
+
+source:
+  url: https://github.com/reflex-dev/ruff-format/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: f8297c67edf1b44c17fdd5c232c1780270d7d39c78a5725a7efce4c44453a436
+
+build:
+  number: 0
+  script:
+    env:
+      # Per conda-forge.org/docs/maintainer/example_recipes/rust/ — applies to
+      # any Rust build (CLI binary OR maturin/PyO3 cdylib). maturin invokes
+      # cargo build internally and inherits these env vars.
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+    content:
+      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    # Cargo.toml declares pyo3 abi3 feature — wheel is
+    # CPython-stable-ABI and works across Python versions.
+    version_independent: true
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - crossenv
+        - maturin >=1,<2
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - pip
+    - maturin >=1.7,<2.0
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - ruff_format
+      pip_check: true
+
+about:
+  homepage: https://pypi.org/project/ruff-format/
+  license: MIT
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  summary: Python bindings for the Ruff code formatter, built with Rust and PyO3.
+  description: |
+    Python bindings for the Ruff code formatter, built with Rust and PyO3.
+  repository: https://github.com/reflex-dev/ruff-format
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ruff-format
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ruff-format
+  cfe-purls:
+    - pkg:conda/ruff-format@${{ version }}?channel=conda-forge
+    - pkg:pypi/ruff-format@${{ version }}
+  cfe-upstream-repo: https://github.com/reflex-dev/ruff-format
+  cfe-upstream-homepage: https://pypi.org/project/ruff-format/
+  cfe-import-names: [ruff_format]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: compiled
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:21:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:21:15Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

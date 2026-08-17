@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: progressbar2
+  version: "4.6.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: fe48c8955a84428af77bff2642ba47041e1b8f7c867a5b7cc94f8bc255a8f0cf
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+    - setuptools-scm
+  run:
+    - python >=${{ python_min }}
+    - python-utils >=3.8.1
+
+tests:
+  - python:
+      imports:
+        - progressbar
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A Python Progressbar library to provide visual (yet text based) progress to long running operations.
+  description: |
+    A text progress bar is typically used to display the progress of a long
+    running operation, providing a visual cue that processing is underway.
+
+    The ProgressBar class manages the current progress, and the format of the line
+    is given by a number of widgets. A widget is an object that may display
+    differently depending on the state of the progress bar. There are many types
+    of widgets:
+
+    - `Timer`
+    - `ETA`
+    - `AdaptiveETA`
+    - `FileTransferSpeed`
+    - `AdaptiveTransferSpeed`
+    - `AnimatedMarker`
+    - `Counter`
+    - `Percentage`
+    - `FormatLabel`
+    - `SimpleProgress`
+    - `Bar`
+    - `ReverseBar`
+    - `BouncingBar`
+    - `RotatingMarker`
+    - `DynamicMessage`
+
+    The progressbar module is very easy to use, yet very powerful. It will also
+    automatically enable features like auto-resizing when the system supports it.
+  homepage: https://github.com/WoLpH/python-progressbar
+  repository: https://github.com/WoLpH/python-progressbar
+  documentation: http://progressbar-2.readthedocs.org/en/latest/
+
+extra:
+  recipe-maintainers:
+    - maartenbreddels
+    - WoLpH
+    - marcelotrevisani
+    - BastianZim

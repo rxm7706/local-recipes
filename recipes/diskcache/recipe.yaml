@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: diskcache
+  version: "5.6.3"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 2c3a3fa2743d8535d832ec61c2054a1641f41775aa7c556758a109941e33e4fc
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - diskcache
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license_file: LICENSE
+  license: Apache-2.0
+  summary: Disk and file backed cache.
+  homepage: http://www.grantjenks.com/docs/diskcache/
+  repository: https://github.com/grantjenks/python-diskcache
+  documentation: http://www.grantjenks.com/docs/diskcache/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - xhochy

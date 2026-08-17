@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: lark-parser
+  version: "0.12.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/lark-parser-${{ version }}.tar.gz
+  sha256: 15967db1f1214013dca65b1180745047b9be457d73da224fcda3d9dd4e96a138
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.6
+    - regex
+    - pip
+    - setuptools
+  run:
+    - python >=3.6
+
+tests:
+  - python:
+      imports:
+        - lark
+        - lark.parsers
+        - lark.tools
+      pip_check: true
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: a modern parsing library
+  description: |
+    Lark is a modern general-purpose parsing library for Python.
+    With Lark, you can parse any context-free grammar, efficiently, with very little code.
+    Main Features:
+    - Builds a parse-tree (AST) automagically, based on the structure of the grammar
+    - Earley parser
+    - Can parse all context-free grammars
+    - Full support for ambiguous grammars
+    - LALR(1) parser
+    - Fast and light, competitive with PLY
+    - Can generate a stand-alone parser
+    - CYK parser, for highly ambiguous grammars
+    - EBNF grammar
+    - Unicode fully supported
+    - Python 2 & 3 compatible
+    - Automatic line & column tracking
+    - Standard library of terminals (strings, numbers, names, etc.)
+    - Import grammars from Nearley.js
+    - Extensive test suite
+    - And much more!
+  homepage: https://github.com/erezsh/lark
+  repository: https://github.com/erezsh/lark
+  documentation: http://lark-parser.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - tarcisioe
+    - mlin

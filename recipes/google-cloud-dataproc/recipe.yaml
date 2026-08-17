@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: google-cloud-dataproc
+  version: "5.30.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/google_cloud_dataproc-${{ version }}.tar.gz
+  sha256: 2a3c44cc3d6a3d7a680dc9331f1f97cd57c5934a1357aee77a07607276644e6d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - google-api-core >=2.24.2,<3.0.0
+    - google-api-core-grpc
+    - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
+    # more restrictive constraint for python >=3.14
+    - grpcio >=1.75.1,<2.0.0
+    - proto-plus >=1.26.1,<2.0.0
+    - protobuf >=6.33.5,<8.0.0
+    - grpc-google-iam-v1 >=0.14.2,<1.0.0
+
+tests:
+  - python:
+      imports:
+        - google.cloud.dataproc
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+      pip_check: true
+
+about:
+  summary: Google Cloud Dataproc API client library
+  license: Apache-2.0
+  license_file: LICENSE
+  description: |
+    Google Cloud Dataproc API client library manages Hadoop-based clusters and jobs on Google Cloud Platform. With Dataproc, enterprises get a fully managed, purpose-built cluster that can autoscale to support any data or analytics processing job.
+    See the [quick start guide](https://googleapis.dev/python/dataproc/latest/index.html#quick-start).
+
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-dataproc
+  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-dataproc
+  documentation: https://googleapis.dev/python/dataproc/latest/index.html
+
+extra:
+  recipe-maintainers:
+    - parthea
+    - xylar

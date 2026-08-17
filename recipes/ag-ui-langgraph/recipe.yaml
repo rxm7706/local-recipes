@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.0.41"
+  version: 0.0.43
 
 package:
   name: ag-ui-langgraph
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/a/ag-ui-langgraph/ag_ui_langgraph-${{ version }}.tar.gz
-  sha256: 3ea1fcb49b147d9532b0a90f2a5554d6ffd0d9365590fa2557ba16a881aeeb7a
+  sha256: 6df1577c039c91d9dbd3b0f279bf4b545837ce7f65299e8c7947299c2d467d9c
 
 build:
   number: 0
@@ -18,7 +18,7 @@ build:
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
-      - "dev = ag_ui_langgraph.dojo:main"
+      - dev = ag_ui_langgraph.dojo:main
 
 requirements:
   host:
@@ -28,10 +28,10 @@ requirements:
   run:
     - python >=${{ python_min }},<3.15
     - ag-ui-protocol >=0.1.15
-    - ag-ui-a2ui-toolkit >=0.0.3
+    - ag-ui-a2ui-toolkit >=0.0.4
     - langchain >=1.2.0
     - langchain-core >=0.3.0
-    - langgraph >=0.3.25,<2
+    - langgraph >=0.6.0,<2
     - pydantic >=2.0.0
   run_constraints:
     - fastapi >=0.115.12
@@ -47,7 +47,7 @@ tests:
         - fastapi >=0.115.12
 
 about:
-  summary: "Implementation of the AG-UI protocol for LangGraph."
+  summary: Implementation of the AG-UI protocol for LangGraph.
   license: MIT
   license_file: LICENSE
   homepage: https://pypi.org/project/ag-ui-langgraph/

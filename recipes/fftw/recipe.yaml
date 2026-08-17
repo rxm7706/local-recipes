@@ -1,0 +1,208 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# ensure mpi is defined (needed for conda-smithy recipe-lint)
+# prioritize nompi variant via build number
+# add build string so packages can depend on
+# mpi or nompi variants explicitly:
+# `pkg * mpi_mpich_*` for mpich
+# `pkg * mpi_*` for any mpi
+# `pkg * nompi_*` for no mpi
+schema_version: 1
+
+context:
+  version: "3.3.11"
+  mpi: mpi or 'nompi'
+  fftw_omp_libs:
+    - libfftw3_omp
+    - libfftw3f_omp
+    - libfftw3l_omp
+  fftw_mpi_libs:
+    - libfftw3_mpi
+    - libfftw3f_mpi
+    - libfftw3l_mpi
+
+recipe:
+  name: fftw-split
+  version: ${{ version }}
+
+source:
+  url: http://www.fftw.org/fftw-${{ version }}.tar.gz
+  sha256: 5630c24cdeb33b131612f7eb4b1a9934234754f9f388ff8617458d0be6f239a1
+
+build:
+  number: ${{ build }}
+
+outputs:
+  - package:
+      name: fftw
+    build:
+      string: ${{ mpi_prefix }}_h${{ PKG_HASH }}_${{ PKG_BUILDNUM }}
+      script:
+        file: ${{ 'bld_fftw.bat' if win else 'build_fftw.sh' if unix else '' }}
+    requirements:
+      build:
+        - if: not win
+          then: perl 5.*
+        - cmake <4
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ compiler("fortran") }}
+        - ${{ stdlib("c") }}
+        - if: osx
+          then: llvm-openmp
+        - if: unix
+          then: make
+        - if: unix
+          then: autoconf
+        - if: unix
+          then: automake
+        - if: unix
+          then: gettext
+        - if: unix
+          then: m4
+        - if: unix
+          then: libtool
+        - if: build_platform != target_platform and mpi == 'openmpi' or build_platform != target_platform and mpi == 'openmpi'
+          then: mpi or 'nompi'.*
+      host:
+        - if: mpi != 'nompi' or mpi != 'nompi'
+          then: mpi or 'nompi'.*
+        - if: osx
+          then: llvm-openmp
+      run:
+        - if: osx
+          then: llvm-openmp
+      run_exports:
+        - ${{ pin_subpackage('fftw', upper_bound='x') }}
+        - fftw * ${{ mpi_prefix }}_*
+    tests:
+      - files:
+          recipe:
+            - if: not win
+              then: test_cmake.sh
+            - if: not win
+              then: test_cmake/*
+        requirements:
+          run:
+            - python >=3
+            - if: not win
+              then: cmake <4
+            - if: not win
+              then: make
+            - if: not win
+              then: ${{ compiler('c') }}
+            - if: not win
+              then: ${{ compiler('cxx') }}
+        script:
+          - if: not win
+            then: test ! -f ${PREFIX}/lib/libfftw3f.a
+          - if: not win
+            then: test ! -f ${PREFIX}/lib/libfftw3.a
+          - if: not win
+            then: test ! -f ${PREFIX}/lib/libfftw3l.a
+          - if: not win
+            then: test ! -f ${PREFIX}/lib/libfftw3f_threads.a
+          - if: not win
+            then: test ! -f ${PREFIX}/lib/libfftw3_threads.a
+          - if: not win
+            then: test ! -f ${PREFIX}/lib/libfftw3l_threads.a
+          - if: not win
+            then: test ! -f ${PREFIX}/lib/libfftw3f_omp.a
+          - if: not win
+            then: test ! -f ${PREFIX}/lib/libfftw3_omp.a
+          - if: not win
+            then: test ! -f ${PREFIX}/lib/libfftw3l_omp.a
+          - if: not win
+            then: test -f ${PREFIX}/include/fftw3.h
+          - if: win
+            then: if not exist %LIBRARY_INC%\\fftw3.h exit 1
+          - if: unix
+            then: python -c "import ctypes; ctypes.cdll[r'${PREFIX}/lib/${{ lib }}${SHLIB_EXT}']"
+          - if: unix
+            then: python -c "import ctypes; ctypes.cdll[r'${PREFIX}/lib/${{ lib }}${SHLIB_EXT}']"
+          - if: unix
+            then: test -f ${PREFIX}/lib/${{ lib }}${SHLIB_EXT} || exit 1
+          - if: win
+            then: if not exist %LIBRARY_LIB%\\${{ base }}.lib exit 1
+          - if: win
+            then: if not exist %LIBRARY_BIN%\\${{ base }}.dll exit 1
+          - if: not win
+            then: bash test_cmake.sh
+  - package:
+      name: fftw-static
+    build:
+      string: ${{ mpi_prefix }}_h${{ PKG_HASH }}_${{ PKG_BUILDNUM }}
+      skip: win
+      script:
+        file: ${{ 'build_fftw.sh' if unix else '' }}
+    requirements:
+      build:
+        - if: not win
+          then: perl 5.*
+        - cmake <4
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ compiler("fortran") }}
+        - ${{ stdlib("c") }}
+        - if: osx
+          then: llvm-openmp
+        - if: unix
+          then: make
+        - if: unix
+          then: autoconf
+        - if: unix
+          then: automake
+        - if: unix
+          then: gettext
+        - if: unix
+          then: m4
+        - if: unix
+          then: libtool
+        - if: build_platform != target_platform and mpi == 'openmpi' or build_platform != target_platform and mpi == 'openmpi'
+          then: mpi or 'nompi'.*
+      host:
+        - if: mpi != 'nompi' or mpi != 'nompi'
+          then: mpi or 'nompi'.*
+        - if: osx
+          then: llvm-openmp
+        - ${{ pin_subpackage('fftw', exact=True) }}
+      run:
+        - if: osx
+          then: llvm-openmp
+        - ${{ pin_subpackage('fftw', exact=True) }}
+    tests:
+      - script:
+          - if: not win
+            then: strings ${PREFIX}/lib/libfftw3.a | grep -q dfftw
+          - if: not win
+            then: test -f ${PREFIX}/lib/libfftw3f.a
+          - if: not win
+            then: test -f ${PREFIX}/lib/libfftw3.a
+          - if: not win
+            then: test -f ${PREFIX}/lib/libfftw3l.a
+          - if: not win
+            then: test -f ${PREFIX}/lib/libfftw3f_threads.a
+          - if: not win
+            then: test -f ${PREFIX}/lib/libfftw3_threads.a
+          - if: not win
+            then: test -f ${PREFIX}/lib/libfftw3l_threads.a
+          - if: not win
+            then: test -f ${PREFIX}/lib/libfftw3f_omp.a
+          - if: not win
+            then: test -f ${PREFIX}/lib/libfftw3_omp.a
+          - if: not win
+            then: test -f ${PREFIX}/lib/libfftw3l_omp.a
+
+about:
+  license: GPL-2.0-or-later
+  license_file: COPYING
+  summary: The fastest Fourier transform in the west.
+  homepage: http://fftw.org
+  repository: https://github.com/FFTW/fftw3
+
+extra:
+  recipe-maintainers:
+    - alexbw
+    - jakirkham
+    - grlee77
+    - jschueller
+    - egpbos

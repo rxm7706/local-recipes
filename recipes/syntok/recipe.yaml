@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: syntok
+  version: "1.4.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 7ee9016139f04c7424e6c5771a46fd5622991cff54c781e9e31270214d3276fe
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - poetry-core >=1.0.0
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+    - regex >2016
+
+tests:
+  - python:
+      imports:
+        - syntok
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: sentence segmentation and word tokenization toolkit
+  description: |
+    Syntok is the successor of an earlier, very similar tool, segtok, but has evolved
+    significantly in terms of providing better segmentation and tokenization performance
+    and throughput (syntok can segment documents at a rate of about 100k tokens per
+    second without problems). For example, if a sentence terminal marker is not
+    followed by a spacing character, segtok is unable to detect that as a terminal
+    marker, while syntok has no problem segmenting that case (as it uses tokenization
+    first, and does segmentation afterwards).
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/fnl/syntok
+
+extra:
+  recipe-maintainers:
+    - BastianZim

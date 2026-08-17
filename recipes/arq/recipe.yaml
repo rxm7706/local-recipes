@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.28.0"
+
+package:
+  name: arq
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/arq/arq-${{ version }}.tar.gz
+  sha256: a458188aefc2d7ee17d136f80d8fa8df1d6eba4ceebdead87e9f172d027dc311
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - arq = arq.cli:cli
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - redis-py >=4.2.0,<6
+    # (extras_require for reddis[hiredis])
+    - hiredis >=1.0.0
+    - click >=8.0
+
+tests:
+  - python:
+      imports:
+        - arq
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Job queues in python with asyncio and redis
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/python-arq/arq
+  repository: https://github.com/python-arq/arq
+  documentation: https://arq-docs.helpmanual.io
+
+extra:
+  recipe-maintainers:
+    - maresb
+    - mgorny

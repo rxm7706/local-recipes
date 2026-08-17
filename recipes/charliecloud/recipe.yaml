@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.45"
+
+package:
+  name: charliecloud
+  version: ${{ version }}
+
+source:
+  # Release asset, not the raw git archive: bundles a pre-generated configure
+  # and Lark, so the build needs no network access or autotools bootstrap.
+  url: https://gitlab.com/charliecloud/charliecloud/-/releases/v${{ version }}/downloads/charliecloud-${{ version }}.tar.gz
+  sha256: 7ff265669751e2593ffed832cc3d98efddd367f306390feeb7714192d54b90bd
+
+build:
+  number: 0
+  skip: not linux
+  script:
+    # buggy-build: bin/str.h poisons strdup/strcmp/strncmp, colliding with
+    # glibc's _FORTIFY_SOURCE macros of the same names under -Werror.
+    # disable-test: matches the old patch's behavior, skipping the
+    # sotest/fixture tree entirely (no more DSO whitelist or symlink fixup).
+    - ./configure --prefix=$PREFIX --enable-buggy-build --disable-html --disable-man --disable-test --enable-ch-image
+    - make -j${CPU_COUNT}
+    - make install
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - make
+    # configure needs this to locate libfuse3 for squashfuse support.
+    - pkg-config
+  host:
+    # python is pinned by conda-forge's build matrix; vmin_python=3.6
+    # in configure.ac but the matrix only builds against 3.10+ anyway.
+    - python
+    - requests >=2.6.0
+  run:
+    - python
+    - requests >=2.6.0
+    - tar
+    # ch-image autodetects git and enables the build-cache feature by default.
+    - git
+    # SquashFS image support (vmin_mksquashfs=4.2, vmin_squashfuse=0.1.100).
+    - squashfs-tools >=4.2
+    - squashfuse >=0.1.100
+
+tests:
+  - script:
+      - ch-run --help
+      - ch-run --version
+      - ch-image --help
+      - ch-image --version | grep -Fx ${{ version }}
+      - ch-convert --help
+      - ch-image gestalt dependencies
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Lightweight user-defined software stacks for high-performance computing.
+  description: |
+    Charliecloud uses Linux user and mount namespaces to run unprivileged
+    containers from standard image formats (Docker/OCI) without a daemon or
+    setuid root binary, letting HPC users run containerized workloads on
+    cluster compute nodes. It includes ch-run (a small C binary launcher),
+    ch-image (a Python image manager and builder), and ch-convert (an image
+    format converter), targeting environments where rootless Docker/Podman
+    aren't viable but unprivileged user namespaces are available.
+  homepage: https://charliecloud.io/
+  repository: https://gitlab.com/charliecloud/charliecloud
+  documentation: https://charliecloud.io/latest/index.html
+
+extra:
+  recipe-maintainers:
+    - MilkClouds
+    - ngam

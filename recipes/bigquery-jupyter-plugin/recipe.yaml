@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.1"
+
+package:
+  name: bigquery-jupyter-plugin
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/bigquery-jupyter-plugin/bigquery_jupyter_plugin-${{ version }}.tar.gz
+  sha256: 84caae0679271e2a6082bf7561abb9c0629c986ced4ac0ab8e32ec2079f26c52
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling >=1.5.0
+    - jupyterlab >=4.0.0,<5
+    - hatch-nodejs-version >=0.3.2
+  run:
+    - python >=${{ python_min }}
+    - dataproc-jupyter-plugin >=0.1.74
+    - jupyter-server <3,>=2.0.1
+
+tests:
+  - python:
+      imports:
+        - bigquery_jupyter_plugin
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/GoogleCloudPlatform/bigquery-jupyter-plugin
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: BigQuery JupyterLab Plugin
+  description: |
+    BigQuery JupyterLab Plugin
+  repository: https://github.com/GoogleCloudPlatform/bigquery-jupyter-plugin.git
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bigquery-jupyter-plugin
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: bigquery-jupyter-plugin
+  cfe-purls:
+    - pkg:conda/bigquery-jupyter-plugin@${{ version }}?channel=conda-forge
+    - pkg:pypi/bigquery-jupyter-plugin@${{ version }}
+  cfe-upstream-repo: https://github.com/GoogleCloudPlatform/bigquery-jupyter-plugin.git
+  cfe-upstream-homepage: https://github.com/GoogleCloudPlatform/bigquery-jupyter-plugin
+  cfe-import-names: [bigquery_jupyter_plugin]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:49:10Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:49:10Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

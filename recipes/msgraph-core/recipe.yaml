@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: msgraph-core
+  version: 1.5.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/msgraph_core-${{ version }}.tar.gz
+  sha256: 1eecc9089ead63ab9cfca4cfb0751fc664088d6a53fc9ee1fc0574eddfba030b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=65.5.0
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - microsoft-kiota-abstractions >=1.11.6,<2.0.0
+    - microsoft-kiota-authentication-azure >=1.11.6,<2.0.0
+    - microsoft-kiota-http >=1.11.6,<2.0.0
+    - httpx >=0.23.0
+tests:
+  - python:
+      imports:
+        - msgraph_core
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Core abstractions for kiota generated libraries in Python
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/microsoftgraph/msgraph-sdk-python-core
+  repository: https://github.com/microsoftgraph/msgraph-sdk-python-core
+  documentation: https://github.com/microsoftgraph/msgraph-sdk-python-core/blob/main/README.md
+
+extra:
+  recipe-maintainers:
+    - xylar

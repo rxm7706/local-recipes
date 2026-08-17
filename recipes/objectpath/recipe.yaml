@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: objectpath
+  version: "0.6.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 461263136c79292e42431fbb85cdcaac4c6a256f6b1aa5b3ae9316e4965ad819
+
+build:
+  number: 6
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - objectpath = objectpath.shell:main
+
+requirements:
+  host:
+    - pip
+    - python
+    - wheel
+    - setuptools
+  run:
+    - python
+    - if: win
+      then: pyreadline
+    - if: not win
+      then: readline
+    - pytz
+    - setuptools
+
+tests:
+  - python:
+      imports:
+        - objectpath
+        - objectpath.core
+        - objectpath.utils
+      pip_check: false
+  - script:
+      - objectpath --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: The agile query language for semi-structured data.
+  homepage: http://adriank.github.io/ObjectPath
+
+extra:
+  recipe-maintainers:
+    - sp-hbk
+    - pg-hbk

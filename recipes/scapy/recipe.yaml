@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: scapy
+  version: "2.7.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: bfc1ef1b93280aea1ddee53be7f74232aa28ac3d891244d41ee85200d24aa446
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --ignore-installed -vv
+  python:
+    entry_points:
+      - scapy = scapy.main:interact
+      - UTscapy = scapy.tools.UTscapy:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - ipython
+    - cryptography
+    - matplotlib-base
+
+tests:
+  - python:
+      imports:
+        - scapy
+        - scapy.arch
+        - scapy.asn1
+        - scapy.contrib
+        - scapy.contrib.automotive
+        - scapy.contrib.automotive.bmw
+        - scapy.contrib.automotive.gm
+        - scapy.contrib.automotive.obd
+        - scapy.contrib.automotive.obd.iid
+        - scapy.contrib.automotive.obd.mid
+        - scapy.contrib.automotive.obd.pid
+        - scapy.contrib.automotive.obd.tid
+        - scapy.contrib.scada
+        - scapy.contrib.scada.iec104
+        - scapy.layers
+        - scapy.layers.tls
+        - scapy.layers.tls.crypto
+        - scapy.modules
+        - scapy.tools
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - scapy -h
+      - UTscapy -h
+
+about:
+  license: GPL-2.0-only
+  license_file: LICENSE
+  summary: "Scapy: interactive packet manipulation tool"
+  description: |
+    Scapy is a powerful Python-based interactive packet manipulation program and library.
+  homepage: https://scapy.net
+  repository: https://github.com/secdev/scapy
+  documentation: https://scapy.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - gpotter2

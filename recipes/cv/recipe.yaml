@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0"
+
+package:
+  name: cv
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/cv/cv-${{ version }}.tar.gz
+  sha256: 71a358ea3ce4cd84bc3286354bd7e88040fb9e0fdfef1aee848523660f0f79bf
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - cv
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/mdrachuk/cv
+  license: MIT
+  license_file: LICENSE
+  summary: Check version of a Python module
+  description: |
+    Check version of a Python module
+  repository: https://github.com/mdrachuk/cv/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: cv
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: cv
+  cfe-purls:
+    - pkg:conda/cv@${{ version }}?channel=conda-forge
+    - pkg:pypi/cv@${{ version }}
+  cfe-upstream-repo: https://github.com/mdrachuk/cv/
+  cfe-upstream-homepage: https://github.com/mdrachuk/cv
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:51:56Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:51:56Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

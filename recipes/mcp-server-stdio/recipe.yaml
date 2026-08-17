@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.10"
+  python_min: "3.13"
+
+package:
+  name: mcp-server-stdio
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mcp-server-stdio/mcp_server_stdio-${{ version }}.tar.gz
+  sha256: d73c893469f51e751c528c40bae5d6373d10878221f53d45cb3cf21b707d434f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - fastmcp >=2.13.0
+    - httpx >=0.28.1
+    - python-dotenv >=1.2.1
+    - starlette >=0.50.0
+
+tests:
+  - python:
+      imports:
+        - mcp_server_stdio
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/mcp-server-stdio/
+  license: MIT
+  license_file: LICENSE
+  summary: MCP Server for Claude / Stdio transport
+  description: |
+    MCP Server for Claude / Stdio transport
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mcp-server-stdio
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mcp-server-stdio
+  cfe-purls:
+    - pkg:conda/mcp-server-stdio@${{ version }}?channel=conda-forge
+    - pkg:pypi/mcp-server-stdio@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/mcp-server-stdio/
+  cfe-upstream-homepage: https://pypi.org/project/mcp-server-stdio/
+  cfe-import-names: [mcp_server_stdio]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:37:55Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:37:55Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.0"
+
+package:
+  name: pamela
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pamela/pamela-${{ version }}.tar.gz
+  md5: 37d71159f1bc17009ff568fd919c2a4d
+  file_name: pamela-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: pip install --no-deps .
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pamela
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: COPYING
+  summary: PAM interface using ctypes
+  homepage: https://github.com/minrk/pamela
+
+extra:
+  recipe-maintainers:
+    - minrk

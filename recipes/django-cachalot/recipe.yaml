@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: django-cachalot
-  version: "2.8.0"
+  version: "2.9.1"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_cachalot-${{ version }}.tar.gz
-  sha256: 30456720ac9f3fabeb90ce898530fe01130c25a1eca911cd016cfaeab251d627
+  sha256: 7d3b12022abc811e344deac8830228e2d027ed8dcf762e1116dccde74d360512
 
 build:
   number: 0
@@ -20,26 +20,36 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    #- cachalot
+    - python ${{ python_min }}
     - pip
+    - setuptools
   run:
-    - python >=${{ python_min }},<4
-    - django >=3.2,<5.3
+    - django-debug-toolbar
+    - jinja2
+    - python >=${{ python_min }},<4.0
+    - django >=4.2,<6.2
+    # - Django <6.1,>=4.2
+    # - Django <6.2,>=4.2
 
 tests:
   - python:
       imports:
         - cachalot
-      pip_check: false
-      python_version: ${{ python_min }}.*
+      pip_check: true
+      python_version: ${{ python_min }}
 
 about:
-  summary: Caches your Django ORM queries and automatically invalidates them.
   license: BSD-3-Clause
   license_file: LICENSE
-  homepage: https://github.com/noripyt/django-cachalot
+  summary: No effort, no worry, maximum performance.
+  description: |
+    Caches your Django ORM queries and automatically invalidates them.
+  homepage: https://github.com/BertrandBordage/django-cachalot
+  repository: https://github.com/BertrandBordage/django-cachalot
+  documentation: http://django-cachalot.readthedocs.io/en/latest/
 
 extra:
   recipe-maintainers:
     - rxm7706
+    - cshaley
+    - sannykr

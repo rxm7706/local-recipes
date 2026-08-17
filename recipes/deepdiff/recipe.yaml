@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: deepdiff
+  version: 9.1.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 07e9e366fab4297755153c4eab795ad4ef3cbd0d51660e847f5751c6bd727687
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - flit-core >=3.11,<4
+  run:
+    - orderly-set >=5.5.0,<6
+    - python >=${{ python_min }}
+    - cachebox >=5.2,<6
+tests:
+  - python:
+      imports:
+        - deepdiff
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Deep Difference and Search of any Python object/data.
+  license: MIT
+  license_file: LICENSE
+  description: |
+    Deep Difference of dictionaries, iterables, strings and other objects.
+    It will recursively look for all the changes.
+  homepage: https://github.com/seperman/deepdiff
+  repository: https://github.com/seperman/deepdiff
+  documentation: http://deepdiff.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - loriab
+    - seperman
+    - synapticarbors

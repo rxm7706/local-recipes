@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: depyf
+  version: "0.20.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/depyf-${{ version }}.tar.gz
+  sha256: fb7683bd72c44f67b56029df2c47721e9a02ffa4d7b19095f1c54c4ebf797a98
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - astor
+    - dill
+
+tests:
+  - python:
+      imports:
+        - depyf
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Decompile python functions, from bytecode to source code!
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/thuml/depyf
+
+extra:
+  recipe-maintainers:
+    - maresb

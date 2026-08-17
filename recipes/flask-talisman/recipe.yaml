@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: flask-talisman
+  version: "1.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+    sha256: c5f486f5f54420729f84b3c3850cd63f96e8b033a9629bee66c524ea363797ff
+  - url: https://raw.githubusercontent.com/wntrblm/flask-talisman/v${{ version }}/LICENSE
+    sha256: c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.5
+  run:
+    - python >=3.5
+    - flask
+
+tests:
+  - python:
+      imports:
+        - flask_talisman
+      pip_check: false
+  - requirements:
+      run:
+        - flask
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: HTTP security headers for Flask
+  description: |
+    Talisman is a small Flask extension that handles setting HTTP headers that can help
+    protect against a few common web application security issues.
+
+  homepage: https://github.com/GoogleCloudPlatform/flask-talisman
+  repository: https://github.com/GoogleCloudPlatform/flask-talisman
+
+extra:
+  recipe-maintainers:
+    - sodre
+    - xmnlab

@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.2.0"
+
+package:
+  name: uritemplate
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/u/uritemplate/uritemplate-${{ version }}.tar.gz
+  sha256: 480c2ed180878955863323eea31b0ede668795de182617fef9c6ca09e6ec9d0e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - uritemplate
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Implementation of RFC 6570 URI Templates
+  homepage: https://uritemplate.readthedocs.org
+  repository: http://github.com/uri-templates/uritemplate-py/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - ocefpaf

@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: nanoid
+  version: 2.0.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 5a80cad5e9c6e9ae3a41fa2fb34ae189f7cb420b2a5d8f82bd9d23466e4efa68
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - nanoid
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+      - python -c "from nanoid import generate"
+
+about:
+  summary: A tiny, secure, URL-friendly, unique string ID generator for Python.
+  description: |
+    * Safe. It uses cryptographically strong random APIs and tests distribution of symbols.
+    * Compact. It uses a larger alphabet than UUID (A-Za-z0-9_-). So ID size was reduced from 36 to 21 symbols.
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/puyuan/py-nanoid
+  repository: https://github.com/puyuan/py-nanoid
+  documentation: https://github.com/puyuan/py-nanoid
+
+extra:
+  recipe-maintainers:
+    - carlodri
+    - sterlinm

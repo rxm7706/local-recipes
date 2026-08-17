@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: pypdfium2
+  version: "5.13.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  # NOTE: the GH release contains the test folder that is not available in the PyPI release.
+  url: https://github.com/pypdfium2-team/pypdfium2/archive/refs/tags/${{ version }}.zip
+  sha256: 03a8af16b50f3cecebfb76d0d027a0ffb907aed9cc150ae8c07b98e0eaae4dce
+
+build:
+  number: 0
+  script:
+    - if: unix
+      then: CTYPESGEN_PIN='1' ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+      else: |
+        set PDFIUM_BINDINGS=reference
+        set PDFIUM_PLATFORM=sourcebuild-toolchained
+        ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  dynamic_linking:
+    # Normally rattler-build tries to modify the install_name of the binary as well as other load commands to make it relocatable.
+    # This is not strictly required here, as the library has no dependencies outside of the sysroot.
+    # The operation by rattler-build will still fail, as the library was pre-compiled without "-headerpad_max_install_names", so replacing the install_name due to insufficient size.
+    binary_relocation: ${{ false if osx else true }}
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - git
+  host:
+    - python
+    - setuptools
+    - packaging
+    - wheel
+    - ctypesgen-pypdfium2-team >=5.4.0
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - pypdfium2
+      pip_check: true
+  - requirements:
+      run:
+        - pytest
+        - pillow
+        - numpy
+    files:
+      source:
+        - tests/
+    script:
+      # test_const_converters[mapping11-True-items11] is deselected due to an erroneous failure unrelated to the package itself
+      - pytest -vvv ./tests/ --deselect tests/test_misc.py::test_const_converters[mapping11-True-items11]
+
+about:
+  summary: Python bindings to PDFium
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/pypdfium2-team/pypdfium2
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - janjagusch
+    - pb01ka

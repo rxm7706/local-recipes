@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.0.0"
+  name: azure-mgmt-resource
+  sha256: 54227c5db06d3be4dd4b77ad885b273e9eb2606d1de653c5b534066cfbb60c0c
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.zip
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - typing_extensions >=4.6.0
+    - isodate >=0.6.1
+    - python >=${{ python_min }}
+    - azure-common >=1.1
+    - azure-mgmt-core >=1.6.0
+
+tests:
+  - python:
+      imports:
+        - azure
+        - azure.mgmt
+        - azure.mgmt.resource
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - python -m unittest discover -p "test_*.py"
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Microsoft Azure Resource Management Client Library for Python
+  homepage: https://github.com/Azure/azure-sdk-for-python/tree/master/sdk/resources/azure-mgmt-resource
+
+extra:
+  recipe-maintainers:
+    - janjagusch
+    - Maxyme
+    - dhirschfeld

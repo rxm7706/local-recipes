@@ -36,10 +36,8 @@ tests:
 
 about:
   summary: An abstract singleton class.
-  description: A Singleton that also enforces abstract methods are implemented.
   license: MIT
-  license_file:
-    - LICENSE
+  license_file: LICENSE
   homepage: https://github.com/BillSchumacher/Abstract-Singleton
 
 extra:

@@ -1,0 +1,126 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.6.4"
+  PYTHON: PYTHON | default("$PYTHON")
+  python_min: python_min | default("3.9")
+
+recipe:
+  name: dparse
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/dparse/dparse-${{ version }}.tar.gz
+  sha256: 90b29c39e3edc36c6284c82c4132648eaf28a01863eb3c231c2512196132201a
+
+build:
+  number: 0
+  noarch: python
+  script:
+    env:
+      CI: true
+    content: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - hatchling
+    - pip
+    - python ${{ python_min }}
+  run:
+    - packaging
+    - python >=${{ python_min }}
+    - tomli
+
+outputs:
+  - package:
+      name: dparse
+  - package:
+      name: dparse-with-conda
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("dparse", upper_bound="x.x.x") }}
+        - pyyaml
+    tests:
+      - requirements:
+          run:
+            - pip
+        script:
+          - pip check
+  - package:
+      name: dparse-with-pipenv
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("dparse", upper_bound="x.x.x") }}
+        - pipenv
+    tests:
+      - requirements:
+          run:
+            - pip
+        script:
+          - pip check
+  - package:
+      name: dparse-with-poetry
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("dparse", upper_bound="x.x.x") }}
+        - poetry
+    tests:
+      - requirements:
+          run:
+            - pip
+        script:
+          - pip check
+  - package:
+      name: dparse-with-all
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("dparse-with-conda", upper_bound="x.x.x") }}
+        - ${{ pin_subpackage("dparse-with-pipenv", upper_bound="x.x.x") }}
+        - ${{ pin_subpackage("dparse-with-poetry", upper_bound="x.x.x") }}
+        - ${{ pin_subpackage("dparse", upper_bound="x.x.x") }}
+    tests:
+      - python:
+          imports:
+            - dparse
+          pip_check: true
+      - files:
+          source:
+            - tests
+            - pyproject.toml
+        requirements:
+          run:
+            - pip
+            - pytest-cov
+        script:
+          - pytest -vv --tb=long --color=yes --cov=dparse --cov-report=term-missing:skip-covered --no-cov-on-fail --cov-fail-under=78
+
+tests:
+  - python:
+      imports:
+        - dparse
+      pip_check: true
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - tests
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A parser for Python dependency files
+  homepage: https://github.com/pyupio/dparse
+
+extra:
+  feedstock-name: dparse
+  recipe-maintainers:
+    - jkornblum
+    - bollwyvl

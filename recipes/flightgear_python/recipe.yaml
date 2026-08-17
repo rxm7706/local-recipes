@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.1.0"
+
+package:
+  name: flightgear_python
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/flightgear_python/flightgear_python-${{ version }}.tar.gz
+  sha256: aec0e6eede08ccce2723e665fc8a2655e5cfec67a5435c67251504714b3833fa
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=1.0.0
+  run:
+    - python >=${{ python_min }}
+    - construct <3.0,>=2.10
+    - multiprocess <0.71,>=0.70
+    - requests <3.0,>=2.32
+
+tests:
+  - python:
+      imports:
+        - flightgear_python
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/flightgear_python/
+  license: MIT
+  license_file: LICENSE
+  summary: Interface for FlightGear network connections
+  description: |
+    Interface for FlightGear network connections
+  repository: https://github.com/julianneswinoga/flightgear-python
+  documentation: https://flightgear-python.readthedocs.io/en/latest
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flightgear_python
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flightgear_python
+  cfe-purls:
+    - pkg:conda/flightgear_python@${{ version }}?channel=conda-forge
+    - pkg:pypi/flightgear-python@${{ version }}
+  cfe-upstream-repo: https://github.com/julianneswinoga/flightgear-python
+  cfe-upstream-homepage: https://pypi.org/project/flightgear_python/
+  cfe-import-names: [flightgear_python]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:43:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:43:59Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4/P5 Create-recipe local-only. flightgear_python.
+####

@@ -3,52 +3,57 @@ schema_version: 1
 
 context:
   name: cmd2
-  version: 2.7.0
+  version: "4.2.0"
+  bundle: tar.gz
+  hash: 0546543c1ba3c6090ecec33f1373c59627e417b14419629a48176115946fd329
+  python_min: "3.11"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/cmd2-${{ version }}.tar.gz
-  sha256: 81d8135b46210e1d03a5a810baf859069a62214788ceeec3588f44eed86fbeeb
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
+  sha256: ${{ hash }}
 
 build:
   number: 0
-  skip: match(python, "<3.9")
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python >=3.9
-    - python-build >=1.2.1
-    - setuptools >=64
-    - setuptools-scm >=8
+    - python 3.11.*
     - pip
+    - setuptools_scm
+    - setuptools
+    - python-build
   run:
-    - python >=3.9
-    - if: osx
-      then: gnureadline >=8
-    - pyperclip >=1.8
-    - if: win
-      then: pyreadline3 >=3.4
-    - rich-argparse >=1.7.1
-    - wcwidth >=0.2.10
+    - python >=${{ python_min }}
+    - prompt-toolkit >=3.0.52
+    - pyperclip >=1.8.2
+    - rich >=15.0.0
+    - rich-argparse >=1.7.2
 
 tests:
   - python:
       imports:
-        - cmd2_myplugin
-      pip_check: true
+        - cmd2
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
 
 about:
-  summary: cmd2 - quickly build feature-rich and user-friendly interactive command line applications in Python
+  license_file: LICENSE
   license: MIT
-  license_file:
-    - LICENSE
-    - plugins/template/LICENSE
-  homepage: https://github.com/python-cmd2/cmd2-plugin-template
+  summary: Extra features for standard library's cmd module
+  homepage: https://github.com/python-cmd2/cmd2
+  repository: https://github.com/python-cmd2/cmd2
+  documentation: https://cmd2.readthedocs.io/
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - anguslees
+    - tschoonj

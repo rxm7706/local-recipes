@@ -1,0 +1,93 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.9.18"
+
+package:
+  name: ciscoconfparse2
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/ciscoconfparse2/ciscoconfparse2-${{ version }}.tar.gz
+  sha256: a28d4117907664b0231c2d3c5702ede9fdc3c7d78f9336fcb857b3d5bb983dc7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling >=1.27.0
+  run:
+    - python >=${{ python_min }}
+    - attrs <27.0.0,>25.4.0
+    - dnspython ==2.8.0
+    - hier-config ==2.3.1
+    - hypothesis ==6.152.7
+    - libpass ==1.9.3
+    - loguru >=0.7.2
+    - macaddress ==2.0.2
+    - pyparsing ==3.3.2
+    - pyyaml >=6.0.3
+    - rich >=14.3.3
+    - toml ==0.10.2
+    - traitlets ==5.15.0
+    - typeguard ==4.5.2
+
+tests:
+  - python:
+      imports:
+        - ciscoconfparse2
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://github.com/mpenning/ciscoconfparse2
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: Parse, Audit, Query, Build, and Modify Cisco IOS-style and JunOS-style configs
+  description: |
+    Parse, Audit, Query, Build, and Modify Cisco IOS-style and JunOS-style configs
+  documentation: http://www.pennington.net/py/ciscoconfparse2/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ciscoconfparse2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ciscoconfparse2
+  cfe-purls:
+    - pkg:conda/ciscoconfparse2@${{ version }}?channel=conda-forge
+    - pkg:pypi/ciscoconfparse2@${{ version }}
+  cfe-upstream-repo: http://github.com/mpenning/ciscoconfparse2
+  cfe-upstream-homepage: http://github.com/mpenning/ciscoconfparse2
+  cfe-import-names: [ciscoconfparse2]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:56:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:56:12Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

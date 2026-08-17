@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: tabpy
   version: "2.14.0"
 
 package:
-  name: tabpy
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/t/tabpy/tabpy-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/tabpy-${{ version }}.tar.gz
   sha256: 4cf07d46879026dffac1e39ed50e26f434f4cf73e630a47615af3a61d43a3d11
 
 build:
@@ -24,7 +25,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pytest-runner
     - pip
     - setuptools
@@ -62,10 +63,12 @@ tests:
       imports:
         - tabpy
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
-  - script:
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
       - tabpy --help
       - tabpy-user --help
 
@@ -74,7 +77,6 @@ about:
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/tableau/TabPy
-  repository: https://github.com/tableau/TabPy
 
 extra:
   recipe-maintainers:

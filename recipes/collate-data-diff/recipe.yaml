@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "0.11.11"
+  version: "0.11.15"
 
 package:
   name: collate-data-diff
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/c/collate-data-diff/collate_data_diff-${{ version }}.tar.gz
-  sha256: a54ff1f6835c2384e5a9eaa7e0a700d67384d4191953b0dffbe46ce083841f83
+  sha256: db924ecc1b44423bbd142e874334bcc57e0e6fd5fc5d56a53284cdec1131fc05
 
 build:
   number: 0
@@ -27,9 +27,9 @@ requirements:
     - pip
   run:
     - python >=${{ python_min }},<4.0
-    - pydantic >=2.0,<3.0
+    - pydantic >=2.0,<3
     - dsnparse <0.2.0
-    - click >=8.1
+    - click >=8.3.3
     - rich
     - toml >=0.10.2
     - mysql-connector-python >=9.1
@@ -37,7 +37,7 @@ requirements:
     - deepdiff >=8.6.1,<9.0
     - keyring
     - tabulate >=0.9.0
-    - urllib3 >=2.7.0,<3.0
+    - urllib3 >=2.7.0,<3
     - typing_extensions >=4.0.1
     - attrs >=23.1.0
     - mashumaro >=2.9,<3.11.0
@@ -61,7 +61,7 @@ tests:
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - "*"
+        - '*'
   - requirements:
       run:
         - python ${{ python_min }}.*

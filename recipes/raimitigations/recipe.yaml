@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: raimitigations
+  version: "1.1.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/raimitigations-${{ version }}.tar.gz
+  sha256: bc02a223ae2a2fb32ca18d518067317f8d62279e080cd74ce6f571866454c9a0
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - numpy
+    - pandas
+    - seaborn
+    - scipy
+    - scikit-learn
+    - imbalanced-learn <=0.9.1
+    - sdv ==0.18.0
+    - mlxtend
+    - researchpy
+    - catboost
+    - statsmodels
+    - xgboost
+    - raiutils
+
+tests:
+  - python:
+      imports:
+        - raimitigations
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Python library for implementing and exploring mitigations for Responsible AI.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/microsoft/responsible-ai-toolbox-mitigations
+
+extra:
+  recipe-maintainers:
+    - rxm7706

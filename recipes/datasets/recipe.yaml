@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: datasets
+  version: "5.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ce22bb851efd7494f08aad33b940803784434f6e77763d00679a0dc45fcf686a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - datasets-cli=datasets.commands.datasets_cli:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - filelock
+    - numpy >=1.17
+    - pyarrow >=21.0.0
+    - dill >=0.3.0,<0.4.2
+    - pandas
+    - requests >=2.32.2
+    - httpx <1.0.0
+    - tqdm >=4.66.3
+    - python-xxhash
+    - multiprocess <0.70.20
+    - fsspec >=2023.1.0,<=2026.6.0
+    - huggingface_hub >=0.25.0,<2.0
+    - packaging
+    - pyyaml >=5.1
+    # For fsspec[http]
+    - aiohttp
+
+tests:
+  - python:
+      imports:
+        - datasets
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - datasets-cli --help
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: HuggingFace/Datasets is an open library of NLP datasets.
+  description: |
+    Datasets is a lightweight library providing one-line dataloaders for many
+    public datasets and one liners to download and pre-process any of the number
+    of datasets major public datasets provided on the HuggingFace Datasets Hub.
+    Datasets are ready to use in a dataloader for training/evaluating a ML model
+    (Numpy/Pandas/PyTorch/TensorFlow/JAX). Datasets also provide an API for
+    simple, fast, and reproducible data pre-processing for the above public
+    datasets as well as your own local datasets in CSV/JSON/text.
+  homepage: https://github.com/huggingface/datasets
+  repository: https://github.com/huggingface/datasets
+  documentation: https://huggingface.co/docs/datasets/
+
+extra:
+  recipe-maintainers:
+    - oblute
+    - Tata17
+    - thewchan
+    - mxr-conda

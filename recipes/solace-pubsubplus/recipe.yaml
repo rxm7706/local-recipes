@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.11.0"
+
+package:
+  name: solace-pubsubplus
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py36/s/solace-pubsubplus/solace_pubsubplus-1.11.0-py36-none-macosx_11_0_universal2.whl
+  sha256: f9b58a3bc2c2780744399c63db7d5c062e23effa52665c4c6dc56b838311a254
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - solace_pubsubplus
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://docs.solace.com/API/Messaging-APIs/Python-API/python-home.htm
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Solace Messaging API for Python.
+  description: |
+    Solace Messaging API for Python.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: solace-pubsubplus
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: solace-pubsubplus
+  cfe-purls:
+    - pkg:conda/solace-pubsubplus@${{ version }}?channel=conda-forge
+    - pkg:pypi/solace-pubsubplus@${{ version }}
+  cfe-upstream-repo: https://docs.solace.com/API/Messaging-APIs/Python-API/python-home.htm
+  cfe-upstream-homepage: https://docs.solace.com/API/Messaging-APIs/Python-API/python-home.htm
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:31:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:31:34Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

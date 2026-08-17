@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.0"
+
+package:
+  name: pdf-generator
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pdf-generator/pdf-generator-${{ version }}.tar.gz
+  sha256: 70dcb42b8019bda05202e27ca8b0d2c1efe5795ae58fe806ab992f96ff3984b5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core >=3.2,<4
+  run:
+    - python >=${{ python_min }}
+    - reportlab
+
+tests:
+  - python:
+      imports:
+        - pdf_generator
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/pdf-generator/
+  license: MIT
+  license_file: LICENSE
+  summary: PDF Generation utils
+  description: |
+    PDF Generation utils
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pdf-generator
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pdf-generator
+  cfe-purls:
+    - pkg:conda/pdf-generator@${{ version }}?channel=conda-forge
+    - pkg:pypi/pdf-generator@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/pdf-generator/
+  cfe-upstream-homepage: https://pypi.org/project/pdf-generator/
+  cfe-import-names: [pdf_generator]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:29:52Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:29:52Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

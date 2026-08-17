@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "3.0.2"
+
+package:
+  name: justext
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/j/justext/justext-${{ version }}.tar.gz
+    sha256: 13496a450c44c4cd5b5a75a5efcd9996066d2a189794ea99a49949685a0beb05
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install .
+
+requirements:
+  host:
+    - pip
+    - setuptools
+    - python ${{ python_min }}.*
+  run:
+    - python >=${{ python_min }}
+    - lxml-html-clean
+
+tests:
+  - python:
+      imports:
+        - justext
+      pip_check: true
+
+about:
+  homepage: https://github.com/miso-belica/jusText
+  summary: Heuristic based boilerplate removal tool
+  license: BSD-2-Clause
+  license_file: LICENSE.rst
+
+extra:
+  recipe-maintainers:
+    - moritzwilksch

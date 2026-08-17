@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.7.3"
+
+package:
+  name: python-hdfs
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/hdfs/hdfs-${{ version }}.tar.gz
+  sha256: 752a21e43f82197dce43697c73f454ba490838108c73a57a9247efb66d1c0479
+  file_name: hdfs-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - hdfscli = hdfs.__main__:main
+      - hdfscli-avro = hdfs.ext.avro.__main__:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - docopt
+    - requests >=2.7.0
+    - six >=1.9.0
+    # avro extra
+    - fastavro >=0.21.19
+    # kerberos extra
+    - requests-kerberos >=0.7.0
+    # dataframe extra
+    # fastavro >=0.21.19 as in avro extra
+    - pandas >=0.14.1
+
+tests:
+  - python:
+      imports:
+        - hdfs
+        - hdfs.ext
+        - hdfs.ext.avro
+        - hdfs.ext.dataframe
+        - hdfs.ext.kerberos
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - hdfscli --help
+      - hdfscli-avro --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: "HdfsCLI: API and command line interface for HDFS."
+  homepage: http://hdfscli.readthedocs.org
+  repository: https://github.com/mtth/hdfs
+  documentation: http://hdfscli.readthedocs.org
+
+extra:
+  recipe-maintainers:
+    - xylar
+    - mariusvniekerk
+    - parente
+    - FernandezMathieu
+    - xylar

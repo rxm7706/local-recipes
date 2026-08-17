@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dask-cuda
+  version: "23.10.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dask-cuda-${{ version }}.tar.gz
+  sha256: 9748c22811c7a2636debf96ec7ef5c368f28228e2ae7f86c59422b1a833971f0
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - dask-cuda-worker = dask_cuda.cli:worker
+      - dask-cuda-config = dask_cuda.cli:config
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=64.0.0
+    # tomli should be less py<3.11
+    - tomli
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - dask-core ==2023.9.2
+    - distributed ==2023.9.2
+    - dask ==2023.9.2
+    - pynvml >=11.0.0,<11.5
+    - numpy >=1.21
+    - numba >=0.57
+    - pandas >=1.3,<1.6.0dev0
+    - zict >=2.0.0
+    - __linux
+
+tests:
+  - python:
+      imports:
+        - dask_cuda
+        - dask_cuda.benchmarks
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - dask-cuda-worker --help
+      - dask-cuda-config --help
+      - dask cuda --help
+      - dask cuda worker --help
+      - dask cuda config --help
+
+about:
+  summary: Utilities for Dask and CUDA interactions
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/rapidsai/dask-cuda
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - jakirkham

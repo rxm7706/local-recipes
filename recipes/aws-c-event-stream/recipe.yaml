@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: aws-c-event-stream
+  version: "0.7.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/awslabs/${{ name }}/archive/v${{ version }}.tar.gz
+  sha256: 334b2abfe0cb5c68d79d52525598fdd5f6052b93a17a78a4b1ada7fa1be252c0
+
+build:
+  number: 6
+
+requirements:
+  build:
+    - cmake !=3.19.0,!=3.19.1
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+    - ninja
+  host:
+    - aws-c-common
+    - aws-c-io
+    - aws-checksums
+  run_exports:
+    - ${{ pin_subpackage("aws-c-event-stream", upper_bound="x.x.x") }}
+
+tests:
+  - script:
+      - if: unix
+        then:
+          - test -f $PREFIX/lib/libaws-c-event-stream${SHLIB_EXT}
+          - test -f $PREFIX/include/aws/event-stream/event_stream.h
+        else:
+          - if not exist %LIBRARY_BIN%\aws-c-event-stream.dll exit 1
+          - if not exist %LIBRARY_INC%\aws\event-stream\event_stream.h exit 1
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: C99 implementation of the vnd.amazon.eventstream content-type.
+  homepage: https://github.com/awslabs/aws-c-event-stream
+  repository: https://github.com/awslabs/aws-c-event-stream
+
+extra:
+  recipe-maintainers:
+    - xhochy
+    - conda-forge/aws-sdk-cpp

@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: uiautomation
   version: "2.0.29"
 
 package:
-  name: uiautomation
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/u/uiautomation/uiautomation-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/uiautomation-${{ version }}.tar.gz
   sha256: 3c169112043ce21065aead1d79c3baebdafc9cf03bd24ded02b2db11d423d88d
 
 build:
@@ -19,35 +20,28 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
-    - setuptools
     - comtypes >=1.2.1
+    - setuptools
   run:
     - python >=${{ python_min }}
+    - typing
     - comtypes >=1.2.1
-    - if: win
-      then: __win
+    - __win
 
 tests:
   - python:
       imports:
         - uiautomation
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Python UIAutomation for Windows
   license: Apache-2.0
   license_file: LICENSE
   homepage: https://github.com/yinkaisheng/Python-UIAutomation-for-Windows
-  repository: https://github.com/yinkaisheng/Python-UIAutomation-for-Windows
-  description: |
-    Python UIAutomation for Windows. A wrapper around the Windows
-    UIAutomation COM API (via comtypes) for inspecting and driving the
-    UI of Windows desktop applications. Windows-only at runtime.
 
 extra:
   recipe-maintainers:

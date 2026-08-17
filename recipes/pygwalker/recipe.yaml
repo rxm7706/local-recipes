@@ -3,15 +3,15 @@ schema_version: 1
 
 context:
   name: pygwalker
-  version: "0.4.9.15"
+  version: "0.5.0.1"
 
 package:
-  name: ${{ name }}
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
-  sha256: 747b726e8acd35f20aef8ee74652a948575fb70b5fa8f816a692c9870d0ab0cb
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pygwalker-${{ version }}.tar.gz
+  sha256: f37f83104e26b0824531675396fe9108b0e2d2a1936b2d85d24ae2d9314c9977
 
 build:
   number: 0
@@ -23,12 +23,12 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - pip
+    - python ${{ python_min }}
     - hatchling
     - hatch-jupyter-builder
+    - pip
   run:
-    - python >=${{ python_min }},<4
+    - python >=${{ python_min }},<4.0
     - jinja2
     - ipython
     - astor
@@ -36,7 +36,7 @@ requirements:
     - ipywidgets
     - pydantic
     - psutil
-    - python-duckdb >=0.10.1,<2.0.0
+    - python-duckdb >=0.10.4,<2.0.0
     - pyarrow
     - sqlglot >=23.15.8
     - requests
@@ -44,6 +44,7 @@ requirements:
     - sqlalchemy
     - gw-dsl-parser ==0.1.49.1
     - appdirs
+    #- segment-analytics-python ==2.2.3 is called analytics-python
     - analytics-python ==2.2.3
     - pandas
     - pytz
@@ -52,6 +53,7 @@ requirements:
     - packaging
     - numpy
     - ipylab <=1.0.0
+    #- quickjs is called python-quickjs 1.19.4
     - python-quickjs
     - traitlets
     - anywidget
@@ -60,33 +62,21 @@ tests:
   - python:
       imports:
         - pygwalker
-      pip_check: false  # Disabled: wasmtime-py package name mismatch with PyPI
-      # gw-dsl-parser 0.1.49.1 has requirement wasmtime>=12.0.0, but you have wasmtime 0.0.0.
+      pip_check: false
+      python_version: ${{ python_min }}
   - requirements:
       run:
         - pip
+        - python ${{ python_min }}
     script:
       - pygwalker --help
 
 about:
-  homepage: https://kanaries.net/pygwalker
-  repository: https://github.com/Kanaries/pygwalker
-  summary: 'pygwalker: turn your data into an interactive UI for data exploration and visualization'
-  description: |
-    PyGWalker is a Python library that converts pandas DataFrames into interactive
-    visual analysis interfaces. It integrates Jupyter Notebooks with Graphic Walker,
-    an open-source alternative to Tableau.
-
-    Features:
-    - Interactive visualization through drag-and-drop operations
-    - Data exploration tools with filtering, zooming, and panning
-    - Multiple chart types (bar, line, scatter, etc.)
-    - Visual data transformation tools
-    - Seamless integration with Jupyter, Colab, Kaggle, and Streamlit
-    - Export functionality for charts (PNG, SVG)
+  summary: "pygwalker: Combining Jupyter Notebook with a Tableau-like UI"
+  description: "pygwalker: turn your data into an interactive UI for data exploration and visualization"
   license: Apache-2.0
   license_file: LICENSE
-  documentation: https://docs.kanaries.net/pygwalker
+  homepage: https://pypi.org/project/pygwalker/
 
 extra:
   recipe-maintainers:

@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: oracledb
+  version: "4.0.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/oracledb-${{ version }}.tar.gz
+  sha256: 0a380ab72853487ea2764c5df772f35026b4219868fc3eba68e193c9aea230ac
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cython >=3.2,<4
+        - cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - cython >=3.2,<4
+    - pip
+    - setuptools >=77.0.0
+  run:
+    - python
+    - cryptography >=3.2.1
+    - typing_extensions >=4.14.0
+
+tests:
+  - python:
+      imports:
+        - oracledb
+      pip_check: true
+
+about:
+  summary: Python interface to Oracle Database
+  license: Apache-2.0
+  license_file:
+    - LICENSE.txt
+    - NOTICE.txt
+  homepage: https://oracle.github.io/python-oracledb
+  repository: https://github.com/oracle/python-oracledb
+  documentation: https://python-oracledb.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - xylar

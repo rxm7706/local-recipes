@@ -1,0 +1,120 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.58.2"
+  version_majmin: ${{ ".".join(version | split(".", 2)[:2]) }}
+  libs:
+    - Pango
+    - PangoCairo
+    - PangoFT2
+
+package:
+  name: pango
+  version: ${{ version }}
+
+source:
+  url: https://download.gnome.org/sources/pango/${{ version_majmin }}/pango-${{ version }}.tar.xz
+  sha256: 342385b6ca3b7c73455d7c80a13b7dbe4489e00bc3bd4c5bd6ed4dce421e374a
+
+build:
+  number: 0
+  prefix_detection:
+    ignore_binary_files: false
+
+requirements:
+  build:
+    - meson
+    - ninja
+    - pkg-config
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+    - gobject-introspection
+    - if: build_platform != target_platform
+      then: cairo
+    - if: build_platform != target_platform
+      then: expat
+    - if: build_platform != target_platform
+      then: fribidi
+    - if: build_platform != target_platform
+      then: glib
+    - if: build_platform != target_platform
+      then: harfbuzz
+    - if: build_platform != target_platform
+      then: fontconfig
+    - if: build_platform != target_platform
+      then: freetype
+    - if: build_platform != target_platform
+      then: libpng
+    # needed for pkg-config/development files:
+    - if: build_platform != target_platform
+      then: harfbuzz
+    - if: build_platform != target_platform
+      then: xorg-xorgproto
+    - if: build_platform != target_platform
+      then: zlib
+  host:
+    - cairo
+    - expat  # need to name this explicitly to get the development files
+    - fribidi
+    - glib
+    - harfbuzz
+    - fontconfig
+    - freetype
+    - harfbuzz
+    - libpng
+    - xorg-xorgproto
+    - zlib
+  run_exports:
+    - ${{ pin_subpackage('pango', upper_bound='x') }}
+  ignore_run_exports:
+    from_package:
+      - ${{ compiler('cxx') }}
+
+tests:
+  - requirements:
+      run:
+        - expat
+        - harfbuzz
+        - pkg-config
+        - pygobject
+    script:
+      - pango-view --help
+      - if: unix
+        then: test -f $PREFIX/lib/lib${{ lib | lower }}-1.0${SHLIB_EXT}
+      - if: unix
+        then: test -f `pkg-config --variable=libdir --dont-define-prefix ${{ lib | lower }}`/lib${{ lib | lower }}-1.0${SHLIB_EXT}
+      - if: win
+        then: if not exist %PREFIX%\\Library\\bin\\${{ lib | lower }}-1.0-0.dll exit 1
+      - if: win
+        then: for /f "usebackq tokens=*" %%a in (`pkg-config --variable=exec_prefix --dont-define-prefix ${{ lib | lower }}`) do if not exist "%%a/bin/${{ lib | lower }}-1.0-0.dll" exit 1
+      - if: win
+        then: if not exist %PREFIX%\\Library\\lib\\${{ lib | lower }}-1.0.lib exit 1
+      - if: win
+        then: for /f "usebackq tokens=*" %%a in (`pkg-config --variable=libdir --dont-define-prefix ${{ lib | lower }}`) do if not exist "%%a/${{ lib | lower }}-1.0.lib" exit 1
+      - if: unix
+        then: test -f $PREFIX/lib/girepository-1.0/${{ lib }}-1.0.typelib
+      - if: win
+        then: if not exist %PREFIX%\Library\lib\girepository-1.0\${{ lib }}-1.0.typelib exit 1
+
+about:
+  license: LGPL-2.1-or-later
+  license_file: COPYING
+  summary: Text layout and rendering engine.
+  description: |
+    Pango is a library for laying out and rendering of text, with an emphasis
+    on internationalization. Pango can be used anywhere that text layout is
+    needed, though most of the work on Pango so far has been done in the
+    context of the GTK+ widget toolkit. Pango forms the core of text and font
+    handling for GTK+-2.x.
+  homepage: http://www.pango.org/
+  repository: https://gitlab.gnome.org/GNOME/pango
+  documentation: http://www.pango.org/
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - ccordoba12
+    - jakirkham
+    - pkgw

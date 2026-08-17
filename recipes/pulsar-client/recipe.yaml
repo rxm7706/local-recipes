@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pulsar-client
+  version: "3.13.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/apache/pulsar-client-python/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 96e2cbf5180afc58ddafd0ada7368c80878831b1bf181457fe1e0580f3962e18
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - ninja
+    - if: not win
+      then: sed
+      else: m2-sed
+    - if: build_platform != target_platform
+      then:
+        - cross-python_${{ target_platform }}
+        - python
+  host:
+    - python
+    - pip
+    - setuptools
+    - libpulsar
+    - pybind11
+  run:
+    - python
+    - certifi
+
+tests:
+  - python:
+      imports:
+        - pulsar
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Apache Pulsar Python client library
+  homepage: https://github.com/apache/pulsar-client-python
+
+extra:
+  recipe-maintainers:
+    - xhochy

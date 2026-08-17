@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pycairo
+  version: "1.29.1"
+  sha256: 4fbd26b4af24c9787d84cf5448e34eb8dca064b732479aaecd03109520eebd5f
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/pygobject/pycairo/releases/download/v${{ version }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  patches:
+    - typing-test-workaround.patch
+
+build:
+  number: 0
+  prefix_detection:
+    ignore_binary_files: false
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - meson >=0.62
+    - pkg-config
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+  host:
+    - cairo
+    - expat  # for pkg-config files
+    - flake8  # for testing during the build
+    - freetype  # for pkg-config files
+    - glib
+    - pytest  # for testing during the build
+    - python
+    - setuptools
+    - xorg-xorgproto  # for pkg-config files
+    - zlib  # for pkg-config files
+  run:
+    - python
+  ignore_run_exports:
+    by_name:
+      - libglib
+
+tests:
+  - python:
+      imports:
+        - cairo
+      pip_check: false
+  - requirements:
+      run:
+        - pkg-config
+    script:
+      - if: unix
+        then: test -f $PREFIX/lib/pkgconfig/py3cairo.pc
+      - if: win
+        then: if not exist %LIBRARY_LIB%\\pkgconfig\\py3cairo.pc exit 1
+      - if: unix
+        then: test -f `pkg-config --variable=includedir --dont-define-prefix py3cairo`/pycairo/py3cairo.h
+      - if: win
+        then: for /f "usebackq tokens=*" %%a in (`pkg-config --variable=includedir --dont-define-prefix py3cairo`) do if not exist "%%a/pycairo/py3cairo.h" exit 1
+
+about:
+  license: LGPL-2.1-only OR MPL-1.1
+  license_file: COPYING
+  summary: Python bindings for the Cairo graphics library.
+  homepage: http://cairographics.org/pycairo/
+  repository: https://github.com/pygobject/pycairo/
+
+extra:
+  recipe-maintainers:
+    - pkgw
+    - ryanvolz

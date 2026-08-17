@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.141.4"
+
+package:
+  name: msedge-selenium-tools
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/msedge-selenium-tools/msedge-selenium-tools-${{ version }}.tar.gz
+  sha256: e1d397b2830c6c6f282cc0da2c6745631ab039c9dcd92dcf51b30f135c96caf2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - selenium
+
+tests:
+  - python:
+      imports:
+        - msedge
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/microsoft/edge-selenium-tools
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: An updated EdgeDriver implementation for Selenium 3 with newly-added support for Microsoft Edge (Chromium).
+  description: |
+    An updated EdgeDriver implementation for Selenium 3 with newly-added support for Microsoft Edge (Chromium).
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: msedge-selenium-tools
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: msedge-selenium-tools
+  cfe-purls:
+    - pkg:conda/msedge-selenium-tools@${{ version }}?channel=conda-forge
+    - pkg:pypi/msedge-selenium-tools@${{ version }}
+  cfe-upstream-repo: https://github.com/microsoft/edge-selenium-tools
+  cfe-upstream-homepage: https://github.com/microsoft/edge-selenium-tools
+  cfe-import-names: [msedge]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:03:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:03:19Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

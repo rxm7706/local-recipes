@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: kfp
+  version: "2.13.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/kfp-${{ version }}.tar.gz
+  sha256: bd3e820452157472614217849f7a1cfd9c5d0d3cc7473ace80b6494ca06e8886
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - dsl-compile = kfp.cli.compile_:main
+      - kfp=kfp.cli.__main__:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - click >=8.0.0,<9
+    - docstring_parser >=0.7.3,<1
+    - google-api-core >=1.31.5,<3.0.0,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0
+    - google-auth >=1.6.1,<3
+    - google-cloud-storage >=2.2.1,<4
+    - kfp-pipeline-spec ==0.6.0
+    - kfp-server-api >=2.1.0,<2.5.0
+    - python-kubernetes >=8.0.0,<31
+    - protobuf >=4.21.1,<5
+    - pyyaml >=5.3,<7
+    - requests-toolbelt >=0.8.0,<2
+    - tabulate >=0.8.6,<1
+    - urllib3 <2.0.0
+    - typing-extensions >=3.7.4,<5
+
+tests:
+  - python:
+      imports:
+        - kfp
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - kfp dsl compile --help
+      - kfp --help
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: |
+    Reusable end-to-end ML workflows built using the Kubeflow Pipelines SDK.
+  description: |
+    Kubeflow is a machine learning (ML) toolkit that is dedicated to making
+    deployments of ML workflows on Kubernetes simple, portable, and scalable.
+    Kubeflow pipelines are reusable end-to-end ML workflows built using the
+    Kubeflow Pipelines SDK.
+
+  homepage: https://github.com/kubeflow/pipelines
+  repository: https://github.com/kubeflow/pipelines/tree/master/sdk/python
+  documentation: https://www.kubeflow.org/docs/pipelines/
+
+extra:
+  recipe-maintainers:
+    - nicolas-geniteau
+    - maximerihouey
+    - ncolomer
+    - tanguycdls
+    - radcheb
+    - ckadner
+    - manuelwalserqc
+    - tarrade
+    - alanhdu

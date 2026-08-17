@@ -1,0 +1,282 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "6.11.1"
+  maj_min: ${{ (version | split('.'))[:2] | join('.') }}
+
+package:
+  name: qt6-main
+  version: ${{ version }}
+
+source:
+  - url: https://ftp.fau.de/qtproject/official_releases/qt/${{ maj_min }}/${{ version }}/single/qt-everywhere-src-${{ version }}.tar.xz
+    md5: 25d4d1dd74c92b978f164e8f20805985
+    patches:
+      # qtbase
+      - patches/0003-qtbase-use-better-clang-optimize-size.patch
+
+      # dont look for qt.conf in bundle directory
+      - patches/0015-qt6-conf-osx.patch
+
+      # Ensure that cross-compiled builds and native builds generated the same cmake config files
+      - patches/0020-remove-qt-host-path-check-in-cross-compiled-builds.patch
+
+      # Ensure that QLibraryInfo::path(QLibraryInfo::PrefixPath) returns the correct value on Windows
+      # after .dll are copied from %CONDA_PREFIX%\Library\lib\qt6\bin to %CONDA_PREFIX%\bin
+      # Fix for https://github.com/conda-forge/qt-main-feedstock/issues/275
+      # Never apply this to other operating systems, as there the libraries are not manually moved
+      - patches/0025-fix-qlibraryinfo-prefixpath-windows.patch
+
+      # qmake fails configuring qwt on osx: Could not find qmake spec 'macx-clang'
+      - patches/0034-specpath-macos.patch
+
+      # https://qt-project.atlassian.net/issues/QTBUG-145230
+      - patches/0040-qttools-concurrent.patch
+
+  - url: https://download.qt.io/development_releases/prebuilt/llvmpipe/windows/opengl32sw-64-mesa_12_0_rc2.7z
+    sha256: 2a0d2f92c60e0962ef5f6039d3793424c6f39e49ba27ac04a5b21ca4ae012e15
+    target_directory: opengl32sw
+
+build:
+  number: 1
+  # bumping qt version requires a 2-staged build as cross builds require the native package with the same version
+  # Once should be careful and "merge" when the native CIs pass
+  # Then on main:
+  #   - let the native CIs pass
+  #   - wait 1-2 hours for the CDN to propagate our artefacts
+  #   - restart the builds on the failed CIs
+  # skip: ${{ build_platform != target_platform }}
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib('c') }}
+    - cmake
+    - ninja
+    - curl
+    - perl
+    - if: unix
+      then:
+        # For fontconfig + freetype
+        - pkg-config
+        - make
+    - if: linux
+      then:
+        - ruby >=2.5
+        - bison
+        - flex
+        - gperf   
+    - if: win
+      then:
+        - m2-gperf
+        - m2-bison
+        - m2-flex
+        - m2-patch
+    - if: build_platform != target_platform
+      then:
+        # circular dependency... but it helps when cross compiling
+        - qt6-main ==${{ version }}
+        # explicit libxml2+icu
+        - libxml2-devel
+        - icu
+
+  host:
+    - brotli
+    - harfbuzz
+    - glib
+    - icu
+    - libjpeg-turbo
+    - libpng
+    - libsqlite
+    - pcre2
+    - zlib
+    - openssl
+    - zstd
+    - krb5
+    - double-conversion
+    - libtiff
+    - libwebp
+    - if: not osx
+      then:
+        - libvulkan-headers
+        - libvulkan-loader
+        - freetype
+    - if: not win
+      then:
+        # We are deciding not to depend on mysql-devel
+        # to keep this package obviously LGPL licensed
+        # as opposed to "maybe GPL"
+        # https://github.com/conda-forge/qt-main-feedstock/issues/335
+        # - mysql-devel
+        - postgresql
+    - if: linux
+      then:
+        # For pkg-config gl, fontconfig + freetype
+        - pthread-stubs
+        - libdrm
+        - libgl-devel
+        - libegl-devel
+        - dbus
+        - fontconfig
+        - libxml2-devel
+        - libxkbcommon
+        - libxcb
+        - libdrm
+        - libcups
+        - alsa-lib
+        - wayland
+        # The xcb-util packages are necessary to build the Qt xcb plugin.
+        # It was decided to not use CDTs for qt to resolve issues
+        # that may exhibit as segfault due to missing libraries
+        # in some lighter weight linux installations
+        # https://github.com/conda-forge/qt-main-feedstock/issues/32
+        - xcb-util
+        - xcb-util-wm
+        - xcb-util-keysyms
+        - xcb-util-image
+        - xcb-util-renderutil
+        - xcb-util-cursor
+        - xorg-libx11
+        - xorg-libxext
+        - xorg-libxdamage
+        - xorg-libxrandr
+        - xorg-libxcomposite
+        - xorg-libxcursor
+        - xorg-libsm
+        - xorg-libice
+        # https://github.com/conda-forge/staged-recipes/pull/22084
+        - xorg-libxxf86vm
+        - xorg-libxtst
+        - xorg-xorgproto
+  run:
+    - if: linux
+      then:
+        - libxcb
+        # Adding the following xcb-util run requirements resolves issue
+        # that may exhibit as segfault due to missing libraries
+        # in some lighter weight linux installations
+        # https://github.com/conda-forge/qt-main-feedstock/issues/32
+        - xcb-util
+        - xcb-util-wm
+        - xcb-util-keysyms
+        - xcb-util-image
+        - xcb-util-renderutil
+        - xcb-util-cursor
+        # these are useful for a devel package if ever created
+        - libgl-devel
+        - libegl-devel
+
+  run_constraints:
+    - qt ==${{ version }}
+  run_exports:
+    # Qt 6 guarantees backwards binary (ABI) compatibility across the entire
+    # 6.x series: an application compiled against an earlier Qt 6 release runs
+    # with any later Qt 6 release (same toolchain/config, dynamic builds). So we
+    # only need to pin the major version. See "Qt Releases":
+    # https://doc.qt.io/qt-6/qt-releases.html
+    #   "Qt aims to keep backwards binary compatibility with previous Qt
+    #    releases of the same major version. That is, an application compiled
+    #    against Qt 6.0.0 should still run with any other Qt 6 release, but not
+    #    necessarily the other way around."
+    #   "There is no universal C++ standard for Application Binary Interfaces
+    #    (ABIs), so this promise only applies when using the same toolchain
+    #    (compiler) and system environment for both versions."
+    - ${{ pin_subpackage('qt6-main', upper_bound='x') }}
+
+tests:
+  - script:
+      - qmake6 --version
+      - if: unix
+        then:
+          - test -d $PREFIX/include/qt6/QtCore
+          - test -f $PREFIX/lib/libQt6Core${SHLIB_EXT}
+          - test -f $PREFIX/lib/libQt6Gui${SHLIB_EXT}
+          - test -f $PREFIX/lib/libQt6Network${SHLIB_EXT}
+          - test -f $PREFIX/lib/libQt6OpenGL${SHLIB_EXT}
+          - test -f $PREFIX/lib/libQt6OpenGLWidgets${SHLIB_EXT}
+          - test -f $PREFIX/lib/libQt6PrintSupport${SHLIB_EXT}
+          - test -f $PREFIX/lib/libQt6ShaderTools${SHLIB_EXT}
+          - test -f $PREFIX/lib/libQt6Svg${SHLIB_EXT}
+          - test -f $PREFIX/lib/libQt6Test${SHLIB_EXT}
+          - test -f $PREFIX/lib/libQt6Qml${SHLIB_EXT}
+          - test -f $PREFIX/lib/libQt6Quick${SHLIB_EXT}
+          - test -f $PREFIX/lib/libQt6Widgets${SHLIB_EXT}
+          - test -f $PREFIX/lib/libQt6Xml${SHLIB_EXT}
+        else:
+          - if not exist %PREFIX%\\Library\\include\\qt6\\QtCore exit 1
+          - if not exist %PREFIX%\\Library\\lib\\Qt6Core.lib exit 1
+          - if not exist %PREFIX%\\Library\\bin\\Qt6Core.dll exit 1
+          - if not exist %PREFIX%\\Library\\lib\\Qt6Gui.lib exit 1
+          - if not exist %PREFIX%\\Library\\lib\\Qt6Network.lib exit 1
+          - if not exist %PREFIX%\\Library\\lib\\Qt6OpenGL.lib exit 1
+          - if not exist %PREFIX%\\Library\\lib\\Qt6OpenGLWidgets.lib exit 1
+          - if not exist %PREFIX%\\Library\\lib\\Qt6PrintSupport.lib exit 1
+          - if not exist %PREFIX%\\Library\\lib\\Qt6ShaderTools.lib exit 1
+          - if not exist %PREFIX%\\Library\\lib\\Qt6Svg.lib exit 1
+          - if not exist %PREFIX%\\Library\\lib\\Qt6Test.lib exit 1
+          - if not exist %PREFIX%\\Library\\lib\\Qt6Qml.lib exit 1
+          - if not exist %PREFIX%\\Library\\lib\\Qt6Quick.lib exit 1
+          - if not exist %PREFIX%\\Library\\lib\\Qt6Widgets.lib exit 1
+          - if not exist %PREFIX%\\Library\\lib\\Qt6Xml.lib exit 1
+      - if: linux
+        then:
+          - test -f $PREFIX/lib/qt6/plugins/platforms/libqxcb.so
+          - test -f $PREFIX/lib/qt6/plugins/platforms/libqeglfs.so
+      - if: unix
+        then:
+          - test -f $PREFIX/lib/qt6/plugins/sqldrivers/libqsqlite${SHLIB_EXT}
+          - test -f $PREFIX/lib/qt6/plugins/imageformats/libqtiff${SHLIB_EXT}
+          # We needed to add a related flag, but these two SO files should be part of the
+          # qt6-wayland conda package
+          - test ! -f $PREFIX/lib/libQt6WaylandCompositor${SHLIB_EXT}
+    requirements:
+      run:
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib('c') }}
+        - cmake >=3.16
+        - if: unix
+          then: make
+        - if: linux
+          then:
+            - libgl-devel
+            - libegl-devel
+            - xcb-util
+            - xorg-libxdamage
+            # https://github.com/conda-forge/staged-recipes/pull/22084
+            - xorg-libxxf86vm
+    files:
+      recipe:
+        - test/main-qtwebengine.cpp
+        - test/main.cpp
+        - test/main.qml
+        - test/qml.qrc
+        - test/qrc_qml.cpp
+        - test/test_qmimedatabase.cpp
+        - test/test_qlibraryinfo_prefixpath.cpp
+        - test/CMakeLists.txt
+        - test/main.pro
+
+about:
+  homepage: https://qt.io
+  license: LGPL-3.0-only
+  license_file: LICENSES/LGPL-3.0-only.txt
+  summary: 'Qt is a cross-platform application and UI framework.'
+  description: |
+    Qt helps you create connected devices, UIs & applications that run
+    anywhere on any device, on any operating system at any time.
+  documentation: https://doc.qt.io/
+  repository: https://github.com/qt
+
+extra:
+  recipe-maintainers:
+    - traversaro
+    - andfoy
+    - ccordoba12
+    - gillins
+    - mingwandroid
+    - msarahan
+    - ocefpaf
+    - stuarteberg
+    - Tobias-Fischer
+    - matthiasdiener
+    - jschueller

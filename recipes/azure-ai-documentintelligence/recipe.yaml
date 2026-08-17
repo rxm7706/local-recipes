@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: azure-ai-documentintelligence
+  version: "1.0.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 4d75a2513f2839365ebabc0e0e1772f5601b3a8c9a71e75da12440da13b63484
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - typing_extensions >=4.6.0
+    - python >=${{ python_min }}
+    - isodate >=0.6.1
+    - azure-core >=1.30.0
+    - typing-extensions >=4.6.0
+
+tests:
+  - python:
+      imports:
+        - azure.ai.documentintelligence
+        - azure.ai.documentintelligence._operations
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Microsoft Azure AI Document Intelligence Client Library for Python
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

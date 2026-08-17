@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.5.2"
+
+package:
+  name: schema-enforcer
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/schema-enforcer/schema_enforcer-${{ version }}.tar.gz
+  sha256: 4c3fdc68eef0eac32bca5ec66d13e6f5b25be06774b2ba7bd656209abc496b92
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=2.0.0,<3.0.0
+  run:
+    - python >=${{ python_min }}
+    - click >=8.2.0
+    - jinja2 <4.0.0,>=3.1.6
+    - jmespath <2.0.0,>=1.0.1
+    - jsonpointer <3.0.0,>=2.1.0
+    - jsonref <2.0.0,>=1.1.0
+    - jsonschema <5.0,>=4.6
+    - pydantic <3.0.0,>=2.0.0
+    - pydantic-settings <3.0,>=2.1
+    - rich >=9.5
+    - ruamel.yaml <0.19,>=0.18
+    - termcolor >=3.2.0
+    - tomli
+
+tests:
+  - python:
+      imports:
+        - schema_enforcer
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/networktocode/schema-enforcer
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Tool/Framework for testing structured data against schema definitions
+  description: |
+    Tool/Framework for testing structured data against schema definitions
+  repository: https://github.com/networktocode/schema-enforcer
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: schema-enforcer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: schema-enforcer
+  cfe-purls:
+    - pkg:conda/schema-enforcer@${{ version }}?channel=conda-forge
+    - pkg:pypi/schema-enforcer@${{ version }}
+  cfe-upstream-repo: https://github.com/networktocode/schema-enforcer
+  cfe-upstream-homepage: https://github.com/networktocode/schema-enforcer
+  cfe-import-names: [schema_enforcer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:31:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:31:05Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

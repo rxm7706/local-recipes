@@ -1,0 +1,561 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Note: as of 0.23.1, we have given up on trying to build gettext on Windows
+# with MSVC -- there are new patterns that may make it simply impossible due to
+# the ways that some DLL-exported variables are used. See discussion in #35. It
+# *is* possible to build gettext on Windows using MinGW/GCC -- see #34. But for
+# now we would rather turn off the Windows build than undertake the major
+# migration that a switch to GCC would entail.
+#
+# For the time being, we're not stripping out the Windows build files and
+# configuration from this recipe, but they're not being used.
+schema_version: 1
+
+context:
+  version: "0.25.1"
+  am_version: "1.15"  #  keep synchronized with build.sh
+  posix: "'m2-' if win else ''"
+  native: "'m2w64-' if win else ''"
+
+recipe:
+  name: gettext-split
+  version: ${{ version }}
+
+source:
+  url: https://ftp.gnu.org/pub/gnu/gettext/gettext-${{ version }}.tar.xz
+  sha256: 2c8294be238f03fb3fa65b8051057e5b68167f3e21f08008070cf40a7051ba22
+
+build:
+  number: 1
+  skip: win
+
+requirements:
+  build:
+    - if: win
+      then: posix
+    - if: win
+      then: ${{ posix }}autoconf
+    - if: win
+      then: ${{ posix }}automake${{ am_version }}
+    - ${{ posix }}libtool
+    - if: win
+      then: ${{ posix }}patch
+    - if: win
+      then: ${{ posix }}sed
+    - if: win
+      then: ${{ native }}binutils
+    - if: win
+      then: ${{ native }}crt-git
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - if: unix
+      then: make
+  host:
+    - libiconv
+
+outputs:
+  - package:
+      name: libintl
+    build:
+      skip: linux
+      script:
+        file: ${{ 'install-libintl.bat' if not unix else 'install-libintl.sh' if unix else '' }}
+    requirements:
+      build:
+        - if: win
+          then: posix
+        - if: win
+          then: ${{ posix }}autoconf
+        - if: win
+          then: ${{ posix }}automake${{ am_version }}
+        - ${{ posix }}libtool
+        - if: win
+          then: ${{ posix }}patch
+        - if: win
+          then: ${{ posix }}sed
+        - if: win
+          then: ${{ native }}binutils
+        - if: win
+          then: ${{ native }}crt-git
+        - if: not win
+          then: ${{ stdlib('c') }}
+        - if: not win
+          then: ${{ compiler('c') }}
+        - if: not win
+          then: ${{ compiler('cxx') }}
+        - if: unix
+          then: make
+      host:
+        - libiconv
+      run_exports:
+        - ${{ pin_subpackage('libintl') }}
+      ignore_run_exports:
+        from_package:
+          - if: unix
+            then: ${{ compiler('cxx') }}
+    tests:
+      - script:
+          - if: osx
+            then: test -f ${PREFIX}/lib/libintl.*.dylib
+          - if: linux
+            then: test -f ${PREFIX}/lib/libintl.so.*
+          - if: win
+            then: if not exist %PREFIX%\Library\bin\intl-*.dll exit /b 1
+          - if: not win
+            then: test ! -f ${PREFIX}/lib/libintl$SHLIB_EXT
+          - if: osx
+            then: test ! -f ${PREFIX}/include/libintl.h
+          - if: win
+            then: if exist %PREFIX%\Library\lib\intl.dll.lib exit /b 1
+          - if: win
+            then: if exist %PREFIX%\Library\lib\intl.lib exit /b 1
+          - if: win
+            then: if exist %PREFIX%\Library\include\libintl.h exit /b1
+    about:
+      license: LGPL-2.1-or-later
+      license_file: COPYING
+      summary: library that provides native language support to programs
+      homepage: https://www.gnu.org/software/gettext/
+  - package:
+      name: libintl-devel
+    build:
+      skip: linux
+      script:
+        file: ${{ 'install-libintl-devel.bat' if not unix else 'install-libintl-devel.sh' if unix else '' }}
+    requirements:
+      build:
+        - if: win
+          then: posix
+        - if: win
+          then: ${{ posix }}autoconf
+        - if: win
+          then: ${{ posix }}automake${{ am_version }}
+        - ${{ posix }}libtool
+        - if: win
+          then: ${{ posix }}patch
+        - if: win
+          then: ${{ posix }}sed
+        - if: win
+          then: ${{ native }}binutils
+        - if: win
+          then: ${{ native }}crt-git
+        - if: not win
+          then: ${{ stdlib('c') }}
+        - if: not win
+          then: ${{ compiler('c') }}
+        - if: not win
+          then: ${{ compiler('cxx') }}
+        - if: unix
+          then: make
+      host:
+        - libiconv
+        - ${{ pin_subpackage('libintl', exact=true) }}
+      run:
+        - ${{ pin_subpackage('libintl', exact=true) }}
+      run_exports:
+        - ${{ pin_subpackage('libintl') }}
+      ignore_run_exports:
+        from_package:
+          - if: unix
+            then: ${{ compiler('cxx') }}
+    tests:
+      - script:
+          - if: osx
+            then: test -f ${PREFIX}/lib/libintl${SHLIB_EXT}
+          - if: osx
+            then: test -f ${PREFIX}/include/libintl.h
+          - if: win
+            then: if not exist %PREFIX%\Library\lib\intl.dll.lib exit /b 1
+          - if: win
+            then: if not exist %PREFIX%\Library\lib\intl.lib exit /b 1
+          - if: win
+            then: if not exist %PREFIX%\Library\include\libintl.h exit /b1
+    about:
+      license: LGPL-2.1-or-later
+      license_file: COPYING
+      summary: library that provides native language support to programs
+      homepage: https://www.gnu.org/software/gettext/
+  - package:
+      name: libasprintf
+    build:
+      script:
+        file: ${{ 'install-asprintf.bat' if not unix else 'install-asprintf.sh' if unix else '' }}
+    requirements:
+      build:
+        - if: win
+          then: posix
+        - if: win
+          then: ${{ posix }}autoconf
+        - if: win
+          then: ${{ posix }}automake${{ am_version }}
+        - ${{ posix }}libtool
+        - if: win
+          then: ${{ posix }}patch
+        - if: win
+          then: ${{ posix }}sed
+        - if: win
+          then: ${{ native }}binutils
+        - if: win
+          then: ${{ native }}crt-git
+        - if: not win
+          then: ${{ stdlib('c') }}
+        - if: not win
+          then: ${{ compiler('c') }}
+        - if: not win
+          then: ${{ compiler('cxx') }}
+        - if: unix
+          then: make
+      host:
+        - libiconv
+      run_exports:
+        - ${{ pin_subpackage('libasprintf') }}
+      ignore_run_exports:
+        by_name:
+          - libiconv
+    tests:
+      - script:
+          - if: osx
+            then: test -f ${PREFIX}/lib/libasprintf.*.dylib
+          - if: linux
+            then: test -f ${PREFIX}/lib/libasprintf.so.0
+          - if: win
+            then: if not exist %PREFIX%\Library\bin\asprintf-*.dll exit /b 1
+          - if: not win
+            then: test ! -f ${PREFIX}/lib/libasprintf$SHLIB_EXT
+          - if: win
+            then: if exist %PREFIX%\Library\lib\asprintf.dll.lib exit /b 1
+          - if: win
+            then: if exist %PREFIX%\Library\lib\asprintf.lib exit /b 1
+    about:
+      license: LGPL-2.1-or-later
+      license_file: COPYING
+      summary: C-style formatted output in C++
+      homepage: https://www.gnu.org/software/gettext/
+  - package:
+      name: libasprintf-devel
+    build:
+      script:
+        file: ${{ 'install-asprintf-devel.bat' if not unix else 'install-asprintf-devel.sh' if unix else '' }}
+    requirements:
+      build:
+        - if: win
+          then: posix
+        - if: win
+          then: ${{ posix }}autoconf
+        - if: win
+          then: ${{ posix }}automake${{ am_version }}
+        - ${{ posix }}libtool
+        - if: win
+          then: ${{ posix }}patch
+        - if: win
+          then: ${{ posix }}sed
+        - if: win
+          then: ${{ native }}binutils
+        - if: win
+          then: ${{ native }}crt-git
+        - if: not win
+          then: ${{ stdlib('c') }}
+        - if: not win
+          then: ${{ compiler('c') }}
+        - if: not win
+          then: ${{ compiler('cxx') }}
+        - if: unix
+          then: make
+      host:
+        - libiconv
+        - ${{ pin_subpackage('libasprintf', exact=True) }}
+      run:
+        - ${{ pin_subpackage('libasprintf', exact=True) }}
+      run_exports:
+        - ${{ pin_subpackage('libasprintf') }}
+      ignore_run_exports:
+        by_name:
+          - libiconv
+        from_package:
+          - if: unix
+            then: ${{ compiler('cxx') }}
+    tests:
+      - script:
+          - if: not win
+            then: test -f ${PREFIX}/lib/libasprintf${SHLIB_EXT}
+          - if: win
+            then: if not exist %PREFIX%\Library\lib\asprintf.dll.lib exit /b 1
+          - if: win
+            then: if not exist %PREFIX%\Library\lib\asprintf.lib exit /b 1
+    about:
+      license: LGPL-2.1-or-later
+      license_file: COPYING
+      summary: Decomposed printf argument list
+      homepage: https://www.gnu.org/software/gettext/
+  - package:
+      name: libgettextpo
+    build:
+      script:
+        file: ${{ 'install-libgettextpo.bat' if not unix else 'install-libgettextpo.sh' if unix else '' }}
+    requirements:
+      build:
+        - if: win
+          then: posix
+        - if: win
+          then: ${{ posix }}autoconf
+        - if: win
+          then: ${{ posix }}automake${{ am_version }}
+        - ${{ posix }}libtool
+        - if: win
+          then: ${{ posix }}patch
+        - if: win
+          then: ${{ posix }}sed
+        - if: win
+          then: ${{ native }}binutils
+        - if: win
+          then: ${{ native }}crt-git
+        - if: not win
+          then: ${{ stdlib('c') }}
+        - if: not win
+          then: ${{ compiler('c') }}
+        - if: not win
+          then: ${{ compiler('cxx') }}
+        - if: unix
+          then: make
+      host:
+        - if: not linux
+          then: ${{ pin_subpackage('libintl', exact=True) }}
+        - libiconv
+      run:
+        - if: not linux
+          then: ${{ pin_subpackage('libintl', exact=True) }}
+      run_exports:
+        - ${{ pin_subpackage('libgettextpo') }}
+      ignore_run_exports:
+        from_package:
+          - if: unix
+            then: ${{ compiler('cxx') }}
+    tests:
+      - script:
+          - if: osx
+            then: test -f ${PREFIX}/lib/libgettextpo.*.dylib
+          - if: linux
+            then: test -f ${PREFIX}/lib/libgettextpo.so.0
+          - if: win
+            then: if not exist %PREFIX%\Library\bin\gettextpo-*.dll exit /b 1
+          - if: not win
+            then: test ! -f ${PREFIX}/lib/libgettextpo$SHLIB_EXT
+          - if: win
+            then: if exist %PREFIX%\Library\lib\gettextpo.dll.lib exit /b 1
+          - if: win
+            then: if exist %PREFIX%\Library\lib\gettextpo.lib exit /b 1
+    about:
+      license: GPL-3.0-or-later
+      license_file: COPYING
+      summary: library for interfacing programmatically with GNU gettext .po files
+      homepage: https://www.gnu.org/software/gettext/
+  - package:
+      name: libgettextpo-devel
+    build:
+      script:
+        file: ${{ 'install-libgettextpo-devel.bat' if not unix else 'install-libgettextpo-devel.sh' if unix else '' }}
+    requirements:
+      build:
+        - if: win
+          then: posix
+        - if: win
+          then: ${{ posix }}autoconf
+        - if: win
+          then: ${{ posix }}automake${{ am_version }}
+        - ${{ posix }}libtool
+        - if: win
+          then: ${{ posix }}patch
+        - if: win
+          then: ${{ posix }}sed
+        - if: win
+          then: ${{ native }}binutils
+        - if: win
+          then: ${{ native }}crt-git
+        - if: not win
+          then: ${{ stdlib('c') }}
+        - if: not win
+          then: ${{ compiler('c') }}
+        - if: not win
+          then: ${{ compiler('cxx') }}
+        - if: unix
+          then: make
+      host:
+        - if: not linux
+          then: ${{ pin_subpackage('libintl', exact=True) }}
+        - ${{ pin_subpackage('libgettextpo', exact=True) }}
+        - libiconv
+      run:
+        - if: not linux
+          then: ${{ pin_subpackage('libintl', exact=True) }}
+        - ${{ pin_subpackage('libgettextpo', exact=True) }}
+      run_exports:
+        - ${{ pin_subpackage('libgettextpo') }}
+      ignore_run_exports:
+        from_package:
+          - if: unix
+            then: ${{ compiler('cxx') }}
+    tests:
+      - script:
+          - if: not win
+            then: test -f ${PREFIX}/lib/libgettextpo$SHLIB_EXT
+          - if: win
+            then: if not exist %PREFIX%\Library\lib\gettextpo.dll.lib exit /b 1
+          - if: win
+            then: if not exist %PREFIX%\Library\lib\gettextpo.lib exit /b 1
+    about:
+      license: GPL-3.0-or-later
+      license_file: COPYING
+      summary: library for interfacing programmatically with GNU gettext .po files
+      homepage: https://www.gnu.org/software/gettext/
+  - package:
+      name: gettext-tools
+    build:
+      script:
+        file: ${{ 'install-gettext.bat' if not unix else 'install-gettext.sh' if unix else '' }}
+    requirements:
+      build:
+        - if: win
+          then: posix
+        - if: win
+          then: ${{ posix }}autoconf
+        - if: win
+          then: ${{ posix }}automake${{ am_version }}
+        - ${{ posix }}libtool
+        - if: win
+          then: ${{ posix }}patch
+        - if: win
+          then: ${{ posix }}sed
+        - if: win
+          then: ${{ native }}binutils
+        - if: win
+          then: ${{ native }}crt-git
+        - ${{ stdlib('c') }}
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - if: unix
+          then: make
+      host:
+        - libiconv
+        - if: not linux
+          then: ${{ pin_subpackage('libintl', exact=True) }}
+        - ${{ pin_subpackage('libasprintf', exact=True ) }}
+        - ${{ pin_subpackage('libgettextpo', exact=True ) }}
+        # Devel packages are included for deduplication-purposes only
+        - if: not linux
+          then: ${{ pin_subpackage('libintl-devel', exact=True) }}
+        - ${{ pin_subpackage('libasprintf-devel', exact=True ) }}
+        - ${{ pin_subpackage('libgettextpo-devel', exact=True ) }}
+      run:
+        - if: not linux
+          then: ${{ pin_subpackage('libintl', exact=True) }}
+      ignore_run_exports:
+        from_package:
+          - ${{ compiler('cxx') }}
+    tests:
+      - files:
+          recipe:
+            - an.po
+        script:
+          - if: win
+            then: msgfmt.exe --help
+          - if: win
+            then: msgfmt.exe -o an.gmo an.po
+          - if: not win
+            then: msgfmt -o an.gmo an.po
+    about:
+      # The binaries of gettext are the GPL-3.0 licensed part.
+      license: GPL-3.0-or-later
+      license_file: COPYING
+      summary: Internationalization package (executable tools)
+      homepage: https://www.gnu.org/software/gettext/
+  - package:
+      name: gettext
+    build:
+      # Required to make overdepending checks pass.
+      script:
+        file: ${{ 'install-gettext.bat' if not unix else 'install-gettext.sh' if unix else '' }}
+    requirements:
+      build:
+        - if: win
+          then: posix
+        - if: win
+          then: ${{ posix }}autoconf
+        - if: win
+          then: ${{ posix }}automake${{ am_version }}
+        - ${{ posix }}libtool
+        - if: win
+          then: ${{ posix }}patch
+        - if: win
+          then: ${{ posix }}sed
+        - if: win
+          then: ${{ native }}binutils
+        - if: win
+          then: ${{ native }}crt-git
+        - if: not win
+          then: ${{ stdlib('c') }}
+        - if: not win
+          then: ${{ compiler('c') }}
+        - if: not win
+          then: ${{ compiler('cxx') }}
+        - if: unix
+          then: make
+      host:
+        - libiconv
+        - ${{ pin_subpackage('gettext-tools', exact=True) }}
+        - if: not linux
+          then: ${{ pin_subpackage('libintl-devel', exact=True) }}
+        - if: not linux
+          then: ${{ pin_subpackage('libintl', exact=True) }}
+        - ${{ pin_subpackage('libasprintf-devel', exact=True ) }}
+        - ${{ pin_subpackage('libasprintf', exact=True ) }}
+        - ${{ pin_subpackage('libgettextpo-devel', exact=True ) }}
+        - ${{ pin_subpackage('libgettextpo', exact=True ) }}
+      run:
+        - ${{ pin_subpackage('gettext-tools', exact=True) }}
+        - if: not linux
+          then: ${{ pin_subpackage('libintl-devel', exact=True) }}
+        - if: not linux
+          then: ${{ pin_subpackage('libintl', exact=True) }}
+        - ${{ pin_subpackage('libasprintf-devel', exact=True ) }}
+        - ${{ pin_subpackage('libasprintf', exact=True ) }}
+        - ${{ pin_subpackage('libgettextpo-devel', exact=True ) }}
+        - ${{ pin_subpackage('libgettextpo', exact=True ) }}
+      run_exports:
+        - if: not linux
+          then: ${{ pin_subpackage('libintl') }}
+        - ${{ pin_subpackage('libasprintf') }}
+        - ${{ pin_subpackage('libgettextpo') }}
+      ignore_run_exports:
+        by_name:
+          - libintl
+          - libasprintf
+          - libgettextpo
+    tests:
+      - script:
+          - if: not win
+            then: test -f ${PREFIX}/lib/lib${{ lib_ident }}$SHLIB_EXT
+          - if: not win
+            then: test ! -f ${PREFIX}/lib/lib${{ lib_ident }}.a
+          - if: win
+            then: if not exist %PREFIX%\Library\lib\${{ lib_ident }}.dll.lib exit /b 1
+          - if: win
+            then: if not exist %PREFIX%\Library\bin\${{ lib_ident }}-*.dll exit /b 1
+    about:
+      license: LGPL-2.1-or-later AND GPL-3.0-or-later
+      license_file: COPYING
+      summary: Internationalization package
+      homepage: https://www.gnu.org/software/gettext/
+
+about:
+  license: LGPL-2.1-or-later AND GPL-3.0-or-later
+  license_file: COPYING
+  summary: Internationalization package
+  homepage: https://www.gnu.org/software/gettext/
+
+extra:
+  feedstock-name: gettext
+  recipe-maintainers:
+    - scopatz
+    - ocefpaf
+    - pkgw
+    - xhochy

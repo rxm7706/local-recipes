@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: applaunchservices
+  version: "0.3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 1cc6ad5c6c88457230b3cc3d1f76c39c00dcd2597af9c6ee592dce5e67eb2cad
+
+build:
+  number: 4
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pyobjc-framework-coreservices
+    - __osx
+
+tests:
+  - python:
+      imports:
+        - applaunchservices
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Simple package for registering an app with apple Launch Services to handle UTI and URL
+  homepage: https://github.com/impact27/applaunchservices
+  repository: https://github.com/impact27/applaunchservices
+
+extra:
+  recipe-maintainers:
+    - impact27
+    - goanpeca
+    - ccordoba12

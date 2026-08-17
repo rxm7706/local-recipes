@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: routes
+  version: "2.5.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/Routes-${{ version }}.tar.gz
+  sha256: b6346459a15f0cbab01a45a90c3d25caf980d4733d628b4cc1952b865125d053
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - python >=3.6
+    - repoze.lru >=0.3
+    - six
+
+tests:
+  - python:
+      imports:
+        - routes
+      pip_check: true
+
+about:
+  summary: Routing Recognition and Generation Tools
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://pypi.org/project/Routes/
+  repository: https://github.com/bbangert/routes
+  documentation: https://routes.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - anthchirp
+    - pmlandwehr

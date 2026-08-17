@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: parsy
+  version: "2.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/parsy-${{ version }}.tar.gz
+  sha256: fd5dd18d7b0b61f8275ee88665f430a20c02cf5a82d88557f35330530186d7ac
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - parsy
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: easy-to-use parser combinators, for parsing in pure Python
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/python-parsy/parsy
+
+extra:
+  recipe-maintainers:
+    - cpcloud
+    - gforsyth

@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sphinxcontrib-mermaid
+  version: "2.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sphinxcontrib_mermaid-${{ version }}.tar.gz
+  sha256: 13c5f9ac395cb6abf403eca34e228dc9fb3a30c9d960dbf3e40e9a8cef969549
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - pyyaml
+    - sphinx
+
+tests:
+  - python:
+      imports:
+        - sphinxcontrib
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Mermaid diagrams in yours Sphinx powered docs
+  license: BSD-2-Clause
+  license_file: LICENSE
+  homepage: https://github.com/mgaitan/sphinxcontrib-mermaid
+
+extra:
+  recipe-maintainers:
+    - timkpaine
+    - conda-forge/sphinx
+    - ericpre

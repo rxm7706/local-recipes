@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: openapi-schema-pydantic
+  version: "1.2.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/openapi-schema-pydantic-${{ version }}.tar.gz
+  sha256: 3e22cf58b74a69f752cc7e5f1537f6e44164282db2700cbbcd3bb99ddd065196
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - pydantic >=1.8.2
+
+tests:
+  - python:
+      imports:
+        - openapi_schema_pydantic
+      pip_check: true
+
+about:
+  summary: OpenAPI (v3) specification schema as pydantic class
+  license: Apache-2.0 AND MIT
+  license_file:
+    - LICENSE
+    - openapi_schema_pydantic/v3/v3_0_3/license.py
+    - openapi_schema_pydantic/v3/v3_1_0/license.py
+  homepage: https://github.com/kuimono/openapi-schema-pydantic
+
+extra:
+  recipe-maintainers:
+    - YYYasin19

@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.2"
+
+package:
+  name: json-toon-converter
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/json-toon-converter/json_toon_converter-${{ version }}.tar.gz
+  sha256: 7d1f648a5ee44cf632584778da9398c83026c85ec5bf6a1438e4dcc683b776b7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - toon-python
+
+tests:
+  - python:
+      imports:
+        - json_to_toon_converter
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/OrenGrinker/json-toon-converter
+  license: MIT
+  license_file: LICENSE
+  summary: A package to convert JSON to TOON and TOON to JSON
+  description: |
+    A package to convert JSON to TOON and TOON to JSON
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: json-toon-converter
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: json-toon-converter
+  cfe-purls:
+    - pkg:conda/json-toon-converter@${{ version }}?channel=conda-forge
+    - pkg:pypi/json-toon-converter@${{ version }}
+  cfe-upstream-repo: https://github.com/OrenGrinker/json-toon-converter
+  cfe-upstream-homepage: https://github.com/OrenGrinker/json-toon-converter
+  cfe-import-names: [json_to_toon_converter]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:47:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:47:50Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

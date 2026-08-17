@@ -1,0 +1,125 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.14.3"
+
+package:
+  name: aiohttp
+  version: ${{ version }}
+
+source:
+  - url: https://files.pythonhosted.org/packages/58/d9/22ce5786ac0c1653ae8b6c23bded02c1686d11f0dbb45b31ce128e0df985/aiohttp-${{ version }}.tar.gz
+    sha256: 9491196535a88924a60afd5b5f434b5b203b6cc616250878dbdb223a8f7844bc
+  # download sources to have tests, which don't get installed;
+  # installing from source is very painful, beware...
+  - url: https://github.com/aio-libs/aiohttp/archive/refs/tags/v${{ version }}.tar.gz
+    sha256: c9b0300c3e129146c7839f66eae3bf14dda1cc556d6d111519a15bcafdb7a011
+    target_directory: sources
+
+build:
+  number: 0
+  noarch: ${{ 'python' if use_noarch else '' }}
+  script:
+    - if: use_noarch
+      then: export AIOHTTP_NO_EXTENSIONS=1
+    - ${{ PYTHON }} -m pip install . -vv
+  track_features:
+    - if: use_noarch
+      then: aiohttp_no_compile
+
+requirements:
+  build:
+    - if: not use_noarch and build_platform != target_platform
+      then: python
+    - if: not use_noarch and build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: not use_noarch and build_platform != target_platform
+      then: cython
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - if: not use_noarch
+      then: python
+    - if: use_noarch
+      then: python ${{ python_min }}
+    - pip
+    - cython
+    - pkgconfig
+    - setuptools >=67.0
+  run:
+    - if: not use_noarch
+      then: python
+    - if: use_noarch
+      then: python >=${{ python_min }}
+    - aiohappyeyeballs >=2.5.0
+    - aiosignal >=1.4.0
+    - if: match(python, "<3.11") or use_noarch
+      then: async-timeout >=4.0,<6.0
+    - attrs >=17.3.0
+    - frozenlist >=1.1.1
+    - multidict >=4.5,<7.0
+    - propcache >=0.2.0
+    - yarl >=1.17.0,<2.0
+    - typing_extensions >=4.4
+
+tests:
+  - python:
+      imports:
+        - aiohttp
+      pip_check: true
+  - files:
+      source:
+        - sources/tests
+        - sources/README.rst
+    requirements:
+      run:
+        - if: not use_noarch
+          then: python
+        - if: use_noarch
+          then: python ${{ python_min }}
+        - pip
+        - pytest <8
+        - pytest-mock
+        - pytest-codspeed
+        - python-blockbuster
+        - brotli
+        - brotlicffi
+        - freezegun
+        - python-isal
+        - if: unix
+          then: gunicorn
+        - pkgconfig
+        - proxy-py
+        - re-assert
+        - if: python_impl == "cpython"
+          then: time-machine
+        - trustme
+        - if: unix
+          then: uvloop
+        - python-zlib-ng
+    script:
+      - if: use_noarch
+        then: export AIOHTTP_NO_EXTENSIONS=1
+      - if: unix
+        then: rm -rf sources/tests/autobahn
+      - if: win
+        then: rmdir /s /q sources\tests\autobahn
+      - pytest sources/tests/ -k "not (${{ tests_to_skip }})"
+
+about:
+  license: MIT AND Apache-2.0
+  license_file:
+    - LICENSE.txt
+    - vendor/llhttp/LICENSE
+  summary: Async http client/server framework (asyncio)
+  homepage: https://github.com/aio-libs/aiohttp
+  repository: https://github.com/aio-libs/aiohttp
+  documentation: http://aiohttp.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - sodre
+    - xhochy
+    - ocefpaf
+    - xylar

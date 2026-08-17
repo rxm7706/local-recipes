@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: bert_score
+  version: "0.3.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 43ed028ff38a41ca0ba77fe0b05f796d5d58898a2209abeb0df58687c5f75611
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - bert-score=bert_score_cli.score:main
+      - bert-score-show=bert_score_cli.visualize:main
+
+requirements:
+  host:
+    - pip
+    - python
+  run:
+    - matplotlib-base
+    - numpy
+    - pandas >=1.0.1
+    - python
+    - requests
+    - pytorch >=1.0.0
+    - tqdm >=4.31.1
+    - transformers
+    - dataclasses
+
+tests:
+  - python:
+      imports:
+        - bert_score
+        - bert_score_cli
+      pip_check: false
+  - requirements:
+      run:
+        - pytest
+    script:
+      - bert-score --help
+      - bert-score-show --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: PyTorch implementation of BERT score
+  homepage: https://github.com/Tiiiger/bert_score
+  repository: https://github.com/Tiiiger/bert_score
+  documentation: https://pypi.org/project/bert-score/
+
+extra:
+  recipe-maintainers:
+    - rluria14
+    - oblute
+    - ndmaxar

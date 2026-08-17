@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: openinference-semantic-conventions
+  version: "0.1.32"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/openinference_semantic_conventions-${{ version }}.tar.gz
+  sha256: 2a3e6723ddce37abc5c43d38c6c7ac05b0f2efcfbe75cc0f135ab14ceb0730f7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - openinference.semconv.trace
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  summary: OpenInference Semantic Conventions
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/Arize-ai/openinference
+
+extra:
+  recipe-maintainers:
+    - michaelschiff
+    - mikeldking
+    - RogerHYang
+    - axiomofjoy
+    - anticorrelator

@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.12.8"
+  python_min: "3.11"
+
+package:
+  name: flax
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/flax/flax-${{ version }}.tar.gz
+  sha256: 1bb438775b967a3f1f42b9c3d4ddf1d2883cd6406589f9cecdc244634036bdc4
+  patches:
+    # Remove after v0.12.6
+    # c.f. https://github.com/google/flax/issues/5352
+    - remove-orbax-export-from-dependencies.patch
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - setuptools-scm
+  run:
+    - python >=${{ python_min }}
+    - jax >=0.8.1
+    - msgpack-python
+    - numpy >=1.23.2
+    - optax
+    - orbax-checkpoint
+    - tensorstore
+    - rich >=11.1.0
+    - typing_extensions >=4.2.0
+    - pyyaml >=5.4.1
+    - treescope >=0.1.7
+
+tests:
+  - python:
+      imports:
+        - flax
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: "Flax: A neural network library for JAX designed for flexibility"
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/google/flax
+  repository: https://github.com/google/flax
+  documentation: http://flax.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - pfackeldey
+    - PhilipVinc
+    - jheek
+    - avital
+    - levskaya
+    - andsteing
+    - gabrielcnr
+    - traversaro

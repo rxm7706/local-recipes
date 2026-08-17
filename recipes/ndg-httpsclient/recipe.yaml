@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ndg-httpsclient
+  pypi_name: ndg_httpsclient
+  version: "0.5.1"
+  hash: d72faed0376ab039736c2ba12e30695e2788c4aa569c9c3e3d72131de2592210
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ pypi_name }}-${{ version }}.tar.gz
+  sha256: ${{ hash }}
+
+build:
+  number: 1
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+  python:
+    entry_points:
+      - ndg_httpclient = ndg.httpsclient.utils:main
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - pyasn1
+    - pyopenssl
+
+tests:
+  - python:
+      imports:
+        - ndg
+        - ndg.httpsclient
+        - ndg.httpsclient.test
+      pip_check: false
+
+about:
+  license: BSD-3-Clause
+  license_file: ndg/httpsclient/LICENSE
+  summary: Provides enhanced HTTPS support for httplib and urllib2 using PyOpenSSL.
+  homepage: https://github.com/cedadev/ndg_httpsclient
+  repository: https://github.com/cedadev/ndg_httpsclient
+  documentation: http://pythonhosted.org/ndg-httpsclient
+
+extra:
+  recipe-maintainers:
+    - goanpeca

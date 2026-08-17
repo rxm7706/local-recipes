@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: grpcio-gcp
+  version: "0.2.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/grpcio-gcp-${{ version }}.tar.gz
+  sha256: e292605effc7da39b7a8734c719afb12ec4b5362add3528d8afad3aa3aa9057c
+
+build:
+  number: 7
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - grpcio >=1.12.0
+    # The upper bound seems to be needed to prevent import issues
+    - protobuf >=3.6.1,<3.21
+
+tests:
+  - python:
+      imports:
+        - grpc_gcp
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: gRPC extensions for Google Cloud Platform
+  homepage: https://grpc.io
+  repository: https://github.com/GoogleCloudPlatform/grpc-gcp-python
+  documentation: https://grpc.io/docs/
+
+extra:
+  recipe-maintainers:
+    - xylar
+    - BrentDorsey

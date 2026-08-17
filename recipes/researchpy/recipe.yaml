@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: researchpy
+  version: "0.3.7"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/researchpy-${{ version }}.tar.gz
+  sha256: 08c1479a44d1062b5db9d4700904bf885451f2c3d3dae7857af8b141a7b71884
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=61.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - scipy
+    - numpy
+    - pandas
+    - statsmodels
+    - patsy
+
+tests:
+  - python:
+      imports:
+        - researchpy
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Researchpy produces Pandas DataFrames that contain relevant statistical testing information that is commonly required for academic research.
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  homepage: https://github.com/researchpy/researchpy
+
+extra:
+  recipe-maintainers:
+    - rxm7706

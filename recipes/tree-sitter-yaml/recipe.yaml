@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: tree-sitter-yaml
+  version: "0.7.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/tree-sitter-grammars/tree-sitter-yaml/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: aeaff5731bb8b66c7054c8aed33cd5edea5f4cd2ac71654f3f6c2ba2073d8fac
+
+build:
+  script:
+    - ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-build-isolation -vv
+  number: 1
+
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - if: target_platform != build_platform
+      then:
+        - cross-python_${{ target_platform }}
+        - python
+  host:
+    - pip
+    - python
+    - setuptools >=42
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - tree_sitter_yaml
+      pip_check: true
+  - script:
+      - python -m pytest bindings/python/tests/
+    requirements:
+      run:
+        - pytest
+        - python
+        - tree_sitter >=0.22
+    files:
+      source:
+        - bindings/python/tests/
+
+about:
+  homepage: https://github.com/tree-sitter-grammars/tree-sitter-yaml
+  summary: 'YAML grammar for tree-sitter.'
+  description: |
+    A tree-sitter parser for YAML files.
+  license: MIT
+  license_file: LICENSE
+  repository: https://github.com/tree-sitter-grammars/tree-sitter-yaml
+
+extra:
+  recipe-maintainers:
+    - MementoRC

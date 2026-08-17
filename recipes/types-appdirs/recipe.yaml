@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: types-appdirs
+  version: "1.4.3.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/types-appdirs-${{ version }}.tar.gz
+  sha256: 83268da64585361bfa291f8f506a209276212a0497bd37f0512a939b3d69ff14
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - test -f $SP_DIR/appdirs-stubs/__init__.pyi
+
+about:
+  summary: Typing stubs for appdirs
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/python/typeshed
+
+extra:
+  recipe-maintainers:
+    - rxm7706

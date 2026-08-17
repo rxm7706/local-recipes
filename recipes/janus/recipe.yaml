@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: janus
+  version: "2.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 0970f38e0e725400496c834a368a67ee551dc3b5ad0a257e132f5b46f2e77770
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools >=51
+    - wheel >=0.36
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - janus
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Mixed sync-async queue to interoperate between asyncio tasks and classic threads
+  homepage: https://github.com/aio-libs/janus/
+
+extra:
+  recipe-maintainers:
+    - epruesse
+    - thewchan

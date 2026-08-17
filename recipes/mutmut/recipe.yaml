@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mutmut
+  version: "3.5.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 548186d4b0c494b7b9895db82871cb1f229b9271c9ff7cd633e348dd9afcc772
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - mutmut = mutmut.__main__:cli
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - uv-build
+  run:
+    - python >=${{ python_min }}
+    - coverage >=7.3.0
+    - libcst >=1.8.5
+    - click >=8.0.0
+    - textual >=1.0.0
+    - setproctitle >=1.0.0
+    - pytest >=6.2.5
+    - toml >=0.10.2
+
+tests:
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+      - mutmut --help
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: mutmut - python mutation tester
+  description: |
+    Mutmut is a mutation testing system for Python,
+    with a strong focus on ease of use.
+  homepage: https://github.com/boxed/mutmut
+  repository: https://github.com/boxed/mutmut
+  documentation: https://mutmut.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - carlodri

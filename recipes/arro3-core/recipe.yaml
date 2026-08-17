@@ -1,0 +1,127 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.8.1"
+
+recipe:
+  name: arro3-core-modules
+  version: ${{ version }}
+
+source:
+  url: https://github.com/kylebarron/arro3/archive/refs/tags/py-v${{ version }}.tar.gz
+  sha256: c7edb854628b8fe15d17ae4a9867aa6d14bd538a68e9c55e98bf0c6f9fdc5ae6
+
+build:
+  # Build issue https://github.com/conda-forge/arro3-core-feedstock/pull/32
+  number: 1
+  skip: ppc64le
+
+outputs:
+  - package:
+      name: arro3-core
+    build:
+      script:
+        file: ${{ 'build-pkg.bat' if win else 'build-pkg.sh' if not win else '' }}
+    requirements:
+      build:
+        - if: build_platform != target_platform
+          then: python
+        - if: build_platform != target_platform
+          then: cross-python_${{ target_platform }}
+        - if: build_platform != target_platform
+          then: maturin >=1.7.0,<2.0
+        - ${{ stdlib("c") }}
+        - ${{ compiler("c") }}
+        - ${{ compiler("rust") }}
+        - cargo-bundle-licenses
+      host:
+        - python
+        - maturin >=1.4.0,<2.0
+        - pip
+      run:
+        - python
+        - if: match(python, "<3.12")
+          then: typing_extensions >=4.6.0
+    tests:
+      - python:
+          imports:
+            - arro3.core
+          pip_check: true
+  - package:
+      name: arro3-compute
+    build:
+      script:
+        file: ${{ 'build-pkg.bat' if win else 'build-pkg.sh' if not win else '' }}
+    requirements:
+      build:
+        - if: build_platform != target_platform
+          then: python
+        - if: build_platform != target_platform
+          then: cross-python_${{ target_platform }}
+        - if: build_platform != target_platform
+          then: maturin >=1.7.0,<2.0
+        - ${{ stdlib("c") }}
+        - ${{ compiler("c") }}
+        - ${{ compiler("rust") }}
+        - cargo-bundle-licenses
+      host:
+        - python
+        - maturin >=1.4.0,<2.0
+        - pip
+      run:
+        - python
+        - ${{ pin_subpackage("arro3-core", exact=True) }}
+        - if: match(python, "<3.12")
+          then: typing_extensions >=4.6.0
+    tests:
+      - python:
+          imports:
+            - arro3.compute
+          pip_check: true
+  - package:
+      name: arro3-io
+    build:
+      script:
+        file: ${{ 'build-pkg.bat' if win else 'build-pkg.sh' if not win else '' }}
+    requirements:
+      build:
+        - if: build_platform != target_platform
+          then: python
+        - if: build_platform != target_platform
+          then: cross-python_${{ target_platform }}
+        - if: build_platform != target_platform
+          then: maturin >=1.7.0,<2.0
+        - ${{ stdlib("c") }}
+        - ${{ compiler("c") }}
+        - ${{ compiler("rust") }}
+        - cargo-bundle-licenses
+      host:
+        - python
+        - maturin >=1.4.0,<2.0
+        - pip
+      run:
+        - python
+        - ${{ pin_subpackage("arro3-core", exact=True) }}
+        - if: match(python, "<3.12")
+          then: typing_extensions >=4.6.0
+    tests:
+      - python:
+          imports:
+            - arro3.io
+          pip_check: true
+
+about:
+  summary: Core library for representing Arrow data in Python.
+  license: MIT
+  license_file:
+    - LICENSE_MIT
+    - THIRDPARTY.yml
+  homepage: https://github.com/kylebarron/arro3
+  repository: https://github.com/kylebarron/arro3
+  documentation: https://kylebarron.dev/arro3
+
+extra:
+  recipe-maintainers:
+    - kylebarron
+  feedstock-name: arro3-core

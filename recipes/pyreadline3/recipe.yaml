@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyreadline3
+  version: "3.5.6"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyreadline3-${{ version }}.tar.gz
+  sha256: 61e53218b99656091ddb077df9e71f25850e72e030b6183b39c9b7e6e4f4a9bf
+
+build:
+  number: 0
+  skip: not win
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - pip
+    - python
+    - sphinx
+    - setuptools
+    - setuptools-git-versioning
+    - setuptools-scm
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - pyreadline3
+      pip_check: true
+
+about:
+  summary: A python implementation of GNU readline.
+  license: BSD-3-Clause
+  license_file: doc/COPYING
+  homepage: https://pypi.python.org/pypi/pyreadline3/
+
+extra:
+  recipe-maintainers:
+    - tschoonj

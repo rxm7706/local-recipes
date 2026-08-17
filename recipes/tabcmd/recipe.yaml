@@ -2,58 +2,61 @@
 schema_version: 1
 
 context:
-  version: "2.0.18"
+  name: tabcmd
+  version: "2.0.21"
 
 package:
-  name: tabcmd
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/t/tabcmd/tabcmd-${{ version }}.tar.gz
-  sha256: 7ab1a7809dc25be7373ee56ae014eb3c6499d8bfccd04ca44a8668724bb494e1
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/tabcmd-${{ version }}.tar.gz
+  sha256: 80eebb14f92ca08ac9b7ffce7c3e5b698b3bec47ce898cfbec9f33287981ece1
 
 build:
   number: 0
   noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
       - tabcmd = tabcmd.tabcmd:main
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - python-build
     - setuptools >=62
     - wheel
     - setuptools-scm >=6.2
     - pip
   run:
+    - setuptools
+    - click
+    - pytest-order
     - python >=${{ python_min }},<3.12
     - appdirs
     - doit
     - ftfy
     - pyinstaller-versionfile
-    - pytest-order
     - requests >=2.25,<3.0
-    - setuptools <81
     - setuptools-scm
     - types-appdirs
     - types-mock
     - types-requests
     - types-setuptools
-    - tableauserverclient ==0.37
+    - tableauserverclient ==0.41
     - urllib3
 
 tests:
   - python:
       imports:
         - tabcmd
-      pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
-  - script:
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
       - tabcmd --help
 
 about:
@@ -61,7 +64,6 @@ about:
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/tableau/tabcmd
-  repository: https://github.com/tableau/tabcmd
 
 extra:
   recipe-maintainers:

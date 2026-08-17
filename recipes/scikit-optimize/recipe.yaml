@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: scikit-optimize
+  version: "0.10.2"
+  sha256: 00a3d91bf9015e292b6e7aaefe7e6cb95e8d25ce19adafd2cd88849e1a0b0da0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - numpy
+    - scipy >=1.1.0
+    - scikit-learn >=1.0.0
+    - matplotlib-base
+    - pyaml
+    - joblib
+    - packaging
+
+tests:
+  - python:
+      imports:
+        - skopt
+        - skopt.learning
+        - skopt.learning.gaussian_process
+        - skopt.optimizer
+        - skopt.space
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license_file: LICENSE
+  license: BSD-3-Clause
+  summary: Sequential model-based optimization toolbox.
+  homepage: https://scikit-optimize.readthedocs.io/
+  repository: https://github.com/holgern/scikit-optimize
+  documentation: https://scikit-optimize.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - holgern

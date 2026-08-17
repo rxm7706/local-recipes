@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: codecov
+  version: "2.1.13"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/codecov-${{ version }}.tar.gz
+  sha256: 2362b685633caeaf45b9951a9b76ce359cd3581dd515b430c6c3f5dfb4d92a8c
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - codecov=codecov:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - coverage
+    - python >=${{ python_min }}
+    - requests >=2.7.9
+
+tests:
+  - python:
+      imports:
+        - codecov
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - codecov --help
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Hosted coverage reports for Github, Bitbucket and Gitlab
+  homepage: https://github.com/codecov/codecov-python
+  repository: https://github.com/codecov/codecov-python
+  documentation: https://github.com/codecov/codecov-python
+
+extra:
+  recipe-maintainers:
+    - CJ-Wright
+    - marcelotrevisani
+    - thewchan

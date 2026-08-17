@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pipx
+  version: "1.14.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pipx-${{ version }}.tar.gz
+  sha256: 6566e35e64292d1df8a2e3c7ab51093521201cf7a9ed2f23217e5f843aad05b8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - pipx = pipx.main:cli
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatch-vcs >=0.4
+    - hatchling >=1.27
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - argcomplete >=1.9.4
+    - colorama >=0.4.4
+    - packaging >=20
+    - platformdirs >=2.1
+    - tomli
+    - userpath >=1.6,!=1.9
+
+tests:
+  - python:
+      imports:
+        - pipx
+        - pipx.commands
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pipx --help
+
+about:
+  summary: Install and Run Python Applications in Isolated Environments
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/pypa/pipx
+
+extra:
+  recipe-maintainers:
+    - maresb

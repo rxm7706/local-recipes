@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: backports.os
+  version: "0.1.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: b472c4933094306ca08ec90b2a8cbb50c34f1fb2767775169a1c1650b7b74630
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1005
+  script: python setup.py install --single-version-externally-managed --record=record.txt
+
+requirements:
+  host:
+    - python
+    - setuptools
+    - setuptools_scm
+    - backports
+  run:
+    - python
+    - if: match(python, ">=2,<3")
+      then: future
+    - backports
+
+tests:
+  - python:
+      imports:
+        - backports
+        - backports.os
+      pip_check: false
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - hypothesis
+    script:
+      - if: unix
+        then: export "PYTHONIOENCODING=utf8"
+      - if: unix
+        then: python -m unittest discover tests
+
+about:
+  license: PSF-2.0
+  license_file: LICENSE
+  summary: Backport of new features in Python's os module
+  homepage: https://github.com/pjdelport/backports.os
+  repository: https://github.com/pjdelport/backports.os
+  documentation: https://docs.python.org/3.5/library/os.html
+
+extra:
+  recipe-maintainers:
+    - nehaljwani

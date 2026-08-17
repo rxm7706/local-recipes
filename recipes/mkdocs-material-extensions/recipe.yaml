@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mkdocs-material-extensions
+  version: "1.3.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/mkdocs_material_extensions-${{ version }}.tar.gz
+  sha256: 10c9511cea88f568257f960358a467d12b970e1f7b2c0e5fb2bb48cab1928443
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - hatchling >=0.21.1
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+  run_constraints:
+    - mkdocs-material >=5.0.0
+
+tests:
+  - python:
+      imports:
+        - materialx
+      pip_check: true
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - beautifulsoup4
+        - pip
+        - mkdocs-material >=5.0.0
+        - pytest
+        - requests
+        - python ${{ python_min }}
+    script:
+      - pytest -vvv --capture=tee-sys tests
+
+about:
+  summary: Extension pack for Python Markdown
+  license: MIT
+  license_file: LICENSE.md
+  homepage: https://github.com/facelessuser/mkdocs-material-extensions
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - marcelotrevisani
+    - vallsv
+    - dgasmith
+    - thewchan

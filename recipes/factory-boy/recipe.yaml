@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: factory_boy
+  version: "3.3.3"
+  bundle: tar.gz
+  hash: 866862d226128dfac7f2b4160287e899daf54f2612778327dd03d0e2cb1e3d03
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
+  sha256: ${{ hash }}
+  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools >=0.8.0
+  run:
+    - python >=${{ python_min }}
+    - faker >=0.7.0
+
+tests:
+  - python:
+      imports:
+        - factory
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A versatile test fixtures replacement based on thoughtbot's factory_girl for Ruby.
+  homepage: https://github.com/FactoryBoy/factory_boy
+  repository: https://github.com/FactoryBoy/factory_boy
+  documentation: https://factoryboy.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - dhirschfeld

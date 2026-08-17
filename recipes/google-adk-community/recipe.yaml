@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.0"
+
+package:
+  name: google-adk-community
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/google-adk-community/google_adk_community-${{ version }}.tar.gz
+  sha256: d0d364afa815c1b40b2dfdc5e847b81a28600119bacee6c5120790198ab2610f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core >=3.8,<4
+  run:
+    - python >=${{ python_min }}
+    - google-adk
+    - httpx <1.0.0,>=0.27.0
+    - orjson >=3.11.3
+    - redis-py <6.0.0,>=5.0.0
+
+tests:
+  - python:
+      imports:
+        - google.adk_community
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://google.github.io/adk-docs/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Agent Development Kit Community Repo
+  description: |
+    Agent Development Kit Community Repo
+  documentation: https://google.github.io/adk-docs/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-adk-community
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-adk-community
+  cfe-purls:
+    - pkg:conda/google-adk-community@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-adk-community@${{ version }}
+  cfe-upstream-repo: https://google.github.io/adk-docs/
+  cfe-upstream-homepage: https://google.github.io/adk-docs/
+  cfe-import-names: [google.adk_community]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:53:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:53:12Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

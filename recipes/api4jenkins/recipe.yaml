@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.1.0"
+
+package:
+  name: api4jenkins
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/api4jenkins/api4jenkins-${{ version }}.tar.gz
+  sha256: 4dd09ed06c86cff7bdcdd832fc30d7d9673395e53e32cf9db257c5f977181442
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - httpx >=0.24.1
+
+tests:
+  - python:
+      imports:
+        - api4jenkins
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/joelee2012/api4jenkins
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Jenkins Python Client
+  description: |
+    Jenkins Python Client
+  repository: https://github.com/joelee2012/api4jenkins
+  documentation: https://api4jenkins.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: api4jenkins
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: api4jenkins
+  cfe-purls:
+    - pkg:conda/api4jenkins@${{ version }}?channel=conda-forge
+    - pkg:pypi/api4jenkins@${{ version }}
+  cfe-upstream-repo: https://github.com/joelee2012/api4jenkins
+  cfe-upstream-homepage: https://github.com/joelee2012/api4jenkins
+  cfe-import-names: [api4jenkins]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:24Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

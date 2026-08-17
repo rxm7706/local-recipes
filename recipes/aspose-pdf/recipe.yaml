@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.7.0"
+
+package:
+  name: aspose-pdf
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/a/aspose-pdf/aspose_pdf-26.7.0-py3-none-manylinux1_x86_64.whl
+  sha256: c819dfcf61b3007b7bef3cafca82978340cd4ceae40b2fa0e0357d2709819ba6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - aspose_pdf
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://products.aspose.com/pdf/python-net/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Aspose.PDF for Python via .NET is a wrapper for Python to perform document management can easily be used to generate, modify, convert, render, secure and print documents without using Adobe Acrobat.
+  description: |
+    Aspose.PDF for Python via .NET is a wrapper for Python to perform document management can easily be used to generate, modify, convert, render, secure and print documents without using Adobe Acrobat.
+  documentation: https://docs.aspose.com/pdf/python-net/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: aspose-pdf
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: aspose-pdf
+  cfe-purls:
+    - pkg:conda/aspose-pdf@${{ version }}?channel=conda-forge
+    - pkg:pypi/aspose-pdf@${{ version }}
+  cfe-upstream-repo: https://products.aspose.com/pdf/python-net/
+  cfe-upstream-homepage: https://products.aspose.com/pdf/python-net/
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:31Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

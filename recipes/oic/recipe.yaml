@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: oic
+  version: "1.7.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: e51705d0c14c97e9ca594374bfb54269a72c9b489e0e979598344c0189bfcb64
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vvv
+  python:
+    entry_points:
+      - oic-client-management = oic.utils.client_management:run
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - requests
+    - pycryptodomex
+    - pydantic-settings
+    - pyjwkest >=1.3.6
+    - mako
+    - cryptography
+    - defusedxml
+    - typing-extensions
+    - python >=${{ python_min }}
+  run_constraints:
+    - cherrypy ==3.2.4
+    - pyopenssl
+    - responses
+    - testfixtures
+    - pytest
+    - freezegun
+    - sphinx
+    - sphinx-autobuild
+    - alabaster
+    - autodoc-pydantic >=2.0.0
+    - pylama
+    - isort
+    - eradicate
+    - mypy
+    - black
+    - bandit
+    - readme_renderer
+    - python-ldap
+    - beaker
+
+tests:
+  - python:
+      imports:
+        - oic
+        - oic.oauth2
+        - oic.oic
+        - oic.utils
+        - oic.utils.authn
+        - oic.utils.userinfo
+        - oic.utils.rp
+        - oic.extension
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  summary: Python implementation of OAuth2 and OpenID Connect
+  homepage: https://github.com/OpenIDC/pyoidc/
+
+extra:
+  recipe-maintainers:
+    - wagnerpeer
+    - mariusvniekerk

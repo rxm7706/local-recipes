@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: configobj
+  version: "5.0.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/configobj-${{ version }}.tar.gz
+  sha256: 03c881bbf23aa07bccf1b837005975993c4ab4427ba57f959afdd9d1a2386848
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - six
+
+tests:
+  - python:
+      imports:
+        - configobj
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Config file reading, writing and validation.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/DiffSK/configobj
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

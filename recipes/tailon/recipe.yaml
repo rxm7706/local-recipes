@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4.3"
+
+package:
+  name: tailon
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/tailon/tailon-${{ version }}.tar.gz
+  sha256: 8cbb0406f9afdd96c93cc8947d0fb4fda534ce3e465794314f4cd3f877cc7576
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - tailon
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/gvalkov/tailon-legacy
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Webapp for looking at and searching through log files
+  description: |
+    Webapp for looking at and searching through log files
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tailon
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tailon
+  cfe-purls:
+    - pkg:conda/tailon@${{ version }}?channel=conda-forge
+    - pkg:pypi/tailon@${{ version }}
+  cfe-upstream-repo: https://github.com/gvalkov/tailon-legacy
+  cfe-upstream-homepage: https://github.com/gvalkov/tailon-legacy
+  cfe-import-names: [tailon]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:54:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:54:17Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

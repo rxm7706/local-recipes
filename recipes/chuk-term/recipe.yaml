@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.2"
+
+package:
+  name: chuk-term
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/chuk-term/chuk_term-${{ version }}.tar.gz
+  sha256: 012c50a43515c06c8ff417e0c8e55111f5c35703e39d0af08dd69f5e8bfbd184
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - click >=8.0.0
+    - rich >=13.0.0
+
+tests:
+  - python:
+      imports:
+        - chuk_term
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/chrishayuk/chuk-term
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A terminal library with CLI interface
+  description: |
+    A terminal library with CLI interface
+  repository: https://github.com/chrishayuk/chuk-term
+  documentation: https://github.com/chrishayuk/chuk-term/tree/main/docs
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: chuk-term
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: chuk-term
+  cfe-purls:
+    - pkg:conda/chuk-term@${{ version }}?channel=conda-forge
+    - pkg:pypi/chuk-term@${{ version }}
+  cfe-upstream-repo: https://github.com/chrishayuk/chuk-term
+  cfe-upstream-homepage: https://github.com/chrishayuk/chuk-term
+  cfe-import-names: [chuk_term]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:50:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:50:29Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

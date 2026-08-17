@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-cors-headers
+  version: "4.9.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_cors_headers-${{ version }}.tar.gz
+  sha256: fe5d7cb59fdc2c8c646ce84b727ac2bca8912a247e6e68e1fb507372178e59e8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - asgiref >=3.6
+    - django >=4.2
+
+tests:
+  - python:
+      imports:
+        - corsheaders
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Django app for handling the server headers required for Cross-Origin Resource Sharing (CORS)
+  description: |
+    A Django App that adds CORS (Cross-Origin Resource Sharing) headers to responses.
+
+    Although JSON-P is useful, it is strictly limited to GET requests.
+    CORS builds on top of XmlHttpRequest to allow developers to make cross-domain requests,
+    similar to same-domain requests. Read more about it here <http://www.html5rocks.com/en/tutorials/cors/>.
+
+  homepage: https://github.com/ottoyiu/django-cors-headers
+  repository: https://github.com/ottoyiu/django-cors-headers
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - lsetiawan
+    - timsnyder
+    - MichelML

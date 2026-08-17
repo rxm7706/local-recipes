@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.1"
+  build_number: 0
+
+package:
+  name: blis
+  version: ${{ version }}
+
+source:
+  url: https://github.com/flame/blis/archive/${{ version }}.tar.gz
+  sha256: 901752ec596cd63421ea45a6a06a9f34491cf5ae01cea412ece05f97a2690a96
+  patches:
+    # https://github.com/flame/blis/pull/908
+    - patches/0001-Blacklist-knl-for-clang-19.patch
+    # workaround problems with xargs in win-64 build env
+    - patches/0002-Use-printf-instead-of-xargs-which-is-broken-in-mingw.patch
+
+build:
+  number: ${{ build_number }}
+  string: ${{ threading }}_h${{ hash }}_${{ build_number }}
+  variant:
+    down_prioritize_variant: ${{ 1 if threading == "openmp" else 0 }}
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - if: win or osx
+      then:
+        - clangxx
+        - llvm-tools
+    - if: win
+      then:
+        - autotools_clang_conda
+        - m2-sed
+      else:
+        - sed
+    - if: linux
+      then: make
+    - perl
+    - python >=3.5
+  host:
+    - if: threading == "openmp"
+      then:
+        - if: linux
+          then: libgomp
+          else: llvm-openmp
+
+tests:
+  - script:
+      - if: unix
+        then:
+          - test -f $PREFIX/lib/libblis.a
+          - test -f $PREFIX/lib/libblis${SHLIB_EXT}
+          - test -f $PREFIX/include/blis/blis.h
+          - test -f $PREFIX/include/blis/cblas.h
+      - if: win
+        then:
+          - if not exist %LIBRARY_INC%\blis\blis.h exit 1
+          - if not exist %LIBRARY_INC%\blis\cblas.h exit 1
+          - if not exist %LIBRARY_BIN%\libblis.4.dll exit 1
+          # import library for the .dll
+          - if not exist %LIBRARY_LIB%\blis.lib exit 1
+          # static library
+          - if not exist %LIBRARY_LIB%\libblis.lib exit 1
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: BLAS-like Library Instantiation Software Framework
+  homepage: http://github.com/flame/blis
+
+extra:
+  recipe-maintainers:
+    - isuruf
+    - h-vetinari
+    - gdonval

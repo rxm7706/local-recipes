@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: sqlfluff
-  version: "4.0.4"
+  version: 4.3.0
 
 package:
   name: ${{ name|lower }}
@@ -11,38 +11,36 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sqlfluff-${{ version }}.tar.gz
-  sha256: 3f443e18b49ec7062132ae0ef0e2f6e56fc485a2044e9f09ea12a17872efd987
+  sha256: aa647b3721112f1aca581efe8eaa815a332ae214610a0946592f98a19ef1e8cb
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv
   python:
     entry_points:
       - sqlfluff = sqlfluff.cli.commands:cli
 
 requirements:
   host:
+    - pip
     - python ${{ python_min }}.*
     - setuptools >=40.8.0
     - wheel
-    - pip
   run:
     - python >=${{ python_min }}
     - platformdirs
     - chardet
-    - click <8.4.0
+    - click <8.5.0
     - colorama >=0.3
     - diff-cover >=2.5.0
     - jinja2
     - pathspec
-    - pytest
     - pyyaml >=5.1
     - regex
     - tblib
     - tomli
     - tqdm
-
 tests:
   - python:
       imports:
@@ -80,4 +78,3 @@ extra:
     - svengiegerich
     - borchero
     - thewchan
-    - rxm7706

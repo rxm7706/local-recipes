@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.1.0"
+
+package:
+  name: jpy
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/jpy/jpy-${{ version }}.tar.gz
+  sha256: e23353f20f45608e228e175e8fe3b854c9cc5f5f243140319d018d6707d81ef4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - jpy
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/jpy-consortium/jpy
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Bi-directional Python-Java bridge
+  description: |
+    Bi-directional Python-Java bridge
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jpy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jpy
+  cfe-purls:
+    - pkg:conda/jpy@${{ version }}?channel=conda-forge
+    - pkg:pypi/jpy@${{ version }}
+  cfe-upstream-repo: https://github.com/jpy-consortium/jpy
+  cfe-upstream-homepage: https://github.com/jpy-consortium/jpy
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:01:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:01:19Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

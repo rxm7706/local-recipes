@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: google-cloud-memcache
+  version: "1.16.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/google_cloud_memcache-${{ version }}.tar.gz
+  sha256: e73b3c7bf4bded56cb627c8efc22a7f0fdaf7548928ade97f904cb6bfa837f3f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - google-api-core >=2.17.1,<3.0.0
+    - google-api-core-grpc
+    - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
+    # more restrictive constraint for python >=3.14
+    - grpcio >=1.75.1,<2.0.0
+    # more restrictive constraint for python >=3.13
+    - proto-plus >=1.25.0,<2.0.0
+    - protobuf >=4.25.8,<8.0.0
+
+tests:
+  - python:
+      imports:
+        - google.cloud.memcache
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+      pip_check: true
+
+about:
+  summary: Google Cloud Memcache API client library
+  license: Apache-2.0
+  license_file: LICENSE
+  description: |
+    Cloud Memorystore for Memached API: Ship performant and highly available
+    key value store, compatible with OSS Memcached protocol.
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-memcache
+  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-memcache
+  documentation: https://googleapis.dev/python/memcache/latest/index.html
+
+extra:
+  recipe-maintainers:
+    - xylar

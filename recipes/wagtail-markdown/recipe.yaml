@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: wagtail-markdown
   version: "0.14.1"
 
 package:
-  name: wagtail-markdown
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/w/wagtail-markdown/wagtail_markdown-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail_markdown-${{ version }}.tar.gz
   sha256: f8685ca937b15c662be9eb972a477aebdbdd4a9aad60716b2a59f7bed898b165
 
 build:
@@ -19,34 +20,28 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - flit-core >=3.2,<4
     - pip
   run:
+    - nh3 >=0.3.4
     - python >=${{ python_min }}
     - wagtail >=7.0
     - markdown >=3.3,<4
-    - nh3 >=0.3.4
+    - bleach >=3.3,<5
 
 tests:
   - python:
       imports:
         - wagtailmarkdown
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Markdown support for Wagtail
-  description: |
-    Markdown support for Wagtail. Provides Markdown fields and StreamField
-    blocks for the Wagtail CMS.
-  license: Zlib
+  license: Unlicense
   license_file: LICENSE
   homepage: https://github.com/torchbox/wagtail-markdown
-  repository: https://github.com/torchbox/wagtail-markdown
-  documentation: https://github.com/torchbox/wagtail-markdown/blob/main/README.md
 
 extra:
   recipe-maintainers:

@@ -2,31 +2,37 @@
 schema_version: 1
 
 context:
-  name: tree-sitter
-  version: 0.25.2
+  version: "0.26.0"
 
 package:
-  name: ${{ name|lower }}
+  name: tree_sitter
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/tree-sitter-${{ version }}.tar.gz
-  sha256: fe43c158555da46723b28b52e058ad444195afd1db3ca7720c59a254544e9c20
+  url: https://pypi.org/packages/source/t/tree_sitter/tree_sitter-${{ version }}.tar.gz
+  sha256: b40c219edccc4564530c96f8f1556f6202b37cda964d1cbd7bd2b7e68b40a245
 
 build:
   number: 0
-  skip: match(python, "<3.10")
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    - if: unix
+      then: export CFLAGS="-D_BSD_SOURCE"
+    - ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
 
 requirements:
   build:
     - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then:
+        - cross-python_${{ target_platform }}
+        - python
   host:
-    - python >=3.10
-    - setuptools >=43
     - pip
+    - python
+    - setuptools >=43
   run:
-    - python >=3.10
+    - python
 
 tests:
   - python:
@@ -40,12 +46,14 @@ tests:
 
 about:
   summary: Python bindings to the Tree-sitter parsing library
-  license: MIT AND EPL-2.0
+  license: MIT and EPL-2.0
   license_file:
     - LICENSE
     - tree_sitter/core/lib/src/unicode/LICENSE
-  repository: https://github.com/tree-sitter/py-tree-sitter
+  homepage: https://github.com/tree-sitter/py-tree-sitter
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - danielnachun
+    - thewchan
+    - davidbrochart

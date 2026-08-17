@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.9.21.1"
+
+package:
+  name: aioquic-mitmproxy
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/aioquic-mitmproxy/aioquic_mitmproxy-${{ version }}.tar.gz
+  sha256: 0da539b95982dd02d1f971344215da5c15d0c409e2639d267a2815cd27335e26
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - certifi
+    - pylsqpack <0.4.0,>=0.3.3
+    - pyopenssl >=22
+    - service-identity >=23.1.0
+
+tests:
+  - python:
+      imports:
+        - aioquic
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/meitinger/aioquic_mitmproxy
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Fork of aioquic (https://github.com/aiortc/aioquic) with adjustments for mitmproxy.
+  description: |
+    Fork of aioquic (https://github.com/aiortc/aioquic) with adjustments for mitmproxy.
+  documentation: https://aioquic.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: aioquic-mitmproxy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: aioquic-mitmproxy
+  cfe-purls:
+    - pkg:conda/aioquic-mitmproxy@${{ version }}?channel=conda-forge
+    - pkg:pypi/aioquic-mitmproxy@${{ version }}
+  cfe-upstream-repo: https://github.com/meitinger/aioquic_mitmproxy
+  cfe-upstream-homepage: https://github.com/meitinger/aioquic_mitmproxy
+  cfe-import-names: [aioquic]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:05Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

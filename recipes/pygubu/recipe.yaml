@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pygubu
+  version: "0.41.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pygubu-${{ version }}.tar.gz
+  sha256: d0a9a609eb78f586d4e87ff5e818da855ce4e1ab2dd3b987e365f2d19bdba74b
+
+build:
+  number: 0
+  skip: match(python, "<3.8")
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python
+    - setuptools
+    - pip
+  run:
+    - python
+    - if: match(python, "<3.9")
+      then: importlib-resources
+    - if: linux
+      then: xorg-libx11
+
+tests:
+  - python:
+      imports:
+        - pygubu
+      pip_check: true
+
+about:
+  summary: A simple GUI builder for the python tkinter module
+  license: MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/pygubu/
+  repository: https://github.com/alejandroautalan/pygubu
+
+extra:
+  recipe-maintainers:
+    - alejandroautalan

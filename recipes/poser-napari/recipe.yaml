@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.1b7"
+
+package:
+  name: poser-napari
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/PoseR-napari/poser_napari-${{ version }}.tar.gz
+  sha256: 79b4e4fbca99050ddfd91caa43e69ea52c7d8b75439d1d4aa3edfda9e37c7225
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+    - setuptools-scm
+  run:
+    - python >=${{ python_min }}
+    - napari ==0.4.14
+    - npe2 ==0.6.2
+    - pydantic ==1.10.4
+    - numpy ==1.23.5
+    - magicgui
+    - qtpy
+    - napari_video
+    - napari-plot ==0.1.5
+    - pytables
+    - imageio-ffmpeg ==0.4.8
+    - pytorch-lightning
+    - test-tube
+    - scikit-learn
+    - matplotlib-base
+    - numba
+    - networkx
+    - seaborn-base
+    - ultralytics
+    - torcheval ==0.0.7
+    - pytorch ==2.4.1
+
+tests:
+  - python:
+      imports:
+        - poser
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/pnm4sfix/PoseR
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A deep learning toolbox for decoding animal behaviour
+  description: |
+    A deep learning toolbox for decoding animal behaviour
+  repository: https://github.com/pnm4sfix/PoseR
+  documentation: https://github.com/pnm4sfix/PoseR#README.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: poser-napari
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: PoseR-napari
+  cfe-purls:
+    - pkg:conda/poser-napari@${{ version }}?channel=conda-forge
+    - pkg:pypi/poser-napari@${{ version }}
+  cfe-upstream-repo: https://github.com/pnm4sfix/PoseR
+  cfe-upstream-homepage: https://github.com/pnm4sfix/PoseR
+  cfe-import-names: [poser]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:55:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:55:34Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

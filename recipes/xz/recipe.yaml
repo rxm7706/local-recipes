@@ -1,0 +1,372 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.8.3"
+
+recipe:
+  name: xz-split
+  version: ${{ version }}
+
+source:
+  url: https://github.com/tukaani-project/xz/releases/download/v${{ version }}/xz-${{ version }}.tar.gz
+  sha256: 3d3a1b973af218114f4f889bbaa2f4c037deaae0c8e815eec381c3d546b974a0
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - ${{ stdlib('c') }}
+    - if: unix
+      then: gnuconfig
+    - ${{ compiler('c') }}
+    - if: win
+      then: cmake-no-system
+    - if: win
+      then: ninja
+    - if: not win
+      then: make
+    - if: not win
+      then: diffutils
+  run_exports:
+    - ${{ pin_subpackage('xz') }}
+
+outputs:
+  - package:
+      name: liblzma
+    build:
+      script:
+        file: ${{ 'install-liblzma.bat' if win else 'install-liblzma.sh' if unix else '' }}
+    requirements:
+      build:
+        - ${{ stdlib('c') }}
+        - ${{ compiler('c') }}
+        - if: win
+          then: cmake-no-system
+        - if: win
+          then: ninja
+        - if: not win
+          then: make
+      run_exports:
+        - ${{ pin_subpackage('liblzma') }}
+      run_constraints:
+        - xz ${{ version }}.*
+    tests:
+      - script:
+          - if: win
+            then: if not exist %LIBRARY_PREFIX%\bin\liblzma.dll exit 1
+          - if: win
+            then: if exist %LIBRARY_PREFIX%\lib\lzma.lib exit 1
+          - if: unix
+            then: test ! -f ${PREFIX}/lib/liblzma.a
+          - if: unix
+            then: test ! -f ${PREFIX}/lib/liblzma${SHLIB_EXT}
+          - if: linux
+            then: test -f ${PREFIX}/lib/liblzma.so.*.*
+          - if: osx
+            then: test -f ${PREFIX}/lib/liblzma.*.dylib
+    about:
+      summary: a compression library with an API similar to that of zlib
+      license: 0BSD
+      license_file:
+        - COPYING
+        - COPYING.0BSD
+      homepage: http://tukaani.org/xz/
+      repository: http://git.tukaani.org/
+  - package:
+      name: liblzma-devel
+    build:
+      script:
+        file: ${{ 'install.bat' if win else 'install.sh' if unix else '' }}
+    requirements:
+      build:
+        - ${{ stdlib('c') }}
+        - ${{ compiler('c') }}
+        - if: win
+          then: cmake-no-system
+        - if: win
+          then: ninja
+        - if: not win
+          then: make
+      host:
+        - ${{ pin_subpackage('liblzma', exact=True) }}
+      run:
+        - ${{ pin_subpackage('liblzma', exact=True) }}
+      run_exports:
+        - ${{ pin_subpackage('liblzma') }}
+    tests:
+      - script:
+          - if: win
+            then: if not exist %LIBRARY_PREFIX%\bin\liblzma.dll exit 1
+          - if: win
+            then: if not exist %LIBRARY_PREFIX%\lib\lzma.lib exit 1
+          - if: win
+            then: if exist %LIBRARY_PREFIX%\lib\liblzma.lib exit 1
+          - if: unix
+            then: test ! -f ${PREFIX}/lib/liblzma.a
+          - if: unix
+            then: test -f ${PREFIX}/lib/liblzma${SHLIB_EXT}
+    about:
+      summary: a compression library with an API similar to that of zlib
+      license: 0BSD
+      license_file:
+        - COPYING
+        - COPYING.0BSD
+      homepage: http://tukaani.org/xz/
+      repository: http://git.tukaani.org/
+  - package:
+      name: xz-tools
+    build:
+      script:
+        file: ${{ 'install.bat' if win else 'install.sh' if unix else '' }}
+    requirements:
+      build:
+        - ${{ stdlib('c') }}
+        - ${{ compiler('c') }}
+        - if: win
+          then: cmake-no-system
+        - if: win
+          then: ninja
+        - if: not win
+          then: make
+      host:
+        - ${{ pin_subpackage('liblzma', exact=True) }}
+        - ${{ pin_subpackage('liblzma-devel', exact=True) }}
+      run:
+        - ${{ pin_subpackage('liblzma', exact=True) }}
+      run_constraints:
+        - xz ${{ version }}.*
+    tests:
+      - script:
+          - if: unix
+            then: lzcat --help
+          - if: unix
+            then: lzma --help
+          - lzmadec --help
+          - lzmainfo --help
+          - if: unix
+            then: unlzma --help
+          - if: unix
+            then: unxz --help
+          - xz --help
+          - if: unix
+            then: xzcat --help
+          - xzdec --help
+    about:
+      summary: A set of tools to work with xz-/lzma-compressed files
+      license: 0BSD AND LGPL-2.1-or-later
+      license_file:
+        - COPYING
+        - COPYING.0BSD
+        - COPYING.LGPLv2.1
+      homepage: http://tukaani.org/xz/
+      repository: http://git.tukaani.org/
+  - package:
+      name: xz-gpl-tools
+    build:
+      skip: win
+      script:
+        file: ${{ 'install.bat' if win else 'install.sh' if unix else '' }}
+    requirements:
+      build:
+        - ${{ stdlib('c') }}
+        - ${{ compiler('c') }}
+        - if: win
+          then: cmake-no-system
+        - if: win
+          then: ninja
+        - if: not win
+          then: make
+      host:
+        - ${{ pin_subpackage('liblzma', exact=True) }}
+        - ${{ pin_subpackage('liblzma-devel', exact=True) }}
+        - ${{ pin_subpackage('xz-tools', exact=True) }}
+      run:
+        - ${{ pin_subpackage('liblzma', exact=True) }}
+      run_exports:
+        - ${{ pin_subpackage('liblzma') }}
+      run_constraints:
+        - xz ${{ version }}.*
+    tests:
+      - script:
+          - lzcmp --help
+          - lzdiff --help
+          - lzegrep --help
+          - lzfgrep --help
+          - lzgrep --help
+          - lzless --help
+          - lzmore --help
+          - xzcmp --help
+          - xzdiff --help
+          - xzegrep --help
+          - xzfgrep --help
+          - xzgrep --help
+          - xzless --help
+          - xzmore --help
+    about:
+      summary: A set of tools to work with xz-/lzma-compressed files (forked of grep)
+      license: 0BSD AND LGPL-2.1-or-later AND GPL-2.0-or-later
+      license_file:
+        - COPYING
+        - COPYING.0BSD
+        - COPYING.LGPLv2.1
+        - COPYING.GPLv2
+      homepage: http://tukaani.org/xz/
+      repository: http://git.tukaani.org/
+  - package:
+      name: xz
+    build:
+      script:
+        file: ${{ 'install.bat' if win else 'install.sh' if unix else '' }}
+    requirements:
+      build:
+        - ${{ stdlib('c') }}
+        - ${{ compiler('c') }}
+        - if: win
+          then: cmake-no-system
+        - if: win
+          then: ninja
+        - if: not win
+          then: make
+      host:
+        - ${{ pin_subpackage('liblzma', exact=True) }}
+        - ${{ pin_subpackage('liblzma-devel', exact=True) }}
+        - ${{ pin_subpackage('xz-tools', exact=True) }}
+        - if: unix
+          then: ${{ pin_subpackage('xz-gpl-tools', exact=True) }}
+      run:
+        - ${{ pin_subpackage('liblzma', exact=True) }}
+        - ${{ pin_subpackage('liblzma-devel', exact=True) }}
+        - ${{ pin_subpackage('xz-tools', exact=True) }}
+        - if: unix
+          then: ${{ pin_subpackage('xz-gpl-tools', exact=True) }}
+      run_exports:
+        - ${{ pin_subpackage('liblzma') }}
+    tests:
+      - script:
+          - if: not win
+            then: xz --help
+          - if: not win
+            then: unxz --help
+          - if: not win
+            then: lzma --help
+          - if: win
+            then: xz.exe --help
+          - if: win
+            then: if not exist %LIBRARY_PREFIX%\bin\liblzma.dll exit 1
+          - if: win
+            then: if not exist %LIBRARY_PREFIX%\lib\lzma.lib exit 1
+          - if: win
+            then: if not exist %LIBRARY_PREFIX%\include\lzma.h exit 1
+          - if: unix
+            then: test -f ${PREFIX}/lib/liblzma${SHLIB_EXT}
+          - if: unix
+            then: test ! -f ${PREFIX}/lib/liblzma.a
+    about:
+      summary: Data compression software with high compression ratio
+      license: 0BSD AND LGPL-2.1-or-later AND GPL-2.0-or-later
+      license_file:
+        - COPYING
+        - COPYING.0BSD
+        - COPYING.LGPLv2.1
+        - COPYING.GPLv2
+      homepage: http://tukaani.org/xz/
+      repository: http://git.tukaani.org/
+  - package:
+      name: liblzma-static
+    build:
+      always_include_files:
+        - if: win
+          then: Library/lib/cmake/liblzma
+      script:
+        file: ${{ 'bld-static.bat' if win else 'install.sh' if unix else '' }}
+    requirements:
+      build:
+        - ${{ stdlib('c') }}
+        - ${{ compiler('c') }}
+        - if: win
+          then: cmake-no-system
+        - if: win
+          then: ninja
+        - if: not win
+          then: make
+      host:
+        - ${{ pin_subpackage('xz', exact=True) }}
+        - ${{ pin_subpackage('liblzma-devel', exact=True) }}
+      run:
+        - ${{ pin_subpackage('liblzma-devel', exact=True) }}
+      run_constraints:
+        - xz ${{ version }}.*
+    tests:
+      - script:
+          - if: unix
+            then: test -f ${PREFIX}/lib/liblzma.a
+          - if: win
+            then: if not exist %LIBRARY_PREFIX%\lib\lzma-static.lib exit 1
+    about:
+      summary: a compression library with an API similar to that of zlib
+      license: 0BSD
+      license_file:
+        - COPYING
+        - COPYING.0BSD
+      homepage: http://tukaani.org/xz/
+      repository: http://git.tukaani.org/
+  - package:
+      name: xz-static
+    requirements:
+      build:
+        - ${{ stdlib('c') }}
+        - ${{ compiler('c') }}
+        - if: win
+          then: cmake-no-system
+        - if: win
+          then: ninja
+        - if: not win
+          then: make
+      host:
+        - ${{ pin_subpackage('xz', exact=True) }}
+        - ${{ pin_subpackage('liblzma-devel', exact=True) }}
+        - ${{ pin_subpackage('liblzma-static', exact=True) }}
+      run:
+        - ${{ pin_subpackage('liblzma-devel', exact=True) }}
+        - ${{ pin_subpackage('liblzma-static', exact=True) }}
+    tests:
+      - script:
+          - if: unix
+            then: test -f ${PREFIX}/lib/liblzma.a
+          - if: win
+            then: if not exist %LIBRARY_PREFIX%\lib\lzma-static.lib exit 1
+    about:
+      summary: a compression library with an API similar to that of zlib
+      license: 0BSD
+      license_file:
+        - COPYING
+        - COPYING.0BSD
+      homepage: http://tukaani.org/xz/
+      repository: http://git.tukaani.org/
+
+about:
+  license: 0BSD AND LGPL-2.1-or-later AND GPL-2.0-or-later
+  license_file:
+    - COPYING
+    - COPYING.0BSD
+    - COPYING.LGPLv2.1
+    - COPYING.GPLv2
+  summary: Data compression software with high compression ratio
+  description: |
+    XZ Utils is free general-purpose data compression software with a high
+    compression ratio. XZ Utils were written for POSIX-like systems, but also
+    work on some not-so-POSIX systems.
+  homepage: http://tukaani.org/xz/
+  repository: http://git.tukaani.org/
+  documentation: http://tukaani.org/xz/
+
+extra:
+  recipe-maintainers:
+    - msarahan
+    - ocefpaf
+    - mingwandroid
+    - nehaljwani
+    - scopatz
+    - xhochy

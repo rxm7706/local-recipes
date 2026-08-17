@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5"
+
+package:
+  name: backports_abc
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/b/backports_abc/backports_abc-${{ version }}.tar.gz
+  sha256: 033be54514a03e255df75c5aee8f9e672f663f93abb723444caec8fe43437bde
+  file_name: backports_abc-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - backports_abc
+      pip_check: false
+
+about:
+  license: PSF-2.0
+  summary: A backport of recent additions to the `collections.abc` module.
+  homepage: https://github.com/cython/backports_abc
+
+extra:
+  recipe-maintainers:
+    - jakirkham

@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: log_symbols
+  version: "0.0.14"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: cf0bbc6fe1a8e53f0d174a716bc625c4f87043cc21eb55dd8a740cfe22680556
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - colorama >=0.3.9
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - log_symbols
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - python -m pip show log_symbols
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Colored symbols for various log levels for Python
+  description: Colored symbols for various log levels for Python
+  homepage: https://github.com/manrajgrover/py-log-symbols
+
+extra:
+  recipe-maintainers:
+    - timkpaine
+    - duncanmmacleod

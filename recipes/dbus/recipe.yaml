@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: 1.16.2
+
+package:
+  name: dbus
+  version: ${{ version }}
+
+source:
+  url: http://dbus.freedesktop.org/releases/dbus/dbus-${{ version }}.tar.xz
+  sha256: 0ba2a1a4b16afe7bceb2c07e9ce99a8c2c3508e5dec290dbb643384bd6beb7e2
+  patches:
+    - if: linux
+      then:
+        - patches/0001-Add-var-lib-dbus-machine-id-as-a-fallback.patch
+        - patches/0002-Use-proc-sys-kernel-random-boot_id-as-last-resort-fa.patch
+        - patches/0003-disable-fd-limit-tests-not-supported-in-docker.patch
+
+build:
+  number: 1
+  skip: win
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib('c') }}
+    - pkg-config
+    - meson
+  host:
+    - glib
+    - expat
+    - zlib
+  run_exports:
+    - ${{ pin_subpackage('dbus') }}
+
+tests:
+  - script:
+      - dbus-daemon --version
+      - dbus-uuidgen
+
+about:
+  license: AFL-2.1 OR GPL-2.0-or-later
+  license_file:
+    - COPYING
+    - LICENSES/AFL-2.1.txt
+    - LICENSES/GPL-2.0-or-later.txt
+  summary: Simple message bus system for applications to talk to one another
+  description: |
+    D-Bus is a message bus system, a simple way for applications
+    to talk to one another. In addition to interprocess communication, D-Bus helps
+    coordinate process lifecycle; it makes it simple and reliable to code a "single
+    instance" application or daemon, and to launch applications and daemons on
+    demand when their services are needed.
+  homepage: http://www.freedesktop.org/wiki/Software/dbus/
+  repository: https://gitlab.freedesktop.org/dbus/dbus
+  documentation: https://www.freedesktop.org/wiki/IntroductionToDBus/
+
+extra:
+  recipe-maintainers:
+    - mingwandroid
+    - ccordoba12
+    - nehaljwani
+    - ocefpaf
+    - xhochy

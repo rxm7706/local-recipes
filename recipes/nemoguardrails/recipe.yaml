@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.23.0"
+
+package:
+  name: nemoguardrails
+  version: ${{ version }}
+
+source:
+  url: https://github.com/NVIDIA-NeMo/Guardrails/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 789239f1f4d17be1cc5ddb55bf6d11d06fac3c6ee85e352eb55ac01702e1e947
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - aiohttp >=3.10.11
+    - aiohttp-retry >=2.9.0
+    - dataclasses-json <0.7.0,>=0.6.7
+    - fastembed >=0.2.2
+    - httpx >=0.24.1
+    - jinja2 >=3.1.6
+    - jsonschema <5.0.0,>=4.26.0
+    - lark >=1.1.7
+    - nest-asyncio >=1.5.6
+    - onnxruntime >=1.17.0
+    - pandas <3,>=1.4.0
+    - prompt-toolkit >=3.0
+    - protobuf >=5.29.5
+    - pydantic <3.0,>=2.5
+    - pyyaml >=6.0
+    - rich >=13.5.2
+    - simpleeval >=0.9.13
+    - typer >=0.8
+
+tests:
+  - python:
+      imports:
+        - qa
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/NVIDIA-NeMo/Guardrails
+  license: LICENSE.md
+  license_file: LICENSE
+  summary: NeMo Guardrails is an open-source toolkit for easily adding programmable guardrails to LLM-based conversational systems.
+  description: |
+    NeMo Guardrails is an open-source toolkit for easily adding programmable guardrails to LLM-based conversational systems.
+  documentation: https://docs.nvidia.com/nemo/guardrails/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nemoguardrails
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: nemoguardrails
+  cfe-purls:
+    - pkg:conda/nemoguardrails@${{ version }}?channel=conda-forge
+    - pkg:pypi/nemoguardrails@${{ version }}
+  cfe-upstream-repo: https://github.com/NVIDIA-NeMo/Guardrails
+  cfe-upstream-homepage: https://github.com/NVIDIA-NeMo/Guardrails
+  cfe-import-names: [qa]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:52:25Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:52:25Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

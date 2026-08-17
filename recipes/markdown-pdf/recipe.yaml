@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.13.2"
+
+package:
+  name: markdown-pdf
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/markdown-pdf/markdown_pdf-${{ version }}.tar.gz
+  sha256: c9f7d8119bf1ebcab6c5276d46ca1ff24477fc61b6a37fe7f0950130d50efce3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=42
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - pymupdf ==1.24.11
+    - markdown-it-py ==3.0.0
+    - requests ==2.32.3
+    - plantuml ==0.3.0
+    - six ==1.17.0
+
+tests:
+  - python:
+      imports:
+        - markdown_pdf
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/vb64/markdown-pdf
+  license: AGPL-3.0-only
+  license_file: LICENSE
+  summary: Markdown to pdf renderer
+  description: |
+    Markdown to pdf renderer
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: markdown-pdf
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: markdown-pdf
+  cfe-purls:
+    - pkg:conda/markdown-pdf@${{ version }}?channel=conda-forge
+    - pkg:pypi/markdown-pdf@${{ version }}
+  cfe-upstream-repo: https://github.com/vb64/markdown-pdf
+  cfe-upstream-homepage: https://github.com/vb64/markdown-pdf
+  cfe-import-names: [markdown_pdf]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:27:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:27:04Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

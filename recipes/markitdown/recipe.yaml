@@ -3,7 +3,8 @@ schema_version: 1
 
 context:
   name: markitdown
-  version: "0.1.6"
+  version: "0.1.7"
+  python_min: '3.10'
   python_max: '4.0'
 
 package:
@@ -12,7 +13,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/markitdown-${{ version }}.tar.gz
-  sha256: e5bdbaffd971b29598c7c39ef0e9afce2f08c0751fbfa4e4257678ebaf8cfc7e
+  sha256: 4d1f3c69cd43b82288fdc3653686d759dcf355ee7c681aa6a855aed98a1e4f44
 
 build:
   number: 1
@@ -38,9 +39,12 @@ requirements:
     - magika >=0.6.1,!=0.6.3,<0.7.0
     - charset-normalizer
     - defusedxml
+    # Upstream's converters are all shipped, but each one imports its backend lazily
+    # and raises MissingDependencyException when it is absent, so the optional
+    # dependencies have to be installed for pdf/docx/xlsx/... to work at all. This is
+    # the [all] extra of
     # https://github.com/microsoft/markitdown/blob/main/packages/markitdown/pyproject.toml#L35
-  run_constraints:
-    #- onnxruntime <=1.20.1  # https://github.com/microsoft/markitdown/pull/1551/changes
+    # https://github.com/conda-forge/markitdown-feedstock/issues/17
     - python-pptx
     - mammoth >=1.11.0
     - pandas
@@ -50,12 +54,19 @@ requirements:
     - pdfminer.six >=20251230
     - pdfplumber >=0.11.9
     - olefile
-    - pydub
-    - SpeechRecognition
     - youtube-transcript-api >=1.0.0
     - azure-ai-documentintelligence
-    #- azure-ai-contentunderstanding >=1.2.0b1   # TBD conda-forge
     - azure-identity
+  run_constraints:
+    # The rest of the [all] extra, kept opt-in because installing it would restrict
+    # markitdown itself:
+    #  - pydub + SpeechRecognition ([audio-transcription]): conda-forge's
+    #    speechrecognition is capped at python <3.13 and pydub imports the stdlib
+    #    audioop module that 3.13 removed.
+    #  - azure-ai-contentunderstanding ([az-content-understanding]) is not constrained
+    #    at all: upstream needs >=1.2.0b1 for to_llm_input(), conda-forge only has 1.1.0.
+    - pydub
+    - SpeechRecognition
 
 tests:
   - python:
@@ -71,6 +82,12 @@ tests:
         - python ${{ python_min }}.*
     script:
       - markitdown --help
+      # the converters swallow the backend ImportError until conversion time, so check
+      # the backends themselves. pdfminer.high_level in particular is what failed in
+      # issue #17, when pdfminer (dead) shadows pdfminer.six.
+      - python -c "import pdfminer.high_level, pdfplumber"
+      - python -c "import pptx, mammoth, lxml, pandas, openpyxl, xlrd, olefile, youtube_transcript_api"
+      - python -c "import azure.ai.documentintelligence, azure.identity"
 
 about:
   summary: Utility tool for converting various files to Markdown

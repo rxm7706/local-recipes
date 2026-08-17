@@ -1,0 +1,408 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.324.0"
+  python_check_max: "3.14"
+
+recipe:
+  name: strawberry-graphql
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/strawberry-graphql/strawberry_graphql-${{ version }}.tar.gz
+  # the SHA256 gets updated by the bot
+  sha256: 4eb6decf0c33524374f24e07ff6d1915da26655a49fa6f656544c293404e2d35
+
+build:
+  # the build number gets reset by the bot
+  number: 0
+
+outputs:
+  - package:
+      name: strawberry-graphql
+    build:
+      noarch: python
+      script:
+        - ${{ PYTHON }} ${{ RECIPE_DIR }}/test_recipe.py
+        - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+      python:
+        entry_points:
+          - strawberry = strawberry.cli:run
+    requirements:
+      host:
+        - jinja2
+        - pip
+        - python ${{ python_min }}.*
+        - tomli
+        - uv-build >=0.11,<0.12
+      run:
+        - python >=${{ python_min }}
+        - cross-web >=0.6.0
+        - graphql-core >=3.2.0,<3.4.0
+        - packaging >=23
+        - python-dateutil >=2.7
+        - typing_extensions >=4.14.0
+        # fix after https://github.com/conda-forge/astunparse-feedstock/pull/15
+        - wheel
+    tests:
+      - python:
+          imports: strawberry
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+
+  - package:
+      name: strawberry-graphql-with-aiohttp
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("strawberry-graphql", exact=True) }}
+        - aiohttp >=3.7.4.post0,<4
+    tests:
+      - python:
+          imports:
+            - strawberry
+            - strawberry.aiohttp
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: A library for creating GraphQL APIs (with [aiohttp])
+
+  - package:
+      name: strawberry-graphql-with-asgi
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("strawberry-graphql", exact=True) }}
+        - python-multipart >=0.0.7
+        - starlette >=0.18.0
+    tests:
+      - python:
+          imports:
+            - strawberry
+            - strawberry.asgi
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: A library for creating GraphQL APIs (with [asgi])
+
+  - package:
+      name: strawberry-graphql-with-debug
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("strawberry-graphql", exact=True) }}
+        - libcst
+        - rich >=12.0.0
+    tests:
+      - python:
+          imports:
+            - strawberry
+            # TODO: import test for debug
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: A library for creating GraphQL APIs (with [debug])
+
+  - package:
+      name: strawberry-graphql-with-django
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("strawberry-graphql", exact=True) }}
+        - asgiref >=3.2
+        - django >=5.2
+    tests:
+      - python:
+          imports:
+            - strawberry
+            - strawberry.django
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: A library for creating GraphQL APIs (with [django])
+
+  - package:
+      name: strawberry-graphql-with-channels
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("strawberry-graphql", exact=True) }}
+        - asgiref >=3.2
+        - channels >=4.0.0
+        - django >=5.2
+    tests:
+      - python:
+          imports:
+            - strawberry
+            - strawberry.channels
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: A library for creating GraphQL APIs (with [channels])
+
+  - package:
+      name: strawberry-graphql-with-flask
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("strawberry-graphql", exact=True) }}
+        - flask >=1.1
+    tests:
+      - python:
+          imports:
+            - strawberry
+            - strawberry.flask
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: A library for creating GraphQL APIs (with [flask])
+
+  - package:
+      name: strawberry-graphql-with-quart
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("strawberry-graphql", exact=True) }}
+        - quart >=0.19.3
+    tests:
+      - python:
+          imports:
+            - strawberry
+            - strawberry.quart.views
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: A library for creating GraphQL APIs (with [quart])
+
+  - package:
+      name: strawberry-graphql-with-apollo-federation
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("strawberry-graphql", exact=True) }}
+        - protobuf >=3.20
+    tests:
+      - python:
+          imports:
+            - strawberry
+            - strawberry.extensions.tracing.apollo_federation
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: A library for creating GraphQL APIs (with [apollo-federation])
+
+  - package:
+      name: strawberry-graphql-with-opentelemetry
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("strawberry-graphql", exact=True) }}
+        - opentelemetry-api <2
+        - opentelemetry-sdk <2
+    tests:
+      - python:
+          imports:
+            - strawberry
+            - strawberry.extensions.tracing
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: A library for creating GraphQL APIs (with [opentelemetry])
+
+  - package:
+      name: strawberry-graphql-with-pydantic
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("strawberry-graphql", exact=True) }}
+        - pydantic >1.6.1
+    tests:
+      - python:
+          imports:
+            - strawberry
+            - strawberry.experimental.pydantic
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: A library for creating GraphQL APIs (with [pydantic])
+
+  - package:
+      name: strawberry-graphql-with-sanic
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("strawberry-graphql", exact=True) }}
+        - sanic >=20.12.2
+    tests:
+      - python:
+          imports:
+            - strawberry
+            - strawberry.sanic
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: A library for creating GraphQL APIs (with [sanic])
+
+  - package:
+      name: strawberry-graphql-with-fastapi
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("strawberry-graphql", exact=True) }}
+        - fastapi >=0.65.2
+        - python-multipart >=0.0.7
+    tests:
+      - python:
+          imports:
+            - strawberry
+            - strawberry.fastapi
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: A library for creating GraphQL APIs (with [fastapi])
+
+  - package:
+      name: strawberry-graphql-with-chalice
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("strawberry-graphql", exact=True) }}
+        - chalice >=1.22
+    tests:
+      - python:
+          imports:
+            - strawberry
+            - strawberry.chalice
+          pip_check: false
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: A library for creating GraphQL APIs (with [chalice])
+
+  - package:
+      name: strawberry-graphql-with-cli
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("strawberry-graphql", exact=True) }}
+        - libcst
+        - pygments >=2.3
+        - python-multipart >=0.0.7
+        - rich >=12.0.0
+        - starlette >=0.18.0
+        - typer >=0.12.4
+        - uvicorn >=0.11.6
+        - websockets >=15.0.1,<17
+    tests:
+      - python:
+          imports:
+            - strawberry
+            - strawberry.cli
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+      - requirements:
+          run:
+            - python ${{ python_min }}.*
+        script:
+          - strawberry --help
+    about:
+      summary: A library for creating GraphQL APIs (with [cli])
+
+  - package:
+      name: strawberry-graphql-with-litestar
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("strawberry-graphql", exact=True) }}
+        - litestar >=2
+    tests:
+      - python:
+          imports:
+            - strawberry
+            - strawberry.litestar
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: A library for creating GraphQL APIs (with [litestar])
+
+  - package:
+      name: strawberry-graphql-with-pyinstrument
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("strawberry-graphql", exact=True) }}
+        - pyinstrument >=4.0.0
+    tests:
+      - python:
+          imports:
+            - strawberry
+            - strawberry.extensions.pyinstrument
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: A library for creating GraphQL APIs (with [pyinstrument])
+
+about:
+  homepage: https://pypi.org/project/strawberry-graphql
+  summary: A library for creating GraphQL APIs
+  license: MIT
+  license_file: LICENSE
+  repository: https://github.com/strawberry-graphql/strawberry
+  documentation: https://strawberry.rocks/docs
+
+extra:
+  feedstock-name: strawberry-graphql
+  recipe-maintainers:
+    - cshaley
+    - thewchan
+    - bollwyvl

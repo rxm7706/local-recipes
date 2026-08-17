@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.14"
+
+package:
+  name: pygeos
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/p/pygeos/pygeos-${{ version }}.tar.gz
+  sha256: 30fbc17f64844200b85133b885fcfb65541b8779531f6ef4f8fe467d3fba7623
+
+build:
+  number: 1
+  skip: match(python, ">=2,<3")
+  script:
+    - if: win
+      then: set GEOS_INCLUDE_PATH=%LIBRARY_INC%
+    - if: win
+      then: set GEOS_LIBRARY_PATH=%LIBRARY_LIB%
+    - ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - if: build_platform != target_platform
+      then: numpy
+    - ${{ compiler('c') }}
+  host:
+    - python
+    - pip
+    - cython
+    - numpy
+    - geos
+  run:
+    - python
+    - ${{ pin_compatible('numpy') }}
+    - geos
+
+tests:
+  - requirements:
+      run:
+        - pytest
+    script:
+      - pytest --pyargs pygeos.tests -k "not offset_curve"
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: GEOS wrapped in numpy ufuncs
+  description: |
+    PyGEOS is a C/Python library with vectorized geometry functions.
+    The geometry operations are done in the open-source geometry library GEOS.
+    PyGEOS wraps these operations in NumPy ufuncs providing a performance
+    improvement when operating on arrays of geometries.
+  homepage: https://github.com/pygeos/pygeos
+  repository: https://github.com/pygeos/pygeos
+  documentation: https://pygeos.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - caspervdw
+    - jorisvandenbossche

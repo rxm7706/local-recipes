@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.1.0"
+
+package:
+  name: structlog
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/structlog/structlog-${{ version }}.tar.gz
+  sha256: f63a716cbd1b1291cf7661de7794b455acfa4c43c5bcf1630e6ad5ddc1adb3b7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+    - hatch-vcs
+    - hatch-fancy-pypi-readme >=22.8.0
+  run:
+    - python >=${{ python_min }}
+    - typing-extensions
+
+tests:
+  - python:
+      imports:
+        - structlog
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  license: Apache-2.0 OR MIT
+  summary: Structured Logging for Python
+  license_file:
+    - LICENSE-MIT
+    - LICENSE-APACHE
+  homepage: http://www.structlog.org
+  repository: https://github.com/hynek/structlog
+
+extra:
+  recipe-maintainers:
+    - vamega
+    - aldanor
+    - synapticarbors

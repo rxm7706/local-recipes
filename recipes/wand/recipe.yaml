@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.6.11"
+
+package:
+  name: wand
+  version: ${{ version }}
+
+source:
+  url: https://github.com/emcconville/wand/releases/download/${{ version }}/Wand-${{ version }}.tar.gz
+  sha256: b661700da9f8f1e931e52726e4fc643a565b9514f5883d41b773e3c37c9fa995
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vvv
+
+requirements:
+  host:
+    - python >=3.3|>=2.7
+    - pip
+  run:
+    - python >=3.3|>=2.7
+    - imagemagick
+
+tests:
+  - python:
+      imports:
+        - wand.image
+      pip_check: false
+
+about:
+  license: MIT
+  summary: Wand is a ctypes-based simple ImageMagick binding for Python, supporting 2.7, 3.6+, and PyPy
+  license_file: LICENSE
+  homepage: https://github.com/emcconville/wand
+
+extra:
+  recipe-maintainers:
+    - kellend-git
+    - r78v10a07

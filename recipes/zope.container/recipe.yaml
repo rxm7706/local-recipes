@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "7.2"
+
+package:
+  name: zope.container
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/z/zope.container/zope_container-${{ version }}.tar.gz
+  sha256: 4de0311073ed50d04b08862af6083ba1f99d09cf280043c136ca367b3d066aaf
+
+build:
+  number: 0
+  skip: match(python, "3.13.*") or match(python, "3.14.*")
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - persistent
+    - zope.proxy
+  run:
+    - python
+    - btrees
+    - persistent >=4.1.0
+    - zope.cachedescriptors
+    - zope.component
+    - zope.deferredimport
+    - zope.dottedname
+    - zope.event
+    - zope.filerepresentation
+    - zope.i18nmessageid
+    - zope.interface
+    - zope.lifecycleevent >=3.5.2
+    - zope.location >=3.5.4
+    - zope.proxy >=4.1.5
+    - zope.publisher
+    - zope.schema
+    - zope.security
+    - zope.size
+    - zope.traversing >=4.0.0a1
+    - setuptools
+
+tests:
+  - python:
+      imports:
+        - zope.container
+      pip_check: true
+
+about:
+  homepage: https://github.com/zopefoundation/zope.container
+  license: ZPL-2.1
+  license_file: LICENSE.txt
+  summary: Zope Container
+  description: |
+    Zope Container
+  documentation: https://zopecontainer.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: zope.container
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: zope.container
+  cfe-purls:
+    - pkg:conda/zope.container@${{ version }}?channel=conda-forge
+    - pkg:pypi/zope.container@${{ version }}
+  cfe-upstream-repo: https://github.com/zopefoundation/zope.container
+  cfe-upstream-homepage: https://github.com/zopefoundation/zope.container
+  cfe-import-names: [zope.container]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: false
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:34:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:34:29Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4 compiled. skip py3.13+ because CF persistent has no cp313 build.
+####

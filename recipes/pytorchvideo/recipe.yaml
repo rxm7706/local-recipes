@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytorchvideo
+  version: "0.1.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytorchvideo-${{ version }}.tar.gz
+  sha256: 69a3424c7feb70422da59d0cec17b56657984bd0ba8d5d78cad08a328cf6341b
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - fvcore
+    - av
+    - parameterized
+    - iopath
+    - networkx
+
+tests:
+  - python:
+      imports:
+        - pytorchvideo
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A video understanding deep learning library.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/facebookresearch/pytorchvideo
+
+extra:
+  recipe-maintainers:
+    - Tobias-Fischer

@@ -2,7 +2,8 @@
 schema_version: 1
 
 context:
-  version: "7.3.2"
+  version: "7.4.2"
+  python_check_max: "3.14"
 
 recipe:
   name: robotframework
@@ -10,10 +11,10 @@ recipe:
 
 source:
   - url: https://pypi.org/packages/source/r/robotframework/robotframework-${{ version }}.tar.gz
-    sha256: 3bb3e299831ecb1664f3d5082f6ff9f08ba82d61a745bef2227328ef3049e93a
+    sha256: 1c934e7f43600de407860cd2bd2fdc41adad4a4a785d8b46b1ed485fdc0f6c9f
     target_directory: dist
   - url: https://github.com/robotframework/robotframework/archive/v${{ version }}.tar.gz
-    sha256: 82e8bc68dea843a82e710c9b864535811e62bf6e03d3258d8cbb8c78eac30711
+    sha256: 22b272c05ec3ac10e22de1a0f5a73c8bcbc5908e13df75590f509321ea1fe9e0
     target_directory: src
 
 build:
@@ -34,8 +35,8 @@ outputs:
           - libdoc = robot.libdoc:libdoc_cli
     requirements:
       host:
-        - python ${{ python_min }}.*
         - pip
+        - python ${{ python_min }}.*
         - setuptools
       run:
         - python >=${{ python_min }}
@@ -44,7 +45,7 @@ outputs:
           pip_check: true
           python_version:
             - ${{ python_min }}.*
-            - 3.13.*
+            - ${{ python_check_max }}.*
           imports:
             - robot
             - robot.api
@@ -91,16 +92,17 @@ outputs:
             - src/README.rst
         requirements:
           run:
+            - coverage
             - docutils
             - jsonschema
             - lxml
             - pillow
-            - pip
             - pygments
             - pyyaml
         script:
-          - pip check
-          - cd src/utest && python run.py
+          - cd src/utest
+          - coverage run --source=robot --branch run.py
+          - coverage report --show-missing --skip-covered --fail-under=71
 
 about:
   license: Apache-2.0
@@ -110,13 +112,12 @@ about:
   summary: Generic automation framework for acceptance testing and robotic process automation (RPA)
   description: >
     Robot Framework is a generic open source automation framework for acceptance testing, acceptance test driven development (ATDD), and robotic process automation (RPA). It has simple plain text syntax and it can be extended easily with libraries implemented using Python or Java.
-  homepage: https://robotframework.org
+  homepage: https://pypi.org/project/robotframework
   repository: https://github.com/robotframework/robotframework
-  documentation: https://robotframework.org/robotframework/${{ version }}/RobotFrameworkUserGuide.html
+  documentation: https://robotframework.org/robotframework
 
 extra:
   feedstock-name: robotframework
   recipe-maintainers:
     - abloemert
     - bollwyvl
-    - rxm7706

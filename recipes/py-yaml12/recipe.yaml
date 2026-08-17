@@ -13,20 +13,15 @@ source:
   sha256: e7b6140fad56d5528e6d51c7b8ff79bdb27631b73a9a7c1bc4b55fda1bddbaef
 
 build:
-  number: 0
+  number: 1
   script:
     env:
-      # Per conda-forge.org/docs/maintainer/example_recipes/rust/ — recommended
-      # for any Rust build. maturin invokes cargo build and inherits these,
-      # producing a stripped + LTO-optimized cdylib.
       CARGO_PROFILE_RELEASE_STRIP: symbols
       CARGO_PROFILE_RELEASE_LTO: fat
     content:
       - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
       - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
-    # Cargo.toml declares pyo3 abi3 feature — wheel is CPython-stable-ABI
-    # and works across Python versions.
     version_independent: true
 
 requirements:
@@ -50,9 +45,6 @@ requirements:
 
 tests:
   - python:
-      # Upstream module name is `yaml12` (see Cargo.toml [lib] name + PyO3
-      # #[pymodule] yaml12 in src/lib.rs). Distribution name `py-yaml12`
-      # would map naively to `py_yaml12` but that import does not exist.
       imports:
         - yaml12
       pip_check: true

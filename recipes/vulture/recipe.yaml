@@ -23,12 +23,12 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
+    - pip
     - setuptools >=68.0
     - wheel
-    - pip
   run:
-    - python >=${{ python_min }},<4
+    - python >=${{ python_min }}
     - tomli >=1.1.0
 
 tests:
@@ -37,19 +37,19 @@ tests:
         - dev
         - vulture
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version: ${{ python_min }}
   - requirements:
       run:
         - pip
-        - python ${{ python_min }}.*
+        - python ${{ python_min }}
     script:
       - vulture --help
 
 about:
-  homepage: https://github.com/jendrikseipp/vulture
   summary: Find dead code
   license: MIT
   license_file: LICENSE.txt
+  homepage: https://github.com/jendrikseipp/vulture
 
 extra:
   recipe-maintainers:

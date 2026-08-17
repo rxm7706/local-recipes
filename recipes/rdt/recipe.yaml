@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: rdt
+  version: "1.22.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/rdt-${{ version }}.tar.gz
+  sha256: 85f29aa98df8fcac3d5ec89d6b66d758b4e8994fa80579579cda63835fbeff2f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - pip
+    - pytest-runner >=2.11.1
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - Faker >=17,!=37.11.0
+    - numpy >=1.21.0
+    - pandas >=1.4.0,<3
+    - python >=${{ python_min }},<3.15
+    - python-dateutil >=2.9
+    - scipy >=1.7.3,<2
+    - scikit-learn >=1.0.2,<2
+
+tests:
+  - python:
+      imports:
+        - rdt
+        - rdt.transformers
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Reversible Data Transforms
+  license: BUSL-1.1
+  license_file: LICENSE
+  homepage: https://github.com/sdv-dev/RDT
+
+extra:
+  recipe-maintainers:
+    - conda-forge/sdv

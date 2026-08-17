@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: albumentations
+  version: "2.0.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 4da95e658e490de3c34af8fcdffed09e36aa8a4edd06ca9f9e7e3ea0b0b16856
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - typing_extensions >=4.9.0
+    - python >=${{ python_min }}
+    - numpy >=1.24.4
+    - scipy >=1.10.0
+    - pyyaml
+    - opencv >=4.9.0.80
+    - albucore ==0.0.24
+    - pydantic >=2.9.2
+    - typing-extensions >=4.9.0
+    - eval-type-backport
+
+tests:
+  - python:
+      imports:
+        - albumentations
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Fast image augmentation library and easy to use wrapper around other libraries
+  homepage: https://github.com/albu/albumentations
+  repository: https://github.com/albu/albumentations
+  documentation: https://albumentations.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - mukhery
+    - mdraw
+    - albu
+    - creafz
+    - ternaus
+    - BloodAxe

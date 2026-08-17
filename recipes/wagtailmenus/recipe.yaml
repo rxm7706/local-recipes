@@ -2,10 +2,11 @@
 schema_version: 1
 
 context:
+  name: wagtailmenus
   version: "4.0.7"
 
 package:
-  name: wagtailmenus
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
@@ -19,14 +20,14 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }}
     - requests
     - django
     - django-modelcluster
+    - python >=${{ python_min }}
     - wagtail >=6.3
     - django-cogwheels ==0.3
 
@@ -35,20 +36,13 @@ tests:
       imports:
         - wagtailmenus
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: An app to help you manage menus in your Wagtail projects more consistently.
   license: MIT
   license_file: LICENSE.txt
-  homepage: https://github.com/jazzband/wagtailmenus
-  repository: https://github.com/jazzband/wagtailmenus
-  description: |
-    wagtailmenus is an extension for the Wagtail CMS that helps you define,
-    manage, and render menus (main menus and flat menus) in your Wagtail
-    projects more consistently and flexibly.
+  homepage: https://github.com/jazzband/wagtailmenus/tree/stable/3.1.x
 
 extra:
   recipe-maintainers:

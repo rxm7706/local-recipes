@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pbs-installer
+  version: "2026.8.14"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/pbs_installer-${{ version }}.tar.gz
+  sha256: e611fe862a3e3b72e6bf17f92d4bb78868e2e203fa7d7579b8d4bfc8d89be7a8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - pbs-install = pbs_installer.__main__:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pdm-backend
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - zstandard
+    - httpx
+
+tests:
+  - python:
+      imports:
+        - pbs_installer
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pbs-install --help
+
+about:
+  summary: Installer for Python Build Standalone
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/frostming/pbs-installer
+  documentation: https://pbs-installer.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - daylinmorgan

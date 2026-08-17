@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: flash
+  version: "1.2.11"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://sourceforge.net/projects/flashpage/files/FLASH-${{ version }}.tar.gz
+  sha256: 685ca6f7fedda07434d8ee03c536f4763385671c4509c5bb48beb3055fd236ac
+
+build:
+  number: 2
+
+requirements:
+  build:
+    - make
+    - if: unix
+      then: ${{ compiler('c') }}
+    - if: unix
+      then: ${{ stdlib('c') }}
+    - if: win
+      then: ${{ compiler('m2w64_c') }}
+    - if: win
+      then: ${{ stdlib('m2w64_c') }}
+  host:
+    - zlib
+  run:
+    - zlib
+
+tests:
+  - script:
+      - flash -v
+
+about:
+  license: GPL-3.0-or-later
+  license_file: COPYING
+  summary: Merge paired sequencing reads into single longer sequences
+  description: |
+    FLASH (Fast Length Adjustment of SHort reads) is a very fast
+    and accurate software tool to merge paired-end reads from
+    next-generation sequencing experiments. FLASH is designed to
+    merge pairs of reads when the original DNA fragments are
+    shorter than twice the length of reads. The resulting longer
+    reads can significantly improve genome assemblies. They can
+    also improve transcriptome assembly when FLASH is used to
+    merge RNA-seq data.
+  homepage: https://ccb.jhu.edu/software/FLASH/
+  repository: http://sourceforge.net/projects/flashpage/files
+  documentation: https://ccb.jhu.edu/software/FLASH/FLASH-reprint.pdf
+
+extra:
+  recipe-maintainers:
+    # GitHub IDs for maintainers of the recipe.
+    - peterjc

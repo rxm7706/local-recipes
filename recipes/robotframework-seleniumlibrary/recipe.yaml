@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.9.0"
+  python_check_max: "3.14"
+
+package:
+  name: robotframework-seleniumlibrary
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/robotframework-seleniumlibrary/robotframework_seleniumlibrary-${{ version }}.tar.gz
+  sha256: 6ff7df0dd9a9ea75f78dd2c7fa2dac0098e96e64f507e69d3bc21f41056e5d56
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  python:
+    entry_points:
+      - selib = SeleniumLibrary.entry.__main__:cli
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - click >=8.0
+    - python >=${{ python_min }}
+    - robotframework >=4.1.3
+    - robotframework-pythonlibcore >=4.4.1
+    - selenium >=4.25.0
+
+tests:
+  - python:
+      imports: SeleniumLibrary
+      pip_check: true
+      python_version: 
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - selib --version
+      - selib --help
+
+about:
+  license: Apache-2.0
+  license_file:
+    - LICENSE.txt
+    - COPYRIGHT.txt
+  summary: Web testing library for Robot Framework
+  homepage: https://pypi.org/project/robotframework-seleniumlibrary
+  repository: https://github.com/robotframework/SeleniumLibrary
+  documentation: https://robotframework.org/SeleniumLibrary/SeleniumLibrary.html
+  description: |
+    SeleniumLibrary is a web testing library for Robot Framework that utilizes
+    the Selenium tool internally. The project is hosted on GitHub and downloads
+    can be found from PyPI.
+
+    SeleniumLibrary works with Selenium 3 and 4. It supports Python 3.6 or newer.
+    In addition to the normal Python interpreter, it works also with PyPy.
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

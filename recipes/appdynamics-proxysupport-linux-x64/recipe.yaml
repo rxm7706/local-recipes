@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: appdynamics-proxysupport-linux-x64
+  version: "11.72.3"
+  python_min: "3.7"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py2.py3/a/appdynamics-proxysupport-linux-x64/appdynamics_proxysupport_linux_x64-${{ version }}-py2.py3-none-any.whl
+  sha256: 0689aaa801c9d675aa70500fbe002fbb600ef23671667846a0419abdae3d9740
+
+build:
+  number: 0
+  string: py2.py3
+  noarch: python
+  script:
+    - ${{ PYTHON }} pip install --find-links . --no-index --ignore-installed --no-deps appdynamics-proxysupport-linux-x64
+  dynamic_linking:
+    missing_dso_allowlist:
+      - "*/libjvm.so"
+  <conda_recipe_manager.types.SentinelType object at 0x72b45864dbe0>:  #ignore_run_exports:
+    #- openjdk
+    #- python >={{ python_min }},<4.0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - cmake
+    - ninja
+  host:
+    - python 3.7.*
+    - pip
+    - setuptools >=38.0
+  #- openjdk =8
+  run:
+    - python >=${{ python_min }},<4.0
+    #- openjdk
+  ignore_run_exports:
+    from_package:
+      - ${{ stdlib('c') }}
+      - ${{ compiler('c') }}
+
+tests:
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pip check
+
+about:
+  summary: Proxysupport for AppDynamics Python agent
+  license: Proprietary
+  license_file:
+    - LICENSE
+  homepage: https://www.appdynamics.com/python
+  documentation: https://pypi.org/project/appdynamics-proxysupport-linux-x64/
+
+extra:
+  copy_test_source_files: true
+  final: true

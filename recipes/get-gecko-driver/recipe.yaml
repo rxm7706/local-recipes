@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.5.3"
+
+package:
+  name: get-gecko-driver
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/get-gecko-driver/get_gecko_driver-${{ version }}.tar.gz
+  sha256: 970639df7e87153ab9015f5ca84f51f3c2c3393cdea7e7226365b9e460a75b6d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - beautifulsoup4 ==4.13.5
+    - requests ==2.33.0
+    - urllib3 ==2.7.0
+    - typer ==0.17.4
+
+tests:
+  - python:
+      imports:
+        - get_gecko_driver
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/zaironjacobs/get-gecko-driver
+  license: MIT
+  license_file: LICENSE
+  summary: A tool to download and install GeckoDriver.
+  description: |
+    A tool to download and install GeckoDriver.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: get-gecko-driver
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: get-gecko-driver
+  cfe-purls:
+    - pkg:conda/get-gecko-driver@${{ version }}?channel=conda-forge
+    - pkg:pypi/get-gecko-driver@${{ version }}
+  cfe-upstream-repo: https://github.com/zaironjacobs/get-gecko-driver
+  cfe-upstream-homepage: https://github.com/zaironjacobs/get-gecko-driver
+  cfe-import-names: [get_gecko_driver]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:43:52Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:43:52Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4/P5 Create-recipe local-only. get-gecko-driver.
+####

@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ipyfilechooser
+  version: "0.6.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 41df9e4395a924f8e1b78e2804dbe5066dc3fdc233fb07fecfcdc2a0c9a7d8d3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - ipywidgets
+    - python >=3.6
+
+tests:
+  - python:
+      imports:
+        - ipyfilechooser
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Python file chooser widget for use in Jupyter/IPython in conjunction with ipywidgets
+  homepage: https://github.com/crahan/ipyfilechooser
+  repository: https://github.com/crahan/ipyfilechooser
+
+extra:
+  recipe-maintainers:
+    - crahan

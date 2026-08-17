@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: opentelemetry-instrumentation-psycopg2
-  version: "0.62b0"
+  version: 0.64b0
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_psycopg2-${{ version }}.tar.gz
-  sha256: c5ed4d271ccaa71b1aecd82c892090715d3bb8d8c7d7a4ae77dc2b685f72fcc6
+  sha256: 57df449718297b93e7bb57c76d3439c475eb5a5451600fcd6a9024d74822d972
 
 build:
   number: 0
@@ -20,15 +20,14 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - hatchling
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - opentelemetry-api >=1.12,<2.dev0
     - opentelemetry-instrumentation ==${{ version }}
     - opentelemetry-instrumentation-dbapi ==${{ version }}
-    - psycopg2-binary >= 2.7.3.1
 
 tests:
   - python:
@@ -37,24 +36,16 @@ tests:
         - opentelemetry.instrumentation
         - opentelemetry.instrumentation.psycopg2
       pip_check: true
-      python_version:
-      - ${{ python_min }}.*
-      - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: OpenTelemetry psycopg2 instrumentation
-  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-psycopg2
-  description: |
-       OpenTelemetry psycopg2 instrumentation.
-  repository: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-psycopg2
-  documentation: https://opentelemetry-python-contrib.readthedocs.io/en/latest/instrumentation/psycopg2/psycopg2.html
   license: Apache-2.0
   license_file: LICENSE
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-psycopg2
 
 extra:
   recipe-maintainers:
-    - rxm7706
     - conda-forge/opentelemetry-api
-    - conda-forge/opentelemetry-sdk
-    - conda-forge/opentelemetry-dbapi
     - mariusvniekerk
+    - rxm7706

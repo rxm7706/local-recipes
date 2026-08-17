@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "1.10.0"
+
+package:
+  name: htmldate
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/h/htmldate/htmldate-${{ version }}.tar.gz
+    sha256: a38df10772ab5d7dbb11896e3f6a852a8491fb1b0965465bc174e23fc2baae58
+
+build:
+  noarch: python
+  number: 1
+  script: ${{ PYTHON }} -m pip install .
+  python:
+    entry_points:
+      - htmldate  =  htmldate.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - charset-normalizer >=3.4.0
+    - dateparser >=1.1.2
+    - lxml >=5.3.0
+    - python-dateutil >=2.9.0.post0
+    - urllib3 <3,>=1.26
+
+tests:
+  - python:
+      imports:
+        - htmldate
+      python_version: ${{ python_min }}.*
+      pip_check: true
+  - script:
+      - htmldate --help
+
+about:
+  homepage: https://github.com/adbar/htmldate
+  summary: Fast and robust extraction of original and updated publication dates from URLs and web pages.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - moritzwilksch

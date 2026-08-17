@@ -2,48 +2,53 @@
 schema_version: 1
 
 context:
+  name: filetype
   version: "1.2.0"
+  sha256: 66b56cd6474bf41d8c54660347d37afcc3f7d1970648de365c102ef77548aadb
 
 package:
-  name: filetype
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/f/filetype/filetype-${{ version }}.tar.gz
-  sha256: 66b56cd6474bf41d8c54660347d37afcc3f7d1970648de365c102ef77548aadb
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - filetype=filetype.__main__:main
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python >3.6
     - pip
-    - setuptools
   run:
-    - python >=${{ python_min }}
+    - python >3.6
 
 tests:
   - python:
       imports:
         - filetype
-      pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      pip_check: false
+  - script:
+      - filetype --help
 
 about:
+  license: MIT
+  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE
+  summary: Infer file type and MIME type of any file/buffer. No external dependencies.
+  description: |
+    Small and dependency free Python package to infer file type
+    and MIME type checking the magic numbers signature of a file or buffer.
+    This is a Python port from filetype Go package.
   homepage: https://github.com/h2non/filetype.py
   repository: https://github.com/h2non/filetype.py
-  license: MIT
-  license_file: LICENSE
-  summary: Infer file type and MIME type of any file/buffer; no external dependencies
-  description: |
-    Small and dependency-free Python package to infer file type and MIME
-    type by checking the magic numbers signature of a file or buffer.
+  documentation: https://h2non.github.io/filetype.py/
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - druvus

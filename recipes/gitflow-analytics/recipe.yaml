@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
-  version: "4.0.0"
+  name: gitflow-analytics
+  version: 4.0.0
 
 package:
-  name: gitflow-analytics
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/g/gitflow-analytics/gitflow_analytics-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/gitflow_analytics-${{ version }}.tar.gz
   sha256: 003b0630511f0efa2caa80f26ab9d90adb954788969288213885b037f438228d
 
 build:
@@ -28,7 +29,7 @@ requirements:
     - wheel
     - pip
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
     - click >=8.1
     - gitpython >=3.1
     - pygithub >=2.0
@@ -48,7 +49,6 @@ requirements:
     - toml
     - urllib3
     - httpx
-
 tests:
   - python:
       imports:
@@ -56,7 +56,6 @@ tests:
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - "*"
   - requirements:
       run:
         - pip

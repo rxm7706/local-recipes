@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.7"
+
+package:
+  name: pyats.tcl
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/cp310/p/pyats.tcl/pyats_tcl-26.7-cp310-cp310-macosx_11_0_universal2.whl
+  sha256: 7a181810064d7bf30f81c89d6333360dfbcf099a4b23ba01b525f7b273913403
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pyats.datastructures <26.8.0,>=26.7.0
+    - pyats.log <26.8.0,>=26.7.0
+
+tests:
+  - python:
+      imports:
+        - pyats.tcl
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://developer.cisco.com/pyats/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: "pyATS Tcl: Tcl Integration and Objects"
+  description: |
+    pyATS Tcl: Tcl Integration and Objects
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyats.tcl
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyats.tcl
+  cfe-purls:
+    - pkg:conda/pyats.tcl@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyats.tcl@${{ version }}
+  cfe-upstream-repo: https://developer.cisco.com/pyats/
+  cfe-upstream-homepage: https://developer.cisco.com/pyats/
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:41:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:41:32Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

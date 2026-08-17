@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: djangocms-text-ckeditor
   version: "5.1.7"
 
 package:
-  name: djangocms-text-ckeditor
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/djangocms-text-ckeditor/djangocms_text_ckeditor-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: c729764cc5f3c856911b204392ef1fbbef831341bbd9c62ff00b2d3f07159c83
 
 build:
@@ -19,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
@@ -34,9 +35,7 @@ tests:
       imports:
         - djangocms_text_ckeditor
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Text Plugin for django CMS with CKEditor support
@@ -50,10 +49,6 @@ about:
     - djangocms_text_ckeditor/static/djangocms_text_ckeditor/ckeditor/samples/toolbarconfigurator/font/LICENSE.txt
     - djangocms_text_ckeditor/static/djangocms_text_ckeditor/ckeditor/samples/toolbarconfigurator/lib/codemirror/LICENSE
   homepage: https://github.com/django-cms/djangocms-text-ckeditor
-  repository: https://github.com/django-cms/djangocms-text-ckeditor
-  description: |
-    Text Plugin for django CMS providing rich-text editing with CKEditor
-    support, including HTML cleanup via html5lib and inline plugin embedding.
 
 extra:
   recipe-maintainers:

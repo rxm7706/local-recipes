@@ -2,24 +2,25 @@
 schema_version: 1
 
 context:
+  name: sketch
   version: "0.5.2"
 
 package:
-  name: sketch
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/s/sketch/sketch-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sketch-${{ version }}.tar.gz
   sha256: 45bfd2d41ad4939a0c8ad8ad86cef00ea1709a5e3c4c32e2ed20d255c0a09b9f
 
 build:
-  number: 0
+  number: 1
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - setuptools >=45
     - wheel
     - setuptools-scm >=6.2
@@ -30,7 +31,7 @@ requirements:
     - datasketch >=1.5.8
     - datasketches >=4.0.0
     - ipython
-    - lambdaprompt >=0.6.1
+    - lambdaprompt >=0.5.4
     - packaging
 
 tests:
@@ -38,21 +39,13 @@ tests:
       imports:
         - sketch
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Compute, store and operate on data sketches
-  description: |
-    Sketch is an AI code-writing assistant for pandas users that
-    understands the context of your data, greatly improving the
-    relevance of suggestions. Sketch is usable in seconds and doesn't
-    require adding a plugin to your IDE.
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/approximatelabs/sketch
-  repository: https://github.com/approximatelabs/sketch
 
 extra:
   recipe-maintainers:

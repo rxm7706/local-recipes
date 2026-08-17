@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: seedir
   version: "0.5.1"
 
 package:
-  name: seedir
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/s/seedir/seedir-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/seedir-${{ version }}.tar.gz
   sha256: 9fb82a6133f92a711bb2d46b2a142f56712e242a4fc03fef2fea9418d307efe2
 
 build:
@@ -18,11 +19,11 @@ build:
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
-      - seedir = seedir.__main__:main
+      - seedir=seedir.__main__:main
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
@@ -34,12 +35,11 @@ tests:
       imports:
         - seedir
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
   - requirements:
       run:
-        - python ${{ python_min }}.*
+        - pip
+        - python ${{ python_min }}
     script:
       - seedir --help
 
@@ -48,11 +48,6 @@ about:
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/earnestt1234/seedir
-  repository: https://github.com/earnestt1234/seedir
-  description: |
-    Package for creating, editing, and reading folder tree diagrams.
-    seedir produces ASCII-art style folder tree diagrams from a directory
-    on disk, and can also parse such diagrams back into folder structures.
 
 extra:
   recipe-maintainers:

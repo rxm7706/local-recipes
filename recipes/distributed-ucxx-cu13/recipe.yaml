@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.51.1"
+  python_min: "3.11"
+
+package:
+  name: distributed-ucxx-cu13
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/d/distributed-ucxx-cu13/distributed_ucxx_cu13-0.51.1-py3-none-manylinux_2_28_aarch64.manylinux_2_28_x86_64.whl
+  sha256: f2557b3d489ada57f2afd7c699a28528f1756ce2d099b70ba5760a9b526434c4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pyyaml >=6
+    - rapids-dask-dependency ==26.8.*
+    - ucxx-cu13 ==0.51.*
+
+tests:
+  - python:
+      imports:
+        - distributed_ucxx_cu13
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/rapidsai/ucxx
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: UCX communication module for Dask Distributed
+  description: |
+    UCX communication module for Dask Distributed
+  repository: https://github.com/rapidsai/ucxx
+  documentation: https://distributed.dask.org/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: distributed-ucxx-cu13
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: distributed-ucxx-cu13
+  cfe-purls:
+    - pkg:conda/distributed-ucxx-cu13@${{ version }}?channel=conda-forge
+    - pkg:pypi/distributed-ucxx-cu13@${{ version }}
+  cfe-upstream-repo: https://github.com/rapidsai/ucxx
+  cfe-upstream-homepage: https://github.com/rapidsai/ucxx
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:53:10Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:53:10Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

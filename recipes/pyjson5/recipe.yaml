@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.1"
+
+package:
+  name: pyjson5
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pyjson5/pyjson5-${{ version }}.tar.gz
+  sha256: a5b0e322e847b198a50d8a1ef16d6b2b19129644dc018d76773e81ef1487ca39
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - cython <4,>=3.1
+    - setuptools >=61
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pyjson5
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/Kijewski/pyjson5
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: JSON5 serializer and parser for Python 3 written in Cython.
+  description: |
+    JSON5 serializer and parser for Python 3 written in Cython.
+  repository: https://github.com/Kijewski/pyjson5
+  documentation: https://pyjson5.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyjson5
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyjson5
+  cfe-purls:
+    - pkg:conda/pyjson5@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyjson5@${{ version }}
+  cfe-upstream-repo: https://github.com/Kijewski/pyjson5
+  cfe-upstream-homepage: https://github.com/Kijewski/pyjson5
+  cfe-import-names: [pyjson5]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:39:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:39:32Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ctgan
+  version: "0.12.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ctgan-${{ version }}.tar.gz
+  sha256: e545c2b1a752affba3de2933a5f8037228e837f7a73f5593399b52cfe9611bc7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - ctgan=ctgan.__main__:main
+
+requirements:
+  host:
+    - pip
+    - pytest-runner >=2.11.1
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - numpy >=1.21.0
+    - pandas >=1.4.0
+    - python >=${{ python_min }},<3.15
+    - pytorch >=1.13.0
+    - rdt >=1.14.0
+    - tqdm >=4.29
+
+tests:
+  - python:
+      imports:
+        - ctgan
+        - ctgan.synthesizers
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - pytest
+        - python ${{ python_min }}
+    script:
+      - ctgan --help
+
+about:
+  summary: Conditional GAN for Tabular Data
+  license: BUSL-1.1
+  license_file: LICENSE
+  homepage: https://github.com/sdv-dev/CTGAN
+
+extra:
+  recipe-maintainers:
+    - conda-forge/sdv

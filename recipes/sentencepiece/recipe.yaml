@@ -1,0 +1,216 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.1"
+
+recipe:
+  name: sentencepiece-split
+  version: ${{ version }}
+
+source:
+  url: https://github.com/google/sentencepiece/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: c1a59e9259c9653ad0ade653dadff074cd31f0a6ff2a11316f67bee4189a8f1b
+  patches:
+    # trying to build both static & shared build seems to break on OSX
+    - patches/0001-do-not-mix-static-shared-builds.patch
+    # set PROTOBUF_USE_DLLS
+    - patches/0002-ensure-we-set-PROTOBUF_USE_DLLS-when-using-our-own-p.patch
+    # ensure python bindings link to correct libs on windows
+    - patches/0003-point-to-our-libs-headers-for-windows-in-setup.py.patch
+    # install pkg-config metadata also on windows
+    - patches/0004-also-install-pkg-config-files-on-windows.patch
+    # install CMake metadata
+    - patches/0005-create-and-install-CMake-metadata.patch
+    # fix abseil setup on windows
+    - patches/0006-also-link-to-static-absl_flags_-on-windows.patch
+    - patches/0007-respect-SPM_ENABLE_SHARED-also-on-windows.patch
+    # handle __declspec(dllimport) / __declspec(dllimport) for generated protobuf
+    - if: win
+      then: patches/0008-add-SPM_DLL-machinery.patch
+    - if: win
+      then: patches/0009-use-custom-protoc-plugin-to-insert-SPM_DLL-macro.patch
+    - patches/0010-avoid-spuriously-inclusing-vendored-abseil.patch
+    - patches/0011-fix-minloglevel-situation-avoid-_USE_EXTERNAL_ABSL.patch
+    - patches/0012-adapt-to-names-for-import_library.patch
+    - patches/0013-also-install-SPM_MODEL_PROTO_HDRS.patch
+
+build:
+  number: 4
+
+outputs:
+    # metapackage that holds everything together
+    package:
+      name: sentencepiece
+    build:
+    requirements:
+      host:
+        - ${{ pin_subpackage('libsentencepiece', exact=True) }}
+        # needs python host dep to avoid creating the same wrapper for
+        # different sentencepiece-python builds due to coinciding hashes
+        - python
+      run:
+        - ${{ pin_subpackage('libsentencepiece', exact=True) }}
+        - ${{ pin_subpackage('sentencepiece-spm', exact=True) }}
+        - ${{ pin_subpackage('sentencepiece-python', exact=True) }}
+      run_exports:
+        - ${{ pin_subpackage("libsentencepiece", upper_bound="x.x.x") }}
+    tests:
+      - script:
+          - exit 0
+  - package:
+      name: libsentencepiece
+    build:
+      script:
+        file: ${{ 'build-lib.sh' if unix else 'build-lib.bat' if win else '' }}
+    requirements:
+      build:
+        - if: build_platform != target_platform
+          then: libprotobuf
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib('c') }}
+        - cmake <4
+        - ninja
+      host:
+        - libabseil
+        - libprotobuf
+        - protobuf
+        - if: win
+          then: pthreads-win32
+      run:
+        # sentencepiece uses PUBLIC linkage for abseil, which is correct
+        # (unfortunately) because it contains abseil types in its API
+        - libabseil
+      run_exports:
+        - ${{ pin_subpackage("libsentencepiece", upper_bound="x.x.x") }}
+    tests:
+      - files:
+          recipe:
+            - cmake_test/
+            - test_sentencepiece.sh
+            - test_sentencepiece.bat
+          source:
+            - data/botchan.txt
+        requirements:
+          run:
+            - ${{ compiler('cxx') }}
+            - cmake <4
+            - ninja
+            - pkg-config
+        script:
+          - if: linux
+            then: test -f $PREFIX/lib/lib${{ each_lib }}.so
+          - if: osx
+            then: test -f $PREFIX/lib/lib${{ each_lib }}.dylib
+          - if: win
+            then: if not exist %LIBRARY_BIN%\${{ each_lib }}.dll exit 1
+          - if: win
+            then: if not exist %LIBRARY_LIB%\${{ each_lib }}_import.lib exit 1
+          - if: unix
+            then: test ! -f $PREFIX/lib/lib${{ each_lib }}.a
+          - if: win
+            then: if exist %LIBRARY_LIB%\${{ each_lib }}.lib exit 1
+          - if: unix
+            then: test -f $PREFIX/include//${{ each_header }} || (echo "${{ each_header }} not found" && exit 1)
+          - if: win
+            then: if not exist %LIBRARY_INC%\\${{ each_header }} exit 1
+          - pkg-config --print-errors --exact-version "${{ version }}" sentencepiece
+          - if: unix
+            then: ./test_sentencepiece.sh
+          - if: win
+            then: ./test_sentencepiece.bat
+  - package:
+      name: sentencepiece-spm
+    build:
+      script:
+        file: ${{ 'build-lib.sh' if unix else 'build-lib.bat' if win else '' }}
+    requirements:
+      build:
+        - if: build_platform != target_platform
+          then: libprotobuf
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib('c') }}
+        - cmake <4
+        - ninja
+      host:
+        - ${{ pin_subpackage('libsentencepiece', exact=True) }}
+        - libabseil
+        - libprotobuf
+        - protobuf
+        - if: win
+          then: pthreads-win32
+      run:
+        - ${{ pin_subpackage('libsentencepiece', exact=True) }}
+    tests:
+      - script:
+          - if: unix
+            then: spm_${{ each_bin }} --help >/dev/null || [[ $? == 1 ]]
+          - if: win
+            then: spm_${{ each_bin }} --help & if ERRORLEVEL ==1 (exit 0) else (exit 1)
+  - package:
+      name: sentencepiece-python
+    build:
+      script:
+        file: ${{ 'build-pkg.sh' if unix else 'build-pkg.bat' if win else '' }}
+    requirements:
+      build:
+        - if: build_platform != target_platform
+          then: python
+        - if: build_platform != target_platform
+          then: cross-python_${{ target_platform }}
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib('c') }}
+        - if: unix
+          then: pkg-config
+      host:
+        - pip
+        - python
+        - setuptools
+        - ${{ pin_subpackage('libsentencepiece', exact=True) }}
+        - libprotobuf
+      run:
+        - python
+        - ${{ pin_subpackage('libsentencepiece', exact=True) }}
+    tests:
+      - python:
+          imports:
+            - sentencepiece
+          pip_check: true
+      - files:
+          source:
+            - python/test
+            - data
+        requirements:
+          run:
+            - pip
+            - pytest
+        script:
+          - cd python && pytest test
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Unsupervised text tokenizer for Neural Network-based text generation.
+  description: |
+    SentencePiece is an unsupervised text tokenizer and detokenizer mainly for
+    Neural Network-based text generation systems where the vocabulary size is
+    predetermined prior to the neural model training.
+
+    SentencePiece implements subword units (e.g., byte-pair-encoding (BPE)
+    [[Sennrich et al.](http://www.aclweb.org/anthology/P16-1162)]) and unigram
+    language model [[Kudo](https://arxiv.org/abs/1804.109590)]) with the
+    extension of direct training from raw sentences. SentencePiece allows us to
+    make a purely end-to-end system that does not depend on language-specific
+    pre/postprocessing.
+
+
+  homepage: https://github.com/google/sentencepiece/
+
+extra:
+  recipe-maintainers:
+    - setu4993
+    - rluria14
+    - ndmaxar
+    - oblute
+    - h-vetinari
+  feedstock-name: sentencepiece

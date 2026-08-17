@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: oci-cli
+  version: "3.76.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  # https://github.com/oracle/oci-cli
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: b7c14fc960865f6f309bd40bab16f65f18c3a41ceb9b80fc8badb62c006d8c03
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - oci=oci_cli.cli:cli
+      - create_backup_from_onprem=oci_cli.scripts.database.dbaas:create_backup_from_onprem
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools >70.0.0
+  # https://github.com/oracle/oci-cli/blob/master/setup.py
+  run:
+    - python >=${{ python_min }}
+    - oci ==2.168.1
+    - arrow >=1.0.0,<2.0.0
+    - certifi >=2025.1.31,<2026.0.0
+    - click ==8.0.4
+    - cryptography >=3.2.1,<47.0.0
+    - jmespath >=0.10.0,<=1.0.1
+    - python-dateutil >=2.5.3,<3.0.0
+    - pytz >=2016.10,<2025.0
+    - six >=1.15.0,<2.0.0
+    - terminaltables ==3.1.10
+    - pyopenssl >=17.5.0,<=25.3.0
+    - pyyaml >=5.4,<=6.0.2
+    - prompt-toolkit >=3.0.38,<=3.0.43
+
+tests:
+  - python:
+      imports:
+        - alloy
+        - common_util
+        - interactive
+        - oci_cli
+        - services
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - oci --help
+
+about:
+  summary: Oracle Cloud Infrastructure CLI
+  license: Apache-2.0 AND UPL-1.0
+  license_file: LICENSE.txt
+  homepage: https://github.com/oracle/oci-cli
+
+extra:
+  recipe-maintainers:
+    - manics

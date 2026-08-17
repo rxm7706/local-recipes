@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: fastapi-restful
+  version: 0.6.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fastapi_restful-${{ version }}.tar.gz
+  sha256: 75cde98b19224dfa424e7fa1b04b51d4787b02e38fae6c1436815857bc3e8179
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - fastapi >=0.89,<1.0
+    - pydantic >=1.0,<3.0
+    - psutil >=5.0.0,<6.0
+    - typing_inspect >=0.9.0,<1.0.0
+  run_constraints:
+    - sqlalchemy >=1.4.0,<3.0.0
+    - pydantic-settings >=2.0.1,<3.0.0
+
+tests:
+  - python:
+      imports:
+        - fastapi_restful
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  summary: Quicker FastApi developing tools
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/yuval9313/FastApi-RESTful
+  repository: https://github.com/yuval9313/FastApi-RESTful
+  documentation: https://fastapi-restful.netlify.app
+
+extra:
+  recipe-maintainers:
+    - pavelzw

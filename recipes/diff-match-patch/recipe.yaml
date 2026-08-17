@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: diff-match-patch
+  version: 20241021
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/diff_match_patch-${{ version }}.tar.gz
+  sha256: beae57a99fa48084532935ee2968b8661db861862ec82c6f21f4acdd6d835073
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - flit-core >=3.8,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - diff_match_patch
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Diff Match Patch is a high-performance library in multiple languages that manipulates plain text
+  homepage: http://code.google.com/p/google-diff-match-patch/
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - ccordoba12

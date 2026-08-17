@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.16.2"
+
+package:
+  name: asyncio-mqtt
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/a/asyncio-mqtt/asyncio_mqtt-0.16.2-py3-none-any.whl
+  sha256: fe70ea2c648b248779a7ff3d9218262cdd739083743dfaa7c0d52ba458a8ad71
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - paho-mqtt
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - asyncio_mqtt
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/asyncio-mqtt/
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Idiomatic asyncio wrapper around paho-mqtt
+  description: |
+    Idiomatic asyncio wrapper around paho-mqtt
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: asyncio-mqtt
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: asyncio-mqtt
+  cfe-purls:
+    - pkg:conda/asyncio-mqtt@${{ version }}?channel=conda-forge
+    - pkg:pypi/asyncio-mqtt@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/asyncio-mqtt/
+  cfe-upstream-homepage: https://pypi.org/project/asyncio-mqtt/
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:12:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:12:37Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

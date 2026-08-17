@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.7.0"
+
+package:
+  name: asteroid
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/asteroid/asteroid-${{ version }}.tar.gz
+  sha256: 0326f28c5342495cb08ba0520efd0e21e39435dfd78854837fdd5a6c9c9ca410
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - numpy
+    - scipy
+    - pytorch
+    - asteroid-filterbanks
+    - soundfile
+    - huggingface-hub
+    - pyyaml
+    - pandas
+    - pytorch-lightning
+    - torchmetrics
+    - torchaudio
+    - pb-bss-eval
+    - torch-stoi
+    - torch-optimizer
+    - julius
+
+tests:
+  - python:
+      imports:
+        - asteroid
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/asteroid-team/asteroid
+  license: MIT
+  license_file: LICENSE
+  summary: PyTorch-based audio source separation toolkit
+  description: |
+    PyTorch-based audio source separation toolkit
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: asteroid
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: asteroid
+  cfe-purls:
+    - pkg:conda/asteroid@${{ version }}?channel=conda-forge
+    - pkg:pypi/asteroid@${{ version }}
+  cfe-upstream-repo: https://github.com/asteroid-team/asteroid
+  cfe-upstream-homepage: https://github.com/asteroid-team/asteroid
+  cfe-import-names: [asteroid]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:32Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

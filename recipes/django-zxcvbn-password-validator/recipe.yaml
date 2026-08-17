@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.6.0"
+  version: "1.7.0"
 
 package:
   name: django-zxcvbn-password-validator
@@ -10,7 +10,7 @@ package:
 
 source:
   - url: https://pypi.org/packages/source/d/django-zxcvbn-password-validator/django_zxcvbn_password_validator-${{ version }}.tar.gz
-    sha256: 5afd5d92313dd0e274817706a16211f0660ff771ec4fb3e6d79b2512d1308ff1
+    sha256: ef603ab1e0c8cd658c83519998a9bd2fda275497474cb512e8cfcff5110bf9c5
 
 build:
   number: 0
@@ -35,7 +35,6 @@ tests:
       python_version:
         - ${{ python_min }}.*
         - "*"
-
 
 about:
   homepage: https://pypi.org/project/django-zxcvbn-password-validator/

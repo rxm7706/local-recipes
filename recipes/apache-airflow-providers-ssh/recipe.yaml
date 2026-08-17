@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: apache-airflow-providers-ssh
+  version: "6.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/apache_airflow_providers_ssh-${{ version }}.tar.gz
+  sha256: 51a42acc8c49a9e19e72715f7ce3226d52e882568d52edfb27e737c61057f7a8
+
+build:
+  noarch: python
+  script: python -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core ==3.12.0
+  run:
+    - python >=${{ python_min }}
+    - apache-airflow >=2.11.0
+    - apache-airflow-providers-common-compat >=1.12.0
+    - asyncssh >=2.12.0
+    - paramiko >=4.0.0
+
+tests:
+  - python:
+      imports:
+        - airflow.providers.ssh
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/apache/airflow/
+  summary: Provider package apache-airflow-providers-ssh for Apache Airflow
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+  documentation: https://airflow.apache.org/docs/apache-airflow-providers-ssh/stable/index.html
+  repository: https://github.com/apache/airflow/
+
+extra:
+  recipe-maintainers:
+    - xylar

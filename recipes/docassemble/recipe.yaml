@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.6.5"
+
+package:
+  name: docassemble
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/docassemble/docassemble-${{ version }}.tar.gz
+  sha256: bedff0d0da2845830b5523d6d0fc02d1283f06719bed7d1b6d1b7c1e5274b835
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - docassemble
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://docassemble.org
+  license: MIT
+  license_file: LICENSE
+  summary: The namespace package for the docassemble system.
+  description: |
+    The namespace package for the docassemble system.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: docassemble
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: docassemble
+  cfe-purls:
+    - pkg:conda/docassemble@${{ version }}?channel=conda-forge
+    - pkg:pypi/docassemble@${{ version }}
+  cfe-upstream-repo: https://docassemble.org
+  cfe-upstream-homepage: https://docassemble.org
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:05:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:05:16Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

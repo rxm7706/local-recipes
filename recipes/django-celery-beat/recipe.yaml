@@ -2,18 +2,19 @@
 schema_version: 1
 
 context:
-  version: "2.9.0"
+  name: django-celery-beat
+  version: 2.9.0
 
 package:
-  name: django-celery-beat
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-celery-beat/django_celery_beat-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: 92404650f52fcb44cf08e2b09635cb1558327c54b1a5d570f0e2d3a22130934c
 
 build:
-  number: 0
+  number: 2
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -23,34 +24,31 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }}
-    - celery >=5.2.3,<6.0
+    - python >=${{ python_min }},<4.0
+    - celery >=5.3.0,<6.0
+    - importlib-metadata
     - django-timezone-field >=5.0
     - tzdata
     - python-crontab >=2.3.4
     - cron-descriptor >=1.2.32,<2.0.0
     - django >=2.2,<6.1
-
+    - kombu
 tests:
   - python:
       imports:
         - django_celery_beat
         - django_celery_beat.migrations
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
   summary: Database-backed Periodic Tasks.
   license: BSD-3-Clause
   license_file: LICENSE
   homepage: https://github.com/celery/django-celery-beat
-  repository: https://github.com/celery/django-celery-beat
 
 extra:
   recipe-maintainers:
-    - hadim
     - rxm7706
 
 #### CFE metadata AND comments

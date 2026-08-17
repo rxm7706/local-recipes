@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: azure-mgmt-core
+  version: "1.6.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: b26232af857b021e61d813d9f4ae530465255cb10b3dde945ad3743f7a58e79c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - azure-core >=1.31.0
+
+tests:
+  - python:
+      imports:
+        - azure
+        - azure.mgmt
+        - azure.mgmt.core
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file:
+    - LICENSE
+    - LICENSE.md
+  summary: Microsoft Azure Management Core Library for Python.
+  homepage: https://github.com/Azure/azure-sdk-for-python
+  repository: https://github.com/Azure/azure-sdk-for-python/tree/main/sdk/core/azure-mgmt-core
+
+extra:
+  recipe-maintainers:
+    - tim-werner
+    - xylar

@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.2"
+
+package:
+  name: calamardolauncher
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/calamardolauncher/calamardolauncher-${{ version }}.tar.gz
+  sha256: 4c900c4bb07d5f74def17383592de26ce0be45b62bfa2a9a820680aaad87d907
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - eel
+    - google-api-python-client
+    - google-auth-httplib2
+    - google-auth-oauthlib
+
+tests:
+  - python:
+      imports:
+        - calamardolauncher
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/manso92/calamardolauncher
+  license: MIT
+  license_file: LICENSE
+  summary: Compose Calamardo's params and launches the binary to generate files.
+  description: |
+    Compose Calamardo's params and launches the binary to generate files.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: calamardolauncher
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: calamardolauncher
+  cfe-purls:
+    - pkg:conda/calamardolauncher@${{ version }}?channel=conda-forge
+    - pkg:pypi/calamardolauncher@${{ version }}
+  cfe-upstream-repo: https://github.com/manso92/calamardolauncher
+  cfe-upstream-homepage: https://github.com/manso92/calamardolauncher
+  cfe-import-names: [calamardolauncher]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:49:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:49:59Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

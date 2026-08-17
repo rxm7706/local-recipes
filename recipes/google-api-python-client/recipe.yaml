@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: google-api-python-client
+  version: "2.198.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/google_api_python_client-${{ version }}.tar.gz
+  sha256: dfe3e16fb241af6e9c460a33f65085b3450e05cea09364f6b5d8997fb7e43e2a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - httplib2 >=0.19.0,<1.0.0
+    - google-auth >=1.32.0,<3.0.0,!=2.24.0,!=2.25.0
+    - google-auth-httplib2 >=0.2.0,<1.0.0
+    - google-api-core >=1.31.5,<3.0.0,!=2.0.*,!=2.1.*,!=2.2.*,!=2.3.0
+    - uritemplate >=3.0.1,<5
+
+tests:
+  - python:
+      imports:
+        - apiclient
+        - googleapiclient
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Apache-2.0 and MIT
+  license_file: LICENSE
+  summary: Google API Client Library for Python
+  homepage: https://github.com/google/google-api-python-client/
+  repository: https://github.com/google/google-api-python-client/
+  documentation: https://developers.google.com/api-client-library/python/start/get_started
+
+extra:
+  recipe-maintainers:
+    - xylar
+    - akrherz
+    - ocefpaf

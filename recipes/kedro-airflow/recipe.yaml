@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: kedro-airflow
+  version: "0.11.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: d69c5b6273f2b54e199b0ba120ff50246218cf397395ceca6d36b191bf5f1a63
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools >=61.2
+  run:
+    - python >=${{ python_min }}
+    - kedro >=0.19.0
+    - python-slugify >=4.0
+    - semver >=2.10.0
+
+tests:
+  - python:
+      imports:
+        - kedro_airflow
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Kedro-Airflow makes it easy to deploy Kedro projects to Airflow
+  license: Apache-2.0
+  license_file: LICENSE.md
+  homepage: https://github.com/kedro-org/kedro-plugins/tree/main/kedro-airflow
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - rxm7706
+    - millsks
+    - elanqo
+    - zaigner

@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "7.12.0"
+
+package:
+  name: docling-parse
+  version: ${{ version }}
+
+source:
+  url: https://github.com/DS4SD/docling-parse/archive/refs/tags/v${{ version }}.zip
+  sha256: 32481b5de5db7380e52d7ce613f7e232c79e4141503a2c1d689e7c69727c2b86
+  patches:
+    - fix-utfcpp.patch
+
+build:
+  number: 0
+  skip: win
+  script:
+    env:
+      USE_SYSTEM_DEPS: on
+    content:
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - pybind11 >=2.13.1
+
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - cmake >=3.27.0,<4.0.0
+    - if: unix
+      then: make
+      else: ninja
+    - pkg-config
+  host:
+    # build tools
+    - python
+    - setuptools >=77.0.3
+    - pybind11 >=2.13.6
+    - pip
+    # libraries
+    - cxxopts
+    - loguru-cpp
+    - nlohmann_json
+    - utfcpp
+    - libjpeg-turbo
+    - openjpeg
+    - lcms2
+    - qpdf
+    - zlib
+    - blend2d
+    - freetype
+  run:
+    - python
+    - tabulate >=0.9.0,<1.0.0
+    - if: win
+      then: pywin32 >=305
+    - pillow >=10.0.0,<13.0.0
+    - pydantic >=2.0.0
+    - docling-core >=2.85.0,<3.0.0
+    - blend2d
+tests:
+  - python:
+      imports:
+        - docling_parse
+      pip_check: true
+
+about:
+  summary: Simple package to extract text with coordinates from programmatic PDFs
+  license: BSD-3-Clause AND MIT
+  license_file:
+    - LICENSE
+    - docling_parse/pdf_resources/cmap-resources/LICENSE.md
+  homepage: https://github.com/docling-project/docling-parse
+
+extra:
+  recipe-maintainers:
+    - kklein
+    - mgorny

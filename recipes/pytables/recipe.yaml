@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.11.1"
+
+package:
+  name: pytables
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/tables/tables-${{ version }}.tar.gz
+  sha256: 78abcf413091bc7c1e4e8c10fbbb438d1ac0b5a87436c5b972c3e8253871b6fb
+  patches:
+    - do_not_rely_on_python-blosc2.patch
+
+build:
+  number: 5
+  skip: match(python, "<3.11")
+  script:
+    env:
+      CFLAGS: "-DBLOSC2_MAX_DIM=8"
+  python:
+    entry_points:
+      - pt2to3 = tables.scripts.pt2to3:main
+      - ptdump = tables.scripts.ptdump:main
+      - ptrepack = tables.scripts.ptrepack:main
+      - pttree = tables.scripts.pttree:main
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython >=0.29.32
+    - if: build_platform != target_platform
+      then: numpy
+    - ${{ stdlib("c") }}
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+  host:
+    - python
+    - setuptools
+    - pip
+    - cython >=0.29.32
+    - numpy
+    - blosc
+    - bzip2
+    - c-blosc2 >=2.14.4
+    - hdf5
+    # Ensure that we build with nompi variant
+    # it provides downstream packages with the most flexibility
+    - hdf5 =*=nompi*
+    - zlib
+  run:
+    - python
+    - numpy >=1.20.0
+    - numexpr
+    - packaging
+    - py-cpuinfo
+    - typing-extensions >=4.4.0
+
+tests:
+  - requirements:
+      run:
+        - setuptools
+        - pip
+    script:
+      - pt2to3 -h
+      - ptdump -h
+      - ptrepack -h
+      - pttree -h
+      - pip check
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Brings together Python, HDF5 and NumPy to easily handle large amounts of data.
+  description: |
+    PyTables is a package for managing hierarchical datasets and designed to
+    efficiently and easily cope with extremely large amounts of data. PyTables
+    is built on top of the HDF5 library, using the Python language and the
+    NumPy package.
+  homepage: http://www.pytables.org
+  repository: https://github.com/PyTables
+  documentation: http://www.pytables.org/
+
+extra:
+  recipe-maintainers:
+    - msarahan
+    - ocefpaf
+    - tomkooij
+    - scopatz
+    - avalentino

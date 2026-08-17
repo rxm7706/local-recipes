@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: google-cloud-iam
+  version: "2.24.1"
+  sha256: 2d7edfe48fd24a181f55473a77584c0c947cf52915fc7af835d9ae0408fccae0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - grpcio >=1.59.0,<2.0.0
+    - python >=${{ python_min }}
+    - google-api-core >=2.25.0,<3.0.0
+    - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
+    - grpc-google-iam-v1 >=0.14.2,<1.0.0
+    - proto-plus >=1.26.1,<2.0.0
+    - protobuf >=6.33.5,<8.0.0
+
+tests:
+  - python:
+      imports:
+        - google
+        - google.cloud.iam_credentials
+        - google.cloud.iam_credentials_v1
+        - google.cloud.iam_v2
+        - google.api_core
+        - grpc
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+
+about:
+  summary: IAM Service Account Credentials API client library
+  license: Apache-2.0
+  license_file: LICENSE
+  description: "IAM Service Account Credentials API is a Google Cloud service that lets client applications communicate with the Cloud Identity and Access Management (IAM) platform. Cloud IAM lets administrators authorize who can take action on specific resources, giving you full control and visibility to manage Google Cloud
+    resources centrally. For enterprises with complex organizational structures, hundreds of workgroups, and many projects, Cloud IAM provides a unified view into security policy across your entire organization, with built-in auditing to ease compliance processes.\nSee the [quick start guide](https://googleapis.dev/python/iamcredentials/latest/index.html#quick-start)."
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-iam
+  repository: https://github.com/googleapis/python-iam
+  documentation: https://googleapis.dev/python/iamcredentials/latest/index.html
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - parthea

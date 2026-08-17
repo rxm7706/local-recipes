@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: django-admin-rangefilter
   version: "0.13.5"
 
 package:
-  name: django-admin-rangefilter
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-admin-rangefilter/django_admin_rangefilter-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_admin_rangefilter-${{ version }}.tar.gz
   sha256: 3134e9e877f59ccad5949cd25cd2db9bf20d170fd8070be584875fdca96d3a14
 
 build:
@@ -23,24 +24,21 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
     - django >=4.2
 
 tests:
   - python:
       imports:
         - rangefilter
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
   summary: django-admin-rangefilter app, add the filter by a custom date range on the admin UI.
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/silentsokolov/django-admin-rangefilter
-  repository: https://github.com/silentsokolov/django-admin-rangefilter
 
 extra:
   recipe-maintainers:

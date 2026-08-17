@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "8.4"
+
+package:
+  name: pglast
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pglast/pglast-${{ version }}.tar.gz
+  sha256: ebc804351aab9c1bac395611758883cd17d4198f4704224bb6f9f1dd1f3c513d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - cython ==3.2.8
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pglast
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/pglast/
+  license: GPL-3.0-or-later
+  license_file: LICENSE
+  summary: PostgreSQL Languages AST and statements prettifier
+  description: |
+    PostgreSQL Languages AST and statements prettifier
+  repository: https://github.com/lelit/pglast
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pglast
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pglast
+  cfe-purls:
+    - pkg:conda/pglast@${{ version }}?channel=conda-forge
+    - pkg:pypi/pglast@${{ version }}
+  cfe-upstream-repo: https://github.com/lelit/pglast
+  cfe-upstream-homepage: https://pypi.org/project/pglast/
+  cfe-import-names: [pglast]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:30:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:30:42Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: httpstan
+  version: "4.6.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/stan-dev/httpstan/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 703e5e04e60651e0004574bb9695827d759fd13eb0d6bd67f827c1bfa0a1fd31
+
+build:
+  number: 4
+  skip: match(python, "<3.7")
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: pybind11
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+  host:
+    - pip
+    - poetry  >=1.1.4
+    - pybind11  >=2.6.2
+    - python
+  run:
+    - aiohttp  >=3.7
+    - appdirs  >=1.4
+    - lz4  >=3.1
+    - marshmallow  >=3.10
+    - numpy  >=1.16
+    - python
+    - setuptools  >=41.0
+    - webargs  >=7.0
+
+tests:
+  - python:
+      imports:
+        - httpstan
+        - httpstan.services
+      pip_check: false
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: HTTP-based REST interface to Stan, a package for Bayesian inference.
+  homepage: https://pypi.org/project/httpstan/
+  repository: https://github.com/stan-dev/httpstan
+  documentation: https://httpstan.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - achangeo
+    - oblute

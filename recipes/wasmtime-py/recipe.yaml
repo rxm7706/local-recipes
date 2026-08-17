@@ -2,15 +2,16 @@
 schema_version: 1
 
 context:
-  version: "45.0.0"
+  name: wasmtime
+  version: "47.0.1"
 
 package:
-  name: wasmtime-py
+  name: ${{ name }}-py
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/w/wasmtime/wasmtime-${{ version }}.tar.gz
-  sha256: 2ad4bf7ca286ceea35c1e420d10b368d7f83faf9a5ffde87b4ee334a9b7f55f3
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: fab6ee0e87354f14ef228fa71b40841dd3c2c713f6efce636af234b4e3e6edcc
 
 build:
   number: 0
@@ -23,9 +24,9 @@ requirements:
     - ${{ compiler('rust') }}
     - cargo-bundle-licenses
     - if: build_platform != target_platform
-      then:
-        - python
-        - cross-python_${{ target_platform }}
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
   host:
     - python
     - pip
@@ -42,7 +43,6 @@ tests:
       pip_check: true
 
 about:
-  homepage: https://github.com/bytecodealliance/wasmtime-py
   summary: A WebAssembly runtime powered by Wasmtime
   description: |
     Python embedding of Wasmtime, a fast and secure runtime for WebAssembly.
@@ -51,8 +51,9 @@ about:
     can be used both as a command-line utility or as an embedded runtime.
   license: Apache-2.0 WITH LLVM-exception
   license_file: LICENSE
-  documentation: https://docs.wasmtime.dev/lang-python.html
+  homepage: https://github.com/bytecodealliance/wasmtime-py
   repository: https://github.com/bytecodealliance/wasmtime-py
+  documentation: https://docs.wasmtime.dev/lang-python.html
 
 extra:
   recipe-maintainers:

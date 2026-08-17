@@ -1,0 +1,156 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: connexion
+  version: "3.3.0"
+
+recipe:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/connexion-${{ version }}.tar.gz
+  sha256: 63e4b32c170c297f245b63e26a78e299d4df86f8f6f37ef1f70db62efaba77cf
+
+build:
+  number: 0
+  noarch: python
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core >=1.2.0
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0.0
+
+outputs:
+  - package:
+      name: ${{ name }}
+    build:
+      noarch: python
+      script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    requirements:
+      host:
+        - python ${{ python_min }}
+        - poetry-core >=1.2.0
+        - pip
+      run:
+        - python >=${{ python_min }},<4.0.0
+        - asgiref >=3.4
+        - httpx >=0.23
+        - inflection >=0.3.1
+        - jsonschema >=4.17.3
+        - jinja2 >=3.0.0
+        - python-multipart >=0.0.15
+        - pyyaml >=5.1
+        - requests >=2.27
+        - starlette >=0.35
+        - typing_extensions >=4.6.1
+        - werkzeug >=2.2.1
+    tests:
+      - python:
+          imports:
+            - connexion
+            - connexion.apps
+            - connexion.decorators
+          pip_check: true
+          python_version: ${{ python_min }}
+      - requirements:
+          run:
+            - pip
+            - python ${{ python_min }}
+        script:
+          - connexion --version
+  - package:
+      name: ${{ name }}-with-flask
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python ${{ python_min }}
+      run:
+        - python >=${{ python_min }}
+        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
+        - a2wsgi >=1.7
+        - flask >=2.2
+        # replace with flask-with-async as soon as available
+        # flask[async] extra
+        - asgiref >=3.2
+    tests:
+      - python:
+          imports:
+            - connexion
+            - connexion.apps.flask
+          pip_check: true
+          python_version: ${{ python_min }}
+  - package:
+      name: ${{ name }}-with-swagger-ui
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python ${{ python_min }}
+      run:
+        - python >=${{ python_min }}
+        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
+        - swagger-ui-bundle >=1.1.0
+    tests:
+      - python:
+          imports:
+            - connexion
+            - swagger_ui_bundle
+          pip_check: true
+          python_version: ${{ python_min }}
+  - package:
+      name: ${{ name }}-with-uvicorn
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python ${{ python_min }}
+      run:
+        - python >=${{ python_min }}
+        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
+        - uvicorn-standard >=0.17.6
+    tests:
+      - python:
+          imports:
+            - connexion
+            - uvicorn
+          pip_check: true
+          python_version: ${{ python_min }}
+  - package:
+      name: ${{ name }}-with-mock
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python ${{ python_min }}
+      run:
+        - python >=${{ python_min }}
+        - ${{ pin_subpackage(name, upper_bound='x.x.x.x.x.x') }}
+        - jsf >=0.10.0
+    tests:
+      - python:
+          imports:
+            - connexion
+            - jsf
+          pip_check: true
+          python_version: ${{ python_min }}
+
+about:
+  summary: Connexion - API first applications with OpenAPI/Swagger
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+  homepage: https://github.com/spec-first/connexion
+  repository: https://github.com/spec-first/connexion
+  documentation: https://connexion.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - rvalieris
+    - xylar

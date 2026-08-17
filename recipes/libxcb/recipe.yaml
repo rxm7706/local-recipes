@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  xorg_name: libxcb
+  xorg_category: lib
+  name: libxcb
+  version: "1.17.0"
+  sha256: 2c69287424c9e2128cb47ffe92171e10417041ec2963bceafb65cb3fcf8f0b85
+  am_version: "1.15"  # keep synchronized with build.sh
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://xorg.freedesktop.org/archive/individual/${{ xorg_category }}/${{ xorg_name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  patches:
+    - if: win
+      then: windows.patch
+
+build:
+  number: 0
+  prefix_detection:
+    ignore_binary_files: false
+
+requirements:
+  build:
+    - if: win
+      then: m2-autoconf
+    - if: win
+      then: m2-automake${{ am_version }}
+    - if: win
+      then: m2-libtool
+    - if: unix
+      then: pkg-config
+    - if: win
+      then: m2-pkg-config
+    - if: unix
+      then: gnuconfig
+    - if: win
+      then: m2-base
+    - if: unix
+      then: make
+    - if: win
+      then: m2-make
+    - if: unix
+      then: ${{ compiler('c') }}
+    - if: unix
+      then: ${{ stdlib('c') }}
+    - if: win
+      then: ${{ compiler('m2w64_c') }}
+    - if: win
+      then: ${{ stdlib('m2w64_c') }}
+    - if: unix
+      then: autoconf
+    - if: unix
+      then: automake
+    - if: unix
+      then: gettext
+    - if: unix
+      then: libtool
+    - if: build_platform != target_platform
+      then: python
+  host:
+    - pthread-stubs
+    - xorg-libxau
+    - xorg-libxdmcp
+    - xorg-util-macros
+    - xcb-proto 1.17.0.*
+    - xorg-xorgproto
+  run:
+    - pthread-stubs
+    - xorg-libxau
+    - xorg-libxdmcp
+  run_exports:
+    - ${{ pin_subpackage('libxcb', upper_bound='x') }}
+
+tests:
+  - script:
+      - if: osx
+        then: test -f $PREFIX/lib/lib${{ lib_ident }}.dylib
+      - if: linux
+        then: test -f $PREFIX/lib/lib${{ lib_ident }}.so
+      - if: win
+        then: if not exist %PREFIX%/Library/lib/lib${{ lib_ident }}.dll.a exit /b 1
+      - if: win
+        then: if not exist %PREFIX%/Library/bin/msys-${{ lib_ident }}-*.dll exit /b 1
+
+about:
+  license: MIT
+  license_file: COPYING
+  summary: This is the C-language Binding (XCB) package to the X Window System protocol
+  homepage: http://xcb.freedesktop.org/
+
+extra:
+  recipe-maintainers:
+    - ccordoba12
+    - pkgw

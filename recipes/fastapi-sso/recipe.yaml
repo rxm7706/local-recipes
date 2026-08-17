@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: 0.21.1
+
+package:
+  name: fastapi-sso
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/fastapi-sso/fastapi_sso-${{ version }}.tar.gz
+  sha256: c6f730b075caf537efa7c0f531095cf2d963a6fa27d059b3300e5eb19b282adb
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  noarch: python
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - fastapi >=0.80
+    - httpx >=0.23.0
+    - oauthlib >=3.1.0
+    - pydantic >=1.8.0
+    - pyjwt >=2.10.1,<3.0.0
+    - typing_extensions >=4.12.2,<5.0.0
+tests:
+  - python:
+      python_version: ${{ python_min }}.*
+      imports:
+        - fastapi_sso
+      pip_check: true
+
+about:
+  summary: FastAPI plugin to enable SSO to most common providers (such as Facebook login, Google login and login via Microsoft Office 365 Account)
+  license: MIT
+  license_file: LICENSE.md
+  homepage: https://tomasvotava.github.io/fastapi-sso/
+  documentation: https://tomasvotava.github.io/fastapi-sso/
+
+extra:
+  recipe-maintainers:
+    - xhochy

@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.0.4"
+
+package:
+  name: aait
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/aait/aait-${{ version }}.tar.gz
+  sha256: 79cc05ac4f3ebb3558d48199f70a4be1bc4ff064bebeadd5cf4e7e99758ad0c3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pytorch
+    - sentence-transformers
+    - sacremoses
+    - transformers
+    - sentencepiece
+    - optuna
+    - spacy
+    - markdown
+    - python-multipart
+    - pymupdf
+    - chonkie
+    - gputil
+    - unidecode
+    - python-docx
+    - psutil
+    - thefuzz
+    - beautifulsoup4
+    - rank-bm25
+    - json-repair
+    - categorit
+
+tests:
+  - python:
+      imports:
+        - orangecontrib
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/aait/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Advanced Artificial Intelligence Tools is a package meant to develop and enable advanced AI functionalities in Orange
+  description: |
+    Advanced Artificial Intelligence Tools is a package meant to develop and enable advanced AI functionalities in Orange
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: aait
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: aait
+  cfe-purls:
+    - pkg:conda/aait@${{ version }}?channel=conda-forge
+    - pkg:pypi/aait@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/aait/
+  cfe-upstream-homepage: https://pypi.org/project/aait/
+  cfe-import-names: [orangecontrib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:47:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:47:54Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

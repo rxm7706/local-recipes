@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jupyter-packaging
+  version: "0.12.3"
+
+recipe:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jupyter_packaging-${{ version }}.tar.gz
+  sha256: 9d9b2b63b97ffd67a8bc5391c32a421bc415b264a32c99e4d8d8dd31daae9cf4
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - python ${{ python_min }}
+    - pip
+    - packaging
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - packaging
+    - tomlkit
+    - setuptools >=60.2.0
+    - wheel
+    - deprecation
+
+outputs:
+  - package:
+      name: jupyter-packaging
+  - package:
+      name: jupyter_packaging
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python ${{ python_min }}
+      run:
+        - ${{ pin_subpackage("jupyter-packaging", exact=True) }}
+
+tests:
+  - python:
+      imports:
+        - jupyter_packaging
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Jupyter Packaging Utilities
+  description: |
+    Jupyter Packaging Utilities
+  homepage: https://github.com/jupyter/jupyter-packaging
+  repository: https://github.com/jupyter/jupyter-packaging
+
+extra:
+  recipe-maintainers:
+    - blink1073
+    - vidartf
+    - timkpaine
+    - xmnlab

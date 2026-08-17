@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2025.7.7.2423"
+
+package:
+  name: pybatfish
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/p/pybatfish/pybatfish-2025.7.7.2423-py3-none-any.whl
+  sha256: c379bef0d0aae627a90ba310b7f7a118389ea925ee58d44bb3ccefa5e2fb9a47
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - attrs >=18.1.0
+    - deepdiff
+    - pandas
+    - python-dateutil
+    - pyyaml
+    - requests
+    - requests-toolbelt
+    - setuptools
+    - simplejson
+    - urllib3 >=1.26.0
+
+tests:
+  - python:
+      imports:
+        - pybatfish
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/batfish/pybatfish
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python API and utilities for Batfish
+  description: |
+    Python API and utilities for Batfish
+  repository: https://github.com/batfish/pybatfish
+  documentation: https://pybatfish.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pybatfish
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pybatfish
+  cfe-purls:
+    - pkg:conda/pybatfish@${{ version }}?channel=conda-forge
+    - pkg:pypi/pybatfish@${{ version }}
+  cfe-upstream-repo: https://github.com/batfish/pybatfish
+  cfe-upstream-homepage: https://github.com/batfish/pybatfish
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:23:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:23:50Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

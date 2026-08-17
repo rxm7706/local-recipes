@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: segtok
+  version: "1.5.11"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 8ab2dd44245bcbfec25b575dc4618473bbdf2af8c2649698cd5a370f42f3db23
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - tokenizer = segtok.tokenizer:main
+      - segmenter = segtok.segmenter:main
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - python >=3.6
+    - regex
+
+tests:
+  - python:
+      imports:
+        - segtok
+      pip_check: false
+  - script:
+      - tokenizer --help
+      - segmenter --help
+
+about:
+  license: MIT
+  # License isn't packaged, track issue here: https://github.com/fnl/segtok/issues/22
+  license_file: LICENSE
+  summary: sentence segmentation and word tokenization tools
+  homepage: https://github.com/fnl/segtok
+  repository: https://github.com/fnl/segtok
+  documentation: http://fnl.es/segtok-a-segmentation-and-tokenization-library.html
+
+extra:
+  recipe-maintainers:
+    - mxr-conda

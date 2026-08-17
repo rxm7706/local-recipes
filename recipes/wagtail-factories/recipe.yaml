@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: wagtail-factories
+  version: "4.5.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/wagtail/wagtail-factories/archive/v${{ version }}.tar.gz
+  sha256: 1676550835d2179e9085e09712bcc1c0bf42c33c8b9cfed5ab9537eda0ccc464
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - django
+    - python >=${{ python_min }}
+    - factory_boy >=3.2,<4
+    - wagtail >=7.0
+
+tests:
+  - python:
+      imports:
+        - tests
+        - tests.testapp
+      pip_check: true
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - tests/
+
+about:
+  summary: Factory boy classes for wagtail
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/wagtail/wagtail-factories/
+
+extra:
+  recipe-maintainers:
+    - rxm7706

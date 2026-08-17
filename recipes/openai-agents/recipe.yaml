@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "0.20.0"
+
+package:
+  name: openai-agents
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/o/openai-agents/openai_agents-${{ version }}.tar.gz
+    sha256: a6b37954877868ac233876a27dab1e2a461c53ecbd5fcf6e19e2d276d3e848cd
+
+build:
+  script: ${{ PYTHON }} -m pip install .
+  noarch: python
+  number: 0
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - openai >=2.26.0,<3
+    - pydantic >=2.12.2,<3
+    - griffelib >=2,<3
+    - typing-extensions >=4.12.2,<5
+    - requests >=2.0,<3
+    - types-requests >=2.0,<3
+    - websockets >=15.0,<16
+    - mcp >=1.19.0,<2
+
+tests:
+  - python:
+      python_version: ${{ python_min }}.*
+      imports:
+        - agents
+      pip_check: true
+
+about:
+  summary: A lightweight, powerful framework for multi-agent workflows
+  homepage: https://github.com/openai/openai-agents-python
+  license: MIT
+  license_file: LICENSE
+extra:
+  recipe-maintainers:
+    - timkpaine
+    - moritzwilksch

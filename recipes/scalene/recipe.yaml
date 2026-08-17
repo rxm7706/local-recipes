@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: scalene
+  version: "1.5.51"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ad33b6ce79239b5a6aff4ec78fa576fe2076b46f78c4c7e5fbc78a927b83374d
+
+build:
+  number: 1
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - scalene = scalene.__main__:main
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+    - make
+    - if: build_platform != target_platform
+      then: cython
+  host:
+    - python
+    - pip
+    - setuptools >=65.5.0
+    - setuptools-scm >=8
+    - cython
+    - wheel
+  run:
+    - python
+    - if: match(python, "<3.9")
+      then: astunparse >=1.6.3
+    - cloudpickle >=2.2.1
+    - jinja2 >=3.0.3
+    - numpy >=1.24.0,!=1.27
+    - if: not osx
+      then: nvidia-ml-py >=12.555.43
+    - psutil >=5.9.2
+    - pydantic >=2.6
+    - rich >=10.7.0
+    - wheel >=0.36.1
+
+tests:
+  - python:
+      imports:
+        - ${{ name }}
+      pip_check: true
+  - files:
+      source:
+        - test/original/bm_mdp.py
+    requirements:
+      run:
+        - pyperf
+        - pip
+    script:
+      - scalene --cli test/original/bm_mdp.py
+
+about:
+  summary: A high-performance, high-precision CPU, GPU, and memory profiler for Python
+  license: MIT AND Apache-2.0
+  license_file:
+    - LICENSE
+    - vendor/Heap-Layers/COPYING
+    - vendor/printf/LICENSE
+  homepage: https://github.com/plasma-umass/scalene
+
+extra:
+  recipe-maintainers:
+    - apmorton
+    - emeryberger
+    - jaltmayerpizzorno
+    - sternj

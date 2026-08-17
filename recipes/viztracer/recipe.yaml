@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: viztracer
+  version: "1.1.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/viztracer-${{ version }}.tar.gz
+  sha256: dcd4b5ddcc3a40ee79a584406d984cb4d40bc3301a6c9015d8949d4445fe9346
+
+build:
+  number: 0
+  skip: match(python, ">=2,<3")
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - viztracer = viztracer.main:main
+      - vizviewer = viztracer.viewer:viewer_main
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+    - orjson
+    - objprint >=0.3.0
+
+tests:
+  - python:
+      imports:
+        - viztracer
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - viztracer --help
+      - vizviewer --help
+
+about:
+  summary: A debugging and profiling tool that can trace and visualize python code execution
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/gaogaotiantian/viztracer
+
+extra:
+  recipe-maintainers:
+    - gaogaotiantian
+    - gforsyth

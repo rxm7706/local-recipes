@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.5"
+
+package:
+  name: apache-airflow-ctl
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/apache-airflow-ctl/apache_airflow_ctl-${{ version }}.tar.gz
+  sha256: 4216fb919b6281de42ffe5f189c63411417cf95f69d80d6aa28d7159001334c9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling ==1.29.0
+    - packaging ==26.2
+    - pathspec ==1.1.1
+    - pluggy ==1.6.0
+    - tomli ==2.4.1
+  run:
+    - python >=${{ python_min }}
+    - argcomplete >=1.10
+    - httpx <1.0,>=0.27.0
+    - keyring >=25.7.0
+    - lazy-object-proxy >=1.2.0
+    - methodtools >=0.4.7
+    - platformdirs >=4.3.6
+    - pydantic >=2.11.0
+    - pyyaml >=6.0.3
+    - rich-argparse >=1.0.0
+    - structlog >=25.4.0
+    - tabulate >=0.9.0
+    - tenacity >=9.1.4
+    - uuid6 >=2024.7.10
+
+tests:
+  - python:
+      imports:
+        - airflowctl
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://airflow.apache.org/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Apache Airflow command line tool for communicating with an Apache Airflow, using the API.
+  description: |
+    Apache Airflow command line tool for communicating with an Apache Airflow, using the API.
+  repository: https://github.com/apache/airflow
+  documentation: https://airflow.apache.org/docs/apache-airflow-ctl/stable/index.html
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: apache-airflow-ctl
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: apache-airflow-ctl
+  cfe-purls:
+    - pkg:conda/apache-airflow-ctl@${{ version }}?channel=conda-forge
+    - pkg:pypi/apache-airflow-ctl@${{ version }}
+  cfe-upstream-repo: https://github.com/apache/airflow
+  cfe-upstream-homepage: https://airflow.apache.org/
+  cfe-import-names: [airflowctl]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:50:06Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:50:06Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

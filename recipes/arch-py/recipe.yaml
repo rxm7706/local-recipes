@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: arch
+  version: "8.0.0"
+
+package:
+  name: arch-py
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 5e9895c2354b9475aff50797ff2191dc64dc5f79602baf0c9321310fb864b637
+
+build:
+  number: 0
+  skip: match(python, "<3.10") or python_impl == "pypy"
+  script:
+    - if: ppc64le
+      then: export PYTHONUNBUFFERED=1
+    # Cross-compilation stuff vendored from numpy-feedstock
+    # necessary for cross-compilation to point to the right env
+    - if: build_platform != target_platform
+      then: export PKG_CONFIG_PATH=$PREFIX/lib/pkgconfig
+    - if: build_platform != target_platform
+      then: echo "python = '${PREFIX}/bin/python'" >> ${CONDA_PREFIX}/meson_cross_file.txt
+    - if: unix
+      then: MESON_ARGS_REDUCED="$(echo $MESON_ARGS | sed 's/--buildtype release //g')"
+    - if: unix
+      then: ${{ PYTHON }} -m pip install -vv --no-deps --ignore-installed . -Csetup-args=${MESON_ARGS_REDUCED// / -Csetup-args=}
+    - if: not unix
+      then: ${{ PYTHON }} -m pip install -vv --no-deps --ignore-installed .
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython >=3.0.13
+    - if: build_platform != target_platform
+      then: numpy
+    - if: build_platform != target_platform
+      then: meson-python
+    - if: build_platform != target_platform
+      then: ninja
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+  host:
+    - python
+    - pip
+    - cython >=3.0.13
+    - numpy
+    - meson
+    - meson-python
+    - ninja
+    - setuptools
+    - setuptools_scm =9.2.0
+  run:
+    - python
+    - pandas >=1.4
+    - scipy >=1.8
+    - statsmodels >=0.13
+    - packaging
+
+tests:
+  - python:
+      imports:
+        - arch
+        - arch.unitroot
+        - arch.univariate
+        - arch.bootstrap
+        - arch.covariance
+        - arch.data
+        - arch.utility
+        - arch._version
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+        - pytest >=8.4.2
+        - pytest-xdist
+    script:
+      - if: (build_platform == target_platform) and (python_impl == "cpython")
+        then: python -c "import arch; arch.test(['-m', '(not slow)', '--numprocesses', '${{ CPU_COUNT }}'])"
+
+about:
+  license: NCSA
+  license_file: LICENSE.md
+  summary: Autoregressive Conditional Heteroskedasticity (ARCH) and other tools for financial econometrics
+  description: |
+    Autoregressive Conditional Heteroskedasticity (ARCH) and other tools for
+    financial econometrics, written in Python  (with Cython and/or Numba
+    used to improve performance)
+  homepage: https://github.com/bashtage/arch
+  repository: https://github.com/bashtage/arch
+  documentation: https://arch.readthedocs.org/en/latest/
+
+extra:
+  recipe-maintainers:
+    - DanielBok
+    - bashtage

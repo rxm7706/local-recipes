@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: Whoosh
+  version: "2.7.4"
+  sha256: 7ca5633dbfa9e0e0fa400d3151a8a0c4bec53bd2ecedc0a67705b17565c31a83
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 10
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - whoosh
+      pip_check: false
+  - requirements:
+      run:
+        - pytest
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE.txt
+  summary: Whoosh is a fast, featureful full-text indexing and searching library implemented in pure Python
+  description: |
+    Whoosh is a fast, featureful full-text indexing and searching library
+    implemented in pure Python. Programmers can use it to easily add search
+    functionality to their applications and websites. Every part of how
+    Whoosh works can be extended or replaced to meet your needs exactly.
+  homepage: https://github.com/whoosh-community/whoosh
+  repository: https://github.com/whoosh-community/whoosh
+  documentation: http://whoosh.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - cmutel

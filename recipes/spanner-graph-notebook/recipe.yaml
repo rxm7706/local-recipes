@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.10"
+
+package:
+  name: spanner-graph-notebook
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/spanner-graph-notebook/spanner_graph_notebook-${{ version }}.tar.gz
+  sha256: d8a1ce287ee26c76373404f09f15a66c522b15b45a01d78e1128cb0d6d5afe66
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - networkx
+    - numpy
+    - google-cloud-spanner >=3.65.0
+    - ipython
+    - ipywidgets
+    - notebook
+    - requests
+    - portpicker
+    - pydata-google-auth
+
+tests:
+  - python:
+      imports:
+        - spanner_graphs
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/cloudspannerecosystem/spanner-graph-notebook
+  license: Apache-2.0 AND MIT
+  license_file:
+    - LICENSE
+    - third_party/LICENSE
+  summary: Visually query Spanner Graph data in notebooks.
+  description: |
+    Visually query Spanner Graph data in notebooks.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: spanner-graph-notebook
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: spanner-graph-notebook
+  cfe-purls:
+    - pkg:conda/spanner-graph-notebook@${{ version }}?channel=conda-forge
+    - pkg:pypi/spanner-graph-notebook@${{ version }}
+  cfe-upstream-repo: https://github.com/cloudspannerecosystem/spanner-graph-notebook
+  cfe-upstream-homepage: https://github.com/cloudspannerecosystem/spanner-graph-notebook
+  cfe-import-names: [spanner_graphs]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T16:31:52Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T16:31:52Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-16T16:36:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Apache-2.0 Google notebook magics; sdist LICENSE is Apache-2.0 (pattern 1)
+#    # plus third_party/LICENSE (MIT force-graph frontend). All run deps on CF.
+####

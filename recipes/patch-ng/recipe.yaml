@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: patch-ng
+  version: "1.19.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 036a3cc00134ec53f37e92333958ee75e117f2e62a5ec2b85c7122e5e815c29e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - patch-ng = patch_ng:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - patch-ng --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Library to parse and apply unified diffs
+  homepage: https://github.com/conan-io/python-patch-ng
+
+extra:
+  recipe-maintainers:
+    - abloemert

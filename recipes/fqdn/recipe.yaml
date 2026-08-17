@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.5.1"
+
+package:
+  name: fqdn
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/f/fqdn/fqdn-${{ version }}.tar.gz
+    sha256: 105ed3677e767fb5ca086a0c1f4bb66ebc3c100be518f0e0d755d9eae164d89f
+    target_directory: dist
+  - url: https://github.com/ypcrts/fqdn/archive/refs/tags/v${{ version }}.tar.gz
+    sha256: a2c026226f1a1eaace81362fda27b3df479693aefe19f160d6c4c3a032add498
+    target_directory: src
+
+build:
+  number: 1
+  noarch: python
+  script: cd dist && ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    # technically only for py<38, not worth extra builds
+    - cached-property >=1.3.0
+    - python >=${{ python_min }},<4
+
+tests:
+  - python:
+      imports:
+        - fqdn
+      pip_check: true
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - src/tests
+    requirements:
+      run:
+        - pip
+        - pytest-cov
+        - python ${{ python_min }}
+    script:
+      - cd src/tests && pytest --cov=fqdn --cov-report=term-missing:skip-covered --no-cov-on-fail --cov-fail-under=95
+
+about:
+  summary: Validates fully-qualified domain names against RFC 1123, so that they are acceptable to modern bowsers
+  license: MPL-2.0
+  license_file: src/LICENSE
+  homepage: https://github.com/ypcrts/fqdn
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

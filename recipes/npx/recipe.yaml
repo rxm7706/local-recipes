@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: npx
+  version: "0.1.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: cce26aad91af079a721750a5bdcb5ca7435bf2feef4642afcf580d58cb151bd4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3
+    - pip
+    - flit
+    - numpy >=1.20.0
+  run:
+    - python >=3
+    - numpy >=1.20.0
+
+tests:
+  - python:
+      imports:
+        - npx
+      pip_check: false
+  - files:
+      source:
+        - README.md
+        - tests
+    requirements:
+      run:
+        - pytest-codeblocks
+        - pytest
+    script:
+      - python -m pytest --codeblocks
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Useful extensions for NumPy
+  homepage: https://github.com/nschloe/npx
+  repository: https://github.com/nschloe/npx
+
+extra:
+  recipe-maintainers:
+    - nschloe

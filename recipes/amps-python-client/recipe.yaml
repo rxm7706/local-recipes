@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.3.5.5"
+
+package:
+  name: amps-python-client
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/amps-python-client/amps_python_client-${{ version }}.tar.gz
+  sha256: e29d12cac6684eabb2ce652814eeb01bac42e7ba20aca0172c0abe9a19a49007
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - amps-python-client
+
+tests:
+  - python:
+      imports:
+        - amps_python_client
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://crankuptheamps.com
+  license: MIT
+  license_file: LICENSE
+  summary: AMPS Python Client
+  description: |
+    AMPS Python Client
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: amps-python-client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: amps-python-client
+  cfe-purls:
+    - pkg:conda/amps-python-client@${{ version }}?channel=conda-forge
+    - pkg:pypi/amps-python-client@${{ version }}
+  cfe-upstream-repo: https://crankuptheamps.com
+  cfe-upstream-homepage: https://crankuptheamps.com
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:07:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:07:03Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

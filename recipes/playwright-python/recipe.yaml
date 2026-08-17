@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.62.0"
+  python_check_max: "3.14"
+
+package:
+  name: playwright-python
+  version: ${{ version }}
+
+source:
+  url: https://github.com/Microsoft/playwright-python/archive/v${{ version }}.tar.gz
+  sha256: 30cc72a0c00a22c3d287539233d3d6abd579becbfe7d02aef80bd3e75c951455
+  patches:
+    - auditwheel.patch  # auditwheel is only available for linux, so we remove it from the build requirements
+    - setup.patch       # Disable download of binaries
+    - driver.patch      # Fix playwright nodejs location
+
+build:
+  number: 0
+  noarch: python
+  python:
+    entry_points:
+      - playwright = playwright.__main__:main
+  script:
+    env:
+      SETUPTOOLS_SCM_PRETEND_VERSION: ${{ version }}
+    content:
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools ==80.9.0
+    - setuptools-scm ==8.3.1
+    - wheel ==0.45.1
+  run:
+    - greenlet >=3.1.1,<4
+    - playwright
+    - pyee >=13,<14
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports: playwright
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      file: run_test.py
+
+about:
+  homepage: https://github.com/Microsoft/playwright-python
+  summary: Python version of the Playwright testing and automation library.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

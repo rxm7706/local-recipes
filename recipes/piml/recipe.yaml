@@ -1,0 +1,105 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.6.0.post2"
+
+package:
+  name: piml
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/cp310/p/PiML/PiML-0.6.0.post2-cp310-none-macosx_10_12_x86_64.whl
+  sha256: 7f9d528d4ca0f468418248d081a6a494b131e72475c437510452063d572e000b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - ipykernel
+    - ipywidgets
+    - joblib
+    - ipython
+    - numpy
+    - scipy
+    - pandas
+    - matplotlib-base
+    - seaborn-base
+    - xlrd
+    - scikit-learn
+    - xgboost
+    - statsmodels
+    - lime
+    - shap
+    - pytorch
+    - pygam
+    - natsort
+    - psutil
+    - dill
+    - packaging
+    - networkx
+    - numba
+    - jupyter-client
+    - optbinning
+    - momentchi2
+
+tests:
+  - python:
+      imports:
+        - piml
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/SelfExplainML/PiML-Toolbox
+  license: Apache
+  license_file: LICENSE
+  summary: A low-code interpretable machine learning toolbox in Python.
+  description: |
+    A low-code interpretable machine learning toolbox in Python.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: piml
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: PiML
+  cfe-purls:
+    - pkg:conda/piml@${{ version }}?channel=conda-forge
+    - pkg:pypi/piml@${{ version }}
+  cfe-upstream-repo: https://github.com/SelfExplainML/PiML-Toolbox
+  cfe-upstream-homepage: https://github.com/SelfExplainML/PiML-Toolbox
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:47:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:47:08Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

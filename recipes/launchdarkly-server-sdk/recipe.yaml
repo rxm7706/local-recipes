@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: launchdarkly-server-sdk
+  version: "9.16.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 6edd75c599b0c09b981a8ede2a954446ec23c388147e1bfcf6cfd6eaa49ae2bb
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - hatchling
+    - python ${{ python_min }}
+  run:
+    - launchdarkly-eventsource >=1.7.2,<2.0.0
+    - certifi >=2018.4.16
+    - expiringdict >=1.1.4
+    - pyrfc3339 >=1.0
+    - python >=${{ python_min }}
+    - semver >=2.10.2
+    - urllib3 >=1.26.0,<3
+
+tests:
+  - python:
+      imports:
+        - ldclient
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: LaunchDarkly SDK for Python
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  homepage: https://github.com/launchdarkly/python-server-sdk
+
+extra:
+  recipe-maintainers:
+    - xhochy

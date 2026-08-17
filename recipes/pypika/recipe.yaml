@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pypika
+  version: "0.51.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ba71a4e4f320221727619401b49b93491c589d794d5347a97bf1e8dfaf8676bb
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - typing_extensions >=4.5.0
+
+tests:
+  - python:
+      imports:
+        - pypika
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: A SQL query builder API for Python
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  homepage: https://github.com/kayak/pypika
+
+extra:
+  recipe-maintainers:
+    - thewchan
+    - mccarthyryanc

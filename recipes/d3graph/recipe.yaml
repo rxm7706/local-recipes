@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.1.0"
+
+package:
+  name: d3graph
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/d3graph/d3graph-${{ version }}.tar.gz
+  sha256: 300ab4f74069e322c4f8d31b5dad29e0e755fa89d7c533083b1ff3119d8262d9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - pandas
+    - numpy
+    - colourmap
+    - networkx >2
+    - ismember
+    - jinja2
+    - packaging
+    - markupsafe
+    - python-louvain
+    - datazets
+    - distfit
+    - tqdm
+
+tests:
+  - python:
+      imports:
+        - d3graph
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://erdogant.github.io/d3graph
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Python package to create interactive network based on d3js.
+  description: |
+    Python package to create interactive network based on d3js.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: d3graph
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: d3graph
+  cfe-purls:
+    - pkg:conda/d3graph@${{ version }}?channel=conda-forge
+    - pkg:pypi/d3graph@${{ version }}
+  cfe-upstream-repo: https://erdogant.github.io/d3graph
+  cfe-upstream-homepage: https://erdogant.github.io/d3graph
+  cfe-import-names: [d3graph]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:58:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:58:37Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

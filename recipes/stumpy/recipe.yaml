@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: stumpy
+  version: "1.14.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 1cb13696724ddab4b512b16843d37ccf4047aee19e072d1ad83024e1fa6fde96
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - numpy >=1.17
+    - scipy >=1.5
+    - numba >=0.54
+
+tests:
+  - python:
+      imports:
+        - stumpy
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - setuptools
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: STUMPY is a powerful and scalable Python library that computes something called a matrix profile, which can then be used for a variety of time series data mining tasks
+  description: |
+    STUMPY is a powerful and scalable Python library that computes something called a matrix profile, which can then be used for a variety of time series data mining tasks.
+  homepage: http://github.com/TDAmeritrade/stumpy
+  repository: https://github.com/TDAmeritrade/stumpy
+  documentation: https://github.com/TDAmeritrade/stumpy/blob/master/README.rst
+
+extra:
+  recipe-maintainers:
+    - seanlaw
+    - NimaSarajpoor

@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.13.2"
+
+package:
+  name: asyncstdlib-fw
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/asyncstdlib-fw/asyncstdlib_fw-${{ version }}.tar.gz
+  sha256: 51ad094c204c5936c3040f38c32fd6d549b391c980f21f1fa095b65fb6806a1f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - pdm-backend
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - asyncstdlib
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/asyncstdlib-fw/
+  license: MIT
+  license_file: LICENSE
+  summary: Fork of asyncstdlib that work with fireworks-ai
+  description: |
+    Fork of asyncstdlib that work with fireworks-ai
+  repository: https://github.com/maxfischer2781/asyncstdlib
+  documentation: https://asyncstdlib.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: asyncstdlib-fw
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: asyncstdlib-fw
+  cfe-purls:
+    - pkg:conda/asyncstdlib-fw@${{ version }}?channel=conda-forge
+    - pkg:pypi/asyncstdlib-fw@${{ version }}
+  cfe-upstream-repo: https://github.com/maxfischer2781/asyncstdlib
+  cfe-upstream-homepage: https://pypi.org/project/asyncstdlib-fw/
+  cfe-import-names: [asyncstdlib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:36Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:36Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

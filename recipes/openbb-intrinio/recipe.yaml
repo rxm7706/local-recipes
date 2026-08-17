@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.6.1"
+
+package:
+  name: openbb-intrinio
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/openbb-intrinio/openbb_intrinio-${{ version }}.tar.gz
+  sha256: 031755b93b0dc5c165a7541d8c4790ddb1c07700cd74a17ca83df5e0802c8c4c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - openbb-core <2.0.0,>=1.6.10
+    - requests-cache <2.0.0,>=1.1.0
+
+tests:
+  - python:
+      imports:
+        - openbb_intrinio
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/openbb-intrinio/
+  license: AGPL-3.0-only
+  license_file: LICENSE
+  summary: Intrinio extension for OpenBB
+  description: |
+    Intrinio extension for OpenBB
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: openbb-intrinio
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: openbb-intrinio
+  cfe-purls:
+    - pkg:conda/openbb-intrinio@${{ version }}?channel=conda-forge
+    - pkg:pypi/openbb-intrinio@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/openbb-intrinio/
+  cfe-upstream-homepage: https://pypi.org/project/openbb-intrinio/
+  cfe-import-names: [openbb_intrinio]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:35:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:35:32Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

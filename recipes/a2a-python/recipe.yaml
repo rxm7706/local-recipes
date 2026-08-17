@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.1"
+  python_min: "3.11"
+
+package:
+  name: a2a-python
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/a2a-python/a2a_python-${{ version }}.tar.gz
+  sha256: cda7871a63b1dc9978aac63e9f835ea47a3e4b1a37f2a47cefd85438e64ea87b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - a2a_python
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/lukehinds/a2a-python
+  license: MIT
+  license_file: LICENSE
+  summary: Python A2A Implementation
+  description: |
+    Python A2A Implementation
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: a2a-python
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: a2a-python
+  cfe-purls:
+    - pkg:conda/a2a-python@${{ version }}?channel=conda-forge
+    - pkg:pypi/a2a-python@${{ version }}
+  cfe-upstream-repo: https://github.com/lukehinds/a2a-python
+  cfe-upstream-homepage: https://github.com/lukehinds/a2a-python
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:47:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:47:43Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

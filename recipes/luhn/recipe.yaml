@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: luhn
+  version: "0.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 917174cecce8bcbbe56ac0d904dbedd06594b21b6f31d5a3ec161d455b0e59f7
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - luhn
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Generate and verify Luhn check digits
+  homepage: https://github.com/mmcloughlin/luhn
+  repository: https://github.com/mmcloughlin/luhn
+  documentation: https://pypi.org/project/luhn/
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - mwilson8
+    - rluria14
+    - benhuff

@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: torchmetrics
+  version: "1.9.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: a488609948600df52d3db4fcdab02e62aab2a85ef34da67037dc3e65b8512faa
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - typing_extensions
+    - numpy >1.20.0
+    - packaging >17.1
+    - setuptools
+    - python >=${{ python_min }}
+    - pytorch >=2.0.0
+    - lightning-utilities >=0.15.3
+
+tests:
+  - python:
+      imports:
+        - torchmetrics
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Collection of PyTorch native metrics for easy evaluating machine learning models
+  description: |
+    Torchmetrics is a metrics API created for easy metric development and usage in both PyTorch and
+    [PyTorch Lightning](https://pytorch-lightning.readthedocs.io/en/stable/). It was originally a part of
+    Pytorch Lightning, but got split off so users could take advantage of the large collection of metrics
+    implemented without having to install Pytorch Lightning (even though we would love for you to try it out).
+    We currently have around 25+ metrics implemented and we continuously is adding more metrics, both within
+    already covered domains (classification, regression ect.) but also new domains (object detection ect.).
+    We make sure that all our metrics are rigorously tested such that you can trust them.
+  homepage: https://pypi.org/project/torchmetrics/
+  repository: https://github.com/PyTorchLightning/metrics
+  documentation: https://torchmetrics.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - Borda
+    - williamFalcon

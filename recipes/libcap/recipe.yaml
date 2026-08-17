@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.78"
+
+package:
+  name: libcap
+  version: ${{ version }}
+
+source:
+  url: https://mirrors.edge.kernel.org/pub/linux/libs/security/linux-privs/libcap2/libcap-${{ version }}.tar.xz
+  sha256: 0d621e562fd932ccf67b9660fb018e468a683d7b827541df27813228c996bb11
+
+build:
+  number: 1
+  skip: not linux
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - make
+    - pkg-config
+  run_exports:
+    - ${{ pin_subpackage('libcap', upper_bound='x.x') }}
+
+tests:
+  - script:
+      - test -f "$PREFIX/lib/libcap.so"
+
+about:
+  license: BSD-3-Clause
+  license_file: License
+  summary: Implements the user-space interfaces to the POSIX 1003.1e capabilities available in Linux kernels
+  homepage: https://directory.fsf.org/wiki/Libcap
+
+extra:
+  recipe-maintainers:
+    - scopatz
+    - ehfd

@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sf-hamilton-ui
+  version: "0.0.17"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sf_hamilton_ui-${{ version }}.tar.gz
+  sha256: 056f2ccfc734fe3610486afb52d2edbd9f163520ac80e68bbe8f5b84e6a94b3e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - typer
+    - django
+    - aiofiles
+    - requests
+    - aiohttp
+    - loguru
+    - passlib
+    - psycopg2-binary
+    - colorlog
+    - django-extensions
+    - click
+    - django-ninja >=1.1.0
+    # Not in Metayaml
+    #- asgiref
+    #- psycopg2
+    #- pydantic
+    #- pymapd
+    - sf-hamilton
+
+tests:
+  - python:
+      imports:
+        - hamilton_ui
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Hamilton, the micro-framework for creating dataframes.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/dagworks-inc/hamilton
+  repository: https://github.com/dagworks-inc/hamilton
+  documentation: https://hamilton.dagworks.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - rxm7706

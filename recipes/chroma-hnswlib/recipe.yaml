@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: chroma-hnswlib
+  version: "0.7.6"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 4dce282543039681160259d29fcde6151cc9106c6461e0485f57cdccd83059b7
+
+build:
+  number: 2
+  script:
+    # HNSWLIB_NO_NATIVE is set to build without "--march=native"
+    - if: unix
+      then: export HNSWLIB_NO_NATIVE=1 && ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+    - if: win
+      then: set HNSWLIB_NO_NATIVE=1 && ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  # see https://github.com/conda-forge/hnswlib-feedstock/blob/main/recipe/meta.yaml
+  build:
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: numpy
+  host:
+    - python
+    - pip
+    - setuptools >=42
+    - pybind11 >=2.0
+    - numpy
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - hnswlib
+      pip_check: true
+
+about:
+  summary: Chromas fork of hnswlib
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/chroma-core/hnswlib
+
+extra:
+  recipe-maintainers:
+    - xhochy
+    - pavelzw

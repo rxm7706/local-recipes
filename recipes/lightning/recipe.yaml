@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: lightning
+  version: "2.6.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/lightning-${{ version }}.tar.gz
+  sha256: 16a30310ed69afde3748491feb5d13508908effd70390d2bfc203dc0812a4b4a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - packaging
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+    - wheel
+  run:
+    - fsspec <2028.0,>=2022.5.0
+    - lightning-utilities <2.0,>=0.10.0
+    - packaging <27.0,>=23.0
+    - python >=${{ python_min }}
+    - pytorch <4.0,>=2.1.0
+    - pytorch-lightning
+    - pyyaml <8.0,>5.4
+    - torchmetrics <3.0,>0.7.0
+    - tqdm <6.0,>=4.57.0
+    - typing_extensions <6.0,>4.5.0
+tests:
+  - python:
+      imports:
+        - lightning
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  homepage: https://github.com/Lightning-AI/pytorch-lightning
+  summary: The Deep Learning framework to train, deploy, and ship AI products Lightning fast.
+  license: Apache-2.0
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - Borda
+    - weiji14

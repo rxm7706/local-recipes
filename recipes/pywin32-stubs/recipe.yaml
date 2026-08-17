@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.8"
+
+package:
+  name: pywin32-stubs
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pywin32-stubs/pywin32_stubs-${{ version }}.tar.gz
+  sha256: 7a54cba16a7f4c65d21d9e315add313ae231186f9085988418e3faf9a33d9f95
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pywin32
+
+tests:
+  - python:
+      imports:
+        - win32helper
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/pywin32-stubs/
+  license: MIT
+  license_file: LICENSE
+  summary: "DEPRECATED: use types-pywin32 instead (https://pypi.org/project/types-pywin32/)"
+  description: |
+    DEPRECATED: use types-pywin32 instead (https://pypi.org/project/types-pywin32/)
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pywin32-stubs
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pywin32-stubs
+  cfe-purls:
+    - pkg:conda/pywin32-stubs@${{ version }}?channel=conda-forge
+    - pkg:pypi/pywin32-stubs@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/pywin32-stubs/
+  cfe-upstream-homepage: https://pypi.org/project/pywin32-stubs/
+  cfe-import-names: [win32helper]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:16:07Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:16:07Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

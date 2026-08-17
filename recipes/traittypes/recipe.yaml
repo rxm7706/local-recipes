@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.3"
+  sha256: 212feed38d566d772648768b78d3347c148ef23915b91c02078188e631316c86
+
+package:
+  name: traittypes
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/traittypes/traittypes-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: traittypes-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - traitlets >=4.2.2,<6.0
+
+tests:
+  - python:
+      imports:
+        - traittypes
+      pip_check: false
+
+about:
+  license: BSD-3-Clause
+  summary: Trait types for NumPy, SciPy and friends
+  license_file: LICENSE
+  homepage: https://github.com/jupyter-incubator/traittypes
+
+extra:
+  recipe-maintainers:
+    - SylvainCorlay
+    - jasongrout
+    - maartenbreddels
+    - vidartf
+    - martinRenou

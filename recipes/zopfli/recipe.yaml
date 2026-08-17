@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: zopfli
+  version: 0.2.3.post1
+  bundle: tar.gz
+  hash: 96484dc0f48be1c5d7ae9f38ed1ce41e3675fd506b27c11a6607f14b49101e99
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
+  sha256: ${{ hash }}
+
+build:
+  number: 1
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - ${{ stdlib("c") }}
+    - ${{ compiler("c") }}
+    - ${{ compiler("cxx") }}
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - setuptools_scm
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - zopfli
+      pip_check: true
+
+about:
+  license_file: COPYING
+  license: Apache-2.0
+  summary: Zopfli module for python
+  homepage: https://github.com/obp/zopfli
+  repository: https://github.com/obp/zopfli
+
+extra:
+  recipe-maintainers:
+    - jakirkham

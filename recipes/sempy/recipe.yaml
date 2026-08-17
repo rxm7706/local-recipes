@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.18"
+
+package:
+  name: sempy
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sempy/sempy-${{ version }}.tar.gz
+  sha256: d313d3ff732764cf0eb4f071bb365d38acb47a2ed04d17059453402300b14338
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - sempy
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://www.sempy.org
+  license: MIT
+  license_file: LICENSE
+  summary: A Python implementation of the spectral element method
+  description: |
+    A Python implementation of the spectral element method
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sempy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sempy
+  cfe-purls:
+    - pkg:conda/sempy@${{ version }}?channel=conda-forge
+    - pkg:pypi/sempy@${{ version }}
+  cfe-upstream-repo: http://www.sempy.org
+  cfe-upstream-homepage: http://www.sempy.org
+  cfe-import-names: [sempy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:17:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:17:34Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

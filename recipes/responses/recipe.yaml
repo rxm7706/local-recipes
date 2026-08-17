@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: responses
+  version: 0.26.2
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 9c9259b46a8349197edebf43cfa68a87e1a2802ef503ff8b2fecbabc0b45afd8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - pyyaml
+    - python >=${{ python_min }}
+    - requests >=2.30.0,<3.0
+    - urllib3 >=1.25.10,<3.0
+tests:
+  - python:
+      imports:
+        - responses
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - '*'
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A utility library for mocking out the `requests` Python library.
+  homepage: https://github.com/getsentry/responses
+
+extra:
+  recipe-maintainers:
+    - thewchan
+    - mariusvniekerk

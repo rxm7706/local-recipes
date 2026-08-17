@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: uuid-utils
+  version: "0.17.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/uuid_utils-${{ version }}.tar.gz
+  sha256: abb5667a36119019b3fa320c4d10c21ebccfcc87c8a739e6a0056cee7f48dde2
+
+build:
+  number: 0
+  skip: is_abi3 and not is_python_min
+  python:
+    version_independent: true
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - maturin
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('rust') }}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - if: is_abi3
+      then: python-abi3
+    - maturin
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - uuid_utils
+      python_version:
+        - if: is_abi3
+          then: "${{ python_min ~ '.*' }}"
+        - "*"
+  - requirements:
+      run:
+        - pip
+    script:
+      - pip check
+  - if: is_abi3 and build_platform == target_platform
+    then:
+      script:
+        - if: win
+          then: abi3audit %PREFIX%/Lib/site-packages/uuid_utils/_uuid_utils.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
+          else:
+            - export SP_DIR=$(python -c "import site; print(site.getsitepackages()[0])")
+            - abi3audit $SP_DIR/uuid_utils/_uuid_utils.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
+      requirements:
+        run:
+          - abi3audit
+
+about:
+  homepage: https://github.com/aminalaee/uuid-utils
+  summary: Drop-in replacement for Python UUID in Rust
+  repository: https://github.com/aminalaee/uuid-utils
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE.md
+    - THIRDPARTY.yml
+
+extra:
+  recipe-maintainers:
+    - moritzwilksch

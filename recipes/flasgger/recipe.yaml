@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: flasgger
+  version: "0.9.7.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ca098e10bfbb12f047acc6299cc70a33851943a746e550d86e65e60d4df245fb
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - flask >=0.10
+    - jsonschema >=3.0.1
+    - mistune
+    - python >=${{ python_min }}
+    - pyyaml >=3.0
+    - six >=1.10.0
+
+tests:
+  - python:
+      imports:
+        - flasgger
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Easy Swagger UI for your Flask API
+  homepage: https://github.com/rochacbruno/flasgger
+
+extra:
+  recipe-maintainers:
+    - lvoliveira
+    - nicoddemus
+    - igortg

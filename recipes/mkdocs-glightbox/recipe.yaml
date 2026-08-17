@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mkdocs-glightbox
+  version: "0.5.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: c7622799347c32310878e01ccf14f70648445561010911c80590cec0353370ac
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - selectolax ==0.3.29
+
+tests:
+  - python:
+      imports:
+        - mkdocs_glightbox
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: MkDocs plugin supports image lightbox with GLightbox.
+  license: MIT
+  license_file:
+    - LICENSE
+  homepage: https://blueswen.github.io/mkdocs-glightbox
+  repository: https://github.com/Blueswen/mkdocs-glightbox
+
+extra:
+  recipe-maintainers:
+    - rtlee

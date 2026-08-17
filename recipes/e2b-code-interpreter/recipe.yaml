@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.9.1"
+
+package:
+  name: e2b-code-interpreter
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/e/e2b-code-interpreter/e2b_code_interpreter-${{ version }}.tar.gz
+  sha256: 146c4254c11fd5f3341aee79ee2a39a2868a33420ef32f1d5983b77da504e2b3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - httpx <1.0.0,>=0.20.0
+    - attrs >=21.3.0
+    - e2b <3.0.0,>=2.39.1
+
+tests:
+  - python:
+      imports:
+        - e2b_code_interpreter
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://e2b.dev/
+  license: MIT
+  license_file: LICENSE
+  summary: E2B Code Interpreter - Stateful code execution
+  description: |
+    E2B Code Interpreter - Stateful code execution
+  repository: https://github.com/e2b-dev/code-interpreter/tree/main/python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: e2b-code-interpreter
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: e2b-code-interpreter
+  cfe-purls:
+    - pkg:conda/e2b-code-interpreter@${{ version }}?channel=conda-forge
+    - pkg:pypi/e2b-code-interpreter@${{ version }}
+  cfe-upstream-repo: https://github.com/e2b-dev/code-interpreter/tree/main/python
+  cfe-upstream-homepage: https://e2b.dev/
+  cfe-import-names: [e2b_code_interpreter]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:28:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:28:32Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

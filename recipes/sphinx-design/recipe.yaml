@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sphinx-design
+  version: "0.7.0"
+  python_min: "3.11"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/executablebooks/${{ name }}/archive/v${{ version }}.tar.gz
+  sha256: c2d9e45ffafc930cb552296238da300d6d0623c0816cfbabdc14534fd16e9ca3
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python 3.11.*
+    - pip
+    - flit-core >=3.4,<4
+  run:
+    - python >=${{ python_min }}
+    - sphinx >=7,<10
+
+tests:
+  - python:
+      imports:
+        - sphinx_design
+      pip_check: false
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - myst-parser >=4,<6
+        - pytest >=8.3,<8.4
+        - pytest-regressions
+        - defusedxml
+        - python ${{ python_min }}
+    script:
+      - pytest tests -vv
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A sphinx extension for designing beautiful, screen-size responsive web components.
+  homepage: https://github.com/executablebooks/sphinx-design
+  documentation: https://sphinx-design.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - awvwgk
+    - dopplershift

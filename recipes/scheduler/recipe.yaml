@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: scheduler
+  version: "0.8.11"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/scheduler-${{ version }}.tar.gz
+  sha256: b2234a069448a617abbc511b9e18f48c4deb3dcd9dcc51721d9c90ef2943b72a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=61.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - typeguard >=3.0.0
+
+tests:
+  - python:
+      imports:
+        - scheduler
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A simple in-process python scheduler library with asyncio, threading and timezone support.
+  license: LGPL-3.0-only
+  license_file: LICENSE
+  homepage: https://github.com/DigonIO/scheduler
+  documentation: https://digon.io/hyd/project/scheduler/t/master/
+
+extra:
+  recipe-maintainers:
+    - sanurielf

@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: fastavro
+  version: "1.12.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 3c79502d56cf6b76210032e1c53494ddfbc73c140bccf2ef4092b3f0825323ab
+
+build:
+  number: 1
+  script:
+    env:
+      FASTAVRO_USE_CYTHON: "1"
+    content: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+  python:
+    entry_points:
+      - fastavro = fastavro.__main__:main
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - cython
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+  host:
+    - python
+    - cython
+    - pip
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - fastavro
+      pip_check: true
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Fast read/write of AVRO files
+  homepage: https://github.com/fastavro/fastavro
+  repository: https://github.com/fastavro/fastavro
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk
+    - scottbelden
+    - tebeka
+    - fhoehle

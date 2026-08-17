@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: spacy-universal-sentence-encoder
+  version: "0.4.6"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/spacy_universal_sentence_encoder-${{ version }}.tar.gz
+  sha256: 822404c1d7c8b82ceb2385803efc11a8b3d2a08467c2083d6102a4555c82e1e2
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - tensorflow >=2.4.0,<3.0.0
+    - spacy >=3.0.0,<4.0.0
+    - tensorflow-hub
+
+tests:
+  - python:
+      imports:
+        - spacy_universal_sentence_encoder
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+
+about:
+  summary: SpaCy models for using Universal Sentence Encoder from TensorFlow Hub
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/MartinoMensio/spacy-universal-sentence-encoder
+
+extra:
+  recipe-maintainers:
+    - BastianZim

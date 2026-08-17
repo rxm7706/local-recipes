@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.0.0"
+  python_min: "3.11"
+
+package:
+  name: oslo.policy
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/oslo.policy/oslo_policy-${{ version }}.tar.gz
+  sha256: 76c132c094505e425fd9681b7f3b8423e9c9322fd4cf2fbba34015c19a09fba5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - pbr >=6.1.1
+  run:
+    - python >=${{ python_min }}
+    - requests >=2.14.2
+    - oslo.config >=6.0.0
+    - oslo.context >=2.22.0
+    - oslo.i18n >=3.15.3
+    - oslo.serialization >=2.18.0
+    - pyyaml >=5.1
+    - stevedore >=1.20.0
+    - oslo.utils >=3.40.0
+
+tests:
+  - python:
+      imports:
+        - oslo_policy
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://docs.openstack.org/oslo.policy
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Oslo Policy library
+  description: |
+    Oslo Policy library
+  repository: https://opendev.org/openstack/oslo.policy
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: oslo.policy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: oslo.policy
+  cfe-purls:
+    - pkg:conda/oslo.policy@${{ version }}?channel=conda-forge
+    - pkg:pypi/oslo.policy@${{ version }}
+  cfe-upstream-repo: https://opendev.org/openstack/oslo.policy
+  cfe-upstream-homepage: https://docs.openstack.org/oslo.policy
+  cfe-import-names: [oslo_policy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:27:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:27:34Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

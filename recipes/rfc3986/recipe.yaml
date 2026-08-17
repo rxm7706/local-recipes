@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.0"
+
+package:
+  name: rfc3986
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/rfc3986/rfc3986-${{ version }}.tar.gz
+  sha256: 97aacf9dbd4bfd829baad6e6309fa6573aaf1be3f6fa735c8ab05e46cecb261c
+
+build:
+  number: 1
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - rfc3986
+      pip_check: true
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - coverage
+        - idna
+        - pip
+        - pytest
+        - python ${{ python_min }}
+    script:
+      - coverage run --source=rfc3986 --branch -m pytest -vv --tb=long --color=yes
+      - coverage report --show-missing --skip-covered --fail-under=98
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Validating URI References per RFC 3986
+  description: |
+    A Python implementation of RFC 3986 including validation and authority parsing.
+  homepage: https://rfc3986.readthedocs.io
+  repository: https://github.com/python-hyper/rfc3986
+  documentation: https://rfc3986.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - anguslees
+    - sigmavirus24
+    - bollwyvl

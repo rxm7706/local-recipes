@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: banal
+  version: "1.0.6"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/banal-${{ version }}.tar.gz
+  sha256: 2fe02c9305f53168441948f4a03dfbfa2eacc73db30db4a93309083cb0e250a5
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - banal
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Commons of banal micro-functions for Python.
+  license: MIT
+  license_file: LICENSE
+  homepage: http://github.com/pudo/banal
+
+extra:
+  recipe-maintainers:
+    - vasudevanv

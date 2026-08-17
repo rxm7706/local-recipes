@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.1"
+
+package:
+  name: bankfind
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/bankfind/bankfind-${{ version }}.tar.gz
+  sha256: 5c5ee1abc5d7e0c36fa80e431bf665e48da4bd4afcba997ee56369b0946d028b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core >=2,<4
+  run:
+    - python >=${{ python_min }}
+    - requests ==2.24.0
+    - pandas >=0.24
+
+tests:
+  - python:
+      imports:
+        - bankfind
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/dpguthrie/bankfind
+  license: MIT
+  license_file: LICENSE
+  summary: Python interface to the FDIC's API for publically available bank data
+  description: |
+    Python interface to the FDIC's API for publically available bank data
+  documentation: https://bankfind.dpguthrie.com
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bankfind
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: bankfind
+  cfe-purls:
+    - pkg:conda/bankfind@${{ version }}?channel=conda-forge
+    - pkg:pypi/bankfind@${{ version }}
+  cfe-upstream-repo: https://github.com/dpguthrie/bankfind
+  cfe-upstream-homepage: https://github.com/dpguthrie/bankfind
+  cfe-import-names: [bankfind]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:49:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:49:02Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

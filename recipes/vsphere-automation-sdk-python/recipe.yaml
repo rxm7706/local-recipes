@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.1"
+
+package:
+  name: vsphere-automation-sdk-python
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/v/vsphere-automation-sdk-python/vsphere-automation-sdk-python-${{ version }}.tar.gz
+  sha256: a5b5b2d64a7008eb2c72872916112341bb0d5080e725e201145bb1367e59c2cd
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - vsphere_automation_sdk_python
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/vmware/vsphere-automation-sdk-python
+  license: MIT
+  license_file: LICENSE
+  summary: vsphere-automation-sdk-python
+  description: |
+    vsphere-automation-sdk-python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: vsphere-automation-sdk-python
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: vsphere-automation-sdk-python
+  cfe-purls:
+    - pkg:conda/vsphere-automation-sdk-python@${{ version }}?channel=conda-forge
+    - pkg:pypi/vsphere-automation-sdk-python@${{ version }}
+  cfe-upstream-repo: https://github.com/vmware/vsphere-automation-sdk-python
+  cfe-upstream-homepage: https://github.com/vmware/vsphere-automation-sdk-python
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:58:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:58:16Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

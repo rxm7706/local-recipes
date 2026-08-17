@@ -1,0 +1,156 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "1.15.1"
+
+recipe:
+  name: highspy
+  version: ${{ version }}
+
+source:
+  # url: https://pypi.org/packages/source/{{ name[0] }}/{{ name }}/highspy-{{ version }}.tar.gz
+  url: https://github.com/ERGO-Code/HiGHS/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: a840d269dff2fafb371dd247df13ad5e026d7ce3b35ad3dc1eedd59bf0c2fb16
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: highspy
+      version: ${{ version }}
+    requirements:
+      build:
+        - if: build_platform != target_platform
+          then:
+            - python
+            - cross-python_${{ target_platform }}
+            - numpy
+        - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - if: unix
+          then: make
+      host:
+        - python
+        - pip
+        - scikit-build-core
+        - numpy
+        - pybind11
+      run:
+        - python
+        - numpy
+      ignore_run_exports:
+        from_package:
+          - numpy
+    build:
+      script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    tests:
+      - python:
+          imports:
+            - highspy
+          pip_check: true
+      - script:
+          - python -m pytest highspy/tests/test_highspy.py
+        requirements:
+          run:
+            - python
+            - pytest
+        files:
+          source:
+            - highspy/tests/
+    about:
+      license: MIT
+      license_file: LICENSE.txt
+  - package:
+      name: highspy-extras
+      version: ${{ version }}
+    requirements:
+      build:
+        - if: build_platform != target_platform
+          then:
+            - python
+            - cross-python_${{ target_platform }}
+            - numpy
+        - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+        - ${{ compiler('cxx') }}
+        - cmake
+        - if: unix
+          then: make
+      host:
+        - python
+        - pip
+        - scikit-build-core
+        - numpy
+        - pybind11
+        - if: not osx
+          then: openblas
+        - if: not osx
+          then: libopenblas
+      run:
+        - python
+        - numpy
+      ignore_run_exports:
+        from_package:
+          - numpy
+    build:
+      script: ${{ PYTHON }} -m pip install ./highspy-extras --config-settings=cmake.define.BUILD_OPENBLAS=OFF -vv --no-deps --no-build-isolation
+    tests:
+      - python:
+          imports:
+            - highspy_extras
+          pip_check: true
+      - script:
+          - python -m pytest highspy-extras/tests/test_highspy_extras.py
+        requirements:
+          run:
+            - python
+            - pytest
+        files:
+          source:
+            - highspy-extras/tests/
+      - script:
+          interpreter: python
+          content: |
+            import highspy
+            h = highspy.Highs()
+            h.readModel("check/instances/afiro.mps")
+            h.setOptionValue("solver", "hipo")
+            h.run()
+            assert h.getModelStatus() == highspy.HighsModelStatus.kOptimal
+        files:
+          source:
+            - check/instances/afiro.mps
+        requirements:
+          run:
+          - python
+          - highspy
+    about:
+      license: Apache-2.0 AND BSD-3-Clause
+      license_file: highspy-extras/THIRD_PARTY_NOTICES.md
+
+about:
+  summary: High performance serial and parallel solver for large scale sparse linear optimization problems
+  description: |
+    HiGHS is a high performance serial and parallel solver for large scale
+    sparse linear optimization problems of the form
+
+    min ½ xᵀ Q x + cᵀ x     s.t. L ≤ Ax ≤ U; l ≤ x ≤ u
+
+    where Q must be positive semi-definite and, if Q is zero, there may be a
+    requirement that some of the variables take integer values. Thus HiGHS can
+    solve linear programming (LP) problems, convex quadratic programming (QP)
+    problems, and mixed integer programming (MIP) problems. It is mainly written in
+    C++, but also has some C. It has been developed and tested on various Linux,
+    MacOS and Windows installations.
+  homepage: https://github.com/ERGO-Code/HiGHS
+  repository: https://github.com/ERGO-Code/HiGHS
+  documentation: https://ergo-code.github.io/HiGHS/stable/
+  license: MIT
+  license_file: LICENSE.txt
+
+extra:
+  recipe-maintainers:
+    - galabovaa
+    - adament

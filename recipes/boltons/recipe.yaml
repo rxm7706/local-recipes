@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: boltons
+  version: "26.1.0"
+  hash: dd67de2cb54ea66367bb4bb4a8b030ce5d34c87771971dac6dd5b3982ab3d6c3
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/mahmoud/boltons/archive/${{ version }}.tar.gz
+  sha256: ${{ hash }}
+  file_name: boltons-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - flit-core >=3.2,<4
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - files:
+      source:
+        - boltons
+        - tests
+        - pyproject.toml
+    requirements:
+      run:
+        - pytest
+        - python ${{ python_min }}
+    script:
+      - pytest --doctest-modules boltons tests
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: >
+    boltons should be builtins. Boltons is a set of over 160 BSD-licensed, pure-Python utilities in the same spirit as--and yet conspicuously missing from--the standard library.
+
+
+  homepage: https://github.com/mahmoud/boltons
+
+extra:
+  recipe-maintainers:
+    - kalefranz
+    - nicoddemus

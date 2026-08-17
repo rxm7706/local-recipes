@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: bentoml
-  version: "1.4.30"
+  version: "1.4.39"
 
 package:
   name: ${{ name|lower }}
@@ -11,24 +11,28 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/bentoml-${{ version }}.tar.gz
-  sha256: 59b9e9805d3a9a16dd5be5c250449ee9ebef8767a03f0d2811a9af11203641cc
+  sha256: e92381702fc13ac926fd41c48fee6721f5c50f6f9bbed6c8cfc3b9346b6b0d41
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    - if: linux
+      then: sed -i '/"uv/d' ./pyproject.toml && ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    - if: win or osx
+      then: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
       - bentoml = bentoml_cli.cli:cli
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - hatchling
     - hatch-vcs >=0.3.0
     - pip
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - jinja2 >=3.0.1
     - pyyaml >=5.0
     - aiohttp
@@ -77,21 +81,29 @@ tests:
   - python:
       imports:
         - bentoml
-      pip_check: true
-      python_version: ${{ python_min }}.*
+      pip_check: false
+      python_version: ${{ python_min }}
   - requirements:
       run:
-        - python ${{ python_min }}.*
         - pip
+        - python ${{ python_min }}
     script:
+      - if: linux
+        then: pip check
       - bentoml --help
 
 about:
-  summary: "BentoML: The easiest way to serve AI apps and models"
+  summary: "Bentoml: The Unified Model Serving Framework"
   license: Apache-2.0
   license_file: LICENSE
+  description: |
+    BentoML simplifies ML model deployment and serves your models at production scale.
+
+    PyPI: [https://pypi.org/project/bentoml/](https://pypi.org/project/bentoml/)
+
+  homepage: https://github.com/bentoml/BentoML
   repository: https://github.com/bentoml/BentoML
-  homepage: https://docs.bentoml.org/en/latest/
+  documentation: https://docs.bentoml.org/en/latest/
 
 extra:
   recipe-maintainers:

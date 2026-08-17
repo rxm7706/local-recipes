@@ -2,20 +2,21 @@
 schema_version: 1
 
 context:
+  name: basedtyping
   version: "0.1.10"
 
 package:
-  name: basedtyping
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/b/basedtyping/basedtyping-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/basedtyping-${{ version }}.tar.gz
   sha256: d7600917ec9f232c9eb4266916c2ea5a4719ffca59fb7902fc96fd59a4678110
 
 build:
+  number: 2
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 0
 
 requirements:
   host:
@@ -23,8 +24,10 @@ requirements:
     - poetry-core >=1.0.8
     - pip
   run:
-    - python >=${{ python_min }},<4.0
-    - typing-extensions >=4.12.2,<5.0.0
+    - python >=${{ python_min }},<4.0.0
+    - typing-extensions >=4.1.0
+    - mypy_extensions >=1.0.0
+    - tomli >=1.1.0
 
 tests:
   - python:
@@ -34,15 +37,11 @@ tests:
       python_version: ${{ python_min }}.*
 
 about:
+  summary: Utilities for basedmypy
+  description: It's recommended to use basedmypy when using basedtyping, as there are specialised adaptations made to basedmypy to support some functionality of this package.
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/KotlinIsland/basedtyping
-  repository: https://github.com/KotlinIsland/basedtyping
-  summary: Utilities for basedmypy
-  description: |
-    It's recommended to use basedmypy when using basedtyping, as there are
-    specialised adaptations made to basedmypy to support some functionality of
-    this package.
 
 extra:
   recipe-maintainers:

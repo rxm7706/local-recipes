@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: property-manager
+  version: "3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 93e76da9ae7af13cccc2cd1e3b47219950c56c125cd962aaed693894af267c54
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python
+  run:
+    - humanfriendly >=4.12
+    - python
+    - verboselogs >=1.1
+
+tests:
+  - python:
+      imports:
+        - property_manager
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Useful property variants for Python programming (required properties, writable properties, cached properties, etc)
+  homepage: https://property-manager.readthedocs.org
+  repository: https://github.com/xolox/python-property-manager
+  documentation: https://property-manager.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - rpetit3

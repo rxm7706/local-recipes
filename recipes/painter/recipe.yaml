@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3.1"
+
+package:
+  name: painter
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/painter/painter-${{ version }}.tar.gz
+  sha256: 3373463d584ba9bbbb23d570c37893e7930b93704fe1149df88e9d2ef906fc88
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - painter
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/fgimian/painter
+  license: MIT
+  license_file: LICENSE
+  summary: Your own expressive painter who colors text in your terminal.
+  description: |
+    Your own expressive painter who colors text in your terminal.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: painter
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: painter
+  cfe-purls:
+    - pkg:conda/painter@${{ version }}?channel=conda-forge
+    - pkg:pypi/painter@${{ version }}
+  cfe-upstream-repo: https://github.com/fgimian/painter
+  cfe-upstream-homepage: https://github.com/fgimian/painter
+  cfe-import-names: [painter]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:28:28Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:28:28Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

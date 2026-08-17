@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mkdocstrings-python
+  version: "2.0.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 3a4d92556ad39637e88af94a5374213af9a8e3040c3824ceaed04b486c017594
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - pdm >2
+    - pdm-backend
+  run:
+    - python >=${{ python_min }}
+    - mkdocstrings >=0.30
+    - mkdocs-autorefs >=1.4
+    - typing_extensions >=4.0
+    - griffelib >=2.0
+
+tests:
+  - python:
+      imports:
+        - mkdocstrings_handlers.python
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A Python handler for mkdocstrings.
+  license: ISC
+  license_file: LICENSE
+  homepage: https://mkdocstrings.github.io/python
+  repository: https://github.com/mkdocstrings/python
+
+extra:
+  recipe-maintainers:
+    - bandersen23

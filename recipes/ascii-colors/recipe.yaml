@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.11.26"
+
+package:
+  name: ascii-colors
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/ascii-colors/ascii_colors-${{ version }}.tar.gz
+  sha256: aa58bfc95e0c666a9e49bcc980fc1ef72e3fcdc17a383aa989b7391b0c00a423
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=77.0
+  run:
+    - python >=${{ python_min }}
+    - wcwidth
+
+tests:
+  - python:
+      imports:
+        - ascii_colors
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/ParisNeo/ascii_colors
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A Python library for rich terminal output with advanced logging features.
+  description: |
+    A Python library for rich terminal output with advanced logging features.
+  repository: https://github.com/ParisNeo/ascii_colors
+  documentation: https://parisneo.github.io/ascii_colors/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ascii-colors
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ascii-colors
+  cfe-purls:
+    - pkg:conda/ascii-colors@${{ version }}?channel=conda-forge
+    - pkg:pypi/ascii-colors@${{ version }}
+  cfe-upstream-repo: https://github.com/ParisNeo/ascii_colors
+  cfe-upstream-homepage: https://github.com/ParisNeo/ascii_colors
+  cfe-import-names: [ascii_colors]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:02:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:02:41Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # Dep-first for P1 lightrag-hku 1.5.6 (pipmaster → ascii-colors). Local-only.
+####

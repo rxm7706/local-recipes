@@ -3,20 +3,23 @@ schema_version: 1
 
 context:
   name: openlineage-python
-  version: "1.35.0"
+  version: "1.52.0"
+  python_min: '3.10'
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/openlineage_python-${{ version }}.tar.gz
-  sha256: 22d3d861d78a07afd8dd6a01b89f59b2b1bf9891614e34f915dcb02073216755
+  url: https://github.com/OpenLineage/OpenLineage/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 20a85962b78732f40b80071a8921daa754783361054c1425eb16c8b1210f8b35
 
 build:
-  number: 1
+  number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    - cd client/python
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
       - ol-generate-code = openlineage.client.generator.cli:main
@@ -24,7 +27,7 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling >=1.17
+    - uv-build >=0.9.4,<0.10.0
     - pip
   run:
     - python >=${{ python_min }},<4.0
@@ -62,3 +65,4 @@ extra:
   recipe-maintainers:
     - rxm7706
     - millsks
+    - xylar

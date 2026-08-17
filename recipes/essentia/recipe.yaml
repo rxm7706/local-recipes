@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.1b6.dev1438"
+
+package:
+  name: essentia
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/cp314/e/essentia/essentia-2.1b6.dev1438-cp314-cp314-macosx_15_0_arm64.whl
+  sha256: 3a4a51f7b59d76b9beb9a1aacdaa9b9c0de89f14b02ab45050f86230241044c5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - numpy >=1.25
+    - pyyaml
+    - six
+
+tests:
+  - python:
+      imports:
+        - essentia
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://essentia.upf.edu
+  license: AGPL-3.0-only
+  license_file: LICENSE
+  summary: Library for audio and music analysis, description and synthesis
+  description: |
+    Library for audio and music analysis, description and synthesis
+  repository: https://github.com/MTG/essentia
+  documentation: http://essentia.upf.edu
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: essentia
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: essentia
+  cfe-purls:
+    - pkg:conda/essentia@${{ version }}?channel=conda-forge
+    - pkg:pypi/essentia@${{ version }}
+  cfe-upstream-repo: https://github.com/MTG/essentia
+  cfe-upstream-homepage: http://essentia.upf.edu
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:47:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:47:59Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

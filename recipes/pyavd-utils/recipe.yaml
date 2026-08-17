@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.7"
+
+package:
+  name: pyavd-utils
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/cp310/p/pyavd-utils/pyavd_utils-0.0.7-cp310-abi3-macosx_10_12_x86_64.whl
+  sha256: 4234efd9060066a17d7658d81baeb89c74b184e59c3bfdc6e7f92b759e5c91ff
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pyavd_utils
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://avd.arista.com
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Rust based utilities used by PyAVD. Should not be used directly and may not follow semantic versioning.
+  description: |
+    Rust based utilities used by PyAVD. Should not be used directly and may not follow semantic versioning.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyavd-utils
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyavd-utils
+  cfe-purls:
+    - pkg:conda/pyavd-utils@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyavd-utils@${{ version }}
+  cfe-upstream-repo: https://avd.arista.com
+  cfe-upstream-homepage: https://avd.arista.com
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:39:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:39:27Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

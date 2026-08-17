@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.8"
+
+package:
+  name: coboljsonifier
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/coboljsonifier/coboljsonifier-${{ version }}.tar.gz
+  sha256: ebb715af4fad8d093589fc53433a53f59c6e3356a4b85503d56fb0e699aa7f23
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=42
+    - wheel
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - coboljsonifier
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/jrperin/cobol-copybook.jsonifier
+  license: MIT
+  license_file: LICENSE
+  summary: Convert cobol copybook to Json and parse data files based on it
+  description: |
+    Convert cobol copybook to Json and parse data files based on it
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: coboljsonifier
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: coboljsonifier
+  cfe-purls:
+    - pkg:conda/coboljsonifier@${{ version }}?channel=conda-forge
+    - pkg:pypi/coboljsonifier@${{ version }}
+  cfe-upstream-repo: https://github.com/jrperin/cobol-copybook.jsonifier
+  cfe-upstream-homepage: https://github.com/jrperin/cobol-copybook.jsonifier
+  cfe-import-names: [coboljsonifier]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:55:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:55:30Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

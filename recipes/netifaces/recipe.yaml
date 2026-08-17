@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: netifaces
+  version: "0.11.0"
+  bundle: tar.gz
+  hash_val: 043a79146eb2907edf439899f262b3dfe41717d34124298ed281139a8b93ca32
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
+  sha256: ${{ hash_val }}
+  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+
+build:
+  number: 4
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - setuptools
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - netifaces
+      pip_check: true
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Portable network interface information.
+  homepage: https://github.com/al45tair/netifaces
+  repository: https://github.com/al45tair/netifaces
+
+extra:
+  recipe-maintainers:
+    - anguslees
+    - minrk

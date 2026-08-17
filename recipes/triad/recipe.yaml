@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: triad
+  version: 1.0.2
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 4fe0b7ab2e95105971b7db694c344dee4d207d335bf7ddb501f2cb9c09790be2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.0
+  run:
+    - python >=${{ python_min }}
+    - fsspec >=2022.5.0
+    - numpy
+    - pandas >=2
+    - pyarrow >=6.0.1
+    - six
+
+tests:
+  - python:
+      imports:
+        - triad
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A collection of python utility functions for Fugue projects
+  homepage: https://github.com/fugue-project/triad
+  repository: https://github.com/fugue-project/triad
+  documentation: https://triad.readthedocs.org
+
+extra:
+  recipe-maintainers:
+    - charlesbluca
+    - thewchan
+    - kvnkho
+    - goodwanghan
+    - rdmolony

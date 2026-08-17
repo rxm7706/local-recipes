@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "1.11.7"
+  version: "1.10.1"
 
 package:
   name: microsoft-kiota-bundle
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/m/microsoft-kiota-bundle/microsoft_kiota_bundle-${{ version }}.tar.gz
-  sha256: 54a4359f711706eda92a051c5a4d0294d92d4010d5e5dd3994bff001c4695769
+  sha256: 76975eed76fb01fcdd760a9968552e629292fc0b7a2c25b7ffd6c697ebdd0c99
 
 build:
   number: 0
@@ -22,7 +22,6 @@ requirements:
     - python ${{ python_min }}.*
     - poetry-core
     - pip
-    - flit-core
   run:
     - python >=${{ python_min }}
     - microsoft-kiota-abstractions ${{ version }}.*

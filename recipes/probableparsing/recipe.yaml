@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: probableparsing
+  version: "0.0.1"
+  hashtype: md5
+  hash: 960a1fab176276070111f1f9b2080cca
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ hash }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1000
+  noarch: python
+  script: python setup.py install --single-version-externally-managed --record record.txt
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - future
+  run:
+    - python
+    - future
+
+tests:
+  - python:
+      imports:
+        - probableparsing
+      pip_check: false
+
+about:
+  license: MIT
+  summary: Common methods for probable parsing
+  homepage: https://github.com/datamade/probableparsing
+
+extra:
+  recipe-maintainers:
+    - wyseguy7

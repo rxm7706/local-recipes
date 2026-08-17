@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "13.3.1"
+
+package:
+  name: cuda-toolkit
+  version: ${{ version }}
+
+source:
+  url: https://developer.download.nvidia.com/compute/cuda/redist/cuda_documentation/LICENSE.txt
+  sha256: e2c71babfd18a8e69542dd7e9ca018f9caa438094001a58e6bc4d8c999bf0d07
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  run:
+    - if: linux
+      then: __linux
+    - if: win
+      then: __win
+    - cuda-compiler 13.3.1.*
+    - cuda-libraries 13.3.1.*
+    - cuda-libraries-dev 13.3.1.*
+    - cuda-nvml-dev 13.3.29.*
+    - cuda-tools 13.3.1.*
+
+tests:
+  - script:
+      - exit 0
+
+about:
+  license_file: LICENSE.txt
+  license: LicenseRef-NVIDIA-End-User-License-Agreement
+  summary: Meta-package containing all toolkit packages for CUDA development
+  description: |
+    Meta-package containing all toolkit packages for CUDA development
+  homepage: https://developer.nvidia.com/cuda-toolkit
+  documentation: https://docs.nvidia.com/cuda/index.html
+
+extra:
+  recipe-maintainers:
+    - conda-forge/cuda

@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: types-pytz
+  version: "2026.3.1.20260727"
+
+package:
+  name: ${{ name | lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/types_pytz-${{ version }}.tar.gz
+  sha256: 4364075b6867dd15b210bb8c1d29727d609917129b45600defe1d4b3eda5ecb9
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - package_contents:
+      site_packages:
+        - pytz-stubs/__init__.pyi
+  - python:
+      imports: []
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  homepage: https://github.com/python/typeshed
+  summary: Typing stubs for pytz
+  license: Apache-2.0 AND MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - fhoehle
+    - conda-forge/mypy

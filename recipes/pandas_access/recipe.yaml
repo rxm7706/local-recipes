@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.1"
+
+package:
+  name: pandas_access
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pandas_access/pandas_access-${{ version }}.tar.gz
+  sha256: 7849140375a8f32037735051dbec55dec0570e1975a405f90b5b75fd582e21ed
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pandas_access
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/jbn/pandas_access
+  license: MIT
+  license_file: LICENSE
+  summary: A tiny, subprocess-based tool for reading a MS Access database(.rdb) as a Pandas DataFrame.
+  description: |
+    A tiny, subprocess-based tool for reading a MS Access database(.rdb) as a Pandas DataFrame.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pandas_access
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pandas_access
+  cfe-purls:
+    - pkg:conda/pandas_access@${{ version }}?channel=conda-forge
+    - pkg:pypi/pandas-access@${{ version }}
+  cfe-upstream-repo: https://github.com/jbn/pandas_access
+  cfe-upstream-homepage: https://github.com/jbn/pandas_access
+  cfe-import-names: [pandas_access]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:28:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:28:37Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

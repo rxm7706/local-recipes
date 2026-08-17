@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: fvcore
+  version: 0.1.5.post20221221
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: f2fb0bb90572ae651c11c78e20493ed19b2240550a7e4bbb2d6de87bdd037860
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - numpy
+    - pillow
+    - portalocker
+    - python >=3.6
+    - pyyaml >=5.1
+    - tabulate
+    - termcolor >=1.1
+    - tqdm
+    - yacs >=0.1.6
+
+tests:
+  - python:
+      imports:
+        - fvcore
+      pip_check: false
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE  # license file not included in pypi tarball, packaged in recipe
+  summary: Collection of common code shared among different research projects in FAIR computer vision team
+  homepage: https://github.com/facebookresearch/fvcore
+  repository: https://github.com/facebookresearch/fvcore
+  documentation: https://github.com/facebookresearch/fvcore
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - rluria14
+    - oblute

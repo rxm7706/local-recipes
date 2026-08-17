@@ -1,44 +1,43 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-schema_version: 1
-
 context:
-  name: "uuid7"
   version: "0.1.0"
 
 package:
-  name: ${{ name | lower }}
+  name: uuid7
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/u/uuid7/uuid7-${{ version }}.tar.gz
   sha256: 8c57aa32ee7456d3cc68c95c4530bc571646defac01895cfc73545449894a63c
 
 build:
-  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools
     - pip
+    - setuptools
   run:
     - python >=${{ python_min }}
 
 tests:
   - python:
+      python_version:
+        - '*'
+        - ${{ python_min }}.*
       imports:
         - uuid_extensions
       pip_check: true
-      python_version: ${{ python_min }}.*
 
 about:
+  homepage: https://github.com/stevesimmons/uuid7
   summary: UUID version 7, generating time-sorted UUIDs with 200ns time resolution and 48 bits of randomness
   license: MIT
   license_file: LICENSE
-  homepage: https://github.com/stevesimmons/uuid7
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - MertErtugrulQC

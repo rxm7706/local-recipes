@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.3"
+
+package:
+  name: mermaid-cli
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mermaid-cli/mermaid_cli-${{ version }}.tar.gz
+  sha256: a9116e898c4fefaced3a1256ac9a9741e973f30d9c82d49b9674832413e92b79
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - click >=8.0.0
+    - playwright >=1.30.0
+    - colorama >=0.4.4
+
+tests:
+  - python:
+      imports:
+        - mermaid_cli
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/seigok/mermaid-cli-python
+  license: MIT
+  license_file: LICENSE
+  summary: Command-line interface and Python library for mermaid diagrams
+  description: |
+    Command-line interface and Python library for mermaid diagrams
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mermaid-cli
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mermaid-cli
+  cfe-purls:
+    - pkg:conda/mermaid-cli@${{ version }}?channel=conda-forge
+    - pkg:pypi/mermaid-cli@${{ version }}
+  cfe-upstream-repo: https://github.com/seigok/mermaid-cli-python
+  cfe-upstream-homepage: https://github.com/seigok/mermaid-cli-python
+  cfe-import-names: [mermaid_cli]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:31:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:31:41Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

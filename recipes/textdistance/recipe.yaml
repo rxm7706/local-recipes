@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: textdistance
+  version: "4.6.3"
+  sha256: d6dabc50b4ea832cdcf0e1e6021bd0c7fcd9ade155888d79bb6a3c31fce2dc6f
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - textdistance
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: TextDistance – python library for comparing distance between two or more sequences by many algorithms.
+  description: |
+    TextDistance – python library for comparing distance between two or more sequences by many algorithms.
+  homepage: https://github.com/orsinium/textdistance
+  repository: https://github.com/orsinium/textdistance
+  documentation: https://pypi.org/project/textdistance/#description
+
+extra:
+  recipe-maintainers:
+    - cu8blank
+    - andfoy
+    - ccordoba12

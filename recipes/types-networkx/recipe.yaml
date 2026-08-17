@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: types-networkx
+  version: "3.6.1.20260728"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/types_networkx-${{ version }}.tar.gz
+  sha256: f193e4fc6a41c973c7d687fa3c12f8008d8e7dcd22b0ab62f0300cc47b65eb28
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - numpy >=1.20
+
+tests:
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+  - package_contents:
+      site_packages:
+        - networkx-stubs/__init__.pyi
+
+about:
+  summary: Typing stubs for networkx
+  license: Apache-2.0 AND MIT
+  license_file: LICENSE
+  homepage: https://github.com/python/typeshed
+  repository: https://github.com/python/typeshed
+
+extra:
+  recipe-maintainers:
+    - fhoehle
+    - '0xbe7a'

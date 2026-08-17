@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyobjc-framework-FSEvents
+  version: "12.2.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyobjc_framework_fsevents-${{ version }}.tar.gz
+  sha256: 85230473b0007a9f9654e08eb1215b5632f36a83b0b431a562f193384695388d
+
+build:
+  number: 0
+  skip: not osx or (arm64 and match(python, "<3.9"))
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+    - pyobjc-core 12.2.2.*
+    - pyobjc-framework-cocoa 12.2.2.*
+
+tests:
+  - python:
+      imports:
+        - FSEvents
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Wrappers for the framework FSEvents on macOS
+  homepage: https://github.com/ronaldoussoren/pyobjc
+
+extra:
+  recipe-maintainers:
+    - larsoner
+    - hoechenberger
+    - xhochy

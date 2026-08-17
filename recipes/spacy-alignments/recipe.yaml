@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.9.2"
+
+package:
+  name: spacy-alignments
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/spacy-alignments/spacy_alignments-${{ version }}.tar.gz
+  sha256: 1c50b50d261550d3220887cfd0a12a6e85e709d815a66949f6b92340e4278d69
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('rust') }}
+  host:
+    - pip
+    - python
+    - setuptools
+    - setuptools-rust
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - spacy_alignments
+      pip_check: false
+  - requirements:
+      run:
+        - pytest
+        - hypothesis
+    script:
+      - python -m pytest --tb=native --pyargs spacy_alignments
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Align tokenizations for spaCy + transformers
+  description: |
+    A spaCy package for Yohei Tamura's Rust tokenizations library.
+  homepage: https://spacy.io/
+  repository: https://github.com/explosion/spacy-alignments
+  documentation: https://github.com/explosion/spacy-alignments
+
+extra:
+  recipe-maintainers:
+    - conda-forge/spacy

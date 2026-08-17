@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: robotframework-excellib
+  version: "2.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robotframework-excellib-${{ version }}.tar.gz
+  sha256: 67303095833c0e0583d617d646763cbb646765cdd5dfaf248228010297836588
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - openpyxl >=2.4.1
+    - robotframework >=3.0.3
+
+tests:
+  - python:
+      imports:
+        - ExcelLibrary
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Robot Framework library for working with Excel documents
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/peterservice-rnd/robotframework-excellib
+
+extra:
+  recipe-maintainers:
+    - rxm7706

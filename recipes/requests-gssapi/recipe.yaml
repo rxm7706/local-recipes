@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: requests-gssapi
+  version: "1.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: ba27eb329f4840d965bc8fa5d360c627c74349efa6156ca501ad89afc6a134f4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - python-gssapi
+    - requests >=1.1.0
+
+tests:
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - pip
+        - pytest
+        - python ${{ python_min }}
+    script:
+      - python -m pip check
+      - python -m pip show requests-gssapi
+      - python -m pytest -ra -v tests/
+
+about:
+  summary: A GSSAPI authentication handler for python-requests
+  license: ISC
+  license_file: LICENSE
+  description: |
+    Requests is an HTTP library, written in Python, for human beings.
+    This library adds optional GSSAPI authentication support and supports
+    mutual authentication.
+
+    It provides a fully backward-compatible shim for the old
+    python-requests-kerberos library: simply replace `import requests_kerberos`
+    with `import requests_gssapi`.
+    A more powerful interface is provided by the HTTPSPNEGOAuth component,
+    but this is of course not guaranteed to be compatible.
+
+
+  homepage: https://github.com/pythongssapi/requests-gssapi
+  repository: https://github.com/pythongssapi/requests-gssapi.git
+
+extra:
+  recipe-maintainers:
+    - duncanmmacleod

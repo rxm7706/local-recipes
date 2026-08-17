@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.4.1"
+
+package:
+  name: pyapiary
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pyapiary/pyapiary-${{ version }}.tar.gz
+  sha256: 69792c7c2174ab4b644840f2b9ef745364fc0fe21a7bd4375c9ff125aa24ce3c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - elasticsearch <10.0.0,>=9.1.1
+    - httpx <0.29.0,>=0.28.1
+    - psycopg-binary <4.0.0,>=3.3.4
+    - psycopg-pool <4.0.0,>=3.3.1
+    - psycopg <4.0.0,>=3.3.4
+    - pymongo <5.0.0,>=4.15.0
+    - python-dotenv <2.0.0,>=1.1.1
+    - splunk-sdk <3.0.0,>=2.1.1
+    - tenacity <10.0.0,>=9.1.2
+    - trino <0.338.0,>=0.337.0
+
+tests:
+  - python:
+      imports:
+        - pyapiary
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/robd518/pyapiary
+  license: MIT
+  license_file: LICENSE
+  summary: A simple, lightweight set of connectors and functions to various APIs and DBMSs, controlled by a central broker.
+  description: |
+    A simple, lightweight set of connectors and functions to various APIs and DBMSs, controlled by a central broker.
+  repository: https://github.com/robd518/pyapiary
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyapiary
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyapiary
+  cfe-purls:
+    - pkg:conda/pyapiary@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyapiary@${{ version }}
+  cfe-upstream-repo: https://github.com/robd518/pyapiary
+  cfe-upstream-homepage: https://github.com/robd518/pyapiary
+  cfe-import-names: [pyapiary]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:32:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:32:09Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

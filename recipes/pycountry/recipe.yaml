@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pycountry
+  version: "24.6.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: b61b3faccea67f87d10c1f2b0fc0be714409e8fcdcc1315613174f6466c10221
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.6,<4.0
+    - pip
+    - poetry-core
+  run:
+    - python >=3.6,<4.0
+    - setuptools
+
+tests:
+  - python:
+      imports:
+        - pycountry
+      pip_check: true
+
+about:
+  license: LGPL-2.1-or-later
+  license_file: LICENSE.txt
+  summary: pycountry provides the ISO databases for the standards
+  description: |
+    The package includes a copy from Debian’s pkg-isocodes and makes the
+    data accessible through a Python API.
+    Translation files for the various strings are included as well.
+  homepage: https://pypi.org/project/pycountry/
+  repository: https://github.com/flyingcircusio/pycountry
+  documentation: https://pypi.org/project/pycountry/
+
+extra:
+  recipe-maintainers:
+    - CurtLH

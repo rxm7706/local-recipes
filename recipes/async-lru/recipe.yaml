@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.3.0"
+  python_check_max: "3.14"
+
+package:
+  name: async-lru
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/async_lru/async_lru-${{ version }}.tar.gz
+  sha256: 89bdb258a0140d7313cf8f4031d816a042202faa61d0ab310a0a538baa1c24b6
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - typing_extensions >=4.0.0
+
+tests:
+  - python:
+      imports: async_lru
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - mypy
+        - pytest-asyncio
+        - pytest-cov
+        - python ${{ python_min }}.*
+    script:
+      - coverage run --source=async_lru -m pytest -vv --asyncio-mode=auto --tb=long --color=yes
+      - coverage report --show-missing --skip-covered --fail-under=89
+      - mypy -m async_lru
+
+about:
+  summary: Simple lru_cache for asyncio
+  license: MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/async-lru
+  repository: https://github.com/aio-libs/async-lru
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

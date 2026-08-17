@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.7.0"
+
+package:
+  name: mcp-server-tree-sitter
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mcp-server-tree-sitter/mcp_server_tree_sitter-${{ version }}.tar.gz
+  sha256: ca01ed60055f2a4abe172f0d8184bdd0150ee39aa3888ec4d9073187e81a5fa0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - h11 >=0.16.0
+    - mcp >=1.23.0
+    - pydantic >=2.0.0
+    - pygments >=2.20.0
+    - pyyaml >=6.0
+    - starlette >=0.49.1
+    - tree-sitter-language-pack >=0.6.1
+    - tree-sitter >=0.24.0
+    - types-pyyaml >=6.0.12.20241230
+
+tests:
+  - python:
+      imports:
+        - mcp_server_tree_sitter
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/wrale/mcp-server-tree-sitter
+  license: MIT
+  license_file: LICENSE
+  summary: MCP Server for Tree-sitter code analysis
+  description: |
+    MCP Server for Tree-sitter code analysis
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mcp-server-tree-sitter
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mcp-server-tree-sitter
+  cfe-purls:
+    - pkg:conda/mcp-server-tree-sitter@${{ version }}?channel=conda-forge
+    - pkg:pypi/mcp-server-tree-sitter@${{ version }}
+  cfe-upstream-repo: https://github.com/wrale/mcp-server-tree-sitter
+  cfe-upstream-homepage: https://github.com/wrale/mcp-server-tree-sitter
+  cfe-import-names: [mcp_server_tree_sitter]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:37:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:37:58Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

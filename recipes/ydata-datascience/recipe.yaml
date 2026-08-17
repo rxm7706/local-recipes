@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.7.0"
+
+package:
+  name: ydata-datascience
+  version: ${{ version }}
+
+source:
+  url: https://github.com/ydataai/python-core/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 8655a78b478139dc7c8cf6e0ab29cd9bd1ab74e684502ab1422147d5002ae459
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - core.ydata
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/ydataai/python-core
+  license: MIT
+  license_file: LICENSE
+  summary: Data science functionalities for all python packages at YData
+  description: |
+    Data science functionalities for all python packages at YData
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ydata-datascience
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ydata-datascience
+  cfe-purls:
+    - pkg:conda/ydata-datascience@${{ version }}?channel=conda-forge
+    - pkg:pypi/ydata-datascience@${{ version }}
+  cfe-upstream-repo: https://github.com/ydataai/python-core
+  cfe-upstream-homepage: https://github.com/ydataai/python-core
+  cfe-import-names: [core.ydata]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:55:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:55:59Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

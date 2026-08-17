@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "12.0.1"
+  python_min: "3.11.0"
+
+package:
+  name: testfixtures
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/testfixtures/testfixtures-${{ version }}.tar.gz
+  sha256: aad7ba894d0093ea41b5b14bbb4c12fef727e50c9fb086facf5d9a972174171a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python 3.11.0.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - testfixtures
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: A collection of helpers and mock objects for unit tests and doc tests.
+  homepage: https://testfixtures.readthedocs.io
+  repository: https://github.com/Simplistix/testfixtures
+  documentation: https://testfixtures.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - ChrisBarker-NOAA
+    - JamesMakela-NOAA
+    - cjw296

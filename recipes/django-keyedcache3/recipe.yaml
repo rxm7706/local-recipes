@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-keyedcache3
+  version: "1.5.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django-keyedcache3-${{ version }}.tar.gz
+  sha256: aa18aa14fb010ab017be26c97e30b477d63a8b75f22e1a3c3ec27ae2e6d5363c
+
+build:
+  number: 3
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=1.8
+
+tests:
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - python -c "import importlib.util; assert importlib.util.find_spec('keyedcache')"
+      - pip check
+
+about:
+  summary: keyedcache
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/kunaldeo/django-keyedcache3
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - rxm7706

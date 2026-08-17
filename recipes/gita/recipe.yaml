@@ -2,40 +2,46 @@
 schema_version: 1
 
 context:
+  name: gita
   version: "0.16.8.2"
 
 package:
-  name: gita
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/g/gita/gita-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/gita-${{ version }}.tar.gz
   sha256: 064e5cbcfa5df76409cfd8e70142f8153f6ecc40fb35d3a28a0a04054d5fb3fd
 
 build:
   number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - gita = gita.__main__:main
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
+    - packaging
     - python >=${{ python_min }}
     - argcomplete
-    - packaging
 
 tests:
   - python:
       imports:
         - gita
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
-  - script:
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
       - gita --help
 
 about:
@@ -43,11 +49,6 @@ about:
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/nosarthur/gita
-  repository: https://github.com/nosarthur/gita
-  description: |
-    gita is a command-line tool to manage multiple git repositories side by
-    side. It displays the status of each repo, runs delegated git/shell
-    commands across groups of repos, and provides shell auto-completion.
 
 extra:
   recipe-maintainers:

@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.1.dev0"
+
+package:
+  name: llama2
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/l/llama2/llama2-0.0.1.dev0-py3-none-any.whl
+  sha256: 070916080fe883e0f1580e6df0ec7706b8dfa150c8d4b136dc92f5ac7aea7624
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pytorch
+
+tests:
+  - python:
+      imports:
+        - llama2
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/llama2/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: llama2
+  description: |
+    llama2
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: llama2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: llama2
+  cfe-purls:
+    - pkg:conda/llama2@${{ version }}?channel=conda-forge
+    - pkg:pypi/llama2@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/llama2/
+  cfe-upstream-homepage: https://pypi.org/project/llama2/
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:02:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:02:41Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

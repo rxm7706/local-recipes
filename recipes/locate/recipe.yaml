@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: locate
+  version: "1.1.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/locate-${{ version }}.tar.gz
+  sha256: 432750f5b7e89f8c99942ca7d8722ccd1e7954b20e6a973027fccb6cc00af857
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools-scm
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - locate
+      pip_check: true
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - pip
+        - pytest
+        - python ${{ python_min }}
+    script:
+      - pytest -vvv --capture=tee-sys tests
+
+about:
+  summary: Locate the file location of your current running script.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/AutoActuary/locate
+
+extra:
+  recipe-maintainers:
+    - thewchan

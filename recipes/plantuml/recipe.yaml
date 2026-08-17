@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2026.6"
+  openjdk_min: "8"
+  openjdk_check_max: "25"
+  contains_version: |
+    ${{ "grep -iE" if unix else "findstr /c" }} "${{ version | replace('.', '\\.') }}"
+
+package:
+  name: plantuml
+  version: ${{ version }}
+
+source:
+  url: https://github.com/plantuml/plantuml/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 323ca8a555cd14c1e1d439f314cda8796ddeca663f533ea0068a9d05cc0c0b84
+
+build:
+  number: 0
+  script:
+    file: build-plantuml
+
+requirements:
+  build:
+    - ant
+    - graphviz
+    - openjdk ${{ openjdk_min }}.*
+  run:
+    - openjdk >=${{ openjdk_min }}
+    - graphviz
+
+tests:
+  - requirements:
+      run:
+        - openjdk ${{ openjdk_min }}.*
+    script:
+      - plantuml -version
+      - plantuml -help
+      - plantuml -version | ${{ contains_version }}
+  - requirements:
+      run:
+        - openjdk ${{ openjdk_check_max }}.*
+    script:
+      - plantuml -version
+      - plantuml -help
+      - plantuml -version | ${{ contains_version }}
+
+about:
+  homepage: http://plantuml.com
+  license_file: COPYING
+  license: GPL-3.0-or-later
+  repository: https://github.com/plantuml/plantuml
+  summary: Generate UML diagram from textual description
+  description: |
+    PlantUML is a component that allows to quickly write:
+
+    - Sequence diagram,
+    - Use case diagram,
+    - Class diagram,
+    - Activity diagram,
+    - Component diagram,
+    - State diagram,
+    - Object diagram,
+    - Deployment diagram,
+    - Timing diagram
+
+    And also:
+
+    - Activity diagram (legacy syntax)
+    - Archimate diagram
+    - Gantt charts
+    - SALT UI mockups
+
+    Furthermore:
+
+    - Hyperlinks and tooltips
+    - Creole: rich text, emoticons, unicode, icons
+    - OpenIconic icons
+    - Sprite icons
+    - AsciiMath mathematical expressions
+
+    To know more about PlantUML, please visit http://plantuml.com/
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

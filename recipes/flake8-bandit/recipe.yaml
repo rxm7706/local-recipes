@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: flake8-bandit
+  version: "4.1.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/flake8_bandit-${{ version }}.tar.gz
+  sha256: 068e09287189cbfd7f986e92605adea2067630b75380c6b5733dab7d87f9a84e
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - flake8 >=5.0.0
+    - bandit >=1.7.3
+
+tests:
+  - python:
+      imports:
+        - flake8_bandit
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Automated security testing with bandit and flake8.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/tylerwince/flake8-bandit
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.0.0"
+
+package:
+  name: amortization
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/amortization/amortization-${{ version }}.tar.gz
+  sha256: 0c212ca96a71190c793c64b3ccc71a3ab8effa2462fe724d223a334c8f113a62
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - uv-build >=0.10.11,<0.11.0
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - amortization
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/amortization/
+  license: MIT
+  license_file: LICENSE
+  summary: Python library for calculating amortizations and generating amortization schedules
+  description: |
+    Python library for calculating amortizations and generating amortization schedules
+  repository: https://github.com/roniemartinez/amortization
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: amortization
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: amortization
+  cfe-purls:
+    - pkg:conda/amortization@${{ version }}?channel=conda-forge
+    - pkg:pypi/amortization@${{ version }}
+  cfe-upstream-repo: https://github.com/roniemartinez/amortization
+  cfe-upstream-homepage: https://pypi.org/project/amortization/
+  cfe-import-names: [amortization]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:00:28Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:00:28Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

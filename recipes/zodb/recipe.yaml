@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ZODB
+  version: "6.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | lower }}-${{ version }}.tar.gz
+  sha256: 2da749cf21c709058b2957bb1bc3d3a5d6e86b456246cb48acb5197173367c9f
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - fsdump=ZODB.FileStorage.fsdump:main
+      - fsoids=ZODB.scripts.fsoids:main
+      - fsrefs=ZODB.scripts.fsrefs:main
+      - fstail=ZODB.scripts.fstail:Main
+      - repozo=ZODB.scripts.repozo:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools <80
+  run:
+    - python >=${{ python_min }}
+    - setuptools
+    - persistent >=4.2.0
+    - btrees >=4.2.0
+    - zconfig
+    - transaction >=2.0.3
+    - six
+    - zc.lockfile
+    - zope.interface
+    - zodbpickle >=0.6.0
+    - setuptools <80
+
+tests:
+  - python:
+      imports:
+        - ZODB
+        - ZODB.FileStorage
+        - ZODB.scripts
+        - ZODB.scripts.tests
+        - ZODB.tests
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - repozo --help
+
+about:
+  license_file: LICENSE.txt
+  license: ZPL-2.1
+  summary: ZODB, a Python object-oriented database
+  homepage: http://www.zodb.org/
+  repository: https://github.com/zopefoundation/ZODB
+  documentation: http://www.zodb.org/en/latest/
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

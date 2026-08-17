@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: imagehash
+  version: "4.3.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ImageHash-${{ version }}.tar.gz
+  sha256: e54a79805afb82a34acde4746a16540503a9636fd1ffb31d8e099b29bbbf8156
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pywavelets
+    - numpy
+    - pillow
+    - scipy
+
+tests:
+  - python:
+      imports:
+        - imagehash
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: A Python Perceptual Image Hahsing Module
+  homepage: https://github.com/JohannesBuchner/imagehash
+
+extra:
+  recipe-maintainers:
+    - JohannesBuchner
+    - bjlittle
+    - ocefpaf

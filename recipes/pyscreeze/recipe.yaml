@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.1"
+  name: PyScreeze
+
+package:
+  name: pyscreeze
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name|lower }}-${{ version }}.tar.gz
+  sha256: cf1662710f1b46aa5ff229ee23f367da9e20af4a78e6e365bee973cad0ead4be
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pillow >=9.2.0
+
+tests:
+  - python:
+      imports:
+        - pyscreeze
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: A simple, cross-platform screenshot module for Python 2 and 3.
+  homepage: https://github.com/asweigart/pyscreeze
+
+extra:
+  recipe-maintainers:
+    - thewchan
+    - jschueller

@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "7.47.0.20260703"
+
+package:
+  name: types-pycurl
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/types-pycurl/types_pycurl-${{ version }}.tar.gz
+  sha256: c20cb9c08bd3ef4a1b2b0ba5ac8eb11a0029c5c2a538ecdf8563eec4e46dbf68
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - package_contents:
+      site_packages:
+        - pycurl-stubs/__init__.pyi
+  - requirements:
+      run:
+        - mypy
+        - pip
+        - pycurl
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+      - mypy -p pycurl
+
+about:
+  summary: Typing stubs for pycurl
+  license: Apache-2.0 AND MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/types-pycurl
+  repository: https://github.com/python/typeshed/tree/main/stubs/pycurl
+
+extra:
+  recipe-maintainers:
+    - fhoehle
+    - conda-forge/mypy

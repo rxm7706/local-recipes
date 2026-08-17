@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: opentracing
+  version: "2.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: a173117e6ef580d55874734d1fa7ecb6f3655160b8b8974a2a1e98e5ec9c840d
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 6
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+    - if: match(python, ">=2,<3")
+      then: futures
+
+tests:
+  - python:
+      imports:
+        - opentracing
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: OpenTracing API for Python.
+  description: |
+    opentracing-python provides only the API and a basic no-op implementation
+    that can be used by instrumentation libraries to collect and propagate
+    distributed tracing context
+  homepage: http://opentracing.io
+  repository: https://github.com/opentracing/opentracing-python
+  documentation: http://opentracing.io/documentation
+
+extra:
+  recipe-maintainers:
+    - nehaljwani

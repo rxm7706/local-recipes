@@ -1,0 +1,42 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: orderly-set
+  version: "5.5.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/orderly_set-${{ version }}.tar.gz
+  sha256: e87185c8e4d8afa64e7f8160ee2c542a475b738bc891dc3f58102e654125e6ce
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core >=3.2,<4
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - orderly_set
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Orderly set
+  license: MIT
+  license_file: MIT-LICENSE
+  homepage: https://github.com/seperman/orderly-set
+
+extra:
+  recipe-maintainers:
+    - synapticarbors

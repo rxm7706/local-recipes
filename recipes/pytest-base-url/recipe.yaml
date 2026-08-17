@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytest-base-url
+  version: "2.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 02748589a54f9e63fcbe62301d6b0496da0d10231b753e950c63e03aee745d45
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatch-vcs >=0.3
+    - hatchling >=1.13
+  run:
+    - python >=${{ python_min }}
+    - pytest >=7
+    - requests >=2.9
+
+tests:
+  - python:
+      imports:
+        - pytest_base_url
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: pytest plugin for URL based testing
+  license: MPL-2.0
+  license_file: LICENSE
+  homepage: https://github.com/pytest-dev/pytest-base-url
+
+extra:
+  recipe-maintainers:
+    - birdsarah
+    - davehunt
+    - nicoddemus

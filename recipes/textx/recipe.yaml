@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: textx
+  version: "4.3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 0facac8029ad124ef21e5838dd8eb67f10129efcee96ea3548f5fd62428a9880
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - textx = textx.cli:textx
+
+requirements:
+  host:
+    - flit-core >=3.8.0,<4
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - arpeggio >=2.0.0
+    - click >=7.0,<9.0
+    - importlib-metadata
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - textx
+        - textx.scoping
+        - textx.cli
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - attrs
+        - html5lib
+        - jinja2
+        - pip
+        - pytest
+        - python ${{ python_min }}.*
+    script:
+      - textx --help
+      - rm tests/functional/test_objcrossref_positions.py
+      - pip install -e tests/functional/subcommands/example_project --no-deps
+      - pip install -e tests/functional/registration/projects/types_dsl --no-deps
+      - pip install -e tests/functional/registration/projects/data_dsl --no-deps
+      - pip install -e tests/functional/registration/projects/flow_dsl --no-deps
+      - pip install -e tests/functional/registration/projects/flow_codegen --no-deps
+      - "pytest -vvv --capture=tee-sys -k \"not test_examples\" tests/functional"
+
+about:
+  summary: Meta-language for DSL implementation inspired by Xtext
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: http://textx.github.io/textX/
+  repository: https://github.com/textX/textX
+
+extra:
+  recipe-maintainers:
+    - thewchan

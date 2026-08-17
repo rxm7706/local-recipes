@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.8.0"
+
+package:
+  name: mkl-service
+  version: ${{ version }}
+
+source:
+  url: https://github.com/IntelPython/mkl-service/archive/${{ version }}.tar.gz
+  sha256: b1c90e0e6dabe577e4db93aecc157591da28e9e81c5782a9f6fbd9b20add9f78
+
+build:
+  number: 0
+  skip: osx and arm64
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - meson-python >=0.13.0
+    - cmake
+    - ninja
+    - if: osx
+      then: mkl-devel <2024
+    - if: not osx
+      then: mkl-devel
+    - cython
+  run:
+    - python
+    - mkl
+  ignore_run_exports:
+    by_name:
+      - blas
+      - mkl-service
+
+tests:
+  - python:
+      imports:
+        - mkl
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+        - if: python_impl == "pypy"
+          then: pytest <8
+        - if: not (python_impl == "pypy")
+          then: pytest
+    script:
+      - pytest -vv --pyargs mkl -k "not test_get_version"
+      - pytest -vv --pyargs mkl -k "test_get_version"
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  description: Intel(R) Math Kernel Library (Intel(R) MKL) support functions are subdivided into the following groups according to their purpose, such as Version Information Threading Control Timing Memory Management Conditional Numerical Reproducibility Control Miscellaneous
+  summary: Python hooks for Intel(R) Math Kernel Library runtime control settings.
+  homepage: http://github.com/IntelPython/mkl-service
+
+extra:
+  recipe-maintainers:
+    - ekomarova
+    - napetrov
+    - vtavana
+    - xaleryb
+    - jharlow-intel
+    - antonwolfy

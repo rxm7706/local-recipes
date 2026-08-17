@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: betterproto
+  version: 2.0.0b7
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/betterproto-${{ version }}.tar.gz
+  sha256: 1b1458ca5278d519bcd62556a4c236f998a91d503f0f71c67b0b954747052af2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - protoc-gen-python_betterproto=betterproto.plugin:main
+
+requirements:
+  host:
+    - pip
+    - poetry-core
+    - setuptools
+    - python ${{ python_min }}
+  run:
+    - grpclib >=0.4.1,<0.5.0
+    - python >=${{ python_min }}
+    - python-dateutil >=2.8,<3.0
+    - typing-extensions >=4.7.1,<5.0.0
+    - importlib-metadata >=1.6.0
+
+tests:
+  - python:
+      imports:
+        - betterproto
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A better Protobuf / gRPC generator & library
+  license: MIT
+  license_file: LICENSE
+  homepage: http://github.com/danielgtaylor/python-betterproto
+
+extra:
+  recipe-maintainers:
+    - asford

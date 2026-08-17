@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: starkbank-ecdsa
+  version: "2.0.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 4b60ebc493f024f2891516a6c140fcc711c16999468c8594bc1097ca5aed759f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - python >=3.6
+
+tests:
+  - python:
+      imports:
+        - ellipticcurve
+        - ellipticcurve.utils
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: A lightweight and fast pure python ECDSA library
+  homepage: https://github.com/starkbank/ecdsa-python
+
+extra:
+  recipe-maintainers:
+    - cjmartian

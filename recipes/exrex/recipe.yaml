@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: exrex
+  version: "0.12.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 3f582add0700d4141e279625252e7a0655f9ad81feab3b8ab9077966668a2c99
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - exrex
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: AGPL-3.0-or-later
+  license_file: COPYING
+  summary: Irregular methods on regular expressions
+  description: |
+    Exrex is a command line tool and python module that generates all - or random -
+    matching strings to a given regular expression and more. It's pure python, without
+    external dependencies.
+
+    There are regular expressions with infinite matching strings (eg.: [a-z]+),
+    in these cases exrex limits the maximum length of the infinite parts.
+
+    Exrex uses generators, so the memory usage does not depend on the number of
+    matching strings.
+  homepage: https://exrex.readthedocs.io/
+  repository: https://github.com/asciimoo/exrex
+  documentation: https://exrex.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - scopatz
+    - jan-janssen

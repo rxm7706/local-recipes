@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dotmap
+  version: "1.3.30"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 5821a7933f075fb47563417c0e92e0b7c031158b4c9a6a7e56163479b658b368
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - dotmap
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license_file: LICENSE.txt
+  license: MIT
+  summary: Ordered, dynamically-expandable dot-access dictionary
+  homepage: https://github.com/drgrib/dotmap
+  repository: https://github.com/drgrib/dotmap
+  documentation: https://github.com/drgrib/dotmap
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - jan-janssen

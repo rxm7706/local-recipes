@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.1.dev202412041639"
+
+package:
+  name: torch-xla2
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/t/torch-xla2/torch_xla2-0.0.1.dev202412041639-py3-none-any.whl
+  sha256: 454b8a5a94002a006b27701c9be59bb3c098e200a29f0ba193b2b0cde69c1a94
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - absl-py
+    - immutabledict
+    - pytest
+    - pytorch >=2.3.0
+
+tests:
+  - python:
+      imports:
+        - torch_xla2
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/torch-xla2/
+  license: MIT
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+  description: |
+    REPLACE_DESCRIPTION
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: torch-xla2
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: torch-xla2
+  cfe-purls:
+    - pkg:conda/torch-xla2@${{ version }}?channel=conda-forge
+    - pkg:pypi/torch-xla2@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/torch-xla2/
+  cfe-upstream-homepage: https://pypi.org/project/torch-xla2/
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:04:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:04:31Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

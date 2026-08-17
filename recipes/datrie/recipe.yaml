@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: datrie
+  version: "0.8.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ea021ad4c8a8bf14e08a71c7872a622aa399a510f981296825091c7ca0436e80
+
+build:
+  number: 0
+  script:
+    - ${{ PYTHON }} -m pip install . --no-deps --ignore-installed  -vvv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - cython
+    - pytest-runner
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - datrie
+      pip_check: false
+
+about:
+  license: LGPL-2.1-or-later
+  license_file: COPYING
+  summary: Super-fast, efficiently stored Trie for Python, uses libdatrie
+  homepage: https://github.com/kmike/datrie/
+  repository: https://github.com/kmike/datrie/
+  documentation: https://pypi.python.org/pypi/datrie
+
+extra:
+  recipe-maintainers:
+    - melund
+    - tacaswell

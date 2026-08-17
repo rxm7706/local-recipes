@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4.0"
+
+package:
+  name: jwt
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/jwt/jwt-${{ version }}.tar.gz
+  sha256: f6f789128ac247142c79ee10f3dba6e366ec4e77c9920d18c1592e28aa0a7952
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=69.0.0
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - cryptography !=3.4.0,>=3.1
+
+tests:
+  - python:
+      imports:
+        - jwt
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/jwt/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: JSON Web Token library for Python 3.
+  description: |
+    JSON Web Token library for Python 3.
+  repository: https://github.com/GehirnInc/python-jwt.git
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jwt
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jwt
+  cfe-purls:
+    - pkg:conda/jwt@${{ version }}?channel=conda-forge
+    - pkg:pypi/jwt@${{ version }}
+  cfe-upstream-repo: https://github.com/GehirnInc/python-jwt.git
+  cfe-upstream-homepage: https://pypi.org/project/jwt/
+  cfe-import-names: [jwt]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:52:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:52:30Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

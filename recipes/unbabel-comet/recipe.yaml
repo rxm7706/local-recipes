@@ -1,0 +1,94 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.2.7"
+
+package:
+  name: unbabel-comet
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/u/unbabel-comet/unbabel_comet-${{ version }}.tar.gz
+  sha256: 81f928e918ab7867e35383148840e5340f9f7923d7b71bd4dbcb426da530e5c5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=1.0.0
+  run:
+    - python >=${{ python_min }}
+    - entmax <2.0,>=1.1
+    - huggingface-hub <1.0,>=0.19.3
+    - jsonargparse ==3.13.1
+    - numpy <2.0.0,>=1.20.0
+    - pandas >=1.4.1
+    - protobuf <5.0.0,>=4.24.4
+    - pytorch-lightning <3.0.0,>=2.0.0
+    - sacrebleu <3.0.0,>=2.0.0
+    - scipy <2.0.0,>=1.5.4
+    - sentencepiece <0.3.0,>=0.2.0
+    - pytorch >=1.6.0
+    - torchmetrics <0.11.0,>=0.10.2
+    - transformers <5.0,>=4.17
+
+tests:
+  - python:
+      imports:
+        - comet
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/Unbabel/COMET
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: High-quality Machine Translation Evaluation
+  description: |
+    High-quality Machine Translation Evaluation
+  repository: https://github.com/Unbabel/COMET
+  documentation: https://unbabel.github.io/COMET/html/index.html
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: unbabel-comet
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: unbabel-comet
+  cfe-purls:
+    - pkg:conda/unbabel-comet@${{ version }}?channel=conda-forge
+    - pkg:pypi/unbabel-comet@${{ version }}
+  cfe-upstream-repo: https://github.com/Unbabel/COMET
+  cfe-upstream-homepage: https://github.com/Unbabel/COMET
+  cfe-import-names: [comet]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:40:20Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:40:20Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

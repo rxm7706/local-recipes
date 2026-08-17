@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.4"
+
+package:
+  name: supar
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/supar/supar-${{ version }}.tar.gz
+  sha256: c2b64eb872f3b5c01c674b23fd58cde4bc1cad6888ce740c72531174600608b1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pytorch
+    - transformers
+    - nltk
+    - stanza
+    - dill
+    - numpy
+
+tests:
+  - python:
+      imports:
+        - supar
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/yzhangcs/parser
+  license: MIT
+  license_file: LICENSE
+  summary: Syntactic/Semantic Parsing Models
+  description: |
+    Syntactic/Semantic Parsing Models
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: supar
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: supar
+  cfe-purls:
+    - pkg:conda/supar@${{ version }}?channel=conda-forge
+    - pkg:pypi/supar@${{ version }}
+  cfe-upstream-repo: https://github.com/yzhangcs/parser
+  cfe-upstream-homepage: https://github.com/yzhangcs/parser
+  cfe-import-names: [supar]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:13:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:13:42Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

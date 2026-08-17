@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: probablepeople
+  version: "0.5.6"
+  sha256: 4ae95e77f9fa7dceb116538500ab48c81a91bf68eb652d45207b794b450f4392
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 1003
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools >=42
+    - wheel
+    - parserator
+    - python-crfsuite >=0.7
+    - probableparsing
+    - doublemetaphone
+  run:
+    - python >=${{ python_min }}
+    - python-crfsuite >=0.7
+    - probableparsing
+    - doublemetaphone
+
+tests:
+  - python:
+      imports:
+        - probablepeople
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Parse romanized names & companies using advanced NLP methods
+  homepage: https://parserator.datamade.us/probablepeople
+  repository: https://github.com/datamade/probablepeople/
+  documentation: https://probablepeople.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - proinsias

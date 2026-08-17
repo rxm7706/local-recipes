@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.2.4"
+
+package:
+  name: selenium-wire-roadtx
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/selenium-wire-roadtx/selenium_wire_roadtx-${{ version }}.tar.gz
+  sha256: 1a455b534008a851e30897d42b2c6897be8221c43852aaf6e3fbe2408230d571
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - blinker >=1.4
+    - brotli >=1.0.9
+    - certifi >=2019.9.11
+    - h2 >=4.0
+    - hyperframe >=6.0
+    - kaitaistruct >=0.7
+    - pyasn1 >=0.3.1
+    - pyopenssl >=22.0.0
+    - pyparsing >=2.4.2
+    - pysocks >=1.7.1
+    - selenium >=4.0.0
+    - wsproto >=0.14
+    - zstandard >=0.14.1
+    - typing_extensions >=4.8.0
+    - ruamel.yaml
+    - dataclasses >=0.7
+    - if: win
+      then:
+        - pydivert
+
+tests:
+  - python:
+      imports:
+        - seleniumwire
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/dirkjanm/selenium-wire-roadtx/
+  license: MIT
+  license_file: LICENSE
+  summary: Extends Selenium to give you the ability to inspect requests made by the browser.
+  description: |
+    Extends Selenium to give you the ability to inspect requests made by the browser.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: selenium-wire-roadtx
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: selenium-wire-roadtx
+  cfe-purls:
+    - pkg:conda/selenium-wire-roadtx@${{ version }}?channel=conda-forge
+    - pkg:pypi/selenium-wire-roadtx@${{ version }}
+  cfe-upstream-repo: https://github.com/dirkjanm/selenium-wire-roadtx/
+  cfe-upstream-homepage: https://github.com/dirkjanm/selenium-wire-roadtx/
+  cfe-import-names: [seleniumwire]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:17:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:17:19Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

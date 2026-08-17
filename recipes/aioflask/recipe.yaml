@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.0"
+
+package:
+  name: aioflask
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/aioflask/aioflask-${{ version }}.tar.gz
+  sha256: 96403709fff88351c606667fce1a5a66bdef2d634a04b358713c8304216db68f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=42
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - greenletio
+    - flask
+    - uvicorn
+
+tests:
+  - python:
+      imports:
+        - aioflask
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/miguelgrinberg/aioflask
+  license: MIT
+  license_file: LICENSE
+  summary: Flask running on asyncio.
+  description: |
+    Flask running on asyncio.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: aioflask
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: aioflask
+  cfe-purls:
+    - pkg:conda/aioflask@${{ version }}?channel=conda-forge
+    - pkg:pypi/aioflask@${{ version }}
+  cfe-upstream-repo: https://github.com/miguelgrinberg/aioflask
+  cfe-upstream-homepage: https://github.com/miguelgrinberg/aioflask
+  cfe-import-names: [aioflask]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:01Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:01Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

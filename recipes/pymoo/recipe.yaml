@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pymoo
+  version: "0.6.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pymoo-${{ version }}.tar.gz
+  sha256: 6f497c00d7cf7598d176a5cd244b4cc66661811a6e81a715a83e2cd545fefe7d
+
+build:
+  number: 0
+  skip: match(python, ">=2,<3")
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - if: build_platform != target_platform
+      then: numpy
+    - if: build_platform != target_platform
+      then: pybind11
+  host:
+    - cython
+    - numpy
+    - pip
+    - python
+    - setuptools
+  run:
+    - autograd >=1.4
+    - cma >=3.4.0
+    - matplotlib-base >=3
+    - numpy >=1.19.3
+    - python
+    - python-moocore >=0.1.7
+    - scipy >=1.1
+    - dill
+    - alive-progress
+    - Deprecated
+
+tests:
+  - python:
+      imports:
+        - pymoo
+        - pymoo.algorithms
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - python -c "from pymoo.functions import is_compiled; exit(is_compiled()!=True)"
+
+about:
+  summary: Multi-Objective Optimization in Python
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://pymoo.org
+
+extra:
+  recipe-maintainers:
+    - cyrilpic
+    - d-cunningham
+    - mxr-conda

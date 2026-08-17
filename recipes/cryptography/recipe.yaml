@@ -1,0 +1,150 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "50.0.0"
+
+recipe:
+  name: cryptography-split
+  version: ${{ version }}
+
+source:
+  url: https://github.com/pyca/cryptography/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 173ac75ea60351540a237b8d4fde5d89b5d6645545771dfe3c9abe8b637f2b35
+
+build:
+  # relocation errors
+  # todo: segfaults for unknown reason
+  number: 0
+  skip: linux and aarch64 and is_freethreading
+  skip: true  # [linux and aarch64 and is_freethreading]
+
+outputs:
+  - package:
+      name: cryptography-vectors
+    build:
+      # this is noarch, but building it in a different feedstock from the same
+      # sources just causes every single upgrade PR to fail pointlessly, so we
+      # build it here (only one build will be uploaded due to coinciding hashes)
+      noarch: python
+      script: python -m pip install ./vectors -vv --no-build-isolation
+    requirements:
+      host:
+        - python ${{ python_min }}
+        - uv-build
+        - pip
+      run:
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports:
+            - cryptography_vectors
+          pip_check: true
+          python_version: ${{ python_min }}
+    about:
+      license: BSD-3-Clause OR Apache-2.0
+      license_file:
+        - LICENSE
+        - LICENSE.BSD
+        - LICENSE.APACHE
+      summary: Test vectors for the cryptography package.
+      homepage: https://github.com/pyca/cryptography
+      repository: https://github.com/pyca/cryptography/tree/main/vectors
+      documentation: https://cryptography.io
+  - package:
+      name: cryptography
+    build:
+      script:
+        # see below for what OPENSSL_DIR should be pointing to:
+        # https://github.com/sfackler/rust-openssl/blob/openssl-sys-v0.9.72/openssl/src/lib.rs#L55-L56
+        - if: unix
+          then: export OPENSSL_DIR=$PREFIX
+        - if: win
+          then: set OPENSSL_DIR=%LIBRARY_PREFIX%
+        - python -m pip install . -vv --no-build-isolation
+    requirements:
+      build:
+        - if: build_platform != target_platform
+          then: python
+        - if: build_platform != target_platform
+          then: cross-python_${{ target_platform }}
+        - if: build_platform != target_platform
+          then: cffi >=2.0
+        - if: build_platform != target_platform
+          then: maturin >=1,<2
+        - ${{ stdlib('c') }}
+        - ${{ compiler('c') }}
+        - ${{ compiler('rust') }}
+      host:
+        - python
+        # force stubborn solver to play ball
+        - if: win and is_freethreading
+          then: python >=3.14.1
+        - pip
+        - maturin >=1,<2
+        - openssl
+        - cffi >=2.0
+        # used by cffi
+        - setuptools
+      run:
+        - python
+        - cffi >=2.0
+        - if: match(python, "<3.11")
+          then: typing_extensions >=4.13.2
+    tests:
+      - python:
+          imports:
+            - cryptography
+            - cryptography.fernet
+            - cryptography.hazmat
+            - cryptography.hazmat.backends
+            - cryptography.hazmat.backends.openssl
+            - cryptography.hazmat.bindings
+            - cryptography.hazmat.bindings.openssl
+            - cryptography.hazmat.primitives
+            - cryptography.hazmat.primitives.asymmetric
+            - cryptography.hazmat.primitives.ciphers
+            - cryptography.hazmat.primitives.kdf
+            - cryptography.hazmat.primitives.twofactor
+            - cryptography.x509
+          pip_check: true
+      - files:
+          source:
+            - tests
+            - pyproject.toml
+        requirements:
+          run:
+            - pip
+            - certifi
+            - cryptography-vectors ${{ version }}
+            - hypothesis
+            - iso8601
+            - pretend
+            - pytest
+            - pytest-subtests
+            - pytest-benchmark
+            - pytz
+        script:
+          - pytest tests
+
+about:
+  license: Apache-2.0 AND BSD-3-Clause AND PSF-2.0 AND MIT
+  license_file: LICENSE
+  summary: cryptography is a package designed to expose cryptographic primitives and recipes to Python developers.
+  description: |
+    cryptography is a package which provides cryptographic recipes and
+    primitives to Python developers. Our goal is for it to be your
+    "cryptographic standard library". It supports Python 3.6+ and PyPy3 7.2+.
+    cryptography includes both high level recipes and low level interfaces
+    to common cryptographic algorithms such as symmetric ciphers, message
+    digests, and key derivation functions..
+  homepage: https://cryptography.io
+  repository: https://github.com/pyca/cryptography
+  documentation: https://cryptography.io/en/latest
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - ocefpaf
+    - h-vetinari
+  feedstock-name: cryptography

@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: azure-mgmt-cosmosdb
+  version: "10.0.0"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: f9f5e9cbc984ad3cf3f9bdfb853ec3e868b0e89e9c2597de4d429fa6602ca8d9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.10.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - azure-common >=1.1,<2
+    - azure-mgmt-core >=1.6.0,<2.0.0
+    - msrest >=0.7.1
+
+tests:
+  - python:
+      imports:
+        - azure.mgmt.cosmosdb
+        - azure.mgmt.cosmosdb.aio
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Microsoft Azure Cosmos DB Management Client Library for Python
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/Azure/azure-sdk-for-python
+
+extra:
+  recipe-maintainers:
+    - awvwgk

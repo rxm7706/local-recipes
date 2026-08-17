@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: django-extra-views
   version: "0.16.0"
 
 package:
-  name: django-extra-views
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-extra-views/django_extra_views-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: 7f8e07bd6c9388816a7c08d752661172d4078758c2079fc0cadddfcf5cd38ae3
 
 build:
@@ -19,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
@@ -31,22 +32,13 @@ tests:
       imports:
         - extra_views
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Extra class-based views for Django
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/AndrewIngram/django-extra-views
-  repository: https://github.com/AndrewIngram/django-extra-views
-  description: |
-    django-extra-views provides a number of additional class-based generic
-    views to complement those bundled with Django, including formset and
-    inline-formset views, multiple-object/object-with-inlines create and
-    update views, searchable and sortable list views, and a calendar
-    month view.
 
 extra:
   recipe-maintainers:

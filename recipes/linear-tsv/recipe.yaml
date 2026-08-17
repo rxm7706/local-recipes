@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: linear-tsv
+  version: "1.1.0"
+  bundle: tar.gz
+  hash: b504d78f4075615ae75de86a16e5680701a441fc84da2a2cf9f94351ab1ccbf5
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
+  sha256: ${{ hash }}
+  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+
+build:
+  number: 1
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+    - six
+
+tests:
+  - python:
+      imports:
+        - tsv
+      pip_check: false
+
+about:
+  license_file: LICENSE.txt
+  license: Apache-2.0
+  summary: Line-oriented, tab-separated value format
+  homepage: https://github.com/solidsnack/tsv
+  repository: https://github.com/solidsnack/tsv
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr

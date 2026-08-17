@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: wn
+  version: "0.9.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wn-${{ version }}.tar.gz
+  sha256: 9ae62e0e6607f56e63e9eb8360930c8337ecc44e9e0488430aa1fa3fb9c51be4
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - flit-core >=3.4,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - requests
+    - tomli
+    - typing-extensions
+
+tests:
+  - python:
+      imports:
+        - wn
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Wordnet interface library
+  license: MIT
+  license_file: LICENSE
+  description: |
+    Wn is a Python library for exploring information in wordnets. Install
+    it from PyPI and download some data:
+
+    ```console
+    $ pip install wn
+    $ python -m wn download oewn:2021  # the Open English WordNet 2021
+    ```
+
+    Then start exploring:
+
+    ```python
+    >>> import wn
+    >>> en = wn.Wordnet('oewn:2021')  # Create Wordnet object to query
+    >>> ss = en.synsets('win')[0]     # Get the first synset for 'win'
+    >>> ss.definition()               # Get the synset's definition
+    'be the winner in a contest or competition; be victorious'
+    ```
+
+    PyPI: [https://pypi.org/project/wn/](https://pypi.org/project/wn/)
+
+  homepage: https://github.com/goodmami/wn
+  repository: https://github.com/goodmami/wn
+  documentation: https://wn.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - sugatoray

@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: streamlit-keyup
+  version: "0.3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 8595a14892423243669e5d50e982853ffb7eb201b65952a48676133ab9bbc937
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - streamlit >=1.2
+    - jinja2
+
+tests:
+  - python:
+      imports:
+        - st_keyup
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - export PROTOCOL_BUFFERS_PYTHON_IMPLEMENTATION=python
+
+about:
+  summary: Streamlit text input that returns value on keyup
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/blackary/streamlit-keyup
+
+extra:
+  recipe-maintainers:
+    - thewchan

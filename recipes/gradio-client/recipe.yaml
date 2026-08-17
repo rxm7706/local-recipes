@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: gradio-client
+  version: "2.6.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/gradio_client-${{ version }}.tar.gz
+  sha256: e648110efa31347bb8b1abda150a7a975b40a9658fdd8562803e2ad6a300d033
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - hatch-requirements-txt
+    - hatch-fancy-pypi-readme >=22.5.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - fsspec
+    - httpx >=0.24.1
+    - huggingface_hub >=0.19.3
+    - packaging
+    - typing_extensions ~=4.0
+    - websockets >=10.0,<16.0
+
+tests:
+  - python:
+      imports:
+        - gradio_client
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Python library for easily interacting with trained machine learning models
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://pypi.org/project/gradio-client/
+  repository: https://github.com/gradio-app/gradio
+
+extra:
+  recipe-maintainers:
+    - abidlabs
+    - Sclare87

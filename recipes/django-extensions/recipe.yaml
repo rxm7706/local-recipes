@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.1"
+
+package:
+  name: django-extensions
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-extensions/django_extensions-${{ version }}.tar.gz
+  sha256: 7b70a4d28e9b840f44694e3f7feb54f55d495f8b3fa6c5c0e5e12bcb2aa3cdeb
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - django >=4.2
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+
+tests:
+  - python:
+      imports:
+        - django_extensions
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Extensions for Django.
+  homepage: http://github.com/django-extensions/django-extensions
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - kwilcox

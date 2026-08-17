@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.0"
+
+package:
+  name: elasticgraph
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/e/elasticgraph/elasticgraph-${{ version }}.tar.gz
+  sha256: f3b1d25cd7f9cde29878f24ce8c9076e861227c17311bfb3b6d1a0abf2233e54
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - jinja2
+    - d3graph
+
+tests:
+  - python:
+      imports:
+        - elasticgraph
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://gitlab.com/rwsdatalab/rwsdatalab/public/codebase/tools/elasticgraph
+  license: MIT
+  license_file: LICENSE
+  summary: Network Graph using D3js with grouping of nodes and elastic edges.
+  description: |
+    Network Graph using D3js with grouping of nodes and elastic edges.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: elasticgraph
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: elasticgraph
+  cfe-purls:
+    - pkg:conda/elasticgraph@${{ version }}?channel=conda-forge
+    - pkg:pypi/elasticgraph@${{ version }}
+  cfe-upstream-repo: https://gitlab.com/rwsdatalab/rwsdatalab/public/codebase/tools/elasticgraph
+  cfe-upstream-homepage: https://gitlab.com/rwsdatalab/rwsdatalab/public/codebase/tools/elasticgraph
+  cfe-import-names: [elasticgraph]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:34:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:34:03Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

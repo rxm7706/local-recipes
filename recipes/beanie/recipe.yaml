@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: beanie
+  version: "2.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/roman-right/beanie/archive/refs/tags/${{ version }}.tar.gz
+  sha256: fe689f021551965ee43e091e078bc107c35d128dbe4443a9f721cf0e2ba5a673
+  patches:
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - beanie = beanie.executors.migrate:migrations
+
+requirements:
+  host:
+    - pip
+    - flit-core
+    - python ${{ python_min }}
+  run:
+    - click >=7
+    - motor >=2.5,<4.0
+    - pydantic >=1.10.0,<3
+    - python >=${{ python_min }}
+    - tomli
+    - lazy-model >=0.2.0
+
+tests:
+  - python:
+      imports:
+        - beanie
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - beanie --help
+
+about:
+  summary: Asynchronous Python ODM for MongoDB
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://roman-right.github.io/beanie/
+  repository: https://github.com/roman-right/beanie
+
+extra:
+  recipe-maintainers:
+    - awvwgk

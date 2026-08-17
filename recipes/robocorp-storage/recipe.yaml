@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: robocorp-storage
-  version: 1.1.0
+  version: "1.1.0"
 
 package:
   name: ${{ name|lower }}
@@ -16,28 +16,36 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    - if: win
+      then: echo f | xcopy /f /y /S %RECIPE_DIR%\README.md %SRC_DIR%\README.md
+    - if: unix
+      then: cp -R ${{ RECIPE_DIR }}/README.md ${{ SRC_DIR }}/README.md
+    - ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python >=3.10,<4.0
+    - python ${{ python_min }}
     - poetry-core
     - pip
   run:
-    - python >=3.10.0,<4.0.0
+    - python >=${{ python_min }},<4.0.0
     - requests >=2.28.2
     - tenacity >=8.0.1
+    - typing-extensions >=4.5.0,<5.0.0
 
 tests:
   - python:
       imports:
-        - robocorp_storage
+        - robocorp.storage
       pip_check: true
+      python_version: ${{ python_min }}
 
 about:
   summary: Robocorp Asset Storage library
   license: Apache-2.0
-  license_file: PLEASE_ADD_LICENSE_FILE
+  license_file: LICENSE
+  homepage: https://github.com/robocorp/robo/
 
 extra:
   recipe-maintainers:

@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.4.0"
+
+package:
+  name: nornir-nautobot
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/nornir-nautobot/nornir_nautobot-${{ version }}.tar.gz
+  sha256: 3c93f8aa34bad370315fe9a75143381b2f61519ee18d123340f5b3653e4ed113
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=2.0.0,<3.0.0
+  run:
+    - python >=${{ python_min }}
+    - httpx <0.29.0,>=0.23.0
+    - jdiff <2.0.0,>=1.0.1
+    - jinja2 <4.0.0,>=3.1.6
+    - jsonschema <5.0,>=4.0.0
+    - napalm <6.0.0,>=5.0.0
+    - netmiko <5.0.0,>=4.4.0
+    - netutils <2.0.0,>=1.18.0
+    - nornir <4.0.0,>=3.3.0
+    - nornir-napalm <1.0.0,>=0.5.0
+    - nornir-netmiko <2.0.0,>=1.0.0
+    - nornir-scrapli <2026.0.0,>=2025.1.30
+    - nornir-utils <1,>=0
+    - ntc-templates >=7.9.0
+    - pynautobot <4.0.0,>=3.0.0
+    - requests <3.0.0,>=2.30.1
+    - scrapli >=2024.01.30
+    - ttp <0.11.0,>=0.10.0
+
+tests:
+  - python:
+      imports:
+        - nornir_nautobot
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/nautobot/nornir-nautobot
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Nornir Plugin for Nautobot providing centralized inventory and tasks.
+  description: |
+    Nornir Plugin for Nautobot providing centralized inventory and tasks.
+  repository: https://github.com/nautobot/nornir-nautobot
+  documentation: https://docs.nautobot.com/projects/nornir-nautobot/en/latest/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nornir-nautobot
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: nornir-nautobot
+  cfe-purls:
+    - pkg:conda/nornir-nautobot@${{ version }}?channel=conda-forge
+    - pkg:pypi/nornir-nautobot@${{ version }}
+  cfe-upstream-repo: https://github.com/nautobot/nornir-nautobot
+  cfe-upstream-homepage: https://github.com/nautobot/nornir-nautobot
+  cfe-import-names: [nornir_nautobot]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:16:45Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:16:45Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

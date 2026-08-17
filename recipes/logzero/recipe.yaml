@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: logzero
+  version: "1.7.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 7f73ddd3ae393457236f081ffebd044a3aa2e423a47ae6ddb5179ab90d0ad082
+
+build:
+  number: 7
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - python
+    - setuptools
+    - pip
+  run:
+    - python
+    - if: win
+      then: colorama
+
+tests:
+  - python:
+      imports:
+        - logzero
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Python logging made easy
+  description: |
+    Robust and effective logging for Python 2 and 3.
+  homepage: https://github.com/metachris/logzero
+  repository: https://github.com/metachris/logzero
+  documentation: https://logzero.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - carlodri
+    - metachris

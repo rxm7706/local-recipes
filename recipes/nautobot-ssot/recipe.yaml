@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.6.1"
+
+package:
+  name: nautobot-ssot
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/nautobot-ssot/nautobot_ssot-${{ version }}.tar.gz
+  sha256: 0b80b9d55d062446657ae5ef88ac916d4a87f024523149798b1d4eb10dbea813
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=2.0.0,<3.0.0
+  run:
+    - python >=${{ python_min }}
+    - markdown !=3.3.5
+    - diffsync <3.0.0,>=2.0.0
+    - nautobot <4.0.0,>=3.0.0
+    - packaging >=21.3
+    - prometheus_client >=0.17.1
+
+tests:
+  - python:
+      imports:
+        - nautobot_ssot
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/nautobot/nautobot-app-ssot
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Nautobot Single Source of Truth
+  description: |
+    Nautobot Single Source of Truth
+  repository: https://github.com/nautobot/nautobot-app-ssot
+  documentation: https://docs.nautobot.com/projects/ssot/en/latest/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nautobot-ssot
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: nautobot-ssot
+  cfe-purls:
+    - pkg:conda/nautobot-ssot@${{ version }}?channel=conda-forge
+    - pkg:pypi/nautobot-ssot@${{ version }}
+  cfe-upstream-repo: https://github.com/nautobot/nautobot-app-ssot
+  cfe-upstream-homepage: https://github.com/nautobot/nautobot-app-ssot
+  cfe-import-names: [nautobot_ssot]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:30:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:30:50Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

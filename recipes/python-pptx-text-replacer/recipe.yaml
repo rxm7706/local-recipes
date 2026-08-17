@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.6"
+
+package:
+  name: python-pptx-text-replacer
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/python-pptx-text-replacer/python_pptx_text_replacer-${{ version }}.tar.gz
+  sha256: a62392f6d93ccc2e8236033925f11ad77ab31247fb42beea32d66a5a0c3eff84
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - python-pptx
+
+tests:
+  - python:
+      imports:
+        - python_pptx_text_replacer
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/fschaeck/python-pptx-text-replacer
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: This package implements text replacement in Powerpoint files in pptx format.
+  description: |
+    This package implements text replacement in Powerpoint files in pptx format.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: python-pptx-text-replacer
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: python-pptx-text-replacer
+  cfe-purls:
+    - pkg:conda/python-pptx-text-replacer@${{ version }}?channel=conda-forge
+    - pkg:pypi/python-pptx-text-replacer@${{ version }}
+  cfe-upstream-repo: https://github.com/fschaeck/python-pptx-text-replacer
+  cfe-upstream-homepage: https://github.com/fschaeck/python-pptx-text-replacer
+  cfe-import-names: [python_pptx_text_replacer]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:44:14Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:44:14Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4/P5 Create-recipe local-only. python-pptx-text-replacer.
+####

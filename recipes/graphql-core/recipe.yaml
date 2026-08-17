@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.2.11"
+  python_check_max: "3.14"
+
+package:
+  name: graphql-core
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/graphql-core/graphql_core-${{ version }}.tar.gz
+  sha256: e7e156d10beb127cab5c89ff0da71416fc73d27c484a4757d3b2d35633774802
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vvv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - poetry-core >=1,<3
+    - python ${{ python_min }}.*
+    - setuptools >=59,<83
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports: graphql
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - pytest >=6.2,<9
+        - pytest-asyncio >=0.16,<1
+        - pytest-benchmark >=3.4,<6
+        - pytest-cov >=4,<7
+        - pytest-describe >=2,<3
+        - pytest-timeout >=2,<3
+        - python ${{ python_min }}.*
+    script:
+      - python -c '__import__("os").unlink("tests/test_docs.py")'
+      - coverage run --source graphql --branch -m pytest -vv --tb=long --color=yes
+      - coverage report --show-missing --skip-covered --fail-under=99
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: GraphQL implementation for Python, a port of GraphQL.js, the JavaScript reference implementation for GraphQL.
+  homepage: https://pypi.org/project/graphql-core
+  repository: https://github.com/graphql-python/graphql-core
+  documentation: https://graphql-core-3.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - carlodri
+    - bollwyvl
+    - KingDarBoja

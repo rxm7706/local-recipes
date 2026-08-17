@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: autots
+  version: "1.0.3"
+  python_min: "3.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 0fa411229d7e5398c6bdd2912b2aac9f997dec50982c2a8ee3d19093caafd63c
+
+build:
+  #  script: python -m build --wheel --outdir dist . && {{ PYTHON }} -m pip install dist/*.whl -vv
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python 3.9.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - numpy >=1.14.6
+    - pandas >=0.25
+    - scikit-learn >=0.20
+    - statsmodels >=0.10
+
+tests:
+  - python:
+      imports:
+        - autots
+        - autots.datasets
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Automated Time Series Forecasting
+  license: MIT
+  license_file: LICENSE
+  description: |
+    AutoTS is a time series package for Python designed for rapidly deploying
+    high-accuracy forecasts at scale.
+  homepage: https://github.com/winedarksea/AutoTS
+  documentation: https://github.com/winedarksea/AutoTS
+
+extra:
+  recipe-maintainers:
+    - winedarksea

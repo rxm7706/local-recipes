@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pydeequ
+  version: "1.6.0"
+  spark_upper_bound: "3.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pydeequ-${{ version }}.tar.gz
+  sha256: 059773f2e3b7329f0a23e58548b24fbb7ca2f6b5c73b1032abb0f21129f72148
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - poetry-core >=1.0.0
+    - python ${{ python_min }}.*
+  run:
+    - numpy >=1.14.1
+    - pandas >=0.23.0
+    - python >=${{ python_min }}
+
+tests:
+  - requirements:
+      run:
+        - pip
+        - pyspark >=2.4.7,<=${{ spark_upper_bound }}
+        - python ${{ python_min }}.*
+    script:
+      - export SPARK_VERSION='${{ spark_upper_bound }}'
+      - python -c "import pydeequ"
+      - pip check
+
+about:
+  summary: PyDeequ - Unit Tests for Data
+  license: Apache-2.0
+  license_file: LICENSE
+  description: |
+    PyDeequ is a Python API for Deequ, a library built on top of Apache
+    Spark for defining "unit tests for data", which measure data
+    quality in large datasets. PyDeequ is written to support usage of
+    Deequ in Python.
+
+
+  homepage: https://github.com/awslabs/python-deequ
+  documentation: https://pydeequ.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - thewchan

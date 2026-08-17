@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: lambdaprompt
+  version: "0.6.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/lambdaprompt-${{ version }}.tar.gz
+  sha256: 5571d6235e0b32940ac17f5b2e38b4f09df618ed6b48e6209d5d05a3c4351699
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=45
+    - wheel
+    - setuptools-scm >=6.2
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - requests
+    - aiohttp
+    - python-dotenv
+    - jinja2
+    - nest-asyncio
+    - pyyaml
+    - tenacity
+    - pydantic
+    - pydantic-settings
+
+tests:
+  - python:
+      imports:
+        - lambdaprompt
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A functional programming interface for building AI systems
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/approximatelabs/lambdaprompt
+
+extra:
+  recipe-maintainers:
+    - rxm7706

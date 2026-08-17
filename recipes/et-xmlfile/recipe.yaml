@@ -1,0 +1,34 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.0"
+
+package:
+  name: et-xmlfile
+  version: ${{ version }}
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  run:
+    - et_xmlfile >=${{ version }}
+
+tests:
+  - python:
+      imports:
+        - et_xmlfile
+      pip_check: true
+
+about:
+  license: MIT
+  license_file: LICENCE.rst
+  summary: Compatibility package, please use `et_xmlfile` instead.
+  homepage: https://bitbucket.org/openpyxl/et_xmlfile
+
+extra:
+  recipe-maintainers:
+    - npavlovikj
+    - mgorny

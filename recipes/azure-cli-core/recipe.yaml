@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: azure-cli-core
+  version: "2.76.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 97dbcc4557589cb68356d9f5c3793ecf5d86118622dc78835057e029c7698a95
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - argcomplete >=3.5.2,<3.5.3
+    - azure-cli-telemetry >=1.1.0
+    - azure-mgmt-core >=1.2.0,<2
+    - cryptography
+    - distro
+    - humanfriendly >=10.0
+    - jmespath
+    - knack >=0.11.0,<0.11.1
+    - microsoft-security-utilities-secret-masker >=1.0.0b4,<1.1.0
+    - msal ==1.33.0b1
+    - msal_extensions ==1.2.0
+    - packaging >=20.9
+    - pkginfo >=1.5.0.1
+    - psutil >=5.9
+    - py-deviceid
+    - pyjwt >=2.1.0
+    - pyopenssl >=17.1.0
+    - pysocks >=1.6.0
+    - requests >=2.20.0
+
+tests:
+  - python:
+      imports:
+        - azure
+        - azure.cli
+        - azure.cli.core
+        - azure.cli.core.commands
+        - azure.cli.core.extension
+        - azure.cli.core.profiles
+      python_version: ${{ python_min }}.*
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Microsoft Azure Command-Line Tools Core Module
+  homepage: https://github.com/Azure/azure-cli
+  repository: https://github.com/Azure/azure-cli
+  documentation: https://docs.microsoft.com/en-us/cli/azure
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - andreyz4k
+    - janjagusch

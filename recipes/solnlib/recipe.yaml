@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "8.1.0"
+
+package:
+  name: solnlib
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/solnlib/solnlib-${{ version }}.tar.gz
+  sha256: b301ebf0dd2ef5ee6c8d8bd3389dafef34fe45c3ed9bd407b0f17d9dec99dc79
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry >=1.0.0
+  run:
+    - python >=${{ python_min }}
+    - urllib3
+    - sortedcontainers >=2
+    - defusedxml >=0.7
+    - splunk-sdk >=2.0.2
+    - opentelemetry-api <2,>=1.39.1
+    - opentelemetry-sdk <2,>=1.39.1
+    - opentelemetry-exporter-otlp-proto-grpc <2,>=1.39.1
+    - grpcio >=1.74.0
+
+tests:
+  - python:
+      imports:
+        - solnlib
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/splunk/addonfactory-solutions-library-python
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: The Splunk Software Development Kit for Splunk Solutions
+  description: |
+    The Splunk Software Development Kit for Splunk Solutions
+  repository: https://github.com/splunk/addonfactory-solutions-library-python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: solnlib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: solnlib
+  cfe-purls:
+    - pkg:conda/solnlib@${{ version }}?channel=conda-forge
+    - pkg:pypi/solnlib@${{ version }}
+  cfe-upstream-repo: https://github.com/splunk/addonfactory-solutions-library-python
+  cfe-upstream-homepage: https://github.com/splunk/addonfactory-solutions-library-python
+  cfe-import-names: [solnlib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:45:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:45:37Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

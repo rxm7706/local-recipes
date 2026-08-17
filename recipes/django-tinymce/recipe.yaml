@@ -28,7 +28,7 @@ requirements:
 
 tests:
   - python:
-      imports:
+      imports: tinymce
       pip_check: true
       python_version:
         - ${{ python_min }}.*

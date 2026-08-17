@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: blinker
+  version: "1.9.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/blinker-${{ version }}.tar.gz
+  sha256: b4ce2265a7abece45e7cc896e98dbebe6cead56bcf805a3d23136d145f5445bf
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - flit-core <4
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - blinker
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Fast, simple object-to-object and broadcast signaling
+  homepage: https://github.com/pallets-eco/blinker
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - frol
+    - synapticarbors

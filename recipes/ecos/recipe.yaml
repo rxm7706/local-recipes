@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: 2.0.14
+  # only python bindings got updated, core lib unchanged
+  version_core: 2.0.10
+
+package:
+  name: ecos
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/embotech/ecos-python/archive/refs/tags/v${{ version }}.tar.gz
+    sha256: 43d1b70b3ac6d7095c6451e06e551c825884f124c5305c48b311a51ca52774ef
+  # include submodule (not in github tarball due to dear-github/dear-github#214)
+  - git: https://github.com/embotech/ecos.git
+    tag: v${{ version_core }}
+    target_directory: ecos
+
+build:
+  number: 3
+  script: make version && ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - numpy
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - make
+  host:
+    - python
+    - pip
+    - setuptools
+    - numpy
+  run:
+    - python
+    - scipy >=1.1
+
+tests:
+  - python:
+      imports:
+        - ecos
+        - _ecos
+  - files:
+      source:
+        - src/test_interface.py
+        - src/test_interface_bb.py
+    requirements:
+      run:
+        - pytest
+    script:
+      - python src/test_interface.py
+      - python src/test_interface_bb.py
+
+about:
+  license: GPL-3.0-only
+  license_file: LICENSE  # in recipe for now; https://github.com/embotech/ecos-python/pull/15
+  summary: Python interface for ECOS, a lightweight conic solver for second-order cone programming
+  homepage: https://github.com/embotech/ecos
+  repository: https://github.com/embotech/ecos-python
+
+extra:
+  recipe-maintainers:
+    - djsutherland
+    - h-vetinari
+    - sebp

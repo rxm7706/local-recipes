@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-certifi-win32
+  version: "1.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: e074663a1b6e54233f28d15832f9872440472144abafa432ec7f5d473fa33085
+
+build:
+  number: 7
+  skip: not win
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python
+    - setuptools_scm
+  run:
+    - certifi
+    - python
+    - wincertstore
+    - wrapt >=1.10.4
+
+tests:
+  - python:
+      imports:
+        - certifi_win32
+      pip_check: false
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Add windows certificate store to certifi cacerts.
+  homepage: https://gitlab.com/alelec/python-certifi-win32
+  repository: https://gitlab.com/alelec/python-certifi-win32
+  documentation: https://gitlab.com/alelec/python-certifi-win32/blob/master/README.rst
+
+extra:
+  recipe-maintainers:
+    - y2kbugger

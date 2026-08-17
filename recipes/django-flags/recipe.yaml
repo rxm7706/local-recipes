@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
-  version: "5.2.0"
+  name: django-flags
+  version: 5.2.0
 
 package:
-  name: django-flags
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-flags/django_flags-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: a3aee5e0d11e24e35f5ae4a423d52cad721f639181c1b1251e0148d8530a3f81
 
 build:
@@ -23,29 +24,24 @@ requirements:
     - setuptools >=63
     - setuptools-scm >=8
     - pip
+    #- wheel
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
     - django >=4.2
     - jinja2
     - django-debug-toolbar
-
 tests:
   - python:
       imports:
         - flags
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
+  summary: Feature flags for Django projects
   license: CC0-1.0
   license_file: LICENSE
-  homepage: https://cfpb.github.io/django-flags/
-  repository: https://github.com/cfpb/django-flags
-  summary: Feature flags for Django projects
-  description: |
-    Feature flags for Django projects.
+  homepage: https://github.com/cfpb/django-flags
 
 extra:
   recipe-maintainers:

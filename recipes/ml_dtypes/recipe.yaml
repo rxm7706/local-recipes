@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ml_dtypes
+  version: 0.5.4
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ml_dtypes-${{ version }}.tar.gz
+  sha256: 8ab06a50fb9bf9666dd0fe5dfb4676fa2b0ac0f31ecff72a6c3af8e22c063453
+
+build:
+  number: 1
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then:
+        - cross-python_${{ target_platform }}
+        - python
+        - numpy
+  host:
+    - python
+    - numpy
+    - setuptools
+    - pip
+    - wheel
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - ml_dtypes
+
+about:
+  summary: A stand-alone implementation of several NumPy dtype extensions used in machine learning
+  license: MPL-2.0 AND Apache-2.0
+  license_file:
+    - LICENSE.eigen
+    - LICENSE
+  homepage: https://pypi.org/project/ml-dtypes/
+  repository: https://github.com/jax-ml/ml_dtypes
+  documentation: https://github.com/jax-ml/ml_dtypes
+
+extra:
+  recipe-maintainers:
+    - ngam
+    - xhochy

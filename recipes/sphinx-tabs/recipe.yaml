@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sphinx-tabs
+  version: "3.5.0"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 91dba1187e4c35fd37380a56ac228bbd54c6c649b2351829f3bf033718277537
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python 3.10.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - sphinx >=7
+    - pygments
+    - docutils >=0.18.0
+
+tests:
+  - python:
+      imports:
+        - sphinx_tabs
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Tabbed views for Sphinx
+  homepage: https://github.com/executablebooks/sphinx-tabs
+  documentation: https://sphinx-tabs.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - bsipocz
+    - chrisjsewell

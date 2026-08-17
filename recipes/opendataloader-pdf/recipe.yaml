@@ -1,25 +1,19 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
-schema_version: 1
-
 context:
-  name: opendataloader-pdf
-  version: "2.2.1"
+  version: "2.5.0"
 
 package:
-  name: ${{ name|lower }}
+  name: opendataloader-pdf
   version: ${{ version }}
 
 source:
-  url: https://github.com/opendataloader-project/opendataloader-pdf/archive/v${{ version }}.tar.gz
-  sha256: 705c0e3e86b7022b5d92a2f0cbfc4d4acaf139f248ab268b546844f4b78258ba
+  url: https://pypi.org/packages/source/o/opendataloader-pdf/opendataloader_pdf-${{ version }}.tar.gz
+  sha256: 6e77f876f90ee45c67168c8d79f39bd9ff8c5c85a885ae879a2e6abc0aaba878
 
 build:
-  number: 0
   noarch: python
-  script:
-    #- echo f | xcopy /f /y /S %RECIPE_DIR%\README.md %SRC_DIR%\python\opendataloader-pdf\README.md  # [win]
-    - cp -R ${{ RECIPE_DIR }}/README.md ${{ SRC_DIR }}/python/opendataloader-pdf/README.md  # [unix]
-    - ${{ PYTHON }} -m pip install ./python/opendataloader-pdf -vv --no-deps --no-build-isolation
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
     entry_points:
       - opendataloader-pdf = opendataloader_pdf.wrapper:main
@@ -28,36 +22,41 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - hatchling
     - pip
+    - hatchling
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
+    - openjdk >=11
 
 tests:
   - python:
+      python_version: ${{ python_min }}.*
       imports:
         - opendataloader_pdf
       pip_check: true
-      python_version:
-      - ${{ python_min }}.*
-      - "*"
   - requirements:
       run:
-        - pip
-        #- ${{ python_min }}
+        - python ${{ python_min }}.*
     script:
       - opendataloader-pdf --help
-      - opendataloader-pdf-hybrid --help
 
 about:
-  summary: A Python wrapper for the opendataloader-pdf Java CLI.
+  homepage: https://github.com/opendataloader-project/opendataloader-pdf
+  summary: PDF Parser for AI-ready data. Extract Markdown, JSON, and HTML from any PDF.
+  description: |
+    OpenDataLoader PDF is an open-source PDF parser that extracts structured
+    Markdown, JSON (with bounding boxes), and HTML from any PDF. It features
+    deterministic local extraction with correct reading order, table detection,
+    heading hierarchy, and built-in AI safety filters. Hybrid mode adds OCR,
+    complex table extraction, formula extraction, and chart descriptions.
   license: Apache-2.0
   license_file:
-    - LICENSE
-    - NOTICE
-    - LICENSE_TEMPLATE/license.txt
-    - THIRD_PARTY/licenses/LICENSE-JJ2000.txt
+    - src/opendataloader_pdf/LICENSE
+    - src/opendataloader_pdf/THIRD_PARTY/
+  documentation: https://opendataloader.org/docs/quick-start-python
+  repository: https://github.com/opendataloader-project/opendataloader-pdf
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - killua156
+    - mgorny

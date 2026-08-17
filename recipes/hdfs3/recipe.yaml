@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3.1"
+
+package:
+  name: hdfs3
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/h/hdfs3/hdfs3-${{ version }}.tar.gz
+  sha256: 3be9ca9d812e760969419e7288fef4d6700e7aa01d303aad4e56cd4ecb4f11ed
+  file_name: hdfs3-${{ version }}.tar.gz
+
+build:
+  # This packages uses libhdfs3, which is primarily used with HDFS on Linux.
+  number: 2
+  skip: win
+  script: python setup.py install --single-version-externally-managed --record=record.txt
+
+requirements:
+  build:
+    - python
+    - setuptools
+  run:
+    - python
+    - libhdfs3 >=2.3
+
+tests:
+  - python:
+      imports:
+        - hdfs3
+      pip_check: false
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Python wrapper for libhdfs3
+  homepage: https://github.com/dask/hdfs3
+
+extra:
+  recipe-maintainers:
+    - mrocklin
+    - martindurant
+    - jcrist

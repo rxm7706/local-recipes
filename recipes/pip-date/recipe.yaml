@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.5"
+
+package:
+  name: pip-date
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/p/pip-date/pip_date-1.0.5-py3-none-any.whl
+  sha256: 9ed7192a5f475af8a7bd82ec2b3fa53ae0795908c0d850cdc23377e4f54ae3e8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - requests
+    - lxml
+
+tests:
+  - python:
+      imports:
+        - pip_date
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/E3V3A/pip-date/
+  license: LICENSE.txt
+  license_file: LICENSE
+  summary: Show the installation/modification times of all your pip packages and other tools
+  description: |
+    Show the installation/modification times of all your pip packages and other tools
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pip-date
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pip-date
+  cfe-purls:
+    - pkg:conda/pip-date@${{ version }}?channel=conda-forge
+    - pkg:pypi/pip-date@${{ version }}
+  cfe-upstream-repo: https://github.com/E3V3A/pip-date/
+  cfe-upstream-homepage: https://github.com/E3V3A/pip-date/
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:33:09Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:33:09Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

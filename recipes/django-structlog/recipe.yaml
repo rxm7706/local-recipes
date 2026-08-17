@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
-  version: "10.1.0"
+  name: django-structlog
+  version: 10.1.0
 
 package:
-  name: django-structlog
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-structlog/django_structlog-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: 812f61dea873e559511f42c0f3a7cdc36d4472f6cc15460565a97e5cbe06a76d
 
 build:
@@ -23,33 +24,25 @@ requirements:
     - setuptools >=61.0
     - pip
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
     - django >=4.2
     - structlog >=21.4.0
     - asgiref >=3.6.0
     - django-ipware >=6.0.2
     - django-extensions
     - celery
-
 tests:
   - python:
       imports:
         - django_structlog
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
   summary: Structured Logging for Django
   license: MIT
   license_file: LICENSE.rst
   homepage: https://github.com/jrobichaud/django-structlog
-  repository: https://github.com/jrobichaud/django-structlog
-  description: |
-    django-structlog provides structured logging for Django using structlog.
-    It binds request/response metadata (request_id, user_id) into log events
-    and offers optional Celery task logging integration.
 
 extra:
   recipe-maintainers:

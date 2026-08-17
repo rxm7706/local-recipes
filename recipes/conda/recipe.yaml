@@ -2,37 +2,76 @@
 schema_version: 1
 
 context:
-  name: conda
-  version: "25.7.0"
-  sha256: "f27a1e13f0ec6f6597e1a3f02963dd1f5a6343746a34f4f28ad2352f91543899"
-  # Running pytest requires the inclusion of test files which baloons
-  # the size of the package; values can be "yes" or "no"
-  run_pytest: "no"
+  version: "26.7.0"
+  sha256: d15d9735d7b46a2c54757b2844b66e71f62441daff36baef070f3cb3a3b257c1
 
 package:
-  name: ${{ name|lower }}
+  name: conda
   version: ${{ version }}
 
 source:
-  url: https://github.com/conda/conda/archive/${{ version }}.tar.gz
-  sha256: 18ffef053c4f14db42870f36fab8df162dea5cb14a022a24abb1a3822ef3874c
+  url: https://github.com/conda/conda/releases/download/${{ version }}/conda-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  target_directory: conda-src
 
 build:
   number: 0
-  script: ${{ PYTHON }} -m pip install conda-src/ --no-deps --no-build-isolation -vv && ${{ PYTHON }} -m conda init --install
-  python:
-    entry_points:
-      - conda = conda.cli.main_pip:main
+  script:
+    content:
+      # Prevents issues like https://github.com/conda-forge/conda-feedstock/issues/280
+      - rm -rf conda-src/tests/
+      - ${{ PYTHON }} -m pip install conda-src/ --no-deps --no-build-isolation -vv && ${{ PYTHON }} -m conda init --install
+      # conda-build rewrites these launchers to use the environment's Python,
+      # but rattler-build requires an explicit prefix to detect and relocate.
+      # Prevents issues like https://github.com/conda-forge/conda-feedstock/issues/304
+      - if: unix
+        then:
+          - sed -i.bak "1s|.*|#!${{ PYTHON }}|" "$PREFIX/bin/conda" "$PREFIX/condabin/conda"
+          - rm "$PREFIX/bin/conda.bak" "$PREFIX/condabin/conda.bak"
+  always_include_files:
+    # These are present when the new environment is created
+    # so we have to exempt them from the list of initial files
+    # for conda-build to realize they should be included.
+    - if: unix
+      then:
+        - bin/conda
+        - bin/activate
+        - bin/deactivate
+    - if: win
+      then:
+        - Scripts/activate.bat
+        - Scripts/activate
+        - Scripts/deactivate
 
 requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - if: win
+      then:
+        - m2-filesystem
+        - m2-bash
+        - m2-base
   host:
-    - python ${{ python_min }}.*
+    - python
+    - pip
     - hatchling >=1.12.2
     - hatch-vcs >=0.2.0
-    - pip
+    # for `conda init` in build/script above
+    - boltons >=23.0.0
+    - frozendict >=2.4.2
+    - menuinst >=2
+    - platformdirs >=3.10.0
+    - requests >=2.28.0,<3
+    - ruamel.yaml >=0.11.14,<0.19
+    - tqdm >=4
   run:
-    - python >=${{ python_min }},<4.0
     - archspec >=0.2.3
+    - if: match(python, "<3.14")
+      then: 
+        - backports.zstd >=1.3.0
     - boltons >=23.0.0
     - charset-normalizer
     - conda-package-handling >=2.2.0
@@ -42,56 +81,65 @@ requirements:
     - menuinst >=2
     - packaging >=23.0
     - platformdirs >=3.10.0
-    - pluggy >=1.0.0
+    - pluggy >=1.6.0
     - pycosat >=0.6.3
+    - python
     - requests >=2.28.0,<3
     - ruamel.yaml >=0.11.14,<0.19
     - setuptools >=60.0.0
     - tqdm >=4
-    - if: match(python, ">=3.10")
-      then: truststore >=0.8.0
-    - zstandard >=0.15
+    - truststore >=0.8.0
+    # Plugins to bundle with conda
+    - conda-libmamba-solver >=26.4.1
+    - conda-lockfiles >=0.2.0
+    - conda-pypi >=0.10.1
+    - conda-rattler-solver >=0.1.1
+    - conda-self >=0.2.0
+  run_constraints:
+    - conda-build >=25.9
+    - conda-content-trust >=0.3.0
+    - conda-env >=2.6
 
 tests:
   - python:
       imports:
-        - constantly
-      pip_check: true
-      python_version: ${{ python_min }}.*
-  - requirements:
-      run:
-        - pip
-        - python ${{ python_min }}.*
-    script:
-      - conda --help
+        - conda
+      pip_check: false
+  - if: match(python, ">=3.12") and match(python, "<3.14") and not osx
+    # the minimum python ^^^^ version here needs to match
+    # the minimum version for the bot code base
+    # package `conda-forge-tick`
+    then:
+      downstream: conda-smithy
+  - script:
+      - if: win
+        then:
+          - run_test.bat
+      - if: unix
+        then:
+          - run_test.sh
+    files:
+      recipe:
+        - if: win
+          then:
+            - run_test.bat
+        - if: unix
+          then:
+            - run_test.sh
 
 about:
-  summary: OS-agnostic, system-level binary package manager.
-  license: Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND MIT
-  license_file:
-    - LICENSE
-    - tests/data/env_metadata/py36-osx-whl/lib/python3.6/site-packages/backports.functools_lru_cache-1.5.dist-info/LICENSE.txt
-    - tests/data/env_metadata/py36-osx-whl/lib/python3.6/site-packages/CherryPy-17.2.0.dist-info/LICENSE.txt
-    - tests/data/env_metadata/py36-osx-whl/lib/python3.6/site-packages/pluggy-0.7.1.dist-info/LICENSE.txt
-    - tests/data/env_metadata/py36-osx-whl/lib/python3.6/site-packages/Django-2.1.dist-info/LICENSE.txt
-    - tests/data/env_metadata/py36-osx-whl/lib/python3.6/site-packages/entrypoints-0.2.3.dist-info/LICENSE
-    - tests/data/env_metadata/py36-osx-whl/lib/python3.6/site-packages/jaraco.functools-1.20.dist-info/LICENSE.txt
-    - tests/data/env_metadata/py36-osx-whl/lib/python3.6/site-packages/pyasn1-0.4.4.dist-info/LICENSE.txt
-    - tests/data/env_metadata/py36-osx-whl/lib/python3.6/site-packages/pytz-2018.5.dist-info/LICENSE.txt
-    - tests/data/env_metadata/py36-osx-whl/lib/python3.6/site-packages/attrs-18.1.0.dist-info/LICENSE.txt
-    - tests/data/env_metadata/py36-osx-whl/lib/python3.6/site-packages/pyasn1_modules-0.2.2.dist-info/LICENSE.txt
-    - tests/data/env_metadata/py36-osx-whl/lib/python3.6/site-packages/idna-2.7.dist-info/LICENSE.txt
-    - tests/data/env_metadata/py36-osx-whl/lib/python3.6/site-packages/urllib3-1.23.dist-info/LICENSE.txt
-    - tests/data/env_metadata/py36-osx-whl/lib/python3.6/site-packages/requests-2.19.1.dist-info/LICENSE.txt
-    - tests/data/env_metadata/py36-osx-whl/lib/python3.6/site-packages/portend-2.3.dist-info/LICENSE.txt
-    - tests/data/env_metadata/py36-osx-whl/lib/python3.6/site-packages/Babel-2.6.0.dist-info/LICENSE.txt
-    - tests/data/env_metadata/py36-osx-whl/lib/python3.6/site-packages/keyring-13.2.1.dist-info/LICENSE.txt
-    - tests/data/env_metadata/py36-osx-whl/lib/python3.6/site-packages/tempora-1.13.dist-info/LICENSE.txt
-    - tests/data/env_metadata/py36-osx-whl/lib/python3.6/site-packages/zope.interface-4.5.0.dist-info/LICENSE.txt
-    - tests/data/env_metadata/py36-osx-whl/lib/python3.6/site-packages/py-1.6.0.dist-info/LICENSE.txt
-    - tests/data/env_metadata/py36-osx-whl/lib/python3.6/site-packages/cheroot-6.4.0.dist-info/LICENSE.txt
-    - tests/data/env_metadata/py36-osx-whl/lib/python3.6/site-packages/pyOpenSSL-18.0.0.dist-info/LICENSE.txt
-    - conda/auxlib/LICENSE
+  license: BSD-3-Clause
+  license_file: conda-src/LICENSE
+  summary: OS-agnostic, system-level binary package and environment manager.
+  description: |
+    Conda is an open source package management system and environment
+    management system for installing multiple versions of software packages
+    and their dependencies and switching easily between them. It works on
+    Linux, OS X and Windows, and was created for Python programs but can
+    package and distribute any software.
+  homepage: https://conda.io
+  repository: https://github.com/conda/conda
+  documentation: https://docs.conda.io/projects/conda/en/stable/
 
 extra:
   recipe-maintainers:
@@ -103,4 +151,3 @@ extra:
     - mbargull
     - ocefpaf
     - beeankha
-    - rxm7706

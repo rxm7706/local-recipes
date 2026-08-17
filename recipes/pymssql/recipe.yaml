@@ -1,0 +1,76 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pymssql
+  version: "2.3.13"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 2137e904b1a65546be4ccb96730a391fcd5a85aab8a0632721feb5d7e39cfbce
+  patches:
+    - patches/0001-customize-compiler.patch
+
+build:
+  number: 0
+  script:
+    - if: unix
+      then:
+        - export LINK_FREETDS_STATICALLY=NO
+        - python setup.py build_ext --include-dirs=$PREFIX/include --library-dirs=$PREFIX/lib
+    - if: win
+      then:
+        - set LINK_FREETDS_STATICALLY=NO
+        - python setup.py build_ext --include-dirs=%PREFIX%\include --library-dirs=%PREFIX%\lib
+    - python setup.py install --single-version-externally-managed --record record.txt
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - cython >=3.1.0
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+    - cython >=3.1.0
+    - freetds
+    - packaging >=24.2
+    - pip
+    - setuptools >=80.0
+    - setuptools-git
+    - setuptools_scm >=8.0
+    - toml
+    - wheel >=0.36.2
+    # seems to work without standard-distuitils
+    # - standard-distutils
+  run:
+    - python
+    - freetds
+
+tests:
+  - python:
+      imports:
+        - pymssql
+      pip_check: true
+
+about:
+  license: LGPL-2.1-or-later
+  license_file: LICENSE
+  summary: DB-API interface to Microsoft SQL Server for Python. (new Cython-based version)
+  homepage: http://pymssql.org
+  repository: https://github.com/pymssql/pymssql
+  documentation: https://pymssql.readthedocs.io/en/stable/
+
+extra:
+  recipe-maintainers:
+    - primozgodec
+    - mariusvniekerk
+    - xylar

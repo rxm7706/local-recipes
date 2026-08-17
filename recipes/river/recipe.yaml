@@ -1,0 +1,109 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: river
+  version: "0.25.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/river-${{ version }}.tar.gz
+  sha256: 8756afe90122285a6fe06c5a38fba143bd15f85d8e84f65b661a5edec3a14e3c
+
+build:
+  number: 0
+  skip:
+    - match(python, "<3.11")
+  script:
+    - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+    - ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - numpy
+        - maturin >=1.13,<2
+    - cargo-bundle-licenses
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('rust') }}
+  host:
+    - python
+    - maturin >=1.13,<2
+    - numpy
+    - pip
+  run:
+    - python
+    - scipy >=1.16,<2
+    - numpy >=2.3.4,<3
+    - altair >=5.0.0
+
+tests:
+  - python:
+      pip_check: true
+      imports:
+        - river
+        - river.active
+        - river.anomaly
+        - river.bandit
+        - river.base
+        - river.checks
+        - river.cluster
+        - river.compat
+        - river.compose
+        - river.covariance
+        - river.datasets
+        - river.datasets.synth
+        - river.drift
+        - river.ensemble
+        - river.evaluate
+        - river.facto
+        - river.feature_extraction
+        - river.feature_selection
+        - river.imblearn
+        - river.linear_model
+        - river.metrics
+        - river.metrics.multioutput
+        - river.misc
+        - river.model_selection
+        - river.multiclass
+        - river.multioutput
+        - river.naive_bayes
+        - river.neighbors
+        - river.neural_net
+        - river.optim
+        - river.preprocessing
+        - river.proba
+        - river.reco
+        - river.rules
+        - river.sketch
+        - river.stats
+        - river.stream
+        - river.time_series
+        - river.tree
+        - river.tree.nodes
+        - river.tree.split_criterion
+        - river.tree.splitter
+        - river.utils
+
+about:
+  summary: Online machine learning in Python
+  license: BSD-3-Clause
+  license_file:
+    - THIRDPARTY.yml
+    - LICENSE
+  homepage: https://github.com/online-ml/river
+
+extra:
+  recipe-maintainers:
+    - MaxHalford
+    - mxr-conda
+    - bubblyorca
+    - synapticarbors

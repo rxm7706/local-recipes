@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: typing_utils
+  version: "0.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/typing_utils-${{ version }}.tar.gz
+  sha256: 8ff6b6705414b82575ad5ae0925ac414a9650fb8c5718289b1327dec61252f65
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - typing_utils
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: utils to inspect Python type annotations
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/bojiang/typing_utils
+
+extra:
+  recipe-maintainers:
+    - BastianZim

@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: junitparser
+  version: "5.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/junitparser-${{ version }}.tar.gz
+  sha256: f15e292877258d7c5755d672ce86f82c3622c7ea4c2f44f55de44ed7518484d3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - junitparser = junitparser.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools >=44
+    - wheel >=0.37
+    # used in setup.py
+    - future
+  run:
+    - python >=${{ python_min }}
+    - future
+
+tests:
+  - python:
+      imports:
+        - junitparser
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - junitparser --help
+
+about:
+  summary: Manipulates JUnit/xUnit Result XML files
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/weiwei/junitparser
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk

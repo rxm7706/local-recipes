@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytest-vcr
+  version: "1.0.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytest-vcr-${{ version }}.tar.gz
+  sha256: 23ee51b75abbcc43d926272773aae4f39f93aceb75ed56852d0bf618f92e1896
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pytest >=3.6.0
+    - vcrpy
+
+tests:
+  - python:
+      imports:
+        - pytest_vcr
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Plugin for managing VCR.py cassettes
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/ktosiek/pytest-vcr
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

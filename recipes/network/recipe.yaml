@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1"
+
+package:
+  name: network
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/network/network-${{ version }}.tar.gz
+  sha256: 786b171895c3ecaaf05948c29e206ab99285f328f799c3bbc5e22a2805bfc27f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - network
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://www.raspberrypi.org/learning/networking-lessons/
+  license: MIT
+  license_file: LICENSE
+  summary: A very simple networking library written by David Whale (@whaleygeek).
+  description: |
+    A very simple networking library written by David Whale (@whaleygeek).
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: network
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: network
+  cfe-purls:
+    - pkg:conda/network@${{ version }}?channel=conda-forge
+    - pkg:pypi/network@${{ version }}
+  cfe-upstream-repo: https://www.raspberrypi.org/learning/networking-lessons/
+  cfe-upstream-homepage: https://www.raspberrypi.org/learning/networking-lessons/
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:03:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:03:32Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

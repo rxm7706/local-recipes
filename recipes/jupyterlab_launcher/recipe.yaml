@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.13.1"
+
+package:
+  name: jupyterlab_launcher
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/j/jupyterlab_launcher/jupyterlab_launcher-${{ version }}.tar.gz
+  sha256: f880eada0b8b1f524d5951dc6fcae0d13b169897fc8a247d75fb5beadd69c5f0
+  file_name: jupyterlab_launcher-${{ version }}.tar.gz
+
+build:
+  number: 2
+  noarch: python
+  script: python -m pip install --no-deps  --ignore-installed .
+
+requirements:
+  host:
+    - pip
+    - python >=3.5
+    - setuptools
+  run:
+    - python >=3.5
+    - notebook
+
+tests:
+  - python:
+      imports:
+        - jupyterlab_launcher
+      pip_check: false
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A Launcher for JupyterLab based applications.
+  homepage: http://github.com/jupyterlab/jupyterlab_launcher
+
+extra:
+  recipe-maintainers:
+    - jasongrout
+    - blink1073
+    - afshin
+    - SylvainCorlay

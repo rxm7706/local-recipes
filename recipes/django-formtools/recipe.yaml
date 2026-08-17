@@ -2,15 +2,16 @@
 schema_version: 1
 
 context:
-  version: "2.6.1"
+  name: django-formtools
+  version: '2.7'
 
 package:
-  name: django-formtools
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-formtools/django_formtools-${{ version }}.tar.gz
-  sha256: 603ebc69a4b76b9bf38534f6e0245face007c7ed31bdfa073f8bf45cff5d7122
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 52b30c08571108023937e4b5d96a5cc35282ff0a2e51630aeea00e27d723d3ac
 
 build:
   number: 0
@@ -24,17 +25,14 @@ requirements:
     - setuptools-scm
     - pip
   run:
-    - python >=${{ python_min }}
-    - django >=4.2
-
+    - python >=${{ python_min }},<4.0
+    - django >=5.2
 tests:
   - python:
       imports:
         - formtools
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
   summary: A set of high-level abstractions for Django forms

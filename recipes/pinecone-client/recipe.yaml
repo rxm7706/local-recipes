@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.0.0"
+
+package:
+  name: pinecone-client
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pinecone-client/pinecone_client-${{ version }}.tar.gz
+  sha256: f224fc999205e4858c4737c40922bdf42d178b361c8859bc486ec00d45b359a9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - typing_extensions >=3.7.4
+    - urllib3 >=1.26.0
+    - certifi >=2019.11.17
+    - pinecone-plugin-interface <0.0.8,>=0.0.7
+    - python-dateutil >=2.5.3
+
+tests:
+  - python:
+      imports:
+        - pinecone
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://www.pinecone.io
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Pinecone client (DEPRECATED)
+  description: |
+    Pinecone client (DEPRECATED)
+  documentation: https://pinecone.io/docs
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pinecone-client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pinecone-client
+  cfe-purls:
+    - pkg:conda/pinecone-client@${{ version }}?channel=conda-forge
+    - pkg:pypi/pinecone-client@${{ version }}
+  cfe-upstream-repo: https://www.pinecone.io
+  cfe-upstream-homepage: https://www.pinecone.io
+  cfe-import-names: [pinecone]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:47:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:47:26Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

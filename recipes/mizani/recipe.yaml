@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mizani
+  version: "0.14.4"
+  bundle: tar.gz
+  hash: 28934d91516d922d7cb0382c82a6c513692abc0174c42a50294ae571520633f9
+  build: 0
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
+  sha256: ${{ hash }}
+  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+
+build:
+  number: ${{ build }}
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python 3.10.*
+    - pip
+    - setuptools
+    - setuptools_scm
+  run:
+    - python >=${{ python_min }}
+    - numpy >=1.23.5
+    - scipy >=1.8.0
+    - pandas >=2.2.0
+    - python-dateutil
+    - tzdata  # os == windows
+
+tests:
+  - files:
+      source:
+        - tests
+        - pyproject.toml
+    requirements:
+      run:
+        - python ${{ python_min }}
+        - pip
+        - pytest
+        - pytest-cov
+    script:
+      - pip list | grep -i ${{ name }} | grep ${{ version }}
+      - pip check
+      - echo $PWD
+      - ls -larth
+      - pytest
+
+about:
+  license_file: LICENSE
+  license: BSD-3-Clause
+  summary: Scales for Python
+  homepage: https://github.com/has2k1/mizani
+  repository: https://github.com/has2k1/mizani
+  documentation: https://mizani.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - has2k1

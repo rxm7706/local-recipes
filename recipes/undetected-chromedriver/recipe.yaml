@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: undetected-chromedriver
+  version: 3.5.5
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/undetected-chromedriver-${{ version }}.tar.gz
+  sha256: 9f945e1435005247abe17de316bcfda85b284a4177fd5f25167c78ced33b65ec
+
+build:
+  number: 3
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<3.12
+    - selenium >=4.9.0
+    - requests
+    - websockets
+
+tests:
+  - python:
+      imports:
+        - undetected_chromedriver
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  summary: "('Selenium.webdriver.Chrome replacement with compatiblity for Brave, and other Chromium based browsers.', 'Not triggered by CloudFlare/Imperva/hCaptcha and such.', 'NOTE: results may vary due to many factors. No guarantees are given, except for ongoing efforts in understanding detection algorithms.')"
+  license: GPL-3.0-only
+  license_file: LICENSE
+  homepage: https://github.com/ultrafunkamsterdam/undetected-chromedriver
+
+extra:
+  recipe-maintainers:
+    - janjagusch

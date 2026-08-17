@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.34.0"
+
+package:
+  name: lancedb
+  version: ${{ version }}
+
+source:
+  url: https://github.com/lancedb/lancedb/archive/python-v${{ version }}.tar.gz
+  sha256: 60f605c426b644ef2d7a7f0c433e122b1759999db58a65724858ba27b9b1bdd7
+
+build:
+  number: 1
+  skip: match(python, "<3.10")
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+    - pkg-config
+    - libprotobuf
+    - if: build_platform != host_platform
+      then:
+        - python
+        - cross-python_${{ host_platform }}
+        - maturin >=1.4
+  host:
+    - python
+    - maturin >=1.4
+    - pip
+    - openssl
+  run:
+    - python
+    - deprecation >=2.1.0
+    - lance-namespace >=0.3.2
+    - tqdm >=4.27.0
+    - pydantic >=1.10
+    - packaging >=23.0
+    - pyarrow >=16
+    - if: match(python, "<3.12")
+      then: overrides >=0.7
+    - numpy >=1.24.0
+
+tests:
+  - python:
+      imports:
+        - lancedb
+      pip_check: true
+
+about:
+  summary: Developer-friendly, serverless vector database for AI applications
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/lancedb/lancedb
+
+extra:
+  recipe-maintainers:
+    - moritzwilksch
+    - mediocretech
+    - jan-janssen

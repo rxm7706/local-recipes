@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: validators
+  version: "0.35.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/validators-${{ version }}.tar.gz
+  sha256: 992d6c48a4e77c81f1b4daba10d16c3a9bb0dbb79b3a19ea847ff0928e70497a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - validators
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Python Data Validation for Humans™
+  license: MIT
+  license_file: LICENSE.txt
+  description: |
+    Python data validation for Humans.
+
+    Python has all kinds of data validation tools, but every one of them seems to require defining a schema or form. I wanted to create a simple validation library where validating a simple value does not require defining a form or a schema.
+  homepage: https://github.com/kvesteri/validators
+  repository: https://github.com/kvesteri/validators
+  documentation: https://validators.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - brl0
+    - xylar

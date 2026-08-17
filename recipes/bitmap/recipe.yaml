@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.7"
+
+package:
+  name: bitmap
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/bitmap/bitmap-${{ version }}.tar.gz
+  sha256: e7fb8fcdade2223348132c108619f93178b563f584ed552aa5d3c6f946958a2d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - future
+
+tests:
+  - python:
+      imports:
+        - bitmap
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/wanji/bitmap
+  license: MIT
+  license_file: LICENSE
+  summary: .
+  description: |
+    .
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: bitmap
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: bitmap
+  cfe-purls:
+    - pkg:conda/bitmap@${{ version }}?channel=conda-forge
+    - pkg:pypi/bitmap@${{ version }}
+  cfe-upstream-repo: https://github.com/wanji/bitmap
+  cfe-upstream-homepage: https://github.com/wanji/bitmap
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:40:08Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:40:08Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

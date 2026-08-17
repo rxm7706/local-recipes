@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.5"
+
+package:
+  name: jupyter-copilot
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/jupyter-copilot/jupyter_copilot-${{ version }}.tar.gz
+  sha256: b6c462be303b1b22d8698c2cd070c719c51cf3ea2960d515d5d108c3a82a521f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling >=1.5.0
+    - jupyterlab >=4.0.0,<5
+    - hatch-nodejs-version >=0.3.2
+  run:
+    - python >=${{ python_min }}
+    - jupyter-server <3,>=2.0.1
+
+tests:
+  - python:
+      imports:
+        - jupyter_copilot
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/baolong281/jupyter-copilot
+  license: MIT
+  license_file: LICENSE
+  summary: GitHub Copilot for Jupyter
+  description: |
+    GitHub Copilot for Jupyter
+  repository: https://github.com/baolong281/jupyter-copilot.git
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jupyter-copilot
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jupyter-copilot
+  cfe-purls:
+    - pkg:conda/jupyter-copilot@${{ version }}?channel=conda-forge
+    - pkg:pypi/jupyter-copilot@${{ version }}
+  cfe-upstream-repo: https://github.com/baolong281/jupyter-copilot.git
+  cfe-upstream-homepage: https://github.com/baolong281/jupyter-copilot
+  cfe-import-names: [jupyter_copilot]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:26:44Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:26:44Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

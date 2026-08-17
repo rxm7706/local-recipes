@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: yacs
+  version: 0.1.8
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: efc4c732942b3103bea904ee89af98bcd27d01f0ac12d8d4d369f1e7a2914384
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pyyaml
+
+tests:
+  - python:
+      imports:
+        - yacs
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Yet Another Configuration System
+  license: Apache-2.0
+  license_file: LICENSE
+  description: YACS -- Yet Another Configuration System
+  homepage: https://github.com/rbgirshick/yacs
+  repository: https://github.com/rbgirshick/yacs
+  documentation: https://github.com/rbgirshick/yacs
+
+extra:
+  recipe-maintainers:
+    - hadim
+    - baszalmstra

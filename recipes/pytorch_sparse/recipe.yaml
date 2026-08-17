@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# see github.com/conda-forge/conda-forge.github.io/issues/1059 for naming discussion
+schema_version: 1
+
+context:
+  version: "0.6.18"
+  torch_proc_type: '"cuda" if cuda_compiler_version != "None" else "cpu"'
+
+package:
+  name: pytorch_sparse
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/torch_sparse/torch_sparse-${{ version }}.tar.gz
+  sha256: 2f14c510a6e93f404c6ea357210615b3c15a71731f9dbd86f25434e34fb5a741
+
+build:
+  number: 13
+  skip: win
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: pytorch
+    - if: build_platform != target_platform
+      then: pytorch * ${{ torch_proc_type }}*
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - if: cuda_compiler_version not in (undefined, 'None')
+      then: ${{ compiler('cuda') }}
+  host:
+    - python
+    - pip
+    - pybind11
+    - pytorch
+    - pytorch * ${{ torch_proc_type }}*
+    - setuptools
+    - pytest-runner
+    - scipy
+    - cuda-version ${{ cuda_compiler_version }}
+    - cuda-driver-dev
+    - cuda-cudart-dev
+    - cuda-nvrtc-dev
+    - cuda-nvtx-dev
+    - cuda-nvml-dev
+    - libcublas-dev
+    - libcusparse-dev
+    - libcusolver-dev
+  run:
+    - python
+    # Use the run_export to depend on pytorch
+    # - pytorch
+    - pytest
+    - pytest-cov
+    - scipy
+    - pytorch_scatter
+  run_constraints:
+    - pytorch * ${{ torch_proc_type }}*
+
+tests:
+  - python:
+      imports:
+        - torch_sparse
+      pip_check: false
+
+about:
+  summary: PyTorch Extension Library of Optimized Autograd Sparse Matrix Operations
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/rusty1s/pytorch_sparse
+  repository: https://github.com/rusty1s/pytorch_sparse
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - rluria14
+    - oblute
+    - ndmaxar
+    - mikemhenry
+    - h-vetinari

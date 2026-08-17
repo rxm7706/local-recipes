@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.0.1"
+
+package:
+  name: statsd
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/statsd/statsd-${{ version }}.tar.gz
+  sha256: 99763da81bfea8daf6b3d22d11aaccb01a8d0f52ea521daab37e758a4ca7d128
+
+build:
+  number: 1
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - requirements:
+      run:
+        - nose2
+        - python ${{ python_min }}
+        - mock
+        - pip
+    script:
+      - pip check
+      - nose2 statsd
+
+about:
+  license: MIT
+  summary: A Python client for statsd
+  license_file: LICENSE
+  homepage: https://github.com/jsocol/pystatsd
+  repository: https://github.com/jsocol/pystatsd
+  documentation: https://statsd.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

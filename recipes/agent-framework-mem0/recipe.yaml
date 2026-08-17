@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0b260813"
+
+package:
+  name: agent-framework-mem0
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/agent-framework-mem0/agent_framework_mem0-${{ version }}.tar.gz
+  sha256: 6b78047bb4f8d983df38e59bf02bd1a31724aefdf0584075aecae837c5c76451
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core >=3.11,<4.0
+  run:
+    - python >=${{ python_min }}
+    - agent-framework-core <2,>=1.13.0
+    - mem0ai <3,>=2.0.0
+
+tests:
+  - python:
+      imports:
+        - agent_framework_mem0
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://aka.ms/agent-framework
+  license: MIT
+  license_file: LICENSE
+  summary: Mem0 integration for Microsoft Agent Framework.
+  description: |
+    Mem0 integration for Microsoft Agent Framework.
+  repository: https://github.com/microsoft/agent-framework/tree/main/python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: agent-framework-mem0
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: agent-framework-mem0
+  cfe-purls:
+    - pkg:conda/agent-framework-mem0@${{ version }}?channel=conda-forge
+    - pkg:pypi/agent-framework-mem0@${{ version }}
+  cfe-upstream-repo: https://github.com/microsoft/agent-framework/tree/main/python
+  cfe-upstream-homepage: https://aka.ms/agent-framework
+  cfe-import-names: [agent_framework_mem0]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:47:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:47:59Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  python_min: "3.12"
+  name: pyasyncore
+  version: "1.0.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyasyncore-${{ version }}.tar.gz
+  sha256: dd483d5103a6d59b66b86e0ca2334ad43dca732ff23a0ac5d63c88c52510542e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.12.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<3.13
+
+tests:
+  - python:
+      imports:
+        - asyncore
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Make asyncore available for Python 3.12 onwards
+  license: PSF-2.0
+  license_file: LICENSE
+  homepage: https://github.com/simonrob/pyasyncore
+
+extra:
+  recipe-maintainers:
+    - xhochy

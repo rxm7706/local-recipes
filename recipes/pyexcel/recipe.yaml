@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyexcel
+  version: "0.7.6"
+  sha256: 489483d8c7675a4d04d0a55a1b5dd0925771e2660fa68105ca342e492f459d1b
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - lml >=0.0.4
+    - pyexcel-io >=0.6.2
+    - texttable >=0.8.2
+    - chardet
+
+tests:
+  - python:
+      imports:
+        - pyexcel
+        - pyexcel.docstrings
+        - pyexcel.internal
+        - pyexcel.internal.sheets
+        - pyexcel.plugins
+        - pyexcel.plugins.parsers
+        - pyexcel.plugins.renderers
+        - pyexcel.plugins.sources
+        - pyexcel.plugins.sources.pydata
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Single API for reading, manipulating and writing data in csv, ods, xls, xlsx and xlsm files
+  description: |
+    'A wrapper library that provides one API to read, manipulate and write ' +
+    'data in different excel formats' +
+    ''
+  homepage: https://github.com/pyexcel/pyexcel
+  repository: https://github.com/pyexcel/pyexcel
+  documentation: http://pyexcel.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - williamjamir
+    - nicoddemus

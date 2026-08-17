@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mimerender
+  version: "0.6.0"
+  compress_type: tar.gz
+  hash_val: e7f1377efee18c3f562cee54907a3329223c824332889fb74b745ddfd0a9b1c6
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ compress_type }}
+  sha256: ${{ hash_val }}
+  file_name: ${{ name }}-${{ version }}.${{ compress_type }}
+
+build:
+  number: 1
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - python-mimeparse >=0.1.4
+
+tests:
+  - python:
+      imports:
+        - mimerender
+      pip_check: false
+
+about:
+  license: MIT
+  # license_file: No MANIFEST.in - see https://github.com/martinblech/mimerender/issues/34
+  summary: RESTful HTTP Content Negotiation for Flask, Bottle, web.py and webapp2 (Google App Engine)
+  homepage: https://github.com/martinblech/mimerender
+  repository: https://github.com/martinblech/mimerender
+  documentation: https://mimerender.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr

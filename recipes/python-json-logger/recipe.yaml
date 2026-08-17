@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.2.0"
+
+package:
+  name: python-json-logger
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/p/python-json-logger/python_json_logger-${{ version }}.tar.gz
+  sha256: e371ebe22ec01e289850102091a2b1f6fc9e655c7f1f5f29073936756c290afa
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - pythonjsonlogger
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  license_file: LICENSE
+  license: BSD-2-Clause
+  summary: JSON Log Formatter for the Python Logging Package
+  description: |
+    This library is provided to allow standard python logging to output log
+    data as json objects. With JSON we can make our logs more readable by
+    machines and we can stop writing custom parsers for syslog type records.
+
+
+  homepage: https://github.com/nhairs/python-json-logger
+
+extra:
+  recipe-maintainers:
+    - awvwgk
+    - sodre
+    - blink1073

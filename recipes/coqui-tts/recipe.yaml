@@ -1,0 +1,102 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.27.5"
+
+package:
+  name: coqui-tts
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/coqui-tts/coqui_tts-${{ version }}.tar.gz
+  sha256: 64304dd6a817c4b56019d53ba65b63e0e25ec1593f4b96f3d40b243daa73bf72
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - anyascii >=0.3.0
+    - coqpit-config <0.3.0,>=0.2.0
+    - coqui-tts-trainer <0.4.0,>=0.3.0
+    - einops >=0.6.0
+    - fsspec >=2023.6.0
+    - inflect >=5.6.0
+    - ko-speech-tools >=0.1.0
+    - librosa >=0.11.0
+    - matplotlib-base >=3.8.4
+    - monotonic-alignment-search >=0.1.0
+    - num2words >=0.5.14
+    - numba >=0.58.0
+    - numpy >=1.26.0
+    - packaging >=23.1
+    - pysbd >=0.3.4
+    - pyyaml >=6.0
+    - scipy >=1.13.0
+    - soundfile >=0.12.0
+    - tqdm >=4.64.1
+    - transformers >=4.57
+    - typing_extensions >=4.10
+
+tests:
+  - python:
+      imports:
+        - TTS
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/idiap/coqui-ai-TTS
+  license: MPL-2.0
+  license_file: LICENSE
+  summary: Deep learning for Text to Speech.
+  description: |
+    Deep learning for Text to Speech.
+  repository: https://github.com/idiap/coqui-ai-TTS
+  documentation: https://coqui-tts.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: coqui-tts
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: coqui-tts
+  cfe-purls:
+    - pkg:conda/coqui-tts@${{ version }}?channel=conda-forge
+    - pkg:pypi/coqui-tts@${{ version }}
+  cfe-upstream-repo: https://github.com/idiap/coqui-ai-TTS
+  cfe-upstream-homepage: https://github.com/idiap/coqui-ai-TTS
+  cfe-import-names: [TTS]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:51:33Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:51:33Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

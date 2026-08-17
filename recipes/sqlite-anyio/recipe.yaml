@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sqlite-anyio
+  version: "0.3.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/sqlite_anyio-${{ version }}.tar.gz
+  sha256: 7ab35ec263f6d4a22650ad1b121362a49a02adef2a3601a547bc59b0670648ca
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - anyio >=4.14.0,<5.0.0
+    - typing_extensions >=4.15.0
+
+tests:
+  - python:
+      imports: sqlite_anyio
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Asynchronous client for SQLite using AnyIO
+  license_file: LICENSE
+  license: MIT
+  homepage: https://github.com/davidbrochart/sqlite-anyio
+  repository: https://github.com/davidbrochart/sqlite-anyio
+
+extra:
+  recipe-maintainers:
+    - davidbrochart

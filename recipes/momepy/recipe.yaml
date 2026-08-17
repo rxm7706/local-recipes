@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: momepy
+  version: "1.0.0"
+  python_min: "3.12"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 7bc2289a4b2d97f2c1267a9ee318cf1c94998e7098d1c6ad6c662a01bc3d9fe6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python 3.12.*
+    - pip
+    - setuptools >=61.0
+    - setuptools-scm >=6.2
+  run:
+    - python >=${{ python_min }}
+    - geopandas >=0.12.0
+    - libpysal >=4.12.0
+    - networkx >=2.8
+    - packaging
+    - pandas >=1.5.1
+    - shapely >=2
+    - tqdm >=4.63.0
+
+tests:
+  - python:
+      imports:
+        - momepy
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Urban Morphology Measuring Toolkit for Python
+  description: |
+    Momepy is a project allowing advanced quantitative analysis of urban morphology.
+    Embracing principles of Urban Morphometrics, this toolkit aims to provide tools
+    for the development of complex frameworks for a description of urban structures.
+  homepage: http://momepy.org
+  repository: https://github.com/pysal/momepy
+  documentation: http://docs.momepy.org
+
+extra:
+  recipe-maintainers:
+    - knaaptime
+    - martinfleis
+    - jGaboardi

@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.1.1"
+
+package:
+  name: pstools
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pstools/pstools-${{ version }}.tar.gz
+  sha256: 775aa665cc3c3f2d182d9a73d94b0bf68a5cda9c99d9c163ff18d148e4c38656
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - meander
+    - astropy-base
+    - numpy
+    - healpy
+    - matplotlib-base
+    - astroquery
+
+tests:
+  - python:
+      imports:
+        - pst
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/pstools/
+  license: MIT
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+  description: |
+    REPLACE_DESCRIPTION
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pstools
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pstools
+  cfe-purls:
+    - pkg:conda/pstools@${{ version }}?channel=conda-forge
+    - pkg:pypi/pstools@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/pstools/
+  cfe-upstream-homepage: https://pypi.org/project/pstools/
+  cfe-import-names: [pst]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:22:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:22:37Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

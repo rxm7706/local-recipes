@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.8"
+
+package:
+  name: pylint-pytest
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pylint-pytest/pylint_pytest-${{ version }}.tar.gz
+  sha256: 5c862c88870aa8eb1b376df48ab9e820b5bdadfe37d965aa9ac567a6305955ca
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pylint >=2
+    - pytest >=4.6
+
+tests:
+  - python:
+      imports:
+        - pylint_pytest
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/pylint-dev/pylint-pytest
+  license: MIT
+  license_file: LICENSE
+  summary: A Pylint plugin to suppress pytest-related false positives.
+  description: |
+    A Pylint plugin to suppress pytest-related false positives.
+  repository: https://github.com/pylint-dev/pylint-pytest
+  documentation: https://github.com/pylint-dev/pylint-pytest#readme
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pylint-pytest
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pylint-pytest
+  cfe-purls:
+    - pkg:conda/pylint-pytest@${{ version }}?channel=conda-forge
+    - pkg:pypi/pylint-pytest@${{ version }}
+  cfe-upstream-repo: https://github.com/pylint-dev/pylint-pytest
+  cfe-upstream-homepage: https://github.com/pylint-dev/pylint-pytest
+  cfe-import-names: [pylint_pytest]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:38:13Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:38:13Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4/P5 Create-recipe local-only. pylint-pytest.
+####

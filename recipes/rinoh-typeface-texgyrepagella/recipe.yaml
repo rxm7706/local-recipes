@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.1"
+
+package:
+  name: rinoh-typeface-texgyrepagella
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/rinoh-typeface-texgyrepagella/rinoh-typeface-texgyrepagella-${{ version }}.tar.gz
+  sha256: 53f4dba338c6b1df758888f23ce1ed728e5be45746f161488ad3b944e5e79fd2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - rinoh_typeface_texgyrepagella
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/brechtm/rinoh-typeface-texgyrepagella
+  license: MIT
+  license_file: LICENSE
+  summary: TeX Gyre Pagella typeface
+  description: |
+    TeX Gyre Pagella typeface
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: rinoh-typeface-texgyrepagella
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: rinoh-typeface-texgyrepagella
+  cfe-purls:
+    - pkg:conda/rinoh-typeface-texgyrepagella@${{ version }}?channel=conda-forge
+    - pkg:pypi/rinoh-typeface-texgyrepagella@${{ version }}
+  cfe-upstream-repo: https://github.com/brechtm/rinoh-typeface-texgyrepagella
+  cfe-upstream-homepage: https://github.com/brechtm/rinoh-typeface-texgyrepagella
+  cfe-import-names: [rinoh_typeface_texgyrepagella]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:54:10Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:54:10Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

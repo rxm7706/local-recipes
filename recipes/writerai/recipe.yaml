@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.0.1"
+
+package:
+  name: writerai
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/writerai/writerai-${{ version }}.tar.gz
+  sha256: 1b1c3135fd83e739f96b09f7c7c694f84db747e3041000ae25c9521e819c3404
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - writer-sdk
+
+tests:
+  - python:
+      imports:
+        - writerai_meta
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://www.writer.com
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Meta-package referencing to writer-sdk
+  description: |
+    Meta-package referencing to writer-sdk
+  repository: https://github.com/writer/writer-python
+  documentation: https://dev.writer.com
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: writerai
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: writerai
+  cfe-purls:
+    - pkg:conda/writerai@${{ version }}?channel=conda-forge
+    - pkg:pypi/writerai@${{ version }}
+  cfe-upstream-repo: https://github.com/writer/writer-python
+  cfe-upstream-homepage: https://www.writer.com
+  cfe-import-names: [writerai_meta]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:32:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:32:53Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

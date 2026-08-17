@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dmgbuild
+  version: "1.6.7"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 676b17acd448899f6d4a83b2184e0657480444ecb6ac9c4922889efad9e5dbfb
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - dmgbuild = dmgbuild.__main__:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - importlib_resources >=5.9
+    - ds_store >=1.1.0
+    - mac_alias >=2.0.1
+    - __osx
+
+tests:
+  - python:
+      imports:
+        - dmgbuild
+      python_version: ${{ python_min }}.*
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - pip
+        - pytest
+        - pytest-cov
+        - tox
+        - python ${{ python_min }}.*
+    script:
+      - tox -e py
+
+about:
+  summary: macOS command line utility to build disk images
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/dmgbuild/dmgbuild
+  documentation: https://dmgbuild.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - marcelotduarte

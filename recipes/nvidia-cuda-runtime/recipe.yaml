@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "13.3.29"
+
+package:
+  name: nvidia-cuda-runtime
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/n/nvidia-cuda-runtime/nvidia_cuda_runtime-13.3.29-py3-none-manylinux2014_aarch64.manylinux_2_17_aarch64.whl
+  sha256: 73291e19c9dd919c140c91bda2f80b0eca487da5ee30a086ef7bc4918ecb90ea
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - nvidia_cuda_runtime
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://developer.nvidia.com/cuda-zone
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: CUDA Runtime native Libraries
+  description: |
+    CUDA Runtime native Libraries
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nvidia-cuda-runtime
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: nvidia-cuda-runtime
+  cfe-purls:
+    - pkg:conda/nvidia-cuda-runtime@${{ version }}?channel=conda-forge
+    - pkg:pypi/nvidia-cuda-runtime@${{ version }}
+  cfe-upstream-repo: https://developer.nvidia.com/cuda-zone
+  cfe-upstream-homepage: https://developer.nvidia.com/cuda-zone
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:03:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:03:41Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: backports.zoneinfo
+  version: "0.2.1"
+  hash: fadbfe37f74051d024037f223b8e001611eac868b5c5b06144ef4d8b799862f2
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ hash }}
+  patches:
+    - tzdata-location.patch
+
+build:
+  number: 11
+  script:
+    - if: match(python, "<3.9")
+      then: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: match(python, "<3.9") and build_platform != target_platform
+      then: python
+    - if: match(python, "<3.9") and build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: match(python, "<3.9")
+      then: ${{ compiler('c') }}
+    - if: match(python, "<3.9")
+      then: ${{ stdlib("c") }}
+  host:
+    - if: match(python, "<3.9")
+      then: backports
+    - python
+    - pip
+    - setuptools >=40.8.0
+  run:
+    - if: match(python, "<3.9")
+      then: backports
+    - python
+    - if: match(python, "<3.9")
+      then: tzdata
+    - if: match(python, "<3.7")
+      then: importlib_resources
+
+tests:
+  - python:
+      imports:
+        - if: match(python, "<3.9")
+          then: backports.zoneinfo
+        - if: match(python, ">=3.9")
+          then: zoneinfo
+      pip_check: false
+  - script:
+      - if: match(python, "<3.9")
+        then: python -c "from backports.zoneinfo import ZoneInfo; from datetime import datetime; dt = datetime(2020, 10, 31, 12, tzinfo=ZoneInfo('America/Los_Angeles')); print(dt.tzname())"
+      - if: match(python, ">=3.9")
+        then: python -c "from zoneinfo import ZoneInfo; from datetime import datetime; dt = datetime(2020, 10, 31, 12, tzinfo=ZoneInfo('America/Los_Angeles')); print(dt.tzname())"
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Backport of the standard library zoneinfo module
+  description: |
+    Backport of the standard library zoneinfo module
+  homepage: https://github.com/pganssle/zoneinfo
+  repository: https://github.com/pganssle/zoneinfo
+  documentation: https://zoneinfo.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - kevans
+    - dhirschfeld

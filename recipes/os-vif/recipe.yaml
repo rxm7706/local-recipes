@@ -1,0 +1,93 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.1.0"
+  python_min: "3.11"
+
+package:
+  name: os-vif
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/os-vif/os_vif-${{ version }}.tar.gz
+  sha256: c2321bb0b89513a45a25543f216393b5f21d238d9c87526813f66499f5baa39e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - pbr >=6.1.1
+  run:
+    - python >=${{ python_min }}
+    - pbr >=3.0.0
+    - oslo.concurrency >=3.20.0
+    - oslo.config >=5.1.0
+    - oslo.log >=3.30.0
+    - oslo.i18n >=6.8.0
+    - oslo.privsep >=1.23.0
+    - oslo.serialization >=2.20.0
+    - oslo.utils >=2.0.0
+    - oslo.versionedobjects >=3.10.2
+    - ovsdbapp >=0.12.1
+    - stevedore >=1.20.0
+    - debtcollector >=1.19.0
+
+tests:
+  - python:
+      imports:
+        - os_vif
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://docs.openstack.org/os_vif
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A library for plugging and unplugging virtual interfaces in OpenStack.
+  description: |
+    A library for plugging and unplugging virtual interfaces in OpenStack.
+  repository: https://opendev.org/openstack/os_vif
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: os-vif
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: os-vif
+  cfe-purls:
+    - pkg:conda/os-vif@${{ version }}?channel=conda-forge
+    - pkg:pypi/os-vif@${{ version }}
+  cfe-upstream-repo: https://opendev.org/openstack/os_vif
+  cfe-upstream-homepage: https://docs.openstack.org/os_vif
+  cfe-import-names: [os_vif]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:26:56Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:26:56Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

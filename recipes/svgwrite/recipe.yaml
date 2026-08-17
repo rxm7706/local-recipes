@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: svgwrite
+  version: "1.4.3"
+  sha256: a8fbdfd4443302a6619a7f76bc937fc683daf2628d9b737c891ec08b8ce524c3
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.zip
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.zip
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+    - pyparsing >=2.0.1
+  run:
+    - python >=${{ python_min }}
+    - pyparsing >=2.0.1
+
+tests:
+  - python:
+      imports:
+        - svgwrite
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.TXT
+  summary: A Python library to create SVG drawings.
+  description: A Python library to create SVG drawings.
+  homepage: https://github.com/mozman/svgwrite
+  repository: https://github.com/mozman/svgwrite
+  documentation: http://svgwrite.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - jeromekelleher

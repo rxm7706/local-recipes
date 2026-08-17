@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.5.0"
+
+package:
+  name: kiwisolver
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/k/kiwisolver/kiwisolver-${{ version }}.tar.gz
+  sha256: d4193f3d9dc3f6f79aaed0e5637f45d98850ebf01f7ca20e69457f3e8946b66a
+
+build:
+  number: 0
+  skip: match(python, "<3.10")
+  script: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ compiler("cxx") }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - cppy >=1.3.0
+    - setuptools >=61.2
+    - setuptools-scm >=3.4.3
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - kiwisolver
+      pip_check: true
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A fast implementation of the Cassowary constraint solver
+  homepage: https://github.com/nucleic/kiwi
+
+extra:
+  recipe-maintainers:
+    - blink1073
+    - licode
+    - MatthieuDartiailh
+    - sccolbert
+    - tacaswell
+    - ocefpaf
+    - fhoehle

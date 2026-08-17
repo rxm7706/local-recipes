@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "7.1.0"
+
+recipe:
+  name: importlib_resources
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/i/importlib_resources/importlib_resources-${{ version }}.tar.gz
+  sha256: 0722d4c6212489c530f2a145a34c0a7a3b4721bc96a15fada5930e2a0b760708
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+    - setuptools_scm >=3.4.1
+    # setuptools_scm[toml]
+    - toml
+  run:
+    - python >=${{ python_min }}
+    - zipp >=3.1.0
+  run_constraints:
+    - ${{ pin_subpackage("importlib-resources", upper_bound="x.x.x") }}
+
+outputs:
+  - package:
+      name: importlib_resources
+  - package:
+      name: importlib-resources
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python ${{ python_min }}
+      run:
+        - ${{ pin_subpackage("importlib_resources", upper_bound="x.x.x") }}
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports:
+            - importlib_resources
+          pip_check: true
+          python_version: ${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - importlib_resources
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Backport of Python 3.7's standard library `importlib.resources`
+  homepage: http://importlib-resources.readthedocs.io
+
+extra:
+  feedstock-name: importlib_resources
+  recipe-maintainers:
+    - ocefpaf

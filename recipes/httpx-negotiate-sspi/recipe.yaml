@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: httpx-negotiate-sspi
+  version: "0.28.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/httpx_negotiate_sspi-${{ version }}.tar.gz
+  sha256: 140bedfe08e1282974af28663bc02a205e4dc64e304df34aecc405be375ebda6
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry >=1.0
+    - poetry-core
+    - pip
+  run:
+    - if: unix
+      then: __unix
+    - if: win
+      then: __win
+    - python >=${{ python_min }}
+    - if: win
+      then: pywin32 >=223
+    - httpx >0.16,<0.29
+
+tests:
+  - python:
+      imports:
+        - if: win
+          then: httpx_negotiate_sspi
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  summary: SSPI authentication for httpx
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/rob-blackbourn/httpx-negotiate-sspi
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld

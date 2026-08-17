@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: opentelemetry-exporter-otlp-proto-common
+  version: "1.44.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_exporter_otlp_proto_common-${{ version }}.tar.gz
+  sha256: dc87a5a5bc58f149a56d1547e4691588fa12994cdc3bc039a694ccb3375862ac
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - opentelemetry-proto ==${{ version }}
+    # NOTE backoff only required for py<37 but pip checks fails without it
+    - backoff >=1.10.0,<3.0.0
+
+tests:
+  - python:
+      imports:
+        - opentelemetry
+        - opentelemetry.exporter.otlp.proto.common
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: OpenTelemetry Protobuf encoding
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://opentelemetry.io/
+
+extra:
+  recipe-maintainers:
+    - conda-forge/opentelemetry-proto
+    - rxm7706
+    - mariusvniekerk
+    - pb01ka

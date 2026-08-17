@@ -1,0 +1,39 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "6.1.4"
+
+package:
+  name: fake
+  version: ${{ version }}
+
+source:
+  url: https://github.com/fsprojects/fake/archive/${{ version }}.tar.gz
+  sha256: d1312e0ba4c7861e9e3edfc6585e22408a09e5ee1eb91218d993da7900fd72b6
+
+build:
+  number: 0
+  noarch: generic
+
+requirements:
+  host:
+    - dotnet
+    - nuget-license
+  run:
+    - dotnet
+
+tests:
+  - script:
+      - fake-cli --help
+
+about:
+  license: Apache-2.0
+  license_file:
+    - License.txt
+    - license-files/
+  summary: FAKE - F# Make
+  homepage: https://fake.build
+  repository: https://github.com/fsprojects/fake
+
+extra:
+  recipe-maintainers:
+    - danielnachun

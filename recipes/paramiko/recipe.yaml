@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: paramiko
+  version: "5.0.0"
+  bundle: tar.gz
+  hash_val: 36763b5b95c2a0dcfdf1abc48e48156ee425b21efe2f0e787c2dd5a95c0e5e79
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
+  sha256: ${{ hash_val }}
+  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - bcrypt >=3.2
+    - cryptography >=3.3
+    - pynacl >=1.5
+    - invoke >=2.0
+
+tests:
+  - python:
+      imports:
+        - paramiko
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license_file: LICENSE
+  license: LGPL-2.1-or-later
+  summary: SSH2 protocol library
+  homepage: http://www.paramiko.org/
+  repository: https://github.com/paramiko/paramiko/
+  documentation: http://docs.paramiko.org/
+
+extra:
+  recipe-maintainers:
+    - vamega
+    - jakirkham
+    - tschoonj
+    - jan-janssen

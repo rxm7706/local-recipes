@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pycryptodomex
+  version: "3.23.0"
+  sha256: 71909758f010c82bc99b0abf4ea12012c98962fbf0583c2164f8b84533c2e4da
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+  patches:
+    # ctypes.util.find_library() isn't CONDA_PREFIX aware :'(
+    # https://github.com/ContinuumIO/anaconda-issues/issues/1716
+    - if: unix
+      then: 0001-Make-load_lib-look-in-sys.prefix-lib-first.patch
+
+build:
+  number: 1
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vvv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+    - if: not win
+      then: gmp
+
+tests:
+  - python:
+      imports:
+        - Cryptodome
+        - Cryptodome.Cipher
+        - Cryptodome.Hash
+        - Cryptodome.IO
+        - Cryptodome.Math
+        - Cryptodome.Protocol
+        - Cryptodome.PublicKey
+        - Cryptodome.Random
+        - Cryptodome.SelfTest
+        - Cryptodome.SelfTest.Cipher
+        - Cryptodome.SelfTest.Hash
+        - Cryptodome.SelfTest.IO
+        - Cryptodome.SelfTest.Math
+        - Cryptodome.SelfTest.Protocol
+        - Cryptodome.SelfTest.PublicKey
+        - Cryptodome.SelfTest.Random
+        - Cryptodome.SelfTest.Signature
+        - Cryptodome.SelfTest.Util
+        - Cryptodome.Signature
+        - Cryptodome.Util
+      pip_check: false
+  - requirements:
+      run:
+        - psutil
+
+about:
+  license: SAX-PD
+  license_file: LICENSE.rst
+  summary: Cryptographic library for Python
+  description: |
+    PyCryptodome is a self-contained Python package of low-level cryptographic
+    primitives.
+  homepage: http://www.pycryptodome.org
+  repository: https://github.com/Legrandin/pycryptodome
+  documentation: https://www.pycryptodome.org/en/latest/
+
+extra:
+  recipe-maintainers:
+    - nehaljwani

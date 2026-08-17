@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: editdistance
+  version: "0.8.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/roy-ht/editdistance/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 443674f20d469a724c4286906d8abd9e859a18b70ef1145b02acd26eb93ea661
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+  host:
+    - python
+    - pip
+    - cython
+    - setuptools
+    - pdm-backend
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - editdistance
+      pip_check: false
+  - files:
+      source:
+        - test
+    script:
+      - python test/test_editdistance.py
+
+about:
+  license: MIT
+  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE
+  summary: Fast implementation of the edit distance(Levenshtein distance)
+  description: Fast implementation of the edit distance(Levenshtein distance)
+  homepage: https://www.github.com/aflc/editdistance
+  repository: https://github.com/aflc/editdistance
+  documentation: https://github.com/aflc/editdistance
+
+extra:
+  recipe-maintainers:
+    - nelson-liu
+    - notestaff
+    - andrewprzh

@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-plotly-wagtail
+  version: "0.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_plotly_wagtail-${{ version }}.tar.gz
+  sha256: 7fe54468eddd417caee9691f94a87d83859f7e97bcb2b0322045e0d91eabc8c5
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - django >3.2
+    - django-plotly-dash
+    - wagtail
+    - dash-bootstrap-components
+    - dash-core-components
+    - dash-html-components
+    - dash-table
+
+tests:
+  - python:
+      imports:
+        - dpwagtail
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  summary: Django Wagtail use of django-plotly-dash and plotly dash
+  license: NGPL
+  license_file: LICENSE
+  homepage: https://gitlab.com/GibbsConsulting/django-plotly-wagtail
+  repository: https://gitlab.com/GibbsConsulting/django-plotly-wagtail
+
+extra:
+  recipe-maintainers:
+    - rxm7706

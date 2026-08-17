@@ -1,0 +1,96 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.4"
+  python_min: "3.11"
+
+package:
+  name: langgraph-api-inmem
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/langgraph-api-inmem/langgraph_api_inmem-${{ version }}.tar.gz
+  sha256: 390f16e6cb08b81c4675f751fad8bb9c8d351ed2c6650c54ed1b34515323c1d9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - croniter >=1.0.1
+    - httptools >=0.5.0
+    - httpx >=0.25.0
+    - jsonschema-rs >=0.20.0
+    - langchain-core <0.4.0,>=0.2.38
+    - langgraph <0.3.0,>=0.2.52
+    - langgraph-checkpoint <3.0,>=2.0.5
+    - langsmith >=0.1.63
+    - orjson >=3.9.7
+    - pycurl >=7.45.0
+    - sse-starlette >=2.1.0
+    - structlog >=23.1.0
+    - tenacity >=8.0.0
+    - tornado >=6.4.0
+    - uvicorn >=0.26.0
+    - watchfiles >=0.13
+
+tests:
+  - python:
+      imports:
+        - langgraph_api.storage
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/langgraph-api-inmem/
+  license: Elastic-2.0
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+  description: |
+    REPLACE_DESCRIPTION
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: langgraph-api-inmem
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: langgraph-api-inmem
+  cfe-purls:
+    - pkg:conda/langgraph-api-inmem@${{ version }}?channel=conda-forge
+    - pkg:pypi/langgraph-api-inmem@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/langgraph-api-inmem/
+  cfe-upstream-homepage: https://pypi.org/project/langgraph-api-inmem/
+  cfe-import-names: [langgraph_api.storage]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:06:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:06:53Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

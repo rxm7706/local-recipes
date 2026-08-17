@@ -2,15 +2,16 @@
 schema_version: 1
 
 context:
-  version: "5.1.1"
+  name: djangocms-link
+  version: "5.2.0"
 
 package:
-  name: djangocms-link
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/djangocms-link/djangocms_link-${{ version }}.tar.gz
-  sha256: 16c3026e795260e54c6305eb5cf0f1302fe3b1840ff4929d7e8336a455640519
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/djangocms_link-${{ version }}.tar.gz
+  sha256: a1b91ab2dfd30512601e3297e5882728860ec44be35c807edc72d8944e279148
 
 build:
   number: 0
@@ -19,10 +20,10 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - pip
+    - python ${{ python_min }}
     - setuptools
     - setuptools-scm
+    - pip
   run:
     - python >=${{ python_min }}
     - django-cms >=3.7,!=4.1,!=4.1.1,!=4.1.2
@@ -33,16 +34,13 @@ tests:
       imports:
         - djangocms_link
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Adds a link plugin to django CMS
   license: BSD-3-Clause
   license_file: LICENSE
   homepage: https://github.com/django-cms/djangocms-link
-  repository: https://github.com/django-cms/djangocms-link
 
 extra:
   recipe-maintainers:

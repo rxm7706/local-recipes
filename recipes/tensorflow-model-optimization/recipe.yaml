@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.8.1"
+
+package:
+  name: tensorflow-model-optimization
+  version: ${{ version }}
+
+source:
+  url: https://github.com/tensorflow/model-optimization/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: fa33d208d0cd72f3b58800820f5980d74ba769d43a64cf8b6e1df8d82dfbb9c7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - absl-py ~=1.2
+    - numpy >=1.23
+    - six ~=1.14
+    - scipy
+    - enum34 ~=1.1
+    - dm-tree ~=0.1.1
+    - mock
+    - tf-keras >=2.14.1
+
+tests:
+  - python:
+      imports:
+        - tensorflow_model_optimization
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/tensorflow/model-optimization
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A suite of tools that users, both novice and advanced can use to optimize machine learning models for deployment and execution.
+  description: |
+    A suite of tools that users, both novice and advanced can use to optimize machine learning models for deployment and execution.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tensorflow-model-optimization
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tensorflow-model-optimization
+  cfe-purls:
+    - pkg:conda/tensorflow-model-optimization@${{ version }}?channel=conda-forge
+    - pkg:pypi/tensorflow-model-optimization@${{ version }}
+  cfe-upstream-repo: https://github.com/tensorflow/model-optimization
+  cfe-upstream-homepage: https://github.com/tensorflow/model-optimization
+  cfe-import-names: [tensorflow_model_optimization]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:02:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:02:41Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

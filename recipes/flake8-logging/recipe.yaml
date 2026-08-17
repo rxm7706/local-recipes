@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: flake8-logging
   version: "1.8.0"
 
 package:
-  name: flake8-logging
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/f/flake8-logging/flake8_logging-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: 765046763d44d1dc051071c047fe0fa056d71a524505207c3fbdc47532e7d8af
 
 build:
@@ -19,9 +20,9 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - pip
+    - python ${{ python_min }}
     - setuptools
+    - pip
   run:
     - python >=${{ python_min }}
     - flake8 >=3,!=3.2
@@ -31,19 +32,13 @@ tests:
       imports:
         - flake8_logging
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: A Flake8 plugin that checks for issues using the standard library logging module.
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/adamchainz/flake8-logging
-  repository: https://github.com/adamchainz/flake8-logging
-  description: |
-    A Flake8 plugin that checks for issues using the standard library
-    logging module.
 
 extra:
   recipe-maintainers:

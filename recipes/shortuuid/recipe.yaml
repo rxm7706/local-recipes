@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.13"
+
+package:
+  name: shortuuid
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/shortuuid/shortuuid-${{ version }}.tar.gz
+  sha256: 3bb9cf07f606260584b1df46399c0b87dd84773e7b25912b7e391e30797c5e72
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - shortuuid = shortuuid.cli:cli
+
+requirements:
+  host:
+    - pip
+    - poetry-core
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - shortuuid
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - coverage
+        - pep8
+        - pip
+        - python ${{ python_min }}
+    script:
+      - shortuuid --help
+      - coverage run --branch --source=shortuuid -m unittest shortuuid.test_shortuuid
+      - coverage report --show-missing --skip-covered --fail-under=90
+
+about:
+  license: BSD-3-Clause
+  license_file: COPYING
+  summary: A generator library for concise, unambiguous and URL-safe UUIDs
+  description: |
+    A library that generates short, pretty, unambiguous unique IDs by using an
+    extensive, case-sensitive alphabet and omitting similar-looking letters and
+    numbers.
+
+
+  homepage: https://github.com/skorokithakis/shortuuid
+
+extra:
+  recipe-maintainers:
+    - astamminger
+    - bollwyvl

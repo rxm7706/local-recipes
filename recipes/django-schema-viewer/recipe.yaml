@@ -2,18 +2,19 @@
 schema_version: 1
 
 context:
+  name: django-schema-viewer
   version: "0.5.3"
 
 package:
-  name: django-schema-viewer
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-schema-viewer/django_schema_viewer-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_schema_viewer-${{ version }}.tar.gz
   sha256: d5bdaa7cfec0827d1232f1d79f746ea5a7f42bf6abf2359615084acb230b2d1c
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -23,7 +24,7 @@ requirements:
     - hatchling
     - pip
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
     - django >=4.0
 
 tests:
@@ -31,9 +32,7 @@ tests:
       imports:
         - schema_viewer
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}.*
 
 about:
   summary: Visualizes a DB schema based on Django models.
@@ -42,9 +41,6 @@ about:
   homepage: https://github.com/pikhovkin/django-schema-viewer
   repository: https://github.com/pikhovkin/django-schema-viewer
   documentation: https://django-schema-viewer.up.railway.app/schema-viewer
-  description: |
-    Visualizes a database schema based on Django models, rendering an
-    interactive entity-relationship diagram of the project's models.
 
 extra:
   recipe-maintainers:

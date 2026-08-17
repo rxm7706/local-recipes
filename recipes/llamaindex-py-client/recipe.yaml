@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: llamaindex-py-client
+  version: 0.1.19
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/llamaindex_py_client-${{ version }}.tar.gz
+  sha256: 73f74792bb8c092bae6dc626627a09ac13a099fa8d10f8fcc83e17a2b332cca7
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0.0
+    - pydantic >=1.10
+    - httpx >=0.20.0
+
+tests:
+  - python:
+      imports:
+        - llama_index_client
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  summary: API definitions for llama-index
+  license: MIT
+  license_file: LICENSE
+  homepage: https://llamaindex.ai
+
+extra:
+  recipe-maintainers:
+    - pavelzw

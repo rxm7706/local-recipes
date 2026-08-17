@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.4.0"
+
+package:
+  name: nassl
+  version: ${{ version }}
+
+source:
+  url: https://github.com/nabla-c0d3/nassl/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 7ccda3e9114f240e1cc79a72cf1bedb9cf0bfec270527354c74de5fff77d8bdc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - nassl
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/nabla-c0d3/nassl
+  license: AGPL-3.0-only
+  license_file: LICENSE
+  summary: Experimental OpenSSL wrapper for Python 3.10+ and SSLyze.
+  description: |
+    Experimental OpenSSL wrapper for Python 3.10+ and SSLyze.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: nassl
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: nassl
+  cfe-purls:
+    - pkg:conda/nassl@${{ version }}?channel=conda-forge
+    - pkg:pypi/nassl@${{ version }}
+  cfe-upstream-repo: https://github.com/nabla-c0d3/nassl
+  cfe-upstream-homepage: https://github.com/nabla-c0d3/nassl
+  cfe-import-names: [nassl]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:38:56Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:38:56Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

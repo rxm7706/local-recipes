@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  python_min: '3.10'
+  name: fastlite
+  version: 0.2.3
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fastlite-${{ version }}.tar.gz
+  sha256: 72de35edcc0701caf9b9fcabf828db07563576a62732d2581ba601a960440a8a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=64.0
+  run:
+    - python >=${{ python_min }}
+    - apswutils >=0.1.2
+    - fastcore >=1.7.1
+tests:
+  - python:
+      imports:
+        - fastlite
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: A bit of extra usability for sqlite
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/AnswerDotAI/fastlite
+
+extra:
+  recipe-maintainers:
+    - synapticarbors

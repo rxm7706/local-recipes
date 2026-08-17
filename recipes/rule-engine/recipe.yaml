@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: rule-engine
+  version: "5.0.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: dd871030a2eee062f3869fa952c3b93dbf56b21c8c01b73ca71e4c3ac8c5a4ea
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - ply >=3.9
+    - python >=${{ python_min }}
+    - python-dateutil >=2.7,<3
+
+tests:
+  - python:
+      imports:
+        - rule_engine
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A lightweight, optionally typed expression language with a custom grammar for matching arbitrary Python objects.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/zeroSteiner/rule-engine
+
+extra:
+  recipe-maintainers:
+    - drbixx
+    - teake

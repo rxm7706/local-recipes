@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: stanio
+  version: "0.5.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/stanio-${{ version }}.tar.gz
+  sha256: 348d52f947dec431e118f4b601c4c5296929b86401d4d4dd5aa9373b0d4ae4ac
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - numpy
+
+tests:
+  - python:
+      imports:
+        - stanio
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: |
+    Preparing inputs to and reading outputs from Stan.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/WardBrian/stanio
+  repository: https://github.com/WardBrian/stanio
+
+extra:
+  recipe-maintainers:
+    - WardBrian

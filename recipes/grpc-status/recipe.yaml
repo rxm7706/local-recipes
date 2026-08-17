@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0"
+
+package:
+  name: grpc-status
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/grpc-status/grpc-status-${{ version }}.tar.gz
+  sha256: 8e44109cbb36ff069fce04bd2a6846cfe25c481859b6bd8ad6919ceb33e0c9b0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - grpc_status
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://grpc.io
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: "Please install the official package with: pip install grpcio-status"
+  description: |
+    Please install the official package with: pip install grpcio-status
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: grpc-status
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: grpc-status
+  cfe-purls:
+    - pkg:conda/grpc-status@${{ version }}?channel=conda-forge
+    - pkg:pypi/grpc-status@${{ version }}
+  cfe-upstream-repo: https://grpc.io
+  cfe-upstream-homepage: https://grpc.io
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:36:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:36:12Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

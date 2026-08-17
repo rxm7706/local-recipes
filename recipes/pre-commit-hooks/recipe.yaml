@@ -1,0 +1,116 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pre-commit-hooks
+  version: "6.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pre_commit_hooks-${{ version }}.tar.gz
+  sha256: 76d8370c006f5026cdd638a397a678d26dda735a3c88137e05885a020f824034
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - check-added-large-files = pre_commit_hooks.check_added_large_files:main
+      - check-ast = pre_commit_hooks.check_ast:main
+      - check-builtin-literals = pre_commit_hooks.check_builtin_literals:main
+      - check-case-conflict = pre_commit_hooks.check_case_conflict:main
+      - check-docstring-first = pre_commit_hooks.check_docstring_first:main
+      - check-executables-have-shebangs = pre_commit_hooks.check_executables_have_shebangs:main
+      - check-json = pre_commit_hooks.check_json:main
+      - check-merge-conflict = pre_commit_hooks.check_merge_conflict:main
+      - check-shebang-scripts-are-executable = pre_commit_hooks.check_shebang_scripts_are_executable:main
+      - check-symlinks = pre_commit_hooks.check_symlinks:main
+      - check-toml = pre_commit_hooks.check_toml:main
+      - check-vcs-permalinks = pre_commit_hooks.check_vcs_permalinks:main
+      - check-xml = pre_commit_hooks.check_xml:main
+      - check-yaml = pre_commit_hooks.check_yaml:main
+      - debug-statement-hook = pre_commit_hooks.debug_statement_hook:main
+      - destroyed-symlinks = pre_commit_hooks.destroyed_symlinks:main
+      - detect-aws-credentials = pre_commit_hooks.detect_aws_credentials:main
+      - detect-private-key = pre_commit_hooks.detect_private_key:main
+      - double-quote-string-fixer = pre_commit_hooks.string_fixer:main
+      - end-of-file-fixer = pre_commit_hooks.end_of_file_fixer:main
+      - file-contents-sorter = pre_commit_hooks.file_contents_sorter:main
+      - fix-byte-order-marker = pre_commit_hooks.fix_byte_order_marker:main
+      - fix-encoding-pragma = pre_commit_hooks.fix_encoding_pragma:main
+      - forbid-new-submodules = pre_commit_hooks.forbid_new_submodules:main
+      - mixed-line-ending = pre_commit_hooks.mixed_line_ending:main
+      - name-tests-test = pre_commit_hooks.tests_should_end_in_test:main
+      - no-commit-to-branch = pre_commit_hooks.no_commit_to_branch:main
+      - pre-commit-hooks-removed = pre_commit_hooks.removed:main
+      - pretty-format-json = pre_commit_hooks.pretty_format_json:main
+      - requirements-txt-fixer = pre_commit_hooks.requirements_txt_fixer:main
+      - sort-simple-yaml = pre_commit_hooks.sort_simple_yaml:main
+      - trailing-whitespace-fixer = pre_commit_hooks.trailing_whitespace_fixer:main
+
+requirements:
+  host:
+    - pip
+    - setuptools
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+    - ruamel.yaml >=0.15
+    - tomli >=1.1.0
+
+tests:
+  - python:
+      imports:
+        - pre_commit_hooks
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - check-added-large-files --help
+      - check-ast --help
+      - check-builtin-literals --help
+      - check-case-conflict --help
+      - check-docstring-first --help
+      - check-executables-have-shebangs --help
+      - check-json --help
+      - check-merge-conflict --help
+      - check-shebang-scripts-are-executable --help
+      - check-symlinks --help
+      - check-toml --help
+      - check-vcs-permalinks --help
+      - check-xml --help
+      - check-yaml --help
+      - debug-statement-hook --help
+      - destroyed-symlinks --help
+      - detect-aws-credentials --help
+      - detect-private-key --help
+      - double-quote-string-fixer --help
+      - end-of-file-fixer --help
+      - file-contents-sorter --help
+      - fix-byte-order-marker --help
+      - forbid-new-submodules --help
+      - mixed-line-ending --help
+      - name-tests-test --help
+      - no-commit-to-branch --help
+      - pretty-format-json --help
+      - requirements-txt-fixer --help
+      - sort-simple-yaml --help
+      - trailing-whitespace-fixer --help
+
+about:
+  summary: Some out-of-the-box hooks for pre-commit.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/pre-commit/pre-commit-hooks
+
+extra:
+  recipe-maintainers:
+    - dangercrow
+    - jtilly

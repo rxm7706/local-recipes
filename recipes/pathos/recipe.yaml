@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pathos
+  version: 0.3.5
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 8fe041b8545c5d3880a038f866022bdebf935e5cf68f56ed3407cb7e65193a61
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools >=42
+  run:
+    - dill >=0.4.1
+    - multiprocess >=0.70.19
+    - pox >=0.3.7
+    - ppft >=1.7.8
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pathos
+        - pathos.helpers
+        - pathos.secure
+        - pathos.xmlrpc
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: parallel graph management and execution in heterogeneous computing
+  homepage: https://github.com/uqfoundation/pathos
+  repository: https://github.com/uqfoundation/pathos
+
+extra:
+  recipe-maintainers:
+    - jschueller
+    - mariusvniekerk
+    - synapticarbors

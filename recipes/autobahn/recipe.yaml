@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.7.1"
+
+package:
+  name: autobahn
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/autobahn/autobahn-${{ version }}.tar.gz
+  sha256: c6949a2c6eb95fb1c218837dbda0a59abbbebafb8b11098551c01a7061dfd245
+
+build:
+  number: 0
+  script: python -m pip install . -vv --no-build-isolation --no-deps
+  skip:
+    - match(python, "<3.11")
+  python:
+    entry_points:
+      - wamp = autobahn.__main__:_main
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - hatchling
+        - cffi >=2.0.0
+        - setuptools
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - hatchling
+    - cffi >=2.0.0
+    - setuptools
+  run:
+    - python
+    - txaio >=25.12.2
+    - cryptography >=3.4.6
+    - hyperlink >=21.0.0
+    - msgpack-python >=1.0.2
+    - ujson >=4.0.2
+    - cbor2 >=5.2.0
+    - py-ubjson >=0.16.1
+
+tests:
+  - python:
+      imports:
+        - autobahn
+        - autobahn.rawsocket
+        - autobahn.wamp
+        - autobahn.websocket
+        - autobahn.util
+        - autobahn.nvx
+      pip_check: true
+  - requirements:
+      run:
+        - zope.interface >=5.2.0
+        - twisted >=24.3.0
+        - attrs >=20.3.0
+    script:
+      - wamp -h
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: WebSocket and WAMP in Python for Twisted and asyncio
+  homepage: https://github.com/crossbario/autobahn-python
+  repository: https://github.com/crossbario/autobahn-python
+  documentation: https://autobahn-python.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - synapticarbors

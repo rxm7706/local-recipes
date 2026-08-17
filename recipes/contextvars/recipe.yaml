@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: contextvars
-  version: 2.4
+  version: "2.4"
 
 package:
   name: ${{ name|lower }}
@@ -14,16 +14,17 @@ source:
   sha256: f38c908aaa59c14335eeea12abea5f443646216c4e29380d7bf34d2018e2c39e
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python
+    - python ${{ python_min }}
     - pip
+    - setuptools
   run:
-    - python
+    - python >=${{ python_min }}
     - immutables >=0.9
 
 tests:
@@ -31,13 +32,17 @@ tests:
       imports:
         - contextvars
       pip_check: true
+      python_version: ${{ python_min }}
 
 about:
-  summary: PEP 567 Backport
   license: Apache-2.0
   license_file: LICENSE
+  summary: PEP 567 Backport
+  description: Implements a backport of Python 3.7 contextvar module (see PEP 567)
   homepage: http://github.com/MagicStack/contextvars
+  repository: https://github.com/MagicStack/contextvars
 
 extra:
   recipe-maintainers:
+    - nicoddemus
     - rxm7706

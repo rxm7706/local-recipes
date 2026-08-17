@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "84.0.0"
+
+package:
+  name: setuptools
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/setuptools/setuptools-${{ version }}.tar.gz
+  sha256: f4695c21257f0d9b537ec2692c941d02ee143b7cc1276941349a546573b2ef73
+  patches:
+    # distutils patches from python-feedstock
+    - patches/0021-Add-d1trimfile-SRC_DIR-to-make-pdbs-more-relocatable.patch
+
+build:
+  number: 0
+  noarch: python
+
+requirements:
+  host:
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - setuptools
+      pip_check: false
+  - requirements:
+      run:
+        - python
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Download, build, install, upgrade, and uninstall Python packages
+  description: |
+    Setuptools is a fully-featured, actively-maintained, and stable library
+    designed to facilitate packaging Python projects.
+  homepage: https://github.com/pypa/setuptools
+  repository: https://github.com/pypa/setuptools
+  documentation: http://pythonhosted.org/setuptools/
+
+extra:
+  recipe-maintainers:
+    - xhochy
+    - rgommers
+    - jakirkham
+    - msarahan
+    - ocefpaf
+    - nicoddemus
+    - isuruf

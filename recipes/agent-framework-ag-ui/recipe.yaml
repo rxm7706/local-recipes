@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0rc3"
+  python_min: "3.10"
+
+package:
+  name: agent-framework-ag-ui
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/agent-framework-ag-ui/agent_framework_ag_ui-${{ version }}.tar.gz
+  sha256: 847f1153be3a5911211ab1eac7255a4fa29299e068f266f45861d0df8e8494ea
+
+build:
+  noarch: python
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - agent-framework-core <2,>=1.6.0
+    - ag-ui-protocol <0.2,>=0.1.16
+    - fastapi <0.133.1,>=0.115.0
+    - uvicorn <0.42.0,>=0.30.0
+
+tests:
+  - python:
+      imports:
+        - agent_framework.ag_ui
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  summary: |
+    AG-UI protocol integration for Agent Framework
+  homepage: https://pypi.org/project/agent-framework-ag-ui/
+  repository: https://github.com/microsoft/agent-framework
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - killua156
+    - mgorny

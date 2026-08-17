@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.7"
+
+package:
+  name: pyats.aereport
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/cp310/p/pyats.aereport/pyats_aereport-26.7-cp310-cp310-macosx_11_0_universal2.whl
+  sha256: 38b4e87443302bd3c4dc705c08ec3849a35640def4dd53043d91666b4ca56755
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - psutil
+    - jinja2
+    - junit-xml
+    - pyats.log <26.8.0,>=26.7.0
+    - pyats.results <26.8.0,>=26.7.0
+
+tests:
+  - python:
+      imports:
+        - pyats.aereport
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://developer.cisco.com/pyats/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: "pyATS AEreport: Result Collection and Reporting"
+  description: |
+    pyATS AEreport: Result Collection and Reporting
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyats.aereport
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyats.aereport
+  cfe-purls:
+    - pkg:conda/pyats.aereport@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyats.aereport@${{ version }}
+  cfe-upstream-repo: https://developer.cisco.com/pyats/
+  cfe-upstream-homepage: https://developer.cisco.com/pyats/
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:37:43Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:37:43Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

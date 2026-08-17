@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jinja2schema
+  version: "0.1.4"
+  python_min: "2.7"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jinja2schema-${{ version }}.tar.gz
+  sha256: 236e4ee6612a0ab5a5664c453c954a2c7e42b6be986c12f7b31f34f9082043bc
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python 2.7.*
+  run:
+    - jinja2 >=2.2
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - jinja2schema
+        - jinja2schema.visitors
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Type inference for Jinja2 templates.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://jinja2schema.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - sumanth-manchala

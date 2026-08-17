@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pipenv
+  version: "2026.7.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 29b9450d52eff3570b28f35d30586cccca68e89a579b92ce4f0b6b59aef30214
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - pipenv=pipenv:cli
+      - pipenv-resolver=pipenv.resolver:main
+
+requirements:
+  host:
+    - pip >=18.0
+    - python ${{ python_min }}
+    - setuptools >=67
+  run:
+    - pip >=18.0
+    - python >=${{ python_min }}
+    - certifi
+    - packaging >=22
+    - setuptools >=67
+    - virtualenv >=20.24.2
+
+tests:
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - CI=1 python -c "import pipenv"
+      - CI=1 pipenv --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Python Development Workflow for Humans.
+  homepage: https://github.com/pypa/pipenv
+  documentation: https://pipenv-fork.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - drewgilliam
+    - roccqqck

@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sas7bdat
+  version: "2.2.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/sas7bdat-${{ version }}.tar.gz
+  sha256: 484c609d962442203c15bc719a638de992a23cd13bc1971a5af6dfb0daf9f797
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - python >=3.6
+    - six >=1.8.0
+
+tests:
+  - python:
+      imports:
+        - sas7bdat
+      pip_check: true
+
+about:
+  summary: A sas7bdat file reader for Python
+  license: MIT
+  license_file: LICENSE
+  homepage: https://bitbucket.org/jaredhobbs/sas7bdat
+
+extra:
+  recipe-maintainers:
+    - izahn

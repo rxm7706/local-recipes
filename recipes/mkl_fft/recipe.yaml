@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.3.2"
+
+package:
+  name: mkl_fft
+  version: ${{ version }}
+
+source:
+  url: https://github.com/IntelPython/mkl_fft/archive/${{ version }}.tar.gz
+  sha256: 31565b5c221fe131b1a9e6e0e60a206b6ada95cbabf7c3ac5dfd24699fd1b994
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - meson-python >=0.13.0
+    - cmake
+    - ninja
+    - python
+    - if: match(python, ">=3.14")
+      then: python-gil
+    - pip
+    - mkl-devel
+    - cython
+    - numpy
+    - wheel  >=0.41.3
+  run:
+    - python
+    - if: match(python, ">=3.14")
+      then: python-gil
+    - ${{ pin_compatible('mkl') }}
+    - numpy
+  ignore_run_exports:
+    by_name:
+      - blas
+
+tests:
+  - python:
+      imports:
+        - mkl_fft
+        - mkl_fft.interfaces
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+        - pytest
+        - scipy >=1.10
+        - mkl-service
+    script:
+      - pytest -v --pyargs mkl_fft
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  description: Supports in-place and out-of-place, 1D and ND complex FFT on arrays of single and double precision with arbitrary memory layout, so long as array strides are multiples of its itemsize.
+  summary: NumPy-based implementation of Fast Fourier Transform using Intel® oneAPI Math Kernel Library (OneMKL)
+  homepage: http://github.com/IntelPython/mkl_fft
+
+extra:
+  recipe-maintainers:
+    - ekomarova
+    - vtavana
+    - xaleryb
+    - jharlow-intel
+    - ndgrigorian

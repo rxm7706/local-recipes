@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: apache-airflow-providers-fab
+  version: "3.8.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/apache_airflow_providers_fab-${{ version }}.tar.gz
+  sha256: 1d1a86e040ad3bdadcb0fc56e05ee10d3efca5755fb0e66155288f364c170419
+
+build:
+  noarch: python
+  script: python -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling ==1.31.0
+    - packaging ==26.2
+    - pathspec ==1.1.1
+    - pluggy ==1.6.0
+    # for all python to stay noarch: python
+    - tomli ==2.4.1
+    - trove-classifiers ==2026.6.1.19
+  run:
+    - python >=${{ python_min }}
+    - apache-airflow >=3.0.2
+    - apache-airflow-providers-common-compat >=1.18.0
+    - blinker >=1.6.2
+    - flask >=2.2.1
+    - flask-appbuilder ==5.2.2
+    - pyjwt >=2.11.0
+    # more restrictive for python >=3.14
+    - flask-login >=0.6.3
+    - flask-session >=0.8.0
+    - msgpack-python >=1.0.0
+    - flask-sqlalchemy >=3.0.5
+    # more restrictive for python >=3.14
+    - flask-wtf >=1.2.2
+    - jmespath >=0.7.0
+    # more restrictive for python >=3.14
+    - werkzeug >=3.1.6
+    - wtforms >=3.0
+    - cachetools >=6.0
+    - marshmallow >=3
+    - flask-limiter >3
+
+tests:
+  - python:
+      imports:
+        - airflow.providers.fab
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/apache/airflow/
+  summary: Provider package apache-airflow-providers-fab for Apache Airflow
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+  documentation: https://airflow.apache.org/docs/apache-airflow-providers-fab/stable/index.html
+  repository: https://github.com/apache/airflow/
+
+extra:
+  recipe-maintainers:
+    - xylar

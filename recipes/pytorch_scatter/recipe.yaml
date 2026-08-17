@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# see github.com/conda-forge/conda-forge.github.io/issues/1059 for naming discussion
+schema_version: 1
+
+context:
+  version: 2.1.2
+  build_number: 21
+  torch_proc_type: ${{ "cuda" if cuda_compiler_version != "None" else "cpu" }}
+  build_string_prefix: ${{ ("cuda" ~ (cuda_compiler_version | replace(".", ""))) if cuda_compiler_version != "None" else "cpu" }}
+
+package:
+  name: pytorch_scatter
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/torch_scatter/torch_scatter-${{ version }}.tar.gz
+  sha256: 69b3aa435f2424ac6a1bfb6ff702da6eb73b33ca0db38fb26989c74159258e47
+
+build:
+  number: ${{ build_number }}
+  string: ${{ build_string_prefix }}_py${{ python | version_to_buildstring }}_h${{ hash }}_${{ build_number }}
+
+requirements:
+  build:
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - if: win
+      then:
+        - m2-sed
+    - if: cuda_compiler_version != "None"
+      then:
+        - ${{ compiler('cuda') }}
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - pytorch
+        - pytorch * [build=${{ torch_proc_type }}*]
+  host:
+    - python
+    - pip
+    - setuptools
+    - pytorch
+    - pytorch * [build=${{ torch_proc_type }}*]
+    - pytest-runner
+    - if: cuda_compiler_version != "None"
+      then:
+        - cuda-version ==${{ cuda_compiler_version }}
+        - libcusparse-dev
+        - libcublas-dev
+        - libcusolver-dev
+  run:
+    - python
+    # - python-wget
+    - pytorch * [build=${{ torch_proc_type }}*]
+
+tests:
+  - python:
+      imports:
+        - torch_scatter
+
+about:
+  summary: PyTorch Extension Library of Optimized Scatter Operations
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/rusty1s/pytorch_scatter
+  repository: https://github.com/rusty1s/pytorch_scatter
+
+extra:
+  recipe-maintainers:
+    - Tobias-Fischer
+    - mxr-conda
+    - rluria14
+    - oblute
+    - ndmaxar
+    - benjaminrwilson

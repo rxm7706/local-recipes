@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: publicsuffixlist
+  version: "1.0.2.20260815"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/publicsuffixlist-${{ version }}.tar.gz
+  sha256: 1b66ddb654990327af8c43db20a1d217e1856176214a3c9bd548fbae34d68373
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - publicsuffixlist-download = publicsuffixlist.update:updatePSL
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - requests
+    # Needed for the CLI
+
+tests:
+  - python:
+      imports:
+        - publicsuffixlist
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - publicsuffixlist-download --help
+
+about:
+  summary: publicsuffixlist implement
+  license: MPL-2.0
+  license_file: LICENSE
+  homepage: https://github.com/ko-zu/psl
+
+extra:
+  recipe-maintainers:
+    - BastianZim

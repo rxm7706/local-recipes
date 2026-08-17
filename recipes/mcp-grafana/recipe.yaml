@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "1.1.0"
+
+package:
+  name: mcp-grafana
+  version: ${{ version }}
+
+source:
+  url: https://github.com/grafana/mcp-grafana/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: dadf6ecc393e4c53ba802e663993095289b302aa95a7e84f6f61c2eaf4449381
+  target_directory: src
+
+build:
+  number: 0
+  script:
+    - cd src
+    - go-licenses save ./cmd/mcp-grafana --save_path ../library_licenses
+    - if: unix
+      then: go build -v -o $PREFIX/bin/mcp-grafana -ldflags="-s -w -X github.com/grafana/mcp-grafana.version=${{ version }}" ./cmd/mcp-grafana
+      else: go build -v -o %LIBRARY_BIN%\mcp-grafana.exe -ldflags="-s -w -X github.com/grafana/mcp-grafana.version=${{ version }}" ./cmd/mcp-grafana
+
+requirements:
+  build:
+    - ${{ compiler("go-nocgo") }}
+    - go-licenses
+
+tests:
+  - script:
+      - mcp-grafana --help
+      - mcp-grafana --version
+  - package_contents:
+      bin:
+        - mcp-grafana
+      strict: true
+
+about:
+  homepage: https://github.com/grafana/mcp-grafana
+  summary: Model Context Protocol server for Grafana
+  description: |
+    mcp-grafana provides a Model Context Protocol server for accessing
+    Grafana instances and the surrounding ecosystem.
+  license: Apache-2.0
+  license_file:
+    - src/LICENSE
+    - library_licenses/
+  documentation: https://github.com/grafana/mcp-grafana#readme
+  repository: https://github.com/grafana/mcp-grafana
+
+extra:
+  recipe-maintainers:
+    - xhochy

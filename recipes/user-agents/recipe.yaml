@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.2.0"
+
+package:
+  name: user-agents
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/u/user-agents/user-agents-${{ version }}.tar.gz
+  sha256: d36d25178db65308d1458c5fa4ab39c9b2619377010130329f3955e7626ead26
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - ua-parser >=0.10.0
+
+tests:
+  - python:
+      imports:
+        - user_agents
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: A library to identify devices (phones, tablets) and their capabilities by parsing (browser/HTTP) user agent strings
+  homepage: https://github.com/selwin/python-user-agents
+  repository: https://github.com/selwin/python-user-agents
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - ocefpaf

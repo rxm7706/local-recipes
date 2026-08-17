@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pybtex-docutils
+  version: 1.0.3
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 3a7ebdf92b593e00e8c1c538aa9a20bca5d92d84231124715acc964d51d93c6b
+
+build:
+  number: 4
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools
+    - pip
+    - docutils >=0.14
+    - pybtex >=0.16
+  run:
+    - python >=${{ python_min }}
+    - setuptools
+    - docutils >=0.14
+    - pybtex >=0.16
+
+tests:
+  - python:
+      imports:
+        - pybtex
+        - pybtex.plugin
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+    script:
+      - pip check
+      - python -c "import pybtex.plugin; pybtex.plugin.find_plugin('pybtex.backends', 'docutils')()"
+
+about:
+  license: MIT
+  license_file: LICENSE.rst
+  summary: A docutils backend for pybtex.
+  description: A docutils backend for pybtex.
+  homepage: https://github.com/mcmtroffaes/pybtex-docutils
+  repository: https://github.com/mcmtroffaes/pybtex-docutils
+  documentation: http://pybtex-docutils.readthedocs.org/
+
+extra:
+  recipe-maintainers:
+    - croth1

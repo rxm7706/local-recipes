@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: exchangelib
+  version: "5.6.0"
+  sha256: a65cffba3b4d1166347059e88b1f11eae9a9d70119c3ad9b33389d7258f6181c
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  skip: match(python, "<3.8")
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - if: match(python, "<3.9")
+      then: backports.zoneinfo
+    - cached-property
+    - defusedxml >=0.6.0
+    - dnspython >=2.2.0
+    - isodate
+    - lxml >3.0
+    - oauthlib
+    - pygments
+    - python
+    - requests >=2.31.0
+    - requests_ntlm >=0.2.0
+    - if: win
+      then: requests-negotiate-sspi
+    - requests-oauthlib
+    - python-tzdata
+    - tzlocal
+
+tests:
+  - python:
+      imports:
+        - exchangelib
+      pip_check: false
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Client for Microsoft Exchange Web Services (EWS)
+  homepage: https://github.com/ecederstrand/exchangelib
+  repository: https://github.com/ecederstrand/exchangelib
+  documentation: https://github.com/ecederstrand/exchangelib
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - rzillman
+    - YannickEttwein

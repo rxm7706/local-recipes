@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: yt-dlp
+  version: "2026.7.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: b094813404f87a9dd2186f00815231df32e5fd8a5403be0f807b3bb2d21a4432
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - yt-dlp = yt_dlp:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling >=1.27.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - yt-dlp-ejs ==0.8.0 #technically is an optional dependancies but as part of the "default" installation
+  run_constraints:
+    - brotli
+    - brotlicffi
+    - certifi
+    - mutagen
+    - pycryptodomex
+    - requests <3,>=2.32.2
+    - urllib3 >=2.0.2,<3
+    - websockets >=13.0
+    - autopep8 >=2.0,<3.dev0
+    - ruff >=0.15.0,<0.16.dev0
+    - deno >=2.6.6
+
+tests:
+  - python:
+      imports:
+        - yt_dlp
+        - yt_dlp.compat
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - script:
+      - yt-dlp --help
+      - yt-dlp --version
+
+about:
+  summary: A youtube-dl fork with additional features and patches
+  license: Unlicense
+  license_file: LICENSE
+  description: |
+    yt-dlp is a youtube-dl fork based on the now inactive youtube-dlc. The main focus of this project is adding new features and patches while also keeping up to date with the original project.
+  homepage: https://github.com/yt-dlp/yt-dlp
+  repository: https://github.com/yt-dlp/yt-dlp
+  documentation: https://github.com/yt-dlp/yt-dlp/wiki
+
+extra:
+  recipe-maintainers:
+    - HeavyTony2

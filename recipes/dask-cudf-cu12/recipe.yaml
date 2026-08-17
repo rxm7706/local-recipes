@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.8.0"
+  python_min: "3.11"
+
+package:
+  name: dask-cudf-cu12
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/d/dask-cudf-cu12/dask_cudf_cu12-26.8.0-py3-none-any.whl
+  sha256: 298526889d12ec29721bc1f68ba51afe1ac7076fcf11297efea6b27b76d5add7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - cudf-cu12 ==26.8.*
+    - cupy-cuda12x !=14.1.0,>=14.0.1
+    - fsspec >=0.6.0
+    - numpy <3.0,>=2.0
+    - nvidia-ml-py >=12
+    - pandas <3.0.4a0,>=3.0.0
+    - rapids-dask-dependency ==26.8.*
+
+tests:
+  - python:
+      imports:
+        - dask_cudf_cu12
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/rapidsai/cudf
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Utilities for Dask and cuDF interactions
+  description: |
+    Utilities for Dask and cuDF interactions
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dask-cudf-cu12
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dask-cudf-cu12
+  cfe-purls:
+    - pkg:conda/dask-cudf-cu12@${{ version }}?channel=conda-forge
+    - pkg:pypi/dask-cudf-cu12@${{ version }}
+  cfe-upstream-repo: https://github.com/rapidsai/cudf
+  cfe-upstream-homepage: https://github.com/rapidsai/cudf
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:52:20Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:52:20Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

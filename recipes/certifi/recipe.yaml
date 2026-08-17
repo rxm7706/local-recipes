@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2026.7.22"
+  pip_version: "25.0.1"
+  setuptools_version: "75.8.0"
+  wheel_version: "0.45.1"
+
+package:
+  name: certifi
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/c/certifi/certifi-${{ version }}.tar.gz
+    sha256: 741e2c3b351ddf169a738da9f2c048608ff7f2c5cc02f1ebc6b118bb090d5d55
+    target_directory: certifi
+  # Download bootstrapped wheels into their respective source directories
+  - url: https://pypi.org/packages/py3/p/pip/pip-${{ pip_version }}-py3-none-any.whl
+    sha256: c46efd13b6aa8279f33f2864459c8ce587ea6a1a59ee20de055868d8f7688f7f
+    target_directory: boostrap_wheels
+  - url: https://pypi.org/packages/py3/s/setuptools/setuptools-${{ setuptools_version }}-py3-none-any.whl
+    sha256: e3982f444617239225d675215d51f6ba05f845d4eec313da4418fdbb56fb27e3
+    target_directory: boostrap_wheels
+  - url: https://pypi.org/packages/py3/w/wheel/wheel-${{ wheel_version }}-py3-none-any.whl
+    sha256: 708e7481cc80179af0e556bbf0cc00b8444c7321e2700b8d8580231d13017248
+    target_directory: boostrap_wheels
+
+build:
+  number: 0
+  noarch: python
+  script:
+    env:
+      PYTHONPATH: ${{ os.sep.join([SRC_DIR|default("."), "boostrap_wheels"]) ~ os.pathsep ~ os.environ | get("PYTHONPATH", "") }}
+    content:
+      - cd certifi
+      - ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - certifi
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: ISC
+  license_file: certifi/LICENSE
+  summary: Python package for providing Mozilla's CA Bundle.
+  description: |
+    Certifi is a curated collection of Root Certificates for validating the
+    trustworthiness of SSL certificates while verifying the identity of TLS
+    hosts.
+  homepage: http://certifi.io/
+  repository: https://github.com/certifi/python-certifi
+  documentation: https://pypi.python.org/pypi/certifi
+
+extra:
+  recipe-maintainers:
+    - jjhelmus
+    - mingwandroid
+    - jakirkham
+    - pelson
+    - sigmavirus24
+    - ocefpaf

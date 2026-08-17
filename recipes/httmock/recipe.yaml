@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: httmock
+  version: "1.3.0"
+  sha256: 4716729f0d07f3f6043dde43545a5381c4c6031a62e9dc9eed21e73c63d86722
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/patrys/${{ name }}/archive/${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: python setup.py install --single-version-externally-managed --record record.txt
+
+requirements:
+  build:
+    - python
+    - setuptools
+  run:
+    - python
+    - requests
+
+tests:
+  - python:
+      imports:
+        - httmock
+      pip_check: false
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A mocking library for requests
+  homepage: https://github.com/patrys/httmock
+  repository: https://github.com/patrys/httmock
+  documentation: https://github.com/patrys/httmock
+
+extra:
+  recipe-maintainers:
+    - gboeing

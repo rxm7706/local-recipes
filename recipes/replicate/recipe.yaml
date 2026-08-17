@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: replicate
+  version: "1.0.7"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/replicate-${{ version }}.tar.gz
+  sha256: d88cb2c37ba39fb370c87fc3291601c67aae64bb918a20a85b5ce399c23ee84c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8
+    - setuptools
+    - wheel
+    - pip
+  run:
+    - python >=3.8
+    - httpx >=0.21.0,<1
+    - packaging
+    - pydantic >1
+    - typing-extensions >=4.5.0
+
+tests:
+  - python:
+      imports:
+        - replicate
+      pip_check: true
+
+about:
+  summary: Python client for Replicate
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://replicate.com
+  repository: https://github.com/replicate/replicate-python
+
+extra:
+  recipe-maintainers:
+    - sodre

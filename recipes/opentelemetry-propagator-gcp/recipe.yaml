@@ -2,15 +2,16 @@
 schema_version: 1
 
 context:
-  version: "1.12.0"
+  name: opentelemetry-propagator-gcp
+  version: "1.14.0"
 
 package:
-  name: opentelemetry-propagator-gcp
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/o/opentelemetry-propagator-gcp/opentelemetry_propagator_gcp-${{ version }}.tar.gz
-  sha256: 5495b891e7c816688d4e12fda7b365572dc8cb7ea8027a4390c5d2d868db1b98
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 2d677ec5f0be296a25822a2011b1a5f74ba95c9635b7162f36bd376423b5a943
 
 build:
   number: 0
@@ -19,33 +20,25 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
-    - opentelemetry-api >=1.0,<2.0
+    - opentelemetry-api >=1.0,<2.dev0
 
 tests:
   - python:
       imports:
-        - opentelemetry.propagators.cloud_trace_propagator
+        - opentelemetry
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Google Cloud propagator for OpenTelemetry
   license: Apache-2.0
   license_file: LICENSE
   homepage: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python/tree/main/opentelemetry-propagator-gcp
-  repository: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python
-  description: |
-    Google Cloud propagator for OpenTelemetry. Provides the
-    CloudTraceFormatPropagator for propagating trace context using the
-    X-Cloud-Trace-Context header, enabling trace correlation with Google
-    Cloud Trace.
 
 extra:
   recipe-maintainers:

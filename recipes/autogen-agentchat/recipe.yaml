@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: autogen-agentchat
+  version: "0.7.5"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/autogen_agentchat-${{ version }}.tar.gz
+  sha256: 8d9c718db52ef24a518806b3a0ef848f0e4c1902877675dc0abed73a8e6e7755
+
+build:
+  noarch: python
+  script: python -m pip install . -vv
+  number: 0
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }},<3.13
+    - autogen-core =${{ version }}
+
+tests:
+  - python:
+      imports:
+        - autogen_agentchat
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  homepage: https://microsoft.github.io/autogen
+  summary: 'Enabling Next-Gen LLM Applications via Multi-Agent Conversation Framework'
+  license: Apache-2.0 AND EPL-2.0 AND MIT
+  license_file: LICENSE-CODE
+  documentation: https://microsoft.github.io/autogen
+  repository: https://github.com/microsoft/autogen
+
+extra:
+  recipe-maintainers:
+    - raybellwaves
+    - jan-janssen

@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: wtforms
+  version: "3.2.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 7b00c73f8670f35d4edb0293dcd81b980528bee72fd662b182aaba27ae570b93
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-build-isolation --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+    - babel >=2.8.0
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - markupsafe >=1.1.1
+
+tests:
+  - python:
+      imports:
+        - wtforms
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.rst
+  summary: A flexible forms validation and rendering library for Python
+  homepage: https://github.com/wtforms/wtforms/
+  repository: https://github.com/wtforms/wtforms
+  documentation: http://wtforms.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - mcs07
+    - synapticarbors
+    - thewchan

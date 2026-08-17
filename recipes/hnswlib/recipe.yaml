@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: hnswlib
+  version: "0.8.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: cb6d037eedebb34a7134e7dc78966441dfd04c9cf5ee93911be911ced951c44c
+
+build:
+  number: 1
+  script:
+    # HNSWLIB_NO_NATIVE is set to build without "--march=native"
+    - if: unix
+      then: export HNSWLIB_NO_NATIVE=1 && ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+    - if: win
+      then: set HNSWLIB_NO_NATIVE=1 && ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: numpy
+  host:
+    - python
+    - pip
+    - setuptools >=42
+    - pybind11 >=2.0
+    - numpy
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - hnswlib
+      pip_check: true
+  - files:
+      recipe:
+        - examples/
+    requirements:
+      run:
+        - pip
+    script:
+      - python examples/ex01.py
+      - python examples/ex02.py
+      - python examples/ex03.py
+      - python examples/ex04.py
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python bindings for Hnswlib, a fast approximate nearest neighbor search package.
+  homepage: https://github.com/nmslib/hnswlib
+  repository: https://github.com/nmslib/hnswlib
+
+extra:
+  recipe-maintainers:
+    - yihming
+    - bli25
+    - yurymalkov
+    - jdblischak

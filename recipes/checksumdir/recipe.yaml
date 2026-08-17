@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: checksumdir
+  version: "1.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/checksumdir-${{ version }}.tar.gz
+  sha256: 10bfd7518da5a14b0e9ac03e9ad105f0e70f58bba52b6e9aa2f21a3f73c7b5a8
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - checksumdir = checksumdir.cli:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }},<4.0
+
+tests:
+  - python:
+      imports:
+        - checksumdir
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - checksumdir --help
+
+about:
+  summary: Compute a single hash of the file contents of a directory.
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: http://github.com/cakepietoast/checksumdir
+
+extra:
+  recipe-maintainers:
+    - bmcconeghy
+    - asford

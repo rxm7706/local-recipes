@@ -2,15 +2,17 @@
 schema_version: 1
 
 context:
-  version: "0.13.0"
+  name: mcp-django
+  version: "0.14.0"
+  python_check_max: "3.14"
 
 package:
-  name: mcp-django
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/m/mcp-django/mcp_django-${{ version }}.tar.gz
-  sha256: 7b1f6d9ce9f7993a81254fe32868bccf1828f70ce8a55ebfaadd2947216da54a
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/mcp_django-${{ version }}.tar.gz
+  sha256: 28f909a44f4d820fbfec2ecef05fd1f970cb2558e060dd4e57e59d66033081e9
 
 build:
   number: 0
@@ -23,9 +25,8 @@ requirements:
     - uv-build >=0.7.21,<0.8
     - pip
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4
     - django >4.2
-    - email-validator >=2.0.0
     - fastmcp >=2.11.3
     - httpx >=0.28.1
     - platformdirs >=4.5.0
@@ -38,18 +39,13 @@ tests:
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - "*"
+        - ${{ python_check_max }}.*
 
 about:
-  homepage: https://github.com/joshuadavidthomas/mcp-django
-  repository: https://github.com/joshuadavidthomas/mcp-django
-  documentation: https://github.com/joshuadavidthomas/mcp-django
+  summary: A Model Context Protocol (MCP) server for Django integration with LLM assistants.
   license: MIT
   license_file: LICENSE
-  summary: A Model Context Protocol (MCP) server for Django integration with LLM assistants.
-  description: |
-    A Model Context Protocol (MCP) server for Django integration with LLM
-    assistants.
+  homepage: https://github.com/joshuadavidthomas/mcp-django
 
 extra:
   recipe-maintainers:

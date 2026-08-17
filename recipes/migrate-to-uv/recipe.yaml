@@ -1,0 +1,105 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Generated from python-maturin path; PyO3/maturin detected via sdist
+# pyproject.toml [build-system].requires. Modelled on phonors PR pattern
+# (modal 27-PR PyO3 sample, Mar 2020 – May 2026). Recipe shape follows the
+# 2026 grayskull / conda-forge convention: literal ``package.name``, literal
+# ``source.url`` (only ``${ version }`` templated), no ``name`` in context.
+schema_version: 1
+
+context:
+  version: "0.12.0"
+
+package:
+  name: migrate-to-uv
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/migrate-to-uv/migrate_to_uv-${{ version }}.tar.gz
+  sha256: 9ef3fa3d32faaec5e0fa112312e03432378cb7c65e4a808dbaa385bb1c4dcc37
+
+build:
+  number: 0
+  script:
+    env:
+      # Per conda-forge.org/docs/maintainer/example_recipes/rust/ — applies to
+      # any Rust build (CLI binary OR maturin/PyO3 cdylib). maturin invokes
+      # cargo build internally and inherits these env vars.
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+    content:
+      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - crossenv
+        - maturin >=1,<2
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler("rust") }}
+    - cargo-bundle-licenses
+  host:
+    - python
+    - pip
+    - maturin >=1.7,<2.0
+  run:
+    - migrate-to-uv
+    - python
+
+tests:
+  - python:
+      imports:
+        - migrate_to_uv
+      pip_check: true
+
+about:
+  homepage: https://pypi.org/project/migrate-to-uv/
+  license: MIT
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  summary: REPLACE_SUMMARY
+  description: |
+    REPLACE_DESCRIPTION
+  repository: https://github.com/osprey-oss/migrate-to-uv
+  documentation: https://osprey-oss.github.io/migrate-to-uv/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: migrate-to-uv
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: migrate-to-uv
+  cfe-purls:
+    - pkg:conda/migrate-to-uv@${{ version }}?channel=conda-forge
+    - pkg:pypi/migrate-to-uv@${{ version }}
+  cfe-upstream-repo: https://github.com/osprey-oss/migrate-to-uv
+  cfe-upstream-homepage: https://pypi.org/project/migrate-to-uv/
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: compiled
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:01:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:01:19Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

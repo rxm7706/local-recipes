@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: gspread-dataframe
+  version: "4.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/gspread-dataframe-${{ version }}.tar.gz
+  sha256: 5ca5493478ecae49b833664a06bac8e17b5b4ed0bdf77f551c948f30545860e6
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - gspread >=3.0.0
+    - pandas >=0.24.0
+    - six >=1.12.0
+
+tests:
+  - python:
+      imports:
+        - gspread_dataframe
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Read/write gspread worksheets using pandas DataFrames
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/robin900/gspread-dataframe
+  documentation: https://pythonhosted.org/gspread-dataframe/
+
+extra:
+  recipe-maintainers:
+    - maresb

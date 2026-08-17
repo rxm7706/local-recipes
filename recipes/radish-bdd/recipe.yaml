@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.18.4"
+
+package:
+  name: radish-bdd
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/radish-bdd/radish_bdd-${{ version }}.tar.gz
+  sha256: e883004ab78121d1fd681099244d14afbabd1da5ffe99cd038aea661374868dc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - docopt
+    - colorful >=0.3.11
+    - tag-expressions >=2.0.0
+    - parse-type >0.4.0
+    - humanize
+
+tests:
+  - python:
+      imports:
+        - radish
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://radish-bdd.github.io
+  license: MIT
+  license_file: LICENSE
+  summary: Behaviour-Driven-Development tool for Python
+  description: |
+    Behaviour-Driven-Development tool for Python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: radish-bdd
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: radish-bdd
+  cfe-purls:
+    - pkg:conda/radish-bdd@${{ version }}?channel=conda-forge
+    - pkg:pypi/radish-bdd@${{ version }}
+  cfe-upstream-repo: https://radish-bdd.github.io
+  cfe-upstream-homepage: https://radish-bdd.github.io
+  cfe-import-names: [radish]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:32:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:32:32Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

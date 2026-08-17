@@ -1,0 +1,99 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.0.0"
+  python_min: "3.11"
+
+package:
+  name: tcex
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/tcex/tcex-${{ version }}.tar.gz
+  sha256: 73cfb792a1869d7c917119098421c72f51eade69029a1eaa73d320799d3720d4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - requests
+    - setuptools >=61
+  run:
+    - python >=${{ python_min }}
+    - arrow ~=1.4.0
+    - black ~=26.5.1
+    - inflection ~=0.5.1
+    - isort ~=8.0.1
+    - jmespath ~=1.1.0
+    - paho-mqtt ~=2.1.0
+    - pyaes ~=1.6.1
+    - pydantic-core <3.0.0,>=2.10.0
+    - pydantic <3.0.0,>=2.10.0
+    - python-dateutil ~=2.9.0.post0
+    - pyyaml ~=6.0.3
+    - redis-py ~=8.0.0
+    - requests ~=2.34.2
+    - rich ~=15.0.0
+    - semantic_version ~=2.10.0
+    - wrapt ~=2.2.1
+
+tests:
+  - python:
+      imports:
+        - tcex
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/tcex/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: ThreatConnect Exchange App Framework
+  description: |
+    ThreatConnect Exchange App Framework
+  repository: https://github.com/ThreatConnect-Inc/tcex
+  documentation: https://threatconnect.readme.io/docs/overview
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tcex
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tcex
+  cfe-purls:
+    - pkg:conda/tcex@${{ version }}?channel=conda-forge
+    - pkg:pypi/tcex@${{ version }}
+  cfe-upstream-repo: https://github.com/ThreatConnect-Inc/tcex
+  cfe-upstream-homepage: https://pypi.org/project/tcex/
+  cfe-import-names: [tcex]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:22:50Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:22:50Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

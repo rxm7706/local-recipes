@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: unsloth
+  version: "2026.8.18"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/unsloth-${{ version }}.tar.gz
+  sha256: b4b45d660aee3218dd58875e4326c551ea6d97ef73c134b7593b09f25182a120
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - sed -i.bak "s/protobuf<4.0.0/protobuf/g" pyproject.toml
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.10.*
+    - setuptools
+    - setuptools-scm
+    - pip
+  run:
+    - python >=${{ python_min }}
+    # direct
+    - typer >=0.12
+    - rich
+    - pydantic
+    - pyyaml
+    - nest-asyncio
+    - structlog >=24.1.0
+    - click >=8
+    # torch / xformers
+    - pytorch >=2.4.0,<2.11
+    - xformers >=0.0.27.post2
+    - bitsandbytes >=0.45.5,!=0.46.0,!=0.48.0
+    # triton
+    - triton >=3.0.0
+    # huggingface
+    - wheel >=0.42.0
+    - packaging
+    - numpy
+    - tqdm
+    - psutil
+    - tyro
+    - protobuf
+    - sentencepiece >=0.2.0
+    - datasets >=3.4.1,!=4.0.*,!=4.1.0,<4.4.0
+    - accelerate >=0.34.1
+    - peft >=0.18.0,!=0.11.0
+    - huggingface_hub >=0.34.0
+    - hf-transfer
+    - diffusers
+    - transformers >=4.51.3,!=4.52.0,!=4.52.1,!=4.52.2,!=4.52.3,!=4.53.0,!=4.54.0,!=4.55.0,!=4.55.1,!=4.57.0,!=4.57.4,!=4.57.5,!=5.0.0,!=5.1.0,<=5.3.0
+    - trl >=0.18.2,!=0.9.0,!=0.9.1,!=0.9.2,!=0.9.3,!=0.15.0,!=0.19.0,<=0.24.0
+    - sentence-transformers
+    - unsloth_zoo >=2026.8.2
+    - torchvision
+
+tests:
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  summary: 2-5X faster LLM finetuning
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/unslothai/unsloth
+
+extra:
+  recipe-maintainers:
+    - isuruf
+    - timkpaine

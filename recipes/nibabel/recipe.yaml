@@ -1,0 +1,97 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Jinja variables help maintain the recipe as you'll update the version only here.
+# sha256 is the prefered checksum -- you can get it for a file with:
+#  `openssl sha256 <file name>`.
+# You may need the openssl package, available on conda-forge
+#  `conda install openssl -c conda-forge``
+schema_version: 1
+
+context:
+  name: nibabel
+  version: "5.4.2"
+  sha256: d5f4b9076a13178ae7f7acf18c8dbd503ee1c4d5c0c23b85df7be87efcbb49da
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - nib-conform  = nibabel.cmdline.conform:main
+      - nib-convert  = nibabel.cmdline.convert:main
+      - nib-dicomfs  = nibabel.cmdline.dicomfs:main
+      - nib-diff     = nibabel.cmdline.diff:main
+      - nib-ls       = nibabel.cmdline.ls:main
+      - nib-nifti-dx = nibabel.cmdline.nifti_dx:main
+      - nib-roi      = nibabel.cmdline.roi:main
+      - nib-stats    = nibabel.cmdline.stats:main
+      - nib-tck2trk  = nibabel.cmdline.tck2trk:main
+      - nib-trk2tck  = nibabel.cmdline.trk2tck:main
+      - parrec2nii   = nibabel.cmdline.parrec2nii:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+    - hatch-vcs
+    - setuptools_scm
+  run:
+    - python >=${{ python_min }}
+    - packaging >=20
+    - numpy >=1.25
+    - importlib_resources >=5.12
+    - typing_extensions >=4.6
+
+tests:
+  - python:
+      imports:
+        - nibabel
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pytest
+        - pytest-doctestplus
+        - pytest-httpserver
+        - pytest-xdist
+        - scipy
+        - pillow
+        - h5py
+        - indexed_gzip
+        - matplotlib
+        - pydicom
+        - pyzstd
+    script:
+      - nib-conform --help
+      - nib-convert --help
+      - nib-dicomfs --help
+      - nib-diff --help
+      - nib-ls --help
+      - nib-nifti-dx --help
+      - nib-roi --help
+      - nib-stats --help
+      - nib-tck2trk --help
+      - nib-trk2tck --help
+      - parrec2nii --help
+      - pytest --doctest-modules --doctest-plus --pyargs nibabel -n auto
+
+about:
+  license: MIT
+  license_file: COPYING
+  summary: Python package to access a cacophony of neuro-imaging file formats
+  homepage: https://nipy.org/nibabel
+
+extra:
+  recipe-maintainers:
+    - arokem
+    - grlee77
+    - effigies

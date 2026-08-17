@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ansicon
+  version: "1.89.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: e4d039def5768a47e4afec8e89e83ec3ae5a26bf00ad851f914d1240b444d2b1
+
+build:
+  number: 9
+  skip: not win
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - ansicon
+      pip_check: true
+
+about:
+  summary: Python wrapper for loading Jason Hood's ANSICON
+  license: MPL-2.0
+  license_file: LICENSE
+  homepage: https://pypi.org/project/ansicon/
+
+extra:
+  recipe-maintainers:
+    - holymonson

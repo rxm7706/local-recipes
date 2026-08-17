@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.4"
+
+package:
+  name: docx
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/docx/docx-${{ version }}.tar.gz
+  sha256: 9d7595eac6e86cda0b7136a2995318d039c1f3eaa368a3300805abbbe5dc8877
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - docx
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://github.com/mikemaccana/python-docx
+  license: MIT
+  license_file: LICENSE
+  summary: The docx module creates, reads and writes Microsoft Office Word 2007 docx files
+  description: |
+    The docx module creates, reads and writes Microsoft Office Word 2007 docx files
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: docx
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: docx
+  cfe-purls:
+    - pkg:conda/docx@${{ version }}?channel=conda-forge
+    - pkg:pypi/docx@${{ version }}
+  cfe-upstream-repo: http://github.com/mikemaccana/python-docx
+  cfe-upstream-homepage: http://github.com/mikemaccana/python-docx
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:49:01Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:49:01Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

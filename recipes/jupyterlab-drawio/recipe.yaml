@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jupyterlab-drawio
+  version: "0.9.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jupyterlab-drawio-${{ version }}.tar.gz
+  sha256: 972cf2007ee654d97a836a1fa4c32c0eed9955db84c576ea7d9e52e5c62cc626
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - jupyter-packaging >=0.7.9,<0.8
+  run:
+    - jupyterlab >=3.0.0,<4
+    - python >=${{ python_min }}
+
+tests:
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pip check
+      - if: unix
+        then: test -f "${PREFIX}/share/jupyter/labextensions/jupyterlab-drawio/package.json"
+      - if: win
+        then: if exist %PREFIX%\\share\\jupyter\\labextensions\\jupyterlab-drawio\\package.json (exit 0) else (exit 1)
+
+about:
+  summary: A JupyterLab extension for embedding drawio / mxgraph.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/QuantStack/jupyterlab-drawio
+
+extra:
+  recipe-maintainers:
+    - jtpio
+    - hbcarlos
+    - wolfv
+    - SylvainCorlay

@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ibm-watson
+  version: "11.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 6c5db611b5ec7b7ed71ba8b4d36f86b04b9fd0a6e757666babe46aa6ccda7b06
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - ibm-cloud-sdk-core >=3.3.6,<4
+    - python >=${{ python_min }}
+    - python-dateutil >=2.5.3
+    - requests >=2.0,<3.0
+    - websocket-client >=1.1.0
+
+tests:
+  - python:
+      imports:
+        - ibm_watson
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Client library to use the IBM Watson Services
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/watson-developer-cloud/python-sdk
+
+extra:
+  recipe-maintainers:
+    - synapticarbors
+    - BastianZim

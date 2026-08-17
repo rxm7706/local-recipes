@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.10.3"
+
+package:
+  name: pyviz
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pyviz/pyviz-${{ version }}.tar.gz
+  sha256: c4a8ca4ab6d3d7428eb430ccaaaab2d5051afa9b49c78700c33493d539cf3cd3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - bokeh
+    - holoviews
+    - hvplot
+    - datashader
+    - panel
+    - param
+    - pyct
+    - ipython
+    - numpy
+    - rise
+    - dask
+    - notebook
+    - matplotlib-base
+    - pandas
+    - xarray
+    - streamz
+    - netcdf4
+    - fastparquet
+    - selenium
+    - ipywidgets
+
+tests:
+  - python:
+      imports:
+        - pyviz
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://pyviz.org
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: How to solve visualization problems with Python tools.
+  description: |
+    How to solve visualization problems with Python tools.
+  repository: https://github.com/pyviz/pyviz
+  documentation: http://pyviz.org
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyviz
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyviz
+  cfe-purls:
+    - pkg:conda/pyviz@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyviz@${{ version }}
+  cfe-upstream-repo: https://github.com/pyviz/pyviz
+  cfe-upstream-homepage: http://pyviz.org
+  cfe-import-names: [pyviz]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:52:49Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:52:49Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

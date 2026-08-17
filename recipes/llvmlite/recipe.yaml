@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  build_number: 1
+  name: "llvmlite"
+  version: "0.48.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  # don't use github generated tar-ball as the sha256 value may not be stable
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 543b19f9ef8f3c7c60d1468191e4ee1b1537bf9f8a3d56f64c0ddd98de92edd2
+
+build:
+  number: ${{ build_number }}
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ stdlib('c') }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - cmake <4
+    - if: unix
+      then:
+        - make
+  host:
+    - python
+    - setuptools
+    - llvmdev 22.*          # abstract pin for static lib
+    - llvmdev ==22.1.8 *_1  # concrete pin for static lib - bot should update
+    - zlib
+    - zstd
+  run:
+    - python
+
+tests:
+  - package_contents:
+      strict: true
+      files:
+        - ${{ "lib/python*" if unix else "Lib" }}/site-packages/llvmlite-${{ version }}-*
+        - ${{ "lib/python*" if unix else "Lib" }}/site-packages/llvmlite/*
+  - python:
+      imports:
+        - llvmlite
+        - llvmlite.binding
+      pip_check: true
+  - script:
+      - python -m llvmlite.tests
+
+about:
+  homepage: http://llvmlite.pydata.org
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: A lightweight LLVM python binding for writing JIT compilers.
+  documentation: http://llvmlite.pydata.org/
+  repository: https://github.com/numba/llvmlite
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - souravsingh
+    - marcelotrevisani
+    - xhochy
+    - mbargull
+    - beckermr
+    - esc
+    - MementoRC

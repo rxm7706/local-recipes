@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.9"
+
+package:
+  name: doc2txt
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/doc2txt/doc2txt-${{ version }}.tar.gz
+  sha256: 067da8d5e0159f00605db6aa037a2d4df7513573af383a048ac948c24edca6fc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=45
+    - wheel
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - doc2txt
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/quantatirsk/doc2txt-pypi
+  license: MIT
+  license_file: LICENSE
+  summary: Python wrapper for antiword with bundled binary and data files
+  description: |
+    Python wrapper for antiword with bundled binary and data files
+  repository: https://github.com/quantatirsk/doc2txt-pypi
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: doc2txt
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: doc2txt
+  cfe-purls:
+    - pkg:conda/doc2txt@${{ version }}?channel=conda-forge
+    - pkg:pypi/doc2txt@${{ version }}
+  cfe-upstream-repo: https://github.com/quantatirsk/doc2txt-pypi
+  cfe-upstream-homepage: https://github.com/quantatirsk/doc2txt-pypi
+  cfe-import-names: [doc2txt]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:03:23Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:03:23Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

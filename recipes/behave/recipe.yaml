@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: behave
-  version: "1.3.1"
+  version: "1.3.3"
 
 package:
   name: ${{ name|lower }}
@@ -11,10 +11,10 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/behave-${{ version }}.tar.gz
-  sha256: 2a1f3a2490242132c4daf0732d9b65c99be6fef1f787f97fd028ea5a402025ff
+  sha256: 2b8f4b64ed2ea756a5a2a73e23defc1c4631e9e724c499e46661778453ebaf51
 
 build:
-  number: 1
+  number: 0
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
   python:
@@ -30,14 +30,12 @@ requirements:
   run:
     - python >=${{ python_min }},<4.0
     - cucumber-tag-expressions >=4.1.0
-    - if: match(python, ">=3.8")
-      then: cucumber-expressions >=17.1.0
+    - cucumber-expressions >=17.1.0
     - parse >=1.18.0
     - parse_type >=0.6.0
     - six >=1.15.0
     - colorama >=0.3.7
-    - if: match(python, ">=3.0")
-      then: tomli >=1.1.0
+    - tomli >=1.1.0
     # Keep the package noarch but allow for the win only dep
     - if: linux
       then:
@@ -45,7 +43,7 @@ requirements:
     - if: osx
       then:
         - __osx
-    - if: win and match(python, "<=3.9")
+    - if: win
       then:
         - __win
         - win_unicode_console
@@ -75,6 +73,7 @@ about:
     Behavior-driven development (or BDD) is an agile software development
     technique that encourages collaboration between developers, QA and
     non-technical or business participants in a software project.
+
     behave uses tests written in a natural language style, backed up by Python
     code.
   documentation: https://behave.readthedocs.io

@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.19.2"
+
+package:
+  name: s3transfer
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/s3transfer/s3transfer-${{ version }}.tar.gz
+  sha256: ba0309fd86be3c27dbf78cdd813c13c5e1df16e5874b99d2535ebbdfb9892993
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - botocore >=1.37.4,<2.0a.0
+
+tests:
+  - python:
+      imports:
+        - s3transfer
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license_file: LICENSE.txt
+  license: Apache-2.0
+  summary: An Amazon S3 Transfer Manager
+  homepage: https://github.com/boto/s3transfer
+  repository: https://github.com/boto/s3transfer
+
+extra:
+  recipe-maintainers:
+    - tkelman
+    - ocefpaf

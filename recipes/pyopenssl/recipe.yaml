@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: 26.4.0
+
+package:
+  name: pyopenssl
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pyOpenSSL/pyopenssl-${{ version }}.tar.gz
+  sha256: 28dfcce0162b9211413e26dfbfdf1d24317fbeba18fc93c12400a1856b2a0bc7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - cryptography >=49.0.0,<51
+    - typing_extensions >=4.9
+tests:
+  - python:
+      imports:
+        - OpenSSL
+        - OpenSSL.crypto
+        - OpenSSL.rand
+        - OpenSSL.SSL
+      python_version: ${{ python_min }}.*
+  - files:
+      source:
+        - tests/*
+    requirements:
+      run:
+        - pip
+        - pytest
+        - python ${{ python_min }}.*
+        - pretend
+        - pytest-rerunfailures
+    script:
+      - pip check
+      # Skip test_client_receives_servers_data due to upstream bug: https://github.com/pyca/pyopenssl/issues/1455
+      - pytest tests -k "not test_client_receives_servers_data"
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python wrapper module around the OpenSSL library
+  description: |
+    pyOpenSSL is a high-level wrapper around a subset of the OpenSSL library.
+    It includes:
+    -SSL.Connection objects, wrapping the methods of Python's portable sockets
+    -Callbacks written in Python
+    -Extensive error-handling mechanism, mirroring OpenSSL's error codes
+    and much more.
+  homepage: https://github.com/pyca/pyopenssl
+  repository: https://github.com/pyca/pyopenssl
+  documentation: https://pyopenssl.readthedocs.org/en/stable/
+
+extra:
+  recipe-maintainers:
+    - goanpeca
+    - janjagusch
+    - nehaljwani
+    - h-vetinari

@@ -1,0 +1,129 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.0.2"
+  python_check_max: "3.14"
+
+package:
+  name: conda-lock
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/conda-lock/conda_lock-${{ version }}.tar.gz
+  sha256: c4ebc4404ea760b1dd0035d6403fa27e291050269a5fd1b629b89fcbc75ef32a
+
+build:
+  number: 0
+  noarch: python
+  python:
+    entry_points:
+      - conda-lock = conda_lock:main
+
+requirements:
+  host:
+    - hatch-vcs
+    - hatchling
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    # See https://github.com/conda-forge/poetry-feedstock/blob/main/recipe/meta.yaml
+    - ${{ "xattr >=1.0.0,<2.0.0" if noarch_platform == "osx" }}
+    - __${{ noarch_platform }}
+    - boltons >=23.0.0
+    - cachecontrol >=0.14.0,<0.15.0
+    - cachecontrol-with-filecache
+    - charset-normalizer
+    - click >=8.0
+    - click-default-group
+    - crashtest >=0.4.1,<0.5.0
+    - dulwich >=0.22.6,<0.25.0
+    - ensureconda >=1.4.7
+    - filelock
+    - gitpython >=3.1.30
+    - jinja2
+    - keyring >=25.1.0,<26.0.0
+    - packaging >=24.0
+    - pkginfo >=1.12,<2.0
+    - platformdirs >=3.10.0,<5.0.0
+    - pydantic >=2
+    - pyproject_hooks >=1.0.0,<2.0.0
+    - python >=${{ python_min }}
+    - python-build >=1.2.1,<2.0.0
+    - python-fastjsonschema >=2.18.0,<3.0.0
+    - python-installer >=1.0.1,<2.0.0
+    - pyyaml >=5.1
+    - requests >=2.26,<3.0
+    - requests-toolbelt >=1.0.0,<2.0.0
+    - ruamel.yaml
+    - semver >=3,<4
+    - setuptools
+    - shellingham >=1.5,<2.0
+    - tomli >=2.0.1,<3.0.0
+    - tomlkit >=0.11.4,<1.0.0
+    - trove-classifiers >=2022.5.19
+    - typing_extensions >=4.6.1
+    - virtualenv >=20.26.6,<21.0.0
+    - zstandard >=0.15
+  run_constraints:
+    - mamba !=2.0.0,!=2.0.1,!=2.0.2,!=2.0.3,!=2.0.4,!=2.0.5,!=2.0.6
+
+tests:
+  - python:
+      imports: conda_lock
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - conda-lock --help
+      - python -c "assert __import__('conda_lock').__version__ == '${{ version }}'"
+
+about:
+  license: Apache-2.0 AND BSD-2-Clause AND BSD-3-Clause AND ISC AND MIT
+  license_file:
+    - conda_lock/_vendor/cleo.LICENSE
+    - conda_lock/_vendor/cleo/LICENSE
+    - conda_lock/_vendor/conda.LICENSE
+    - conda_lock/_vendor/conda/_vendor/appdirs.LICENSE.txt
+    - conda_lock/_vendor/conda/_vendor/distro.LICENSE.txt
+    - conda_lock/_vendor/conda/_vendor/frozendict/LICENSE.txt
+    - conda_lock/_vendor/conda/_vendor/py_cpuinfo.LICENSE
+    - conda_lock/_vendor/conda/appdirs.LICENSE.txt
+    - conda_lock/_vendor/conda/auxlib/LICENSE
+    - conda_lock/_vendor/conda/distro.LICENSE.txt
+    - conda_lock/_vendor/conda/LICENSE
+    - conda_lock/_vendor/conda/py_cpuinfo.LICENSE
+    - conda_lock/_vendor/grayskull/LICENSE
+    - conda_lock/_vendor/LICENSES.md
+    - conda_lock/_vendor/poetry_core.LICENSE
+    - conda_lock/_vendor/poetry.LICENSE
+    - conda_lock/_vendor/poetry/core/_vendor/fastjsonschema/LICENSE
+    - conda_lock/_vendor/poetry/core/_vendor/lark/LICENSE
+    - conda_lock/_vendor/poetry/core/_vendor/packaging/LICENSE
+    - conda_lock/_vendor/poetry/core/_vendor/packaging/LICENSE.APACHE
+    - conda_lock/_vendor/poetry/core/_vendor/packaging/LICENSE.BSD
+    - conda_lock/_vendor/poetry/core/_vendor/tomli/LICENSE
+    - conda_lock/_vendor/poetry/LICENSE
+    - LICENSE
+  summary: Lightweight lockfile for conda environments
+  description: |
+    Conda lock is a lightweight library that can be used to generate fully
+    reproducible lock files for conda environments.
+    It does this by performing multiple solves for conda targeting a set of
+    platforms you desire lockfiles for.
+    This also has the added benefit of acting as an external presolve for conda
+    as the lockfiles it generates results in the conda solver not being invoked
+    when installing the packages from the generated lockfile.
+  homepage: https://github.com/conda/conda-lock
+  documentation: https://conda.github.io/conda-lock
+
+extra:
+  recipe-maintainers:
+    - bollwyvl
+    - maresb
+    - mariusvniekerk
+    - ocefpaf

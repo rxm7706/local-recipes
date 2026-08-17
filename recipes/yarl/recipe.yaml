@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: yarl
+  version: "1.24.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: e81b83143bee16329c23db3c1b2d82b29892fcbcb849186d2f6e98a5abe9a57f
+
+build:
+  number: 0
+  noarch: ${{ 'python' if use_noarch else '' }}
+  script:
+    - if: not use_noarch
+      then: ${{ PYTHON }} -m pip install . --no-deps -vv
+    - if: use_noarch
+      then: ${{ PYTHON }} -m pip install . --no-deps -vv  --config-settings=pure-python=true
+  track_features:  # [use_noarch]
+    - if: use_noarch
+      then: yarl_no_compile
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: cython
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - if: use_noarch
+      then: python ${{ python_min }}
+    - if: not use_noarch
+      then: python
+    - pip
+    - expandvars
+    - tomli
+    - cython
+    - setuptools
+  run:
+    - if: use_noarch
+      then: python >=${{ python_min }}
+    - if: not use_noarch
+      then: python
+    - multidict >=4.0
+    - idna >=2.0
+    - propcache >=0.2.1
+
+tests:
+  - python:
+      imports:
+        - yarl
+      pip_check: true
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - if: use_noarch
+          then: python ${{ python_min }}
+        - if: not use_noarch
+          then: python
+        - pytest
+        - pytest-codspeed
+        - hypothesis >=6.0
+        - pip
+    script:
+      - if: use_noarch
+        then: export YARL_NO_EXTENSIONS=1
+      - py.test tests
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Yet another URL library
+  homepage: https://github.com/aio-libs/yarl
+  repository: https://github.com/aio-libs/yarl
+  documentation: http://yarl.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - sodre
+    - xhochy

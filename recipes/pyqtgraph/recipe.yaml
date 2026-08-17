@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyqtgraph
+  version: "0.14.0"
+  sha256: 30f41a2f27ec41fb7d4442dbb150b004520ba83e777cdf5bb9cce0d18017424f
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/${{ name }}/${{ name }}/archive/refs/tags/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - numpy >=1.25
+    - colorama
+  run_constraints:
+    - pyside2 >=5.15
+    - pyqt >=5.15
+
+tests:
+  - python:
+      imports:
+        - pyqtgraph
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pyqt >=5.15
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Scientific Graphics and GUI Library for Python
+  description: |
+    PyQtGraph is a pure-python graphics and GUI library built on PyQt /
+    PySide and numpy. It is intended for use in mathematics / scientific /
+    engineering applications. Despite being written entirely in python, the
+    library is very fast due to its heavy leverage of numpy for number
+    crunching and Qt's GraphicsView framework for fast display.
+  homepage: http://www.pyqtgraph.org
+  repository: https://github.com/pyqtgraph/pyqtgraph
+  documentation: http://www.pyqtgraph.org/documentation/
+
+extra:
+  recipe-maintainers:
+    - astaric
+    - marcelotrevisani
+    - ksunden
+    - j9ac9k

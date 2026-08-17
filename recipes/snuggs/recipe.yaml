@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: snuggs
+  version: "1.4.7"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/snuggs-${{ version }}.tar.gz
+  sha256: 501cf113fe3892e14e2fee76da5cd0606b7e149c411c271898e6259ebde2617b
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - numpy
+    - pyparsing >=2.1.6
+
+tests:
+  - python:
+      imports:
+        - snuggs
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Snuggs are s-expressions for Numpy
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/mapbox/snuggs
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

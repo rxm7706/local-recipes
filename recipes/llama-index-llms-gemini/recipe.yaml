@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.6.2"
+
+package:
+  name: llama-index-llms-gemini
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/llama-index-llms-gemini/llama_index_llms_gemini-${{ version }}.tar.gz
+  sha256: 11080b0500b2a5ca37d38ab952a576ced978ef456fdb36f8307dd428333b0466
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - google-generativeai >=0.5.2
+    - llama-index-core <0.15,>=0.13.0
+    - pillow <11,>=10.2.0
+
+tests:
+  - python:
+      imports:
+        - llama_index.llms.gemini
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/llama-index-llms-gemini/
+  license: MIT
+  license_file: LICENSE
+  summary: llama-index llms gemini integration
+  description: |
+    llama-index llms gemini integration
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: llama-index-llms-gemini
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: llama-index-llms-gemini
+  cfe-purls:
+    - pkg:conda/llama-index-llms-gemini@${{ version }}?channel=conda-forge
+    - pkg:pypi/llama-index-llms-gemini@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/llama-index-llms-gemini/
+  cfe-upstream-homepage: https://pypi.org/project/llama-index-llms-gemini/
+  cfe-import-names: [llama_index.llms.gemini]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:26:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:26:21Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

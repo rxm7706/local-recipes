@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.4.11"
+
+package:
+  name: subdomain
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/subdomain/subdomain-${{ version }}.tar.gz
+  sha256: 327afa69f4f7ef6b9443ab8d86e404205b2dc7e118eb3060d435ad6c09eca01e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=1.0.0
+  run:
+    - python >=${{ python_min }}
+    - aiodns
+    - loguru
+    - ipy
+    - autopep8
+    - pytest
+    - cp-common
+
+tests:
+  - python:
+      imports:
+        - subdomain
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/HotSec/subdomain
+  license: MIT
+  license_file: LICENSE
+  summary: 这是一个使用异步协程的子域名爆破工具。
+  description: |
+    这是一个使用异步协程的子域名爆破工具。
+  repository: https://github.com/HotSec/subdomain
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: subdomain
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: subdomain
+  cfe-purls:
+    - pkg:conda/subdomain@${{ version }}?channel=conda-forge
+    - pkg:pypi/subdomain@${{ version }}
+  cfe-upstream-repo: https://github.com/HotSec/subdomain
+  cfe-upstream-homepage: https://github.com/HotSec/subdomain
+  cfe-import-names: [subdomain]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:13:35Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:13:35Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

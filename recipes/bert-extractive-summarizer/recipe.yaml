@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: bert-extractive-summarizer
+  version: "0.10.1"
+  pytest_skips: not (coreference_handler)
+  cov_fail_under: 50
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/dmmiller612/bert-extractive-summarizer/archive/${{ version }}.tar.gz
+  sha256: 4bfc5384c9411d3b02501d007087827125dadb42ce0c39333e609bdb91c9f3c4
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - transformers
+    - scikit-learn
+    - spacy
+
+tests:
+  - script:
+      - pip check
+      # https://github.com/conda-forge/owlrl-feedstock/blob/main/recipe/recipe.yaml
+      #- python -c "assert __import__('summarizer').__version__ == '${{ version }}'"
+      # AttributeError: module 'summarizer' has no attribute '__version__'
+      #- python -c "import summarizer; assert importlib.metadata.version('summarizer') == '${{ version }}'"
+      # importlib.metadata.PackageNotFoundError: No package metadata was found for summarizer
+      - python -c "from summarizer import *"
+      #- python -m pytest tests -k "${{ pytest_skips }}"
+      #- coverage run pytest tests -vv --tb=long --color=yes -k "${{ pytest_skips }}"
+      #- coverage report --show-missing --skip-covered --fail-under=${{ cov_fail_under }}
+    files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+        # Tests Only
+        - pytest
+        - coverage
+        - scikit-learn
+        - spacy
+        - sentence-transformers
+        #- neuralcoref needs update
+        - transformers
+        - pytorch
+
+about:
+  summary: Easy to use extractive text summarization with BERT
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/dmmiller612/bert-extractive-summarizer
+
+extra:
+  recipe-maintainers:
+    - rxm7706

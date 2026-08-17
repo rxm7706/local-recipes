@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: markov_draftjs
+  version: "2.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/markov_draftjs-${{ version }}.tar.gz
+  sha256: 392288751affb0fa4769e6d8e92e07108fec8be19b7b3823e384c6c49cc921e1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - markov_draftjs
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Draft.js sample content generated with Markov chains of Project Gutenberg books.
+  description: Draft.js sample content generated with Markov chains of Project Gutenberg books.
+  homepage: https://github.com/thibaudcolas/markov_draftjs
+  repository: https://github.com/thibaudcolas/markov_draftjs
+  documentation: https://github.com/thibaudcolas/markov_draftjs
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - rxm7706
+    - sannykr

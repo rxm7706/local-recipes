@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-followit
+  version: "0.7.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 05b103437c89283cb3fa026c6883a9e20256edc46e8b5898b6c53ada73522644
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }},<3.12
+    - django >=1.11,<5.0
+    - six
+
+tests:
+  - files:
+      source:
+        - followit/tests/__init__.py
+        - followit/tests/manage.py
+        - followit/tests/models.py
+        - followit/tests/runtests.py
+        - followit/tests/settings.py
+        - followit/tests/tests.py
+    requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - python -c "from django.conf import settings; settings.configure(); import followit"
+      - python -c "import importlib.util; assert importlib.util.find_spec('followit')"
+      - python followit/tests/runtests.py
+      - pip check
+
+about:
+  summary: A Django application that allows users to follow django model objects
+  license: BSD-3-Clause
+  license_file: followit/LICENSE
+  homepage: https://github.com/ASKBOT/django-followit
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mxr-conda

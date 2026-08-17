@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: squarify
+  version: "0.4.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 54091f6ad175f7f201f8934574e647ce1b50dedc478c5fd968688eb7d7469f95
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=2.6,<=2.7|>=3.5
+    - pip
+  run:
+    - python >=2.6,<=2.7|>=3.5
+    - matplotlib-base
+
+tests:
+  - python:
+      imports:
+        - squarify
+      pip_check: false
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  summary: Pure Python implementation of the squarify treemap layout algorithm.
+  description: Pure Python implementation of the squarify treemap layout algorithm.
+  homepage: https://github.com/laserson/squarify
+  repository: https://github.com/laserson/squarify
+  documentation: https://github.com/laserson/squarify
+
+extra:
+  recipe-maintainers:
+    - aaronmussig

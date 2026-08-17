@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: langchain-ollama
+  version: "1.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/langchain_ollama-${{ version }}.tar.gz
+  sha256: f776f56f6782ae4da7692579b94a6575906118318d1023b455d7207f9d059811
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - ollama-python >=0.6.1,<1.0.0
+    - langchain-core >=1.2.21,<2.0.0
+
+tests:
+  - python:
+      imports:
+        - langchain_ollama
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: An integration package connecting Ollama and LangChain
+  license: MIT
+  license_file: LICENSE
+  repository: https://github.com/langchain-ai/langchain/blob/master/libs/partners/ollama/
+  homepage: https://python.langchain.com/docs/integrations/providers/ollama/
+
+extra:
+  recipe-maintainers:
+    - MridulS

@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.21.0a20251023"
+
+package:
+  name: tb-nightly
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/t/tb-nightly/tb_nightly-2.21.0a20251023-py3-none-any.whl
+  sha256: 369f8f7c160b87d15515a35b49f49ac3212ef0547ed20e4dee37cf0ea7079d28
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - absl-py >=0.4
+    - grpcio >=1.48.2
+    - markdown >=2.6.8
+    - numpy >=1.12.0
+    - packaging
+    - pillow
+    - protobuf !=4.24.0,>=3.19.6
+    - setuptools >=41.0.0
+    - tensorboard-data-server <0.8.0,>=0.7.0
+    - werkzeug >=1.0.1
+
+tests:
+  - python:
+      imports:
+        - tb_nightly
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/tensorflow/tensorboard
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: TensorBoard lets you watch Tensors Flow
+  description: |
+    TensorBoard lets you watch Tensors Flow
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tb-nightly
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tb-nightly
+  cfe-purls:
+    - pkg:conda/tb-nightly@${{ version }}?channel=conda-forge
+    - pkg:pypi/tb-nightly@${{ version }}
+  cfe-upstream-repo: https://github.com/tensorflow/tensorboard
+  cfe-upstream-homepage: https://github.com/tensorflow/tensorboard
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:09:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:09:34Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

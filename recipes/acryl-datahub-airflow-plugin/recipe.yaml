@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.7.0.4"
+
+package:
+  name: acryl-datahub-airflow-plugin
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/acryl-datahub-airflow-plugin/acryl_datahub_airflow_plugin-${{ version }}.tar.gz
+  sha256: 996fb5c0456d36951c4136edcd1f38d0f890f75e5a0de29dff57895e01a16d48
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=78.1.1
+    - wheel
+    - pip >=21.0.0
+  run:
+    - python >=${{ python_min }}
+    - acryl-datahub ==1.7.0.4
+    - airflow <4.0.0,>=3.0.0
+    - pydantic >=2.4.0
+    - apache-airflow-providers-openlineage >=2.1.0
+
+tests:
+  - python:
+      imports:
+        - datahub_airflow_plugin
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://datahub.com/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: DataHub Airflow plugin — automatically capture pipeline lineage, run history, and task metadata from Apache Airflow
+  description: |
+    DataHub Airflow plugin — automatically capture pipeline lineage, run history, and task metadata from Apache Airflow
+  repository: https://github.com/datahub-project/datahub
+  documentation: https://docs.datahub.com/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: acryl-datahub-airflow-plugin
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: acryl-datahub-airflow-plugin
+  cfe-purls:
+    - pkg:conda/acryl-datahub-airflow-plugin@${{ version }}?channel=conda-forge
+    - pkg:pypi/acryl-datahub-airflow-plugin@${{ version }}
+  cfe-upstream-repo: https://github.com/datahub-project/datahub
+  cfe-upstream-homepage: https://datahub.com/
+  cfe-import-names: [datahub_airflow_plugin]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:47:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:47:54Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

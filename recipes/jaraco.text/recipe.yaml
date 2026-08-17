@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.3.0"
+
+package:
+  name: jaraco.text
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/jaraco.text/jaraco_text-${{ version }}.tar.gz
+  sha256: ddd5eb6259d0701e08cb642c8d6b63bcc73947d03df9239ea67bbef911b3e4e1
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=77
+    - pip
+    - setuptools-scm >=3.4.1
+    - coherent.licensed
+  run:
+    - python >=${{ python_min }}
+    - jaraco.functools
+    - jaraco.context >=4.1
+    - typer-slim
+    - more-itertools
+
+tests:
+  - python:
+      imports: jaraco.text
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - 3.13.*
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Module for text manipulation
+  homepage: https://github.com/jaraco/jaraco.text
+  repository: https://github.com/jaraco/jaraco.text
+  documentation: https://jaracotext.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - carlodri

@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: segno
+  version: "1.6.6"
+  sha256: e60933afc4b52137d323a4434c8340e0ce1e58cec71439e46680d4db188f11b3
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - flit-core
+  run:
+    - python >=${{ python_min }}
+    - importlib-metadata
+
+tests:
+  - python:
+      imports:
+        - segno
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - segno -h
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Segno is a QR Code and Micro QR Code encoder which has no further dependencies.
+  description: |
+    This package implements ISO/IEC 18004:2006(E) / ISO/IEC
+    18004:2015(E) "QR Code bar code symbology specification" and
+    produces Micro QR Codes and QR Codes with nearly no effort.
+    Segno provides many serialization formats and could
+    provide more serialization formats via a plugin architecture.
+    Further, it provides several high level function to create QR
+    Codes which encode contact data (MeCard, vCard) or WIFI
+    configurations.
+  homepage: https://github.com/heuer/segno
+  repository: https://github.com/heuer/segno
+  documentation: https://segno.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - bryanwweber

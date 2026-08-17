@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.0"
+
+package:
+  name: dfcx-scrapi
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/dfcx-scrapi/dfcx_scrapi-${{ version }}.tar.gz
+  sha256: 5070b47ed2419c3abf6e83ecf4b8d64fe9fd4de4331dcf52b204a595d96a46fc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=42
+    - setuptools-scm
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - google-cloud-dialogflow-cx
+    - google-cloud-aiplatform
+    - google-cloud-discoveryengine
+    - rouge-score
+
+tests:
+  - python:
+      imports:
+        - dfcx_scrapi
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/GoogleCloudPlatform/dfcx-scrapi
+  license: MIT
+  license_file: LICENSE
+  summary: A high level scripting API for bot builders, developers, and      maintainers.
+  description: |
+    A high level scripting API for bot builders, developers, and      maintainers.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dfcx-scrapi
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dfcx-scrapi
+  cfe-purls:
+    - pkg:conda/dfcx-scrapi@${{ version }}?channel=conda-forge
+    - pkg:pypi/dfcx-scrapi@${{ version }}
+  cfe-upstream-repo: https://github.com/GoogleCloudPlatform/dfcx-scrapi
+  cfe-upstream-homepage: https://github.com/GoogleCloudPlatform/dfcx-scrapi
+  cfe-import-names: [dfcx_scrapi]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:03:46Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:03:46Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

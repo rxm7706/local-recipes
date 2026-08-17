@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: 0.6.1
+
+package:
+  name: manimpango
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/manimpango/manimpango-${{ version }}.tar.gz
+  sha256: 59a00bbf8e99dab5f94341087c88e609fe946e79724627429cf59da84cbd40bf
+
+build:
+  number: 1
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - cython >=3.0.2,<3.1
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - pkg-config
+  host:
+    - python
+    - setuptools
+    - cython >=3.0.2,<3.1
+    - pip
+    - pango
+    - cairo
+    - glib
+    - zlib
+    - harfbuzz
+    - freetype
+    - fontconfig
+    - expat
+    - if: linux
+      then:
+        - xorg-xproto
+        - xorg-kbproto
+        - xorg-xextproto
+        - xorg-renderproto
+  run:
+    - python
+    - pango
+    - cairo
+    - glib
+
+tests:
+  - python:
+      imports:
+        - manimpango
+      pip_check: true
+
+about:
+  homepage: https://manimpango.manim.community/
+  summary: Bindings for Pango for using with Manim.
+  repository: https://github.com/ManimCommunity/manimpango
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - pavelzw

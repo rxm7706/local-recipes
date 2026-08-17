@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sqlite-migrate
+  version: 0.1b1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 7b346f1cefd21af862f415f0fc81228424fa91933ac555676d8115fc9e86a7c0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - sqlite-utils <4
+
+tests:
+  - python:
+      imports:
+        - sqlite_migrate
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A simple database migration system for SQLite, based on sqlite-utils
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/simonw/sqlite-migrate
+
+extra:
+  recipe-maintainers:
+    - rxm7706

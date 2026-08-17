@@ -1,0 +1,332 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "9.0.4"
+  major: ${{ version | split(".") | first }}
+  minor: ${{ (version | split("."))[1] }}
+  maj_min: ${{ major }}${{ '.' if unix }}${{ minor }}
+  build: 0
+  tk_build: ${{ build + 100 if tk_variant == 'noxft' and linux else build }}
+  # the variant prefix is only used in the build string on linux
+  string_prefix: ${{ (tk_variant | default("")) + "_" if (linux | default(false)) else "" }}
+
+recipe:
+  name: tk-split
+  version: ${{ version }}
+
+source:
+  - url: https://downloads.sourceforge.net/tcl/tcl${{ version }}-src.tar.gz
+    target_directory: tcl${{ version }}
+    sha256: d0aed49230bc02a65c1e0229e65f34590a4b037ec40d546f32573b467f7551ea
+    patches:
+      # link against system libraries on Windows
+      - patches/win-system-libs.patch
+
+  - url: https://downloads.sourceforge.net/tcl/tk${{ version }}-src.tar.gz
+    target_directory: tk${{ version }}
+    sha256: d7a146d2917eb8b5cc95276dbf0e3d03c7464d2b19c1675357857c989301dbb4
+
+build:
+  number: ${{ build }}
+  # TODO: remove this once we build native tk-9
+  skip: build_platform != target_platform and win
+
+outputs:
+  - staging:
+      name: tk-build
+    build:
+      script:
+        file: build
+        env:
+          PKG_VERSION: ${{ version }}
+    requirements:
+      build:
+        - ${{ stdlib('c') }}
+        - ${{ compiler('c') }}
+        - if: unix
+          then:
+            - make
+            - zip
+        - if: linux and tk_variant == "xft"
+          then: pkg-config
+        - if: build_platform != target_platform and win
+          then: tcl >=9
+      host:
+        - libtommath
+        - zlib
+        - if: linux
+          then:
+            - xorg-xorgproto
+            - xorg-libx11
+        - if: linux and tk_variant == "xft"
+          then:
+            - xorg-libxft
+            - fontconfig
+            - expat
+      ignore_run_exports:
+        from_package:
+          - xorg-libx11
+          - xorg-libxft
+
+  - package:
+      name: libtcl
+    inherit: tk-build
+    build:
+      files:
+        include:
+          - lib/tcl${{ major }}
+          - lib/tcl${{ major }}.${{ minor }}
+          - lib/libtcl*.so
+          - lib/libtcl*.dylib
+          - Library/bin/tcl*.dll
+          - Library/lib/tcl${{ major }}
+          - Library/lib/tcl${{ major }}.${{ minor }}
+          - Library/lib/dde*
+          - Library/lib/registry*
+          # TODO: remove this
+          - Library/bin/zlib1.dll
+          - Library/bin/libtommath.dll
+        exclude:
+          - lib/tcl*/*.sh
+          - lib/pkgconfig
+          - lib/libtcl*tk*
+          - Library/lib/tcl*/*.sh
+          - Library/lib/tcl*.sh
+          - Library/lib/pkgconfig
+          - Library/bin/tcl*tk*.dll
+    requirements:
+      run_constraints:
+        - tk ${{ version }}.*
+    tests:
+      - package_contents:
+          lib:
+            - if: unix
+              then: tcl${{ maj_min }}
+          files:
+            - if: win
+              then:
+                - Library/bin/tcl${{ maj_min }}.dll
+
+  - package:
+      name: tcl
+    inherit: tk-build
+    build:
+      files:
+        - bin/tclsh*
+        - Library/bin/tclsh*.exe
+    requirements:
+      host:
+        - ${{ pin_subpackage('libtcl', upper_bound='x.x.x') }}
+        - if: linux
+          then: xorg-libx11
+      run:
+        - ${{ pin_subpackage('libtcl', upper_bound='x.x.x') }}
+      run_constraints:
+        - tk ${{ version }}.*
+    tests:
+      - package_contents:
+          bin:
+            - tclsh
+            - tclsh${{ maj_min }}
+      - script:
+          # Check commands work and run a simple program.
+          - tclsh hello.tcl
+          - tclsh${{ maj_min }} hello.tcl
+          - if: win
+            then:
+              - tclsh${{ maj_min_nodot }} hello.tcl
+        requirements:
+          run:
+            - if: linux
+              then: xorg-libx11
+        files:
+          recipe:
+            - hello.tcl
+
+  - package:
+      name: libtcl-devel
+    inherit: tk-build
+    requirements:
+      host:
+        - ${{ pin_subpackage('libtcl', upper_bound='x.x.x') }}
+      run:
+        - ${{ pin_subpackage('libtcl', upper_bound='x.x.x') }}
+      run_constraints:
+        - tk ${{ version }}.*
+    build:
+      files:
+        include:
+          - include/tcl-private
+          - include/tcl*
+          - lib/tcl*/*.sh
+          - lib/pkgconfig/tcl*
+          - lib/libtcl*.a
+          - Library/include/tcl-private
+          - Library/include/tcl*
+          - Library/lib/tcl*.sh
+          - Library/lib/tcl*/*.sh
+          - Library/lib/pkgconfig/tcl*
+          - Library/lib/tcl*.lib
+        exclude:
+          - Library/lib/tcl*tk*.lib
+    tests:
+      - package_contents:
+          files:
+            # static and import libraries (not handled by `lib`)
+            - if: unix
+              then:
+                - lib/libtclstub.a
+            - if: win
+              then:
+                - Library/lib/tcl${{ maj_min }}.lib
+                - Library/lib/tclstub.lib
+          include:
+            - tcl.h
+            - tclDecls.h
+            - tclPlatDecls.h
+            - tclTomMathDecls.h
+            - tclTomMath.h
+
+  - package:
+      name: libtk
+    inherit: tk-build
+    build:
+      files:
+        include:
+          - lib/tk*
+          - lib/libtcl*tk*.so
+          - lib/libtcl*tk*.dylib
+          - Library/bin/tcl*tk*.dll
+          - Library/lib/tk${{ major }}.${{ minor }}
+        exclude:
+          - lib/tk*/*.sh
+      number: ${{ tk_build }}
+      string: ${{ string_prefix }}h${{ hash }}_${{ tk_build }}
+      variant:
+        use_keys:
+          - tk_variant
+        # deprioritize the xft variant (preserves preference for noxft, replaces v0 track_features)
+        down_prioritize_variant: ${{ 1 if (tk_variant | default("")) == "xft" else 0 }}
+    requirements:
+      host:
+        - ${{ pin_subpackage('libtcl', upper_bound='x.x.x') }}
+        - if: linux and tk_variant == "xft"
+          then:
+            - xorg-libxft
+            - fontconfig
+            - expat
+      run:
+        - ${{ pin_subpackage('libtcl', upper_bound='x.x.x') }}
+      run_constraints:
+        - tk ${{ version }}.*
+    tests:
+      - package_contents:
+          lib:
+            - if: unix
+              then: tcl${{ major }}tk${{ maj_min }}
+          files:
+            - if: win
+              then: Library/bin/tcl${{ major }}tk${{ maj_min }}.dll
+
+  - package:
+      name: tk
+    inherit: tk-build
+    build:
+      files:
+        - bin/wish*
+        - Library/bin/wish*.exe
+      number: ${{ tk_build }}
+      string: ${{ string_prefix }}h${{ hash }}_${{ tk_build }}
+      variant:
+        use_keys:
+          - tk_variant
+        # deprioritize the xft variant (preserves preference for noxft, replaces v0 track_features)
+        down_prioritize_variant: ${{ 1 if (tk_variant | default("")) == "xft" else 0 }}
+    requirements:
+      host:
+        - ${{ pin_subpackage('libtk', upper_bound='x.x.x') }}
+        - if: linux
+          then: xorg-libx11
+      run:
+        - ${{ pin_subpackage('libtk', upper_bound='x.x.x') }}
+    tests:
+      - package_contents:
+          bin:
+            - wish
+            - wish${{ maj_min }}
+      - script:
+          # Check commands work and run a simple program.
+          - wish hello.tcl
+          - wish${{ maj_min }} hello.tcl
+          - if: win
+            then:
+              - wish${{ maj_min_nodot }} hello.tcl
+        files:
+          recipe:
+            - hello.tcl
+        requirements:
+          run:
+            - if: linux
+              then: xorg-libx11
+
+  - package:
+      name: libtk-devel
+    inherit: tk-build
+    build:
+      files:
+        - include/tk-private
+        - include/tk*
+        - lib/tk*/*.sh
+        - lib/pkgconfig/tk*
+        - lib/libtk*.a
+        - Library/include/tk-private
+        - Library/include/tk*
+        - Library/lib/tk*/*.sh
+        - Library/lib/pkgconfig/tk*
+        - Library/lib/tcl*tk*.lib
+        - Library/lib/tkstub.lib
+      number: ${{ tk_build }}
+      string: ${{ string_prefix }}h${{ hash }}_${{ tk_build }}
+      variant:
+        use_keys:
+          - tk_variant
+        # deprioritize the xft variant (preserves preference for noxft, replaces v0 track_features)
+        down_prioritize_variant: ${{ 1 if (tk_variant | default("")) == "xft" else 0 }}
+    requirements:
+      host:
+        - ${{ pin_subpackage('libtk', upper_bound='x.x.x') }}
+      run:
+        - ${{ pin_subpackage('libtk', upper_bound='x.x.x') }}
+      run_constraints:
+        - tk ${{ version }}.*
+    tests:
+      - package_contents:
+          files:
+            # static and import libraries (not handled by `lib`)
+            - if: unix
+              then:
+                - lib/libtkstub.a
+            - if: win
+              then:
+                - Library/lib/tcl${{ major }}tk${{ maj_min }}.lib
+                - Library/lib/tkstub.lib
+          include:
+            - tk.h
+            - tkDecls.h
+            - tkPlatDecls.h
+
+about:
+  homepage: http://www.tcl.tk/
+  license: TCL
+  license_file: tcl${{ version }}/license.terms
+  summary: A dynamic programming language with GUI support.  Bundles Tcl and Tk.
+  repository: https://github.com/tcltk/tk
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - msarahan
+    - pelson
+    - ocefpaf
+    - isuruf
+    - matthiasdiener
+    - xhochy

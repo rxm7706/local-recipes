@@ -3,45 +3,61 @@ schema_version: 1
 
 context:
   name: opencensus
-  version: 0.11.4
+  version: "0.11.4"
 
 package:
-  name: ${{ name|lower }}
+  name: ${{ name }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opencensus-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
   sha256: cbef87d8b8773064ab60e5c2a1ced58bbaa38a6d052c41aec224958ce544eff2
 
 build:
   number: 0
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python
+    - python ${{ python_min }}
     - pip
+    - setuptools
   run:
-    - python
+    - python >=${{ python_min }}
     - opencensus-context >=0.1.3
-    - if: match(python, "<3.6")
-      then: google-api-core >=1.0.0,<2.0.0
-    - if: match(python, ">=3.6")
-      then: google-api-core >=1.0.0,<3.0.0
-    - six >=1.16,<2.dev0
+    - google-api-core >=1.0.0,<3.0.0
+    - six >=1.16,<2.0
 
 tests:
   - python:
       imports:
         - opencensus
-      pip_check: true
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
 
 about:
-  summary: A stats collection and distributed tracing framework
   license: Apache-2.0
-  license_file: PLEASE_ADD_LICENSE_FILE
+  license_file: LICENSE
+  summary: OpenCensus - A stats collection and distributed tracing framework
+  description: |
+    OpenCensus makes getting critical telemetry out of your services easy and seamless.
+    OpenCensus currently provides libraries for a number of languages that allow you to capture,
+    manipulate, and export metrics and distributed traces to the backend(s) of your choice.
+    OpenCensus works great with all software systems, from client applications, large monoliths,
+    or highly-distributed microservices.
+    OpenCensus started at Google but is now developed by a broad community of service
+    developers, cloud vendors, and community contributors.
+    OpenCensus isn’t tied to any particular vendor’s backend or analysis system.
+    This is OpenCensus for Python.
   homepage: https://github.com/census-instrumentation/opencensus-python
+  repository: https://github.com/census-instrumentation/opencensus-python
+  documentation: https://opencensus.io/quickstart/python/
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - basnijholt
+    - dhirschfeld

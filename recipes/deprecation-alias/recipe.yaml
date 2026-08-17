@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: deprecation-alias
+  version: "0.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: a58d2e74491c7834e9d318788da60272fa2f81aeb814b4055a4ba90a0a41740f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - hatchling
+    - hatch-requirements-txt
+    - pip
+    - python ${{ python_min }}
+  run:
+    - deprecation >=2.1.0
+    - packaging >=20.4
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - deprecation_alias
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A wrapper around 'deprecation' providing support for deprecated aliases.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/domdfcoding/deprecation-alias
+
+extra:
+  recipe-maintainers:
+    - domdfcoding

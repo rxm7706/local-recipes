@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.15.9"
+
+package:
+  name: toon
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/toon/toon-0.15.9.zip
+  sha256: b53daedb3896a9f5d01a8c97c1c5361ad627cb717f63456e04c330e11b949001
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - Cython
+    - numpy
+    - psutil
+
+tests:
+  - python:
+      imports:
+        - toon
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/aforren1/toon
+  license: MIT
+  license_file: LICENSE
+  summary: Tools for neuroscience experiments
+  description: |
+    Tools for neuroscience experiments
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: toon
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: toon
+  cfe-purls:
+    - pkg:conda/toon@${{ version }}?channel=conda-forge
+    - pkg:pypi/toon@${{ version }}
+  cfe-upstream-repo: https://github.com/aforren1/toon
+  cfe-upstream-homepage: https://github.com/aforren1/toon
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:16:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:16:30Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

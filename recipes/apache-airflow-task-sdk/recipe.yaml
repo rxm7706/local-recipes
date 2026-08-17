@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: apache-airflow-task-sdk
+  version: 1.2.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/apache_airflow_task_sdk-${{ version }}.tar.gz
+  sha256: d2c4d173388f751e1d900a3f5e67fea3518822b63dd20b60a1bdbf92cdf96e8c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling ==1.29.0
+    - packaging ==26.0
+    - pathspec ==1.0.4
+    - pluggy ==1.6.0
+    - tomli ==2.4.0
+    - trove-classifiers ==2026.1.14.14
+  run:
+    - python >=${{ python_min }},<3.14
+    # temporarily drop circular dependency
+    # - apache-airflow-core <3.3.0,>=3.2.0
+    - asgiref >=2.3.0
+    - attrs >=24.2.0,!=25.2.0
+    - babel >=2.17.0
+    - fsspec >=2023.10.0
+    - httpx >=0.27.0
+    - jinja2 >=3.1.5
+    - methodtools >=0.4.7
+    - msgspec >=0.19.0
+    - python-dateutil >=2.7.0
+    - psutil >=6.1.0
+    - structlog >=25.4.0
+    - greenback >=1.2.1
+    - tenacity >=8.3.0
+    - pendulum >=3.1.0
+    - colorlog >=6.8.2
+    - pydantic >2.11.0
+    - pygtrie >=2.5.0
+    - jsonschema >=4.19.1
+    - typing_extensions >=4.14.1
+    - pathspec >=0.9.0
+    - pluggy >=1.5.0
+    - importlib-metadata >=6.5
+    - packaging >=25.0
+# tests:
+#   - python:
+#       imports:
+#         - airflow.sdk
+#       pip_check: true
+#       python_version: ${{ python_min }}.*
+
+about:
+  summary: Python Task SDK for Apache Airflow DAG Authors
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/apache/airflow
+  repository: https://github.com/apache/airflow
+  documentation: https://github.com/apache/airflow/blob/main/task-sdk/README.md
+
+extra:
+  recipe-maintainers:
+    - xylar

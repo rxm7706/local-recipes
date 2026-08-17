@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.11.0"
+
+package:
+  name: pyproject-api
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pyproject-api/pyproject_api-${{ version }}.tar.gz
+  sha256: b8807d85a293e6c9f133e6575946fed45f1d42b22d58c780b33aa2421a799549
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - hatch-vcs >=0.5
+    - hatchling >=1.28
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - python >=${{ python_min }}
+    - packaging >=25
+    - tomli >=2.3
+
+tests:
+  - python:
+      imports: pyproject_api
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - 3.14.*
+  - files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - coverage
+        - pytest
+        - pytest-mock
+        - python ${{ python_min }}.*
+        - setuptools
+        - virtualenv
+    script:
+      - coverage run -m --source pyproject_api --branch -m pytest -vv --color=yes --tb=long -k "not setuptools_prepare_metadata_for_build_wheel"
+      - coverage report --show-missing --skip-covered --fail-under=76
+
+about:
+  summary: API to interact with the python pyproject.toml based projects
+  license: MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/pyproject-api
+  repository: https://github.com/tox-dev/pyproject-api
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: amqp
+  version: "5.3.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/amqp-${{ version }}.tar.gz
+  sha256: cddc00c725449522023bad949f70fff7b48f0b1ade74d170a6f10ab044739432
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - vine >=5.0.0,<6.0.0
+
+tests:
+  - python:
+      imports:
+        - amqp
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Low-level AMQP client for Python (fork of amqplib)
+  homepage: https://github.com/celery/py-amqp/
+  repository: https://github.com/celery/py-amqp/
+  documentation: https://amqp.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - anguslees
+    - kwilcox
+    - wseaton
+    - frol

@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-braces
+  version: "1.17.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_braces-${{ version }}.tar.gz
+  sha256: 3a6fe630d3d91fef0711bfe1088d14af00c245559f79f6298040ed2b2f757337
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=40.6.6
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=2.2
+
+tests:
+  - python:
+      imports:
+        - braces
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Reusable, generic mixins for Django
+  description: |
+    Mixins for Django's class-based views.
+  homepage: https://github.com/brack3t/django-braces
+  repository: https://github.com/brack3t/django-braces
+  documentation: https://django-braces.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - rxm7706
+    - sannykr

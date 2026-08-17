@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: flake8-django
+  version: "1.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/flake8_django-${{ version }}.tar.gz
+  sha256: 4debba883084191568e3187416d1d6bdd4abd826da988f197a3c36572e9f30de
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0
+    - astroid >=2.15.2,<3.0.0
+    - flake8 >=3.8.4,<7
+
+tests:
+  - python:
+      imports:
+        - flake8_django
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Plugin to catch bad style specific to Django Projects.
+  license: GPL-3.0-or-later
+  license_file: LICENSE
+  homepage: https://github.com/rocioar/flake8-django
+
+extra:
+  recipe-maintainers:
+    - rxm7706

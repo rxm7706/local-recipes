@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: gast
+  version: "0.7.0"
+  sha256: 0bb14cd1b806722e91ddbab6fb86bba148c22b40e7ff11e248974e04c8adfdae
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+  run_constraints:
+    - pythran >=0.12.2
+
+tests:
+  - python:
+      imports:
+        - gast
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  # https://github.com/serge-sans-paille/gast/pull/17
+  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE
+  summary: A generic AST to represent Python2 and Python3's Abstract Syntax Tree(AST).
+  description: |
+    GAST provides a compatibility layer between the AST of various Python
+    versions, as produced by ast.parse from the standard ast module.
+  homepage: https://github.com/serge-sans-paille/gast
+  repository: https://github.com/serge-sans-paille/gast
+
+extra:
+  recipe-maintainers:
+    - CurtLH
+    - martinRenou
+    - conda-forge/pythran

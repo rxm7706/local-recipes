@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: peewee
+  version: "4.3.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: f2e6686e6fc61d236fd12f370bfd42955b7b42bbd9954f207d02434a0328c3de
+
+build:
+  number: 0
+  script:
+    env:
+      NO_SQLITE: ${{ "1" if win else "0" }}
+    content:
+      - python -m pip install . -vv --no-build-isolation --no-deps
+
+  python:
+    entry_points:
+      - pwiz = pwiz:main
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - cython
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - cython >=0.22.1
+    - if: win
+      then:
+        - msinttypes
+    - sqlite
+    - setuptools
+    - wheel
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - playhouse
+        - peewee
+      pip_check: true
+  - script:
+      - pwiz --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A little ORM
+  homepage: https://github.com/coleifer/peewee/
+  repository: https://github.com/coleifer/peewee/
+  documentation: http://docs.peewee-orm.com/en/latest/
+
+extra:
+  recipe-maintainers:
+    - dharhas
+    - synapticarbors

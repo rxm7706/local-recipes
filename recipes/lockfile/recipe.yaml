@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: lockfile
+  version: "0.12.2"
+  compress_type: tar.gz
+  hash_val: 6aed02de03cba24efabcd600b30540140634fc06cfa603822d508d5361e9f799
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ compress_type }}
+  sha256: ${{ hash_val }}
+  file_name: ${{ name }}-${{ version }}.${{ compress_type }}
+
+build:
+  number: 1
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  host:
+    - python
+    - pip
+    - pbr >=1.8
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - lockfile
+      pip_check: false
+
+about:
+  license: MIT
+  # license_file: No MANIFEST.in - see https://bugs.launchpad.net/pylockfile/+bug/1622259
+  summary: Platform-independent file locking module
+  homepage: https://launchpad.net/pylockfile
+  repository: http://git.openstack.org/cgit/openstack/pylockfile
+  documentation: http://docs.openstack.org/developer/pylockfile/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr

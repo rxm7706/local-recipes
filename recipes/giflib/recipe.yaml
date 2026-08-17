@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: giflib
+  version: "6.1.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://downloads.sourceforge.net/project/giflib/giflib-6.x/giflib-${{ version }}.tar.gz
+    sha256: b65b66b99f0424b93525f987386f22fc5efb9da2bfc92ad4a532249aaffbab0e
+    patches:
+      - if: win
+        then:
+          - fix_win.patch
+          - stdbool_h.patch
+  - if: win
+    then:
+      - path: getopt.h
+
+build:
+  number: 1
+  skip:
+    - win and vc < 14
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - cmake
+    - if: win
+      then:
+        - git
+    - if: unix
+      then:
+        - make
+  run_exports:
+    # SONAME changes at minor revs.
+    # https://abi-laboratory.pro/tracker/timeline/giflib/
+    - ${{ pin_subpackage("giflib", upper_bound="x.x") }}
+
+tests:
+  - script:
+      - if: unix
+        then:
+          - gif2rgb -h
+          - gifbuild -h
+          - gifclrmp -h
+          - giffix -h
+          - giftext -h
+
+about:
+  homepage: https://giflib.sourceforge.net/
+  license: MIT
+  license_file:
+    - COPYING
+    - if: win
+      then: getopt_LICENSE.txt
+  summary: Library for reading and writing gif images
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - 183amir
+    - msarahan
+    - isuruf
+    - wolfv
+    - katietz

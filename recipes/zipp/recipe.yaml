@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: zipp
+  version: "4.1.0"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 4cb57381f544315db7688e976e922a2b18cdb513d21cc194eb42232ba2a3e602
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools >=56
+    - wheel
+    - setuptools_scm >=3.4.1,<7
+    - toml
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      python_version: ${{ python_min }}.*
+      imports:
+        - zipp
+      pip_check: true
+  - script:
+      - python -m unittest tests/test_path.py
+    requirements:
+      run:
+        - importlib_metadata
+        - jaraco.itertools
+        - jaraco.test
+        - jaraco.functools
+        - more-itertools
+    files:
+      source:
+        - tests
+
+about:
+  homepage: https://github.com/jaraco/zipp
+  documentation: https://zipp.readthedocs.io/en/latest
+  repository: https://github.com/jaraco/zipp
+  license: MIT
+  license_family: MIT
+  license_file: LICENSE
+  summary: A pathlib-compatible Zipfile object wrapper
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - nehaljwani

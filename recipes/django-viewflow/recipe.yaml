@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-viewflow
+  version: "2.4.0"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: dbce804262f2d5d41d87383042670d1adf003d3952823742a2e35cfff7212768
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.10.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=4.2
+    - django-filter >=2.3.0
+
+tests:
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - python -c "import django; from django.conf import settings; settings.configure(DEBUG=True,INSTALLED_APPS=['viewflow']); django.setup(); import viewflow; import viewflow.apps; import viewflow.conf; import viewflow.contrib; import viewflow.fields; import viewflow.forms; import viewflow.fsm; import viewflow.jsonstore; import viewflow.locale; import viewflow.management; import viewflow.middleware; import viewflow.static; import viewflow.templates; import viewflow.templatetags; import viewflow.urls; import viewflow.utils; import viewflow.views; import viewflow.workflow"
+      - pip check
+
+about:
+  license: AGPL-3.0-or-later
+  license_file:
+    - LICENSE
+    - LICENSE_EXCEPTION
+    - LICENSE.django
+  summary: Reusable workflow library for Django
+  description: |
+    Viewflow takes the best parts from two worlds. It is based on BPMN -
+    business process modeling and notation standard - and plays well with the
+    django web development toolchain. BPMN provides a standard notation,
+    readily understandable by all business stakeholders. Viewflow bridges
+    the gap between a picture and an executable, ready to use web application.
+  homepage: http://viewflow.io/
+  repository: https://github.com/viewflow/viewflow/
+  documentation: http://docs.viewflow.io/
+
+extra:
+  recipe-maintainers:
+    - cshaley
+    - millsks
+    - rxm7706

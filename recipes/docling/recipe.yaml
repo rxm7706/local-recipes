@@ -1,0 +1,110 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: docling
+  version: "2.120.1"
+  python_min: '3.10'
+
+recipe:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/docling-slim/docling_slim-${{ version }}.tar.gz
+  sha256: 451622619c08fa75cb9fc7a4deb3c2f165be33503d46226f4c63024a863be64c
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: ${{ name }}-slim
+    build:
+      number: 0
+      noarch: python
+      script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+      python:
+        entry_points:
+          - docling = docling.cli.main:app
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+        - pip
+        - hatchling
+      run:
+        - python >=${{ python_min }}
+        - pydantic >=2.0.0,<3.0.0
+        - docling-core >=2.84.0,<3.0.0
+        - pydantic-settings >=2.3.0,<3.0.0
+        - filetype >=1.2.0,<2.0.0
+        - requests >=2.32.2,<3.0.0
+        - certifi >=2024.7.4
+        - pluggy >=1.0.0,<2.0.0
+        - tqdm >=4.65.0,<5.0.0
+    tests:
+      - python:
+          imports:
+            - docling
+          pip_check: false
+          python_version: ${{ python_min }}.*
+
+  - package:
+      name: ${{ name }}
+    build:
+      number: 0
+      noarch: python
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+      run:
+        - python >=${{ python_min }}
+        - ${{ pin_subpackage("docling-slim", exact=True) }}
+        - docling-ibm-models >=3.13.0,<4
+        - docling-parse >=7.0.0,<8.0.0
+        - pypdfium2 >=4.30.0,!=4.30.1,<6.0.0
+        - huggingface_hub >=0.23,<2
+        - rtree >=1.3.0,<2.0.0
+        - scipy >=1.6.0,<2.0.0
+        - typer >=0.12.5,<0.22.0
+        - python-docx >=1.1.2,<2.0.0
+        - python-pptx >=1.0.2,<2.0.0
+        - beautifulsoup4 >=4.12.3,<5.0.0
+        - pandas >=2.1.4,<4.0.0
+        - marko >=2.1.2,<3.0.0
+        - openpyxl >=3.1.5,<4.0.0
+        - lxml >=4.0.0,<7.0.0
+        - pillow >=10.0.0,<13.0.0
+        - pylatexenc >=2.10,<3.0
+        - polyfactory >=2.22.2
+        - accelerate >=1.0.0,<2
+        - rapidocr >=3.8,<4.0.0
+        - defusedxml >=0.7.1,<0.8.0
+        - mail-parser>=4.1.4,<5.0.0
+      run_constraints:
+        - tesserocr >=2.7.1,<3.0.0
+        - onnxruntime >=1.7.0,<2.0.0
+        - transformers >=4.42.0,<5.9.0,!=5.0.*,!=5.1.*,!=5.2.*,!=5.3.*
+    tests:
+      - python:
+          imports:
+            - docling
+          # `pip check` fails because:
+          # - "scikit-image 0.24.0 has requirement numpy>=1.23, but you have numpy 1.22.4."
+          pip_check: false
+          python_version: ${{ python_min }}.*
+      - script:
+          - docling --help
+        requirements:
+          run:
+            - python ${{ python_min }}.*
+
+about:
+  summary: Docling PDF conversion package
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/DS4SD/docling
+
+extra:
+  recipe-maintainers:
+    - kklein

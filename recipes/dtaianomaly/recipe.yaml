@@ -1,0 +1,95 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.1"
+
+package:
+  name: dtaianomaly
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/dtaianomaly/dtaianomaly-${{ version }}.tar.gz
+  sha256: 0fc381d62ca4e5f5f9bd3452cffc6f28b3ad0e42e3933f011946535375e66a90
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+    - python-build
+  run:
+    - python >=${{ python_min }}
+    - numpy >=1.22
+    - scipy >=1.10
+    - numba >=0.58
+    - stumpy >=1.12
+    - scikit-learn >=1.3
+    - pandas >=1.3.0
+    - matplotlib-base >=3.7
+    - statsmodels >=0.6
+    - pyod >=2.0.0
+    - tslearn >=0.6.3
+    - sktime
+    - toml
+    - pytorch >=1.8.0
+
+tests:
+  - python:
+      imports:
+        - dtaianomaly
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/dtaianomaly/
+  license: MIT
+  license_file: LICENSE
+  summary: A simple-to-use Python package for time series anomaly detection!
+  description: |
+    A simple-to-use Python package for time series anomaly detection!
+  documentation: https://dtaianomaly.readthedocs.io/en/stable/index.html
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dtaianomaly
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dtaianomaly
+  cfe-purls:
+    - pkg:conda/dtaianomaly@${{ version }}?channel=conda-forge
+    - pkg:pypi/dtaianomaly@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/dtaianomaly/
+  cfe-upstream-homepage: https://pypi.org/project/dtaianomaly/
+  cfe-import-names: [dtaianomaly]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:35:20Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:35:20Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

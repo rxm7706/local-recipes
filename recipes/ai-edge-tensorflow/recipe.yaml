@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.21.0.dev20260126"
+
+package:
+  name: ai-edge-tensorflow
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/cp310/a/ai-edge-tensorflow/ai_edge_tensorflow-2.21.0.dev20260126-cp310-cp310-macosx_12_0_arm64.whl
+  sha256: 5653ca4faa35e9813eba04635a9a4f360615d2ecf4f887b6bd4c858ed4e9799c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - absl-py >=1.0.0
+    - astunparse >=1.6.0
+    - flatbuffers >=25.9.23
+    - gast !=0.5.0,!=0.5.1,!=0.5.2,>=0.2.1
+    - google-pasta >=0.1.1
+    - libclang >=13.0.0
+    - opt-einsum >=2.3.2
+    - packaging
+    - protobuf <8.0.0,>=6.31.1
+    - requests <3,>=2.21.0
+    - setuptools
+    - six >=1.12.0
+    - termcolor >=1.1.0
+    - typing_extensions >=3.6.6
+    - wrapt >=1.11.0
+    - grpcio <2.0,>=1.24.3
+    - tb-nightly ~=2.20.0.a
+    - keras-nightly >=3.10.0.dev
+    - numpy >=1.26.0
+    - h5py <3.15.0,>=3.11.0
+    - ml-dtypes <1.0.0,>=0.5.1
+    - if: win
+      then:
+        - tensorflow-io-gcs-filesystem
+
+tests:
+  - python:
+      imports:
+        - ai_edge_tensorflow
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://www.tensorflow.org/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: TensorFlow is an open source machine learning framework for everyone.
+  description: |
+    TensorFlow is an open source machine learning framework for everyone.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ai-edge-tensorflow
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ai-edge-tensorflow
+  cfe-purls:
+    - pkg:conda/ai-edge-tensorflow@${{ version }}?channel=conda-forge
+    - pkg:pypi/ai-edge-tensorflow@${{ version }}
+  cfe-upstream-repo: https://www.tensorflow.org/
+  cfe-upstream-homepage: https://www.tensorflow.org/
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

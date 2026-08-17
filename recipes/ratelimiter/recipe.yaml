@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.0"
+
+package:
+  name: ratelimiter
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/r/ratelimiter/ratelimiter-${{ version }}.tar.gz
+  sha256: f724b256264afdeab0225ec174728b0f8af1afd1cc122463150daf226b411fb6
+  file_name: ratelimiter-${{ version }}.tar.gz
+
+build:
+  number: 1003
+  noarch: python
+  script: ${{ PYTHON }} -m pip install .
+
+requirements:
+  host:
+    - python >=3,<3.11  # ratelimiter is not compatible with async changes in python 3.11
+    - pip
+  run:
+    - python >=3,<3.11
+
+tests:
+  - python:
+      imports:
+        - ratelimiter
+      pip_check: false
+
+about:
+  license: Apache-2.0
+  license_file: ${{ RECIPE_DIR }}/LICENSE
+  summary: Simple Python module providing rate limiting.
+  description: |
+    This package provides the ratelimiter module, which ensures that an operation
+    will not be executed more than a given number of times on a given period.
+    This can prove useful when working with third parties APIs which require
+    for example a maximum of 10 requests per second.
+
+
+  homepage: https://github.com/RazerM/ratelimiter
+
+extra:
+  recipe-maintainers:
+    - johanneskoester

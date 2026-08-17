@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: kerberos
+  version: "1.3.1"
+
+package:
+  name: python-kerberos
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/kerberos-${{ version }}.tar.gz
+  sha256: cdd046142a4e0060f96a00eb13d82a5d9ebc0f2d7934393ed559bac773460a2c
+
+build:
+  number: 3
+  skip: win
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - krb5
+    - pip
+    - python
+    - setuptools
+  run:
+    - krb5
+    - python
+
+tests:
+  - python:
+      imports:
+        - kerberos
+      pip_check: true
+
+about:
+  summary: High-level interface to Kerberos
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  description: |
+    pykerberos is a high-level wrapper for Kerberos (GSSAPI) operations. The
+    goal is to avoid having to build a module that wraps the entire
+    Kerberos.framework and instead offer a limited set of functions that do
+    what is needed for client/server Kerberos authentication.
+
+
+  homepage: https://github.com/apple/ccs-pykerberos
+  documentation: https://pypi.python.org/pypi/kerberos
+
+extra:
+  recipe-maintainers:
+    - rxm7706

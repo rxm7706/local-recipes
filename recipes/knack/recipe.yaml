@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: knack
+  version: "0.14.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 2ddd32fd6343ec9b6ed0da729b212362d0e6b1208c0162633c90cb6f94a05877
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - packaging
+    - python >=${{ python_min }}
+    - argcomplete
+    - jmespath
+    - pygments
+    - pyyaml
+    - tabulate
+
+tests:
+  - python:
+      imports:
+        - knack
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A Command-Line Interface framework
+  homepage: https://github.com/microsoft/knack
+  repository: https://github.com/microsoft/knack
+  documentation: https://github.com/Microsoft/knack/tree/master/docs
+
+extra:
+  recipe-maintainers:
+    - awvwgk
+    - dhirschfeld
+    - andreyz4k

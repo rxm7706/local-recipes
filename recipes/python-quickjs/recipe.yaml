@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: quickjs
+  version: "1.19.4"
+
+package:
+  # The package is named python-quickjs to leave `quickjs` available for a binary of the wrapped library
+  name: python-${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 1205953abc24ff757f4a795304d5d61e4bf1e555c9ef6ec96a132d4b95535484
+  patches:
+    - setup.patch
+
+build:
+  number: 4
+
+requirements:
+  build:
+    # uses m2w64 toolchain on windows, see conda_build_config.yaml
+    - ${{ stdlib("c") }}
+    - ${{ compiler("c") }}
+  host:
+    - if: win
+      then: distutils-activate-mingw
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - quickjs
+      pip_check: true
+  - files:
+      recipe:
+        - test_quickjs.py
+    requirements:
+      run:
+        - pip
+    script:
+      - python -m unittest
+
+about:
+  summary: Wrapping the quickjs C library.
+  description: |
+    Python wrapper around https://bellard.org/quickjs/
+    Translates types like str, float, bool, list, dict and combinations thereof to and from Javascript.
+    QuickJS is currently thread-hostile, so this wrapper makes sure that all calls to the same JS runtime comes from the same thead.
+  license: MIT
+  license_file:
+    - LICENSE
+    - LICENSE-quickjs
+  homepage: https://github.com/PetterS/quickjs
+  repository: https://github.com/PetterS/quickjs
+  documentation: https://bellard.org/quickjs/
+
+extra:
+  recipe-maintainers:
+    - m-rossi
+    - fcollonval

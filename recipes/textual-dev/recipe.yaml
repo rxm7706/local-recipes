@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: textual-dev
+  version: "1.8.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/textual_dev-${{ version }}.tar.gz
+  sha256: 7e56867b0341405a95e938cac0647e6d2763d38d0df08710469ad6b6a8db76df
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . -vv
+  python:
+    entry_points:
+      - textual = textual_dev.cli:run
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core >=1.2.0
+    - pip
+  run:
+    - python >=${{ python_min }},<4
+    - textual >=0.86.2
+    - textual-serve >=1.0.3
+    - aiohttp >=3.8.1
+    - click >=8.1.2
+    - msgpack-python >=1.0.3
+    - typing_extensions >=4.4.0,<5.0.0
+
+tests:
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - textual --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Development tools for working with Textual
+  homepage: https://github.com/Textualize/textual-dev
+  repository: https://github.com/Textualize/textual-dev
+  documentation: https://textual.textualize.io/guide/devtools
+
+extra:
+  recipe-maintainers:
+    - davidbrochart

@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: screeninfo
+  version: "0.8.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/screeninfo-${{ version }}.tar.gz
+  sha256: 9983076bcc7e34402a1a9e4d7dabf3729411fd2abb3f3b4be7eba73519cd2ed1
+
+build:
+  number: 3
+  skip: python_impl == 'pypy'
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - python
+    - pip
+    - poetry
+  host:
+    - pip
+    - python
+    - poetry
+  run:
+    - python
+    - poetry
+    - if: osx
+      then: cython
+    - if: osx
+      then: pyobjc-framework-cocoa
+
+tests:
+  - python:
+      imports:
+        - screeninfo
+        - screeninfo.enumerators
+      pip_check: true
+
+about:
+  summary: Fetch location and size of physical screens.
+  license: MIT AND BSD-3-Clause
+  license_file: LICENSE.md
+  homepage: https://github.com/rr-/screeninfo
+
+extra:
+  recipe-maintainers:
+    - gauranshkumar

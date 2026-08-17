@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.0.3"
+
+package:
+  name: pyyaml
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/P/PyYAML/pyyaml-${{ version }}.tar.gz
+  sha256: d76623373421df22fb4cf8817020cbb7ef15c725b9d5e45f17e189bfc384190f
+  patches:
+    - 0001-Ensure-we-do-not-end-up-wih-CRLF-line-endings-on-tes.patch
+    - if: match(python, "<3.9")
+      then: 0002-remove-setuptools-use-distutils-py38.patch
+
+build:
+  number: 1
+  skip: match(python, "<3.8")
+  noarch: ${{ 'python' if use_noarch else '' }}
+  track_features:
+    - if: use_noarch
+      then: pyyaml_no_compile
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - if: not use_noarch
+      then: python
+    - if: use_noarch
+      then: python ${{ python_min }}.*
+    - cython
+    - setuptools
+    - packaging
+    - pip
+    - yaml
+  run:
+    - if: not use_noarch
+      then: python
+    - if: use_noarch
+      then: python >=${{ python_min }}.*
+    - yaml
+
+tests:
+  - python:
+      imports:
+        - yaml
+        - if: python_impl == "cpython" and not use_noarch
+          then: _yaml
+      pip_check: false
+  - requirements:
+      run:
+        - pip
+        - if: use_noarch
+          then: python ${{ python_min }}.*
+    script:
+      - if: not (win and python_impl == 'pypy')
+        then: pip check
+
+about:
+  license_file: LICENSE
+  license: MIT
+  summary: YAML parser and emitter for Python
+  homepage: http://pyyaml.org/wiki/PyYAML
+  repository: https://github.com/yaml/pyyaml
+  documentation: http://pyyaml.org/wiki/PyYAML
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - msarahan
+    - pelson
+    - ocefpaf

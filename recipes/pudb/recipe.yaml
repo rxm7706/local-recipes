@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2025.1.5"
+  python_min: python_min|default("3.6")
+
+package:
+  name: pudb
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pudb/pudb-${{ version }}.tar.gz
+  sha256: e6dedb81fc3c8cdcd66cf62e86337cb913570ebb2c994c9ab52012d059e086ad
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - pudb = pudb.run:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - urwid >=2.4
+    - urwid_readline
+    - packaging >=20.0
+    - pygments >=2.7.4
+    - jedi >=0.18,<1
+
+tests:
+  - python:
+      imports:
+        - pudb
+      pip_check: false
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - pudb/test
+    requirements:
+      run:
+        - pytest-mock
+        - python ${{ python_min }}
+    script:
+      - cd pudb/test && python -m pytest
+      - pudb --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A full-screen, console-based Python debugger
+  homepage: https://pypi.org/project/pudb/
+  repository: https://github.com/inducer/pudb
+  documentation: https://documen.tician.de/pudb/
+
+extra:
+  recipe-maintainers:
+    - jeongseok-meta
+    - asmeurer
+    - inducer
+    - matthiasdiener

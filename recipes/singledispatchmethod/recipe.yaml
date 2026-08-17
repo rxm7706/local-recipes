@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: singledispatchmethod
+  version: "1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/singledispatchmethod-${{ version }}.tar.gz
+  sha256: 183a7fbeab53b9c9d182f8b8f9c2d7e109a7d40afaa30261d81dd8de68cd73bf
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=2.7
+    - pip
+    - setuptools-scm
+  run:
+    - python >=2.7
+
+tests:
+  - python:
+      imports:
+        - singledispatchmethod
+      pip_check: true
+
+about:
+  summary: Backport of @functools.singledispatchmethod to Python 2.7-3.7.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/ikalnytskyi/singledispatchmethod
+  repository: https://github.com/ikalnytskyi/singledispatchmethod
+
+extra:
+  recipe-maintainers:
+    - AntoineD

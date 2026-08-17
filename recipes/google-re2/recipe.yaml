@@ -14,8 +14,7 @@ source:
   sha256: 1db14a292ee8303b91e91e7c37e05ac17d3c467f29416c79ac70a78be3e65bda
 
 build:
-  number: 1
-  #skip: winAdd_Platforms
+  number: 2
   script:
     env:
       CL: "/std:c++17"

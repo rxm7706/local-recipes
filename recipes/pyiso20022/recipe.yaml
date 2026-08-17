@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.6.2"
+
+package:
+  name: pyiso20022
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pyiso20022/pyiso20022-${{ version }}.tar.gz
+  sha256: a43801f0f30912faa192f630078a6bea67201fe949ac7d9aeb6deebe576b4db4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pyiso20022
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/phoughton/pyiso20022
+  license: MIT
+  license_file: LICENSE
+  summary: pyiso20022 is a library for generating ISO20022 messages in Python.
+  description: |
+    pyiso20022 is a library for generating ISO20022 messages in Python.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pyiso20022
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pyiso20022
+  cfe-purls:
+    - pkg:conda/pyiso20022@${{ version }}?channel=conda-forge
+    - pkg:pypi/pyiso20022@${{ version }}
+  cfe-upstream-repo: https://github.com/phoughton/pyiso20022
+  cfe-upstream-homepage: https://github.com/phoughton/pyiso20022
+  cfe-import-names: [pyiso20022]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:35:44Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:35:44Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

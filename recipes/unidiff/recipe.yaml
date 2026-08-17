@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: unidiff
+  version: "0.7.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/unidiff-${{ version }}.tar.gz
+  sha256: 2e5f0162052248946b9f0970a40e9e124236bf86c82b70821143a6fc1dea2574
+
+build:
+  # Due to the use of scripts, this cannot be noarch
+  number: 4
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - unidiff
+      pip_check: true
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - pip
+    script:
+      - python -m unittest discover -s tests/
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Simple Python library to parse and interact with unified diff data.
+  homepage: https://github.com/matiasb/python-unidiff
+
+extra:
+  recipe-maintainers:
+    - xhochy
+    - tovrstra

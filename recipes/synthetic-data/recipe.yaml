@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: synthetic-data
+  version: "1.2.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/synthetic-data-${{ version }}.tar.gz
+  sha256: eeef55fe2fb2f3d3a1e71861817ebad5cbb2b9df8cb915fc98fbddbbd70b92ae
+
+build:
+  number: 1
+  noarch: python
+  script:
+    env:
+      PYTHONUTF8: 1
+    content: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - numpy >=1.22.0,<2.0.0
+    - scikit-learn >=1.1.0
+    - scipy >=1.10.0
+    - dataprofiler >=0.10.3
+
+tests:
+  - python:
+      imports:
+        - synthetic_data
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Generates complex, nonlinear datasets for use with deep learning/black box models
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/capitalone/synthetic-data
+
+extra:
+  recipe-maintainers:
+    - rxm7706

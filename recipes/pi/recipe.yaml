@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.2"
+
+package:
+  name: pi
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pi/pi-${{ version }}.tar.gz
+  sha256: 8d503a790317f7fbce7469c4160e44b1c76492571b2b0c0596636a1794800f75
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pi
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/chbrown/pi
+  license: MIT
+  license_file: LICENSE
+  summary: Simpler python package installation
+  description: |
+    Simpler python package installation
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pi
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pi
+  cfe-purls:
+    - pkg:conda/pi@${{ version }}?channel=conda-forge
+    - pkg:pypi/pi@${{ version }}
+  cfe-upstream-repo: https://github.com/chbrown/pi
+  cfe-upstream-homepage: https://github.com/chbrown/pi
+  cfe-import-names: [pi]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:30:13Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:30:13Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ansiwrap
+  version: "0.8.4"
+  bundle: zip
+  hash_value: ca0c740734cde59bf919f8ff2c386f74f9a369818cdc60efe94893d01ea8d9b7
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
+  sha256: ${{ hash_value }}
+  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  build:
+    - python
+    - pip
+  run:
+    - python
+    - textwrap3
+
+tests:
+  - python:
+      imports:
+        - ansiwrap
+      pip_check: false
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  summary: textwrap, but savvy to ANSI colors and styles
+  description: ansiwrap wraps text, like the standard textwrap module. But it also correctly wraps text that contains ANSI control sequences that colorize or style text.
+  homepage: https://github.com/jonathaneunice/ansiwrap
+  repository: https://github.com/jonathaneunice/ansiwrap
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr

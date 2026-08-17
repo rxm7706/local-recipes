@@ -1,0 +1,103 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.204.0"
+
+package:
+  name: daytona
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/daytona/daytona-${{ version }}.tar.gz
+  sha256: c6c2068c07b7bf76d265f648a650fe1009b811b2f05c5f3e9dc4f68acd5ba5e3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core >=2.0.0,<3.0.0
+  run:
+    - python >=${{ python_min }}
+    - deprecated <2.0.0,>=1.2.18
+    - aiofiles <25.2.0,>=24.1.0
+    - aiohttp <4.0.0,>=3.14.1
+    - daytona-analytics-api-client ==0.204.0
+    - daytona-analytics-api-client-async ==0.204.0
+    - daytona-api-client ==0.204.0
+    - daytona-api-client-async ==0.204.0
+    - daytona-toolbox-api-client ==0.204.0
+    - daytona-toolbox-api-client-async ==0.204.0
+    - httpx <0.29.0,>=0.28.0
+    - httpx-ws <1.0.0,>=0.7.0
+    - obstore <0.12.0,>=0.8.0
+    - opentelemetry-api <2.0.0,>=1.27.0
+    - opentelemetry-exporter-otlp-proto-http <2.0.0,>=1.27.0
+    - opentelemetry-instrumentation-aiohttp-client >=0.59b0
+    - opentelemetry-sdk <2.0.0,>=1.27.0
+    - pydantic <3.0.0,>=2.4.2
+    - python-dotenv <2.0.0,>=1.0.0
+    - python-multipart <0.1.0,>=0.0.31
+    - python-socketio <6.0.0,>=5.0.0
+    - toml <0.11.0,>=0.10.0
+    - typing_extensions >=4.0.0
+    - urllib3 <3.0.0,>=2.1.0
+    - wsproto <2.0.0,>=1.2.0
+
+tests:
+  - python:
+      imports:
+        - daytona
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/daytona/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python SDK for Daytona
+  description: |
+    Python SDK for Daytona
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: daytona
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: daytona
+  cfe-purls:
+    - pkg:conda/daytona@${{ version }}?channel=conda-forge
+    - pkg:pypi/daytona@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/daytona/
+  cfe-upstream-homepage: https://pypi.org/project/daytona/
+  cfe-import-names: [daytona]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:52:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:52:34Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

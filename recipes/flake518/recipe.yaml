@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: flake518
+  version: "1.6.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/flake518-${{ version }}.tar.gz
+  sha256: e02efcacb9609e4250265600c7efd559576ae75c93b8898e019fec63128c90b5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - flake518 = flake518.__main__:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pdm-backend
+    - pip
+  run:
+    - python >=${{ python_min }},<4
+    - tomli >=0.10.2
+    - flake8 >=3.0.0
+
+tests:
+  - python:
+      imports:
+        - flake518
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - flake518 --help
+
+about:
+  summary: A small wrapper around flake8 to support PEP518 pyproject.toml as configuration file.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/carstencodes/flake518
+
+extra:
+  recipe-maintainers:
+    - rxm7706

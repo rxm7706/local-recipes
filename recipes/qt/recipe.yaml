@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# This has become a metapacakge for qt-base and other related packages
+# Add a dummy source so that the bot helps us keep this up to date
+schema_version: 1
+
+context:
+  version: "5.15.15"
+
+package:
+  name: qt
+  version: ${{ version }}
+
+source:
+  url: https://download.qt.io/archive/qt/${{ version.rpartition('.')[0] }}/${{ version }}/submodules/qtbase-everywhere-opensource-src-${{ version }}.tar.xz
+  sha256: e5f941fecf694ecba97c550b45b0634e552166cc6c815bcfdc481edd62796ba1
+
+build:
+  number: 1
+
+requirements:
+  run:
+    - qt-main      ${{ version }}.*
+    # qt-webengine sometimes goes more out of sync due to
+    # the fact that they release open source releases more frequently
+    # qt-webengine does not support ppc64le
+    # (https://github.com/conda-forge/qt-webengine-feedstock/pull/21)
+    - if: not ppc64le
+      then: qt-webengine ${{ version }}.*
+  run_exports:
+    - ${{ pin_subpackage('qt', upper_bound='x.x') }}
+
+tests:
+  - files:
+      recipe:
+        - test/hello.pro
+        - test/main-qtwebengine.cpp
+        - test/main.cpp
+        - test/main.qml
+        - test/qml.qrc
+        - test/qrc_qml.cpp
+        - test/qtwebengine.pro
+        - xcodebuild
+        - xcrun
+    requirements:
+      run:
+        - if: unix
+          then: make
+        - ${{ compiler('cxx') }}
+        - if: linux
+          then: libgl-devel
+    script:
+      - if: win
+        then: if not exist %LIBRARY_BIN%\\Qt5WebEngine_conda.dll exit 1
+      - if: win
+        then: if not exist %LIBRARY_BIN%\\Qt5Core_conda.dll exit 1
+      - if: win
+        then: if not exist %LIBRARY_BIN%\\Qt5Gui_conda.dll exit 1
+      - if: unix and not ppc64le
+        then: test -f $PREFIX/lib/libQt5WebEngine${SHLIB_EXT}
+      - if: unix
+        then: test -f $PREFIX/lib/libQt5Core${SHLIB_EXT}
+      - if: unix
+        then: test -f $PREFIX/lib/libQt5Gui${SHLIB_EXT}
+      - if: unix
+        then: test -f $PREFIX/plugins/sqldrivers/libqsqlite${SHLIB_EXT}
+      - if: win
+        then: if not exist %LIBRARY_PREFIX%\plugins\sqldrivers\qsqlite.dll exit 1
+
+about:
+  license: LGPL-3.0-only
+  license_file: LICENSE.LGPLv3
+  summary: Qt is a cross-platform application and UI framework.
+  description: |
+    Qt helps you create connected devices, UIs & applications that run
+    anywhere on any device, on any operating system at any time.
+  homepage: http://qt-project.org
+  repository: https://github.com/qtproject
+  documentation: http://doc.qt.io/
+
+extra:
+  recipe-maintainers:
+    - conda-forge/qt-main

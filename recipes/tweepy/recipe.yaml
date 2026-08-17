@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: tweepy
+  version: "4.17.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/tweepy-${{ version }}.tar.gz
+  sha256: c232e9fffa0b15b81d5ff8ec59d46af85e330285ffc3e64614d2418fb9af71b5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - flit-core <4
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - oauthlib >=3.2.0,<4
+    - requests >=2.27.0,<3
+    - requests-oauthlib >=1.2.0,<3
+
+tests:
+  - python:
+      imports:
+        - tweepy
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: An easy-to-use Python library for accessing the Twitter API
+  homepage: http://www.tweepy.org
+  repository: https://github.com/tweepy/tweepy
+  documentation: http://tweepy.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - nikicc
+    - ocefpaf

@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.1"
+
+package:
+  name: ocrmac
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/ocrmac/ocrmac-${{ version }}.tar.gz
+  sha256: 507fe5e4cbd67b2d03f6729a52bbc11f9d0b58241134eb958a5daafd4b9d93d9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - click >=7.0
+    - pyobjc-framework-vision
+    - pillow
+
+tests:
+  - python:
+      imports:
+        - ocrmac
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/straussmaximilian/ocrmac
+  license: MIT
+  license_file: LICENSE
+  summary: A python wrapper to extract text from images on a mac system. Uses the vision framework from Apple.
+  description: |
+    A python wrapper to extract text from images on a mac system. Uses the vision framework from Apple.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ocrmac
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ocrmac
+  cfe-purls:
+    - pkg:conda/ocrmac@${{ version }}?channel=conda-forge
+    - pkg:pypi/ocrmac@${{ version }}
+  cfe-upstream-repo: https://github.com/straussmaximilian/ocrmac
+  cfe-upstream-homepage: https://github.com/straussmaximilian/ocrmac
+  cfe-import-names: [ocrmac]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:51:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:51:32Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

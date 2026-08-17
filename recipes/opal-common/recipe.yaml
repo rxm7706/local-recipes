@@ -1,0 +1,107 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.9.6"
+
+package:
+  name: opal-common
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/opal-common/opal_common-${{ version }}.tar.gz
+  sha256: b79a520e217edc833678d37e827bab3f696fd32368c51e34fd67ed441583c8ee
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - aiohttp <4,>=3.9.2
+    - click <9,>=8.1.3
+    - cryptography
+    - gitpython <4,>=3.1.32
+    - loguru >=0.6.0
+    - pyjwt <3,>=2.4.0
+    - python-decouple <4,>=3.6
+    - tenacity <9,>=8.0.1
+    - datadog <1,>=0.44.0
+    - ddtrace <4,>=3.0.0
+    - certifi >=2023.7.22
+    - requests >=2.32.0
+    - httpx >=0.27.0
+    - urllib3 >=2.2.2
+    - idna <4,>=3.3
+    - typer <1,>=0.4.1
+    - fastapi <1,>=0.109.1
+    - fastapi-websocket-pubsub <2,>=1.0.0
+    - fastapi-websocket-rpc <1,>=0.1.28
+    - websockets >=10.3
+    - gunicorn >=23.0.0
+    - pydantic <2,>=1.9.1
+    - starlette <1,>=0.40.0
+    - uvicorn <1,>=0.17.6
+    - fastapi-utils <1,>=0.2.1
+    - setuptools >=70.0.0
+    - anyio >=4.4.0
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - opal_common
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/permitio/opal
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: OPAL is an administration layer for Open Policy Agent (OPA), detecting changes to both policy and data and pushing live updates to your agents. opal-common contains common code used by both opal-client and opal-server.
+  description: |
+    OPAL is an administration layer for Open Policy Agent (OPA), detecting changes to both policy and data and pushing live updates to your agents. opal-common contains common code used by both opal-client and opal-server.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: opal-common
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: opal-common
+  cfe-purls:
+    - pkg:conda/opal-common@${{ version }}?channel=conda-forge
+    - pkg:pypi/opal-common@${{ version }}
+  cfe-upstream-repo: https://github.com/permitio/opal
+  cfe-upstream-homepage: https://github.com/permitio/opal
+  cfe-import-names: [opal_common]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:34:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:34:16Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

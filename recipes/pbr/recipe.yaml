@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pbr
+  version: "7.0.3"
+  bundle: tar.gz
+  hash: b46004ec30a5324672683ec848aed9e8fc500b0d261d40a3229c2d2bbfcedc29
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
+  sha256: ${{ hash }}
+  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - pbr = pbr.cmd.main:main
+  preserve_egg_dir: true
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pip
+    - setuptools
+
+tests:
+  - python:
+      imports:
+        - pbr
+        - pbr.cmd
+        - pbr.hooks
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pbr --help
+
+about:
+  license_file: LICENSE
+  license: Apache-2.0
+  summary: Python Build Reasonableness
+  homepage: https://launchpad.net/pbr
+  repository: https://git.openstack.org/cgit/openstack-dev/pbr
+  documentation: https://docs.openstack.org/developer/pbr/
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - tschoonj

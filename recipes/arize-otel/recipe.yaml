@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.13.0"
+
+package:
+  name: arize-otel
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/arize-otel/arize_otel-${{ version }}.tar.gz
+  sha256: 6ccd1e26be23a52a0dad2798c924036e2c73a0db086a2214c2817fcfa36a31e6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - openinference-instrumentation >=0.1.22
+    - openinference-semantic-conventions >=0.1.5
+    - opentelemetry-exporter-otlp >=1.22
+    - opentelemetry-proto >=1.12.0
+    - opentelemetry-sdk >=1.22
+
+tests:
+  - python:
+      imports:
+        - arize.otel
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/arize-otel/
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Helper package for OTEL setup to send traces to Arize & Phoenix
+  description: |
+    Helper package for OTEL setup to send traces to Arize & Phoenix
+  repository: https://github.com/Arize-ai/arize-otel-python
+  documentation: https://docs.arize.com/arize/large-language-models/tracing
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: arize-otel
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: arize-otel
+  cfe-purls:
+    - pkg:conda/arize-otel@${{ version }}?channel=conda-forge
+    - pkg:pypi/arize-otel@${{ version }}
+  cfe-upstream-repo: https://github.com/Arize-ai/arize-otel-python
+  cfe-upstream-homepage: https://pypi.org/project/arize-otel/
+  cfe-import-names: [arize.otel]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:50:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:50:24Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

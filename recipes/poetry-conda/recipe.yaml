@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: poetry-conda
+  version: "0.1.7"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/poetry_conda-${{ version }}.tar.gz
+  sha256: 803f916d11f6fd8ff992d36a738e3d18877cc1b286a28c050ace7ec184910681
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.10.*
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - poetry >=1.5.0,<3
+
+tests:
+  - python:
+      imports:
+        - poetry_conda
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Poetry plugin that allows for the creation of virtual environments using Poetry, without interfering with the Conda environment in which Poetry is installed
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/renan-r-santos/poetry-conda
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - renan-r-santos

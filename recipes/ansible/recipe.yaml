@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  python_min: "3.12"
+  name: ansible
+  version: "14.3.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 98d4ad2b355feac8dc04d99e8377d6cb801b1d58bbfadd6d80534e4607fb5c4d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - ansible-community=ansible_collections.ansible_community:main
+
+requirements:
+  host:
+    - pip
+    - python 3.12.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - ansible-core >=2.21.3,<2.22.dev0
+    # https://docs.ansible.com/ansible/latest/user_guide/windows_faq.html#can-ansible-run-on-windows
+    - __unix
+
+tests:
+  - python:
+      imports:
+        - ansible_collections
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - ansible --version
+      - ansible-community --help
+
+about:
+  license: GPL-3.0-only
+  license_file: COPYING
+  summary: Ansible is a radically simple IT automation platform
+  description: |
+    Ansible is a radically simple IT automation platform
+    that makes your applications and systems easier to deploy.
+    Includes support for OpenStack (shade) and EC2 (AWS), extra
+    batteries included.
+  homepage: http://github.com/ansible/ansible
+  repository: https://github.com/ansible/ansible
+  documentation: https://www.ansible.com/
+
+extra:
+  recipe-maintainers:
+    - brainstorm
+    - tschoonj
+    - pavelzw
+    - Wafflenator

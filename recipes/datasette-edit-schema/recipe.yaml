@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: datasette-edit-schema
+  version: "0.7.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/datasette-edit-schema-${{ version }}.tar.gz
+  sha256: e7de83533bbb441ed0f392b2cae9a2871931be917f69cbad1d60c79cac1dbe08
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - datasette >=0.63
+    - sqlite-utils >=3.35
+
+tests:
+  - python:
+      imports:
+        - datasette_edit_schema
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  summary: Datasette plugin for modifying table schemas
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/simonw/datasette-edit-schema
+
+extra:
+  recipe-maintainers:
+    - rxm7706

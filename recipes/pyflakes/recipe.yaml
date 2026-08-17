@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyflakes
+  version: "3.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: b24f96fafb7d2ab0ec5075b7350b3d2d2218eab42003821c06344973d3ea2f58
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - pyflakes = pyflakes.api:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pyflakes
+        - pyflakes.scripts
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pyflakes --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Pyflakes analyzes programs and detects various errors.
+  homepage: https://github.com/PyCQA/pyflakes
+  repository: https://github.com/PyCQA/pyflakes
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - sigmavirus24
+    - dopplershift
+    - ocefpaf

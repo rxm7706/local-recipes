@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.0.0"
+
+package:
+  name: googlesearch
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/google/google-${{ version }}.tar.gz
+  sha256: 143530122ee5130509ad5e989f0512f7cb218b2d4eddbafbad40fd10e8d8ccbe
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - beautifulsoup4
+
+tests:
+  - python:
+      imports:
+        - googlesearch
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Google search from Python.
+  description: Google search from Python.
+  homepage: https://github.com/MarioVilas/googlesearch
+  repository: https://github.com/MarioVilas/googlesearch
+  documentation: https://python-googlesearch.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - MarioVilas
+    - h-vetinari

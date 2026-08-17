@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "8.2.0"
+  python_min: "3.11"
+
+package:
+  name: oslo.middleware
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/oslo.middleware/oslo_middleware-${{ version }}.tar.gz
+  sha256: dc53a609c59bb3d92f7364d9b6db8f704e672f5b7ea904c5824ccc1dc189b92b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - pbr >=6.1.1
+  run:
+    - python >=${{ python_min }}
+    - bcrypt >=3.1.3
+    - jinja2 >=2.10
+    - oslo.config >=5.2.0
+    - oslo.context >=2.19.2
+    - oslo.i18n >=3.15.3
+    - oslo.utils >=3.33.0
+    - pbr >=2.0.0
+    - statsd >=3.2.1
+    - stevedore >=5.6.0
+    - typing_extensions >=4.11.0
+    - webob >=1.8.0
+
+tests:
+  - python:
+      imports:
+        - oslo_middleware
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://docs.openstack.org/oslo.middleware
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Oslo Middleware library
+  description: |
+    Oslo Middleware library
+  repository: https://opendev.org/openstack/oslo.middleware
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: oslo.middleware
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: oslo.middleware
+  cfe-purls:
+    - pkg:conda/oslo.middleware@${{ version }}?channel=conda-forge
+    - pkg:pypi/oslo.middleware@${{ version }}
+  cfe-upstream-repo: https://opendev.org/openstack/oslo.middleware
+  cfe-upstream-homepage: https://docs.openstack.org/oslo.middleware
+  cfe-import-names: [oslo_middleware]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:27:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:27:29Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

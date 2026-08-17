@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: trl
+  version: "1.10.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/huggingface/${{ name }}/archive/v${{ version }}.tar.gz
+  sha256: 238b40bb1751bed8b26279df3005b8fc84bd3279b369a37f322bed24ed1b0273
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - jinja2
+    - packaging >20.0
+    - rich
+    - python >=${{ python_min }}
+    - pytorch >=1.4.0
+    - transformers >=4.56.2
+    - numpy >=1.18.2
+    - accelerate >=1.4.0
+    - datasets >=4.7.0
+    - tyro >=0.5.11
+    - typer
+
+tests:
+  - python:
+      imports:
+        - trl
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Train transformer language models with reinforcement learning.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/huggingface/trl
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

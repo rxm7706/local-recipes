@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyinstaller-versionfile
+  version: "3.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyinstaller_versionfile-${{ version }}.tar.gz
+  sha256: 39547421bf64f8b4f651fbd2bb30f47b7258d356b52cbcc65b46b0deca7709ed
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - create-version-file = pyinstaller_versionfile.__main__:create_version_file
+      - pyivf-make_version = pyinstaller_versionfile.__main__:make_version
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0.0
+    - jinja2
+    - pyyaml
+    - packaging
+
+tests:
+  - python:
+      imports:
+        - pyinstaller_versionfile
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - create-version-file --help
+      - pyivf-make_version --help
+
+about:
+  summary: Create a windows version-file from metadata stored in a simple self-written YAML file or obtained from an installed distribution.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/DudeNr33/pyinstaller-versionfile
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: futures
+  version: "3.4.0"
+  sha256: 3ec8ceecd1b85547aa7539c1db8d6b2a6245405de427e4780809b6f56a18fdd2
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  skip: match(python, ">=3.2")
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - concurrent
+        - concurrent.futures
+      pip_check: false
+
+about:
+  license: PSF-2.0
+  license_file: LICENSE
+  summary: Backport of the concurrent.futures package from Python 3.2
+  description: |
+    concurrent.futures module provides a high-level interface for
+    asynchronously executing callables.
+  homepage: https://github.com/agronholm/pythonfutures
+  repository: https://github.com/agronholm/pythonfutures
+  documentation: http://pythonhosted.org/futures/
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - nehaljwani

@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: docstring_parser
+  version: "0.18.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 292510982205c12b1248696f44959db3cdd1740237a968ea1e2e7a900eeb2015
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core >=1.0.0
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - docstring_parser
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.md
+  summary: Parse Python docstrings in reST and Google format
+  description: |
+    Parse Python docstrings. Currently support ReST, Google, and Numpydoc-style
+    docstrings.
+  homepage: https://github.com/rr-/docstring_parser
+  repository: https://github.com/rr-/docstring_parser
+
+extra:
+  recipe-maintainers:
+    - Chilipp
+    - rr-

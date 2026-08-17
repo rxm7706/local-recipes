@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: fabric
+  version: "3.2.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: dcbd2c47ad87688facaef5cc11aab6d1ec9ed05645fed97a5de7204d5d17cc44
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - fab = fabric.main:program.run
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - deprecated >=1.2
+    - python >=${{ python_min }}
+    - invoke >=2.0,<3.0
+    - paramiko >=2.4
+    - decorator >=5
+
+tests:
+  - python:
+      imports:
+        - fabric
+        - fabric.testing
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - fab --help
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Fabric is a simple, Pythonic tool for remote execution and deployment.
+  homepage: http://fabfile.org
+  repository: https://github.com/fabric/fabric/
+  documentation: http://docs.fabfile.org/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - setu4993
+    - ocefpaf

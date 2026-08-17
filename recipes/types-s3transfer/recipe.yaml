@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: types-s3transfer
+  version: "0.16.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/types_s3transfer-${{ version }}.tar.gz
+  sha256: b4636472024c5e2b62278c5b759661efeb52a81851cde5f092f24100b1ecb443
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - types-awscrt
+
+tests:
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+  - package_contents:
+      site_packages:
+        - s3transfer-stubs/__init__.pyi
+
+about:
+  summary: Type annotations for AWS s3transfer
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/youtype/types-s3transfer
+  repository: https://github.com/youtype/types-s3transfer
+
+extra:
+  recipe-maintainers:
+    - vemel
+    - xhochy

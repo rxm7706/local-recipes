@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.2"
+
+package:
+  name: redis-entraid
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/redis-entraid/redis_entraid-${{ version }}.tar.gz
+  sha256: 95c9cb8a779e79f60ec1abfaf51daf78e3731d8621851d2bfa5ca7b1fd8177ab
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=61.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - redis-py >=5.3.0
+    - pyjwt >=2.12.0,<2.13.dev0
+    - msal >=1.33.0,<1.34.dev0
+    - azure-identity >=1.24.0,<1.25.dev0
+
+tests:
+  - python:
+      imports:
+        - redis_entraid
+      pip_check: true
+      python_version: >=${{ python_min }}
+
+about:
+  summary: Entra ID credentials provider implementation for Redis-py client
+  license: MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/redis-entraid/
+  repository: https://github.com/redis/redis-py-entraid/
+
+extra:
+  recipe-maintainers:
+    - ibhagwat-upland

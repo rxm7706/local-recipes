@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.7"
+
+package:
+  name: genie.libs.health
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/g/genie.libs.health/genie_libs_health-26.7-py3-none-any.whl
+  sha256: a3b46a210caa012a3b56b62b718e3d8898d58819ff28ab1cfad03a983f2e7b21
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - setuptools
+    - wheel
+    - genie
+
+tests:
+  - python:
+      imports:
+        - genie.libs.health
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://developer.cisco.com/pyats
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: pyATS Health Check for monitoring device health status
+  description: |
+    pyATS Health Check for monitoring device health status
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: genie.libs.health
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: genie.libs.health
+  cfe-purls:
+    - pkg:conda/genie.libs.health@${{ version }}?channel=conda-forge
+    - pkg:pypi/genie.libs.health@${{ version }}
+  cfe-upstream-repo: https://developer.cisco.com/pyats
+  cfe-upstream-homepage: https://developer.cisco.com/pyats
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:36:53Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:36:53Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

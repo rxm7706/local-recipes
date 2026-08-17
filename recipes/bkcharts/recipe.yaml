@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: bkcharts
+  version: "0.2"
+  sha256: a5eaa8e78853dcecaa46345812e4fabe9cd3b96330ebf0809f640a4a0556d72e
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  script: python setup.py install --single-version-externally-managed --record record.txt
+
+requirements:
+  build:
+    - python
+    - setuptools
+  run:
+    - python
+    - six >=1.5.2
+    - numpy >=1.7.1
+    # xref: https://github.com/bokeh/bkcharts/issues/72
+    - pandas
+
+tests:
+  - python:
+      imports:
+        - bkcharts
+        - bkcharts.builders
+        - bkcharts.builders.tests
+        - bkcharts.tests
+      pip_check: false
+  - requirements:
+      run:
+        - bokeh ==0.12.6
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: High level chart types built on top of Bokeh
+  homepage: http://github.com/bokeh/bkcharts
+
+extra:
+  recipe-maintainers:
+    - jakirkham

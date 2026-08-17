@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: skorch
+  version: "1.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: f7a5d3c13a3aecf0a0fe689ff25188be1145a95268f8fe81f01aaa9fbd7cead1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - numpy >=1.13.3
+    - pytorch >=2.6.0
+    - scikit-learn >=0.22.0
+    - scipy >=1.1.0
+    - tabulate >=0.7.7
+    - tqdm >=4.14.0
+
+tests:
+  - python:
+      imports:
+        - numpy
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A scikit-learn compatible neural network library that wraps pytorch
+  homepage: https://github.com/dnouri/skorch
+  repository: https://github.com/dnouri/skorch
+  documentation: https://skorch.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - BenjaminBossan
+    - dhirschfeld

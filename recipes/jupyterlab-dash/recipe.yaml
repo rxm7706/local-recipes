@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jupyterlab-dash
+  version: 0.1.0a3
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 70f2835833759bea6d5ee94e7b72f8cd5978875dd795bc3b372578d6a235c02c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3
+  run:
+    - python >=3
+    - dash
+    - jupyter-server-proxy
+
+tests:
+  - python:
+      imports:
+        - jupyterlab_dash
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: A JupyterLab extensions for rendering Plotly Dash apps
+  homepage: https://github.com/plotly/jupyterlab-dash
+
+extra:
+  recipe-maintainers:
+    - xhochy

@@ -16,6 +16,9 @@ build:
   noarch: python
   number: 0
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - qianfan = qianfan.common.cli.main:main
 
 requirements:
   host:
@@ -35,6 +38,8 @@ requirements:
     - multiprocess >=0.70.12
     - rich >=13.0.0
     - typer >=0.9.0
+    - click >=8.0.0
+    - python-dateutil >=2.8.2,<3.0.0
     - pyyaml >=6.0.1,<7.0.0
     - prompt-toolkit >=3.0.38
     - diskcache >=5.6.3
@@ -48,6 +53,10 @@ tests:
       python_version:
         - ${{ python_min }}.*
         - "*"
+  - script:
+      - qianfan --version
+      - if: not win
+        then: qianfan --help
 
 about:
   homepage: https://cloud.baidu.com/product/wenxinworkshop

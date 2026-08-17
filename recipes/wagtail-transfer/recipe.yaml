@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: wagtail-transfer
   version: "0.11"
 
 package:
-  name: wagtail-transfer
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/w/wagtail-transfer/wagtail_transfer-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: 02aea3460e0c536e9fc2159fb44f6e8562b9c5f5488496df74040c2b18cdd67a
 
 build:
@@ -19,17 +20,17 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }}
     - django
     - django-modelcluster
     - django-taggit
     - django-treebeard
     - djangorestframework
     - requests
+    - python >=${{ python_min }}
     - wagtail >=5.2
 
 tests:
@@ -37,19 +38,13 @@ tests:
       imports:
         - wagtail_transfer
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Content transfer for Wagtail
   license: BSD-3-Clause
   license_file: LICENSE
   homepage: https://github.com/wagtail/wagtail-transfer
-  repository: https://github.com/wagtail/wagtail-transfer
-  description: |
-    An extension for Wagtail allowing content to be transferred between
-    multiple instances of a Wagtail project.
 
 extra:
   recipe-maintainers:

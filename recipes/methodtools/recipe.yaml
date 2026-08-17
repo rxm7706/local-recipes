@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: methodtools
+  version: "0.4.7"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: e213439dd64cfe60213f7015da6efe5dd4003fd89376db3baa09fe13ec2bb0ba
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - wirerope >=0.4.7
+
+tests:
+  - python:
+      imports:
+        - methodtools
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Expand standard functools to methods
+  homepage: https://github.com/youknowone/methodtools
+  repository: https://github.com/youknowone/methodtools
+
+extra:
+  recipe-maintainers:
+    - timkpaine

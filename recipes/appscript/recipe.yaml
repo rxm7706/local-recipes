@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: appscript
+  version: "1.4.0"
+  sha256: b2c6fc770bf822ea45529c7084bc0ee340e67ab260016b01d28e0449ec8723be
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+  patches:
+    - 0001-Drop-bad-valued-MAC_OS_X_VERSION_MIN_REQUIRED.patch
+
+build:
+  number: 0
+  skip: not osx
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+    - lxml >=4.7.1
+
+tests:
+  - python:
+      imports:
+        - aem
+        - appscript
+        - mactypes
+        - osax
+        - aem.ae
+      pip_check: false
+
+about:
+  license: SAX-PD
+  summary: Control AppleScriptable applications from Python.
+  description: |
+    Appscript is a user-friendly Apple event bridge that allows users to
+    control scriptable Mac OS X applications from Python, Ruby and Objective-C.
+    Appscript makes these languages serious alternatives to Apple's own
+    AppleScript language for automating your Mac.
+  homepage: http://appscript.sourceforge.net
+  repository: http://svn.code.sf.net/p/appscript/code/py-appscript/
+  documentation: https://pypi.python.org/pypi/appscript
+
+extra:
+  recipe-maintainers:
+    - nehaljwani

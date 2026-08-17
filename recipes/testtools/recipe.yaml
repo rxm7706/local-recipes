@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: testtools
+  version: "2.9.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/testtools-${{ version }}.tar.gz
+  sha256: 39ad9eb9e1b935d6838f4b3aee4d6e72db65df5602f6feda998dbb4fe8de0b19
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools >=61
+    - hatchling
+    - hatch-vcs
+  run:
+    - python >=${{ python_min }}
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - testtools
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license_file: LICENSE
+  license: MIT
+  summary: Extensions to the Python standard library unit testing framework
+  homepage: https://github.com/testing-cabal/testtools
+  repository: https://github.com/testing-cabal/testtools
+  documentation: https://testtools.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - anguslees
+    - pmlandwehr
+    - BastianZim

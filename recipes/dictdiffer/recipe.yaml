@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dictdiffer
+  version: "0.9.0"
+  sha256: 17bacf5fbfe613ccf1b6d512bd766e6b21fb798822a133aa86098b8ac9997578
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vvv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - pytest-runner >=2.7
+    - setuptools
+    - setuptools-scm >=3.1
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - dictdiffer
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - setuptools
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Dictdiffer is a library that helps you to diff and patch dictionaries.
+  homepage: https://github.com/inveniosoftware/dictdiffer
+  repository: https://github.com/inveniosoftware/dictdiffer
+  documentation: https://dictdiffer.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - hodgsonw
+    - kmuehlbauer
+    - maresb

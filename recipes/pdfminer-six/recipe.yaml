@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pdfminer-six
+  version: 20260107
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  # patches:
+  #   - patch.diff
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 96bfd431e3577a55a0efd25676968ca4ce8fd5b53f14565f85716ff363889602
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.10.*
+    - setuptools
+    - setuptools-git-versioning <3
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - charset-normalizer >=2.0.0
+    - cryptography >=36.0.0
+
+tests:
+  - python:
+      imports:
+        - pdfminer
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: PDF parser and analyzer
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/pdfminer/pdfminer.six
+
+extra:
+  recipe-maintainers:
+    - sarthakpati

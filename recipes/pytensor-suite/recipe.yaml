@@ -1,0 +1,157 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.3.0"
+
+recipe:
+  # https://github.com/conda/conda-build/issues/3933
+  name: pytensor-suite
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/23/58/93480a1d25b17a89ec3759e1e6934c1ddb97f02d291117f8a34fc881bb7a/pytensor-${{ version }}.tar.gz
+  sha256: 237236085e4c005a5a8b129c3aadc598c358f6dd2f929c490ab9696a752a320c
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: pytensor-base
+    build:
+      # NOTE: Keep this line synchronized with the identical one below.
+      skip: match(python, "<3.12")
+      script:
+        - python -m pip install . --no-deps -vv
+      python:
+        entry_points:
+          - pytensor-cache = pytensor.bin.pytensor_cache:main
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ stdlib("c") }}
+        - ${{ compiler('cxx') }}
+        - if: build_platform != target_platform
+          then:
+            - python
+            - setuptools >=59.0.0
+            - cython
+            # Allow numpy pinnings to be managed by conda-forge global dependencies
+            # See also <https://matrix.to/#/!SOyumkgPRWoXfQYIFH:matrix.org/$17156774815028VNLdj:matrix.org?via=matrix.org&via=gitter.im&via=salt-rock-lamp.ems.host>
+            - numpy
+            - versioneer ==0.29
+            - cross-python_${{ target_platform }}
+            - tomli
+      host:
+        - python
+        - setuptools >=59.0.0
+        - cython
+        # Allow numpy pinnings to be managed by conda-forge global dependencies
+        # See also <https://matrix.to/#/!SOyumkgPRWoXfQYIFH:matrix.org/$17156774815028VNLdj:matrix.org?via=matrix.org&via=gitter.im&via=salt-rock-lamp.ems.host>
+        - numpy
+        - versioneer ==0.29
+        - pip
+        - tomli
+      run:
+        - python
+        - setuptools >=59.0.0
+        - scipy >=1,<2
+        - numpy >=2.0
+        - numba >=0.58,<=0.66.0
+        - filelock >=3.15
+    tests:
+      - python:
+          imports:
+            - pytensor
+      - files:
+          recipe:
+            - check-for-warnings.py
+            - allowed-warnings-base.txt
+        requirements:
+          run:
+            - pip
+        script:
+          - pytensor-cache help
+          - pip check
+          - python -c "import pytensor; print(pytensor.config.blas__ldflags); print(pytensor.config)"
+          - python check-for-warnings.py allowed-warnings-base.txt
+  - package:
+      name: pytensor
+    build:
+      # NOTE: Keep this line synchronized with the identical one above.
+      skip: match(python, "<3.12")
+      script:
+        - "echo \"Nothing to build here, just add dependencies.\""
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - ${{ pin_subpackage('pytensor-base', exact=True) }}
+
+        # PyTensor's C backend requires a C++ compiler at runtime
+        - if: linux or win
+          then:
+            - gxx
+        - if: osx
+          then:
+            - clangxx
+
+        # Pin BLAS provider per platform for consistency and performance.
+        # MKL for x86_64 platforms, Accelerate for macOS arm64, OpenBLAS elsewhere.
+        - if: (linux and x86_64) or win or (osx and not arm64)
+          then:
+            - blas * mkl
+            - mkl-service
+        - if: osx and arm64
+          then: blas * *accelerate
+        - if: not ((linux and x86_64) or win or osx)
+          then: blas * openblas
+      run_constraints:
+        - if: win
+          then:
+            # The libstdc++.dll provided in libstdcxx v15.1.0 build h904f734_2
+            # is missing `_ZSt21ios_base_library_initv`. Adding this prevents
+            # libstdcxx v15.1.0 from being installed, without actually adding
+            # libstdcxx as a requirement.
+            # Currently tracking this issue in
+            # <https://github.com/pymc-devs/pytensor/issues/1398>
+            - libstdcxx !=15.1.0
+    tests:
+      - python:
+          imports:
+            - pytensor
+            - pytensor.configdefaults
+      - files:
+          recipe:
+            - check-for-warnings.py
+            - allowed-warnings-main.txt
+        requirements:
+          run:
+            - pip
+        script:
+          - pytensor-cache help
+          - pip check
+          - python -c "import pytensor; print(pytensor.config.blas__ldflags); print(pytensor.config)"
+          - python -c "import pytensor; assert pytensor.config.blas__ldflags != '', 'Blas flags are empty'"
+          - python check-for-warnings.py allowed-warnings-main.txt
+          - >
+            python -c "from pytensor.tensor import scalar; scalar('x').exp().eval({'x': 0}, mode='C')"
+
+about:
+  license: BSD-3-Clause
+  summary: An optimizing compiler for evaluating mathematical expressions.
+  license_file: LICENSE.txt
+  homepage: https://github.com/pymc-devs/pytensor
+  repository: https://github.com/pymc-devs/pytensor/
+  documentation: https://pytensor.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - jessegrabowski
+    - ricardoV94
+    - aseyboldt
+    - maresb
+    - michaelosthege
+    - twiecki

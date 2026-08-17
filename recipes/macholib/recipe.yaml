@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: macholib
+  version: "1.16.4"
+  sha256: f408c93ab2e995cd2c46e34fe328b130404be143469e41bc366c807448979362
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python >=2.7,<3|>=3.4
+    - pip
+    - setuptools
+  run:
+    - python >=2.7,<3|>=3.4
+    - altgraph >=0.17
+
+tests:
+  - python:
+      imports:
+        - macholib
+      pip_check: false
+  - script:
+      - python -m macholib find /tmp/
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Mach-O header analysis and editing
+  description: |
+    macholib can be used to analyze and edit Mach-O headers,
+    the executable format used by Mac OS X.
+  homepage: https://github.com/ronaldoussoren/macholib
+  repository: https://github.com/ronaldoussoren/macholib
+  documentation: https://macholib.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - rth
+    - jakirkham
+    - bkpoon

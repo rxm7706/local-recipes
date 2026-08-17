@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytest-instafail
+  version: "0.5.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytest-instafail-${{ version }}.tar.gz
+  sha256: 33a606f7e0c8e646dc3bfee0d5e3a4b7b78ef7c36168cfa1f3d93af7ca706c9e
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pytest >=5.0
+
+tests:
+  - python:
+      imports:
+        - pytest_instafail
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: py.test plugin to show failures instantly
+  description: |
+    pytest-instafail is a plugin for py.test that shows failures and errors
+    instantly instead of waiting until the end of test session.
+  homepage: https://github.com/pytest-dev/pytest-instafail
+  repository: https://github.com/pytest-dev/pytest-instafail
+  documentation: https://github.com/pytest-dev/pytest-instafail
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - asford

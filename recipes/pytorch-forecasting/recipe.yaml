@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytorch-forecasting
+  version: "1.8.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pytorch_forecasting/pytorch_forecasting-${{ version }}.tar.gz
+  sha256: f7de2af2fb7ce0c4ef73287666b8b79391485ff55883c974b6267b505adf0422
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.10,<3.15
+    - setuptools >=70
+  run:
+    - python >=3.10
+    - lightning >=2.0.0,<3.0.0
+    - pandas >=1.3.0,<3.0.0
+    - scikit-learn >=1.2,<2.0
+    - scipy >=1.8,<2.0
+    - pytorch >=2.0.0,!=2.0.1,<3.0.0
+    - numpy <=3.0.0
+    - scikit-base <0.14.0
+
+tests:
+  - python:
+      imports:
+        - pytorch_forecasting
+      pip_check: false
+      python_version: >=3.10
+  - requirements:
+      run:
+        - pip
+        - python >=3.10
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Timeseries forecasting with PyTorch
+  description: |
+    PyTorch Forecasting is a timeseries forecasting package for PyTorch build on PyTorch Lightning.
+    It provides timeseries datasets and dataloaders, various ways to normalize variables
+    and a number of neural networks for forecasting. The package is tightly integrated with tensorboard
+    for logging.
+  homepage: https://github.com/jdb78/pytorch-forecasting
+  repository: https://github.com/jdb78/pytorch-forecasting
+  documentation: https://pytorch-forecasting.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - pranavbhatp
+    - phoeenniixx
+    - yarnabrina
+    - benheid
+    - fkiraly
+    - jdb78

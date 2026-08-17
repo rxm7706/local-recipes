@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: data-wizard
+  version: "2.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/data-wizard-${{ version }}.tar.gz
+  sha256: d66637824d1636246f891a32ecfb9da759ed78c2dc2ebc057602442fc344538a
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools-scm
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - django >=3.2
+    - djangorestframework
+    - itertable >=2.1.0
+    - natural-keys
+    - html-json-forms
+    - python-dateutil
+
+tests:
+  - python:
+      imports:
+        - data_wizard
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  summary: Interactive web-based wizard for importing structured data into Django models.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://django-data-wizard.wq.io/
+  repository: https://github.com/wq/django-data-wizard
+
+extra:
+  recipe-maintainers:
+    - rxm7706

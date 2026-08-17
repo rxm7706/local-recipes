@@ -1,0 +1,75 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: line_profiler
+  version: "5.0.2"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 8d8a990c84c64bcde45af22af502d17bc0ae107be405ce41bba92af5c39c0000
+
+build:
+  number: 0
+  script:
+    - if: osx and arm64
+      then: "export CMAKE_OSX_ARCHITECTURES=\"arm64\""
+    - ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - kernprof = kernprof:main
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - cython >=3.0.3
+        - scikit-build
+    - ${{ compiler("cxx") }}
+    - ${{ stdlib("c") }}
+    - cmake
+    - ninja
+  host:
+    - python
+    - pip
+    - cython >=3.0.3
+    - scikit-build >=0.17
+    - setuptools
+  run:
+    - python
+    - if: match(python, "<3.11")
+      then: tomli
+    - typing_extensions
+  run_constraints:
+    - ipython >=8.14.0
+    - rich >=12.3.0
+
+tests:
+  - python:
+      imports:
+        - kernprof
+        - line_profiler
+      pip_check: true
+  - script:
+      - kernprof --help
+      - python -m kernprof --help
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: A module for monitoring memory usage of a python program
+  homepage: https://github.com/pyutils/line_profiler
+  repository: https://github.com/pyutils/line_profiler
+  documentation: https://github.com/pyutils/line_profiler
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - grlee77
+    - synapticarbors

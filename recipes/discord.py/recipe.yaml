@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: discord.py
+  version: "2.3.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/discord.py-${{ version }}.tar.gz
+  sha256: 4560f70f2eddba7e83370ecebd237ac09fbb4980dc66507482b0c0e5b8f76b9c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - aiohttp >=3.7.4,<4
+
+tests:
+  - python:
+      imports:
+        - discord
+      pip_check: true
+
+about:
+  summary: A Python wrapper for the Discord API
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/Rapptz/discord.py
+
+extra:
+  recipe-maintainers:
+    - galaxyonfire

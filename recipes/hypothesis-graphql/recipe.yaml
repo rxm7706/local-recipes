@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: hypothesis-graphql
+  version: "0.13.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/hypothesis_graphql-${{ version }}.tar.gz
+  sha256: b0b34f0accb87af40140f5dd54a784ab899401db37ba52fac39a4b37c24b2f6c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - hatchling
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - graphql-core >=3.1.0,<3.3.0
+    - hypothesis >=6.84.3,<7.0
+    - python >=${{ python_min }},<4.0
+
+tests:
+  - python:
+      imports:
+        - hypothesis_graphql
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - files:
+      source:
+        - test
+    requirements:
+      run:
+        - pytest >=6.2.0,<8
+        - pytest-xdist >=2.5,<3.0
+        - python ${{ python_min }}.*
+    script:
+      - pytest -vvv --capture=tee-sys test
+
+about:
+  summary: Hypothesis strategies for GraphQL queries and mutations
+  license: MIT
+  license_file:
+    - LICENSE
+  homepage: https://github.com/Stranger6667/hypothesis-graphql
+
+extra:
+  recipe-maintainers:
+    - thewchan

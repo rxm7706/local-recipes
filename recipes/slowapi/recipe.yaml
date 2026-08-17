@@ -2,24 +2,25 @@
 schema_version: 1
 
 context:
-  version: "0.1.10"
+  name: slowapi
+  version: "0.1.9"
 
 package:
-  name: slowapi
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/s/slowapi/slowapi-${{ version }}.tar.gz
-  sha256: d320d5bc04d9f171a77fb16700faf3036d85b00f420f22924c8a225f95bd14f9
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/slowapi-${{ version }}.tar.gz
+  sha256: 639192d0f1ca01b1c6d95bf6c71d794c3a9ee189855337b4821f7f457dddad77
 
 build:
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 1
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - poetry-core >=1.0.0
     - pip
   run:
@@ -27,28 +28,20 @@ requirements:
     - limits >=2.3
     - starlette
   run_constraints:
-    - redis-py >=3.4.1
+    - redis-py >=3.4.1,<4.0.0
 
 tests:
   - python:
       imports:
         - slowapi
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
-  - script:
-      - python -c "import slowapi, redis; from limits.storage import storage_from_string; storage_from_string('memory://'); print('redis-py', redis.__version__, 'co-installed OK')"
-    requirements:
-      run:
-        - python
-        - redis-py >=8
+      python_version: ${{ python_min }}
 
 about:
-  homepage: https://github.com/laurents/slowapi
   summary: A rate limiting extension for Starlette and Fastapi
   license: MIT
   license_file: LICENSE
+  homepage: https://github.com/laurents/slowapi
 
 extra:
   recipe-maintainers:

@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: starlette-testclient
+  version: "0.4.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/starlette_testclient-${{ version }}.tar.gz
+  sha256: 9e993ffe12fab45606116257813986612262fe15c1bb6dc9e39cc68693ac1fc5
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - hatchling
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+    - starlette >=0.20.1
+    - requests
+
+tests:
+  - python:
+      imports:
+        - starlette_testclient
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A backport of Starlette TestClient using requests!
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/Kludex/starlette-testclient
+
+extra:
+  recipe-maintainers:
+    - thewchan

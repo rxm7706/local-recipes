@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.42"
+
+package:
+  name: haystack
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/haystack/haystack-${{ version }}.tar.gz
+  sha256: 4eaf0ba481d160639e240602734a9195f3dfc37c6c0ad132a14e9eb1454868f0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - haystack
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://packages.python.org/haystack/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Search C Structures in a process' memory
+  description: |
+    Search C Structures in a process' memory
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: haystack
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: haystack
+  cfe-purls:
+    - pkg:conda/haystack@${{ version }}?channel=conda-forge
+    - pkg:pypi/haystack@${{ version }}
+  cfe-upstream-repo: http://packages.python.org/haystack/
+  cfe-upstream-homepage: http://packages.python.org/haystack/
+  cfe-import-names: [haystack]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:36:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:36:30Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

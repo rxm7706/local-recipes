@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: keystoneauth1
+  version: "5.15.0"
+  python_min: "3.11"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ce2cacdfd028e65bd23ff403d6572ebfab3b006d6d2dde3aa85c263675a9fbb5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install --no-deps --ignore-installed .
+
+requirements:
+  host:
+    - python 3.11.*
+    - pip
+    - pbr !=2.1.0,>=2.0.0
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pbr !=2.1.0,>=2.0.0
+    - iso8601 >=0.1.11
+    - requests >=2.14.2
+    - stevedore >=1.20.0
+    - os-service-types >=1.2.0
+    - typing-extensions >=4.12
+
+tests:
+  - python:
+      imports:
+        - keystoneauth1
+        - keystoneauth1.identity
+        - keystoneauth1.identity.v2
+        - keystoneauth1.identity.v3
+        - keystoneauth1.identity.generic
+        - keystoneauth1.extras
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license_file: LICENSE
+  license: Apache-2.0
+  summary: Authentication Library for OpenStack Identity
+  homepage: https://docs.openstack.org/developer/keystoneauth/
+  repository: https://git.openstack.org/cgit/openstack/keystoneauth
+  documentation: https://docs.openstack.org/developer/keystoneauth/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - tschoonj

@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.3.0"
+
+package:
+  name: splunk-appinspect
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/splunk-appinspect/splunk_appinspect-${{ version }}.tar.gz
+  sha256: b067f6bb47a61c48beb8dd28e5fb7be6028016382557428757fca6afce630517
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - beautifulsoup4 ==4.10.0
+    - chardet ==3.0.4
+    - click >=8.0.0
+    - croniter <2.0.0,>=0.3.34
+    - defusedxml ==0.7.1
+    - jinja2 <4.0.0,>=3.1.6
+    - lxml <6.0.0,>=5.3.0
+    - mako <2.0.0,>=1.0.12
+    - markdown <4.0.0,>=3.1.1
+    - packaging-legacy ==23.0
+    - painter <1.0.0,>=0.3.1
+    - pyyaml <7.0.0,>=6.0.1
+    - semver >=3.0.0
+    - structlog <=24.4.0,>=23.1.0
+    - if: win
+      then:
+        - python-magic-bin
+        - pywin32
+
+tests:
+  - python:
+      imports:
+        - splunk_appinspect
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://splunk.com
+  license: Proprietary
+  license_file: LICENSE
+  summary: Automatic validation checks for Splunk Apps
+  description: |
+    Automatic validation checks for Splunk Apps
+  repository: https://dev.splunk.com/goto/appinspectdownload
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: splunk-appinspect
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: splunk-appinspect
+  cfe-purls:
+    - pkg:conda/splunk-appinspect@${{ version }}?channel=conda-forge
+    - pkg:pypi/splunk-appinspect@${{ version }}
+  cfe-upstream-repo: https://dev.splunk.com/goto/appinspectdownload
+  cfe-upstream-homepage: https://splunk.com
+  cfe-import-names: [splunk_appinspect]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:06:47Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:06:47Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

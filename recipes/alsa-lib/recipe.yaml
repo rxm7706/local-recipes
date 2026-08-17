@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.16.1"
+
+package:
+  name: alsa-lib
+  version: ${{ version }}
+
+source:
+  url: https://github.com/alsa-project/alsa-lib/archive/v${{ version }}.tar.gz
+  sha256: 8df8253c6349cf309903c1dd7752efe783c1f456913c9d722bdb5731271c0988
+
+build:
+  number: 0
+  skip: not linux
+
+requirements:
+  build:
+    - make
+    - autoconf
+    - automake
+    - libtool
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+  run:
+  run_exports:
+    - ${{ pin_subpackage("alsa-lib", upper_bound="x.x") }}
+
+tests:
+  - script:
+      - test -f $PREFIX/lib/libasound$SHLIB_EXT
+
+about:
+  license: LGPL-2.1-or-later
+  license_file: COPYING
+  summary: Advanced Linux Sound Architecture
+  homepage: http://www.alsa-project.org/main/index.php/Main_Page
+
+extra:
+  recipe-maintainers:
+    - scopatz
+    - ocefpaf
+    - ryanvolz

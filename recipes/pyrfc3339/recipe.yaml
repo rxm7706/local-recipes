@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyrfc3339
+  version: 2.1.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/pyRFC3339/${{ name }}-${{ version }}.tar.gz
+  sha256: c569a9714faf115cdb20b51e830e798c1f4de8dabb07f6ff25d221b5d09d8d7f
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=64
+    - setuptools_scm >=8
+  run:
+    - python >=${{ python_min }}
+    - pip
+    - pytz
+
+tests:
+  - python:
+      python_version: ${{ python_min }}.*
+      pip_check: true
+      imports:
+        - pyrfc3339
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+    script:
+      - pip list | grep pyRFC3339 | grep ${{ version }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Python library for generating and parsing RFC 3339-compliant timestamps.
+  description: |
+    pyRFC3339 parses and generates RFC 3339-compliant timestamps using
+    Python datetime.datetime objects.
+  homepage: https://github.com/kurtraschke/pyRFC3339
+  repository: https://github.com/kurtraschke/pyRFC3339
+  documentation: https://pyrfc3339.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - xhochy

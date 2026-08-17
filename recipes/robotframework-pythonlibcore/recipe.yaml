@@ -2,45 +2,83 @@
 schema_version: 1
 
 context:
-  name: robotframework-pythonlibcore
-  version: "4.4.1"
+  version: "4.6.0"
+  python_check_max: "3.14"
+  # space-delimited paths to undiscoverable test tiles
+  ## - test_get_keyword_source.py needs pytest-mockito
+  test_rm: utest/test_get_keyword_source.py
+  test_cov_run: coverage run --source=robotlibcore --branch
+  test_cov_fail_under: "85"
 
 package:
-  name: ${{ name|lower }}
+  name: robotframework-pythonlibcore
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robotframework-pythonlibcore-${{ version }}.tar.gz
-  sha256: 2d695b2ea906f5815179643e29182466675e682d82c5fa9d1009edfae2f84b16
+  - target_directory: dist
+    url: https://pypi.org/packages/source/r/robotframework-pythonlibcore/robotframework_pythonlibcore-${{ version }}.tar.gz
+    sha256: c45acbdf781b35a5cbac8e1c019fedab87d99f34ff29a6c99b774fbd95313f27
+  - target_directory: src
+    url: https://github.com/robotframework/PythonLibCore/archive/refs/tags/v${{ version }}.tar.gz
+    sha256: c124e61ebaca59cb685cbce5ff57054bbcd29f7254750cb1c8d6daf94f6782b1
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    - cd dist
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
 
 requirements:
   host:
-    - python ${{ python_min }}.*
     - pip
+    - python ${{ python_min }}.*
     - setuptools
   run:
-    - python >=${{ python_min }},<4.0
+    - python >=${{ python_min }}
     - robotframework
 
 tests:
   - python:
-      imports:
-        - robotlibcore
+      imports: robotlibcore
       pip_check: true
-      python_version: ${{ python_min }}.*
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - files:
+      source:
+        - src/utest
+        - src/atest
+    requirements:
+      run:
+        - approvaltests >=11.1.1
+        - coverage
+        - pytest
+        - python ${{ python_min }}.*
+        - robotframework
+        - robotstatuschecker
+        # needs packaging
+        # - pytest-mockito
+    script:
+      - cd src
+      - ${{ ("del " if win else "rm ") ~ test_rm if test_rm else "echo no tests deleted" }}
+      - if: unix
+        then: export "PYTHONPATH=$(pwd)/atest:$(pwd)/utest/helpers"
+        else: set "PYTHONPATH=%cd%\atest;%cd%\utest\helpers"
+      - echo "tool.coverage.run.patch = ['subprocess']" > pyproject.toml
+      - ${{ test_cov_run }} -m pytest -vv --tb=long --color=yes
+      - ${{ test_cov_run }} atest/run.py
+      - coverage combine
+      - coverage report --show-missing --skip-covered --fail-under=${{ test_cov_fail_under }}
 
 about:
-  homepage: https://github.com/robotframework/PythonLibCore
   summary: Tools to ease creating larger test libraries for Robot Framework using Python.
   license: Apache-2.0
   license_file:
-    - LICENSE.txt
-    - COPYRIGHT.txt
+    - dist/LICENSE.txt
+    - dist/COPYRIGHT.txt
+  homepage: https://pypi.org/project/robotframework-pythonlibcore
+  repository: https://github.com/robotframework/PythonLibCore
   description: |-
     The Robot Framework hybrid and dynamic library API gives more flexibility for
     library than the static library API, but they also sets requirements for
@@ -52,4 +90,3 @@ extra:
   recipe-maintainers:
     - bollwyvl
     - martinRenou
-    - rxm7706

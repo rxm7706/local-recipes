@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2026.7.1"
+  python_min: "3.10"
+
+package:
+  name: dask
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/dask/dask-${{ version }}.tar.gz
+  sha256: 5727484427665f051e86bf87d021a64d6411141cdc8a20bfe3c1ad2968cc06b7
+
+build:
+  number: 0
+  noarch: python
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - dask-core ==${{ version }}
+    - distributed ==${{ version }}
+  run:
+    - python >=${{ python_min }}
+    - ${{ pin_compatible('dask-core', upper_bound='x.x.x') }}
+    - ${{ pin_compatible('distributed', upper_bound='x.x.x') }}
+    - cytoolz >=0.11.2
+    - lz4 >=4.3.2
+    - numpy >=1.26
+    - pandas >=2.0
+    - bokeh >=3.1.0
+    - jinja2 >=2.10.3
+    - pyarrow >=16.0
+  run_constraints:
+    - openssl !=1.1.1e
+
+tests:
+  - python:
+      imports:
+        - dask
+        - dask.array
+        - dask.bag
+        - dask.bytes
+        - dask.dataframe
+        - dask.dataframe.tseries
+        - dask.delayed
+        - dask.diagnostics
+        - dask.distributed
+        - distributed
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pip
+    script:
+      - dask --version
+      - dask info versions
+
+about:
+  summary: Parallel PyData with Task Scheduling
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE.txt
+    - dask/array/NUMPY_LICENSE.txt
+  description: |
+    Dask is a flexible parallel computing library for analytics.
+  homepage: https://dask.org/
+  repository: https://github.com/dask/dask
+  documentation: https://dask.org/
+
+extra:
+  recipe-maintainers:
+    - charlesbluca
+    - alimanfoo
+    - jakirkham
+    - jcrist
+    - martindurant
+    - mrocklin
+    - pitrou
+    - tomaugspurger
+    - jrbourbeau
+    - fjetter
+    - jacobtomlinson

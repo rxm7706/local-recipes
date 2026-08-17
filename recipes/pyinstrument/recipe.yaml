@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyinstrument
+  version: "5.1.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 93dc5576fa90bb267c46d864712329e8e057f51a6b15d0b4f917558d82066ba7
+
+build:
+  number: 0
+  skip: python_impl=='pypy'
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - pyinstrument = pyinstrument.__main__:main
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - pyinstrument
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - pyinstrument --help
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A call stack profiler for Python. Inspired by Apple's Instruments.app
+  homepage: https://github.com/joerick/pyinstrument
+  repository: https://github.com/joerick/pyinstrument
+  documentation: https://pyinstrument.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - moorepants
+    - asmeurer
+    - matthiasdiener

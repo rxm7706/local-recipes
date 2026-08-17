@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: thrift_sasl
+  version: "0.4.3"
+  hash: 5bdd5b760d90a13d9b3abfce873db0425861aa8d6bf25912d3cc0467a4f773da
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ hash }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 3
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - thrift >=0.10.0
+    - pure-sasl >=0.6.2
+    - six >=1.13.0
+
+tests:
+  - python:
+      imports:
+        - thrift_sasl
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Thrift SASL module that implements TSaslClientTransport
+  homepage: https://github.com/cloudera/thrift_sasl
+  repository: https://github.com/cloudera/thrift_sasl
+  documentation: https://github.com/cloudera/thrift_sasl
+
+extra:
+  recipe-maintainers:
+    - xylar
+    - mariusvniekerk
+    - ericdill
+    - wesm

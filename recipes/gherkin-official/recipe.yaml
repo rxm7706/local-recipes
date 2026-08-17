@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "29.0.0"
+
+package:
+  name: gherkin-official
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/gherkin-official/gherkin_official-${{ version }}.tar.gz
+  sha256: dbea32561158f02280d7579d179b019160d072ce083197625e2f80a6776bb9eb
+
+build:
+  number: 0
+  noarch: python
+  script:
+    # py2-only module with syntax that fails to byte-compile under py3
+    - rm gherkin/count_symbols_py2.py
+    - ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - gherkin
+        - gherkin.parser
+        - gherkin.errors
+      pip_check: true
+      python_version: ["${{ python_min }}.*", "*"]
+
+about:
+  homepage: https://github.com/cucumber/gherkin
+  license: MIT
+  license_file: LICENSE
+  summary: Gherkin parser/compiler for Python
+  repository: https://github.com/cucumber/gherkin
+
+extra:
+  recipe-maintainers:
+    - mariusvniekerk
+    - killua156

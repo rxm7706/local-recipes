@@ -2,15 +2,16 @@
 schema_version: 1
 
 context:
-  version: "0.63b1"
+  name: opentelemetry-exporter-prometheus-remote-write
+  version: 0.65b0
 
 package:
-  name: opentelemetry-exporter-prometheus-remote-write
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/o/opentelemetry-exporter-prometheus-remote-write/opentelemetry_exporter_prometheus_remote_write-${{ version }}.tar.gz
-  sha256: 19b7f49d18b2bb75df77d781c4629800315dcc0b21e4e6d821156b3db5f19ece
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_exporter_prometheus_remote_write-${{ version }}.tar.gz
+  sha256: 744ab3fd8b1b900fea9d0db3d389558556bb650861a2bb53d052fcf1743cc2a2
 
 build:
   number: 0
@@ -19,7 +20,7 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - hatchling
     - pip
   run:
@@ -35,21 +36,13 @@ tests:
       imports:
         - opentelemetry.exporter.prometheus_remote_write
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Prometheus Remote Write Metrics Exporter for OpenTelemetry
   license: Apache-2.0
   license_file: LICENSE
   homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/exporter/opentelemetry-exporter-prometheus-remote-write
-  repository: https://github.com/open-telemetry/opentelemetry-python-contrib
-  documentation: https://opentelemetry-python-contrib.readthedocs.io/
-  description: |
-    This library allows exporting metrics to Prometheus-compatible
-    backends that support the Prometheus Remote Write protocol, as part
-    of the OpenTelemetry Python instrumentation ecosystem.
 
 extra:
   recipe-maintainers:

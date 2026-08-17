@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: fastuuid
+  version: "0.14.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fastuuid-${{ version }}.tar.gz
+  sha256: 178947fc2f995b38497a74172adee64fdeb8b7ec18f2a5934d037641ba265d26
+
+build:
+  number: 0
+  skip: osx and match(python, "==3.10")
+  script:
+    env:
+      PYO3_USE_ABI3_FORWARD_COMPATIBILITY: 1
+    content:
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ compiler('cxx') }}
+    - ${{ compiler('rust') }}
+    - ${{ stdlib('c') }}
+    - maturin >=1.0,<2.0
+    - cargo-bundle-licenses
+  host:
+    - python
+    - pip
+    - maturin >=1.0,<2.0
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - fastuuid
+      pip_check: true
+
+about:
+  summary: Python bindings to Rust's UUID library.
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE
+    - THIRDPARTY.yml
+  homepage: https://github.com/fastuuid/fastuuid
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

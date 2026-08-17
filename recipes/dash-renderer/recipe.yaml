@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dash-renderer
+  filename: dash_renderer
+  version: "1.9.1"
+  sha256: 73a69e3d145880e68e42723ad10182251d92b44f3efe92b8763145cfd2158e7e
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ filename }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ filename }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - dash_renderer
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE
+  summary: Front-end component renderer for dash
+  homepage: https://plot.ly/dash
+  repository: https://github.com/plotly/dash-renderer
+
+extra:
+  recipe-maintainers:
+    - moorepants

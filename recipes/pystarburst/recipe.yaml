@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.14.1"
+
+package:
+  name: pystarburst
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/p/pystarburst/pystarburst-0.14.1-py3-none-any.whl
+  sha256: 135ed56104b4abeb49692b78fb19803192085e72e3185d8528d19a6563da55fe
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - idna >=3.15
+    - orjson >=3.11.6
+    - pydantic <2.13,>=2.12.5
+    - requests >=2.33.0
+    - trino <0.337.0,>=0.336.0
+    - urllib3 >=2.7.0
+    - zstandard <0.24.0,>=0.23.0
+
+tests:
+  - python:
+      imports:
+        - pystarburst
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://starburst.io
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: PyStarburst DataFrame API allows you to query and transform data in Starburst products in a data pipeline without having to download the data locally.
+  description: |
+    PyStarburst DataFrame API allows you to query and transform data in Starburst products in a data pipeline without having to download the data locally.
+  repository: https://github.com/starburstdata/pystarburst-examples
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pystarburst
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pystarburst
+  cfe-purls:
+    - pkg:conda/pystarburst@${{ version }}?channel=conda-forge
+    - pkg:pypi/pystarburst@${{ version }}
+  cfe-upstream-repo: https://github.com/starburstdata/pystarburst-examples
+  cfe-upstream-homepage: https://starburst.io
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:51:44Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:51:44Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

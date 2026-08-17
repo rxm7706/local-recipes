@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ansicolors
+  version: "1.1.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/ansicolors-${{ version }}.zip
+  sha256: 99f94f5e3348a0bcd43c82e5fc4414013ccc19d70bd939ad71e0133ce9c372e0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - python >=3.6
+
+tests:
+  - python:
+      imports:
+        - colors
+      pip_check: true
+
+about:
+  summary: ANSI colors for Python
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE
+  homepage: https://github.com/jonathaneunice/colors/
+
+extra:
+  recipe-maintainers:
+    - kjappelbaum

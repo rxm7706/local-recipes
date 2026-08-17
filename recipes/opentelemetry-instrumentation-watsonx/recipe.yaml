@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: opentelemetry-instrumentation-watsonx
+  version: "0.62.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_watsonx-${{ version }}.tar.gz
+  sha256: 2739e8b4fe8c39cfa9d04de1aa70788f9292aae81f581cea2eedab376430aef6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - opentelemetry-api >=1.38.0,<2.0.0
+    - opentelemetry-instrumentation >=0.59b0
+    - opentelemetry-semantic-conventions >=0.59b0
+    - opentelemetry-semantic-conventions-ai >=0.5.1,<0.6.0
+
+tests:
+  - python:
+      imports:
+        - opentelemetry.instrumentation.watsonx
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: OpenTelemetry IBM Watsonx Instrumentation
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://www.traceloop.com/openllmetry
+  repository: https://github.com/traceloop/openllmetry
+  documentation: https://www.traceloop.com/docs/openllmetry/introduction
+
+extra:
+  recipe-maintainers:
+    - timkpaine

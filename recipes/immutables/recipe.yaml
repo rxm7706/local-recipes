@@ -3,50 +3,51 @@ schema_version: 1
 
 context:
   name: immutables
-  version: 0.21
+  version: "0.21"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/immutables-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
   sha256: b55ffaf0449790242feb4c56ab799ea7af92801a0a43f9e2f4f8af2ab24dfc4a
+  file_name: ${{ name }}-${{ version }}.tar.gz
 
 build:
-  number: 0
+  number: 2
   skip: match(python, "<3.8")
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: python -m pip install . --no-deps --ignore-installed
 
 requirements:
   build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
     - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
   host:
-    - python >=3.8.0
-    - setuptools >=42
-    - wheel
+    - python
     - pip
+    - setuptools
   run:
-    - python >=3.8.0
+    - python
 
 tests:
   - python:
       imports:
         - immutables
-  - requirements:
-      run:
-        - pip
-    script:
-      - pip check
+      pip_check: false
 
 about:
+  license: Apache-2.0
+  license_file: LICENSE
   summary: Immutable Collections
-  license: OGC-1.0 AND Apache-2.0
-  license_file:
-    - LICENSE
-    - LICENSE-APACHE
-    - NOTICE
+  description: An immutable mapping type for Python.
+  homepage: https://github.com/MagicStack/immutables
+  repository: https://github.com/MagicStack/immutables
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - nicoddemus

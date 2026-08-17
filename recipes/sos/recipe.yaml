@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: 0.25.1
+
+package:
+  name: sos
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sos/sos-${{ version }}.tar.gz
+  sha256: 5f5bedbf516567ed81e6f6cc4ca5130e404df708e5f2ba2430ab843c8fd1c10e
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vvv
+  python:
+    entry_points:
+      - sos=sos.__main__:main
+      - sos-runner=sos.__main__:sosrunner
+
+requirements:
+  host:
+    - pip
+    - python =${{ python_min }}
+    - setuptools
+  run:
+    - fasteners
+    - jinja2
+    - nbformat
+    - networkx
+    - pexpect
+    - ptyprocess
+    - psutil
+    - pydot
+    - pydotplus
+    - pygments
+    - python >=${{ python_min }}
+    - python-xxhash
+    - pyyaml
+    - pyzmq
+    - setuptools
+    - tqdm
+
+tests:
+  - python:
+      imports:
+        - sos
+        - sos.docker
+        - sos.singularity
+  - requirements:
+      run:
+        - python =${{ python_min }}
+    script:
+      - sos --help
+      - sos-runner --help
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: "Script of Scripts (SoS): an interactive, cross-platform, and cross-language workflow system for reproducible data analysis"
+  homepage: https://github.com/vatlab/SoS
+  documentation: https://vatlab.github.io/sos-docs/
+
+extra:
+  recipe-maintainers:
+    - danielnachun
+    - BoPeng
+    - gaow
+    - jdblischak

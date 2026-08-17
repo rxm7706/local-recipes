@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.16.5"
+  python_min: "3.11"
+
+package:
+  name: uipath-langchain
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/u/uipath-langchain/uipath_langchain-${{ version }}.tar.gz
+  sha256: 99219b6eb9816462562f8645d39655d1259272e4899a3421999de0f1b485a307
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - a2a-sdk <2.0.0,>=1.1.2
+    - deepagents <0.6.0,>=0.5.9
+    - httpx >=0.27.0
+    - jsonpath-ng >=1.7.0
+    - jsonschema-pydantic-converter >=0.4.0
+    - langchain-core <2.0.0,>=1.2.27
+    - langchain-mcp-adapters ==0.2.1
+    - langchain <2.0.0,>=1.2.15
+    - langgraph-checkpoint-sqlite <4.0.0,>=3.0.3
+    - langgraph <2.0.0,>=1.1.8
+    - mcp ==1.26.0
+    - openinference-instrumentation-langchain <0.2.0,>=0.1.69
+    - pillow >=12.1.1
+    - pydantic-settings >=2.6.0
+    - python-dotenv >=1.0.1
+    - rdflib <8.0.0,>=7.0.0
+    - uipath-core <0.6.0,>=0.5.29
+    - uipath-langchain-client <1.18.0,>=1.17.3
+    - uipath-llm-client <1.18.0,>=1.17.1
+    - uipath-platform <0.3.0,>=0.2.15
+    - uipath-runtime <0.14.0,>=0.13.0
+    - uipath <2.15.0,>=2.14.1
+
+tests:
+  - python:
+      imports:
+        - uipath_langchain
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://uipath.com
+  license: MIT
+  license_file: LICENSE
+  summary: Python SDK that enables developers to build and deploy LangGraph agents to the UiPath Cloud Platform
+  description: |
+    Python SDK that enables developers to build and deploy LangGraph agents to the UiPath Cloud Platform
+  repository: https://github.com/UiPath/uipath-langchain-python
+  documentation: https://uipath.github.io/uipath-python/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: uipath-langchain
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: uipath-langchain
+  cfe-purls:
+    - pkg:conda/uipath-langchain@${{ version }}?channel=conda-forge
+    - pkg:pypi/uipath-langchain@${{ version }}
+  cfe-upstream-repo: https://github.com/UiPath/uipath-langchain-python
+  cfe-upstream-homepage: https://uipath.com
+  cfe-import-names: [uipath_langchain]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:26:48Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:26:48Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

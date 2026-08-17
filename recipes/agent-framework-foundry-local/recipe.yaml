@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0b260730"
+
+package:
+  name: agent-framework-foundry-local
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/agent-framework-foundry-local/agent_framework_foundry_local-${{ version }}.tar.gz
+  sha256: 278854bba4a9d76d1cd4b3cbd9fbe0ec20ea2f8b51ac7620ea094a24960c17fb
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core >=3.11,<4.0
+  run:
+    - python >=${{ python_min }}
+    - agent-framework-core <2,>=1.13.0
+    - agent-framework-openai <2,>=1.6.0
+    - foundry-local-sdk <0.5.2,>=0.5.1
+
+tests:
+  - python:
+      imports:
+        - agent_framework_foundry_local
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://aka.ms/agent-framework
+  license: MIT
+  license_file: LICENSE
+  summary: Foundry Local integration for Microsoft Agent Framework.
+  description: |
+    Foundry Local integration for Microsoft Agent Framework.
+  repository: https://github.com/microsoft/agent-framework/tree/main/python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: agent-framework-foundry-local
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: agent-framework-foundry-local
+  cfe-purls:
+    - pkg:conda/agent-framework-foundry-local@${{ version }}?channel=conda-forge
+    - pkg:pypi/agent-framework-foundry-local@${{ version }}
+  cfe-upstream-repo: https://github.com/microsoft/agent-framework/tree/main/python
+  cfe-upstream-homepage: https://aka.ms/agent-framework
+  cfe-import-names: [agent_framework_foundry_local]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:47:59Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:47:59Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

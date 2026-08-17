@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.8"
+
+package:
+  name: mathparse
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mathparse/mathparse-${{ version }}.tar.gz
+  sha256: 704a9d56e4b4f65e4cd99fcc38dd02bc1a79cbfda19b166d9032811f776b1903
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - mathparse
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/mathparse/
+  license: MIT
+  license_file: LICENSE
+  summary: mathparse is a library for solving mathematical equations contained in strings
+  description: |
+    mathparse is a library for solving mathematical equations contained in strings
+  repository: https://github.com/gunthercox/mathparse
+  documentation: https://mathparse.chatterbot.us
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mathparse
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mathparse
+  cfe-purls:
+    - pkg:conda/mathparse@${{ version }}?channel=conda-forge
+    - pkg:pypi/mathparse@${{ version }}
+  cfe-upstream-repo: https://github.com/gunthercox/mathparse
+  cfe-upstream-homepage: https://pypi.org/project/mathparse/
+  cfe-import-names: [mathparse]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:12:41Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:12:41Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4 Create-recipe local.
+####

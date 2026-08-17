@@ -16,7 +16,7 @@ source:
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -28,8 +28,7 @@ requirements:
     - python-build >=1.2.0
     - python-installer
     - pyproject_hooks
-    - if: match(python, "<3.11")
-      then: tomli
+    - tomli
     - validate-pyproject
 
 tests:
@@ -42,7 +41,7 @@ tests:
 
 about:
   summary: Python functions to get top-level importable names
-  homepage: https://github.com/astrojuanlu/pygetimportables
+  homepage: https://pypi.org/project/pygetimportables/
   description: |
        Python functions to get top-level importable names from a source tree or an already built wheel.
   repository: https://github.com/astrojuanlu/pygetimportables

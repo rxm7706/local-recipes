@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pygetwindow
+  version: "0.0.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/PyGetWindow-${{ version }}.tar.gz
+  sha256: 17894355e7d2b305cd832d717708384017c1698a90ce24f6f7fbf0242dd0a688
+
+build:
+  # Source code checks for sys.platform and riase NotImplementedError if it's linux
+  number: 5
+  skip: linux
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - if: osx
+      then: pyobjc-framework-quartz
+    - python
+    - pyrect
+
+tests:
+  - python:
+      imports:
+        - pygetwindow
+      pip_check: true
+
+about:
+  summary: A simple, cross-platform module for obtaining GUI information on application's windows.
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE.txt
+  homepage: https://github.com/asweigart/pygetwindow
+
+extra:
+  recipe-maintainers:
+    - thewchan

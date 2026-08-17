@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytest-openfiles
+  version: "0.5.0"
+  git_url: https://github.com/astropy/pytest-openfiles
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 179c2911d8aee3441fee051aba08e0d9b4dab61b829ae4811906d5c49a3b0a58
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools_scm
+    - pytest >=4.6
+    - psutil
+  run:
+    - python >=${{ python_min }}
+    - pytest >=4.6
+    - psutil
+
+tests:
+  - python:
+      imports:
+        - pytest_openfiles
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.rst
+  summary: Pytest plugin for detecting inadvertent open file handles
+  description: |
+    This package provides a plugin for the pytest framework that allows
+    developers to detect whether any file handles or other file-like objects
+    were inadvertently left open at the end of a unit test.
+  homepage: ${{ git_url }}
+  repository: ${{ git_url }}
+  documentation: ${{ git_url }}
+
+extra:
+  recipe-maintainers:
+    - astrofrog-conda-forge
+    - drdavella
+    - mwcraig

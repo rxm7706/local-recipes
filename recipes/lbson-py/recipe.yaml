@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.0"
+
+package:
+  name: lbson-py
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/lbson-py/lbson_py-${{ version }}.tar.gz
+  sha256: 43ab3c5e4f0370a54374362b3addc8f26768f8629a5d009a1e2f6ece5884e502
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - lbson
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/Soju06/lbson
+  license: MIT
+  license_file: LICENSE
+  summary: High-performance BSON library for Python without MongoDB dependencies
+  description: |
+    High-performance BSON library for Python without MongoDB dependencies
+  repository: https://github.com/Soju06/lbson.git
+  documentation: https://github.com/Soju06/lbson#readme
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: lbson-py
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: lbson-py
+  cfe-purls:
+    - pkg:conda/lbson-py@${{ version }}?channel=conda-forge
+    - pkg:pypi/lbson-py@${{ version }}
+  cfe-upstream-repo: https://github.com/Soju06/lbson.git
+  cfe-upstream-homepage: https://github.com/Soju06/lbson
+  cfe-import-names: [lbson]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:42:42Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:42:42Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

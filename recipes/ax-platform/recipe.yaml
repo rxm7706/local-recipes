@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ax-platform
+  version: "1.3.1"
+  python_min: "3.11"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 1363b9b73630f23f8042ad03357115f45ba79edee01a0a478376ef5702d06175
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools >=34.4
+    - setuptools-scm
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - botorch <0.18.2dev9999,>=0.18.1
+    - jinja2
+    - pandas
+    - scipy
+    - scikit-learn
+    - ipywidgets
+    - plotly >=5.12.0
+    - pyre-extensions
+    - sympy
+    - markdown
+    - python-graphviz
+    # from pytorch[pymoo]
+    - pymoo
+  run_constraints:
+    - jaxlib >=0.7.0
+    - jax >=0.7.0
+
+tests:
+  - python:
+      imports:
+        - ax
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Adaptive Experimentation
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/facebook/Ax
+
+extra:
+  recipe-maintainers:
+    - rpanai
+    - thewchan

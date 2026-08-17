@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: fugue
+  version: "0.9.7"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/fugue-${{ version }}.tar.gz
+  sha256: 3e38d43ffc4bcdca78ed80628d4fb8bb707ca1fdf3b2abe9b8793e80ac968970
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - triad >=1.0.0
+    - adagio >=0.2.6
+
+tests:
+  - python:
+      imports:
+        - fugue
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: An abstraction layer for distributed computation
+  license: Apache-2.0
+  license_file: LICENSE  # license file manually packaged.
+  description: |
+    Fugue is a unified interface for distributed computing that lets
+    users execute Python, pandas, and SQL code on Spark and Dask
+    without rewrites. It is meant for data scientists/analysts who want
+    to focus on defining logic rather than worrying about execution. It
+    is also suitable for SQL users wanting to use SQL to define
+    end-to-end workflows in pandas, Spark, and Dask. Data scientists
+    using pandas wanting to take advantage of Spark or Dask with
+    minimal effort, as well as big data practitioners finding testing
+    code to be costly and slow would also find Fugue useful.
+
+
+
+  homepage: http://github.com/fugue-project/fugue
+  documentation: https://fugue-tutorials.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - kvnkho
+    - goodwanghan
+    - charlesbluca
+    - thewchan

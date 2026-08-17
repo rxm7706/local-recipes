@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3.2"
+
+package:
+  name: sphinx-collections
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sphinx-collections/sphinx_collections-${{ version }}.tar.gz
+  sha256: 42506b0ec456b70a63be1641a84b33399503f3233bfdc1d181775c7475466b85
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - flit-core >=3.4,<4
+  run:
+    - python >=${{ python_min }}
+    - sphinx >=4.0
+    - jinja2 >=3.0
+    - gitpython >=3.1
+    - packaging >=20.0
+
+tests:
+  - python:
+      imports:
+        - sphinx_collections
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/useblocks/sphinx-collections
+  license: MIT
+  license_file: LICENSE
+  summary: Sphinx collections extension for mapping directories and services as document folders
+  description: |
+    Sphinx collections extension for mapping directories and services as document folders
+  repository: https://github.com/useblocks/sphinx-collections
+  documentation: https://sphinx-collections.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sphinx-collections
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sphinx-collections
+  cfe-purls:
+    - pkg:conda/sphinx-collections@${{ version }}?channel=conda-forge
+    - pkg:pypi/sphinx-collections@${{ version }}
+  cfe-upstream-repo: https://github.com/useblocks/sphinx-collections
+  cfe-upstream-homepage: https://github.com/useblocks/sphinx-collections
+  cfe-import-names: [sphinx_collections]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:40:11Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:40:11Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

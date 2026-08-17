@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jsmin
+  version: "3.0.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jsmin-${{ version }}.tar.gz
+  sha256: c0959a121ef94542e807a674142606f7e90214a2b3d1eb17300244bbb5cc2bfc
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - jsmin
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: JavaScript minifier.
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/tikitu/jsmin/
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - daf

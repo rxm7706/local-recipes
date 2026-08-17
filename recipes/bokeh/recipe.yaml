@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  python_min: "3.10"
+  version: "3.9.2"
+
+package:
+  name: bokeh
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/bokeh/bokeh-${{ version }}.tar.gz
+  sha256: 5be30d105b329d7d2ab1cb92f51e6bd44e23f0fe21ab8d49594b220b2ab11632
+  patches:
+    - do_not_check_tags.patch
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - bokeh = bokeh.__main__:main
+
+requirements:
+  host:
+    - python 3.10.*
+    - pip
+    - setuptools-git-versioning
+    - setuptools >=77
+    - colorama
+  run:
+    - narwhals >=1.13
+    - python >=${{ python_min }}
+    - jinja2 >=2.9
+    - contourpy >=1.2
+    - numpy >=1.16
+    - packaging >=16.8
+    - pillow >=7.1.0
+    - pyyaml >=3.10
+    - tornado >=6.2
+    - xyzservices >=2021.09.1
+  run_constraints:
+    - panel >=1.8.10
+
+tests:
+  - python:
+      imports:
+        - bokeh
+        - bokeh.application
+        - bokeh.application.handlers
+        - bokeh.client
+        - bokeh.command
+        - bokeh.command.subcommands
+        - bokeh.core
+        - bokeh.core.property
+        - bokeh.core.validation
+        - bokeh.models
+        - bokeh.models.widgets
+        - bokeh.plotting
+        - bokeh.server
+        - bokeh.protocol
+        - bokeh.protocol.messages
+        - bokeh.server.views
+        - bokeh.sphinxext
+        - bokeh.themes
+        - bokeh.util
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - bokeh --help
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Statistical and novel interactive HTML plots for Python
+  description: |
+    Bokeh is a Python interactive visualization library that targets
+    modern web browsers for presentation. Its goal is to provide elegant,
+    concise  construction of novel graphics in the style of D3.js, and to
+    extend this capability with high-performance interactivity over very
+    large or streaming datasets. Bokeh can help anyone who would like to
+    quickly and easily create interactive plots, dashboards, and data
+    applications.
+  homepage: https://bokeh.org
+  repository: https://github.com/bokeh/bokeh
+  documentation: https://docs.bokeh.org
+
+extra:
+  recipe-maintainers:
+    - almarklein
+    - jakirkham
+    - mattpap
+    - ocefpaf
+    - philippjfr

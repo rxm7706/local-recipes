@@ -3,7 +3,8 @@ schema_version: 1
 
 context:
   name: a2a-sdk
-  version: "1.1.0"
+  version: "1.1.2"
+  python_check_max: '3.14'
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +12,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/a2a_sdk-${{ version }}.tar.gz
-  sha256: e8102dad1b36709dbdc3d19319e38e6dfa3b3a79c30416030eb2d482576be204
+  sha256: f928d8bf9a0dc0a473ee8258bd5226c1b8520a85c70e7f233c3b9b0e30a1bd10
 
 build:
   number: 0
@@ -27,7 +28,6 @@ requirements:
   run:
     - python >=${{ python_min }},<4
     - httpx >=0.28.1
-    - httpx-sse >=0.4.0
     - pydantic >=2.11.3
     - protobuf >=5.29.5,<7
     - google-api-core >=1.26.0
@@ -42,14 +42,14 @@ tests:
       pip_check: true
       python_version:
         - ${{ python_min }}.*
-        - "*"
+        - ${{ python_check_max }}.*
 
 about:
-  homepage: https://github.com/a2aproject/a2a-python
-  license: Apache-2.0
-  license_file: LICENSE
   summary: A2A Python SDK
   description: Official Python SDK for the Agent2Agent (A2A) Protocol
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/a2aproject/a2a-python
 
 extra:
   recipe-maintainers:

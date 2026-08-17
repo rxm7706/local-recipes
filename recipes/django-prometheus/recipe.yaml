@@ -3,7 +3,7 @@ schema_version: 1
 
 context:
   name: django-prometheus
-  version: "2.4.1"
+  version: "2.5.0"
 
 package:
   name: ${{ name|lower }}
@@ -11,7 +11,7 @@ package:
 
 source:
   url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_prometheus-${{ version }}.tar.gz
-  sha256: 073628243d2a6de6a8a8c20e5b512872dfb85d66e1b60b28bcf1eca0155dad95
+  sha256: 4837b3c3734d8350880839ab8235aafd250b668c348e159d4aecc3cbefeee53e
 
 build:
   number: 0
@@ -36,8 +36,8 @@ tests:
         - django_prometheus
       pip_check: true
       python_version:
-      - ${{ python_min }}.*
-      - "*"
+        - ${{ python_min }}.*
+        - "*"
 
 about:
   summary: Django middlewares to monitor your application with Prometheus.io.

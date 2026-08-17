@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: wagtail-linkchecker
+  version: "0.6.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/wagtail-linkchecker-${{ version }}.tar.gz
+  sha256: 2bdd457ee757ae52e0f00196739e84f5f21e0e40212ae3d6170e108efd62b6e1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - wagtail >=1.0
+    - requests >=2.9.1
+    - celery >=4.0,<5
+
+tests:
+  - python:
+      imports:
+        - wagtaillinkchecker
+      pip_check: true
+
+about:
+  summary: A tool to assist with finding broken links on your wagtail site.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/neon-jungle/wagtail-linkchecker/
+
+extra:
+  recipe-maintainers:
+    - rxm7706

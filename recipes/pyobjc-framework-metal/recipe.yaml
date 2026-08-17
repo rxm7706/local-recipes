@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "12.2.1"
+  name: pyobjc-framework-Metal
+
+package:
+  name: pyobjc-framework-metal
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name.replace('-', '_').lower() }}/${{ name.replace('-', '_') | lower }}-${{ version }}.tar.gz
+  sha256: cd362194bdb7fd2a9116b8dc1e6b14ce19629136304cdf6b88d105a969fda72c
+
+build:
+  number: 0
+  skip: not osx
+  script:
+    # force pyobjc to use conda-forge's chosen SDK
+    - export CFLAGS="${CFLAGS} -isysroot ${SDKROOT:-$CONDA_BUILD_SYSROOT}"
+    - ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - libffi
+  run:
+    - python
+    - pyobjc-core =${{ version }}
+    - pyobjc-framework-cocoa =${{ version }}
+    - libffi
+
+tests:
+  - python:
+      imports:
+        - Metal
+      pip_check: false
+  - requirements:
+      run:
+        - pip
+    script:
+      - python -c "import Metal; print(Metal.MTLCreateSystemDefaultDevice())"
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Wrappers for the Metal framework on macOS
+  homepage: https://github.com/ronaldoussoren/pyobjc
+  documentation: https://pyobjc.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - xhochy

@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.27.2"
+
+package:
+  name: screen-brightness-control
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/screen-brightness-control/screen_brightness_control-${{ version }}.tar.gz
+  sha256: 7fd21a05025f644447ea267ef24b150bb1f5c9b47199c1e51e9aded3c6e918cc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - screen_brightness_control
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/screen-brightness-control/
+  license: MIT
+  license_file: LICENSE
+  summary: A Python tool for controlling the brightness of your monitor
+  description: |
+    A Python tool for controlling the brightness of your monitor
+  repository: https://github.com/Crozzers/screen_brightness_control
+  documentation: https://crozzers.github.io/screen_brightness_control
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: screen-brightness-control
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: screen-brightness-control
+  cfe-purls:
+    - pkg:conda/screen-brightness-control@${{ version }}?channel=conda-forge
+    - pkg:pypi/screen-brightness-control@${{ version }}
+  cfe-upstream-repo: https://github.com/Crozzers/screen_brightness_control
+  cfe-upstream-homepage: https://pypi.org/project/screen-brightness-control/
+  cfe-import-names: [screen_brightness_control]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:32:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:32:26Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

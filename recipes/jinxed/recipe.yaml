@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jinxed
+  version: "2.0.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: a92ac48923433c0a88577bb0479191788813fd5055ef17ff2b04a701a1b83f19
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.8
+    - setuptools
+    - wheel
+  run:
+    - __${{ target_os }}
+    - ansicon
+    - python >=3.8
+
+tests:
+  - python:
+      imports:
+        - jinxed
+        - jinxed.terminfo
+      pip_check: true
+
+about:
+  summary: Jinxed Terminal Library
+  license: MPL-2.0
+  license_file: LICENSE
+  homepage: https://pypi.org/project/jinxed/
+
+extra:
+  recipe-maintainers:
+    - mattip

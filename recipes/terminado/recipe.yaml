@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.18.1"
+  python_check_max: "3.14"
+
+package:
+  name: terminado
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/terminado/terminado-${{ version }}.tar.gz
+  sha256: de09f2c4b85de4765f7714688fff57d3e75bad1f909b589fde880460c753fd2e
+
+build:
+  number: 1
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - hatchling >=1.5
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - __${{ noarch_platform }}
+    - ${{ "ptyprocess" if noarch_platform == "unix" }}
+    - ${{ "pywinpty >=1.1.0" if noarch_platform == "win" }}
+    - python >=${{ python_min }}
+    - tornado >=6.1.0
+
+tests:
+  - python:
+      imports: terminado
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - coverage
+        - pytest >=7.0
+        - pytest-timeout
+        - python ${{ python_min }}.*
+    script:
+      file: run_test.py
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: Terminals served by tornado websockets
+  description: |
+    This is a Tornado websocket backend for the Xterm.js Javascript terminal emulator library.
+  homepage: https://pypi.org/project/terminado
+  repository: https://github.com/jupyter/terminado
+  documentation: http://terminado.readthedocs.org
+
+extra:
+  recipe-maintainers:
+    - blink1073
+    - bollwyvl
+    - ocefpaf
+    - pelson
+    - takluyver

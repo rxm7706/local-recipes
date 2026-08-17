@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: openmetadata-airflow-managed-apis
+  version: "0.11.5.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/openmetadata-airflow-managed-apis-${{ version }}.tar.gz
+  sha256: 0c7614ce9fed1f0f599a064383864600e143706a349b6b202689add2ff0c2a55
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - flask >=1.1.4
+    - packaging >=21.2
+    - setuptools >=58.3.0
+    - openmetadata-ingestion >=0.11.5.3
+    - apache-airflow >=2.1.4
+    - pendulum >=2.1.2
+    - flask-admin >=1.6.0
+
+tests:
+  - python:
+      imports:
+        - openmetadata
+        - plugins
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  summary: Airflow REST APIs to create and manage DAGS
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://open-metadata.org/
+  repository: https://github.com/open-metadata/OpenMetadata
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - elanqo

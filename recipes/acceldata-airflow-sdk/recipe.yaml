@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.4.0"
+
+package:
+  name: acceldata-airflow-sdk
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/acceldata-airflow-sdk/acceldata_airflow_sdk-${{ version }}.tar.gz
+  sha256: ea5cd83f7c78dfc3d7a76ee2a5f1e44e72d33e3300aee03342d461298919952e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=68
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - acceldata-sdk >=26.4.0
+    - requests
+    - dataclasses
+    - typing
+
+tests:
+  - python:
+      imports:
+        - acceldata_airflow_sdk
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/acceldata-airflow-sdk/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Acceldata Airflow SDK
+  description: |
+    Acceldata Airflow SDK
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: acceldata-airflow-sdk
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: acceldata-airflow-sdk
+  cfe-purls:
+    - pkg:conda/acceldata-airflow-sdk@${{ version }}?channel=conda-forge
+    - pkg:pypi/acceldata-airflow-sdk@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/acceldata-airflow-sdk/
+  cfe-upstream-homepage: https://pypi.org/project/acceldata-airflow-sdk/
+  cfe-import-names: [acceldata_airflow_sdk]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:04:10Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:04:10Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

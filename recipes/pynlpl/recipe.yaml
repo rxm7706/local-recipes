@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.9"
+
+package:
+  name: pynlpl
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/PyNLPl/PyNLPl-${{ version }}.tar.gz
+  sha256: a7f9db301fe03ac3c98b115a3d000e52cfff46fad10d8df849708a0838a548e5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pynlpl
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/proycon/pynlpl
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: "PyNLPl, pronounced as 'pineapple', is a Python library for Natural Language Processing."
+  description: |
+    PyNLPl, pronounced as 'pineapple', is a Python library for Natural Language Processing. It contains various modules useful for common, and less common, NLP tasks. PyNLPl contains modules for basic tasks, clients for interfacting with server, and modules for parsing several file formats common in NLP, most notably FoLiA.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pynlpl
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: PyNLPl
+  cfe-purls:
+    - pkg:conda/pynlpl@${{ version }}?channel=conda-forge
+    - pkg:pypi/pynlpl@${{ version }}
+  cfe-upstream-repo: https://github.com/proycon/pynlpl
+  cfe-upstream-homepage: https://github.com/proycon/pynlpl
+  cfe-import-names: [pynlpl]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:38:06Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:38:06Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4/P5 Create-recipe local-only. pynlpl.
+####

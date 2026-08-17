@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: earthengine-api
+  version: "1.7.39"
+  sha256: 4e7e69433d1d0b3f0af44d2778722ab81379ae8f49c22c77daabc8111b17d190
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    entry_points:
+      - earthengine = ee.cli.eecli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - google-api-python-client >=2.71.0
+    - google-auth >=2.48.0
+    - google-auth-httplib2 >=0.3.1
+    - google-cloud-storage
+    - httplib2 >=0.30.2,<1dev
+    - python >=${{ python_min }}
+    - requests
+
+tests:
+  - python:
+      imports:
+        - ee
+        - ee.cli
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - earthengine --help
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Earth Engine Python API
+  description: |
+    The Earth Engine Python API allows developers to interact with
+    Google Earth Engine, a web platform for global scale geospatial analysis.
+  homepage: https://earthengine.google.com/
+  repository: https://github.com/google/earthengine-api/
+  documentation: https://developers.google.com/earth-engine/
+
+extra:
+  recipe-maintainers:
+    - gino-m
+    - jdbcode
+    - jgarcia525
+    - michaelfdewitt
+    - naschmitz
+    - schwehr
+    - sgreenberg
+    - sufyanAbbasi
+    - kfriis33

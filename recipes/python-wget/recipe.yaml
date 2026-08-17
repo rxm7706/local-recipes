@@ -1,0 +1,41 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.2"
+
+package:
+  name: python-wget
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/w/wget/wget-${{ version }}.zip
+  sha256: 35e630eca2aa50ce998b9b1a127bb26b30dfee573702782aa982f875e3f16061
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  build:
+    - python
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - wget
+      pip_check: false
+
+about:
+  license: SAX-PD
+  summary: pure python download utility
+  homepage: http://bitbucket.org/techtonik/python-wget/
+
+extra:
+  recipe-maintainers:
+    - lsetiawan
+    - ocefpaf

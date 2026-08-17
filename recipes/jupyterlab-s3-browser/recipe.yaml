@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  python_min: "3.10.0"
+  name: jupyterlab-s3-browser
+  version: "0.12.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jupyterlab_s3_browser-${{ version }}.tar.gz
+  sha256: 14eabbd562f26f1267a3b176f9d2c26f782f61267330bd1dab0504d2494f37b4
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.10.0.*
+    - jupyter_packaging >=0.7.9
+    - jupyterlab >=3.0,<4.0
+    - setuptools >=40.8.0
+    - wheel
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - jupyterlab >=2.0.0  # https://github.com/IBM/jupyterlab-s3-browser/blob/0.12.0/setup.py#L100
+    - notebook
+    - boto3
+    - s3fs >=2021.10.1
+    - jupyter_server
+    - singleton-decorator
+
+tests:
+  - python:
+      imports:
+        - jupyterlab_s3_browser
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: JupyterLab extension for browsing S3-compatible object storage
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/IBM/jupyterlab-s3-browser
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.6.1"
+
+package:
+  name: pygame
+  version: ${{ version }}
+
+source:
+  url: https://github.com/pygame/pygame/archive/refs/tags/${{ version }}.tar.gz
+  sha256: 6a5dd68af93a11ba6eb35c971fa220bf253cebf63b1f54cbe697b30fae9c7c72
+  patches:
+    # make sure we use dependencies from conda-forge (instead of
+    # downloading/building them), and that the bespoke config finds them
+    - patches/0001-use-DLLs-from-conda-forge.patch
+    - patches/0002-fix-PREFIX-handling-on-OSX.patch
+    - patches/0003-try-to-fix-whacky-search-patterns-for-windows.patch
+    # apparently, the env var WIN32_DO_NOT_INCLUDE_DEPS available
+    # in setup.py switches off some other relevant processing too...
+    - patches/0004-do-not-copy-DLLs.patch
+    - patches/0005-avoid-downloading-stuff-despite-auto_download-False.patch
+    # add skips to test that need a display, which we don't have in CI
+    - patches/0006-add-some-more-display-tags-to-tests-modules.patch
+    - patches/0007-mark-docs-test-broken.patch
+    - patches/0008-fix-strict-prototype.patch
+    - patches/0009-skip-some-specific-warnings-on-linux-osx.patch
+    - patches/0010-don-t-Werror.patch
+
+build:
+  number: 0
+  script:
+    # despite the name "_unix", this only works for linux, c.f.
+    # https://github.com/pygame/pygame/blob/main/buildconfig/config_unix.py
+    - if: linux
+      then: export LOCALBASE="$PREFIX"
+    - ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+    - pkg-config
+  host:
+    - python
+    - cython
+    - setuptools
+    - pip
+    - fontconfig
+    - freetype
+    - libjpeg-turbo
+    - libpng
+    - zlib
+    - portmidi
+    - sdl2
+    - sdl2_image
+    - sdl2_mixer
+    - sdl2_ttf
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - pygame
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+        - numpy *
+    script:
+      - if: win
+        then: set SDL_VIDEODRIVER=dummy
+      - if: win
+        then: set SDL_AUDIODRIVER=disk
+      - if: unix
+        then: export SDL_VIDEODRIVER=dummy
+      - if: unix
+        then: export SDL_AUDIODRIVER=disk
+      - python -m pygame.tests -v --exclude display,broken,opengl,music,timing
+
+about:
+  license: LGPL-2.1-only
+  license_file: docs/LGPL.txt
+  summary: Python Game Development
+  description: |
+    pygame (the library) is a Free and Open Source python programming language
+    library for making multimedia applications like games built on top of the
+    excellent SDL library. C, Python, Native, OpenGL.
+  homepage: https://www.pygame.org
+  repository: https://github.com/pygame/pygame
+
+extra:
+  recipe-maintainers:
+    - h-vetinari
+    - kcemenike
+    - Tobias-Fischer

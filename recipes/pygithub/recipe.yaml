@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pygithub
+  version: "2.9.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 59771d7ff63d54d427be2e7d0dad2208dfffc2b0a045fec959263787739b611c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.7
+    - setuptools-scm
+    - pip
+  run:
+    - python >=3.7
+    - pynacl >=1.4.0
+    - python-dateutil
+    - requests >=2.14.0
+    - pyjwt >=2.4.0
+    - typing-extensions >=4.0.0
+    - urllib3 >=1.26.0
+    - deprecated
+    - cryptography >=3.4.0
+
+tests:
+  - python:
+      imports:
+        - github
+      pip_check: true
+
+about:
+  license_file: COPYING.LESSER
+  license: LGPL-3.0-only
+  summary: Python library implementing the GitHub API v3
+  homepage: http://pygithub.github.io/PyGithub
+  repository: https://github.com/PyGithub/PyGithub
+  documentation: http://pygithub.github.io/PyGithub
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - pelson
+    - xmnlab

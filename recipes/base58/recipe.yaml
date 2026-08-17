@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: base58
+  version: "2.1.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/keis/base58/archive/v${{ version }}.tar.gz
+  sha256: 5df25ce3b3d2f7e9d5289b2c75ba9e5291b59b1c34f4f7c90df5ae5f87fe5fb9
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - base58 = base58.__main__:main
+
+requirements:
+  host:
+    - setuptools
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - base58
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - base58 --help
+
+about:
+  summary: Base58 and Base58Check implementation
+  license: MIT
+  license_file: COPYING
+  homepage: https://github.com/keis/base58
+
+extra:
+  recipe-maintainers:
+    - step21

@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: supervisor
+  version: 4.3.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 4a2bf149adf42997e1bb44b70c43b613275ec9852c3edacca86a9166b27e945e
+
+build:
+  number: 2
+  noarch: python
+  python:
+    entry_points:
+      - supervisord = supervisor.supervisord:main
+      - supervisorctl = supervisor.supervisorctl:main
+      - echo_supervisord_conf = supervisor.confecho:main
+      - pidproxy = supervisor.pidproxy:main
+
+requirements:
+  build:
+    - sed
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - __unix
+
+tests:
+  - python:
+      imports:
+        - supervisor
+        - supervisor.supervisorctl
+        - supervisor.supervisord
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - 3.*
+  - files:
+      source:
+        - supervisor/tests/
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pytest >=2.5.2
+        - mock >=0.5.0
+    script:
+      - cp -r supervisor/tests $(python -c 'import site; print(site.getsitepackages()[0])')/supervisor
+      - pytest supervisor/tests
+      - supervisord -h
+      - supervisorctl -h
+      - echo_supervisord_conf -h
+
+about:
+  license: BSD-3-Clause-Modification AND BSD-3-Clause AND PSF-2.0
+  license_file: LICENSES.txt
+  summary: A Process Control System
+  description: |
+    Supervisor is a client/server system that allows its users to monitor and
+    control a number of processes on UNIX-like operating systems.
+  homepage: http://supervisord.org/
+  repository: https://github.com/Supervisor/supervisor
+  documentation: http://supervisord.org/
+
+extra:
+  recipe-maintainers:
+    - kalefranz
+    - sodre
+    - xhochy

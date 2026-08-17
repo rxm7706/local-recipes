@@ -1,0 +1,108 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.3.3"
+  python_min: "3.12"
+
+package:
+  name: openhands-aci
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/openhands-aci/openhands_aci-${{ version }}.tar.gz
+  sha256: 567fc65bb881e3ea56c987f4251c8f703d3c88fae99402b46ea7dcc48d85adb2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - beautifulsoup4 >=4.12.3
+    - binaryornot <0.5.0,>=0.4.4
+    - cachetools <6.0.0,>=5.5.2
+    - charset-normalizer <4.0.0,>=3.4.1
+    - flake8
+    - gitpython
+    - grep-ast <0.10.0,>=0.9.0
+    - libcst ==1.5.0
+    - mammoth >=1.8.0
+    - markdownify >=0.13.1
+    - matplotlib-base <4.0.0,>=3.10.3
+    - networkx <4.0.0,>=3.4.2
+    - openpyxl <4.0.0,>=3.1.5
+    - pandas
+    - pdfminer-six >=20240706
+    - puremagic >=1.28
+    - pydantic <3.0.0,>=2.11.3
+    - pydub <0.26.0,>=0.25.1
+    - pypdf >=5.1.0
+    - python-pptx <2.0.0,>=1.0.2
+    - rapidfuzz <4.0.0,>=3.13.0
+    - requests >=2.32.3
+    - speechrecognition <4.0.0,>=3.14.1
+    - tree-sitter <0.25.0,>=0.24.0
+    - tree-sitter-language-pack ==0.7.3
+    - whatthepatch <2.0.0,>=1.0.6
+    - xlrd <3.0.0,>=2.0.1
+    - youtube-transcript-api >=0.6.2
+
+tests:
+  - python:
+      imports:
+        - openhands_aci
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/openhands-aci/
+  license: MIT
+  license_file: LICENSE
+  summary: An Agent-Computer Interface (ACI) designed for software development agents OpenHands.
+  description: |
+    An Agent-Computer Interface (ACI) designed for software development agents OpenHands.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: openhands-aci
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: openhands-aci
+  cfe-purls:
+    - pkg:conda/openhands-aci@${{ version }}?channel=conda-forge
+    - pkg:pypi/openhands-aci@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/openhands-aci/
+  cfe-upstream-homepage: https://pypi.org/project/openhands-aci/
+  cfe-import-names: [openhands_aci]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:25:29Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:25:29Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

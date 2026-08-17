@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.11.0"
+
+package:
+  name: octavia-lib
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/octavia-lib/octavia_lib-${{ version }}.tar.gz
+  sha256: c347080d0be7b13b75918e364b7e480e08d39970a50e1b6b04a96ee7327a43c8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - oslo.i18n >=3.15.3
+    - oslo.serialization >=2.28.1
+    - pbr !=2.1.0,>=2.0.0
+    - tenacity >=5.0.2
+
+tests:
+  - python:
+      imports:
+        - octavia_lib
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://docs.openstack.org/octavia-lib/latest/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A library to support Octavia provider drivers.
+  description: |
+    A library to support Octavia provider drivers.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: octavia-lib
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: octavia-lib
+  cfe-purls:
+    - pkg:conda/octavia-lib@${{ version }}?channel=conda-forge
+    - pkg:pypi/octavia-lib@${{ version }}
+  cfe-upstream-repo: https://docs.openstack.org/octavia-lib/latest/
+  cfe-upstream-homepage: https://docs.openstack.org/octavia-lib/latest/
+  cfe-import-names: [octavia_lib]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:33:57Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:33:57Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

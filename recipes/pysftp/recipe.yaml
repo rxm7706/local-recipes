@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pysftp
+  version: "0.2.9"
+  sha256: fbf55a802e74d663673400acd92d5373c1c7ee94d765b428d9f977567ac4854a
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+    - paramiko >=1.17.0
+
+tests:
+  - python:
+      imports:
+        - pysftp
+      pip_check: false
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: A friendly face on SFTP
+  description: |
+    A simple interface to SFTP. The module offers high level abstractions and task
+    based routines to handle your SFTP needs. Checkout the Cook Book, in the docs,
+    to see what pysftp can do for you..
+  homepage: https://bitbucket.org/dundeemt/pysftp
+  repository: https://bitbucket.org/dundeemt/pysftp
+  documentation: http://pysftp.rtfd.org/
+
+extra:
+  recipe-maintainers:
+    - shaunwbell

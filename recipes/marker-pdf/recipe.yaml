@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.0"
+
+package:
+  name: marker-pdf
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/marker-pdf/marker_pdf-${{ version }}.tar.gz
+  sha256: 7f6f0ebd29908f7c7c66f61cc06a9c07a9e3cd612c00732016f6e6b6fc150f7c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - anthropic <1,>=0.69.0
+    - click <9,>=8.2.0
+    - filetype <2,>=1.2.0
+    - ftfy <7,>=6.1.1
+    - google-genai <3,>=1.40.0
+    - markdown2 <3,>=2.5.2
+    - markdownify <2,>=1.1.0
+    - openai <3,>=2.2.0
+    - pdftext <0.8.0,>=0.7.0
+    - pillow <11,>=10.1.0
+    - psutil <8,>=7.0.0
+    - pydantic-settings <3,>=2.0.3
+    - pydantic <3,>=2.4.2
+    - python-dotenv <2,>=1.0.0
+    - rapidfuzz <4,>=3.8.1
+    - regex >=2024.4.28
+    - scikit-learn <2,>=1.6.1
+    - surya-ocr <0.23.0,>=0.22.1
+    - pytorch <3,>=2.7.0
+    - tqdm <5,>=4.66.1
+    - transformers <6,>=5.12.1
+
+tests:
+  - python:
+      imports:
+        - marker.utils
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/marker-pdf/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Convert documents to markdown with high speed and accuracy.
+  description: |
+    Convert documents to markdown with high speed and accuracy.
+  repository: https://github.com/datalab-to/marker
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: marker-pdf
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: marker-pdf
+  cfe-purls:
+    - pkg:conda/marker-pdf@${{ version }}?channel=conda-forge
+    - pkg:pypi/marker-pdf@${{ version }}
+  cfe-upstream-repo: https://github.com/datalab-to/marker
+  cfe-upstream-homepage: https://pypi.org/project/marker-pdf/
+  cfe-import-names: [marker.utils]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:07:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:07:32Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

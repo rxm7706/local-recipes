@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mbstrdecoder
+  version: "1.1.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 8cbfba26938befd8a35e3cc06ca0632f61320b7b2be7df32550b895e1725b1ce
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools >=64
+    - setuptools-scm >=8
+    - releasecmd
+  run:
+    - chardet >=3.0.4,<6
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - mbstrdecoder
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: multi-byte character string decoder
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/thombashi/mbstrdecoder
+  repository: https://github.com/thombashi/mbstrdecoder
+
+extra:
+  recipe-maintainers:
+    - basnijholt

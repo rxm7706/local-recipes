@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.24.0"
+
+package:
+  name: pysam
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pysam/pysam-${{ version }}.tar.gz
+  sha256: db0f86c15532ef5dad263748324f45d9a639668e3497d8cabce54ef47a1a78d9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=59.0
+    - cython >=3,<4
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pysam
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/pysam-developers/pysam
+  license: MIT
+  license_file: LICENSE
+  summary: Package for reading, manipulating, and writing genomic data
+  description: |
+    Package for reading, manipulating, and writing genomic data
+  documentation: https://pysam.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pysam
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pysam
+  cfe-purls:
+    - pkg:conda/pysam@${{ version }}?channel=conda-forge
+    - pkg:pypi/pysam@${{ version }}
+  cfe-upstream-repo: https://github.com/pysam-developers/pysam
+  cfe-upstream-homepage: https://github.com/pysam-developers/pysam
+  cfe-import-names: [pysam]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:34:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:34:34Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

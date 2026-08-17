@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: access
+  version: 1.1.10.post3
+  python_min: "3.11"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 3dbfbd7cc5a09d30ad314955d061fb46fd2d48ce1f84f15adc5b760bb8b4a34b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - pip
+    - python 3.11.*
+    - setuptools >=61.0
+    - setuptools-scm >=6.2
+  run:
+    - python >=${{ python_min }}
+    - geopandas >=1.0.1
+    - numpy >=1.26.0
+    - pandas >=2.1.0
+    - scipy >=1.14.1
+    - requests >=2
+
+tests:
+  - python:
+      imports:
+        - access
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: classical and novel measures of spatial accessibility to services
+  description: |
+    access is a class and function for calculating the spatial accessibility
+    of resources.  It is designed for python 3.7 and higher.
+    Pandas (and numpy) are required, and geopandas allows for some additional functionality.
+  homepage: https://access.readthedocs.io/
+  repository: https://github.com/pysal/access
+  documentation: https://pysal.org/access/
+
+extra:
+  recipe-maintainers:
+    - ocefpaf
+    - JamesSaxon
+    - jkoschinsky
+    - martinfleis
+    - knaaptime
+    - jGaboardi

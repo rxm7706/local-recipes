@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.5.1"
+
+package:
+  name: langchain-openai
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/l/langchain-openai/langchain_openai-${{ version }}.tar.gz
+  sha256: e7100c89a6180e3fdf8d02b29a0f2b6c532da91428fc1b57aa93ebbc8acc0ce9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - certifi >=2024.6.2
+    - python >=${{ python_min }}
+    - langchain-core >=1.5.4,<2.0.0
+    - openai >=2.45.0,<4.0.0
+    - tiktoken >=0.7.0,<1.0.0
+
+tests:
+  - python:
+      imports:
+        - langchain_openai
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: LangChain integrations for OpenAI through their openai SDK
+  homepage: https://github.com/langchain-ai/langchain/tree/master/libs/partners/openai
+
+extra:
+  recipe-maintainers:
+    - jan-janssen
+    - pavelzw
+    - raybellwaves

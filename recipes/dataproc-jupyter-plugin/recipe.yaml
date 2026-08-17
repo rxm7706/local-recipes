@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.97"
+
+package:
+  name: dataproc-jupyter-plugin
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/dataproc-jupyter-plugin/dataproc_jupyter_plugin-${{ version }}.tar.gz
+  sha256: bfc7713182df1df8ab22d4e15ade85052dc64a9cce6722df7eee7faa30236b3a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling >=1.5.0
+    - jupyterlab >=3.6.0,<5
+    - hatch-nodejs-version
+  run:
+    - python >=${{ python_min }}
+    - aiofiles <23,>=22.1.0
+    - aiohttp ~=3.9.5
+    - cachetools >=4.2.4
+    - google-cloud-jupyter-config >=0.0.11
+    - google-cloud-storage ~=2.18.2
+    - jupyter-server <3,>=2.7.3
+    - kernels-mixer >=0.0.13
+    - pendulum >=3.0.0
+    - pydantic ~=1.10.0
+    - scheduler-jupyter-plugin >=0.1.0
+
+tests:
+  - python:
+      imports:
+        - dataproc_jupyter_plugin
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/GoogleCloudDataproc/dataproc-jupyter-plugin
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: It is a plugin to work with dataproc services in Jupyterlab
+  description: |
+    It is a plugin to work with dataproc services in Jupyterlab
+  repository: https://github.com/GoogleCloudDataproc/dataproc-jupyter-plugin.git
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dataproc-jupyter-plugin
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dataproc-jupyter-plugin
+  cfe-purls:
+    - pkg:conda/dataproc-jupyter-plugin@${{ version }}?channel=conda-forge
+    - pkg:pypi/dataproc-jupyter-plugin@${{ version }}
+  cfe-upstream-repo: https://github.com/GoogleCloudDataproc/dataproc-jupyter-plugin.git
+  cfe-upstream-homepage: https://github.com/GoogleCloudDataproc/dataproc-jupyter-plugin
+  cfe-import-names: [dataproc_jupyter_plugin]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:01:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:01:27Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

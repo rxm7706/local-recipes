@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: clipboard
+  version: "0.0.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/clipboard-${{ version }}.tar.gz
+  sha256: a72a78e9c9bf68da1c3f29ee022417d13ec9e3824b511559fd2b702b1dd5b817
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=2.7
+    - pip
+  run:
+    - python >=2.7
+    - pyperclip >=1.3
+
+tests:
+  - python:
+      imports:
+        - clipboard
+      pip_check: true
+
+about:
+  summary: A cross platform clipboard operation library of Python. Works for Windows, Mac and Linux.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/terryyin/clipboard
+
+extra:
+  recipe-maintainers:
+    - thewchan

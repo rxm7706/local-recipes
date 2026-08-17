@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: aws-c-cal
+  version: "0.9.15"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/awslabs/${{ name }}/archive/v${{ version }}.tar.gz
+  sha256: 215dd31c12ea49c4f40aa7882a800f9648e4095cfcb2d6abdd27e957574ad6e2
+
+build:
+  number: 2
+
+requirements:
+  build:
+    - cmake !=3.19.0,!=3.19.1
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ninja
+  host:
+    - aws-c-common
+    - if: not win and not osx
+      then: openssl
+  run_exports:
+    - ${{ pin_subpackage("aws-c-cal", upper_bound="x.x.x") }}
+
+tests:
+  - files:
+      recipe:
+        - cmake_test/
+    requirements:
+      run:
+        - ${{ compiler('c') }}
+        - cmake
+        - ninja
+        - pkg-config
+    script:
+      - if: unix
+        then: test -f $PREFIX/lib/libaws-c-cal${SHLIB_EXT}
+      - if: unix
+        then: test -f $PREFIX/include/aws/cal/cal.h
+      - if: win
+        then: if not exist %LIBRARY_INC%\\aws\\cal\\cal.h exit 1
+      - if: win
+        then: if not exist %PREFIX%\\Library\\bin\\aws-c-cal.dll exit 1
+      - cd cmake_test
+      - if: unix
+        then: cmake -GNinja $CMAKE_ARGS .
+      - if: win
+        then: cmake -GNinja %CMAKE_ARGS% .
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: "Aws Crypto Abstraction Layer: Cross-Platform, C99 wrapper for cryptography primitives."
+  homepage: https://github.com/awslabs/aws-c-cal
+  repository: https://github.com/awslabs/aws-c-cal
+
+extra:
+  recipe-maintainers:
+    - xhochy
+    - conda-forge/aws-sdk-cpp

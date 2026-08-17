@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.20.3"
+  erlang_min: "27"
+
+package:
+  name: elixir
+  version: ${{ version }}
+
+source:
+  url: https://github.com/elixir-lang/elixir/archive/v${{ version }}.tar.gz
+  sha256: ff22a894b130631443db1a193b4e8cb4762f697128566e43da848fd16c3777bd
+
+build:
+  number: 0
+  skip: win
+  script:
+    - make prefix=${PREFIX} install
+
+requirements:
+  build:
+    - git
+    - make
+  host:
+    - erlang ${{ erlang_min }}.*
+  run:
+    - erlang >=${{ erlang_min }}
+
+tests:
+  - requirements:
+      run:
+        - erlang ${{ erlang_min }}.*
+    script:
+      - elixir --version
+      - mix --version
+  - requirements:
+      run:
+        - erlang >=${{ erlang_min }},!=${{ erlang_min }}.*
+    script:
+      - elixir --version
+      - mix --version
+
+about:
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - LICENSES
+  summary: Elixir is a dynamic, functional language designed for building scalable and maintainable applications
+  homepage: https://elixir-lang.org
+  repository: https://github.com/elixir-lang/elixir
+  documentation: https://elixir-lang.org/docs.html
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

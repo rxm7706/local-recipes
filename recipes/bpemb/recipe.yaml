@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: bpemb
+  version: "0.3.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ad86ba9b1623ecc3be6fcc5ba4408e23a30e118b7e1d683d292f4be788798ffe
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3
+  run:
+    - gensim
+    - numpy
+    - python >=3
+    - requests
+    - sentencepiece
+    - tqdm
+
+tests:
+  - python:
+      imports:
+        - bpemb
+      pip_check: true
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Byte-pair embeddings in 275 languages
+  homepage: https://nlp.h-its.org/bpemb
+  repository: https://github.com/bheinzerling/bpemb
+  documentation: https://nlp.h-its.org/bpemb
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - oblute
+    - rluria14
+    - ndmaxar

@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: model2vec
+  version: "0.8.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/model2vec-${{ version }}.tar.gz
+  sha256: 4e88d1a5eb2136475ebd90505689046f61caf25c69371c331f21c6499637c110
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=64
+    - setuptools-scm >=8
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - jinja2
+    - joblib
+    - numpy
+    - rich
+    - safetensors
+    - setuptools
+    - tokenizers >=0.20
+    - tqdm  #
+    # Extra: distill
+    - pytorch
+    - transformers
+    - scikit-learn  #
+    # Extra: inference
+    - skops  #
+    # Extra: onnx
+    - onnx  #
+    # Extra: train
+    - lightning
+
+tests:
+  - python:
+      imports:
+        - model2vec
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Fast State-of-the-Art Static Embeddings
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/MinishLab/model2vec
+  repository: https://github.com/MinishLab/model2vec
+
+extra:
+  recipe-maintainers:
+    - AndreasAlbertQC

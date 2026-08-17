@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pytest-mpl
+  version: "0.19.0"
+  sha256: c08e7b51ba4c98eed77ac3f3c6e336ed6163647d9e27ea1d928f79b542178cbe
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools >=80
+    - setuptools_scm >=8
+  run:
+    - python >=${{ python_min }}
+    - pytest >=6.2.5
+    - matplotlib-base >=3.5.3
+    - packaging >=22.0.0
+    - jinja2 >=2.10.2
+    - pillow >=8.1.1
+
+tests:
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - py.test --traceconfig ${SRCDIR} | grep pytest-mpl-${{ version }}
+
+about:
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: pytest plugin to help with testing figures output from Matplotlib
+  homepage: https://github.com/matplotlib/pytest-mpl
+  repository: https://github.com/matplotlib/pytest-mpl
+
+extra:
+  recipe-maintainers:
+    - dopplershift
+    - astrofrog

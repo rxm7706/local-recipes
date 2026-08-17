@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.12.0"
+
+package:
+  name: dbt-oracle
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/dbt-oracle/dbt_oracle-${{ version }}.tar.gz
+  sha256: 0deb9d4f2ce5a27354a3480e8604a1f0dc911aeda776d874a3e7606de35affaa
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=77.0
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - dbt-common <2.0,>=1.1.0
+    - dbt-adapters <2.0,>=1.2.1
+    - dbt-core <1.13,~=1.12
+    - oracledb
+
+tests:
+  - python:
+      imports:
+        - dbt
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/dbt-oracle/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: dbt (data build tool) adapter for Oracle Autonomous Database
+  description: |
+    dbt (data build tool) adapter for Oracle Autonomous Database
+  repository: https://github.com/oracle/dbt-oracle
+  documentation: https://docs.getdbt.com/reference/warehouse-profiles/oracle-profile
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: dbt-oracle
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: dbt-oracle
+  cfe-purls:
+    - pkg:conda/dbt-oracle@${{ version }}?channel=conda-forge
+    - pkg:pypi/dbt-oracle@${{ version }}
+  cfe-upstream-repo: https://github.com/oracle/dbt-oracle
+  cfe-upstream-homepage: https://pypi.org/project/dbt-oracle/
+  cfe-import-names: [dbt]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:52:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:52:40Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

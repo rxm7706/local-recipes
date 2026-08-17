@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.7.0"
+
+package:
+  name: pynvjitlink-cu12
+  version: ${{ version }}
+
+source:
+  url: https://github.com/rapidsai/pynvjitlink/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 350abe5e45a9f137c947f8cd06095a02c982689e1ed174e4d9bd06ba675268ca
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - rapids-build-backend >=0.3.0,<0.4.0dev0
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pynvjitlink
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://rapids.ai/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: nvJitLink Python binding
+  description: |
+    nvJitLink Python binding
+  repository: https://github.com/rapidsai/pynvjitlink
+  documentation: https://github.com/rapidsai/pynvjitlink/blob/main/README.md
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pynvjitlink-cu12
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pynvjitlink-cu12
+  cfe-purls:
+    - pkg:conda/pynvjitlink-cu12@${{ version }}?channel=conda-forge
+    - pkg:pypi/pynvjitlink-cu12@${{ version }}
+  cfe-upstream-repo: https://github.com/rapidsai/pynvjitlink
+  cfe-upstream-homepage: https://rapids.ai/
+  cfe-import-names: [pynvjitlink]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:06:18Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:06:18Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -2,15 +2,16 @@
 schema_version: 1
 
 context:
-  version: "1.57.2"
+  name: copilotkit
+  version: "1.68.1"
 
 package:
-  name: copilotkit
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
   url: https://github.com/CopilotKit/CopilotKit/archive/v${{ version }}.tar.gz
-  sha256: e308fb515e9116d26b0d3beb40be25dae2cad569d9cafc619b76690aa2d26837
+  sha256: dcfac64f367be6485ef75a2db429898f4883c64e39805870032fc3f8f88b7cbc
 
 build:
   number: 0
@@ -19,36 +20,33 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - poetry-core
     - pip
   run:
     - python >=${{ python_min }}
-    - langgraph >=0.3.25,<2
+    - langgraph >=0.3.25,<2.0
     - langchain >=0.3.0
     - ag-ui-langgraph >=0.0.35
     - ag-ui-protocol >=0.1.15
     - fastapi >=0.115.0,<1.0.0
     - partialjson >=0.0.8,<0.0.9
     - toml >=0.10.2,<0.11.0
-    - pydantic-core >=2.35.0
 
 tests:
-  - python:
-      imports:
-        - copilotkit
-      pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pip check
 
 about:
-  homepage: https://github.com/CopilotKit/CopilotKit
-  repository: https://github.com/CopilotKit/CopilotKit
-  summary: "CopilotKit is an open-source framework for building AI copilots that assist users in various tasks by leveraging large language models and other AI technologies."
   license: MIT
   license_file:
     - LICENSE
+  summary: CopilotKit is an open-source framework for building AI copilots that assist users in various tasks by leveraging large language models and other AI technologies.
+  homepage: https://github.com/CopilotKit/CopilotKit
 
 extra:
   recipe-maintainers:

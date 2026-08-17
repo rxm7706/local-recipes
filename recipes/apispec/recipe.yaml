@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: apispec
+  version: 6.10.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/apispec-${{ version }}.tar.gz
+  sha256: 0a888555cd4aa5fb7176041be15684154fd8961055e1672e703abf737e8761bf
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - flit-core <4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - packaging >=21.3
+    # yaml extra:
+    - pyyaml >=3.10
+tests:
+  - python:
+      imports:
+        - apispec
+      python_version: ${{ python_min }}.*
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A pluggable API specification generator
+  description: |
+    A pluggable API specification generator. Currently supports the OpenAPI
+    specification (f.k.a. Swagger 2.0).
+  homepage: https://github.com/marshmallow-code/apispec
+  repository: https://github.com/marshmallow-code/apispec
+  documentation: http://apispec.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - xylar
+    - rth
+    - carlodri

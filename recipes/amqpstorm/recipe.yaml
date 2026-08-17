@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.1.4"
+  python_min: "3.11"
+
+package:
+  name: amqpstorm
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/AMQPStorm/amqpstorm-${{ version }}.tar.gz
+  sha256: 8c4c81430b3e3f06c88474a8ed883b48a62068f14490e339d6e0fc3329f030d3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=64
+  run:
+    - python >=${{ python_min }}
+    - pamqp <5.0,>=4.0.0
+
+tests:
+  - python:
+      imports:
+        - amqpstorm
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://amqpstorm.readthedocs.io/
+  license: MIT
+  license_file: LICENSE
+  summary: Thread-safe Python3 RabbitMQ Client & Management library.
+  description: |
+    Thread-safe Python3 RabbitMQ Client & Management library.
+  repository: https://github.com/eandersson/amqpstorm
+  documentation: https://amqpstorm.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: amqpstorm
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: AMQPStorm
+  cfe-purls:
+    - pkg:conda/amqpstorm@${{ version }}?channel=conda-forge
+    - pkg:pypi/amqpstorm@${{ version }}
+  cfe-upstream-repo: https://github.com/eandersson/amqpstorm
+  cfe-upstream-homepage: https://amqpstorm.readthedocs.io/
+  cfe-import-names: [amqpstorm]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:17Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:17Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jsonargparse
+  version: "4.40.2"
+  python_min: "3.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jsonargparse-${{ version }}.tar.gz
+  sha256: 91e775b4ffba72bc5bbdab39d2f3efeb8ca84285def706d534edeed621cf0cb7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install .[all] -vv
+
+requirements:
+  host:
+    - pip
+    - python 3.8.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pyyaml >=3.13
+    - docstring_parser >=0.15
+    - dataclasses >=0.8
+    - jsonschema >=3.2.0
+    - jsonnet >=0.13.0
+    - validators >=0.14.2
+    - requests >=2.18.4
+    - fsspec >=0.8.4
+    - argcomplete >=3.5.1
+
+tests:
+  - python:
+      imports:
+        - jsonargparse
+        - jsonargparse_tests
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Parsing of command line options, yaml/jsonnet config files and/or environment variables based on argparse.
+  license: MIT
+  license_file: LICENSE.rst
+  homepage: https://github.com/omni-us/jsonargparse
+
+extra:
+  recipe-maintainers:
+    - olegtarasov

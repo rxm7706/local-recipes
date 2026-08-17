@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: webrtcvad
+  version: "2.0.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/webrtcvad-${{ version }}.tar.gz
+  sha256: f1bed2fb25b63fb7b1a55d64090c993c9c9167b28485ae0bcdd81cf6ede96aea
+
+build:
+  number: 6
+  skip: match(python, "<3.7")
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+    - setuptools
+
+tests:
+  - python:
+      imports:
+        - webrtcvad
+      pip_check: true
+
+about:
+  summary: Python interface to the Google WebRTC Voice Activity Detector (VAD)
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/wiseman/py-webrtcvad
+
+extra:
+  recipe-maintainers:
+    - thewchan

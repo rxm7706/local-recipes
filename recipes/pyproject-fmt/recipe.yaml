@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.28.0"
+  python_check_max: "3.14"
+
+package:
+  name: pyproject-fmt
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/7b/85/879bce1cffaa5941c41998a2bce8c6d7b79631695b53e9293340874c90de/pyproject_fmt-${{ version }}.tar.gz
+  sha256: e22437de7e3f4add60e65fe935a65df6bc513edd827041f397013d78199ce146
+
+build:
+  number: 0
+  skip: is_abi3 and not is_python_min
+  script:
+    env:
+      CARGO_PROFILE_RELEASE_STRIP: symbols
+      CARGO_PROFILE_RELEASE_LTO: fat
+      CARGO: cargo-auditable-wrapper${{ ".bat" if win }}
+      PYTHONIOENCODING: utf-8
+      PYTHONLEGACYTEXTENCODING: utf-8
+    content:
+      - if: win
+        then:
+          - copy "%RECIPE_DIR%\cargo-auditable-wrapper.bat" "%BUILD_PREFIX%\Library\bin\cargo-auditable-wrapper.bat"
+        else:
+          - cp "${RECIPE_DIR}/cargo-auditable-wrapper.sh" "${BUILD_PREFIX}/bin/cargo-auditable-wrapper"
+          - chmod 755 "${BUILD_PREFIX}/bin/cargo-auditable-wrapper"
+      - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+      - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+  python:
+    entry_points:
+      - pyproject-fmt = pyproject_fmt.__main__:runner
+    version_independent: ${{ is_abi3 }}
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ compiler("rust") }}
+    - ${{ stdlib("c") }}
+    - cargo-auditable
+    - cargo-bundle-licenses
+  host:
+    - maturin >=1.14
+    - pip
+    - python
+    - if: is_abi3
+      then:
+        - python-abi3
+  run:
+    - python
+    - toml-fmt-common
+
+tests:
+  - if: is_abi3
+    then:
+      - python:
+          imports: pyproject_fmt
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    else:
+      - python:
+          imports: pyproject_fmt
+          pip_check: true
+  - files:
+      recipe:
+        - run_test.py
+      source:
+        - pyproject-fmt/build_backend.py
+        - pyproject-fmt/tests/
+    requirements:
+      run:
+        - pytest >=8.4.2
+        - pytest-cov >=7
+        - pytest-mock >=3.15.1
+        - if: is_abi3
+          then:
+            - abi3audit
+            - python !=${{ python_min }}.*
+    script:
+      - pyproject-fmt --help
+      - python run_test.py --python-min=${{ python_min }}
+
+about:
+  summary: Format your pyproject.toml file
+  license: MIT
+  license_file:
+    - LICENSE.txt
+    - THIRDPARTY.yml
+  homepage: https://pypi.org/project/pyproject-fmt
+  repository: https://github.com/tox-dev/toml-fmt
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

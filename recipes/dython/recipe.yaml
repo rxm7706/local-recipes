@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dython
+  version: "0.7.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 95d2277ae58e20091e237f61a5efef8f1e2bbdd6773b043ff0da9bb676b5e64d
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - if: not win
+      then: echo $PKG_VERSION > VERSION
+    - if: not win
+      then: cp ${RECIPE_DIR}/DESCRIPTION.md .
+    - if: win
+      then: echo %PKG_VERSION% > VERSION
+    - if: win
+      then: copy %RECIPE_DIR%\DESCRIPTION.md .
+    - ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - matplotlib-base >=3.6.0
+    - numpy >=1.23.0
+    - pandas >=1.4.2
+    - psutil >=5.9.1
+    - python >=${{ python_min }}
+    - scikit-learn >=0.24.2
+    #- scikit-plot >=0.3.7
+    - scipy >=1.7.1
+    - seaborn >=0.12.0
+
+tests:
+  - python:
+      imports:
+        - dython
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A set of data tools in Python
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: http://shakedzy.xyz/dython
+  repository: http://shakedzy.xyz/dython/modules/data_utils/
+  documentation: http://shakedzy.xyz/dython/getting_started/installation/
+
+extra:
+  recipe-maintainers:
+    - sarthakpati

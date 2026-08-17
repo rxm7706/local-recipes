@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.1"
+
+package:
+  name: caugetch
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/caugetch/caugetch-${{ version }}.tar.gz
+  sha256: 6f6ddb3b928fa272071b02aabb3342941cd99992f27413ba8c189eb4dc3e33b0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - caugetch
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://www.youtube.com/channel/UCAbwAklWIeuoKKjVBMQVCew
+  license: MIT
+  license_file: LICENSE
+  summary: this is a better getpass. Made by Caua_SCP.
+  description: |
+    this is a better getpass. Made by Caua_SCP.
+
+extra:
+  recipe-maintainers:
+    - REPLACE_MAINTAINER
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: caugetch
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: caugetch
+  cfe-purls:
+    - pkg:conda/caugetch@${{ version }}?channel=conda-forge
+    - pkg:pypi/caugetch@${{ version }}
+  cfe-upstream-repo: https://www.youtube.com/channel/UCAbwAklWIeuoKKjVBMQVCew
+  cfe-upstream-homepage: https://www.youtube.com/channel/UCAbwAklWIeuoKKjVBMQVCew
+  cfe-import-names: [caugetch]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:08:31Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:08:31Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

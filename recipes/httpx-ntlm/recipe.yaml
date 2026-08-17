@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: httpx-ntlm
+  version: "1.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/httpx_ntlm-${{ version }}.tar.gz
+  sha256: 41be8a2ba85143484e617dcb917d4b19e3ae12afdc688622a4901034993b53e4
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - httpx >=0.24
+    - pyspnego >=0.3
+
+tests:
+  - python:
+      imports:
+        - httpx_ntlm
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: This package allows for HTTP NTLM authentication using the HTTPX library.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/ulodciv/httpx-ntlm
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld

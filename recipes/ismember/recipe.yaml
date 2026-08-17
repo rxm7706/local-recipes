@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.0"
+
+package:
+  name: ismember
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/i/ismember/ismember-${{ version }}.tar.gz
+  sha256: 2263aaaad010e29b7a71bd6a6740e6c925d66574051a49ecaa7d1d213414c9b2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - numpy
+
+tests:
+  - python:
+      imports:
+        - ismember
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://erdogant.github.io/ismember
+  license: MIT
+  license_file: LICENSE
+  summary: Python package ismember returns array elements that are members of set array.
+  description: |
+    Python package ismember returns array elements that are members of set array.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: ismember
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: ismember
+  cfe-purls:
+    - pkg:conda/ismember@${{ version }}?channel=conda-forge
+    - pkg:pypi/ismember@${{ version }}
+  cfe-upstream-repo: https://erdogant.github.io/ismember
+  cfe-upstream-homepage: https://erdogant.github.io/ismember
+  cfe-import-names: [ismember]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:32:52Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:32:52Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

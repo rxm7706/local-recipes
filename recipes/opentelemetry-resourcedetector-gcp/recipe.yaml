@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
-  version: "1.12.0a0"
+  name: opentelemetry-resourcedetector-gcp
+  version: 1.12.0a0
 
 package:
-  name: opentelemetry-resourcedetector-gcp
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/o/opentelemetry-resourcedetector-gcp/opentelemetry_resourcedetector_gcp-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: d5e3f78283a272eb92547e00bbeff45b7332a34ae791a70ab4eba81af9bc3baf
 
 build:
@@ -19,36 +20,30 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
+    - typing_extensions >=4.0,<5.dev0
     - python >=${{ python_min }}
-    - opentelemetry-api >=1.30,<2
-    - opentelemetry-sdk >=1.30,<2
-    - requests >=2.24,<3
-    - typing_extensions >=4.0,<5
+    - opentelemetry-api >=1.30,<2.dev0
+    - opentelemetry-sdk >=1.30,<2.dev0
+    - requests ~=2.24
+    - typing-extensions >=4.0,<5.dev0
+    # - typing_extensions ~=4.0
 
 tests:
   - python:
       imports:
-        - opentelemetry.resourcedetector.gcp_resource_detector
+        - opentelemetry
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Google Cloud resource detector for OpenTelemetry
-  description: |
-    Google Cloud resource detector for OpenTelemetry. Detects resource
-    attributes for Google Cloud Platform environments (GCE, GKE, Cloud Run,
-    Cloud Functions, App Engine) and populates them onto OpenTelemetry
-    resources.
   license: Apache-2.0
   license_file: LICENSE
   homepage: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python/tree/main/opentelemetry-resourcedetector-gcp
-  repository: https://github.com/GoogleCloudPlatform/opentelemetry-operations-python
 
 extra:
   recipe-maintainers:

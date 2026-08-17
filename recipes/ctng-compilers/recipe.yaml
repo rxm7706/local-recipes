@@ -1,0 +1,890 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# libgcc-devel is a noarch: generic package that is built for
+# cross-compilers as well. Instead of skipping for cross-compilers,
+# let's prioritize the native compilers package
+schema_version: 1
+
+context:
+  version: gcc_version
+  build_num: 1
+  gcc_maj_ver: 15
+  cross_target_platform: linux-64
+
+recipe:
+  name: gcc_compilers
+  version: ${{ version }}
+
+source:
+  - url:
+      #- https://ftp.gnu.org/gnu/gcc/gcc-{{ version }}/gcc-{{ version }}.tar.gz
+      - https://mirrors.ocf.berkeley.edu/gnu/gcc/gcc-${{ version }}/gcc-${{ version }}.tar.gz
+    sha256: ${{ 'f35aa1c7f14e6bbe5a7fab83abcb7813449aa1dc6d38bbf27b74614dee17db5e' if gcc_version == "14.4.0" else 'd6c1a7d2da0f2a3bc52c7d02fdd4a531ead78fd694dd31cae1ca532cf5e2b7e3' if gcc_version == "15.3.0" else '48be131b8c719db967cf0265a0ccb0cab2a3b224d5bb42f84904f0c1744213e6' if gcc_version == "16.1.0" else '' }}
+    patches:
+      - patches/0001-allow-commands-in-main-specfile.patch
+      - patches/0002-patch-zoneinfo_dir_override-to-point-to-our-tzdata.patch
+      - patches/0003-add-ldl-to-libstdc___la_LDFLAGS.patch
+      - patches/0004-Hardcode-HAVE_ALIGNED_ALLOC-1-in-libstdc-v3-configur.patch
+      # for GCC 16: https://github.com/msys2/MINGW-packages/tree/2386f7b596fed897fa1f0dcdc56743251b47361c/mingw-w64-gcc
+      #             + a revert of https://github.com/msys2/MINGW-packages/commit/7d132b0972c81c65893eaa4a6e7b2e7436b2d6cf
+      # for GCC 15: https://github.com/msys2/MINGW-packages/tree/f59921184b35858d4ceb91679578de0d62475cbf/mingw-w64-gcc
+      # for GCC 14: https://github.com/msys2/MINGW-packages/tree/331bf945d21af562d228ed46bda21c8272d1e76e/mingw-w64-gcc
+      - patches/mingw/${{ gcc_maj_ver }}/0003-Windows-Follow-Posix-dir-exists-semantics-more-close.patch
+      - patches/mingw/${{ gcc_maj_ver }}/0005-Windows-Don-t-ignore-native-system-header-dir.patch
+      - patches/mingw/${{ gcc_maj_ver }}/0007-Build-EXTRA_GNATTOOLS-for-Ada.patch
+      - patches/mingw/${{ gcc_maj_ver }}/0008-Prettify-linking-no-undefined.patch
+      - patches/mingw/${{ gcc_maj_ver }}/0011-Enable-shared-gnat-implib.patch
+      - patches/mingw/${{ gcc_maj_ver }}/0012-Handle-spaces-in-path-for-default-manifest.patch
+      - patches/mingw/${{ gcc_maj_ver }}/0014-gcc-9-branch-clone_function_name_1-Retain-any-stdcall-suffix.patch
+      - patches/mingw/${{ gcc_maj_ver }}/0020-libgomp-Don-t-hard-code-MS-printf-attributes.patch
+      - patches/mingw/${{ gcc_maj_ver }}/0140-gcc-diagnostic-color.patch
+      - patches/mingw/${{ gcc_maj_ver }}/0200-add-m-no-align-vector-insn-option-for-i386.patch
+      - patches/mingw/${{ gcc_maj_ver }}/2001-fix-building-rust-on-mingw-w64.patch
+      - if: gcc_maj_ver == 16
+        then: patches/mingw/${{ gcc_maj_ver }}/3001-fix-codeview-crashes.patch
+      - if: gcc_maj_ver == 15
+        then: patches/mingw/${{ gcc_maj_ver }}/9002-native-tls.patch
+      # all patches from https://github.com/Homebrew/formula-patches/tree/d1a4ad9bcd210b9721a55370d6dd67e303b7b1fb/gcc
+      # in case of several patches per version, use newest one
+      - patches/macos/gcc-${{ version }}.diff
+      # from https://github.com/JuliaPackaging/Yggdrasil/blob/master/0_RootFS/GCCBootstrap%4014/bundled/patches/gcc/gcc1420-Increase-fallback-min-macOS-version-for-libgcc-to-10.8.patch
+      - if: cross_target_platform == "osx-64"
+        then: patches/macos/0001-GCC-${{ gcc_maj_ver }}-Increase-fallback-min-macOS-version-for-libgc.patch
+      # Make -stdlib=libcxx the default
+      - patches/macos/0002-Make-stdlib-libc-the-default-for-macos-platforms.patch
+      # call xcrun to get sdkroot
+      - patches/macos/0003-Find-macos-sysroot-by-calling-xcrun.patch
+      - patches/macos/0004-fix-malloc-error.patch
+  # Need an up-to-date zlib for recent clang
+  - url: https://github.com/madler/zlib/releases/download/v1.3.1/zlib-1.3.1.tar.gz
+    sha256: 9a93b2b7dfdac77ceba5a558a580e74667dd6fede4585b91eefb60f03b72df23
+    target_directory: zlib2
+
+build:
+  number: ${{ build_num }}
+  skip: (win and cross_target_platform != "win-64") or ((cross_target_platform in ("osx-64", "osx-arm64") or osx) and gcc_maj_ver < 15) or ((cross_target_platform == "linux-riscv64" or riscv64) and gcc_maj_ver < 15) or (riscv64 and cross_target_platform in ("osx-64", "osx-arm64"))
+  prefix_detection:
+    ignore_binary_files: true
+
+requirements:
+  build:
+    # Build dependencies are installed in setup_compilers.sh due to
+    # conda-build bugs
+  host:
+    - if: cross_target_stdlib != "None"
+      then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+  ignore_run_exports:
+    from_package:
+      - ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+
+outputs:
+  - package:
+      name: libgcc-devel_${{ cross_target_platform }}
+    build:
+      number: ${{ libgcc_devel_build_num }}
+      noarch: generic
+      prefix_detection:
+        ignore_binary_files: true
+      dynamic_linking:
+        missing_dso_allowlist:
+          - "*"
+      script:
+        file: install-libgcc-devel.sh
+    requirements:
+      build:
+      host:
+        - if: cross_target_stdlib != "None"
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+      run:
+        - if: unix
+          then: __unix
+        - if: win
+          then: m2-conda-epoch
+      ignore_run_exports:
+        from_package:
+          - ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+    tests:
+      - script:
+          - echo ${{ cross_target_stdlib_version }}
+          - if: cross_target_platform not in ("osx-64", "osx-arm64")
+            then: test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/crtbegin.o
+          - if: cross_target_platform in ("osx-64", "osx-arm64")
+            then: test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/crtfastmath.o
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgcc_eh.a
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgcc.a
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgcc_s.so
+          - if: gcc_maj_ver >= 16
+            then: test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgcc_s_asneeded.so
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgcc_s.1.dylib
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgcc_s.1.1.dylib
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgcc_s.1.1.dylib
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgcc_s.a
+    about:
+      summary: The GNU C development libraries and object files
+      license: GPL-3.0-only WITH GCC-exception-3.1
+      homepage: https://gcc.gnu.org/
+  - package:
+      name: libstdcxx-devel_${{ cross_target_platform }}
+    build:
+      number: ${{ libgcc_devel_build_num }}
+      skip: cross_target_cxx_stdlib != "libstdcxx"
+      noarch: generic
+      prefix_detection:
+        ignore_binary_files: true
+      dynamic_linking:
+        missing_dso_allowlist:
+          - "*"
+      script:
+        file: install-libstdc++-devel.sh
+    requirements:
+      build:
+      host:
+        - if: cross_target_stdlib != "None"
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+      run:
+        - if: unix
+          then: __unix
+        - if: win
+          then: m2-conda-epoch
+      ignore_run_exports:
+        from_package:
+          - ${{ cross_target_stdlib }}_${{ cross_target_platform }}
+    tests:
+      - script:
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libstdc++.a
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libstdc++fs.a
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libsupc++.a
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/include/c++/cstdio
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libstdc++.so
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libstdc++.dll.a
+    about:
+      summary: The GNU C++ headers and development libraries
+      license: GPL-3.0-only WITH GCC-exception-3.1
+      homepage: https://gcc.gnu.org/
+  - package:
+      name: gcc_impl_${{ cross_target_platform }}
+    build:
+      number: ${{ build_num }}
+      prefix_detection:
+        ignore_binary_files: true
+      dynamic_linking:
+        missing_dso_allowlist:
+          - "*"
+      script:
+        file: install-gcc.sh
+    requirements:
+      build:
+      host:
+        - if: cross_target_stdlib != "None"
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+        - if: target_platform == cross_target_platform and cross_target_platform not in ("osx-64", "osx-arm64")
+          then: ${{ pin_subpackage("libgomp", exact=True) }}
+        - if: target_platform == cross_target_platform and cross_target_platform not in ("osx-64", "osx-arm64")
+          then: ${{ pin_subpackage("libstdcxx", exact=True) }}
+        - if: target_platform == cross_target_platform
+          then: ${{ pin_subpackage("libgcc", exact=True) }}
+        - if: target_platform == cross_target_platform
+          then: ${{ pin_subpackage("libgfortran" ~ libgfortran_soname) }}
+        - if: target_platform == cross_target_platform and not (win or osx)
+          then: ${{ pin_subpackage("libsanitizer", exact=True) }}
+        - ${{ pin_subpackage("libgcc-devel_" ~ cross_target_platform, exact=True) }}
+      run:
+        # For the linker
+        - ld64_${{ cross_target_platform }}
+        # For the assembler which calls the integrated assembler in clang
+        - cctools_${{ cross_target_platform }}
+        - clang
+        - binutils_impl_${{ cross_target_platform }} >=${{ binutils_version }}
+        - if: cross_target_stdlib != "None"
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }}
+        # libstdcxx is a runtime dep of gcc because LTO requires it.
+        - if: target_platform == cross_target_platform
+          then: ${{ pin_subpackage("libstdcxx", upper_bound=None) }}
+        - if: target_platform == cross_target_platform
+          then: ${{ pin_subpackage("libgomp", upper_bound=None) }}
+        - ${{ pin_subpackage("libstdcxx-devel_" ~ cross_target_platform, exact=True) }}
+        - ${{ pin_subpackage("libgcc-devel_" ~ cross_target_platform, exact=True) }}
+        - if: target_platform == cross_target_platform and not (win or osx)
+          then: ${{ pin_subpackage("libsanitizer", exact=True) }}
+        - if: target_platform == cross_target_platform
+          then: ${{ pin_subpackage("libgcc", upper_bound=None) }}
+      ignore_run_exports:
+        from_package:
+          - ${{ cross_target_stdlib }}_${{ cross_target_platform }}
+    tests:
+      - files:
+          recipe:
+            - tests
+        requirements:
+          run:
+            - if: cross_target_stdlib != "None"
+              then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+        script:
+          - echo ${{ c_stdlib }}
+          - echo ${{ c_stdlib_version }}
+          - if: target_platform == cross_target_platform and cross_target_platform not in ("osx-64", "osx-arm64")
+            then: test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgomp.so
+          - if: target_platform == cross_target_platform and cross_target_platform not in ("osx-64", "osx-arm64")
+            then: test `readlink ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgomp.so` == "../../../libgomp.so"
+          - test -f ${PREFIX}/bin/${{ TARGET }}-gcc
+          - test -f ${PREFIX}/bin/${{ TARGET }}-cpp
+          - if: cross_target_platform not in ("osx-64", "osx-arm64")
+            then: test ! -f ${PREFIX}/bin/gcc
+          - if: cross_target_platform not in ("osx-64", "osx-arm64")
+            then: test ! -f ${PREFIX}/bin/cpp
+          - CC=$(${PREFIX}/bin/*-gcc -dumpmachine)-gcc
+          - if: target_platform == cross_target_platform and (x86_64 or s390x)
+            then: ${CC} -Wall tests/aligned_alloc.c -c -o c_aligned.o -v -Wl,-v -march=native
+          - if: target_platform == cross_target_platform and (not x86_64 and not s390x and not ppc64le and not riscv64)
+            then: ${CC} -Wall tests/aligned_alloc.c -c -o c_aligned.o -v -Wl,-v -mcpu=native
+          - if: cross_target_platform != "win-64"
+            then: ${CC} -Wall tests/aligned_alloc.c -c -o c_aligned.o -v -fsanitize=address
+          - if: cross_target_platform != "win-64"
+            then: ${CC} -Wall tests/aligned_alloc.c -c -o c_aligned.o -v
+          - if: cross_target_platform == target_platform and cross_target_platform != "win-64"
+            then: ${CC} -Wall c_aligned.o -o c_aligned -v && ./c_aligned
+          - if: cross_target_platform == target_platform and linux
+            then: ${CC} -Wall c_aligned.o -o c_aligned -Wl,-rpath,/foo && ${{ TARGET }}-readelf -d c_aligned | grep RPATH | grep "/foo:${PREFIX}/lib"
+          - ${CC} -Wall tests/hello_world.c -c -o hello_world.o -v
+          - ${CC} -Wall hello_world.o -o hello_world -v
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgcc_s.so
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libsanitizer.spec
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libasan_preinit.o
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgcc_s.1.1.dylib
+          - find ${PREFIX}/${{ TARGET }} || true
+          - test ! -d ${PREFIX}/${{ TARGET }}
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgcc_s.a
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libquadmath.a
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgomp.a
+          - if: win
+            then: test ! -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libatomic_asneeded.a
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgomp.spec
+    about:
+      summary: GNU C Compiler
+      license: GPL-3.0-only WITH GCC-exception-3.1
+      homepage: https://gcc.gnu.org/
+    run_exports:
+      # impose this requirement across the build/host boundary
+      strong:
+        - libgcc >=${{ gcc_version }}
+  - package:
+      name: gcc
+    build:
+      skip: target_platform != cross_target_platform
+      track_features:  # [not with_conda_specs]
+        - if: not with_conda_specs
+          then: gcc_no_conda_specs
+      script:
+        file: install-symlinks.sh
+    requirements:
+      host:
+        - ${{ pin_subpackage("gcc_impl_" ~ cross_target_platform, exact=True) }}
+        - if: cross_target_platform not in ("osx-arm64", "osx-64")
+          then: binutils_impl_${{ cross_target_platform }} ${{ binutils_version }}.* bootstrap_*
+      run:
+        - ${{ pin_subpackage("gcc_impl_" ~ cross_target_platform, exact=True) }}
+        - if: with_conda_specs
+          then: conda-gcc-specs
+    tests:
+      - script:
+          - echo "int main (void) {return 0;}" > conftest.c
+          - ${PREFIX}/bin/gcc -v
+          - ${PREFIX}/bin/gcc conftest.c -c -v
+          - ${PREFIX}/bin/gcov -v
+    about:
+      summary: GNU C native compiler (symlinks)
+      license: BSD-3-Clause
+      license_file: LICENSE
+      homepage: https://github.com/conda-forge/ctng-compilers-feedstock
+  - package:
+      name: gcc-no-conda-specs
+    build:
+      skip: with_conda_specs or target_platform != cross_target_platform
+    requirements:
+      run:
+        - ${{ pin_subpackage("gcc", exact=True) }}
+      run_constraints:
+        - conda-gcc-specs <0.0a0
+    tests:
+      - script:
+          - gcc --version
+  - package:
+      name: conda-gcc-specs
+    build:
+      number: ${{ build_num }}
+      skip: cross_target_platform != target_platform
+      prefix_detection:
+        ignore_binary_files: true
+      script:
+        file: install-conda-specs.sh
+    requirements:
+      build:
+      run:
+        - ${{ pin_subpackage("gcc_impl_" ~ cross_target_platform, upper_bound='x.x.x.x') }}
+    tests:
+      - files:
+          recipe:
+            - tests
+        script:
+          - specdir=$PREFIX/lib/gcc/${{ TARGET }}/${{ gcc_version }}
+          - test -f $specdir/conda.specs
+          - CC=$(${PREFIX}/bin/*-gcc -dumpmachine)-gcc
+          - if: linux
+            then: echo | ${CC} -E -v -x c - |& grep '^Reading specs from' | awk '{print $NF}' | xargs readlink -e | awk -v ORS= '{print $1":"}' | grep "${specdir}/specs:${specdir}/conda.specs:"
+          - cp tests/libhowdy.h $PREFIX/include/
+          - ${CC} -shared -fpic -o $PREFIX/lib/libhowdy.so tests/libhowdy.c
+          - ${CC} -o howdy-dso tests/howdy-dso.c -lhowdy
+          - ./howdy-dso
+          - if: linux
+            then: grep RPATH   <(${{ TARGET }}-readelf -d howdy-dso)
+          - if: linux
+            then: grep RUNPATH <(${{ TARGET }}-readelf -d howdy-dso)
+          - if: linux
+            then: ${CC} -Wl,-enable-new-dtags -o howdy-dso-runpath tests/howdy-dso.c -lhowdy
+          - if: linux
+            then: ./howdy-dso-runpath
+          - if: linux
+            then: grep RPATH   <(${{ TARGET }}-readelf -d howdy-dso-runpath)
+          - if: linux
+            then: grep RUNPATH <(${{ TARGET }}-readelf -d howdy-dso-runpath)
+          - if: linux
+            then: echo | ${CC} -E -Wp,-v -x c - |& awk '/include <\.\.\.> search starts/,/^End of search/ {print}' | tail -n2 | head -n1 | grep "$PREFIX/include"
+          - if: linux
+            then: echo | ${CC} -isystem "$PREFIX/include" -E -Wp,-v -x c - |& awk '/include <\.\.\.> search starts/, /^End of search/ {print}' | head -n2 | tail -n1 | grep "$PREFIX/include"
+    about:
+      summary: conda-specific specfile for GNU C/C++ Compiler
+      description: |
+        When installed, this optional package provides a specfile that
+        directs gcc (and g++ or gfortran) to automatically:
+        * search for includes in $PREFIX/include
+        * link libraries in $PREFIX/lib
+        * set RPATH to $PREFIX/lib
+        * use RPATH instead of the newer RUNPATH
+        This package is intended to aid usability of the compiler
+        toolchain as a replacement for system-installed compilers.
+        It should not be used in recipes.  Use the 'compiler(<lang>)'
+        jinja function as described on
+        https://conda-forge.org/docs/maintainer/knowledge_base.html#dep-compilers
+      license: GPL-3.0-only WITH GCC-exception-3.1
+      homepage: https://gcc.gnu.org/
+      documentation: https://gcc.gnu.org/onlinedocs/gcc/Spec-Files.html
+  - package:
+      name: gxx_impl_${{ cross_target_platform }}
+    build:
+      number: ${{ build_num }}
+      prefix_detection:
+        ignore_binary_files: true
+      dynamic_linking:
+        missing_dso_allowlist:
+          - "*"
+      script:
+        file: install-g++.sh
+    requirements:
+      build:
+      host:
+        - if: cross_target_stdlib != "None"
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+        # For cpp and crt{i,n}.o
+        - ${{ pin_subpackage("gcc_impl_" ~ cross_target_platform, exact=True) }}
+        - if: cross_target_platform not in ("osx-arm64", "osx-64")
+          then: binutils_impl_${{ cross_target_platform }} ${{ binutils_version }}.* bootstrap_*
+        - if: cross_target_cxx_stdlib == "libstdcxx"
+          then: ${{ pin_subpackage("libstdcxx-devel_" ~ cross_target_platform, exact=True) }}
+      run:
+        # For cpp and crt{i,n}.o
+        - ${{ pin_subpackage("gcc_impl_" ~ cross_target_platform, exact=True) }}
+        # not needed due to pinning above but marks this build as using the new sysroots
+        - if: cross_target_stdlib != "None"
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }}
+        - if: cross_target_cxx_stdlib == "libstdcxx"
+          then: ${{ pin_subpackage("libstdcxx-devel_" ~ cross_target_platform, exact=True) }}
+        - if: cross_target_cxx_stdlib == "libcxx" and target_platform == cross_target_platform
+          then: libcxx-devel
+        - if: cross_target_cxx_stdlib == "libcxx" and target_platform != cross_target_platform
+          then: libcxx-headers
+        # for C++20 chrono support
+        - tzdata
+      ignore_run_exports:
+        from_package:
+          - ${{ cross_target_stdlib }}_${{ cross_target_platform }}
+    tests:
+      - <conda_recipe_manager.types.SentinelType object at 0x7a7153e51be0>:
+          - ${CXX} -isystem ${PREFIX}/include --std=c++20 -Wall tests/tzdb-override.cpp -c -o tzdb-override.o -v
+          - ${CXX} -isystem ${PREFIX}/include --std=c++20 -Wall tests/tzdb.cpp -c -o tzdb.o -v
+          - ${CXX} tzdb-override.o -o tzdb-override -v && ./tzdb-override
+          - ${CXX} tzdb.o -o tzdb -v && ./tzdb
+          - strace ./tzdb 2>&1 | grep ${CONDA_PREFIX}/lib/../share/zoneinfo/tzdata.zi
+          - unset PREFIX
+          - unset CONDA_PREFIX
+          - ./tzdb
+        files:
+          recipe:
+            - tests
+        requirements:
+          run:
+            - if: cross_target_stdlib != "None"
+              then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+        script:
+          - test -f ${PREFIX}/bin/${{ TARGET }}-g++
+          - CXX=$(${PREFIX}/bin/*-gcc -dumpmachine)-g++
+          - if: cross_target_platform != "win-64"
+            then: ${CXX} -Wall tests/aligned_alloc.cpp -c -o cpp_aligned.o --std=c++17
+          - if: cross_target_platform == target_platform and cross_target_platform != "win-64"
+            then: ${CXX} -Wall cpp_aligned.o -o cpp_aligned --std=c++17 && ./cpp_aligned
+          - ${CXX} -Wall tests/hello_world.cpp -c -o hello_world.o --std=c++17 -v
+          - ${CXX} -Wall hello_world.o -o hello_world --std=c++17 -v
+    about:
+      summary: GNU C++ Compiler
+      license: GPL-3.0-only WITH GCC-exception-3.1
+      homepage: https://gcc.gnu.org/
+    run_exports:
+      # impose this requirement across the build/host boundary
+      strong:
+        - if: cross_target_cxx_stdlib == "libstdcxx"
+          then: libstdcxx >=${{ gcc_version }}
+        - if: cross_target_cxx_stdlib == "libcxx"
+          then: libcxx
+  - package:
+      name: gxx
+    build:
+      skip: target_platform != cross_target_platform
+      script:
+        file: install-symlinks.sh
+    requirements:
+      host:
+        - ${{ pin_subpackage("gxx_impl_" ~ cross_target_platform, exact=True) }}
+        - if: cross_target_platform not in ("osx-arm64", "osx-64")
+          then: binutils_impl_${{ cross_target_platform }} ${{ binutils_version }}.* bootstrap_*
+        - ${{ pin_subpackage("gcc", exact=True) }}
+      run:
+        - ${{ pin_subpackage("gxx_impl_" ~ cross_target_platform, exact=True) }}
+        - ${{ pin_subpackage("gcc", exact=True) }}
+    tests:
+      - script:
+          - ${PREFIX}/bin/g++ -v
+          - ${PREFIX}/bin/gcc -v
+    about:
+      summary: GNU C++ native compiler (symlinks)
+      license: BSD-3-Clause
+      license_file: LICENSE
+      homepage: https://github.com/conda-forge/ctng-compilers-feedstock
+  - package:
+      name: gfortran_impl_${{ cross_target_platform }}
+    build:
+      number: ${{ build_num }}
+      prefix_detection:
+        ignore_binary_files: true
+      dynamic_linking:
+        missing_dso_allowlist:
+          - "*"
+      script:
+        file: install-gfortran.sh
+    requirements:
+      build:
+      host:
+        # For cpp and crt{i,n}.o
+        - ${{ pin_subpackage("gcc_impl_" ~ cross_target_platform, exact=True) }}
+        - if: cross_target_platform not in ("osx-arm64", "osx-64")
+          then: binutils_impl_${{ cross_target_platform }} ${{ binutils_version }}.* bootstrap_*
+        # not needed due to pinning above but marks this build as using the new sysroots
+        - if: cross_target_stdlib != "None"
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+      run:
+        # For cpp and crt{i,n}.o
+        - gcc_impl_${{ cross_target_platform }} >=${{ gcc_version }}
+        - if: target_platform == cross_target_platform
+          then: ${{ pin_subpackage("libgfortran" ~ libgfortran_soname, upper_bound=None) }}
+        - if: target_platform == cross_target_platform
+          then: ${{ pin_subpackage("libgcc", upper_bound=None) }}
+        - if: target_platform == cross_target_platform and cross_target_cxx_stdlib == "libstdcxx"
+          then: ${{ pin_subpackage("libstdcxx", upper_bound=None) }}
+        - if: cross_target_stdlib != "None"
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }}
+      ignore_run_exports:
+        from_package:
+          - ${{ cross_target_stdlib }}_${{ cross_target_platform }}
+    tests:
+      - files:
+          recipe:
+            - tests/fortomp/*
+        requirements:
+          run:
+            - if: x86_64 or aarch64 or ppc64le
+              then: cmake >=3.11,<4
+            - if: cross_target_stdlib != "None"
+              then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+        script:
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgfortran.so
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgfortran.dylib
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgfortran.dll.a
+          - test -f ${PREFIX}/lib/gcc/${{ TARGET }}/${{ gcc_version }}/libgfortran.a
+          - test -f ${PREFIX}/bin/${{ TARGET }}-gfortran
+          - find $PREFIX/lib -iname omp_lib.mod | grep '.'
+          - find $PREFIX/lib -iname omp_lib.h | grep '.'
+          - find $PREFIX/lib -iname ISO_Fortran_binding.h | grep '.'
+          - echo ${{ gcc_maj_ver }}
+          - pushd tests/fortomp
+          - if: target_platform == cross_target_platform and (x86_64 or aarch64 or ppc64le)
+            then: sh test_fort.sh
+    about:
+      summary: GNU Fortran Compiler
+      license: GPL-3.0-only WITH GCC-exception-3.1
+      homepage: https://gcc.gnu.org/
+    run_exports:
+      # impose this requirement across the build/host boundary
+      strong:
+        - libgfortran${{ libgfortran_soname }} ${{ gcc_version }}.*
+        - libgcc >=${{ gcc_version }}
+  - package:
+      name: gfortran
+    build:
+      skip: target_platform != cross_target_platform
+      script:
+        file: install-symlinks.sh
+    requirements:
+      host:
+        - ${{ pin_subpackage("gfortran_impl_" ~ cross_target_platform, exact=True) }}
+        - ${{ pin_subpackage("gcc_impl_" ~ cross_target_platform, exact=True) }}
+        - if: cross_target_platform not in ("osx-arm64", "osx-64")
+          then: binutils_impl_${{ cross_target_platform }} ${{ binutils_version }}.* bootstrap_*
+        - ${{ pin_subpackage("gcc", exact=True) }}
+      run:
+        - ${{ pin_subpackage("gfortran_impl_" ~ cross_target_platform, exact=True) }}
+        - ${{ pin_subpackage("gcc_impl_" ~ cross_target_platform, exact=True) }}
+        - ${{ pin_subpackage("gcc", exact=True) }}
+    tests:
+      - script:
+          - ${PREFIX}/bin/gfortran -v
+          - ${PREFIX}/bin/gcc -v
+    about:
+      summary: GNU Fortran native compiler (symlinks)
+      license: BSD-3-Clause
+      license_file: LICENSE
+      homepage: https://github.com/conda-forge/ctng-compilers-feedstock
+  - package:
+      name: libstdcxx
+    build:
+      number: ${{ build_num }}
+      skip: target_platform != cross_target_platform or cross_target_cxx_stdlib != "libstdcxx"
+      prefix_detection:
+        ignore_binary_files: true
+      dynamic_linking:
+        missing_dso_allowlist:
+          - "*"
+      script:
+        file: install-libstdc++.sh
+    requirements:
+      build:
+      host:
+        - if: cross_target_stdlib != "None"
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+        - ${{ pin_subpackage("libgcc", exact=True) }}
+      run:
+        - ${{ pin_subpackage("libgcc", exact=True) }}
+      run_constraints:
+        - libstdcxx-ng ==${{ version }}=*_${{ build_num }}
+    tests:
+      - script:
+          - test -f ${PREFIX}/lib/libstdc++.so
+    about:
+      summary: The GNU C++ Runtime Library
+      license: GPL-3.0-only WITH GCC-exception-3.1
+      homepage: https://gcc.gnu.org/
+    target: ${{ cross_target_platform }}
+  - package:
+      name: libsanitizer
+    build:
+      number: ${{ build_num }}
+      skip: target_platform != cross_target_platform or win or osx
+      prefix_detection:
+        ignore_binary_files: true
+      dynamic_linking:
+        missing_dso_allowlist:
+          - "*"
+      script:
+        file: install-libsanitizer.sh
+    requirements:
+      build:
+      host:
+        - if: cross_target_stdlib != "None"
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }}  ${{ cross_target_stdlib_version }}
+      run:
+        - libgcc >=${{ gcc_version }}
+        - libstdcxx >=${{ gcc_version }}
+      run_exports:
+        - libsanitizer ${{ gcc_version }}
+    tests:
+      - requirements:
+          run:
+            - if: cross_target_stdlib != "None"
+              then: ${{ cross_target_stdlib }}_${{ cross_target_platform }}
+            - gcc_impl_${{ cross_target_platform }}
+            - if: cross_target_platform not in ("osx-arm64", "osx-64")
+              then: binutils_impl_${{ cross_target_platform }} ${{ binutils_version }}.* bootstrap_*
+        script:
+          - test -f ${PREFIX}/lib/libasan.so
+          - if: x86_64 or aarch64
+            then: test -f ${PREFIX}/lib/libhwasan.so
+          - file ${PREFIX}/bin/${{ TARGET }}-gcc
+          - echo 'void main(){}' | ${{ TARGET }}-gcc -fsanitize=address -Wl,--fatal-warnings -x c -
+    about:
+      summary: The GCC runtime libraries for sanitizers
+      license: GPL-3.0-only WITH GCC-exception-3.1
+      homepage: https://gcc.gnu.org/onlinedocs/gccint/Libgcc.html
+    target: ${{ cross_target_platform }}
+  - package:
+      name: libgomp
+    build:
+      number: ${{ build_num }}
+      skip: target_platform != cross_target_platform or osx
+      prefix_detection:
+        ignore_binary_files: true
+      dynamic_linking:
+        missing_dso_allowlist:
+          - "*"
+      script:
+        file: install-libgomp.sh
+    requirements:
+      build:
+      host:
+        - if: cross_target_stdlib != "None"
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }}  ${{ cross_target_stdlib_version }}
+      run_exports:
+        - strong:
+            - ${{ pin_subpackage("_openmp_mutex", upper_bound=None) }}
+            - ${{ pin_subpackage("libgomp", upper_bound=None) }}
+      run_constraints:
+        - if: win
+          then: msys2-conda-epoch <0.0a0
+    tests:
+      - requirements:
+          run:
+            - if: cross_target_stdlib != "None"
+              then: ${{ cross_target_stdlib }}_${{ cross_target_platform }}
+        script:
+          - test -f ${PREFIX}/lib/libgomp.so.${{ libgomp_ver }}
+          - test ! -f ${PREFIX}/lib/libgomp.so.${{ libgomp_ver[0:1] }}
+    about:
+      summary: The GCC OpenMP implementation.
+      license: GPL-3.0-only WITH GCC-exception-3.1
+      homepage: https://gcc.gnu.org/onlinedocs/gccint/Libgcc.html
+    target: ${{ cross_target_platform }}
+  - package:
+      name: libgcc
+    build:
+      number: ${{ build_num }}
+      skip: target_platform != cross_target_platform
+      prefix_detection:
+        ignore_binary_files: true
+      dynamic_linking:
+        missing_dso_allowlist:
+          - "*"
+      script:
+        file: install-libgcc-no-gomp.sh
+    requirements:
+      build:
+      host:
+        - if: not osx
+          then: ${{ pin_subpackage("libgomp", exact=True) }}
+        - if: not osx
+          then: ${{ pin_subpackage('_openmp_mutex', exact=True) }}
+        - if: cross_target_stdlib != "None"
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }}  ${{ cross_target_stdlib_version }}
+      run:
+        - if: not osx
+          then: ${{ pin_subpackage("_openmp_mutex", upper_bound=None) }}
+        - if: osx
+          then: _openmp_mutex
+      run_constraints:
+        - ${{ pin_subpackage("libgomp", exact=True) }}
+        - if: win
+          then: msys2-conda-epoch <0.0a0
+        - libgcc-ng ==${{ version }}=*_${{ build_num }}
+    tests:
+      - requirements:
+          run:
+            - if: cross_target_stdlib != "None"
+              then: ${{ cross_target_stdlib }}_${{ cross_target_platform }}
+        script:
+          - if: linux
+            then: test -f ${PREFIX}/lib/libgcc_s.so
+          - if: linux and (gcc_maj_ver >= 16)
+            then: test -f ${PREFIX}/lib/libgcc_s_asneeded.so
+          - if: osx
+            then: test -f ${PREFIX}/lib/libgcc_s.1.1.dylib
+          - if: linux
+            then: test -f ${PREFIX}/lib/libgomp.so.${{ libgomp_ver[0:1] }}
+          - if: linux
+            then: test `readlink ${PREFIX}/lib/libgomp.so.${{ libgomp_ver[0:1] }}` == "libgomp.so.${{ libgomp_ver }}"
+          - if: linux
+            then: test `readlink ${PREFIX}/lib/libgomp.so.${{ libgomp_ver[0:1] }}` == "libgomp.so.${{ libgomp_ver }}"
+    about:
+      summary: The GCC low-level runtime library
+      license: GPL-3.0-only WITH GCC-exception-3.1
+      homepage: https://gcc.gnu.org/onlinedocs/gccint/Libgcc.html
+    target: ${{ cross_target_platform }}
+  - package:
+      name: _openmp_mutex
+      version: ${{ openmp_ver }}
+    build:
+      # have higher priority than llvm
+      number: 20
+      string: 20_gnu
+      skip: target_platform != cross_target_platform or osx
+      script:
+        file: install-openmp_impl.sh
+    requirements:
+      build:
+      host:
+        - ${{ pin_subpackage('libgomp', exact=True) }}
+        - if: cross_target_stdlib != "None"
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }}  ${{ cross_target_stdlib_version }}
+      run:
+        - libgomp >=7.5.0
+      run_exports:
+        - strong:
+            - ${{ pin_subpackage("_openmp_mutex", upper_bound=None) }}
+      run_constraints:
+        - openmp_impl <0.0a0
+        - if: win
+          then: msys2-conda-epoch <0.0a0
+    tests:
+      - script:
+          - test -f ${PREFIX}/lib/libgomp.so.${{ libgomp_ver[0:1] }}
+          - test `readlink ${PREFIX}/lib/libgomp.so.${{ libgomp_ver[0:1] }}` == "libgomp.so.${{ libgomp_ver }}"
+    about:
+      summary: OpenMP Implementation Mutex
+      license: BSD-3-Clause
+      license_file: LICENSE
+      homepage: https://github.com/conda-forge/ctng-compilers-feedstock
+  - package:
+      name: libgfortran${{ libgfortran_soname }}
+    build:
+      number: ${{ build_num }}
+      skip: target_platform != cross_target_platform
+      prefix_detection:
+        ignore_binary_files: true
+      dynamic_linking:
+        missing_dso_allowlist:
+          - "*"
+      script:
+        file: install-libgfortran.sh
+    requirements:
+      build:
+      host:
+        - if: cross_target_stdlib != "None"
+          then: ${{ cross_target_stdlib }}_${{ cross_target_platform }} ${{ cross_target_stdlib_version }}
+      run:
+        - libgcc >=${{ gcc_version }}
+      run_constraints:
+        - libgfortran ${{ gcc_version }}
+    tests:
+      - script:
+          - test -f ${PREFIX}/lib/libgfortran${SHLIB_EXT}
+    about:
+      summary: The GNU Fortran Runtime Library
+      license: GPL-3.0-only WITH GCC-exception-3.1
+      homepage: https://gcc.gnu.org/
+    target: ${{ cross_target_platform }}
+  - package:
+      name: libgfortran
+    build:
+      number: ${{ build_num }}
+      skip: target_platform != cross_target_platform
+    requirements:
+      run:
+        - ${{ pin_subpackage('libgfortran' ~ libgfortran_soname, exact=True) }}
+      run_constraints:
+        - libgfortran-ng ==${{ version }}=*_${{ build_num }}
+    tests:
+      - script:
+          - test -f ${PREFIX}/lib/libgfortran${SHLIB_EXT}
+    about:
+      summary: The GNU Fortran Runtime Library
+      license: GPL-3.0-only WITH GCC-exception-3.1
+      homepage: https://gcc.gnu.org/
+    target: ${{ cross_target_platform }}
+  # compatibility outputs for previous naming of the runtime libraries
+  # with "-ng" suffix; for windows the suffix had never been introduced
+  - package:
+      name: libgcc-ng
+    build:
+      number: ${{ build_num }}
+      skip: target_platform != cross_target_platform
+    requirements:
+      host:
+        - ${{ pin_subpackage("libgcc", exact=True) }}
+      run:
+        - ${{ pin_subpackage("libgcc", exact=True) }}
+      run_exports:
+        - strong:
+            - libgcc
+    tests:
+      - script:
+          - echo "empty wrapper for compatibility with previous naming"
+    about:
+      summary: The GCC low-level runtime library
+      license: GPL-3.0-only WITH GCC-exception-3.1
+      homepage: https://gcc.gnu.org/onlinedocs/gccint/Libgcc.html
+    target: ${{ cross_target_platform }}
+  - package:
+      name: libstdcxx-ng
+    build:
+      number: ${{ build_num }}
+      skip: target_platform != cross_target_platform or cross_target_cxx_stdlib != "libstdcxx"
+      script:
+        file: install-libstdc++.sh
+    requirements:
+      host:
+        - ${{ pin_subpackage("libstdcxx", exact=True) }}
+      run:
+        - ${{ pin_subpackage("libstdcxx", exact=True) }}
+      run_exports:
+        - strong:
+            - libstdcxx
+    tests:
+      - script:
+          - echo "empty wrapper for compatibility with previous naming"
+    about:
+      summary: The GNU C++ Runtime Library
+      license: GPL-3.0-only WITH GCC-exception-3.1
+      homepage: https://gcc.gnu.org/
+    target: ${{ cross_target_platform }}
+  - package:
+      name: libgfortran-ng
+    build:
+      number: ${{ build_num }}
+      skip: target_platform != cross_target_platform
+    requirements:
+      host:
+        - ${{ pin_subpackage('libgfortran', exact=True) }}
+      run:
+        - ${{ pin_subpackage('libgfortran', exact=True) }}
+      run_exports:
+        - strong:
+            - libgfortran
+    tests:
+      - script:
+          - echo "empty wrapper for compatibility with previous naming"
+    about:
+      summary: The GNU Fortran Runtime Library
+      license: GPL-3.0-only WITH GCC-exception-3.1
+      homepage: https://gcc.gnu.org/
+    target: ${{ cross_target_platform }}
+
+about:
+  summary: GNU Compiler Collection
+  license: GPL-3.0-only WITH GCC-exception-3.1
+  license_file:
+    - COPYING
+    - COPYING.LIB
+    - COPYING3
+    - COPYING3.LIB
+  homepage: https://gcc.gnu.org/
+
+extra:
+  feedstock-name: ctng-compilers
+  recipe-maintainers:
+    - timsnyder
+    - xhochy
+    - isuruf
+    - beckermr

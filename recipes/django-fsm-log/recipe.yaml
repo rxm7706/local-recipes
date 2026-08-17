@@ -2,50 +2,45 @@
 schema_version: 1
 
 context:
-  version: "5.0.2"
+  name: django-fsm-log
+  version: "3.1.0"
 
 package:
-  name: django-fsm-log
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-fsm-log/django_fsm_log-${{ 
-    version }}.tar.gz
-  sha256: 5276a587bff3112c123c73456f37decf9c1bdc631e005c760e248adc25c8ec97
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django-fsm-log-${{ version }}.tar.gz
+  sha256: 9ef766f5e6d7c573d1953cf91df73538a611373cc1ef97488eff19a3f71d6ed6
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
-    - hatchling
+    - setuptools
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<3.11
+    - django >=1.8
+    - django-fsm >=2
     - django-appconf
-    - django-fsm-2
-    - django >=4.2
 
 tests:
   - python:
       imports:
         - django_fsm_log
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
-  homepage: https://github.com/jazzband/django-fsm-log
+  summary: Logging for django-fsm
   license: MIT
   license_file: LICENSE
-  summary: Transition's persistence for django-fsm
-  description: |
-    Transition's persistence for django-fsm
-  documentation: https://django-fsm-log.readthedocs.io/en/latest/
+  homepage: https://github.com/gizmag/django-fsm-log
 
 extra:
   recipe-maintainers:

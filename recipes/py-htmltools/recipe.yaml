@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: htmltools
+  version: "0.7.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/htmltools-${{ version }}.tar.gz
+  sha256: b95f922b7038f1b935ce24691ae74cb1ab9526d9c9cf1c2e2f329c38ef227a10
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.7
+    - setuptools
+  run:
+    - python >=3.7
+    - packaging >=20.9
+    - typing-extensions >=3.10.0.0
+
+tests:
+  - python:
+      imports:
+        - htmltools
+      pip_check: true
+
+about:
+  summary: Tools for HTML generation and output.
+  license: MIT
+  license_file:
+    - LICENSE
+  description: |
+    # `htmltools` for Python
+
+    Tools for creating, manipulating, and writing HTML from Python.
+
+    PyPI: [https://pypi.org/project/htmltools](https://pypi.org/project/htmltools)
+
+  homepage: https://github.com/posit-dev/py-htmltools
+  repository: https://github.com/posit-dev/py-htmltools
+  documentation: https://github.com/posit-dev/py-htmltools
+
+extra:
+  recipe-maintainers:
+    - wch
+    - sugatoray
+  feedstock-name: py-${{ name|lower }}

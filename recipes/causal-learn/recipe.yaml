@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: causal-learn
+  version: "0.1.4.7"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 777762d1c599030a4fb9069f7780d6199780c2251f722bd5ed89876291f35cb9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - numpy
+    - scipy
+    - scikit-learn
+    - python-graphviz
+    - statsmodels
+    - pandas
+    - matplotlib-base
+    - networkx
+    - pydot
+    - tqdm
+    - momentchi2
+    - joblib
+
+tests:
+  - python:
+      imports:
+        - causallearn
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: causal-learn Python Package
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/py-why/causal-learn
+
+extra:
+  recipe-maintainers:
+    - kunwuz

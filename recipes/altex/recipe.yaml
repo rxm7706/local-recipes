@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.0"
+
+package:
+  name: altex
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/altex/altex-${{ version }}.tar.gz
+  sha256: 5ed6404af0d242a751111bd78421951d5e7025f9c559b7bcb151d3b4e63299d7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - altair >=4.0.0
+    - pandas >=1.0.0
+    - streamlit >=1.18.0
+
+tests:
+  - python:
+      imports:
+        - altex
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/arnaudmiribel/altex
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A simple wrapper on top of Altair to make charts with an express API
+  description: |
+    A simple wrapper on top of Altair to make charts with an express API
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: altex
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: altex
+  cfe-purls:
+    - pkg:conda/altex@${{ version }}?channel=conda-forge
+    - pkg:pypi/altex@${{ version }}
+  cfe-upstream-repo: https://github.com/arnaudmiribel/altex
+  cfe-upstream-homepage: https://github.com/arnaudmiribel/altex
+  cfe-import-names: [altex]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:15Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

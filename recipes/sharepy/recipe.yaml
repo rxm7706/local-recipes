@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.0"
+
+package:
+  name: sharepy
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sharepy/sharepy-${{ version }}.tar.gz
+  sha256: 683ba3d472b9dfa259e01f3b9e8a4aea3abc833fb01ca2ca1c22e618301ded1a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - requests
+
+tests:
+  - python:
+      imports:
+        - sharepy
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/JonathanHolvey/sharepy
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: Simple SharePoint Online authentication for Python
+  description: |
+    Simple SharePoint Online authentication for Python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sharepy
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sharepy
+  cfe-purls:
+    - pkg:conda/sharepy@${{ version }}?channel=conda-forge
+    - pkg:pypi/sharepy@${{ version }}
+  cfe-upstream-repo: https://github.com/JonathanHolvey/sharepy
+  cfe-upstream-homepage: https://github.com/JonathanHolvey/sharepy
+  cfe-import-names: [sharepy]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:17:45Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:17:45Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

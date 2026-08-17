@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dataflows-tabulator
+  version: "1.54.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/dataflows-tabulator-${{ version }}.tar.gz
+  sha256: c697990bf91d16fb2ca1885cd665608a60c6c2c68d4d5e07609b455a93b20352
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - tabulator = tabulator.__main__:cli
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - six >=1.9
+    - click >=6.0
+    - requests >=2.8
+    - chardet >=3.0
+    - boto3 >=1.9
+    - unicodecsv >=0.14
+    - ijson >=3.0.3
+    - jsonlines >=1.1
+    - sqlalchemy >=0.9.6
+    - linear-tsv >=1.0
+    - xlrd >=1.0
+    - openpyxl >=2.6
+
+tests:
+  - python:
+      imports:
+        - tabulator
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - tabulator --help
+
+about:
+  summary: Consistent interface for stream reading and writing tabular data (csv/xls/json/etc)
+  license: MIT
+  license_file: LICENSE.md
+  homepage: https://github.com/akariv/tabulator-py
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

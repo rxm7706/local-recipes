@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.7.0"
+
+package:
+  name: ptyprocess
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/ptyprocess/ptyprocess-${{ version }}.tar.gz
+  sha256: 5c5d0a3b48ceee0b48485e0c26037c0acd7d29765ca3fbb5cb3831d347423220
+
+build:
+  number: 1
+  noarch: python
+  script:
+    - flit build --format wheel
+    - ${{ PYTHON }} -m pip install dist/*.whl --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - flit
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - ptyprocess
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: ISC
+  summary: Run a subprocess in a pseudo terminal
+  description: |
+    Ptyprocess allows you to launch a subprocess in a pseudo terminal (pty),
+    and interact with both the process and its pty.
+  homepage: https://github.com/pexpect/ptyprocess
+  repository: https://github.com/pexpect/ptyprocess
+  documentation: http://ptyprocess.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - pelson
+    - takluyver
+    - ocefpaf

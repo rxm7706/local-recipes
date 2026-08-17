@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: tableauserverclient
+  version: "0.41"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: e491975b9f0e19467fb6423b814511a9f549c22bce78c868079a25fbe81a0e95
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - pytest-runner
+    - versioneer[toml] >=0.29
+    - setuptools >=0.77
+  run:
+    - python >=${{ python_min }}
+    - defusedxml >=0.7.1
+    - packaging >=23.1
+    - requests >=2.32
+    - typing_extensions >=4.0
+    - urllib3 >=2.6.0,<3
+
+tests:
+  - python:
+      imports:
+        - tableauserverclient
+        - tableauserverclient.models
+        - tableauserverclient.server
+        - tableauserverclient.server.endpoint
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - black ==26.3.1
+        - mypy ==1.4
+        - pytest >=7.0
+        - pytest-cov
+        - pytest-subtests
+        - pytest-xdist
+        - python-build
+        - requests-mock >=1.0,<2.0
+        - types-requests >=2.32.4.20250913
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A Python library for the Tableau Server REST API
+  description: |
+    Use the Tableau Server Client (TSC) library to increase your productivity
+    as you interact with the Tableau Server REST API. With the TSC library you
+    can do almost everything that you can do with the REST API, including
+    publish workbooks and data sources, create users and groups, and query
+    projects, sites, and more.
+  homepage: https://github.com/tableau/server-client-python
+  repository: https://github.com/tableau/server-client-python
+  documentation: https://tableau.github.io/server-client-python/docs/
+
+extra:
+  recipe-maintainers:
+    - patlougheed

@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.11.2"
+
+package:
+  name: sprox
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/sprox/sprox-${{ version }}.tar.gz
+  sha256: 5cfeee951be07b51d1e219d20fbafd6293f6c1e5d3f579a4aecd7c63621aa55f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - sprox
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://www.sprox.org
+  license: MIT
+  license_file: LICENSE
+  summary: A package for creation of web widgets directly from database schema.
+  description: |
+    A package for creation of web widgets directly from database schema.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: sprox
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: sprox
+  cfe-purls:
+    - pkg:conda/sprox@${{ version }}?channel=conda-forge
+    - pkg:pypi/sprox@${{ version }}
+  cfe-upstream-repo: http://www.sprox.org
+  cfe-upstream-homepage: http://www.sprox.org
+  cfe-import-names: [sprox]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:07:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:07:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

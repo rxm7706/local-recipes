@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pondpond
+  version: "1.4.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pondpond-${{ version }}.tar.gz
+  sha256: 8afa34b869d1434d21dd2ec12644abc3b1733fcda8fcf355300338a13a79bb7b
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pdm-pep517 >=1.0.0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - madoka >=0.7.1
+
+tests:
+  - python:
+      imports:
+        - pond
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Pond is a high performance object-pooling library for Python.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/T-baby/pondpond
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

@@ -1,0 +1,87 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.8.19"
+
+package:
+  name: aiavatar
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/a/aiavatar/aiavatar-0.8.19-py3-none-any.whl
+  sha256: 8622682b4ab15a8e85d03a768de6689defbc770f47907e77321e873fead7986f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - httpx >=0.27.0
+    - openai >=1.55.3
+    - aiofiles >=24.1.0
+    - numpy >=2.2.3
+    - silero-vad >=6.0.0
+    - websockets >=13.0
+    - fastapi >=0.115.0
+    - uvicorn >=0.30.0
+
+tests:
+  - python:
+      imports:
+        - aiavatar
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/uezo/aiavatar
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: 🥰 Building AI-based conversational avatars lightning fast ⚡️💬
+  description: |
+    🥰 Building AI-based conversational avatars lightning fast ⚡️💬
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: aiavatar
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: aiavatar
+  cfe-purls:
+    - pkg:conda/aiavatar@${{ version }}?channel=conda-forge
+    - pkg:pypi/aiavatar@${{ version }}
+  cfe-upstream-repo: https://github.com/uezo/aiavatar
+  cfe-upstream-homepage: https://github.com/uezo/aiavatar
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:48:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:48:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

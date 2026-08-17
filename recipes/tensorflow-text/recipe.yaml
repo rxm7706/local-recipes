@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.20.1"
+
+package:
+  name: tensorflow-text
+  version: ${{ version }}
+
+source:
+  url: https://github.com/tensorflow/text/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: f04cd737b64ac7bdbba46ac649f5de7c30e4e4ccd78c41ead8999758bf6f3685
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - tensorflow <2.21,>=2.20.0
+
+tests:
+  - python:
+      imports:
+        - tensorflow_text
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://github.com/tensorflow/text
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: TF.Text is a TensorFlow library of text related ops, modules, and subgraphs.
+  description: |
+    TF.Text is a TensorFlow library of text related ops, modules, and subgraphs.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: tensorflow-text
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: tensorflow-text
+  cfe-purls:
+    - pkg:conda/tensorflow-text@${{ version }}?channel=conda-forge
+    - pkg:pypi/tensorflow-text@${{ version }}
+  cfe-upstream-repo: http://github.com/tensorflow/text
+  cfe-upstream-homepage: http://github.com/tensorflow/text
+  cfe-import-names: [tensorflow_text]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:09:52Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:09:52Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

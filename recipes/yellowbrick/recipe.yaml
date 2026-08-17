@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: yellowbrick
+  version: "1.5"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 99a6336dd2e7ce586a8cde67966b79c51b479d3759f3c083d7e19ffe949f6076
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - pytest-runner
+  run:
+    - python >=${{ python_min }}
+    - cycler >=0.10.0
+    - matplotlib-base >=2.0.2,!=3.0.0
+    - numpy >=1.16.0
+    - scikit-learn >=1.0.0
+    - scipy >=1.0.0
+    - umap-learn >=0.5.1
+
+tests:
+  - python:
+      imports:
+        - yellowbrick
+        - yellowbrick.classifier
+        - yellowbrick.cluster
+        - yellowbrick.contrib
+        - yellowbrick.contrib.classifier
+        - yellowbrick.contrib.missing
+        - yellowbrick.contrib.statsmodels
+        - yellowbrick.datasets
+        - yellowbrick.features
+        - yellowbrick.gridsearch
+        - yellowbrick.model_selection
+        - yellowbrick.regressor
+        - yellowbrick.style
+        - yellowbrick.target
+        - yellowbrick.text
+        - yellowbrick.utils
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  summary: A suite of visual analysis and diagnostic tools for machine learning.
+  homepage: http://scikit-yb.org/
+  repository: https://github.com/DistrictDataLabs/yellowbrick
+  documentation: https://www.scikit-yb.org/en/latest/
+
+extra:
+  recipe-maintainers:
+    - kellend-git

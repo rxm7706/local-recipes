@@ -35,7 +35,8 @@ tests:
         - django_nextjs
       pip_check: true
       python_version:
-        - ${{ python_min }}.*
+      - ${{ python_min }}.*
+      - "*"
 
 about:
   summary: Integrate Next.js into your Django project

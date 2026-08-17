@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: setuptools-parcels
+  version: "0.0.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/setuptools-parcels-${{ version }}.tar.gz
+  sha256: 8cebbefb971524ec44ca4f0d23d60d2cd0ffae4295e09031876dd9651144408d
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - setuptools_parcels
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: an alternative interface to package_data
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/toumorokoshi/setuptools-parcels
+
+extra:
+  recipe-maintainers:
+    - rxm7706

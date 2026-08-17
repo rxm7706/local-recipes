@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.9.0"
+  python_check_max: "3.14"
+  cov_fail_under: "82"
+
+package:
+  name: openapi-schema-validator
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/openapi-schema-validator/openapi_schema_validator-${{ version }}.tar.gz
+  sha256: b72db64315b89d21834cd3ffef37e3e6893bc876327be2d366e8424b1029afd3
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - poetry-core >=1.0.0
+    - python ${{ python_min }}.*
+  run:
+    - jsonschema >=4.19.1,<5.0.0
+    - jsonschema-specifications >=2024.10.1
+    - pydantic >=2.0.0,<3.0.0
+    - pydantic-settings >=2.0.0,<3.0.0
+    - python >=${{ python_min }}
+    - referencing >=0.37.0,<0.38.0
+    - rfc3339-validator
+  run_constraints:
+    - regress >=2025.10.1
+
+tests:
+  - python:
+      imports: openapi_schema_validator
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - files:
+      recipe:
+        - pyproject.toml
+      source:
+        - tests/
+    requirements:
+      run:
+        - mypy
+        - pytest-cov
+        - python ${{ python_min }}.*
+        - regress
+        - types-jsonschema
+    script:
+      - coverage run -m pytest
+      - coverage report --fail-under=${{ cov_fail_under }}
+      - mypy -p openapi_schema_validator
+
+about:
+  summary: OpenAPI schema validation for Python
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://pypi.org/project/openapi-schema-validator
+  repository: https://github.com/p1c2u/openapi-schema-validator
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

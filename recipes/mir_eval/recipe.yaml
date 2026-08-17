@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mir_eval
+  version: "0.8.2"
+  python_min: "3.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 141a3e1193276889fc32e911547e73dcb3e829ee8cfea60f7bbcd633c0792569
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install .  -vv
+
+requirements:
+  host:
+    - pip
+    - python 3.9.*
+    - setuptools >=48
+  run:
+    - numpy >=1.7.0
+    - python >=${{ python_min }}
+    - scipy >=1.0.0
+    - decorator
+
+tests:
+  - python:
+      imports:
+        - mir_eval
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Common metrics for common audio/music processing tasks.
+  homepage: https://github.com/mir-evaluation/mir_eval
+  repository: https://github.com/mir-evaluation/mir_eval
+  documentation: http://mir-evaluation.github.io/mir_eval/
+
+extra:
+  recipe-maintainers:
+    - oblute
+    - rluria14
+    - ndmaxar
+    - bmcfee

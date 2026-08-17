@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: murmurhash
+  version: "1.0.15"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 58e2b27b7847f9e2a6edf10b47a8c8dd70a4705f45dccb7bf76aeadacf56ba01
+
+build:
+  number: 1
+  script: ${{ PYTHON }} -m pip install . --no-deps --no-build-isolation -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+        - cython
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+  host:
+    - if: win and match(python, "<3.5")
+      then: msinttypes
+    - cython
+    - python
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - murmurhash
+        - murmurhash.mrmr
+      pip_check: true
+  - requirements:
+      run:
+        - pytest
+    script:
+      - python run_test.py
+    files:
+      recipe:
+        - run_test.py
+
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Cython bindings for MurmurHash2
+  homepage: https://github.com/explosion/murmurhash/
+
+extra:
+  recipe-maintainers:
+    - rmax
+    - conda-forge/spacy
+    - synapticarbors

@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: git-cliff
+  version: "2.13.1"
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/orhun/git-cliff/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 3dd3138a009ade1085dd2f001f836c2bb406462a99512dbcb573bda1f2166274
+
+build:
+  number: 0
+  script:
+    content:
+      - if: unix
+        then:
+          - export LIBGIT2_NO_VENDOR="true"
+          - export PKG_CONFIG="$BUILD_PREFIX/bin/pkg-config"
+          - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+          - cargo install --path git-cliff --bins --root "${PREFIX}" --locked
+          - rm $PREFIX/.crates2.json
+          - rm $PREFIX/.crates.toml
+      - if: win
+        then:
+          - dir %PREFIX%\Library\lib
+          # NOTE: somehow the linker is looking for ssh2.lib and not libssh2.lib.
+          # Using RUSTFLAGS with `-l libssh2` does not work so the only solution found
+          # so far is to copy libssh2.lib to ssh2.lib.
+          # See:
+          # - https://github.com/conda-forge/git-cliff-feedstock/pull/23#issuecomment-2695470356
+          # - https://github.com/conda-forge/git-cliff-feedstock/pull/26
+          # - https://github.com/conda-forge/libssh2-feedstock/issues/55
+          - copy %PREFIX%\Library\lib\libssh2.lib %PREFIX%\Library\lib\ssh2.lib
+          - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml || exit 1
+          - cargo install --verbose --path git-cliff --bins --root %LIBRARY_PREFIX% --locked || exit 1
+          - del %LIBRARY_PREFIX%\.crates2.json || exit 1
+          - del %LIBRARY_PREFIX%\.crates.toml || exit 1
+          - del %PREFIX%\Library\lib\ssh2.lib || exit 1
+
+requirements:
+  build:
+    - ${{ compiler('rust') }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - pkg-config
+    - cargo-bundle-licenses
+  host:
+    - libgit2
+    - libssh2
+    # to build against libgit2 we also need the pkgconfig files
+    # for zlib
+    - zlib
+
+tests:
+  - script:
+      - git-cliff --help
+  - package_contents:
+      bin:
+        - git-cliff
+        - git-cliff-completions
+        - git-cliff-mangen
+
+about:
+  summary: A highly customizable changelog generator
+  description: A highly customizable Changelog Generator that follows Conventional Commit specifications ⛰️
+  license: MIT OR Apache-2.0
+  license_file:
+    - LICENSE-MIT
+    - LICENSE-APACHE
+    - THIRDPARTY.yml
+  homepage: https://git-cliff.org
+  repository: https://github.com/orhun/git-cliff
+  documentation: https://git-cliff.org/docs/
+
+extra:
+  recipe-maintainers:
+    - hadim
+    - orhun

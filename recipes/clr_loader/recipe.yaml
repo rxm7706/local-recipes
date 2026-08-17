@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: clr_loader
+  version: "0.3.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 2e073e9aaf49d1ae2f56ecba27987ad5fb68be4bcd9dd34a5bed8f0e4e128366
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - dotnet-sdk 8.0.*
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools >=80
+    - setuptools-scm
+    - wheel
+  run:
+    - cffi >=1.17
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - clr_loader
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Generic pure Python loader for .NET runtimes
+  homepage: https://github.com/pythonnet/clr-loader
+  repository: https://github.com/pythonnet/clr-loader
+
+extra:
+  recipe-maintainers:
+    - m-rossi

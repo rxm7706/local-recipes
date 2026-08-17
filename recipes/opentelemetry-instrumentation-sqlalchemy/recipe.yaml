@@ -1,0 +1,112 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: opentelemetry-instrumentation-sqlalchemy
+  version: 0.65b0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_sqlalchemy-${{ version }}.tar.gz
+  sha256: 8ec2e79f1e00808c5dc639ab5b2cfcdf9dcdef55efd6442c6019707fe2894028
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - opentelemetry-api ~=1.12
+    - opentelemetry-instrumentation ==0.65b0
+    - opentelemetry-semantic-conventions ==0.65b0
+    - packaging >=21.0
+    - wrapt >=1.11.2
+    # - sqlalchemy
+    # - pytest
+    # - opentelemetry-sdk ~=1.12
+    # - opentelemetry-instrumentation-sqlalchemy
+    # - sqlalchemy
+    # - pytest
+    # - opentelemetry-sdk ~=1.12
+    # - opentelemetry-instrumentation-sqlalchemy
+    # - sqlalchemy
+    # - pytest
+    # - opentelemetry-sdk ~=1.12
+    # - opentelemetry-instrumentation-sqlalchemy
+    # - sqlalchemy
+    # - pytest
+    # - opentelemetry-sdk ~=1.12
+    # - opentelemetry-instrumentation-sqlalchemy
+    # - sqlalchemy
+    # - pytest
+    # - opentelemetry-sdk ~=1.12
+    # - opentelemetry-instrumentation-sqlalchemy
+    # - sqlalchemy
+    # - pytest
+    # - opentelemetry-sdk ~=1.12
+    # - opentelemetry-instrumentation-sqlalchemy
+    # - sqlalchemy
+    # - pytest
+    # - opentelemetry-sdk ~=1.12
+    # - opentelemetry-instrumentation-sqlalchemy
+    # - sqlalchemy
+    # - pytest
+    # - opentelemetry-sdk ~=1.12
+    # - opentelemetry-instrumentation-sqlalchemy
+    # - sqlalchemy
+    # - sqlalchemy
+    # - sqlalchemy
+    # - sqlalchemy
+    # - sqlalchemy
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+    # - sqlalchemy <2.1.0,>=1.0.0
+
+tests:
+  - python:
+      imports:
+        - opentelemetry
+        - opentelemetry.instrumentation
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: OpenTelemetry SQLAlchemy instrumentation
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/open-telemetry/opentelemetry-python-contrib/tree/main/instrumentation/opentelemetry-instrumentation-sqlalchemy
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk

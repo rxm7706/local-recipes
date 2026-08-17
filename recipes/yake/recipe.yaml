@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: yake
+  version: "0.7.3"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 8778fb2832e58d26d838d6d7ac967b4947521f1fe8cdf23dd872636161fc53ed
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - yake = yake.cli:keywords
+
+requirements:
+  host:
+    - python 3.10.*
+    - hatchling
+    - pip
+    - pytest-runner
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - tabulate
+    - segtok
+    - networkx
+    - numpy >=1.24.0
+    - click >=6.0
+    - jellyfish
+
+tests:
+  - python:
+      imports:
+        - yake
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: Single-document unsupervised keyword extraction
+  description: |
+    Unsupervised Approach for Automatic Keyword Extraction using Text Features.
+    YAKE! is a light-weight unsupervised automatic keyword extraction method which rests
+    on text statistical features extracted from single documents to select the most important
+    keywords of a text. Our system does not need to be trained on a particular set of documents,
+    neither it depends on dictionaries, external-corpus, size of the text, language or domain.
+    To demonstrate the merits and the significance of our proposal, we compare it against ten
+    state-of-the-art unsupervised approaches (TF.IDF, KP-Miner, RAKE, TextRank, SingleRank, ExpandRank,
+    TopicRank, TopicalPageRank, PositionRank and MultipartiteRank), and one supervised method (KEA).
+    Experimental results carried out on top of twenty datasets (see Benchmark section below) show that
+    our methods significantly outperform state-of-the-art methods under a number of collections of
+    different sizes, languages or domains. In addition to the python package here described, we also
+    make available a demo, an API and a mobile app.
+  homepage: https://github.com/LIAAD/yake
+  repository: https://github.com/LIAAD/yake
+  documentation: https://github.com/LIAAD/yake
+
+extra:
+  recipe-maintainers:
+    - primozgodec

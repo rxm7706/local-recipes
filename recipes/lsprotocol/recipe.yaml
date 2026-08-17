@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2025.0.0"
+
+package:
+  name: lsprotocol
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/l/lsprotocol/lsprotocol-${{ version }}.tar.gz
+    sha256: e879da2b9301e82cfc3e60d805630487ac2f7ab17492f4f5ba5aaba94fe56c29
+    target_directory: dist
+  - url:
+      # handle inconsistent upstream tag pattern
+      - https://github.com/microsoft/lsprotocol/archive/refs/tags/v${{ version }}.tar.gz
+      - https://github.com/microsoft/lsprotocol/archive/refs/tags/${{ version }}.tar.gz
+    sha256: f5e93c080c01ac27896114b996929e8474943b189b2a2dbf304dcd4663596d5c
+    target_directory: src
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - cd dist
+    - ${{ PYTHON }} -m pip install . -vv --no-build-isolation --no-deps --disable-pip-version-check
+
+requirements:
+  host:
+    - flit-core >=3.2,<4
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - attrs >=21.3.0
+    - cattrs !=23.2.1
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports: lsprotocol
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - 3.13.*
+  - files:
+      source:
+        - src/conftest.py
+        - src/tests
+        - src/generator
+    requirements:
+      run:
+        - importlib_resources
+        - jsonschema
+        - mypy
+        - pyhamcrest
+        - pytest-cov
+        - python ${{ python_min }}.*
+    script:
+      - cd src
+      - coverage run --source=lsprotocol --branch -m pytest -vv --tb=long --color=yes -k "not test_notebook_sync_options"
+      - coverage report --show-missing --skip-covered --fail-under=88
+      - mypy -p lsprotocol
+
+about:
+  summary: Python implementation of the Language Server Protocol.
+  license: MIT
+  license_file: dist/LICENSE
+  homepage: https://pypi.org/project/lsprotocol
+  repository: https://github.com/microsoft/lsprotocol
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

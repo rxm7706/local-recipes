@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "11.697.25301"
+
+package:
+  name: mo-sql-parsing
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mo-sql-parsing/mo_sql_parsing-${{ version }}.tar.gz
+  sha256: 364b62673c623a6bd6e4ece933b0521de8be0357212019371cf658b943e8081d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - mo-dots ==10.685.25166
+    - mo-future ==7.685.25166
+    - mo-imports ==7.685.25166
+    - mo-parsing ==8.694.25301
+
+tests:
+  - python:
+      imports:
+        - mo_sql_parsing
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/klahnakoski/mo-sql-parsing
+  license: MPL-2.0
+  license_file: LICENSE
+  summary: More SQL Parsing! Parse SQL into JSON parse tree
+  description: |
+    More SQL Parsing! Parse SQL into JSON parse tree
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mo-sql-parsing
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mo-sql-parsing
+  cfe-purls:
+    - pkg:conda/mo-sql-parsing@${{ version }}?channel=conda-forge
+    - pkg:pypi/mo-sql-parsing@${{ version }}
+  cfe-upstream-repo: https://github.com/klahnakoski/mo-sql-parsing
+  cfe-upstream-homepage: https://github.com/klahnakoski/mo-sql-parsing
+  cfe-import-names: [mo_sql_parsing]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:21:00Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:21:00Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

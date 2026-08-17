@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: django-approval
   version: "0.15.1"
 
 package:
-  name: django-approval
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-approval/django-approval-${{ version }}.tar.gz
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/django-approval-${{ version }}.tar.gz
   sha256: 92bc352206c1761152eb3f20cff462f1cf4ad927b1d5949df7643c895bee8a7c
 
 build:
@@ -19,28 +20,25 @@ build:
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - pip
+    - python >=3.9
     - setuptools >=61.0
+    - pip
   run:
-    - python >=${{ python_min }}
+    - python >=3.9
     - django >=3.2
+    - django-annoying
 
 tests:
   - python:
       imports:
         - approval
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
   summary: Easily moderate any content in Django before it's visible to the public.
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/artscoop/django-approval
-  repository: https://github.com/artscoop/django-approval
 
 extra:
   recipe-maintainers:

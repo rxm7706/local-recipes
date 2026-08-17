@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ptflops
+  version: "0.7.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 59c0af2505255108df019674fb805eb61178f0baad6515720bb30dcb29592071
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+  run:
+    - python >=3.6
+    - pytorch
+
+tests:
+  - python:
+      imports:
+        - ptflops
+      pip_check: true
+
+about:
+  summary: This tool is designed to compute the theoretical amount of multiply-add operations in neural networks.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/sovrasov/flops-counter.pytorch
+
+extra:
+  recipe-maintainers:
+    - cnpcshangbo

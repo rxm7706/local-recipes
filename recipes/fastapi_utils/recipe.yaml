@@ -1,0 +1,101 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.8.0"
+  PYTHON: PYTHON | default("$PYTHON")
+  python_min: python_min | default("3.9")
+
+recipe:
+  name: fastapi_utils-split
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/fastapi-utils/fastapi_utils-${{ version }}.tar.gz
+  sha256: eca834e80c09f85df30004fe5e861981262b296f60c93d5a1a1416fe4c784140
+
+build:
+  number: 0
+  noarch: python
+
+outputs:
+  - package:
+      name: fastapi_utils-core
+    build:
+      noarch: python
+      script:
+        - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+    requirements:
+      host:
+        - pip
+        - python ${{ python_min }}
+        - poetry-core >=1.0.0
+      run:
+        - fastapi >=0.89,<1.0
+        - pydantic >=1.0,<3.0
+        - python >=${{ python_min }}
+        - psutil >=5,<6
+        # upstream claims is optional, but does not import without
+        - typing_inspect >=0.9.0,<0.10.0
+      run_constraints:
+        - ${{ pin_subpackage("fastapi_utils", upper_bound="x.x.x") }}
+        - sqlalchemy >=1.4,<3.0.0
+        - pydantic-settings >=2.0.1,<3.0.0
+    tests:
+      - python:
+          imports:
+            - fastapi_utils
+          pip_check: true
+          python_version: ${{ python_min }}
+  - package:
+      name: fastapi_utils-with-session
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("fastapi_utils-core", upper_bound="x.x.x") }}
+        - sqlalchemy
+    tests:
+      - python:
+          imports:
+            - fastapi_utils.session
+          pip_check: true
+  - package:
+      name: fastapi_utils-with-all
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("fastapi_utils-with-session", upper_bound="x.x.x") }}
+        - pydantic-settings
+    tests:
+      - python:
+          imports:
+            - fastapi_utils
+            - fastapi_utils.api_settings
+          pip_check: true
+  - package:
+      name: fastapi_utils
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("fastapi_utils-with-session", upper_bound="x.x.x") }}
+    tests:
+      - python:
+          imports:
+            - fastapi_utils
+          pip_check: true
+
+about:
+  summary: Reusable utilities for FastAPI
+  license: MIT
+  license_file: LICENSE
+  homepage: https://fastapiutils.github.io/fastapi-utils
+  repository: https://github.com/dmontagu/fastapi-utils
+
+extra:
+  feedstock-name: fastapi_utils
+  recipe-maintainers:
+    - marcelotrevisani
+    - bollwyvl

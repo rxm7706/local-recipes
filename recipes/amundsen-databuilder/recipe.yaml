@@ -2,31 +2,32 @@
 schema_version: 1
 
 context:
+  name: amundsen-databuilder
   version: "7.5.1"
 
 package:
-  name: amundsen-databuilder
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/a/amundsen-databuilder/amundsen-databuilder-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/amundsen-databuilder-${{ version }}.tar.gz
   sha256: 8ec6949aee68ac943d7a6dc0a460603cdab430d0631fb210c1c5a082b84246f3
 
 build:
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-  number: 1
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - pip
     - setuptools
   run:
     - python >=${{ python_min }}
     - elasticsearch >=6.2.0,<8.0
     - elasticsearch-dsl >=7.4.0
-    - neo4j-python-driver >=4.4.5,<5.0
+    - neo4j-python-driver >=4.4.5,<5.0  # neo4j-driver same as neo4j-python-driver
     - requests >=2.25.0,<3.0
     - freezegun >=1.1.0
     - atomicwrites >=1.1.5
@@ -34,6 +35,7 @@ requirements:
     - pluggy >=0.6.0
     - py >=1.10.0
     - pyhocon >=0.3.42
+    # pyhocon 0.3.59 has requirement pyparsing~=2.0
     - pyparsing >=2.2.0,<3.0
     - sqlalchemy >=1.3.6
     - wheel >=0.31.1
@@ -56,17 +58,18 @@ tests:
         - databuilder
         - example
       pip_check: false
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
+  - <conda_recipe_manager.types.SentinelType object at 0x707a26e51be0>:
+      requirements:
+        run:
+          - python ${{ python_min }}
 
 about:
-  license: Apache-2.0
-  license_file: LICENSE
   summary: Amundsen Data builder
+  license: Apache-2.0
+  license_file:
+    - LICENSE
   homepage: https://www.github.com/amundsen-io/amundsen/tree/main/databuilder
-  repository: https://github.com/amundsen-io/amundsen
-  documentation: https://www.amundsen.io/amundsen/
 
 extra:
   recipe-maintainers:

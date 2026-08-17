@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.5.1"
+
+package:
+  name: asn1crypto
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/asn1crypto/asn1crypto-${{ version }}.tar.gz
+  sha256: 13ae38502be632115abf8a24cbe5f4da52e3b5231990aff31123c805306ccb9c
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - asn1crypto
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Python ASN.1 library with a focus on performance and a pythonic API
+  homepage: https://github.com/wbond/asn1crypto
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.19.1"
+
+package:
+  name: lcms2
+  version: ${{ version }}
+
+source:
+  url: https://github.com/mm2/Little-CMS/releases/download/lcms${{ version }}/lcms2-${{ version }}.tar.gz
+  sha256: bfc54f7bab59fbc921012014a8032e4cba4abd46db47d46b76416a8c0b2815c8
+  patches:
+    - win_jpegturbo.patch
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - if: unix
+      then: libtool
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - if: not win
+      then: make
+    - if: win
+      then: m2-sed
+  host:
+    - libjpeg-turbo
+    - libtiff
+  run_exports:
+    - ${{ pin_subpackage("lcms2") }}
+
+tests:
+  - requirements:
+      run:
+        - pkg-config
+    script:
+      - if: not win
+        then: test -f ${PREFIX}/include/lcms2.h
+      - if: not win
+        then: test ! -f ${PREFIX}/lib/liblcms2.a
+      - if: not win
+        then: test -f ${PREFIX}/lib/liblcms2${SHLIB_EXT}
+      - jpgicc
+      - tificc
+      - linkicc
+      - transicc
+      - psicc
+      - if: win
+        then: if not exist %LIBRARY_INC%\\lcms2.h exit 1
+      - if: win
+        then: if not exist %LIBRARY_LIB%\\lcms2.lib exit 1
+      - if: win
+        then: if not exist %LIBRARY_BIN%\\lcms2.dll exit 1
+      - pkg-config --modversion lcms2
+      - pkg-config --cflags lcms2
+      - pkg-config --libs lcms2
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Open Source Color Management Engine
+  homepage: http://www.littlecms.com/
+
+extra:
+  recipe-maintainers:
+    - isuruf
+    - hmaarrfk

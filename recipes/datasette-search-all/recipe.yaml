@@ -2,18 +2,19 @@
 schema_version: 1
 
 context:
+  name: datasette-search-all
   version: "1.1.4"
 
 package:
-  name: datasette-search-all
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/datasette-search-all/datasette_search_all-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: 371de80eff4f2f0e5ba70cc8efcdd68c1089ebf03d743febced250012d678911
 
 build:
-  number: 0
+  number: 2
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -23,28 +24,21 @@ requirements:
     - pip
     - setuptools
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
     - datasette >=0.63.1
 
 tests:
   - python:
       imports:
         - datasette_search_all
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
   summary: Datasette plugin for searching all searchable tables at once
   license: Apache-2.0
   license_file: LICENSE
   homepage: https://github.com/simonw/datasette-search-all
-  repository: https://github.com/simonw/datasette-search-all
-  description: |
-    Datasette plugin that adds a search interface for querying all
-    searchable (full-text-indexed) tables across a Datasette instance
-    from a single search box.
 
 extra:
   recipe-maintainers:

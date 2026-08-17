@@ -1,0 +1,147 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: kubernetes
+  version: "1.34.3"
+
+recipe:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: ${{ 'https://github.com/kubernetes/kubernetes/archive/v${{ version }}.tar.gz' if not win else '' }}
+    sha256: ${{ 'd95f59700bf9d059b261ee2e0a34187301c734d596307e8dfe66c4c68c1a565d' if not win else '' }}
+    patches:  # [not win]
+      - if: not win
+        then: 0001-unset-conda-go-compiler.diff
+  - url: ${{ 'https://dl.k8s.io/v${{ version }}/kubernetes-node-windows-amd64.tar.gz' if win else '' }}
+    sha256: ${{ '3a3448afd66754e95e4adfb71b75cae0608cfdbdb3e60bbdd0b01d85459d4362' if win else '' }}
+
+build:
+  number: 0
+  skip: (osx and not arm64) or ppc64le or aarch64
+
+requirements:
+  run:
+    - ${{ pin_subpackage('kubernetes-client', exact=True) }}
+    - ${{ pin_subpackage('kubernetes-node', exact=True) }}
+    - if: unix
+      then: ${{ pin_subpackage('kubernetes-server', exact=True) }}
+
+outputs:
+  - package:
+      name: ${{ name }}-client
+    build:
+      script:
+        file: ${{ 'client/build.sh' if unix else 'client/bld.bat' if win else '' }}
+    requirements:
+      build:
+        - if: unix
+          then: ${{ stdlib("c") }}
+        - if: unix and not osx
+          then: ${{ compiler('cgo') }}
+        - if: osx
+          then: ${{ compiler('cgo') }} <1.25
+        - if: unix
+          then: ${{ compiler('c') }}
+        - if: unix
+          then: bash >=4.2
+        - if: unix
+          then: make
+        - if: unix
+          then: rsync
+        - if: unix
+          then: jq
+    tests:
+      - script: client/test.sh
+    about:
+      license: Apache-2.0
+      license_file: ${{ 'LICENSES/' if win else '' }}
+      license_file: LICENSES/  # [win]
+      summary: Kubernetes client binaries
+  - package:
+      name: ${{ name }}-node
+    build:
+      dynamic_linking:
+        binary_relocation: false
+      script:
+        file: ${{ 'node/build.sh' if unix else 'node/bld.bat' if win else '' }}
+    requirements:
+      build:
+        - if: unix
+          then: ${{ stdlib("c") }}
+        - if: unix and not osx
+          then: ${{ compiler('cgo') }}
+        - if: osx
+          then: ${{ compiler('cgo') }} <1.25
+        - if: unix
+          then: ${{ compiler('c') }}
+        - if: unix
+          then: bash >=4.2
+        - if: unix
+          then: make
+        - if: unix
+          then: rsync
+        - if: unix
+          then: jq
+    tests:
+      - script: node/test.sh
+    about:
+      license: Apache-2.0
+      license_file: ${{ 'LICENSES/' if win else '' }}
+      license_file: LICENSES/  # [win]
+      summary: Kubernetes node binaries
+  - package:
+      name: ${{ name }}-server
+    build:
+      skip: not unix
+      script:
+        file: server/build.sh
+    requirements:
+      build:
+        - ${{ stdlib("c") }}
+        - if: unix and not osx
+          then: ${{ compiler('cgo') }}
+        - if: osx
+          then: ${{ compiler('cgo') }} <1.25
+        - ${{ compiler('c') }}
+        - bash >=4.2
+        - make
+        - rsync
+        - jq
+      run:
+        - ${{ pin_subpackage('kubernetes-node', exact=True) }}
+    tests:
+      - script: server/test.sh
+    about:
+      license: Apache-2.0
+      license_file: LICENSE
+      summary: Kubernetes server binaries
+
+tests:
+  - script:
+      - kubectl
+      - kubelet --help
+      - kube-proxy --help
+      - kubeadm --help
+      - if: unix
+        then: kube-apiserver --help
+      - if: unix
+        then: kube-controller-manager --help
+      - if: unix
+        then: kube-scheduler --help
+
+about:
+  license: Apache-2.0
+  license_file: ${{ 'LICENSES/' if win else 'LICENSE' if not win else '' }}
+  summary: Production-Grade Container Orchestration
+  homepage: https://www.kubernetes.io
+  repository: https://github.com/kubernetes/kubernetes
+  documentation: https://docs.kubernetes.io
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - sodre
+    - dhirschfeld

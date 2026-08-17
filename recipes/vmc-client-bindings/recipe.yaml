@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "7.0.0"
+
+package:
+  name: vmc-client-bindings
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/v/vmc-client-bindings/vmc-client-bindings-${{ version }}.tar.gz
+  sha256: 5f87b942d8f7f0abd521176bbcca2986c3f269c2c4d6129e1d6549e431ab709a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - vmc_client_bindings
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/vmware/vsphere-automation-sdk-python
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: vmc-client-bindings
+  description: |
+    vmc-client-bindings
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: vmc-client-bindings
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: vmc-client-bindings
+  cfe-purls:
+    - pkg:conda/vmc-client-bindings@${{ version }}?channel=conda-forge
+    - pkg:pypi/vmc-client-bindings@${{ version }}
+  cfe-upstream-repo: https://github.com/vmware/vsphere-automation-sdk-python
+  cfe-upstream-homepage: https://github.com/vmware/vsphere-automation-sdk-python
+  cfe-import-names: []
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:04:51Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:04:51Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

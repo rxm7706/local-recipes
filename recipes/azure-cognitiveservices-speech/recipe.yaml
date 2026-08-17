@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.51.1"
+
+package:
+  name: azure-cognitiveservices-speech
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/a/azure-cognitiveservices-speech/azure_cognitiveservices_speech-1.51.1-py3-none-macosx_10_14_x86_64.whl
+  sha256: 045aeaf9ec1008ac7e40c1b447e9ac18c52aa64505d5bd5ef5718cd2959ea7ed
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - azure-core >=1.33.0
+
+tests:
+  - python:
+      imports:
+        - azure_cognitiveservices_speech
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/azure-cognitiveservices-speech/
+  license: MIT
+  license_file: LICENSE
+  summary: Microsoft Cognitive Services Speech SDK for Python
+  description: |
+    Microsoft Cognitive Services Speech SDK for Python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: azure-cognitiveservices-speech
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: azure-cognitiveservices-speech
+  cfe-purls:
+    - pkg:conda/azure-cognitiveservices-speech@${{ version }}?channel=conda-forge
+    - pkg:pypi/azure-cognitiveservices-speech@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/azure-cognitiveservices-speech/
+  cfe-upstream-homepage: https://pypi.org/project/azure-cognitiveservices-speech/
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:04:05Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:04:05Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

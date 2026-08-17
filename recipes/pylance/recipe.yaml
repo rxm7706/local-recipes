@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pylance
+  version: "10.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/lancedb/lance/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 21dd573c29e0a0b35f6662a7c27bd1e13ef3e5e295f9425056be67de3d81d882
+
+build:
+  number: 0
+  skip: match(python, "<3.9")
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: maturin <2
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('rust') }}
+    - cargo-bundle-licenses
+    - libprotobuf
+  host:
+    - python
+    - pip
+    - maturin <2
+    - openssl
+  run:
+    - python
+    - numpy >=1.22
+    - pyarrow >=14
+    - lance-namespace >=0.8.5,<0.9
+
+tests:
+  - python:
+      imports:
+        - lance
+      pip_check: true
+
+about:
+  summary: python wrapper for Lance columnar format
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - python/LICENSE
+    - THIRDPARTY.yml
+  homepage: https://github.com/lancedb/lance
+
+extra:
+  recipe-maintainers:
+    - yhori991

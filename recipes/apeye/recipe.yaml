@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: apeye
+  version: "1.4.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/apeye-${{ version }}.tar.gz
+  sha256: 14ea542fad689e3bfdbda2189a354a4908e90aee4bf84c15ab75d68453d76a36
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - flit-core >=3.2,<4
+    - pip
+    - python ${{ python_min }}
+  run:
+    - apeye-core >=1.0.0b2
+    - domdf-python-tools >=2.6.0
+    - platformdirs >=2.3.0
+    - python >=${{ python_min }}
+    - requests >=2.24.0
+  run_constraints:
+    - cachecontrol >=0.12.6
+
+tests:
+  - python:
+      imports:
+        - apeye
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Handy tools for working with URLs and APIs.
+  license: LGPL-3.0-or-later
+  license_file: LICENSE
+  homepage: https://github.com/domdfcoding/apeye
+  documentation: https://apeye.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - domdfcoding

@@ -1,0 +1,113 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "17.0.0"
+
+package:
+  name: vmware-nsx
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/v/vmware-nsx/vmware-nsx-${{ version }}.tar.gz
+  sha256: 34ceecbe06ed54e055e1600a3f55c2a05fcfd21f458adeb60e2d6323988c37da
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - prettytable
+    - sqlalchemy
+    - decorator
+    - eventlet
+    - httplib2
+    - netaddr
+    - networking-l2gw
+    - networking-sfc
+    - neutron-dynamic-routing
+    - neutron-fwaas
+    - neutron-lib
+    - neutron-vpnaas
+    - neutron
+    - octavia-lib
+    - osc-lib
+    - oslo.concurrency
+    - oslo.config
+    - oslo.context
+    - oslo.db
+    - oslo.i18n
+    - oslo.log
+    - oslo.policy
+    - oslo.serialization
+    - oslo.service
+    - oslo.utils
+    - oslo.vmware
+    - paramiko
+    - pbr
+    - python-openstackclient
+    - requests
+    - stevedore
+    - tenacity
+    - tooz
+    - vmware-nsxlib
+
+tests:
+  - python:
+      imports:
+        - vmware_nsx
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://launchpad.net/vmware-nsx
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: VMware NSX library for OpenStack projects
+  description: |
+    VMware NSX library for OpenStack projects
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: vmware-nsx
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: vmware-nsx
+  cfe-purls:
+    - pkg:conda/vmware-nsx@${{ version }}?channel=conda-forge
+    - pkg:pypi/vmware-nsx@${{ version }}
+  cfe-upstream-repo: https://launchpad.net/vmware-nsx
+  cfe-upstream-homepage: https://launchpad.net/vmware-nsx
+  cfe-import-names: [vmware_nsx]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:58:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:58:03Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

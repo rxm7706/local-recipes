@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: banks
+  version: "2.5.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/banks-${{ version }}.tar.gz
+  sha256: fdd4fd54b84dbe31cb51a1173c960697c73d683a52fb0b1d1957a557a8d6fcc8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - filetype >=1.2.0
+    - python >=${{ python_min }}
+    - griffe
+    - jinja2
+    - pydantic
+    - deprecated
+    - platformdirs
+
+tests:
+  - python:
+      imports:
+        - banks
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A prompt programming language
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://github.com/masci/banks
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cmakelang
+  version: "0.6.13"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 03982e87b00654d024d73ef972d9d9bb0e5726cdb6b8a424a15661fb6278e67f
+  patches:
+    - patch/0001-Fix-setup.py.patch
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - cmake-annotate = cmakelang.annotate:main
+      - cmake-format = cmakelang.format.__main__:main
+      - cmake-lint = cmakelang.lint.__main__:main
+      - cmake-genparsers = cmakelang.genparsers:main
+      - ctest-to = cmakelang.ctest_to:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - six >=1.13.0
+    - pyyaml >=5.3
+    - jinja2 >=2.10.3
+
+tests:
+  - python:
+      imports:
+        - cmakelang
+        - cmakelang.format
+        - cmakelang.lex
+        - cmakelang.lint
+        - cmakelang.parse
+        - cmakelang.parse.funs
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - cmake-format -h
+      - cmake-lint -h
+      - cmake-annotate -h
+      - cmake-genparsers -h
+      - ctest-to -h
+
+about:
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: Source code formatter for cmake listfiles
+  description: |
+    The cmake-format project provides Quality Assurance (QA) tools for cmake.
+    * cmake-annotate can generate pretty HTML from your listfiles
+    * cmake-format can format your listfiles nicely so that they don't
+    look like crap.
+    * cmake-lint can check your listfiles for problems
+    * ctest-to can parse a ctest output tree and translate it into a more
+    structured format (either JSON or XML).
+  homepage: https://github.com/cheshirekow/cmake_format
+  repository: https://github.com/cheshirekow/cmake_format
+  documentation: https://cmake-format.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - avrahamshukron
+    - bdice
+    - vyasr

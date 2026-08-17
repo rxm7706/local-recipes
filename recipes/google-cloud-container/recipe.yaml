@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: google-cloud-container
+  version: "2.65.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/google_cloud_container-${{ version }}.tar.gz
+  sha256: 67605d396a188ebd02cd73a425503667ea2f5bc56b17571a9a678b7d55b734dc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - google-api-core >=2.17.1,<3.0.0
+    - google-api-core-grpc
+    - google-auth >=2.14.1,<3.0.0,!=2.24.0,!=2.25.0
+    # more restrictive constraint for python >=3.14
+    - grpcio >=1.75.1,<2.0.0
+    # more restrictive constraint for python >=3.13
+    - proto-plus >=1.25.0,<2.0.0
+    - protobuf >=4.25.8,<8.0.0
+
+tests:
+  - python:
+      imports:
+        - google.cloud.container
+        - google.cloud.container_v1
+        - google.cloud.container_v1beta1
+        - grpc
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  summary: Google Cloud Container API client library
+  license: Apache-2.0
+  license_file: LICENSE
+  description: |
+    **Python Client for Kubernetes Engine**
+
+    Kubernetes Engine: The Google Kubernetes Engine API is used for building and managing container based applications, powered by the open source Kubernetes technology.
+
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-container
+  repository: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-container
+  documentation: https://googleapis.dev/python/container/latest/index.html
+
+extra:
+  recipe-maintainers:
+    - xylar
+    - BrentDorsey
+    - parthea

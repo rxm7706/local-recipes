@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pymongo_inmemory
+  version: "0.5.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pymongo_inmemory-${{ version }}.tar.gz
+  sha256: 2af2a6bab1cda9a27f524737ce6d3c9ff8cb9e52c224537e5742d610c4aa677e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core >=0.12
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pymongo *
+
+tests:
+  - python:
+      imports:
+        - pymongo_inmemory
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A mongo mocking library with an ephemeral MongoDB running in memory.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/kaizendorks/pymongo_inmemory
+
+extra:
+  recipe-maintainers:
+    - awvwgk

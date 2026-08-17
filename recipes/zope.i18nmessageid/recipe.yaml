@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "8.2"
+
+package:
+  name: zope.i18nmessageid
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/z/zope.i18nmessageid/zope_i18nmessageid-${{ version }}.tar.gz
+  sha256: 85204fb2440f6bd0aac52f6a4629eb44f8fe569dcd9caa582a0a39df18a30817
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+    - zope.interface
+
+tests:
+  - python:
+      imports:
+        - zope.i18nmessageid
+      pip_check: true
+
+about:
+  homepage: https://pypi.org/project/zope.i18nmessageid/
+  license: ZPL-2.1
+  license_file: LICENSE.txt
+  summary: Message Identifiers for internationalization
+  description: |
+    Message Identifiers for internationalization
+  repository: https://github.com/zopefoundation/zope.i18nmessageid
+  documentation: https://zopei18nmessageid.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: zope.i18nmessageid
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: zope.i18nmessageid
+  cfe-purls:
+    - pkg:conda/zope.i18nmessageid@${{ version }}?channel=conda-forge
+    - pkg:pypi/zope.i18nmessageid@${{ version }}
+  cfe-upstream-repo: https://github.com/zopefoundation/zope.i18nmessageid
+  cfe-upstream-homepage: https://pypi.org/project/zope.i18nmessageid/
+  cfe-import-names: [zope.i18nmessageid]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: false
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:16:33Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:16:33Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4 compiled C accel. conda_build_config.yaml pins python 3.10 so noarch dependents resolve.
+####

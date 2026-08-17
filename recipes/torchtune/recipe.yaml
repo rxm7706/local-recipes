@@ -1,0 +1,104 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.6.1"
+
+package:
+  name: torchtune
+  version: ${{ version }}
+
+source:
+  url: https://github.com/pytorch/torchtune/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 80a06ba0760741aa91f5f7bfb49ef6bb779c8044409dd7ef116f5420f122214b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - tune = torchtune._cli.tune:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pytorch
+    - torchao
+    - torchdata ==0.11.0
+    - datasets
+    - huggingface_hub
+    - hf-transfer
+    - safetensors
+    - kagglehub
+    - sentencepiece
+    - tiktoken
+    - blobfile >=2
+    - tokenizers
+    - numpy
+    - tqdm
+    - omegaconf
+    - psutil
+    - pillow >=9.4.0
+
+tests:
+  - python:
+      imports:
+        - torchtune
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/pytorch/torchtune
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Native PyTorch library for LLM fine-tuning
+  description: |
+    Native PyTorch library for LLM fine-tuning
+  repository: https://github.com/pytorch/torchtune
+  documentation: https://pytorch.org/torchtune/main/index.html
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: torchtune
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: torchtune
+  cfe-purls:
+    - pkg:conda/torchtune@${{ version }}?channel=conda-forge
+    - pkg:pypi/torchtune@${{ version }}
+  cfe-upstream-repo: https://github.com/pytorch/torchtune
+  cfe-upstream-homepage: https://github.com/pytorch/torchtune
+  cfe-import-names: [torchtune]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T16:43:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T16:43:30Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-16T16:44:20Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # PyPI is wheel-only; G54 GitHub tag v{{ version }} (LICENSE in archive).
+#    # __init__.py hard-requires torchao (not in pyproject). pytorch is undeclared
+#    # but imported by package submodules. huggingface_hub[hf_transfer] flattened
+#    # to huggingface_hub + hf-transfer. torchdata==0.11.0 is upstream-exact (CF
+#    # has 0.11.0).
+####

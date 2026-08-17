@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4.1"
+
+package:
+  name: httpimport
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/h/httpimport/httpimport-${{ version }}.tar.gz
+  sha256: 737616a4c998d0c6bb4468d696f68f2882deaabcb567009f59e5cc227035d051
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - httpimport
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/operatorequals/httpimport
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Remote in-memory Python package loading over HTTP
+  description: |
+    Module for remote in-memory Python package/module loading through HTTP
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: httpimport
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: httpimport
+  cfe-purls:
+    - pkg:conda/httpimport@${{ version }}?channel=conda-forge
+    - pkg:pypi/httpimport@${{ version }}
+  cfe-upstream-repo: https://github.com/operatorequals/httpimport
+  cfe-upstream-homepage: https://github.com/operatorequals/httpimport
+  cfe-import-names: [httpimport]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T16:33:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T16:33:15Z
+  cfe-local-build-status: success
+  cfe-local-build-datetime: 2026-08-16T16:38:00Z
+  cfe-local-build-platform: linux-64
+  cfe-local-build-tool: rattler-build
+####
+# CFE comments
+# Header:
+#    # Apache-2.0 noarch; LICENSE in sdist (pattern 1). No run deps.
+####

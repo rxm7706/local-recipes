@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: simpervisor
+  version: "1.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 7eb87ca86d5e276976f5bb0290975a05d452c6a7b7f58062daea7d8369c823c1
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - simpervisor
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Simple async process supervisor
+  homepage: https://github.com/yuvipanda/simpervisor
+  repository: https://github.com/yuvipanda/simpervisor
+
+extra:
+  recipe-maintainers:
+    - consideratio
+    - jakirkham
+    - lsetiawan
+    - minrk
+    - ocefpaf

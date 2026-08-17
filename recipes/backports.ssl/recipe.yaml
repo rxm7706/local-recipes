@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: backports.ssl
+  version: "0.0.9"
+  hash_val: 079549f44a5d52e6b6c97455cc322725e0590772237d6dc362cda57635128e1d
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ hash_val }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1001
+  script: python setup.py install --single-version-externally-managed --record=record.txt
+
+requirements:
+  build:
+    - python
+    - setuptools
+    - backports
+  run:
+    - python
+    - backports
+    - pyopenssl >=0.14
+    - pyasn1 >=0.1.7
+
+tests:
+  - python:
+      imports:
+        - backports
+        - backports.ssl
+        - backports.ssl.monkey
+      pip_check: false
+
+about:
+  license: MIT
+  # license_file: NO MANIFEST in package - see this PR: https://github.com/alekstorm/backports.ssl/pull/20
+  summary: The Python 3.4 standard `ssl` module API implemented on top of pyOpenSSL
+  homepage: https://github.com/alekstorm/backports.ssl
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr

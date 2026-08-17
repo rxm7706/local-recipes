@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.7.1"
+
+package:
+  name: google-cloud-ces
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/google-cloud-ces/google_cloud_ces-${{ version }}.tar.gz
+  sha256: c7469bd2d35c08ed12a362eb9956748ec2036719a360781bcd0e79014ea09378
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - google-api-core <3.0.0,>=2.24.2
+    - google-auth !=2.24.0,!=2.25.0,<3.0.0,>=2.14.1
+    - grpcio <2.0.0,>=1.59.0
+    - proto-plus <2.0.0,>=1.26.1
+    - protobuf <8.0.0,>=6.33.5
+
+tests:
+  - python:
+      imports:
+        - google.cloud.ces
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-ces
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Google Cloud Ces API client library
+  description: |
+    Google Cloud Ces API client library
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: google-cloud-ces
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: google-cloud-ces
+  cfe-purls:
+    - pkg:conda/google-cloud-ces@${{ version }}?channel=conda-forge
+    - pkg:pypi/google-cloud-ces@${{ version }}
+  cfe-upstream-repo: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-ces
+  cfe-upstream-homepage: https://github.com/googleapis/google-cloud-python/tree/main/packages/google-cloud-ces
+  cfe-import-names: [google.cloud.ces]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:52:16Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:52:16Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

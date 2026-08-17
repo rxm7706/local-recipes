@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: untokenize
+  version: 0.1.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 3865dbbbb8efb4bb5eaa72f1be7f3e0be00ea8b7f125c69cbd1f5fda926f37a2
+
+build:
+  number: 3
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - untokenize
+      python_version: ${{ python_min }}.*
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Transforms tokens into original source code
+  description: |
+    untokenize transforms tokens into source code. Unlike the standard
+    library's tokenize.untokenize(), it preserves the original whitespace between tokens.
+  homepage: https://github.com/myint/untokenize
+  repository: https://github.com/myint/untokenize
+
+extra:
+  recipe-maintainers:
+    - carlodri
+    - zklaus

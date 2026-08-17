@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: aiohttp-cors
+  version: 0.8.1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/aiohttp_cors/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: ccacf9cb84b64939ea15f859a146af1f662a6b1d68175754a07315e305fb1403
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - aiohttp >=1.1
+
+tests:
+  - python:
+      imports:
+        - aiohttp_cors
+      python_version: ${{ python_min }}.*
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: CORS support for aiohttp
+  homepage: https://github.com/aio-libs/aiohttp-cors
+  repository: https://github.com/aio-libs/aiohttp-cors
+  documentation: https://github.com/aio-libs/aiohttp-cors
+
+extra:
+  recipe-maintainers:
+    - carlodri

@@ -1,0 +1,88 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: vl-convert-python
+  version: 2.0.0rc1
+  whl: whl
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: ${{ 'https://files.pythonhosted.org/packages/c4/26/e1c33b2b958ad207b03b854660caf03ca8c0ee100afd3a8059185fa27066/vl_convert_python-${{ version }}-cp37-abi3-macosx_11_0_arm64.${{ whl }}' if osx and arm64 else 'https://files.pythonhosted.org/packages/e6/10/1a07c451ca23c5cf1382e9e00cd2579e3d47488bdc5b7fd4b8812aa5b403/vl_convert_python-${{ version }}-cp37-abi3-manylinux_2_28_aarch64.${{ whl }}' if linux and aarch64 else 'https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/vl_convert_python-${{ version }}.tar.gz' if not arm64 and not aarch64 else '' }}
+  sha256: ${{ '8779a5a7916d6ab904e30f2e9eee122b96d43cb5e1b45a144f370a8a229d4881' if osx and arm64 else '80163dcad94845b09bdd65728bc46af25f910311b014e16f04d58bf6f9e537b8' if linux and aarch64 else 'bfb5e52ea3a5d972228b096b18c8e18db4ab2b4edeed13674a0a3be05e42ddac' if not arm64 and not aarch64 else '' }}
+  patches:  # [not arm64 and not aarch64]
+    - if: not arm64 and not aarch64
+      then: 01-fix-libffi-msvc.patch
+
+build:
+  number: 0
+  skip: aarch64 and python_impl == 'pypy'
+  prefix_detection:
+    ignore: ${{ true if arm64 or aarch64 }}
+    ignore_binary_files: false
+  dynamic_linking:
+    binary_relocation: ${{ true if arm64 or aarch64 }}
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: not win
+      then: ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - if: not win
+      then: make
+    - cmake
+    - rust >=1.81.0
+    - protobuf
+    - if: win
+      then: libffi
+    - if: linux and x86_64
+      then: jq
+    - if: linux and x86_64
+      then: libclang
+    - if: linux and x86_64
+      then: llvmdev
+    - if: win
+      then: nasm
+  host:
+    - python
+    - pip
+    - maturin
+    - if: not arm64 and not aarch64
+      then: sqlite
+    - if: not arm64 and not aarch64
+      then: pkg-config
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - vl_convert
+      pip_check: true
+
+about:
+  summary: Convert Vega-Lite chart specifications to SVG, PNG, or Vega
+  license: BSD-3-Clause
+  license_file:
+    - if: arm64 or aarch64
+      then: LICENSE
+    - if: not arm64 and not aarch64
+      then: vl-convert-python/LICENSE
+    - if: not arm64 and not aarch64
+      then: vl-convert-python/thirdparty_font.md
+    - if: not arm64 and not aarch64
+      then: vl-convert-python/thirdparty_javascript.md
+    - if: not arm64 and not aarch64
+      then: vl-convert-python/thirdparty_rust.yaml
+  homepage: https://github.com/jonmmease/vl-convert
+
+extra:
+  recipe-maintainers:
+    - jonmmease

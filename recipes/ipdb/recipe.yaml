@@ -1,0 +1,70 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ipdb
+  version: "0.13.13"
+  sha256: 5bf95ec55224e5fa96a21acf6d13df075aa405cfb4ba946e717aa5e36c2a2def
+  gh_org: gotcha
+  gh_repo: name
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/${{ gh_org }}/${{ gh_repo }}/archive/${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . --no-deps -vv
+    - if: win
+      then: call %RECIPE_DIR%/install-scripts.bat
+    - if: not win
+      then: . ${RECIPE_DIR}/install-scripts.sh
+  python:
+    entry_points:
+      - ipdb = ipdb.__main__:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - ipython
+    - toml >=0.10.2
+    - decorator
+
+tests:
+  - python:
+      imports:
+        - ipdb
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - python -c 'import os; assert(os.environ["PYTHONBREAKPOINT"] == "ipdb.set_trace")'
+
+about:
+  license: BSD-3-Clause
+  license_file: COPYING.txt
+  summary: Integration of IPython pdb
+  description: |
+    ipdb exports functions to access the IPython debugger,
+    which features tab completion, syntax highlighting, better
+    tracebacks, better introspection with the same interface
+    as the pdb module.
+  homepage: https://github.com/${{ gh_org }}/${{ gh_repo }}
+  repository: https://github.com/${{ gh_org }}/${{ gh_repo }}
+
+extra:
+  recipe-maintainers:
+    - vamega

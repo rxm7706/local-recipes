@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: nbqa
+  version: "1.9.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 48c0acd83675bd6d086efba3885e1137d9475c0da328c74f46b9acbc664fe36f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - nbqa=nbqa.__main__:main
+
+requirements:
+  host:
+    - pip
+    - python >=3.8.0
+  run:
+    - python >=3.8.0
+    - autopep8 >=1.5
+    - ipython >=7.8.0
+    - tomli
+    - tokenize-rt >=3.2.0
+    # Only required for [py<38] but always include so this can be noarch: python
+    - importlib-metadata >=1.4
+
+tests:
+  - python:
+      imports:
+        - nbqa
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+    script:
+      - nbqa --help
+
+about:
+  summary: Run any Python code quality tool on a Jupyter Notebook!
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/nbQA-dev/nbQA
+
+extra:
+  recipe-maintainers:
+    - s-weigand
+    - MarcoGorelli
+    - girip11

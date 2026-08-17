@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.2"
+
+package:
+  name: xlrd
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/x/xlrd/xlrd-${{ version }}.tar.gz
+  sha256: 08b5e25de58f21ce71dc7db3b3b8106c1fa776f3024c54e45b45b374e89234c9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - files:
+      recipe:
+        - test.xls
+    requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause AND BSD-4-Clause
+  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE
+  summary: Library for developers to extract data from Microsoft Excel (tm) spreadsheet files
+  homepage: http://www.python-excel.org/
+  repository: https://github.com/python-excel/xlrd/
+  documentation: http://xlrd.readthedocs.io/en/stable/
+
+extra:
+  recipe-maintainers:
+    - cokelaer
+    - notestaff
+    - mjhoptics

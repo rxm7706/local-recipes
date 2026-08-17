@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  python_min: "3.12"
+  version: "2.10.0"
+
+package:
+  name: esda
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/e/esda/esda-${{ version }}.tar.gz
+  sha256: 2dad5b73d8408bc2fe5fff95524a38b98552e09cc494df5010649f8f12019ea5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python 3.12.*
+    - setuptools >=61.0
+    - setuptools-scm >=6.2
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - geopandas >=1.0
+    - libpysal >=4.12
+    - numpy >=2.1
+    - pandas >=2.3
+    - scikit-learn >=1.6
+    - scipy >=1.14
+    - shapely >=2.1
+
+tests:
+  - python:
+      imports:
+        - esda
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Exploratory Spatial Data Analysis
+  homepage: https://github.com/pysal/esda
+
+extra:
+  recipe-maintainers:
+    - knaaptime
+    - martinfleis
+    - jGaboardi
+    - ocefpaf

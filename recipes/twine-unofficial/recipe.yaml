@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.0.2.1"
+
+package:
+  name: twine-unofficial
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/twine-unofficial/twine-unofficial-${{ version }}.tar.gz
+  sha256: d3a34cbb8bd54b72b1bac8bc56dee3185170f18809a8af8bcb4e4000c4bdf06c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=45
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - pkginfo
+    - readme-renderer
+    - requests
+    - requests-toolbelt
+    - urllib3
+    - importlib-metadata
+    - keyring
+    - rfc3986
+    - rich
+
+tests:
+  - python:
+      imports:
+        - twine
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://twine.readthedocs.io/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Collection of utilities for publishing packages on PyPI
+  description: |
+    Collection of utilities for publishing packages on PyPI
+  repository: https://github.com/strayge/twine-unofficial/
+  documentation: https://twine.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: twine-unofficial
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: twine-unofficial
+  cfe-purls:
+    - pkg:conda/twine-unofficial@${{ version }}?channel=conda-forge
+    - pkg:pypi/twine-unofficial@${{ version }}
+  cfe-upstream-repo: https://github.com/strayge/twine-unofficial/
+  cfe-upstream-homepage: https://twine.readthedocs.io/
+  cfe-import-names: [twine]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:40:14Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:40:14Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

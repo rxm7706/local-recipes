@@ -1,0 +1,72 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: apprise
+  version: "1.12.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/apprise-${{ version }}.tar.gz
+  sha256: ffe9860d99cbde05fd156c610d4bcb49d953200c4ed3cb2db001ed50722fc142
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - apprise = apprise.cli:main
+
+requirements:
+  host:
+    - babel
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools >=69
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - certifi
+    - requests
+    - requests-oauthlib
+    - click >=5.0
+    - markdown
+    - pyyaml
+    - python-tzdata
+
+tests:
+  - python:
+      imports:
+        - apprise
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - pytest
+        - pytest-mock
+        - python ${{ python_min }}.*
+    script:
+      - apprise --help
+      - pytest -vvv -k "not test_plugin_workflows_template_add_failure" --capture=tee-sys tests
+
+about:
+  summary: Push Notifications that work with just about every platform
+  license: MIT
+  license_file:
+    - LICENSE
+  homepage: https://hub.docker.com/r/caronc/apprise
+  repository: https://github.com/caronc/apprise
+  documentation: https://github.com/caronc/apprise/wiki
+
+extra:
+  recipe-maintainers:
+    - thewchan

@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.0"
+  python_min: "3.11"
+
+package:
+  name: copilot-token-tracker
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/copilot-token-tracker/copilot_token_tracker-${{ version }}.tar.gz
+  sha256: b7492f65d91f1495df261a6b2f545486f44b45de8875e0efffdb421c3daa5b96
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=69
+    - wheel
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - tokentracker
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/J-Bax/copilot-token-tracker
+  license: MIT
+  license_file: LICENSE
+  summary: Global token tracker for GitHub Copilot CLI and VS Code sessions
+  description: |
+    Global token tracker for GitHub Copilot CLI and VS Code sessions
+  repository: https://github.com/J-Bax/copilot-token-tracker
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: copilot-token-tracker
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: copilot-token-tracker
+  cfe-purls:
+    - pkg:conda/copilot-token-tracker@${{ version }}?channel=conda-forge
+    - pkg:pypi/copilot-token-tracker@${{ version }}
+  cfe-upstream-repo: https://github.com/J-Bax/copilot-token-tracker
+  cfe-upstream-homepage: https://github.com/J-Bax/copilot-token-tracker
+  cfe-import-names: [tokentracker]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:51:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:51:30Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

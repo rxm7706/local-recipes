@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.1"
+
+package:
+  name: mkdocs-windmillex
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mkdocs-windmillex/mkdocs-windmillex-${{ version }}.tar.gz
+  sha256: 1bda0a353ed1162c9f103f1f0c27c5e35795f056c25b1984b7e3dae3c82487c8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - mkdocs_windmillex
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/guenbakku/mkdocs-windmillex
+  license: MIT
+  license_file: LICENSE
+  summary: MkDocs theme focused on navigation and usability
+  description: |
+    MkDocs theme focused on navigation and usability
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mkdocs-windmillex
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mkdocs-windmillex
+  cfe-purls:
+    - pkg:conda/mkdocs-windmillex@${{ version }}?channel=conda-forge
+    - pkg:pypi/mkdocs-windmillex@${{ version }}
+  cfe-upstream-repo: https://github.com/guenbakku/mkdocs-windmillex
+  cfe-upstream-homepage: https://github.com/guenbakku/mkdocs-windmillex
+  cfe-import-names: [mkdocs_windmillex]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:54:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:54:40Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

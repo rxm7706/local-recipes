@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: psmpy
+  version: "0.3.13"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/psmpy-${{ version }}.tar.gz
+  sha256: 13dcda62a6745ec53d2ee6834e987f50415f8cb21e1a1d47bc8a9fd2daf317d4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.6
+    - pytest-runner
+    - pip
+  run:
+    - python >=3.6
+    - matplotlib-base
+    - numpy
+    - pandas
+    - seaborn
+    - scikit-learn
+    - scipy
+
+tests:
+  - python:
+      imports:
+        - psmpy
+      pip_check: true
+
+about:
+  summary: Propensity score matching for python and graphical plots
+  license: MIT
+  license_file: LICENSE.txt
+  homepage: https://pypi.org/project/psmpy/
+
+extra:
+  recipe-maintainers:
+    - dillonroach

@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: azure-mgmt-datalake-store
+  version: 1.0.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.zip
+  sha256: 1ab9952bdeccfa2a237af3cb553b8b99f4112f1beb1edafd0d11f2989bcb6071
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - azure-common >=1.1,<2
+    - msrest >=0.5.0
+    - azure-mgmt-core >=1.2.0,<2.0.0
+
+tests:
+  - python:
+      imports:
+        - azure.mgmt.datalake.store.models
+        - azure.mgmt.datalake.store.operations
+      python_version: ${{ python_min }}.*
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Microsoft Azure Data Lake Store Management Client Library for Python
+  homepage: https://github.com/Azure/azure-sdk-for-python
+  repository: https://github.com/Azure/azure-sdk-for-python/tree/master/sdk/datalake/azure-mgmt-datalake-store
+  documentation: https://docs.microsoft.com/en-us/python/api/azure-mgmt-datalake-store/azure.mgmt.datalake.store?view=azure-python
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - janjagusch

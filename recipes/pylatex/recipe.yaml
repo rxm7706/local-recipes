@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: PyLaTeX
+  version: "1.4.2"
+  python_min: "3.6"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0]|lower }}/${{ name|lower }}/${{ name }}-${{ version }}.tar.gz
+  sha256: bb7b21bec57ecdba3f6f44c856ebebdf6549fd6e80661bd44fd5094236729242
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python 3.6.*
+    - setuptools
+  run:
+    - ordered-set
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pylatex
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A Python library for creating LaTeX files and snippets
+  homepage: https://github.com/JelteF/PyLaTeX
+  documentation: https://jeltef.github.io/PyLaTeX
+
+extra:
+  recipe-maintainers:
+    - Hoxbro

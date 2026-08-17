@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.0.0"
+
+package:
+  name: flask-inputs
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/Flask-Inputs/flask_inputs-${{ version }}.tar.gz
+  sha256: bb883ce1528946c147de5e49aa00c5b426e7cfdb581310b5f7fc45009f1385ee
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - pypandoc
+  run:
+    - python >=${{ python_min }}
+    - flask >=3
+    - wtforms >=3
+    - future >=1
+
+tests:
+  - python:
+      imports:
+        - flask_inputs
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://pythonhosted.org/Flask-Inputs
+  license: MIT
+  license_file: LICENSE
+  summary: Flask request data validation
+  description: |
+    Flask request data validation
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flask-inputs
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: Flask-Inputs
+  cfe-purls:
+    - pkg:conda/flask-inputs@${{ version }}?channel=conda-forge
+    - pkg:pypi/flask-inputs@${{ version }}
+  cfe-upstream-repo: http://pythonhosted.org/Flask-Inputs
+  cfe-upstream-homepage: http://pythonhosted.org/Flask-Inputs
+  cfe-import-names: [flask_inputs]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:40:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:40:58Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P5 Create-recipe local-only. flask-inputs.
+####

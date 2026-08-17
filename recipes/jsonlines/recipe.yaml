@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jsonlines
+  version: "4.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 0c6d2c09117550c089995247f605ae4cf77dd1533041d366351f6f298822ea74
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install --no-deps --ignore-installed .
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - python >=3.6
+    - attrs >=19.2.0
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - jsonlines
+      pip_check: true
+
+about:
+  license_file: LICENSE.rst
+  license: BSD-3-Clause
+  summary: Library with helpers for the jsonlines file format
+  homepage: https://github.com/wbolster/jsonlines
+  repository: https://github.com/wbolster/jsonlines
+  documentation: https://jsonlines.readthedocs.org/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - asford

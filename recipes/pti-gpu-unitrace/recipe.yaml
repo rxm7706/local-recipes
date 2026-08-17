@@ -1,0 +1,179 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: intel-pti
+  version: "1.0.1"
+  version_pkg: ${{ version | replace("-", ".") }}
+  so_version: ${{ version.split('.')[0] }}
+  so_version_major: ${{ version.split('.')[0] }}
+  unitrace_version_match: 'load_file_regex(
+  load_file="tools/unitrace/src/version.h",
+  regex_pattern='#define\s+UNITRACE_VERSION\s+"(.+)"')'
+  unitrace_version: ${{ unitrace_version_match[1] }}
+
+recipe:
+  name: ${{ name|lower }}-split
+  version: ${{ version_pkg }}
+
+source:
+  url: https://github.com/intel/pti-gpu/archive/refs/tags/pti-${{ version }}.tar.gz
+  sha256: ca25b891e3121c59c0218371562418ff85d7ad776391a925057df4069549428d
+
+build:
+  number: 0
+  skip: osx
+
+requirements:
+  build:
+    - cmake
+    - ninja >=1.11.1
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib('c') }}
+  host:
+    - level-zero-devel 1.28.*
+    - if: linux
+      then: ocl-icd
+    - if: not linux
+      then: khronos-opencl-icd-loader
+    # cpu runtime
+    - intel-opencl-rt
+    - spdlog >=1.14.1
+    # TODO: https://github.com/conda-forge/spdlog-feedstock/issues/52
+    #   remove once fmt is in run_export of spdlog.
+    - fmt
+    - if: linux
+      then: dpcpp_impl_linux-64 >=2025.0.0
+    - if: win
+      then: dpcpp_impl_win-64 >=2025.0.0
+    - intel-cmplr-lib-rt >=2025.0.0
+  ignore_run_exports:
+    by_name:
+      - dpcpp-cpp-rt
+      - spdlog >=1.14.1
+
+outputs:
+  - package:
+      name: ${{ name }}
+      version: ${{ version_pkg }}
+    build:
+      script:
+        file: ${{ 'install.sh' if unix else 'install.bat' if win else '' }}
+    requirements:
+      build:
+        - cmake
+        - ninja >=1.11.1
+        - ${{ compiler('cxx') }}
+        - ${{ stdlib('c') }}
+      host:
+        - level-zero-devel 1.28.*
+        - if: linux
+          then: ocl-icd
+        - if: not linux
+          then: khronos-opencl-icd-loader
+        # cpu runtime
+        - intel-opencl-rt
+        - spdlog >=1.14.1
+        # TODO: https://github.com/conda-forge/spdlog-feedstock/issues/52
+        #   remove once fmt is in run_export of spdlog.
+        - fmt
+      ignore_run_exports:
+        from_package:
+          - level-zero-devel
+      run_constraints:
+        - dpcpp-cpp-rt >=2025.3.2
+        - level-zero >=1.21.9
+    tests:
+      - script:
+          - if: unix
+            then: test -f $PREFIX/lib/libpti_view.so
+          - if: unix
+            then: test -f $PREFIX/lib/pti/libpti.so
+          - if: unix
+            then: test -f $PREFIX/lib/libpti_view.so.${{ so_version }}
+          - if: win
+            then: test -f %LIBRARY_BIN%\pti\pti.dll
+          - if: win
+            then: test -f %LIBRARY_BIN%\pti_view-${{ so_version|replace(".", "-") }}.dll
+    about:
+      summary: Profiling Tools Interfaces for GPU
+      description: |
+        A PTI library for Intel(R) oneAPI applications.
+      license: MIT
+      license_file: LICENSE
+      homepage: https://github.com/intel/pti-gpu
+      repository: https://github.com/intel/pti-gpu
+      documentation: https://github.com/intel/pti-gpu
+    run_exports:
+      - ${{ pin_subpackage(name, upper_bound='x.x') }}
+  - package:
+      name: pti-gpu-unitrace
+      version: ${{ unitrace_version }}
+    build:
+      # TODO: does unitrace work on windows?
+      number: 0
+      skip: osx
+      script:
+        file: ${{ 'build.sh' if unix else 'bld.bat' if win else '' }}
+    requirements:
+      build:
+        - cmake
+        - ninja >=1.11.1
+        # For ITT?
+        - make
+        - ${{ compiler('cxx') }}
+        - ${{ compiler('dpcpp') }} >=2025.0.0
+        - ${{ stdlib('c') }}
+      host:
+        - level-zero-devel 1.28.*
+        - if: linux
+          then: ocl-icd
+        - if: not linux
+          then: khronos-opencl-icd-loader
+        - llvm-openmp
+        # cpu runtime
+        - intel-opencl-rt
+        - impi-devel
+        - ittapi-static
+        # These packages are not required during build, but we want proper version
+        # export for runtime:
+        - intel-cmplr-lib-rt >=2025.0.0
+      ignore_run_exports:
+        from_package:
+          - level-zero-devel
+      run_constraints:
+        - dpcpp-cpp-rt >=2025.3.2
+        - level-zero >=1.21.9
+    tests:
+      - requirements:
+          run:
+            - level-zero
+        script:
+          - unitrace --help || true
+    about:
+      summary: Unified Tracing and Profiling Tool
+      description: |
+        A performance tool for Intel(R) oneAPI applications. It traces and
+        profiles host/device activities, interactions and hardware utilizations
+        for Intel(R) GPU applications.
+      license: MIT
+      license_file: LICENSE
+      homepage: https://github.com/intel/pti-gpu
+      repository: https://github.com/intel/pti-gpu
+      documentation: https://github.com/intel/pti-gpu
+
+about:
+  summary: Profiling Tools Interfaces for GPU
+  description: |
+    This a PTI library for Intel(R) oneAPI applications.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/intel/pti-gpu
+  repository: https://github.com/intel/pti-gpu
+  documentation: https://github.com/intel/pti-gpu
+
+extra:
+  recipe-maintainers:
+    - ZzEeKkAa
+    - oleksandr-pavlyk
+    - mschilling0

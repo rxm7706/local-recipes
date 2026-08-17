@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: PySmbClient
+  version: "0.1.5"
+  hash: dc528959ffe3fae5cdd2053c0d68b6dfca706d8f4ea78b9b3e741daedc87aed4
+  build: 1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ hash }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: ${{ build }}
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  host:
+    - pip
+    - python
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - smbclient
+      pip_check: false
+
+about:
+  license_file: ${{ RECIPE_DIR }}/LICENSE
+  license: GPL-3.0-only
+  summary: A convenient smbclient wrapper
+  homepage: https://bitbucket.org/nosklo/pysmbclient
+  repository: https://bitbucket.org/nosklo/pysmbclient
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr

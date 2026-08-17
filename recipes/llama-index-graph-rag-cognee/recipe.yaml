@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.0"
+
+package:
+  name: llama-index-graph-rag-cognee
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/llama-index-graph-rag-cognee/llama_index_graph_rag_cognee-${{ version }}.tar.gz
+  sha256: 692fd9436483988aaf594bc93842fe9720e8578e6e39f4a1506531f543fb4f5f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - cognee
+    - httpx ~=0.27.0
+    - llama-index-core <0.14,>=0.13.0
+
+tests:
+  - python:
+      imports:
+        - llama_index.graph_rag.cognee
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/llama-index-graph-rag-cognee/
+  license: MIT
+  license_file: LICENSE
+  summary: llama-index graph rag cognee integration
+  description: |
+    llama-index graph rag cognee integration
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: llama-index-graph-rag-cognee
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: llama-index-graph-rag-cognee
+  cfe-purls:
+    - pkg:conda/llama-index-graph-rag-cognee@${{ version }}?channel=conda-forge
+    - pkg:pypi/llama-index-graph-rag-cognee@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/llama-index-graph-rag-cognee/
+  cfe-upstream-homepage: https://pypi.org/project/llama-index-graph-rag-cognee/
+  cfe-import-names: [llama_index.graph_rag.cognee]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:35:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:35:21Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

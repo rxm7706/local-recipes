@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: livereload
+  version: "2.7.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/livereload-${{ version }}.tar.gz
+  sha256: 3d9bf7c05673df06e32bea23b494b8d36ca6d10f7d5c3c8a6989608c09c986a9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - livereload = livereload.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - tornado
+
+tests:
+  - python:
+      imports:
+        - livereload
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+        - pip
+    script:
+      - livereload --help
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Python LiveReload is an awesome tool for web developers
+  homepage: https://github.com/lepture/python-livereload
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

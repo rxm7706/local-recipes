@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.31"
+  python_min: "3.11"
+
+package:
+  name: uipath-core
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/u/uipath-core/uipath_core-${{ version }}.tar.gz
+  sha256: 6abb443582d9a8ab6a504791296d49f524fb430f66d8dfaf6d6d1849958700bb
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - opentelemetry-instrumentation <1.0.0,>=0.60b0
+    - opentelemetry-sdk <2.0.0,>=1.39.0
+    - pydantic <3.0.0,>=2.12.5
+
+tests:
+  - python:
+      imports:
+        - uipath.core
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://uipath.com
+  license: MIT
+  license_file: LICENSE
+  summary: UiPath Core abstractions
+  description: |
+    UiPath Core abstractions
+  repository: https://github.com/UiPath/uipath-python
+  documentation: https://uipath.github.io/uipath-python/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: uipath-core
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: uipath-core
+  cfe-purls:
+    - pkg:conda/uipath-core@${{ version }}?channel=conda-forge
+    - pkg:pypi/uipath-core@${{ version }}
+  cfe-upstream-repo: https://github.com/UiPath/uipath-python
+  cfe-upstream-homepage: https://uipath.com
+  cfe-import-names: [uipath.core]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:26:44Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:26:44Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

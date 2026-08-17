@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.21.15"
+
+package:
+  name: drf-yasg
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/drf-yasg/drf_yasg-${{ version }}.tar.gz
+  sha256: ef86838c4ef10dcd3ac1ebf2be601cbe02978b999671caa43667f7c9db961468
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=77.0.3
+    - setuptools-scm >=7.0,<8.dev0
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=4.0
+    - djangorestframework >=3.13
+    - inflection >=0.3.1
+    - packaging >=21.0
+    - pytz >=2021.1
+    - pyyaml >=5.1
+    - uritemplate >=3.0.0
+
+tests:
+  - python:
+      imports:
+        - drf_yasg
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Automated generation of real Swagger/OpenAPI 2.0 schemas from Django Rest Framework code.
+  license: Apache-2.0 AND MIT AND BSD-3-Clause
+  license_file:
+    - LICENSE.rst
+    - src/drf_yasg/static/drf-yasg/swagger-ui-dist/NOTICE
+    - src/drf_yasg/static/drf-yasg/swagger-ui-dist/LICENSE
+    - src/drf_yasg/static/drf-yasg/redoc-old/LICENSE
+    - src/drf_yasg/static/drf-yasg/redoc/LICENSE
+  homepage: https://github.com/axnsan12/drf-yasg
+  documentation: https://drf-yasg.readthedocs.io/en/stable/
+
+extra:
+  recipe-maintainers:
+    - julian-belina
+    - mgorny

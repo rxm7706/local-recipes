@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: freeze-core
+  version: "0.7.1"
+  sha256: 5b7a7aceb94b946d613d0ec4f348aa3c692b5834c458c83da517756da43fd74e
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name|replace("-", "_") }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  skip: match(python, "<3.11")
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  dynamic_linking:
+    missing_dso_allowlist:
+      - if: win
+        then:
+          - "**/cx_Logging.*.pyd"
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools >=78.1.1,<85
+    - if: win
+      then:
+        - cx_logging >=3.2
+  run:
+    - python
+    - filelock >=3.20.3
+    - if: win
+      then:
+        - cabarchive >=0.2.4
+        - striprtf >=0.0.26
+
+tests:
+  - python:
+      imports:
+        - freeze_core
+  - files:
+      source:
+        - pyproject.toml
+        - tests
+    requirements:
+      run:
+        - coverage >=7.10.3
+        - pytest >=9.0.3
+        - if: not win
+          then:
+            - cabarchive >=0.2.4
+            - striprtf >=0.0.26
+    script:
+      - coverage run
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Core dependency for cx_Freeze.
+  repository: https://github.com/marcelotduarte/freeze-core
+  homepage: https://marcelotduarte.github.io/cx_Freeze
+  documentation: https://cx-freeze.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - marcelotduarte

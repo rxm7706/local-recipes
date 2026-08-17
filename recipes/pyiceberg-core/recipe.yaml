@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: pyiceberg-core
+  python_name: pyiceberg_core
+  version: "0.10.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ python_name }}-${{ version }}.tar.gz
+  sha256: c5e600728071032a4027c4c36680e4806c98f443057a26523532a2f830db4c89
+
+build:
+  number: 0
+  python:
+    version_independent: true
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then:
+        - python ${{ python_min }}.*
+        - cross-python_${{ target_platform }}
+        - maturin >=1.0,<2
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('rust') }}
+    - cargo-bundle-licenses
+  host:
+    - python ${{ python_min }}.*
+    - python-abi3
+    - maturin >=1.2.2,<2
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - pyiceberg_core
+      python_version:
+        - "${{ python_min }}.*"
+        - "*"
+  - requirements:
+      run:
+        - pip
+        - abi3audit
+    script:
+      - pip check
+      - if: unix
+        then:
+          - export SP_DIR=$(python -c "import site; print(site.getsitepackages()[0])")
+          - abi3audit $SP_DIR/pyiceberg_core/pyiceberg_core_rust.abi3.so -s -v --assume-minimum-abi3 ${{ python_min }}
+      - if: win
+        then:
+          - set "SP_DIR=%PREFIX%\\Lib\\site-packages"
+          - abi3audit %SP_DIR%\\pyiceberg_core\\pyiceberg_core_rust.pyd -s -v --assume-minimum-abi3 ${{ python_min }}
+
+about:
+  homepage: https://github.com/apache/iceberg-rust/
+  license: Apache-2.0
+  license_file:
+    - LICENSE
+    - NOTICE
+    - bindings/python/THIRDPARTY.yml
+  summary: |
+    This project is used to build an iceberg-rust powered core for pyiceberg, and intended for use only by pyiceberg.
+  repository: https://github.com/apache/iceberg-rust/
+
+extra:
+  recipe-maintainers:
+    - sumanth-manchala

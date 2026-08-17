@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: pytest-flakefinder
+  version: 1.1.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pytest-flakefinder-${{ version }}.tar.gz
+  sha256: e2412a1920bdb8e7908783b20b3d57e9dad590cc39a93e8596ffdd493b403e0e
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pytest >=2.7.1
+
+tests:
+  - python:
+      imports:
+        - pytest_flakefinder
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  summary: Runs tests multiple times to expose flakiness.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/dropbox/pytest-flakefinder
+  repository: https://github.com/dropbox/pytest-flakefinder
+
+extra:
+  recipe-maintainers:
+    - baszalmstra

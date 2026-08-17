@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: kfp-server-api
+  version: "2.17.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 12adfe269ca4758f01c687898f4471e786183e720fe5fa5aa4ad4fb0f3737d4f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - urllib3 >=1.15
+    - six >=1.10
+    - certifi
+    - python-dateutil
+
+tests:
+  - python:
+      imports:
+        - kfp_server_api
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: KF Pipelines API
+  description: Generated python client for the KF Pipelines server API
+  homepage: https://github.com/kubeflow/pipelines/tree/master/backend/api/python_http_client
+
+extra:
+  recipe-maintainers:
+    - alanhdu
+    - nicolas-geniteau
+    - maximerihouey
+    - ncolomer
+    - tanguycdls
+    - radcheb

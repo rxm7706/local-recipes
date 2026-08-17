@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: model_bakery
+  version: "1.24.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 6469223c9fb0eccb021d5c33667b914e9208dd2282d7dc1e55394c2310a7687d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - uv-build >=0.9.26,<0.12.0
+  run:
+    - django >=1.11.0
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - model_bakery
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Smart object creation facility for Django.
+  homepage: http://github.com/model-bakers/model_bakery
+  repository: https://github.com/model-bakers/model_bakery
+  documentation: https://pypi.org/project/model-bakery/
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - bubblyorca
+    - soapy1

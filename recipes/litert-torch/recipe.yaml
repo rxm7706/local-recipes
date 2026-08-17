@@ -1,0 +1,98 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.9.3"
+
+package:
+  name: litert-torch
+  version: ${{ version }}
+
+source:
+  url: https://github.com/google-ai-edge/litert-torch/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: b1bccd11a22492cb674a521bbbce036eb6e297af14f1e6becd8504cb130c735f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - absl-py
+    - numpy
+    - scipy
+    - safetensors
+    - multipledispatch
+    - transformers
+    - kagglehub
+    - tabulate
+    - pytorch <2.13.0,>=2.4.0
+    - ai-edge-litert <2.2.0,>=2.1.6
+    - ai-edge-quantizer ==0.8.*
+    - litert-converter ==0.3.*
+    - torchao >=0.17.0
+    - jax
+    - jaxtyping
+    - fire
+    - sentencepiece
+    - rich
+    - litert-lm-builder >=0.0.0.dev0
+
+tests:
+  - python:
+      imports:
+        - litert_torch
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/google-ai-edge/litert-torch
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Support PyTorch model conversion with LiteRT.
+  description: |
+    Support PyTorch model conversion with LiteRT.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: litert-torch
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: litert-torch
+  cfe-purls:
+    - pkg:conda/litert-torch@${{ version }}?channel=conda-forge
+    - pkg:pypi/litert-torch@${{ version }}
+  cfe-upstream-repo: https://github.com/google-ai-edge/litert-torch
+  cfe-upstream-homepage: https://github.com/google-ai-edge/litert-torch
+  cfe-import-names: [litert_torch]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:43:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:43:27Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

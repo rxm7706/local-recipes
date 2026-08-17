@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.10.0.0"
+
+package:
+  name: typing
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/typing/typing-${{ version }}.tar.gz
+  sha256: 13b4ad211f54ddbf93e5901a9967b1e07720c1d1b78d596ac6a439641aa1b130
+
+build:
+  number: 2
+  noarch: python
+  script: echo "dummy package for python 3"
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - typing
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: PSF-2.0
+  license_file: LICENSE
+  summary: Type Hints for Python - backport for Python<3.5
+  homepage: https://docs.python.org/3.5/library/typing.html
+
+extra:
+  recipe-maintainers:
+    - msarahan
+    - ocefpaf

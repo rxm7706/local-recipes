@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: picologging
+  version: "0.9.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/picologging-${{ version }}.tar.gz
+  sha256: 6921f86ea0875ac85e252188627e9f04b872895327a7028e06c825ddb888a825
+
+build:
+  number: 1
+  skip: (match(python, "<3.7")) or (python_impl == 'pypy')
+  script:
+    - if: osx
+      then: export CXXFLAGS="${CXXFLAGS} -D_LIBCPP_DISABLE_AVAILABILITY"
+    - ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - ${{ compiler('cxx') }}
+  host:
+    - cmake >=3.18
+    - if: linux
+      then: make
+    - ninja
+    - pip
+    - python
+    - scikit-build >=0.17.0
+    - setuptools >=65.4.1
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - picologging
+      pip_check: true
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - pip
+        - pytest
+    script:
+      - pytest -vvv --capture=tee-sys tests
+
+about:
+  summary: A fast and lightweight logging library for Python
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/microsoft/picologging
+
+extra:
+  recipe-maintainers:
+    - tonybaloney
+    - thewchan

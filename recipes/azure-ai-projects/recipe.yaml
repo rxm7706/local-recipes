@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.4.0"
+
+package:
+  name: azure-ai-projects
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/azure-ai-projects/azure_ai_projects-${{ version }}.tar.gz
+  sha256: 121154f70cf7de350a38a75e1da710f4e98b7d8114bc3b1ea25124469e34186f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=77.0.3
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - isodate >=0.6.1
+    - azure-core >=1.37.0
+    - typing_extensions >=4.11
+    - azure-identity >=1.15.0
+    - openai >=2.8.0
+    - azure-storage-blob >=12.15.0
+
+tests:
+  - python:
+      imports:
+        - azure
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/azure-ai-projects/
+  license: MIT
+  license_file: LICENSE
+  summary: Microsoft Corporation Azure AI Projects Client Library for Python
+  description: |
+    Microsoft Corporation Azure AI Projects Client Library for Python
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: azure-ai-projects
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: azure-ai-projects
+  cfe-purls:
+    - pkg:conda/azure-ai-projects@${{ version }}?channel=conda-forge
+    - pkg:pypi/azure-ai-projects@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/azure-ai-projects/
+  cfe-upstream-homepage: https://pypi.org/project/azure-ai-projects/
+  cfe-import-names: [azure]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:01:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:01:40Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

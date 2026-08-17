@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: databricks-cli
+  version: "1.12.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/databricks/cli/archive/refs/tags/v${{ version }}.tar.gz
+    sha256: 89bcb4efef1bd5e0ec6faf4702eab3dfde87c663033500771ca4eade9b66863f
+  - url: ${{ 'https://raw.githubusercontent.com/mattn/go-localereader/refs/heads/master/LICENSE' if win else '' }}
+    sha256: ${{ 'dceede03550621e65ec7b79fcba87cf6dbb9d31132a8ae71a8fe8ceec0af7da3' if win else '' }}
+    file_name: ${{ 'LICENSE-go-localereader' if win else '' }}
+
+build:
+  number: 0
+  script: {}
+
+requirements:
+  build:
+    - ${{ compiler('go') }} >=1.24.1
+    - go-licenses
+    - if: win
+      then: m2-base
+
+tests:
+  - requirements:
+      run:
+        - ripgrep
+    script:
+      - databricks --help
+      - databricks --version | rg ${{ version }}
+      - databricks version --output json | rg "Major.: ${{ version.split(".")[0] }},"
+      - databricks version --output json | rg v${{ version }}
+
+about:
+  summary: A command line interface for Databricks
+  license: LicenseRef-Databricks-License
+  license_file:
+    - LICENSE
+    - NOTICE
+    - thirdparty/
+    - if: win
+      then: LICENSE-go-localereader
+  homepage: https://github.com/databricks/cli
+
+extra:
+  recipe-maintainers:
+    - thewchan
+    - andrewmchen
+    - jaroslawk
+    - oblute
+    - dhirschfeld

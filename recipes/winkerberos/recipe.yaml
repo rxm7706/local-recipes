@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: winkerberos
+  version: "0.13.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/winkerberos-${{ version }}.tar.gz
+  sha256: f3fbb67346fe8ed697e125724b0699d5c2a15b9a5f9151d25a1be88df8dac427
+
+build:
+  number: 1
+  skip: not win
+  skip: true  # [not win]
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - setuptools >=61.0
+    - pip
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - winkerberos
+      pip_check: true
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: High level interface to SSPI for Kerberos client auth
+  homepage: https://github.com/mongodb-labs/winkerberos
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

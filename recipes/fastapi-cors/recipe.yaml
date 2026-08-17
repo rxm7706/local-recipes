@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.6"
+
+package:
+  name: fastapi-cors
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/fastapi-cors/fastapi-cors-${{ version }}.tar.gz
+  sha256: 17eeb92f2b3dd8f0deb8ca69f031760e35edd5a0c811aaf80f9743e5e6ae50a1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - pdm-pep517 >=1.0
+  run:
+    - python >=${{ python_min }}
+    - environs >=9.5.0
+    - fastapi >=0.99.1
+
+tests:
+  - python:
+      imports:
+        - fastapi_cors
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/fastapi-cors/
+  license: MIT
+  license_file: LICENSE
+  summary: Simple env support of CORS settings for Fastapi applications
+  description: |
+    Simple env support of CORS settings for Fastapi applications
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: fastapi-cors
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: fastapi-cors
+  cfe-purls:
+    - pkg:conda/fastapi-cors@${{ version }}?channel=conda-forge
+    - pkg:pypi/fastapi-cors@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/fastapi-cors/
+  cfe-upstream-homepage: https://pypi.org/project/fastapi-cors/
+  cfe-import-names: [fastapi_cors]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:38:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:38:15Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4/P5 Create-recipe local-only. fastapi-cors.
+####

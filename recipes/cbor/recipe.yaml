@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cbor
+  version: "1.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/cbor-${{ version }}.tar.gz
+  sha256: 13225a262ddf5615cbd9fd55a76a0d53069d18b07d2e9f19c39e6acb8609bbb6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - cbor
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: RFC 7049 - Concise Binary Object Representation
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://bitbucket.org/bodhisnarkva/cbor
+
+extra:
+  recipe-maintainers:
+    - mediocretech

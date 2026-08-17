@@ -1,0 +1,74 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.52.1"
+
+package:
+  name: libuv
+  version: ${{ version }}
+
+source:
+  url: https://github.com/libuv/libuv/archive/v${{ version }}.tar.gz
+  sha256: 478baf2599bfbc882c355288c9cb6f92e0e7dda435fa04031fa5b607cf3f414c
+  patches:
+    # linux.c:1638:21: error: 'CLOCK_BOOTTIME' undeclared
+    - boottime.patch
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - if: unix
+      then:
+        - automake
+        - autoconf
+        - libtool
+        - make
+        - sed
+        - cmake-no-system
+        - ninja
+  run_exports:
+    - ${{ pin_subpackage('libuv', upper_bound='x') }}
+
+tests:
+  - package_contents:
+      include:
+        - uv.h
+      lib:
+        - uv
+      files:
+        exists:
+          - if: osx
+            then: lib/libuv.1.dylib
+          - if: linux
+            then: lib/libuv.so.1
+          - if: win
+            then:
+              - Library/lib/pkgconfig/libuv.pc
+              - Library/lib/uv.lib
+            else: lib/pkgconfig/libuv.pc
+        not_exists:
+          - lib/libuv.a
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Cross-platform asynchronous I/O
+  description: |
+    libuv is a multi-platform support library with a focus on asynchronous I/O.
+    It was primarily developed for use by Node.js, but it's also used by Luvit,
+    Julia, pyuv, and others.
+  homepage: http://libuv.org/
+  repository: https://github.com/libuv/libuv
+  documentation: http://docs.libuv.org/
+
+extra:
+  recipe-maintainers:
+    - jjerphan
+    - frol
+    - mariusvniekerk
+    - xhochy

@@ -1,0 +1,91 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: schemathesis
+  version: "4.24.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/schemathesis-${{ version }}.tar.gz
+  sha256: 11b47ca77067ffeaa1400d33f216d214417dcb90fdbabed482a7238600366cb8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - schemathesis = schemathesis.cli:schemathesis
+      - st = schemathesis.cli:schemathesis
+
+requirements:
+  host:
+    - pip
+    - hatchling
+    - python ${{ python_min }}.*
+  run:
+    - python >=${{ python_min }}
+    - click >=8.0,<9
+    - colorama >=0.4,<1.0
+    - harfile >=0.5.0,<1.0
+    - httpx >=0.22.0,<1.0
+    - hypothesis >=6.130.12,<7
+    - hypothesis-graphql >=0.13.1,<1
+    - hypothesis-jsonschema >=0.23.1,<0.24
+    - jsonschema >=4.18.0,<5.0
+    - jsonschema-rs >=0.49.0
+    - junit-xml >=1.9,<2.0
+    - pyrate-limiter >=4.0,<5.0
+    - pytest-subtests >=0.11,<0.16.0
+    - pytest >=9,<10
+    - pyyaml >=5.1,<7.0
+    - requests >=2.22,<3
+    - rich >=13.9.4
+    - starlette-testclient >=0.4.1,<1
+    - tomli >=2.2.1
+    - tenacity >=9.1.2,<10.0
+    - typing_extensions >=4.12.2
+    - werkzeug >=0.16.0,<4
+    # for hypothesis[tzdata]
+    - python-tzdata
+    # for jsonschema[format]
+    - fqdn
+    - idna
+    - isoduration
+    - jsonpointer >1.13
+    - rfc3339-validator
+    - rfc3987
+    - uri-template
+    - webcolors >=1.11
+
+tests:
+  - python:
+      imports:
+        - schemathesis
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - python ${{ python_min }}.*
+    script:
+      - schemathesis --help
+      - st --help
+
+about:
+  summary: Property-based testing framework for Open API and GraphQL based apps
+  license: MIT
+  license_file:
+    - LICENSE
+  homepage: https://github.com/schemathesis/schemathesis
+  documentation: https://schemathesis.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - Stranger6667
+    - thewchan

@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: "2.2.12"
+  python_min: "3.11"
+
+package:
+  name: fastcore
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/fastcore/fastcore-${{ version }}.tar.gz
+  sha256: 843589e613b1b6f69dc81fedb04075a0bcea159088509f560780aef6d3528294
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - py2pyi=fastcore.py2pyi:py2pyi
+      - replace_wildcards=fastcore.py2pyi:replace_wildcards
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - setuptools >=64
+    - pip
+  run:
+    - python >=${{ python_min }}
+tests:
+  - python:
+      imports:
+        - fastcore
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+      - py2pyi --help
+      - replace_wildcards --help
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+
+about:
+  summary: Python supercharged for fastai development
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/fastai/fastcore
+
+extra:
+  recipe-maintainers:
+    - kai-tub
+    - synapticarbors
+    - thewchan

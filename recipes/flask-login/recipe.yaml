@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: Flask-Login
+  version: "0.6.3"
+  bundle: tar.gz
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.${{ bundle }}
+  sha256: 5e23d14a607ef12806c699590b89d0f0e0d67baeec599d75947bf9c147330333
+  file_name: ${{ name }}-${{ version }}.${{ bundle }}
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - flask >=1.0.4
+    - werkzeug >=1.0.1
+
+tests:
+  - python:
+      imports:
+        - flask_login
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: User session management for Flask
+  homepage: https://github.com/maxcountryman/flask-login
+  repository: https://github.com/maxcountryman/flask-login
+  documentation: https://flask-login.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - synapticarbors
+    - xylar

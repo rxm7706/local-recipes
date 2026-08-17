@@ -1,0 +1,130 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "6.9.0"
+
+package:
+  name: plotly
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/plotly/plotly-${{ version }}.tar.gz
+  sha256: 967ad33e8c704fed051800d11d985eb206a9c795c14206b30a6f463ed9c67d0d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools >=40.8.0  # min version from packages/python/plotly/pyproject.toml
+    - wheel
+    - hatchling >=1.26
+  run:
+    - python >=${{ python_min }}
+    # Check <https://github.com/plotly/plotly.py/blob/master/packages/python/plotly/requires-install.txt>
+    - narwhals >=1.15.1
+    - packaging
+  run_constraints:
+    - ipywidgets >=7.6
+
+tests:
+  - python:
+      imports:
+        - plotly
+        - plotly.offline
+        - plotly.io
+        - plotly.data
+        - plotly.colors
+        - plotly.graph_objects
+        - _plotly_utils
+        - _plotly_utils.colors
+        - plotly.graph_objs.bar
+        - plotly.graph_objs.barpolar
+        - plotly.graph_objs.box
+        - plotly.graph_objs.candlestick
+        - plotly.graph_objs.carpet
+        - plotly.graph_objs.choropleth
+        - plotly.graph_objs.choroplethmapbox
+        - plotly.graph_objs.cone
+        - plotly.graph_objs.contour
+        - plotly.graph_objs.contourcarpet
+        - plotly.graph_objs.densitymapbox
+        - plotly.graph_objs.funnel
+        - plotly.graph_objs.funnelarea
+        - plotly.graph_objs.heatmap
+        - plotly.graph_objs.histogram
+        - plotly.graph_objs.histogram2d
+        - plotly.graph_objs.histogram2dcontour
+        - plotly.graph_objs.icicle
+        - plotly.graph_objs.image
+        - plotly.graph_objs.indicator
+        - plotly.graph_objs.isosurface
+        - plotly.graph_objs.layout
+        - plotly.graph_objs.mesh3d
+        - plotly.graph_objs.ohlc
+        - plotly.graph_objs.parcats
+        - plotly.graph_objs.parcoords
+        - plotly.graph_objs.pie
+        - plotly.graph_objs.sankey
+        - plotly.graph_objs.scatter
+        - plotly.graph_objs.scatter3d
+        - plotly.graph_objs.scattercarpet
+        - plotly.graph_objs.scattergeo
+        - plotly.graph_objs.scattergl
+        - plotly.graph_objs.scattermapbox
+        - plotly.graph_objs.scatterpolar
+        - plotly.graph_objs.scatterpolargl
+        - plotly.graph_objs.scatterternary
+        - plotly.graph_objs.splom
+        - plotly.graph_objs.streamtube
+        - plotly.graph_objs.sunburst
+        - plotly.graph_objs.surface
+        - plotly.graph_objs.table
+        - plotly.graph_objs.treemap
+        - plotly.graph_objs.violin
+        - plotly.graph_objs.volume
+        - plotly.graph_objs.waterfall
+      pip_check: true
+      python_version: ${{ python_min }}
+  - files:
+      recipe:
+        - test-imports-requiring-numpy.py
+        - test-imports-requiring-matplotlib.py
+        - test-imports-requiring-pandas.py
+    requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - conda install -y numpy
+      - python test-imports-requiring-numpy.py
+      - conda install -y matplotlib-base
+      - python test-imports-requiring-matplotlib.py
+      - conda install -y pandas
+      - python test-imports-requiring-pandas.py
+
+about:
+  license: MIT
+  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE.txt
+  summary: An interactive, browser-based graphing library for Python
+  description: |
+    Plotly's Python graphing library makes interactive,
+    publication-quality graphs online. Examples of how to make line
+    plots, scatter plots, area charts, bar charts, error bars, box plots,
+    histograms, heatmaps, subplots, multiple-axes, polar charts and
+    bubble charts.
+  homepage: https://plot.ly/python/
+  repository: https://github.com/plotly/plotly.py
+  documentation: https://plot.ly/python/
+
+extra:
+  recipe-maintainers:
+    - maresb
+    - chohner
+    - moorepants
+    - ocefpaf

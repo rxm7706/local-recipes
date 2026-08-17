@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: amplitude-analytics
+  version: "1.2.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/amplitude_analytics-${{ version }}.tar.gz
+  sha256: 4c9525847c391c19675d6e026f4601c27204ffeec71cb92252770d84d4538404
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - amplitude
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: The official Amplitude backend Python SDK for server-side instrumentation.
+  homepage: https://github.com/amplitude/Amplitude-Python
+  repository: https://github.com/amplitude/Amplitude-Python
+
+extra:
+  recipe-maintainers:
+    - josham
+    - killua156

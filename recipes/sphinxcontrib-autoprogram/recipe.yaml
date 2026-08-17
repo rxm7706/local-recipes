@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.5"
+
+package:
+  name: sphinxcontrib-autoprogram
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/s/sphinxcontrib-autoprogram/sphinxcontrib-autoprogram-${{ version }}.tar.gz
+  sha256: 7ec6bdf235b491dc693d1a72fb7f9f734db69e29b81333435efb41f09f9bbeef
+  file_name: sphinxcontrib-autoprogram-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  host:
+    - pip
+    - python
+    - setuptools
+    - sphinx >=1.2
+    - six
+  run:
+    - python
+    - sphinx >=1.2
+    - six
+
+tests:
+  - python:
+      imports:
+        - sphinxcontrib
+      pip_check: false
+
+about:
+  license: BSD-2-Clause
+  summary: Documenting CLI programs
+  homepage: https://bitbucket.org/birkenfeld/sphinx-contrib
+
+extra:
+  recipe-maintainers:
+    - asmeurer

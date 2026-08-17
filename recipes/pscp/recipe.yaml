@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.3"
+
+package:
+  name: pscp
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pscp/pscp-${{ version }}.tar.gz
+  sha256: 6679a8f4944cc432e90df4b380d3af28d5dd7df0b99c3e7c6e05dde877db9e0e
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pscp
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/qbx2/pscp
+  license: MIT
+  license_file: LICENSE
+  summary: Per-session checkpoint using git-stash-create
+  description: |
+    Per-session checkpoint using git-stash-create
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pscp
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pscp
+  cfe-purls:
+    - pkg:conda/pscp@${{ version }}?channel=conda-forge
+    - pkg:pypi/pscp@${{ version }}
+  cfe-upstream-repo: https://github.com/qbx2/pscp
+  cfe-upstream-homepage: https://github.com/qbx2/pscp
+  cfe-import-names: [pscp]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:47:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:47:12Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

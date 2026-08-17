@@ -2,44 +2,41 @@
 schema_version: 1
 
 context:
+  name: deptry
   version: "0.25.1"
 
 package:
-  name: deptry
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/deptry/deptry-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/deptry-${{ version }}.tar.gz
   sha256: 45c8cd982c85cd4faae573ddff6920de7eec735336db6973f26a765ae7950f7d
 
 build:
   number: 0
-  skip: match(python, "<3.10")
+  skip: match(python, "<3.8")
+  script: |
+    set "CARGO_HOME=C:\cargo"
+    echo "building..."
+    ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
   python:
     entry_points:
       - deptry = deptry.cli:deptry
-  script:
-    content:
-      - if: win
-        then: |
-          set "CARGO_HOME=C:\cargo"
-          ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-          cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
-        else: |
-          ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
-          cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
 
 requirements:
   build:
-    - ${{ compiler('c') }}
-    - ${{ stdlib('c') }}
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: maturin >=1.5,<2.0
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
     - ${{ compiler('rust') }}
     - cargo-bundle-licenses
-    - if: build_platform != target_platform
-      then:
-        - python
-        - cross-python_${{ target_platform }}
-        - maturin >=1.5,<2.0
   host:
     - python
     - maturin >=1.5,<2.0
@@ -47,12 +44,12 @@ requirements:
   run:
     - python
     - click >=8.0.0,<9
+    - if: win
+      then: colorama >=0.4.6
     - packaging >=23.2
     - requirements-parser >=0.11.0,<1
-    - tomli >=2.0.1
-    - if: win
-      then:
-        - colorama >=0.4.6
+    - if: match(python, "<3.15")
+      then: tomli >=2.0.1
 
 tests:
   - python:
@@ -62,6 +59,9 @@ tests:
   - requirements:
       run:
         - pip
+        - if: python_impl == 'pypy'
+          then: setuptools
+        - setuptools
     script:
       - deptry --help
 

@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.1.0"
+  python_check_max: "3.14"
+  grep: ${{ "grep -iE" if unix else "findstr" }}
+
+package:
+  name: jupyter_bokeh
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/jupyter_bokeh/jupyter_bokeh-${{ version }}.tar.gz
+  sha256: fc0719c653920b5a1b2b42b2f4091c43fb1570880819058d820a2ab198cb93bf
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - hatch-jupyter-builder >=0.8.2
+    - hatch-nodejs-version
+    - hatchling >=1.5.0
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - bokeh 3.*
+    - ipywidgets 8.*
+    - python >=${{ python_min }}
+  run_constraints:
+    - jupyterlab 4.*
+
+tests:
+  - python:
+      imports:
+        - jupyter_bokeh
+        - jupyter_bokeh.widgets
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - requirements:
+      run:
+        - jupyterlab
+        - python ${{ python_min }}.*
+    script:
+      - jupyter labextension list
+      - |-
+        jupyter labextension list 2>&1 | ${{ grep }} "@bokeh/jupyter_bokeh.*OK.*jupyter_bokeh"
+
+about:
+  summary: A Jupyter extension for rendering Bokeh content.
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE.txt
+    - jupyter_bokeh/labextension/static/third-party-licenses.json
+  homepage: https://pypi.org/project/jupyter-bokeh
+  repository: https://github.com/bokeh/jupyter_bokeh
+
+extra:
+  recipe-maintainers:
+    - bollwyvl
+    - philippjfr
+    - mattpap

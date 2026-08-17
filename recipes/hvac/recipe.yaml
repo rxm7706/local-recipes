@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: hvac
+  version: "2.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: e0056ad9064e7923e874e6769015b032580b639e29246f5ab1044f7959c1c7e0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry-core >=1.0.0
+    - pip
+  run:
+    - python >=${{ python_min }},<4.0.0
+    - requests >=2.27.1,<3.0.0
+  run_constraints:
+    - pyhcl >=0.4.4,<0.5.0
+
+tests:
+  - python:
+      imports:
+        - hvac
+        - hvac.api
+        - hvac.api.auth_methods
+        - hvac.api.secrets_engines
+        - hvac.api.system_backend
+        - hvac.constants
+        - hvac.v1
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  summary: HashiCorp Vault API client
+  homepage: https://python-hvac.org/
+  repository: https://github.com/hvac/hvac
+  documentation: https://hvac.readthedocs.io/en/latest/?badge=latest
+
+extra:
+  recipe-maintainers:
+    - mbiette
+    - mariusvniekerk

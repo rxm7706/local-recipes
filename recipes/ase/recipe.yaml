@@ -1,0 +1,77 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ase
+  version: "3.29.0"
+  sha256: ef4e2caa38169e3fbbc4164764a060d1877a6692519a4bed82521328eeb0d9aa
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - ase=ase.cli.main:main
+      - ase-db=ase.cli.main:old
+      - ase-gui=ase.cli.main:old
+      - ase-run=ase.cli.main:old
+      - ase-info=ase.cli.main:old
+      - ase-build=ase.cli.main:old
+
+requirements:
+  host:
+    - python 3.10.*
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - matplotlib-base
+    - numpy
+    - scipy
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - ase
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pytest
+        - pytest-mock
+        - python ${{ python_min }}
+        - pip
+    script:
+      - if: not win
+        then: export DISPLAY=""
+      - ase test
+
+about:
+  license: LGPL-2.1-or-later
+  license_file: LICENSE
+  summary: ASE is a python package providing an open source Atomic Simulation Environment in the Python language.
+  description: |
+    ASE is a set of tools and Python modules for setting up,
+    manipulating, running, visualizing and analyzing atomistic simulations.
+    Python 3.5+
+  homepage: https://gitlab.com/ase/ase
+  repository: https://gitlab.com/ase/ase
+  documentation: http://wiki.fysik.dtu.dk/ase
+
+extra:
+  recipe-maintainers:
+    - jochym
+    - CJ-Wright
+    - jan-janssen

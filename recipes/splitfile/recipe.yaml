@@ -1,0 +1,78 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.2"
+
+package:
+  name: splitfile
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/splitfile/splitfile-${{ version }}.tar.gz
+  sha256: d36a9f42920201aed7448c79af4fe6fc5233dd928e91bc146c8663530b1c5fec
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - splitfile
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/alemigo/splitfile
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: File like object that splits data across volumes
+  description: |
+    File like object that splits data across volumes
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: splitfile
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: splitfile
+  cfe-purls:
+    - pkg:conda/splitfile@${{ version }}?channel=conda-forge
+    - pkg:pypi/splitfile@${{ version }}
+  cfe-upstream-repo: https://github.com/alemigo/splitfile
+  cfe-upstream-homepage: https://github.com/alemigo/splitfile
+  cfe-import-names: [splitfile]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:44:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:44:22Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4/P5 Create-recipe local-only. splitfile.
+####

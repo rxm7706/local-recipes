@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sseclient
+  version: 0.0.27
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: b2fe534dcb33b1d3faad13d60c5a7c718e28f85987f2a034ecf5ec279918c11c
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - requests >=2.0.0
+    - six
+
+tests:
+  - python:
+      imports:
+        - sseclient
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+
+about:
+  license: MIT
+  license_file: LICENSE
+  # license_file: LICENSE not included in MANIFEST.in - see https://bitbucket.org/btubbs/sseclient/pull-requests/10/
+  summary: Python client library for reading Server Sent Event streams.
+  homepage: https://bitbucket.org/btubbs/sseclient/
+  repository: https://bitbucket.org/btubbs/sseclient/src
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - jan-janssen

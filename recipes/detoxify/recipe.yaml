@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.2"
+
+package:
+  name: detoxify
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/detoxify/detoxify-${{ version }}.tar.gz
+  sha256: c119d0b47545bb076190ff583faad9aa3bb0a90ac01c7c4144758606d21da5b1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - transformers
+    - pytorch >=1.7.0
+    - sentencepiece >=0.1.94
+
+tests:
+  - python:
+      imports:
+        - detoxify
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/unitaryai/detoxify
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A python library for detecting toxic comments
+  description: |
+    A python library for detecting toxic comments
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: detoxify
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: detoxify
+  cfe-purls:
+    - pkg:conda/detoxify@${{ version }}?channel=conda-forge
+    - pkg:pypi/detoxify@${{ version }}
+  cfe-upstream-repo: https://github.com/unitaryai/detoxify
+  cfe-upstream-homepage: https://github.com/unitaryai/detoxify
+  cfe-import-names: [detoxify]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:52:58Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:52:58Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

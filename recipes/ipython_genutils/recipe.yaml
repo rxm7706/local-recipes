@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.2.0"
+
+package:
+  name: ipython_genutils
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/i/ipython_genutils/ipython_genutils-${{ version }}.tar.gz
+  sha256: eb2e116e75ecef9d4d228fdc66af54269afa26ab4463042e33785b887c628ba8
+  file_name: ipython_genutils-${{ version }}.tar.gz
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - ipython_genutils
+        - ipython_genutils.testing
+        - ipython_genutils.tests
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: COPYING.md
+  summary: Vestigial utilities from IPython
+  homepage: http://ipython.org
+
+extra:
+  recipe-maintainers:
+    - minrk
+    - msarahan
+    - pelson
+    - scopatz
+    - Carreau
+    - takluyver

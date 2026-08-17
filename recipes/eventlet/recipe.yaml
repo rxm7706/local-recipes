@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  version: 0.41.2
+
+package:
+  name: eventlet
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/e/eventlet/eventlet-${{ version }}.tar.gz
+  sha256: 721b86b77fca33a735598292022ac6feef99747bf48f52defdada6b572acd5af
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . -vv --no-build-isolation --no-deps
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatch-vcs >=0.3
+    - hatchling >=1.12.2
+  run:
+    - python >=${{ python_min }}
+    - greenlet >=1.0
+    - dnspython >=1.15.0
+tests:
+  - python:
+      imports:
+        - eventlet
+        - eventlet.green
+        # moved to separate test since it needs pyopenssl
+        # - eventlet.green.OpenSSL
+        - eventlet.green.http
+        - eventlet.green.urllib
+        - eventlet.greenio
+        - eventlet.hubs
+        - eventlet.support
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - requirements:
+      run:
+        - pyopenssl
+        - python ${{ python_min }}.*
+    script:
+      - python -c "import eventlet.green.OpenSSL"
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Highly concurrent networking library
+  homepage: http://eventlet.net
+  repository: https://github.com/eventlet/eventlet
+  documentation: http://eventlet.net
+
+extra:
+  recipe-maintainers:
+    - synapticarbors
+    - anguslees
+    - jan-janssen

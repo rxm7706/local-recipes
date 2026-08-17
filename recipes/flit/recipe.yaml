@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.0.2"
+
+package:
+  name: flit
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/flit/flit-${{ version }}.tar.gz
+  sha256: 232bc4317279e8952eca9fb3f5e000d8395d693b39c105b99f619ce461e1da85
+  target_directory: source
+
+build:
+  number: 0
+  noarch: python
+  script: cd source/ && FLIT_ROOT_INSTALL=1 python -m flit install --deps=none
+  python:
+    entry_points:
+      - flit = flit:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - docutils
+    - requests
+    - tomli-w
+    - flit-core 4.0.2.*
+  run:
+    - python >=${{ python_min }}
+    - pip
+    - docutils
+    - requests
+    - tomli-w
+    - flit-core 4.0.2.*
+
+tests:
+  - python:
+      imports:
+        - flit
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - flit --version
+
+about:
+  license: BSD-3-Clause
+  license_file: source/LICENSE
+  summary: Simplified packaging of Python modules
+  homepage: https://flit.pypa.io/
+
+extra:
+  recipe-maintainers:
+    - Carreau
+    - minrk
+    - takluyver
+    - ocefpaf

@@ -2,15 +2,16 @@
 schema_version: 1
 
 context:
+  name: django-ai-core
   version: "0.1.5"
-  python_min: "3.11"
+  python_min: '3.11'
 
 package:
-  name: django-ai-core
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-ai-core/django_ai_core-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_ai_core-${{ version }}.tar.gz
   sha256: a6c20b1fc29c7bed8fd3639a0898cbc91eb67da5f5762882d9b0880b6ab8678a
 
 build:
@@ -24,18 +25,16 @@ requirements:
     - uv-build >=0.8.22,<0.9.0
     - pip
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
     - any-llm-sdk ==0.20.3
-    - queryish >=0.3.0
+    - queryish >=0.2.0
 
 tests:
   - python:
       imports:
         - django_ai_core
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}.*
 
 about:
   summary: Django AI Core provides developer-focused AI features for implementing AI tooling in to Django sites.

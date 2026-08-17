@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: bitstring
+  version: "4.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: e682ac522bb63e041d16cbc9d0ca86a4f00194db16d0847c7efe066f836b2e37
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools >=61
+  run:
+    - bitarray >=3.0.0,<4.0
+    - python >=${{ python_min }}
+    - tibs >=0.5.6,<0.6
+
+tests:
+  - python:
+      imports:
+        - bitstring
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Simple construction, analysis and modification of binary data.
+  homepage: http://scott-griffiths.github.io/bitstring
+  repository: https://github.com/scott-griffiths/bitstring
+  documentation: https://bitstring.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - m-rossi

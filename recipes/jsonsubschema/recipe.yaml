@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jsonsubschema
+  version: "0.0.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jsonsubschema-${{ version }}.tar.gz
+  sha256: 39846ece264fe62aae5dd86e71bef8899a5d0869b8be03ab582066acbee7f9d9
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - jsonsubschema=jsonsubschema.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - portion
+    - greenery >=4.0.0
+    - jsonschema
+    - jsonref
+
+tests:
+  - python:
+      imports:
+        - jsonsubschema
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - jsonsubschema --help
+
+about:
+  summary: A tool to check whether a JSON schema is subset/subschema of another JSON schema
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  homepage: https://github.com/IBM/jsonsubschema
+
+extra:
+  recipe-maintainers:
+    - josk0

@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: uc-micro-py
+  version: "2.0.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: c53691e495c8db60e16ffc4861a35469b0ba0821fe409a8a7a0a71864d33a811
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - uc_micro
+        - uc_micro.categories
+        - uc_micro.categories.Cc
+        - uc_micro.categories.Cf
+        - uc_micro.categories.P
+        - uc_micro.categories.Z
+        - uc_micro.properties
+        - uc_micro.properties.Any
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Micro subset of unicode data files for linkify-it-py projects.
+  homepage: https://github.com/tsutsu3/uc.micro-py
+
+extra:
+  recipe-maintainers:
+    - thewchan
+    - chrisjsewell

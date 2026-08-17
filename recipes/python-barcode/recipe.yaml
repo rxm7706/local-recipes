@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-barcode
+  version: "0.13.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: fafba4aa24e9d969777be521c294ff18f6c2b36ad63b5fc2f2108d972e23b252
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - python-barcode = barcode.pybarcode:main
+
+requirements:
+  host:
+    - python >=3.5
+    - pip
+    - setuptools_scm
+  run:
+    - python
+    - pillow
+
+tests:
+  - python:
+      imports:
+        - barcode
+      pip_check: false
+  - script:
+      - python-barcode --help
+
+about:
+  license: MIT
+  license_file: LICENCE
+  summary: This library provides a simple way to create barcodes using only the Python standard lib
+  homepage: http://github.com/WhyNotHugo/python-barcode
+  repository: http://github.com/WhyNotHugo/python-barcode
+
+extra:
+  recipe-maintainers:
+    - sodre

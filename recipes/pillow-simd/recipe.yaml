@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "9.5.0.post2"
+
+package:
+  name: pillow-simd
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/Pillow-SIMD/Pillow-SIMD-${{ version }}.tar.gz
+  sha256: 39dfb027bdaa3e35597df9a1c42ea97091f32bc83f25ab9cab0845b3c4bad331
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - PIL
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/uploadcare/pillow-simd
+  license: HPND
+  license_file: LICENSE
+  summary: Python Imaging Library (Fork)
+  description: |
+    Python Imaging Library (Fork)
+  repository: https://github.com/uploadcare/pillow-simd
+  documentation: https://pillow.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pillow-simd
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: Pillow-SIMD
+  cfe-purls:
+    - pkg:conda/pillow-simd@${{ version }}?channel=conda-forge
+    - pkg:pypi/pillow-simd@${{ version }}
+  cfe-upstream-repo: https://github.com/uploadcare/pillow-simd
+  cfe-upstream-homepage: https://github.com/uploadcare/pillow-simd
+  cfe-import-names: [PIL]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:31:22Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:31:22Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

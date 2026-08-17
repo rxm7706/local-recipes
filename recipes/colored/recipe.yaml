@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: colored
+  version: "2.3.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: d6b7f0737a732c54c92b271f2932c91e386238c8b6ded49d4180eed44eb50684
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - flit
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - colored
+      pip_check: false
+      python_version: ${{ python_min }}
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Simple library for color and formatting to terminal
+  homepage: https://gitlab.com/dslackw/colored
+
+extra:
+  recipe-maintainers:
+    - ozcan
+    - jan-janssen

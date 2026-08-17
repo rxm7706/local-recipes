@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: raitracker
+  version: "0.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/raitracker-${{ version }}.tar.gz
+  sha256: f464f9a74e5e2b9e10ffbfa484489c2073f096c4af962bf720dcec15e60500e5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.7
+    - hatchling >=1.4.0
+    - jupyterlab >=3.4.7,<4.0.0
+    - hatch-nodejs-version
+    - hatch-jupyter-builder >=0.5
+    - pip
+  run:
+    - python >=3.7
+    - jupyterlab >=3
+    - mlflow >=2
+    - numpy >=1
+    - pandas >=1
+    - scikit-learn >=1
+
+tests:
+  - python:
+      imports:
+        - raitracker
+      pip_check: true
+
+about:
+  summary: Responsible AI Toolbox Tracker
+  license: MIT
+  license_file: LICENSE.md
+  homepage: https://github.com/microsoft/responsible-ai-toolbox-tracker
+
+extra:
+  recipe-maintainers:
+    - rxm7706

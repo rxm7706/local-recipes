@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: importlib
+  version: "1.0.4"
+  checksum: b6ee7066fea66e35f8d0acee24d98006de1a0a8a94a8ce6efe73a9a23c8d9826
+
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.zip
+  sha256: ${{ checksum }}
+  file_name: ${{ name }}-${{ version }}.zip
+
+build:
+  number: 0
+  skip: match(python, "==2.7") or match(python, ">3.0")
+  script: python setup.py install
+
+requirements:
+  build:
+    - python
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - importlib
+      pip_check: false
+
+about:
+  license: PSF-2.0
+  license_file: LICENSE
+  summary: Backport of importlib.import_module() from Python 2.7
+  homepage: https://github.com/brettcannon/importlib
+
+extra:
+  recipe-maintainers:
+    - jakirkham

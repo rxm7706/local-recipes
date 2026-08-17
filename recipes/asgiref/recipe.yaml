@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: asgiref
+  version: "3.11.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 5f184dc43b7e763efe848065441eac62229c9f7b0475f41f80e207a114eda4ce
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - typing_extensions >=4
+
+tests:
+  - python:
+      imports:
+        - asgiref
+      python_version: ${{ python_min }}.*
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: ASGI in-memory channel layer
+  homepage: https://github.com/django/asgiref
+  documentation: https://asgi.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - carlodri

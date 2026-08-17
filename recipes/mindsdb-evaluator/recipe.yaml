@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.21"
+
+package:
+  name: mindsdb-evaluator
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mindsdb-evaluator/mindsdb_evaluator-${{ version }}.tar.gz
+  sha256: c13a3279da97d7778aa2e6e94b400c33cec5154ce540a9d325f527f172862ef5
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - type-infer ==0.0.26
+    - numpy <3,>=2
+    - pandas <3,>=2
+    - scikit-learn ==1.5.2
+    - dataprep-ml ==0.0.26
+
+tests:
+  - python:
+      imports:
+        - mindsdb_evaluator
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/mindsdb-evaluator/
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: Model evaluation for Machine Learning pipelines.
+  description: |
+    Model evaluation for Machine Learning pipelines.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mindsdb-evaluator
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mindsdb-evaluator
+  cfe-purls:
+    - pkg:conda/mindsdb-evaluator@${{ version }}?channel=conda-forge
+    - pkg:pypi/mindsdb-evaluator@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/mindsdb-evaluator/
+  cfe-upstream-homepage: https://pypi.org/project/mindsdb-evaluator/
+  cfe-import-names: [mindsdb_evaluator]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:53:01Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:53:01Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -3,32 +3,31 @@ schema_version: 1
 
 context:
   name: jupyter-resource-usage
-  version: 1.2.0
+  version: "1.2.1"
 
 package:
   name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jupyter_resource_usage-${{ version }}.tar.gz
-  sha256: cf69d5025ef72d078619154ec262e8d6a55b4b18a891395908a57c532bb9178e
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 41f89bb10a6f3338589fb9ae4379d0ce910a4f8557dd1e91eef83dd288721a3a
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python >=3.10
-    - hatchling >=1.5.0
-    - jupyterlab >=4.0,<5
+    - python ${{ python_min }}
     - pip
+    - hatchling
+    - hatch-jupyter-builder
   run:
-    - python >=3.10
-    - jupyter_server >=2.0
-    - prometheus_client
-    - psutil >=5.6
+    - jupyter_server >=2.0.0,<3
+    - psutil >=5.6.0
+    - python >=${{ python_min }}
     - pyzmq >=19
 
 tests:
@@ -36,12 +35,18 @@ tests:
       imports:
         - jupyter_resource_usage
       pip_check: true
+      python_version: ${{ python_min }}
 
 about:
-  summary: Jupyter Extension to show resource usage
-  license: BSD-2-Clause
+  license: BSD-3-Clause
   license_file: LICENSE
+  summary: Jupyter Server Extension for monitoring Resource Usage
+  description: |
+    Jupyter Server Extension for monitoring Resource Usage
+  homepage: https://github.com/jupyter-server/jupyter-resource-usage
+  repository: https://github.com/jupyter-server/jupyter-resource-usage
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - krassowski
+    - jtpio

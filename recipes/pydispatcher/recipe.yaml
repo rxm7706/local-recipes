@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.0.7"
+
+package:
+  name: pydispatcher
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pydispatcher/PyDispatcher-${{ version }}.tar.gz
+  sha256: b777c6ad080dc1bad74a4c29d6a46914fa6701ac70f94b0d66fbcfde62f5be31
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools >=40.8.0
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pydispatch
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  license: BSD-3-Clause
+  license_file: license.txt
+  summary: Multi-producer-multi-consumer signal dispatching mechanism
+  description: |
+    Multi-producer-multi-consumer signal dispatching mechanism
+  homepage: https://pydispatcher.sourceforge.net/
+  repository: https://github.com/mcfletch/pydispatcher/
+  documentation: https://pydispatcher.sourceforge.net/
+
+extra:
+  recipe-maintainers:
+    - shyuep
+    - mgorny

@@ -1,0 +1,141 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "8.8.0"
+  python_check_max: "3.14"
+
+recipe:
+  name: robotframework-robocop-split
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/robotframework-robocop/robotframework_robocop-${{ version }}.tar.gz
+  sha256: 8da173558587e0d0b3f51ac0bd9d333414a7c28565563d4a93d829f10652dedb
+
+build:
+  number: 0
+  noarch: python
+
+outputs:
+  - package:
+      name: robotframework-robocop
+    build:
+      noarch: python
+      script:
+        content:
+          - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+      python:
+        entry_points:
+          - robocop = robocop.run:main
+          - robocop-mcp = robocop.mcp.server:main
+    requirements:
+      host:
+        - hatchling >=1.26.1
+        - pip
+        - python ${{ python_min }}.*
+      run:
+        - jinja2 >=3.1.4
+        - msgpack-python >=1.0.0
+        - pathspec >=0.12
+        - platformdirs >=4.3
+        - python >=${{ python_min }}
+        - pytz >=2022.7
+        - rich >=10.11.0
+        - robotframework >=5.0,<7.6
+        - tomli ==2.2.1
+        - tomli-w >=1.0
+        - typer >=0.26
+        - typing_extensions >=4.15.0
+    tests:
+      - python:
+          imports: robocop.run
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+      - requirements:
+          run:
+            - python ${{ python_min }}.*
+        script:
+          - robocop --help
+          - robocop --version
+
+  - package:
+      name: robotframework-robocop-with-mcp
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("robotframework-robocop", exact=True) }}
+        - fastmcp >=3.0.0
+        - pydantic >=2.13.4
+    tests:
+      - python:
+          imports: robocop.mcp.server
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+      - requirements:
+          run:
+            - python ${{ python_min }}.*
+        script:
+          - robocop-mcp --help
+          - robocop-mcp --version
+    about:
+      summary: Static code analysis tool (linter) and code formatter for Robot Framework (with [mcp])
+
+  - package:
+      name: robotframework-robocop-with-all
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("robotframework-robocop-with-mcp", exact=True) }}
+        - ${{ pin_subpackage("robotframework-robocop", exact=True) }}
+    tests:
+      - python:
+          imports:
+            - robocop.run
+            - robocop.mcp.server
+          pip_check: true
+          python_version:
+            - ${{ python_min }}.*
+            - ${{ python_check_max }}.*
+    about:
+      summary: Static code analysis tool (linter) and code formatter for Robot Framework (with all [extras])
+
+  - package:
+      name: robotframework-robocop-with-tests
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("robotframework-robocop-with-all", exact=True) }}
+    tests:
+      - files:
+          source:
+            - pyproject.toml
+            - tests/
+        requirements:
+          run:
+            - pytest-cov
+            - python ${{ python_min }}.*
+        script:
+          file: run_test.py
+    about:
+      summary: Static code analysis tool (linter) and code formatter for Robot Framework (with all [extras] and tests)
+
+about:
+  summary: Static code analysis tool (linter) and code formatter for Robot Framework
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://pypi.org/project/robotframework-robocop
+  repository: https://github.com/MarketSquare/robotframework-robocop
+  documentation: https://robocop.dev
+
+extra:
+  feedstock-name: robotframework-robocop
+  recipe-maintainers:
+    - bollwyvl

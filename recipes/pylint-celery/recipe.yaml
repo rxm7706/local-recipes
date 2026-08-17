@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pylint-celery
+  version: "0.3"
+  sha256: 41e32094e7408d15c044178ea828dd524beedbdbe6f83f712c5e35bde1de4beb
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 1
+  noarch: python
+  script: python -m pip install --no-deps --ignore-installed .
+
+requirements:
+  host:
+    - pip
+    - python
+    - setuptools
+  run:
+    - python
+    - pylint >=1.0
+    - astroid >=1.0
+    - pylint-plugin-utils >=0.2.1
+
+tests:
+  - python:
+      imports:
+        - pylint_celery
+      pip_check: false
+
+about:
+  license: NGPL
+  summary: pylint-celery is a Pylint plugin to aid Pylint in recognising and understandingerrors caused when using the Celery library
+  homepage: https://github.com/landscapeio/pylint-celery
+
+extra:
+  recipe-maintainers:
+    - jakirkham

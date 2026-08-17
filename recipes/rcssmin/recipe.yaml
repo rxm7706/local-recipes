@@ -2,20 +2,18 @@
 schema_version: 1
 
 context:
+  name: rcssmin
   version: "1.2.2"
 
 package:
-  name: rcssmin
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/r/rcssmin/rcssmin-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/rcssmin-${{ version }}.tar.gz
   sha256: 806986eaf7414545edc28a1d29523e9560e49e151ff4a337d9d1f0271d6e1cc4
 
 build:
-  # build.number 1 supersedes the broken *_0 noarch:generic builds (C extension
-  # compiled for one CPython, published noarch — installable anywhere, working
-  # only on the build-time Python). This recipe restores per-python builds.
   number: 1
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
@@ -37,22 +35,22 @@ tests:
       pip_check: true
 
 about:
-  homepage: https://github.com/ndparker/rcssmin
   license: Apache-2.0 AND BSD-3-Clause
   license_file:
     - LICENSE
     - bench/LICENSE.cssmin
   summary: Fast CSS minifier for Python
-  description: "RCSSmin is a CSS minifier written in python. The minifier is based
-    on the semantics of the YUI compressor, \nwhich itself is based on the rule list
-    by Isaac Schlueter. This module is a re-implementation aiming for \nspeed instead
-    of maximum compression, so it can be used at runtime (rather than during a preprocessing
-    step). \nRCSSmin does syntactical compression only (removing spaces, comments
-    and possibly semicolons). It does not \nprovide semantic compression (like removing
-    empty blocks, collapsing redundant properties etc). It does, \nhowever, support
-    various CSS hacks (by keeping them working as intended).\n"
-  documentation: http://opensource.perlig.de/rcssmin/doc-1.0/index.html
+  description: |
+    RCSSmin is a CSS minifier written in python. The minifier is based on the semantics of the YUI compressor,
+    which itself is based on the rule list by Isaac Schlueter. This module is a re-implementation aiming for
+    speed instead of maximum compression, so it can be used at runtime (rather than during a preprocessing step).
+    RCSSmin does syntactical compression only (removing spaces, comments and possibly semicolons). It does not
+    provide semantic compression (like removing empty blocks, collapsing redundant properties etc). It does,
+    however, support various CSS hacks (by keeping them working as intended).
+  homepage: https://github.com/ndparker/rcssmin
   repository: https://github.com/ndparker/rcssmin
+  documentation: http://opensource.perlig.de/rcssmin/doc-1.0/index.html
+
 extra:
   recipe-maintainers:
     - cshaley

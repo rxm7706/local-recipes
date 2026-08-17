@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: minikanren
+  version: "1.0.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/minikanren-${{ version }}.tar.gz
+  sha256: c030e3e9a3fa5f372f84b66966776a8dc63b16b98768b78be0401982b892e00d
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=77.0.0
+    - setuptools-scm
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - cons >=0.4.0
+    - etuples >=0.3.1
+    - logical-unification >=0.4.1
+    - multipledispatch
+    - toolz
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - kanren
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+        - pip
+    script:
+      - python -c "from importlib.metadata import version; print(version('${{ name }}'))"
+      - python -c "from importlib.metadata import version; print(version('${{ name }}'))" | grep ${{ version }}
+
+about:
+  summary: Relational programming in Python
+  description: An extensible, lightweight relational/logic programming DSL written in pure Python
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  homepage: https://github.com/pythological/kanren
+  repository: https://github.com/pythological/kanren
+
+extra:
+  recipe-maintainers:
+    - maresb
+    - brandonwillard

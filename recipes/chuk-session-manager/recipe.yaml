@@ -1,0 +1,84 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.0"
+  python_min: "3.11"
+
+package:
+  name: chuk-session-manager
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/c/chuk-session-manager/chuk_session_manager-${{ version }}.tar.gz
+  sha256: 9cb896642b36e0e7c366b3e13ba99cbb9e5356c778a6cd63ba0c10f719674f98
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.0
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - aiofiles >=24.1.0
+    - chuk-tool-processor >=0.1.6
+    - pydantic >=2.11.3
+
+tests:
+  - python:
+      imports:
+        - chuk_session_manager
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/chuk-session-manager/
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Session manager for A2A applications
+  description: |
+    Session manager for A2A applications
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: chuk-session-manager
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: chuk-session-manager
+  cfe-purls:
+    - pkg:conda/chuk-session-manager@${{ version }}?channel=conda-forge
+    - pkg:pypi/chuk-session-manager@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/chuk-session-manager/
+  cfe-upstream-homepage: https://pypi.org/project/chuk-session-manager/
+  cfe-import-names: [chuk_session_manager]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:50:27Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:50:27Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

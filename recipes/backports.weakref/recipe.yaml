@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: backports.weakref
+  version: 1.0.post1
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/backports.weakref-${{ version }}.tar.gz
+  sha256: bc4170a29915f8b22c9e7c4939701859650f2eb84184aee80da329ac0b9825c2
+
+build:
+  number: 1003
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+    - setuptools_scm
+    - backports
+  run:
+    - python >=3.6
+    - backports
+
+tests:
+  - python:
+      imports:
+        - backports.weakref
+      pip_check: false
+
+about:
+  license: Python-2.0
+  summary: Backport of new features in Python's weakref module
+  homepage: https://github.com/pjdelport/backports.weakref
+  repository: https://github.com/pjdelport/backports.weakref
+
+extra:
+  recipe-maintainers:
+    - adrianchia

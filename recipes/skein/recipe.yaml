@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: skein
+  version: "0.8.1"
+  pkg_loc: py2.py3
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/${{ pkg_loc }}/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}-${{ pkg_loc }}-none-any.whl
+  sha256: 506884a13675ec884b1bbd85675f196fe123e13f33f6b308303531cd26466726
+
+build:
+  number: 4
+  skip: win or match(python, "<3.5")
+  script:
+    - python -m pip install --no-deps --ignore-installed ${{ name }}-${{ version }}-${{ pkg_loc }}-none-any.whl
+    - cp ${{ SP_DIR }}/${{ name }}-${{ version }}.dist-info/LICENSE ${{ SRC_DIR }}/LICENSE
+  python:
+    entry_points:
+      - skein = skein.cli:main
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - cryptography
+    - grpcio >=1.11.0
+    - protobuf >=3.5.0
+    - pyyaml
+
+tests:
+  - python:
+      imports:
+        - skein
+        - skein.proto
+        - skein.recipes
+      pip_check: false
+  - script:
+      - skein --help
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A simple tool and library for deploying applications on Apache YARN
+  homepage: https://jcrist.github.io/skein/
+  repository: https://github.com/jcrist/skein
+  documentation: https://jcrist.github.io/skein/
+
+extra:
+  recipe-maintainers:
+    - jcrist

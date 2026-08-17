@@ -1,0 +1,71 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: flac
+  version: "1.5.0"
+  sha256: aea54ed186ad07a34750399cb27fc216a2b62d0ffcd6dc2e3064a3518c3146f8
+
+package:
+  name: lib${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/xiph/${{ name }}/archive/${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 1
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('cxx') }}
+    - cmake
+    - if: unix
+      then: make
+    - if: not ppc64le
+      then: pandoc
+  host:
+    - if: unix
+      then: libiconv
+    - libogg
+  run_exports:
+    - ${{ pin_subpackage('libflac', upper_bound='x.x') }}
+
+tests:
+  - script:
+      - if: unix
+        then: test -f $PREFIX/bin/flac
+      - if: unix
+        then: test -f $PREFIX/bin/metaflac
+      - if: unix
+        then: test -f $PREFIX/lib/libFLAC${SHLIB_EXT}
+      - if: unix
+        then: test -f $PREFIX/lib/libFLAC++${SHLIB_EXT}
+      - if: win
+        then: if not exist %LIBRARY_LIB%\\FLAC++.lib exit 1
+      - if: win
+        then: if not exist %LIBRARY_BIN%\\FLAC++.dll exit 1
+      - if: win
+        then: if not exist %LIBRARY_LIB%\\FLAC.lib exit 1
+      - if: win
+        then: if not exist %LIBRARY_BIN%\\FLAC.dll exit 1
+      - if: build_platform == target_platform
+        then: flac --version
+
+about:
+  license: BSD-3-Clause
+  license_file: COPYING.Xiph
+  summary: Flac audio format
+  description: Free Lossless Audio Codec.
+  homepage: https://www.xiph.org/
+  repository: https://gitlab.xiph.org/xiph/flac
+  documentation: https://wiki.xiph.org/
+
+extra:
+  recipe-maintainers:
+    - dschreij
+    - martinRenou
+    - matthiasdiener

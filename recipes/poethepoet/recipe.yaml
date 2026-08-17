@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: poethepoet
+  version: "0.41.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/poethepoet-${{ version }}.tar.gz
+  sha256: dcaad621dc061f6a90b17d091bebb9ca043d67bfe9bd6aa4185aea3ebf7ff3e6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - poe = poethepoet:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - poetry >=0.12
+    - poetry-core
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - pastel >=0.2.0,<0.3.0
+    - tomlkit >=0.6.0,<1.0.0
+    - pyyaml
+    - tomli
+
+tests:
+  - python:
+      imports:
+        - poethepoet
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+        - pip
+    script:
+      - poe --help
+
+about:
+  summary: A task runner that works well with poetry.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/nat-n/poethepoet
+
+extra:
+  recipe-maintainers:
+    - Dhananjhay

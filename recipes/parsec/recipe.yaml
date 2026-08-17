@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: parsec
+  version: "3.15"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/parsec-${{ version }}.tar.gz
+  sha256: f3fe44674d2064eb69146de8fa70f134f16e771ff19a462d78f0eb1778dd96db
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.7
+    - setuptools
+    - wheel
+    - pip
+  run:
+    - python >=3.7
+    - enum34
+
+tests:
+  - python:
+      imports:
+        - parsec
+      pip_check: true
+
+about:
+  summary: parser combinator.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/sighingnow/parsec.py
+  repository: https://github.com/sighingnow/parsec.py
+  documentation: https://pythonhosted.org/parsec/
+
+extra:
+  recipe-maintainers:
+    - rxm7706

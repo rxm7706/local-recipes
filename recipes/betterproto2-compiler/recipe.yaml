@@ -1,0 +1,90 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.9.0"
+
+package:
+  name: betterproto2-compiler
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/b/betterproto2-compiler/betterproto2_compiler-${{ version }}.tar.gz
+    sha256: f138597a035b4f163f25255a77fc6732801e046d0d9f3b13634b07c8f06bcd66
+  # PyPI sdist omits LICENSE; fetch from monorepo compiler tag.
+  - url: https://raw.githubusercontent.com/betterproto/python-betterproto2/compiler-v${{ version }}/LICENSE.md
+    sha256: 3e0976a51794fb6cb0da6886790e79505972cea019fc4a585726769d68f046fe
+    file_name: LICENSE
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - betterproto2 <0.10,>=0.9.0
+    - jinja2 >=3.0.3
+    - ruff >=0.9.3,<0.10
+    - strenum <0.5,>=0.4.15
+    - typing_extensions <5,>=4.7.1
+
+tests:
+  - python:
+      imports:
+        - betterproto2_compiler
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/betterproto2-compiler/
+  license: MIT
+  license_file: LICENSE
+  summary: Compiler for betterproto2
+  description: |
+    Compiler for betterproto2
+  repository: https://github.com/betterproto/python-betterproto2
+  documentation: https://betterproto.github.io/python-betterproto2/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: betterproto2-compiler
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: betterproto2-compiler
+  cfe-purls:
+    - pkg:conda/betterproto2-compiler@${{ version }}?channel=conda-forge
+    - pkg:pypi/betterproto2-compiler@${{ version }}
+  cfe-upstream-repo: https://github.com/betterproto/python-betterproto2
+  cfe-upstream-homepage: https://pypi.org/project/betterproto2-compiler/
+  cfe-import-names: [betterproto2_compiler]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:04:26Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:04:26Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # Host dep of envoy-data-plane. Pin 0.9.0 to match
+#    # betterproto2 <0.10. Same LICENSE.md as the library.
+####

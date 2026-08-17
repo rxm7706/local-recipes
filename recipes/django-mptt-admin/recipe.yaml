@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "2.9.0"
+  version: "2.10.0"
 
 package:
   name: django-mptt-admin
@@ -10,7 +10,7 @@ package:
 
 source:
   url: https://github.com/mbraak/django-mptt-admin/archive/refs/tags/${{ version }}.tar.gz
-  sha256: f12cc4bb3a403637ae57508253304bf58389415eb59a7c00e6a8f56c4d3c5e43
+  sha256: d027d47b0e1c00d8eb7053704196b993dea58c2369a42de2c354fd39f60407a1
 
 build:
   number: 0
@@ -39,17 +39,15 @@ about:
   homepage: https://github.com/mbraak/django-mptt-admin
   license: Apache-2.0
   license_file: LICENSE.rst
-  summary: Django-mptt-admin provides a nice Django Admin interface for Mptt 
-    models
-  description: Django-mptt-admin provides a nice Django Admin interface for 
-    django-mptt models.
+  summary: Django-mptt-admin provides a nice Django Admin interface for Mptt models
+  description: Django-mptt-admin provides a nice Django Admin interface for django-mptt models.
   repository: https://github.com/mbraak/django-mptt-admin
   documentation: https://mbraak.github.io/django-mptt-admin/
 extra:
   recipe-maintainers:
-    - rxm7706
     - cshaley
     - sannykr
+    - rxm7706
 
 #### CFE metadata AND comments
 # CFE metadata

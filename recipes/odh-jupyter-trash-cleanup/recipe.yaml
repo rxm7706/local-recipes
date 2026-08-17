@@ -1,0 +1,83 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.1"
+
+package:
+  name: odh-jupyter-trash-cleanup
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/odh-jupyter-trash-cleanup/odh_jupyter_trash_cleanup-${{ version }}.tar.gz
+  sha256: d97d3a6c70fcf4e47041dc89445505ba6b6964c9319254917f30393b656e6b5c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling >=1.5.0
+    - jupyterlab >=4.0.0,<5
+    - hatch-nodejs-version >=0.3.2
+  run:
+    - python >=${{ python_min }}
+    - jupyter-server <3,>=2.4.0
+
+tests:
+  - python:
+      imports:
+        - odh_jupyter_trash_cleanup
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/opendatahub-io/odh-ide-extensions/tree/main/odh-jupyter-trash-cleanup
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: REPLACE_SUMMARY
+  description: |
+    REPLACE_DESCRIPTION
+  repository: https://github.com/opendatahub-io/odh-ide-extensions.git
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: odh-jupyter-trash-cleanup
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: odh-jupyter-trash-cleanup
+  cfe-purls:
+    - pkg:conda/odh-jupyter-trash-cleanup@${{ version }}?channel=conda-forge
+    - pkg:pypi/odh-jupyter-trash-cleanup@${{ version }}
+  cfe-upstream-repo: https://github.com/opendatahub-io/odh-ide-extensions.git
+  cfe-upstream-homepage: https://github.com/opendatahub-io/odh-ide-extensions/tree/main/odh-jupyter-trash-cleanup
+  cfe-import-names: [odh_jupyter_trash_cleanup]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:34:01Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:34:01Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

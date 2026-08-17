@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cyipopt
+  version: "1.7.0"
+  sha256: 527eab917415af8808df05ab1899df12bde6e95e5c5d32644b59a69e18561471
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name|lower }}/${{ name|lower }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  skip: python_impl == 'pypy'
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython >=0.29.37
+    - if: build_platform != target_platform
+      then: numpy >1.25
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+    - pkg-config
+  host:
+    - cython >=0.29.37
+    - ipopt >=3.13
+    - libblas
+    - liblapack
+    - numpy >=1.26.4
+    - pip
+    - python
+    - setuptools >=68.1.2
+  run:
+    - ipopt >=3.13
+    - numpy >=1.26.4
+    - python
+  run_constraints:
+    - scipy >=1.11.4
+
+tests:
+  - python:
+      imports:
+        - cyipopt
+      pip_check: false
+  - files:
+      recipe:
+        - examplehs071.py
+    requirements:
+      run:
+        - scipy
+    script:
+      - python examplehs071.py
+
+about:
+  license: EPL-2.0
+  license_file: LICENSE
+  summary: A Cython wrapper to the IPOPT optimization package
+  description: |
+    Ipopt (Interior Point OPTimizer, pronounced eye-pea-Opt) is a software
+    package for large-scale nonlinear optimization. cyipopt is a python wrapper
+    around Ipopt. It enables using Ipopt from the comfort of the great Python
+    scripting language. Ipopt is available from the COIN-OR initiative, under
+    the Eclipse Public License (EPL).
+  homepage: https://github.com/mechmotum/cyipopt
+  repository: https://github.com/mechmotum/cyipopt
+  documentation: https://cyipopt.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - moorepants

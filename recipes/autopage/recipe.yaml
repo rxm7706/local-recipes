@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: autopage
+  version: "0.6.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/autopage-${{ version }}.tar.gz
+  sha256: 42d07de90de63e83762828028bfd56d19906a18f7c951ef6eef3e9ad48a3071d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - autopage
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: A library to provide automatic paging for console output
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/zaneb/autopage
+
+extra:
+  recipe-maintainers:
+    - tschoonj

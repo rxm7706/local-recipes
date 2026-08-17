@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2026.7.0"
+  name: fsspec
+  sha256: c803c40f4cf860b49dea58ee3e1c33cb9c790520e233537e1340049f89b82a88
+
+package:
+  name: fsspec
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - jinja2
+    - hatch
+    - hatch-vcs
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - fsspec
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: A specification for pythonic filesystems
+  description: >
+    To produce a template or specification for a file-system interface, that specific implementations should follow, so that applications making use of them can rely on a common behaviour and not have to worry about the specific internal implementation decisions with any given backend. Many such implementations are included
+    in this package, or in sister projects such as s3fs and gcsfs.
+
+    In addition, if this is well-designed, then additional functionality, such as a key-value store or FUSE mounting of the file-system implementation may be available for all implementations "for free".
+
+
+  homepage: https://github.com/fsspec/filesystem_spec
+  repository: https://github.com/intake/filesystem_spec
+  documentation: https://filesystem-spec.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - martindurant
+    - TomAugspurger

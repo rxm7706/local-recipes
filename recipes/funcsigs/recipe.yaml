@@ -1,0 +1,36 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+context:
+  name: funcsigs
+  version: 1.0.2
+package:
+  name: ${{ name }}
+  version: ${{ version }}
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: a7bb0f2cf3a3fd1ab2732cb49eba4252c2af4240442415b4abce3b87022a8f50
+build:
+  number: 5
+  noarch: python
+  script: python -m pip install . --no-deps -vv
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+  run:
+    - python >=${{ python_min }}
+tests:
+  - python:
+      python_version: ${{ python_min }}.*
+      imports:
+        - funcsigs
+      pip_check: true
+about:
+  homepage: http://funcsigs.readthedocs.org
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python function signatures from PEP362 for Python 2.6, 2.7 and 3.2+.
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - carlodri

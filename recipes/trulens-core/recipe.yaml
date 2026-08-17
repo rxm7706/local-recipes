@@ -1,0 +1,100 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.13.0"
+
+package:
+  name: trulens-core
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/trulens-core/trulens_core-${{ version }}.tar.gz
+  sha256: 8d49410b290332ea5b063ed5edbc815660cb6da205834900fb1bc6ecb713c085
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - poetry-core
+  run:
+    - python >=${{ python_min }}
+    - alembic <2.0.0,>=1.8.1
+    - dill <0.4.0,>=0.3.8
+    - importlib_resources >=6.0
+    - munch <5.0.0,>=2.5.0
+    - nest-asyncio <2.0,>=1.5
+    - numpy >=1.23.0
+    - opentelemetry-api >=1.23.0
+    - opentelemetry-proto >=1.23.0
+    - opentelemetry-sdk >=1.23.0
+    - packaging >=23.0
+    - pandas >=1.0.0
+    - pydantic <3.0.0,>=2.4.2
+    - python-dotenv <2.0,>=0.21
+    - requests <3.0,>=2.31
+    - rich <14.0.0,>=13.6.0
+    - sqlalchemy <3.0,>=2.0
+    - trulens-otel-semconv <3.0.0,>=2.0.0
+    - typing_extensions <5.0,>=4.9
+    - wrapt >=1.17.0
+
+tests:
+  - python:
+      imports:
+        - trulens.core
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://trulens.org/
+  license: MIT
+  license_file: LICENSE
+  summary: Library to systematically track and evaluate LLM based applications.
+  description: |
+    Library to systematically track and evaluate LLM based applications.
+  repository: https://github.com/truera/trulens
+  documentation: https://trulens.org/getting_started/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: trulens-core
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: trulens-core
+  cfe-purls:
+    - pkg:conda/trulens-core@${{ version }}?channel=conda-forge
+    - pkg:pypi/trulens-core@${{ version }}
+  cfe-upstream-repo: https://github.com/truera/trulens
+  cfe-upstream-homepage: https://trulens.org/
+  cfe-import-names: [trulens.core]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:32:37Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:32:37Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pynvim
+  version: 0.6.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 0ffcb879322d08f9e9061e1123dd58ba3a5ccfbd4999bb1157bac525822aa590
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pytest-runner
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - msgpack-python >=0.5.0
+    - greenlet
+    - typing_extensions
+
+tests:
+  - python:
+      python_version: ${{ python_min }}.*
+      imports:
+        - pynvim
+        - pynvim.api
+        - pynvim.msgpack_rpc
+        - pynvim.msgpack_rpc.event_loop
+        - pynvim.plugin
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Python client to neovim
+  description: |
+    Python client to neovim
+  homepage: http://github.com/neovim/pynvim
+  repository: https://github.com/neovim/pynvim
+
+extra:
+  recipe-maintainers:
+    - curtisalexander
+    - xhochy

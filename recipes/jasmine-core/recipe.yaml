@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.99.0"
+
+package:
+  name: jasmine-core
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/jasmine-core/jasmine-core-${{ version }}.tar.gz
+  sha256: 9af06f63d8d5c392a64018aec6eb8af1df59c80a682b35ff9d01a5d42cfbc140
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - images
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://jasmine.github.io
+  license: MIT
+  license_file: LICENSE
+  summary: Jasmine is a Behavior Driven Development testing framework for JavaScript. It does not rely on browsers, DOM, or any JavaScript framework. Thus it's suited for websites, Node.js (http://nodejs.org) projects, or anywhere that JavaScript can run.
+  description: |
+    Jasmine is a Behavior Driven Development testing framework for JavaScript. It does not rely on browsers, DOM, or any JavaScript framework. Thus it's suited for websites, Node.js (http://nodejs.org) projects, or anywhere that JavaScript can run.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: jasmine-core
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: jasmine-core
+  cfe-purls:
+    - pkg:conda/jasmine-core@${{ version }}?channel=conda-forge
+    - pkg:pypi/jasmine-core@${{ version }}
+  cfe-upstream-repo: http://jasmine.github.io
+  cfe-upstream-homepage: http://jasmine.github.io
+  cfe-import-names: [images]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-17T00:01:12Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-17T00:01:12Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

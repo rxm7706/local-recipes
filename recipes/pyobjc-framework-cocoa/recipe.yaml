@@ -1,0 +1,67 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "12.2.2"
+  name: pyobjc-framework-Cocoa
+
+package:
+  name: pyobjc-framework-cocoa
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pyobjc_framework_cocoa-${{ version }}.tar.gz
+  sha256: c96c0ef69a71afbbb0e6a7d594b455c5fe47d62e0db376ee7a2b4b828c16ace9
+
+build:
+  number: 0
+  skip: (not osx) or match(python, ">=2,<3") or python_impl == 'pypy' or (arm64 and match(python, "<3.9"))
+  script:
+    # force pyobjc to use conda-forge's chosen SDK
+    - export CFLAGS="${CFLAGS} -isysroot ${SDKROOT:-$CONDA_BUILD_SYSROOT}"
+    # force ignoring invalid compiler flag (-Wl,-export-dynamic)
+    - if: match(python, "==3.7") or match(python, "==3.8")
+      then: export CFLAGS="${CFLAGS} -Wno-unused-command-line-argument"
+    - ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+    - ${{ stdlib('c') }}
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - libffi
+  run:
+    - python
+    - pyobjc-core 12.2.2.*
+    - libffi
+
+tests:
+  - python:
+      imports:
+        - AppKit
+        - Cocoa
+        - CoreFoundation
+        - Foundation
+        - PyObjCTools
+      pip_check: true
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Wrappers for the Cocoa frameworks on Mac OS X
+  homepage: https://github.com/ronaldoussoren/pyobjc
+  documentation: https://pyobjc.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - xhochy
+    - jschueller
+    - thewchan
+    - larsoner

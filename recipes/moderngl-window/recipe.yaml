@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+context:
+  name: moderngl-window
+  version: 3.1.1
+
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/moderngl_window-${{ version }}.tar.gz
+  sha256: 29c2827505f87399f3461d480b2778910fddeebe44ea803301215cf212a6c1bc
+
+build:
+  number: 2
+  noarch: python
+  script: python -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - moderngl <6
+    - pyglet >=2.0.0
+    - numpy
+    - pyglm >=2.7.0,<3
+    - pillow >=10.0.1
+
+tests:
+  - python:
+      pip_check: true
+      imports:
+        - moderngl_window
+        - moderngl_window.conf
+      python_version: ${{ python_min }}.*
+
+about:
+  homepage: https://github.com/moderngl/moderngl_window
+  summary: A cross platform helper library for ModernGL making window creation and resource loading simple
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - janjagusch
+    - pavelzw

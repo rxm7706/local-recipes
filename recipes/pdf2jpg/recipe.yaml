@@ -1,0 +1,80 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1"
+
+package:
+  name: pdf2jpg
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pdf2jpg/pdf2jpg-${{ version }}.tar.gz
+  sha256: b1574d07bd1bb97c9127fd6678af5ed3dca34ecddcbe666721d1a52268e3d4f4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - img2pdf
+    - pikepdf
+
+tests:
+  - python:
+      imports:
+        - pdf2jpg
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/pankajr141/pdf2jpg
+  license: MIT
+  license_file: LICENSE
+  summary: Wrapper to convert PDF files into jpg
+  description: |
+    Wrapper to convert PDF files into jpg
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pdf2jpg
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pdf2jpg
+  cfe-purls:
+    - pkg:conda/pdf2jpg@${{ version }}?channel=conda-forge
+    - pkg:pypi/pdf2jpg@${{ version }}
+  cfe-upstream-repo: https://github.com/pankajr141/pdf2jpg
+  cfe-upstream-homepage: https://github.com/pankajr141/pdf2jpg
+  cfe-import-names: [pdf2jpg]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T17:25:55Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T17:25:55Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # P4 Create-recipe local-only. pdf2jpg.
+####

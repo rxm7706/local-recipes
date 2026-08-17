@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pySBD
+  version: "0.3.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/nipunsadvilkar/${{ name }}/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: cfdea5f33b79aba8cc82a3495cf57be582a1c36fa2cacc96d9bfd6ed8b213f2b
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pysbd
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Rule-based sentence boundary detection
+  homepage: https://github.com/nipunsadvilkar/pySBD
+
+extra:
+  recipe-maintainers:
+    - thewchan

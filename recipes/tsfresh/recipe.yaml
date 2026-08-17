@@ -1,0 +1,65 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: tsfresh
+  version: "0.21.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: a960f474498da07f5ed9992f2054db1d7483e224fdf91d89c28535c3af5cb17d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools_scm
+    - setuptools <81
+    - pyscaffold <4,>=3.3a0
+  run:
+    - pywavelets
+    - python >=${{ python_min }}
+    - setuptools
+    - requests >=2.9.1
+    - numpy >=1.15.1
+    - pandas >=0.25.0
+    - scipy >=1.2.0
+    - statsmodels >=0.13
+    - patsy >=0.4.1
+    - scikit-learn >=0.22.0
+    - tqdm >=4.10.0
+    - dask >=2.9.0
+    - distributed >=2.11.0
+    - stumpy >=1.11.1
+    - cloudpickle
+
+tests:
+  - python:
+      imports:
+        - tsfresh
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Automatic extraction of relevant features from time series
+  homepage: http://github.com/blue-yonder/tsfresh
+  repository: https://github.com/blue-yonder/tsfresh
+  documentation: http://tsfresh.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - kempa-liehr
+    - MaxBenChrist
+    - nils-braun
+    - xhochy

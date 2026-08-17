@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: flake8-annotations
+  version: "3.2.0"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/flake8_annotations-${{ version }}.tar.gz
+  sha256: 71b52ec85a4ec82a10edfad497fe2b390609c95b2ad7d61cc94704bc88a498a0
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python 3.10.*
+    - pip
+    - uv-build
+  run:
+    - python >=${{ python_min }},<4.0.0
+    - flake8 >=5.0
+
+tests:
+  - python:
+      imports:
+        - flake8_annotations
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Flake8 Type Annotation Checks
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/sco1/flake8-annotations
+
+extra:
+  recipe-maintainers:
+    - apmorton
+    - muyajil

@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2022.1.1"
+
+package:
+  name: oneccl
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py2.py3/o/oneccl/oneccl-2022.1.1-py2.py3-none-manylinux_2_28_x86_64.whl
+  sha256: e877ad3720e8d6dd45d71cf05dd9d65e66f5a38c0900089f1542569e43512e78
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - impi-rt >=2021.18
+    - intel-sycl-rt >=2026.1
+
+tests:
+  - python:
+      imports:
+        - oneccl
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://software.intel.com/en-us/articles/empowering-science-with-high-performance-python
+  license: MIT
+  license_file: LICENSE
+  summary: Intel® oneAPI Collective Communications Library Runtime Environment
+  description: |
+    Intel® oneAPI Collective Communications Library Runtime Environment
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: oneccl
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: oneccl
+  cfe-purls:
+    - pkg:conda/oneccl@${{ version }}?channel=conda-forge
+    - pkg:pypi/oneccl@${{ version }}
+  cfe-upstream-repo: https://software.intel.com/en-us/articles/empowering-science-with-high-performance-python
+  cfe-upstream-homepage: https://software.intel.com/en-us/articles/empowering-science-with-high-performance-python
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:35:32Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:35:32Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

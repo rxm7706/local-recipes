@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: nexus-rpc
+  version: "1.4.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/nexus_rpc-${{ version }}.tar.gz
+  sha256: 3b8b373d4865671789cc43623e3dc0bcbf192562e40e13727e17f1c149050fba
+
+build:
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  number: 0
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - typing_extensions >=4.12.2
+
+tests:
+  - python:
+      python_version: ${{ python_min }}.*
+      imports:
+        - nexusrpc
+      pip_check: true
+
+about:
+  homepage: https://github.com/nexus-rpc/sdk-python
+  summary: Nexus Python SDK
+  license: MIT
+  license_file: LICENSE
+
+extra:
+  recipe-maintainers:
+    - dgasmith
+    - nic-chira
+    - chrisjryan
+    - fzding
+    - chrisdeutsch

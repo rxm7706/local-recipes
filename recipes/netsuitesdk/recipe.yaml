@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: netsuitesdk
+  version: "2.23.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/netsuitesdk-${{ version }}.tar.gz
+  sha256: ab592437776f787996d60429a0243d5ca569a1a41ea3a5f2943e12485125f36f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=2.5
+  run:
+    - python >=2.5
+    - zeep
+
+tests:
+  - python:
+      imports:
+        - netsuitesdk
+        - netsuitesdk.api
+      pip_check: true
+
+about:
+  summary: Python SDK for accessing the NetSuite SOAP webservice
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/fylein/netsuite-sdk-py
+
+extra:
+  recipe-maintainers:
+    - conda-forge/rpaframework-core

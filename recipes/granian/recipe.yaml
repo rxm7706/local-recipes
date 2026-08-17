@@ -1,0 +1,209 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.8.1"
+  summary: A Rust HTTP server for Python applications
+
+recipe:
+  name: granian
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/g/granian/granian-${{ version }}.tar.gz
+  sha256: 41a7954e10621ca46f9bfe829a42272e4796358cc4bf27a9253f3171f871a397
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: granian
+    build:
+      script:
+        env:
+          CARGO_PROFILE_RELEASE_STRIP: symbols
+          CARGO_PROFILE_RELEASE_LTO: fat
+          CARGO: cargo-auditable-wrapper${{ ".bat" if win }}
+          PYTHONIOENCODING: utf-8
+          PYTHONLEGACYTEXTENCODING: utf-8
+        content:
+          - if: win
+            then:
+              - copy "%RECIPE_DIR%\cargo-auditable-wrapper.bat" "%BUILD_PREFIX%\Library\bin\cargo-auditable-wrapper.bat"
+            else:
+              - cp "${RECIPE_DIR}/cargo-auditable-wrapper.sh" "${BUILD_PREFIX}/bin/cargo-auditable-wrapper"
+              - chmod 755 "${BUILD_PREFIX}/bin/cargo-auditable-wrapper"
+          - |-
+            ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+          - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+      python:
+        entry_points:
+          - granian = granian:cli.cli
+    requirements:
+      build:
+        - ${{ compiler("c") }}
+        - ${{ compiler("rust") }}
+        - ${{ stdlib("c") }}
+        - cargo-bundle-licenses
+        - cargo-auditable
+        - if: unix
+          then:
+            # for the jemalloc-sys crate
+            - make
+      host:
+        - pip
+        - python
+        - maturin >=1.14.0,<2
+        - if: unix
+          then:
+            - jemalloc
+      run:
+        - click >=8.1.0
+        - python
+      run_constraints:
+        - python-dotenv >=1.1,<2
+        - rloop >=0.1,<1.0
+        - setproctitle >=1.3.3,<1.4
+        - uvloop >=0.18.0
+        - watchfiles >=1.0,<2.0
+        - winloop >=0.2.2
+    tests:
+      - python:
+          imports: granian
+          pip_check: true
+      - script:
+          - granian --help
+    about:
+      license_file:
+        - LICENSE
+        - THIRDPARTY.yml
+
+  - package:
+      name: granian-with-dotenv
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("granian", exact=True) }}
+        - python-dotenv
+    tests:
+      - python:
+          imports: granian
+          pip_check: true
+    about:
+      summary: ${{ summary }} (with [dotenv])
+
+  - package:
+      name: granian-with-pname
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("granian", exact=True) }}
+        - setproctitle
+    tests:
+      - python:
+          imports: granian
+          pip_check: true
+    about:
+      summary: ${{ summary }} (with [pname])
+
+  - package:
+      name: granian-with-reload
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("granian", exact=True) }}
+        - watchfiles
+    tests:
+      - python:
+          imports: granian
+          pip_check: true
+    about:
+      summary: ${{ summary }} (with [reload])
+
+  # unix
+  - package:
+      name: granian-with-rloop
+    build:
+      noarch: generic
+      skip: not unix
+    requirements:
+      run:
+        - ${{ pin_subpackage("granian", exact=True) }}
+        - rloop
+    tests:
+      - python:
+          imports: granian
+          pip_check: true
+    about:
+      summary: ${{ summary }} (with [rloop])
+
+  - package:
+      name: granian-with-uvloop
+    build:
+      noarch: generic
+      skip: not unix
+    requirements:
+      run:
+        - ${{ pin_subpackage("granian", exact=True) }}
+        - uvloop
+    tests:
+      - python:
+          imports: granian
+          pip_check: true
+    about:
+      summary: ${{ summary }} (with [uvloop])
+
+  # windows
+  - package:
+      name: granian-with-winloop
+    build:
+      noarch: generic
+      skip: not win
+    requirements:
+      run:
+        - ${{ pin_subpackage("granian", exact=True) }}
+        - winloop
+    tests:
+      - python:
+          imports: granian
+          pip_check: true
+    about:
+      license_file: LICENSE
+      license: BSD-3-Clause
+      summary: ${{ summary }} (with [winloop])
+
+  - package:
+      name: granian-with-all
+    build:
+      noarch: generic
+    requirements:
+      run:
+        - ${{ pin_subpackage("granian", exact=True) }}
+        - ${{ pin_subpackage("granian-with-pname", exact=True) }}
+        - ${{ pin_subpackage("granian-with-reload", exact=True) }}
+        - ${{ pin_subpackage("granian-with-dotenv", exact=True) }}
+    tests:
+      - python:
+          imports: granian
+          pip_check: true
+    about:
+      license_file: LICENSE
+      license: BSD-3-Clause
+      summary: ${{ summary }} (with all platform-independent [extras])
+
+about:
+  homepage: https://pypi.org/project/granian
+  summary: ${{ summary }}
+  repository: https://github.com/emmett-framework/granian
+  license: BSD-3-Clause
+  license_file: LICENSE
+
+extra:
+  feedstock-name: granian
+  recipe-maintainers:
+    - thewchan
+    - bollwyvl

@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.2.4"
+
+package:
+  name: billiard
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/b/billiard/billiard-${{ version }}.tar.gz
+  sha256: 55f542c371209e03cd5862299b74e52e4fbcba8250ba611ad94276b369b6a85f
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - billiard
+        - billiard.dummy
+      pip_check: false
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Python multiprocessing fork with improvements and bugfixes
+  homepage: https://github.com/celery/billiard
+  repository: https://github.com/celery/billiard
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - kwilcox

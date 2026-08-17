@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "3.3.8"
+
+package:
+  name: redfish
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/redfish/redfish-${{ version }}.tar.gz
+  sha256: c1eb32fafeed10c09cc2dbfc86af7697e6b28dae644b54336237ab6b1823ee18
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - jsonpath-ng
+    - jsonpointer
+    - requests
+    - requests-toolbelt
+    - requests-unixsocket
+    - jsonpatch <=1.24
+    - urllib3 >=2.6.0
+
+tests:
+  - python:
+      imports:
+        - redfish
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/DMTF/python-redfish-library
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Redfish Python Library
+  description: |
+    Redfish Python Library
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: redfish
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: redfish
+  cfe-purls:
+    - pkg:conda/redfish@${{ version }}?channel=conda-forge
+    - pkg:pypi/redfish@${{ version }}
+  cfe-upstream-repo: https://github.com/DMTF/python-redfish-library
+  cfe-upstream-homepage: https://github.com/DMTF/python-redfish-library
+  cfe-import-names: [redfish]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T18:34:52Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T18:34:52Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

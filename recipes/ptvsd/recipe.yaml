@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ptvsd
+  version: "4.3.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.zip
+  sha256: 3b05c06018fdbce5943c50fb0baac695b5c11326f9e21a5266c854306bda28ab
+
+build:
+  number: 5
+  skip: win and match(python, "==3.8")
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+  python:
+    skip_pyc_compilation: ${{ '*' if win else '' }}
+  dynamic_linking:
+    binary_relocation: ${{ true if osx }}
+
+requirements:
+  build:
+    - ${{ compiler('c') }}
+  host:
+    - python
+    - pip
+    - pytest-runner
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - ptvsd
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Python debugger package for use with Visual Studio and Visual Studio Code
+  homepage: https://github.com/Microsoft/ptvsd/
+
+extra:
+  recipe-maintainers:
+    - int19h
+    - karthiknadig
+    - dhirschfeld
+    - rzillman

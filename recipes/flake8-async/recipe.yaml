@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "26.7.1"
+
+package:
+  name: flake8-async
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/f/flake8-async/flake8_async-${{ version }}.tar.gz
+  sha256: 28e25d1e9a66c77824a42f02db1d71e7d629508a61551957ae30c47bc96b9716
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - libcst >=1.0.1
+
+tests:
+  - python:
+      imports:
+        - flake8_async
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/python-trio/flake8-async
+  license: MIT
+  license_file: LICENSE
+  summary: A highly opinionated flake8 plugin for Trio-related problems.
+  description: |
+    A highly opinionated flake8 plugin for Trio-related problems.
+  documentation: https://flake8-async.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: flake8-async
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: flake8-async
+  cfe-purls:
+    - pkg:conda/flake8-async@${{ version }}?channel=conda-forge
+    - pkg:pypi/flake8-async@${{ version }}
+  cfe-upstream-repo: https://github.com/python-trio/flake8-async
+  cfe-upstream-homepage: https://github.com/python-trio/flake8-async
+  cfe-import-names: [flake8_async]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:57:13Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:57:13Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

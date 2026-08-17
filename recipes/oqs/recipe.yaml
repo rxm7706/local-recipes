@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.10.2"
+
+package:
+  name: oqs
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/o/oqs/oqs-${{ version }}.tar.gz
+  sha256: 5c2643ef1a04c1f22f5c34d629a289e50d041fae84dbf698c6bc151b879c636d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - oqs
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/Infuzu/OQS
+  license: MIT
+  license_file: LICENSE
+  summary: OQS (Open Quick Script) is a Python library for interpreting versatile expressions, supporting basic to advanced operations, custom functions, and performance monitoring. It efficiently handles fundamental types and operations, interprets expressions using variables from dictionaries or JSON, and adheres to robust error handling standards. OQS enhances Python's expression evaluation capabilities, making it ideal for diverse applications.
+  description: |
+    OQS (Open Quick Script) is a Python library for interpreting versatile expressions, supporting basic to advanced operations, custom functions, and performance monitoring. It efficiently handles fundamental types and operations, interprets expressions using variables from dictionaries or JSON, and adheres to robust error handling standards. OQS enhances Python's expression evaluation capabilities, making it ideal for diverse applications.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: oqs
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: oqs
+  cfe-purls:
+    - pkg:conda/oqs@${{ version }}?channel=conda-forge
+    - pkg:pypi/oqs@${{ version }}
+  cfe-upstream-repo: https://github.com/Infuzu/OQS
+  cfe-upstream-homepage: https://github.com/Infuzu/OQS
+  cfe-import-names: [oqs]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:26:15Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:26:15Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jenkinsapi
+  version: "0.3.21"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: e3b512e00e1188c6a391570f51c98aa60e9b420d285731fba774ac09f8d5f4bf
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv --no-cache-dir
+  dynamic_linking:
+    missing_dso_allowlist: ${{ '- "*\\SHLWAPI.dll"
+
+requirements:
+  host:
+    - pip
+    - pbr
+    - python
+    - hatchling
+  run:
+    - python
+    - pytz >=2014.4
+    - requests >=2.3.0
+
+tests:
+  - python:
+      imports:
+        - jenkinsapi
+        - jenkinsapi.command_line
+        - jenkinsapi.utils
+      pip_check: false
+  - script:
+      - if: unix
+        then: jenkins_invoke --help
+      - if: unix
+        then: jenkinsapi_version --help
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A Python API for accessing resources on a Jenkins continuous-integration server.
+  homepage: https://github.com/pycontribs/jenkinsapi
+  documentation: https://jenkinsapi.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - nehaljwani

@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "8.18.0"
+
+package:
+  name: elasticsearch-dsl
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/e/elasticsearch_dsl/elasticsearch_dsl-${{ version }}.tar.gz
+  sha256: 763465dba9eae166add10567e924c65730aa122819b08bfe9a077e91b13b30d1
+
+build:
+  number: 1
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+    - typing-extensions
+    - python-dateutil
+    - elasticsearch >=8.0.0,<9.0.0
+
+tests:
+  - python:
+      imports:
+        - elasticsearch_dsl
+      pip_check: true
+
+about:
+  license_file: LICENSE
+  license: Apache-2.0
+  summary: Higher-level Python client for Elasticsearch
+  homepage: https://github.com/elasticsearch/elasticsearch-dsl-py
+  repository: https://github.com/elasticsearch/elasticsearch-dsl-py
+  documentation: https://elasticsearch-dsl.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - miguelgrinberg
+    - ezimuel
+    - joshmock
+    - pquentin

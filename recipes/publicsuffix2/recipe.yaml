@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: publicsuffix2
+  version: "2.20191221"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/publicsuffix2-${{ version }}.tar.gz
+  sha256: 00f8cc31aa8d0d5592a5ced19cccba7de428ebca985db26ac852d920ddd6fe7b
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - requests >=2.7.0
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - publicsuffix2
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Get a public suffix for a domain name using the Public Suffix List. Forked from and using the same API as the publicsuffix package.
+  license: MIT AND MPL-2.0
+  license_file:
+    - publicsuffix2.LICENSE
+    - src/publicsuffix2/mpl-2.0.LICENSE
+  homepage: https://github.com/nexb/python-publicsuffix2
+
+extra:
+  recipe-maintainers:
+    - jonashaag
+    - AdrianFreundQC
+    - freundTech

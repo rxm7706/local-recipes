@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: mplcursors
+  version: "0.7.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mplcursors/mplcursors-${{ version }}.tar.gz
+  sha256: b567d7380415f4c7c2c23825809be6fa597ff32f2f5299886b14a473e46da7dd
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+    - setuptools_scm
+  run:
+    - python >=${{ python_min }}
+    - matplotlib-base >3.1
+
+tests:
+  - python:
+      imports:
+        - mplcursors
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: mplcursors provides interactive data selection cursors for Matplotlib. It is inspired from mpldatacursor, with a much simplified API.
+  homepage: https://github.com/anntzer/mplcursors
+  repository: https://github.com/anntzer/mplcursors
+  documentation: https://mplcursors.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - hmaarrfk

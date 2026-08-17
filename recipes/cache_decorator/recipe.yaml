@@ -1,0 +1,48 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cache_decorator
+  version: "2.1.15"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/cache_decorator-${{ version }}.tar.gz
+  sha256: 781951788d0e601393ed1a57f39b8883d20b350ebbbfdd1da6581bac50c2e3d6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python >=3.8
+    - pip
+  run:
+    - python >=3.8
+    - dict_hash >=1.1.32
+    - humanize >=3.4.1
+    - compress-pickle >=2.0.1
+    - compress_json >=1.0.4
+    - deflate_dict
+
+tests:
+  - python:
+      imports:
+        - cache_decorator
+      pip_check: true
+
+about:
+  summary: a simple decorator to cache the results of computationally heavy functions
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/zommiommy/cache_decorator
+
+extra:
+  recipe-maintainers:
+    - isuruf
+    - dillonroach

@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: groq
+  version: "1.6.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/groq-${{ version }}.tar.gz
+  sha256: c4237ecf0053ba85fd926bb31cb4b178996310474b4618867994e3e40d8e3c02
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - hatch-fancy-pypi-readme
+    - pip
+  run:
+    - typing_extensions >=4.14,<5
+    - python >=${{ python_min }}
+    - httpx >=0.23.0,<1
+    - pydantic >=1.9.0,<3
+    - typing-extensions >=4.7,<5
+    - anyio >=3.5.0,<5
+    - distro >=1.7.0,<2
+    - sniffio
+
+tests:
+  - python:
+      imports:
+        - groq
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: The official Python library for the groq API
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://console.groq.com/docs/quickstart
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

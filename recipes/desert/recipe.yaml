@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: desert
+  version: "2022.9.22"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/desert-${{ version }}.tar.gz
+  sha256: 0f45e098915e16452a269a1da0bcbbf31df0af2173899f1c097fb2e3b0265d89
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+    - marshmallow >=3.0
+    - attrs
+    - typing_inspect
+    - dataclasses
+
+tests:
+  - python:
+      imports:
+        - desert
+      pip_check: true
+
+about:
+  summary: Deserialize to objects while staying DRY
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/python-desert/desert
+
+extra:
+  recipe-maintainers:
+    - andrew-mcgrath

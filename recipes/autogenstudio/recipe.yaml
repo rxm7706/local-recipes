@@ -1,0 +1,97 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.4.2.2"
+
+package:
+  name: autogenstudio
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/autogenstudio/autogenstudio-${{ version }}.tar.gz
+  sha256: 1cab6a4148ae7436c91090d5e229d3b02c9add6c8ab449b800b7fcc9204b2675
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - setuptools-scm
+  run:
+    - python >=${{ python_min }}
+    - pydantic
+    - pydantic-settings
+    - fastapi
+    - typer
+    - aiofiles
+    - python-dotenv
+    - websockets
+    - sqlmodel
+    - psycopg
+    - alembic
+    - loguru
+    - pyyaml
+    - html2text
+    - autogen-core <0.6,>=0.4.9.2
+    - autogen-agentchat <0.6,>=0.4.9.2
+    - autogen-ext <0.6,>=0.4.2
+    - anthropic
+
+tests:
+  - python:
+      imports:
+        - autogenstudio
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/microsoft/autogen
+  license: MIT
+  license_file: LICENSE
+  summary: AutoGen Studio
+  description: |
+    AutoGen Studio
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: autogenstudio
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: autogenstudio
+  cfe-purls:
+    - pkg:conda/autogenstudio@${{ version }}?channel=conda-forge
+    - pkg:pypi/autogenstudio@${{ version }}
+  cfe-upstream-repo: https://github.com/microsoft/autogen
+  cfe-upstream-homepage: https://github.com/microsoft/autogen
+  cfe-import-names: [autogenstudio]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:03:38Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:03:38Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

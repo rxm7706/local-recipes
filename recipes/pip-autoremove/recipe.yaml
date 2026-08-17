@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pip-autoremove
+  version: "0.10.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pip-autoremove-${{ version }}.tar.gz
+  sha256: 1328c6f6ef54b1ea51dd4dd78199d7f8b27c2344e9517fbb4f89edf3bfbb32ba
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - pip-autoremove = pip_autoremove:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - pip
+    - python >=${{ python_min }}
+    - setuptools
+
+tests:
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pip check
+      - pip-autoremove --help
+
+about:
+  summary: Remove a package and its unused dependencies
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/invl/pip-autoremove
+
+extra:
+  recipe-maintainers:
+    - thewchan

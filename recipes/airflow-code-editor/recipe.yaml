@@ -2,15 +2,16 @@
 schema_version: 1
 
 context:
-  version: "8.2.4"
+  name: airflow-code-editor
+  version: "8.3.0"
 
 package:
-  name: airflow-code-editor
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/a/airflow-code-editor/airflow_code_editor-${{ version }}.tar.gz
-  sha256: 6e237efd1fe98d8b46e970346bf92b1a15c3f22743fe6626cb500fd76e5b63bc
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/airflow_code_editor-${{ version }}.tar.gz
+  sha256: f7a44b44e02c62a2b29c83dd21b69462078ae0590135118c998bd09f350a4146
 
 build:
   number: 0
@@ -33,9 +34,7 @@ tests:
       imports:
         - airflow_code_editor
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}.*
 
 about:
   summary: Apache Airflow code editor and file manager
@@ -44,7 +43,6 @@ about:
     - LICENSE
     - airflow_code_editor/static/fonts/LICENSE
   homepage: https://github.com/andreax79/airflow-code-editor
-  repository: https://github.com/andreax79/airflow-code-editor
 
 extra:
   recipe-maintainers:

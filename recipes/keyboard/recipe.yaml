@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: keyboard
+  version: "0.13.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.zip
+  sha256: 63ed83305955939ca5c9a73755e5cc43e8242263f5ad5fd3bb7e0b032f3d308b
+
+build:
+  number: 4
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python
+    - pip
+    - setuptools
+    - if: osx
+      then: pyobjc-framework-quartz
+  run:
+    - python
+    - if: osx
+      then: pyobjc-framework-quartz
+
+tests:
+  - python:
+      imports:
+        - keyboard
+      pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Hook and simulate global keyboard events on Windows and Linux.
+  description: |
+    Take full control of your keyboard with this small Python library.
+    Hook global events, register hotkeys, simulate key presses and much
+    more.
+  homepage: https://github.com/boppreh/keyboard
+  repository: https://github.com/boppreh/keyboard
+  documentation: https://github.com/boppreh/keyboard#api
+
+extra:
+  recipe-maintainers:
+    - hhslepicka

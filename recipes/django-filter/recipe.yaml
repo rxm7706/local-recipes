@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  python_min: "3.10"
+  version: "26.1"
+
+package:
+  name: django-filter
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/django-filter/django_filter-${{ version }}.tar.gz
+  sha256: 66ea04031b068c77c86e1ac26ced7a3f8f13ce797f5795751707e3deefc58054
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - flit-core >=3.2,<4
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - django >=5.2
+
+tests:
+  - python:
+      imports:
+        - django_filters
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+  - script:
+    - python -c "import django; from django.conf import settings; settings.configure(); django.setup(); import django_filters; import django_filters.rest_framework"
+
+about:
+  summary: Django-filter is a reusable Django application for allowing users to filter querysets dynamically.
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/carltongibson/django-filter/tree/main
+  documentation: https://django-filter.readthedocs.io/en/main/
+
+extra:
+  recipe-maintainers:
+    - kwilcox
+    - ocefpaf

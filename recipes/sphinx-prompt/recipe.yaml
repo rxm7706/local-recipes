@@ -1,0 +1,44 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sphinx-prompt
+  version: "1.10.1"
+  python_min: "3.11"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  # https://files.pythonhosted.org/packages/6c/1b/ceb8d295275982121eefc8a4f0b71edf7f26c16f5bc53f4204527f173783/sphinx_prompt-1.10.1.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name.replace("-", "_") }}/${{ name | replace("-", "_") }}-${{ version }}.tar.gz
+  sha256: 2b8a18433ee3d9f2a7c4e51a768fb14c5177cce4bf0e2298ecc068a0ca9918bf
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  host:
+    - pip
+    - poetry-core >=1.0.0
+    - poetry-dynamic-versioning
+    - python 3.11.*
+  run:
+    - python >=${{ python_min }}
+    - pygments
+    - sphinx
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Sphinx directive to add unselectable prompt
+  homepage: https://github.com/sbrunner/sphinx-prompt
+  repository: https://github.com/sbrunner/sphinx-prompt
+  documentation: https://github.com/sbrunner/sphinx-prompt/blob/master/README.rst
+
+extra:
+  recipe-maintainers:
+    - jonathansick

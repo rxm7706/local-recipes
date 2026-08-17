@@ -2,24 +2,25 @@
 schema_version: 1
 
 context:
+  name: flake8-pylint
   version: "0.2.1"
 
 package:
-  name: flake8-pylint
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/f/flake8-pylint/flake8_pylint-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: 7741f9a63b05768fc4c641c7f6389bc33c91f9ed9bfd59c01540bbb7acc180e3
 
 build:
-  number: 0
+  number: 1
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - flit-core >=2,<4
     - pip
   run:
@@ -32,16 +33,13 @@ tests:
       imports:
         - flake8_pylint
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Flake8 plugin that runs PyLint.
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/orsinium-labs/flake8-pylint
-  repository: https://github.com/orsinium-labs/flake8-pylint
 
 extra:
   recipe-maintainers:

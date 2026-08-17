@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.11.1"
+  python_min: "3.11"
+
+package:
+  name: pandas-datareader
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pandas-datareader/pandas_datareader-${{ version }}.tar.gz
+  sha256: e1eadb6d2ccaa4b7a876a1c81b6ff0307fa7a08b56f7799862a50207c2e65a05
+
+build:
+  number: 0
+  noarch: python
+  script: python -m pip install . -vv
+
+requirements:
+  host:
+    - python 3.11.*
+    - pip
+    - setuptools
+    - setuptools_scm >=8.0.0,<9
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - lxml
+    - pandas >=2.1.4
+    - requests >=2.3.0
+
+tests:
+  - python:
+      imports:
+        - pandas_datareader
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.md
+  summary: Up to date remote data access for pandas, works for multiple versions of pandas
+  homepage: https://github.com/pydata/pandas-datareader
+  repository: https://github.com/pydata/pandas-datareader
+  documentation: https://pandas-datareader.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - timkpaine
+    - mariusvniekerk
+    - femtotrader
+    - jreback
+    - davidastephens
+    - bashtage

@@ -1,0 +1,73 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.1.6"
+  python_check_max: "3.14"
+  nodejs_min: "20"
+
+package:
+  name: jupyter-book
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/j/jupyter-book/jupyter_book-${{ version }}.tar.gz
+  sha256: fb52cf7f7056a8475aebefa78376801e45cc3daa010a48ac3ea089a5f10dd17c
+  patches:
+    - 0000-no-nodeenv.patch
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  python:
+    entry_points:
+      - jupyter-book = jupyter_book.__main__:main
+
+requirements:
+  host:
+    - hatch-deps-selector
+    - hatch-jupyter-builder
+    - hatch-nodejs-version
+    - hatchling
+    - nodejs ${{ nodejs_min }}.*
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - ipykernel
+    - jupyter_core
+    - jupyter_server
+    - nodejs >=${{ nodejs_min }}
+    - platformdirs >=4.2.2
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports: jupyter_book
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - requirements:
+      run:
+        - nodejs ${{ nodejs_min }}.*
+        - python ${{ python_min }}.*
+    script:
+      file: run_test.py
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Create computational narratives that are reusable, reproducible, and interactive.
+  homepage: https://pypi.org/project/jupyter-book
+  repository: https://github.com/jupyter-book/jupyter-book
+  documentation: https://jupyterbook.org/stable/get-started/
+
+extra:
+  recipe-maintainers:
+    - bsipocz
+    - rowanc1
+    - agoose77
+    - bollwyvl
+    - AakashGfude

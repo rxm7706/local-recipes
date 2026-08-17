@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cli_helpers
+  version: "2.15.1"
+  sha256: e9c0826dda2855745eb63b3fd8e33b6ac8881188f2ba91e51a516ed833fc0cb8
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - configobj >=5.0.5
+    - pygments >=1.6
+    - tabulate ~=0.10.0
+    - wcwidth
+
+tests:
+  - python:
+      imports:
+        - cli_helpers
+        - cli_helpers.tabular_output
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Python helpers for common CLI tasks
+  homepage: http://cli-helpers.rtfd.io
+  repository: https://github.com/dbcli/cli_helpers
+  documentation: http://cli-helpers.rtfd.io
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - mariusvniekerk

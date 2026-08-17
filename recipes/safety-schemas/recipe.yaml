@@ -1,0 +1,66 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.19"
+  cov_fail_under: "65"
+
+package:
+  name: safety-schemas
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/safety-schemas/safety_schemas-${{ version }}.tar.gz
+  sha256: 4781f06d4852a4f28b968f8ec66a9a827c5b02d257054210a0c2082c8cb7aa8d
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - hatchling ==1.26.3
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - dparse >=0.6.4
+    - packaging >=21.0
+    - pydantic >=2.6.0
+    - python >=${{ python_min }}
+    - ruamel.yaml >=0.17.21
+    - typing_extensions >=4.7.1
+
+tests:
+  - python:
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - 3.14.*
+      imports:
+        - safety_schemas
+        - safety_schemas.models
+        - safety_schemas.report
+        - safety_schemas.config
+  - files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+        - pytest-cov
+        - deepdiff
+    script:
+      - coverage run --source safety_schemas --branch -m pytest -vv --tb=long --color=yes --import-mode=importlib
+      - coverage report --show-missing --skip-covered --fail-under=${{ cov_fail_under }}
+
+about:
+  summary: Schemas for Safety CLI
+  license: MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/safety-schemas
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

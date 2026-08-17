@@ -1,0 +1,86 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.6.0"
+
+package:
+  name: zvec
+  version: ${{ version }}
+
+source:
+  url: https://github.com/alibaba/zvec/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: a21e09a3b61da2bc2ef912bd24ad47146fc4e70df6f072dc523ed3a618e6484c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - scikit-build-core >=0.11
+    - pybind11 >=3.0
+    - setuptools-scm >=8.0
+    - cmake >=3.26,<4.0
+    - ninja >=1.11
+  run:
+    - python >=${{ python_min }}
+    - numpy >=1.23
+
+tests:
+  - python:
+      imports:
+        - python.zvec
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/alibaba/zvec
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: A high-performance vector database engine with native C++ backend and Python bindings
+  description: |
+    A high-performance vector database engine with native C++ backend and Python bindings
+  repository: https://github.com/alibaba/zvec
+  documentation: https://zvec.org
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: zvec
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: zvec
+  cfe-purls:
+    - pkg:conda/zvec@${{ version }}?channel=conda-forge
+    - pkg:pypi/zvec@${{ version }}
+  cfe-upstream-repo: https://github.com/alibaba/zvec
+  cfe-upstream-homepage: https://github.com/alibaba/zvec
+  cfe-import-names: [python.zvec]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:56:21Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:56:21Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

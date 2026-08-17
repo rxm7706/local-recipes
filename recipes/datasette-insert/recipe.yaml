@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: datasette-insert
+  version: "0.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/datasette-insert-${{ version }}.tar.gz
+  sha256: a6c53304f517f403729454d9673a1b4c30c0eea8a590a04cc3f28e3f7bf2f180
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - datasette >=0.46
+    - sqlite-utils
+
+tests:
+  - python:
+      imports:
+        - datasette_insert
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  summary: Datasette plugin for inserting and updating data
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/simonw/datasette-insert
+
+extra:
+  recipe-maintainers:
+    - rxm7706

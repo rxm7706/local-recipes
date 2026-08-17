@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jwcrypto
+  version: "1.5.8"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: c3d7114b6f6e65b52f6b7da817eb8cb8423e1da31e1ef13508447c81ecbdcc34
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - cryptography >=3.4
+    - typing_extensions
+
+tests:
+  - python:
+      imports:
+        - jwcrypto
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: LGPL-3.0-only
+  license_file: LICENSE
+  summary: Implements JWK,JWS,JWE specifications using python-cryptography
+  description: |
+    An implementation of the JOSE Working Group documents: RFC 7515 - JSON Web
+    Signature (JWS) RFC 7516 - JSON Web Encryption (JWE) RFC 7517 - JSON Web
+    Key (JWK) RFC 7518 - JSON Web Algorithms (JWA) RFC 7519 - JSON Web Token
+    (JWT) RFC 7520 - Examples of Protecting Content Using JSON Object Signing
+    and Encryption (JOSE)
+  homepage: https://jwcrypto.readthedocs.io/en/latest/
+  repository: https://github.com/latchset/jwcrypto
+  documentation: https://jwcrypto.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - aymondebroglie
+    - scopatz
+    - jan-janssen

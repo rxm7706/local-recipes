@@ -1,0 +1,58 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.1.4"
+
+package:
+  name: rfc3339-validator
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/rfc3339-validator/rfc3339_validator-${{ version }}.tar.gz
+  sha256: 138a2abdf93304ad60530167e51d2dfb9549521a836871b88d7f4695d0022f6b
+
+build:
+  number: 1
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - six
+
+tests:
+  - python:
+      imports:
+        - rfc3339_validator
+      pip_check: true
+      python_version: ${{ python_min }}
+  - files:
+      source:
+        - tests
+    requirements:
+      run:
+        - hypothesis
+        - pip
+        - pytest-cov
+        - pytest-runner
+        - strict-rfc3339
+        - python ${{ python_min }}
+    script:
+      - pytest --cov=rfc3339_validator --cov-report=term-missing:skip-covered --no-cov-on-fail --cov-fail-under=95
+
+about:
+  summary: A pure python RFC3339 validator
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/naimetti/rfc3339-validator
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

@@ -1,0 +1,62 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: coreforecast
+  version: "0.0.18"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/coreforecast-${{ version }}.tar.gz
+  sha256: 2712aa23699302faf602253e413b6900eff395ddaebfed19ed4f9d9323ee7443
+
+build:
+  number: 0
+  skip: match(python, "<3.9")
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+    - cmake
+    - if: not win
+      then: make
+    - if: win
+      then: ninja
+  host:
+    - python
+    - scikit-build-core
+    - pip
+    - pybind11
+  run:
+    - python
+    - numpy >=1.20.0
+
+tests:
+  - files:
+      recipe:
+        - test_scalers.py
+    requirements:
+      run:
+        - pytest
+    script:
+      - pytest test_scalers.py
+
+about:
+  summary: Fast implementations of common forecasting routines
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://nixtla.github.io/coreforecast
+
+extra:
+  recipe-maintainers:
+    - jmoralez
+    - nasaul

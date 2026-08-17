@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: confusable-homoglyphs
+  version: "3.3.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/confusable_homoglyphs-${{ version }}.tar.gz
+  sha256: b995001c9b2e1b4cea0cf5f3840a7c79188a8cbbad053d693572bd8c1c1ec460
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - confusable_homoglyphs=confusable_homoglyphs.cli:cli
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - click
+
+tests:
+  - python:
+      imports:
+        - confusable_homoglyphs
+      python_version: ${{ python_min }}.*
+      pip_check: true
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+      - confusable_homoglyphs --help
+
+about:
+  summary: Detect confusable usage of unicode homoglyphs, prevent homograph attacks.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/vhf/confusable_homoglyphs
+
+extra:
+  recipe-maintainers:
+    - rxm7706

@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: opentelemetry-instrumentation-milvus
+  version: "0.62.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_instrumentation_milvus-${{ version }}.tar.gz
+  sha256: 7df6346b17f0760e4b1863de78bdeca9041ca89c4348c88ed7e76c84c3668869
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - opentelemetry-api >=1.38.0,<2.0.0
+    - opentelemetry-instrumentation >=0.59b0
+    - opentelemetry-semantic-conventions >=0.59b0
+    - opentelemetry-semantic-conventions-ai >=0.5.2,<0.6.0
+  run_constraints:
+    - pymilvus >=2.4.1,<3.0.0
+
+tests:
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pip check
+
+about:
+  summary: OpenTelemetry Milvus instrumentation
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://www.traceloop.com/openllmetry
+  repository: https://github.com/traceloop/openllmetry
+  documentation: https://www.traceloop.com/docs/openllmetry/introduction
+
+extra:
+  recipe-maintainers:
+    - timkpaine

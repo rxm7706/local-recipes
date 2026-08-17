@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.1.0"
+
+package:
+  name: pytorch-triton-rocm
+  version: ${{ version }}
+
+source:
+  url: https://github.com/openai/triton/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 4338ca0e80a059aec2671f02bfc9320119b051f378449cf5f56a1273597a3d99
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=40.8.0
+    - wheel
+    - cmake >=3.18
+  run:
+    - python >=${{ python_min }}
+    - cmake
+    - filelock
+    - pytorch
+    - lit-nlp
+
+tests:
+  - python:
+      imports:
+        - python.triton
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/openai/triton/
+  license: MIT
+  license_file: LICENSE
+  summary: A language and compiler for custom Deep Learning operations
+  description: |
+    A language and compiler for custom Deep Learning operations
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: pytorch-triton-rocm
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: pytorch-triton-rocm
+  cfe-purls:
+    - pkg:conda/pytorch-triton-rocm@${{ version }}?channel=conda-forge
+    - pkg:pypi/pytorch-triton-rocm@${{ version }}
+  cfe-upstream-repo: https://github.com/openai/triton/
+  cfe-upstream-homepage: https://github.com/openai/triton/
+  cfe-import-names: [python.triton]
+  cfe-source-kind: github-tag:no-sdist-on-pypi-G54
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:04:34Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:04:34Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: multipledispatch
+  version: "0.6.0"
+  package: ${{ name + "-" + version + ".tar.gz" }}
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ package }}
+    sha256: a7ab1451fd0bf9b92cab3edbd7b205622fb767aeefb4fb536c2e3de9e0a38bea
+  - url: https://raw.githubusercontent.com/mrocklin/multipledispatch/${{ version }}/LICENSE.txt
+    sha256: 8767c8a56a24a69d4bf42561c408bdf3e3ffa40699989aec50b96f4b4351efd9
+    file_name: LICENSE.txt
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed --no-cache-dir -vvv
+
+requirements:
+  host:
+    - pip
+    - python >=3.6
+    - six
+  run:
+    - python >=3.6
+    - six
+
+tests:
+  - python:
+      imports:
+        - multipledispatch
+      pip_check: false
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE.txt
+  summary: Multiple dispatch
+  homepage: https://github.com/mrocklin/multipledispatch/
+  repository: https://github.com/mrocklin/multipledispatch/
+  documentation: https://multiple-dispatch.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - cpcloud

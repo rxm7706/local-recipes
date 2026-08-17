@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.28.0"
+
+package:
+  name: runloop_api_client
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/runloop_api_client/runloop_api_client-${{ version }}.tar.gz
+  sha256: 14281f30baf47697f1ae1cd3e21b3e2325a721735e28cf44087321c0fa9abffc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - hatchling ==1.26.3
+    - hatch-fancy-pypi-readme
+  run:
+    - python >=${{ python_min }}
+    - anyio <5,>=3.5.0
+    - distro <2,>=1.7.0
+    - httpx <1,>=0.23.0
+    - pydantic <3,>=2.0
+    - sniffio
+    - typing_extensions <5,>=4.14
+    - uuid-utils >=0.11.0
+
+tests:
+  - python:
+      imports:
+        - runloop_api_client
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/runloopai/api-client-python
+  license: MIT
+  license_file: LICENSE
+  summary: The official Python library for the runloop API
+  description: |
+    The official Python library for the runloop API
+  repository: https://github.com/runloopai/api-client-python
+  documentation: https://runloopai.github.io/api-client-python/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: runloop_api_client
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: runloop_api_client
+  cfe-purls:
+    - pkg:conda/runloop_api_client@${{ version }}?channel=conda-forge
+    - pkg:pypi/runloop-api-client@${{ version }}
+  cfe-upstream-repo: https://github.com/runloopai/api-client-python
+  cfe-upstream-homepage: https://github.com/runloopai/api-client-python
+  cfe-import-names: [runloop_api_client]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:16:48Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:16:48Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

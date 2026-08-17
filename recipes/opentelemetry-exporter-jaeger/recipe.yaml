@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: opentelemetry-exporter-jaeger
+  version: "1.21.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/opentelemetry_exporter_jaeger-${{ version }}.tar.gz
+  sha256: e5650af9d09adad35add56b93d9856bd410644d25b0b5b87e6111467b9877dc2
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+    - opentelemetry-exporter-jaeger-proto-grpc ==1.21.0
+    - opentelemetry-exporter-jaeger-thrift ==1.21.0
+
+tests:
+  - python:
+      imports:
+        - opentelemetry
+        - opentelemetry.exporter
+        - opentelemetry.exporter.jaeger
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script: {}
+
+about:
+  summary: Jaeger Exporters for OpenTelemetry
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/open-telemetry/opentelemetry-python/tree/main/exporter/opentelemetry-exporter-jaeger
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+    - mariusvniekerk

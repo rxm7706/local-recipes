@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.2.5"
+
+package:
+  name: pytoolconfig
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pytoolconfig/pytoolconfig-${{ version }}.tar.gz
+  sha256: a50f9dfe23b03a9d40414c1fdf902fefbeae12f2ac75a3c8f915944d6ffac279
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip <22
+    - pdm
+    - pdm-pep517 >=1.0.5
+    - python ${{ python_min }}
+  run:
+    - packaging >=22.0
+    - python >=${{ python_min }}
+    - tomli >=2.0.1
+    - typing-extensions >=4.4.0
+
+tests:
+  - python:
+      imports:
+        - pytoolconfig
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Python tool configuration
+  license: LGPL-3.0-or-later
+  license_file: LICENSE
+  homepage: https://pypi.org/project/pytoolconfig
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

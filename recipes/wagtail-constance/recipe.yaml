@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: wagtail-constance
+  version: "0.0.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtail-constance-${{ version }}.tar.gz
+  sha256: f11630c2a4f0cc6c3a5b0c4fe5d2bf7cd579fecaab3f7731615bb72653fe6e87
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django-constance
+
+tests:
+  - python:
+      imports:
+        - wagtailconstance
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: django-constance integration for Wagtail CMS
+  license: MIT
+  license_file: LICENSE
+  homepage: http://github.com/MechanisM/wagtail-constance
+
+extra:
+  recipe-maintainers:
+    - rxm7706

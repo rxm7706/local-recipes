@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: fake-useragent
+  version: "2.2.0"
+  python_min: "3.9"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 4e6ab6571e40cc086d788523cf9e018f618d07f9050f822ff409a4dfe17c16b2
+
+build:
+  number: 1
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+  host:
+    - python
+    - pip
+    - setuptools
+    - if: match(python, "<3.10")
+      then: importlib-resources >=6.0
+  run:
+    - python
+    - if: match(python, "<3.10")
+      then: importlib-resources >=6.0
+
+tests:
+  - python:
+      imports:
+        - fake_useragent
+      pip_check: true
+
+about:
+  summary: Up to date simple useragent faker with real world database
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/hellysmile/fake-useragent
+
+extra:
+  recipe-maintainers:
+    - rpanai

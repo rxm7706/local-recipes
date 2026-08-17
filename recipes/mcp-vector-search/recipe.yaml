@@ -1,0 +1,117 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "4.1.14"
+  python_min: "3.11"
+
+package:
+  name: mcp-vector-search
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/m/mcp-vector-search/mcp_vector_search-${{ version }}.tar.gz
+  sha256: ea3afb020d2528c3de155a295d4411c49b11027e102d9009200d5a4ca65e5d0b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.0
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - aiofiles >=23.0.0
+    - authlib >=1.6.4
+    - boto3 >=1.35.0
+    - click-didyoumean >=0.3.0
+    - fastapi >=0.104.0
+    - httpx >=0.25.0
+    - kuzu >=0.7.0
+    - lancedb >=0.20.0
+    - loguru >=0.7.0
+    - mcp >=1.12.4
+    - networkx >=3.0
+    - orjson >=3.9.0
+    - packaging >=23.0
+    - pandas >=2.0.0
+    - psutil >=5.9.0
+    - py-mcp-installer >=0.1.4
+    - pydantic-settings >=2.1.0
+    - pydantic >=2.5.0
+    - pylance >=0.20.0
+    - pyyaml >=6.0
+    - rank-bm25 >=0.2.2
+    - rich >=13.0.0
+    - sentence-transformers <6.0.0,>=5.2.0
+    - starlette >=0.49.1
+    - transformers <5.0.0,>=4.34.0
+    - tree-sitter-language-pack >=0.9.0
+    - tree-sitter >=0.20.1
+    - typer >=0.9.0
+    - uvicorn >=0.24.0
+    - watchdog >=3.0.0
+    - yake >=0.4.8
+    - if: osx
+      then:
+        - pytorch
+
+tests:
+  - python:
+      imports:
+        - mcp_vector_search
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/bobmatnyc/mcp-vector-search
+  license: MIT
+  license_file: LICENSE
+  summary: CLI-first semantic code search with MCP integration and interactive D3.js visualization for exploring code relationships
+  description: |
+    CLI-first semantic code search with MCP integration and interactive D3.js visualization for exploring code relationships
+  repository: https://github.com/bobmatnyc/mcp-vector-search
+  documentation: https://mcp-vector-search.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: mcp-vector-search
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: mcp-vector-search
+  cfe-purls:
+    - pkg:conda/mcp-vector-search@${{ version }}?channel=conda-forge
+    - pkg:pypi/mcp-vector-search@${{ version }}
+  cfe-upstream-repo: https://github.com/bobmatnyc/mcp-vector-search
+  cfe-upstream-homepage: https://github.com/bobmatnyc/mcp-vector-search
+  cfe-import-names: [mcp_vector_search]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:38:02Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:38:02Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

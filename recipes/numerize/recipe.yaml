@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.12"
+
+package:
+  name: numerize
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/n/numerize/numerize-${{ version }}.tar.gz
+  sha256: 5548fe72adceb2c7964998179697d80117bb117f57cd02f872cf5db40d615c04
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - numerize
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/davidsa03/numerize
+  license: MIT
+  license_file: LICENSE
+  summary: Convert large numbers into readable numbers for humans.
+  description: |
+    Convert large numbers into readable numbers for humans.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: numerize
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: numerize
+  cfe-purls:
+    - pkg:conda/numerize@${{ version }}?channel=conda-forge
+    - pkg:pypi/numerize@${{ version }}
+  cfe-upstream-repo: https://github.com/davidsa03/numerize
+  cfe-upstream-homepage: https://github.com/davidsa03/numerize
+  cfe-import-names: [numerize]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:33:39Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:33:39Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

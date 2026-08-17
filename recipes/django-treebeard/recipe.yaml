@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-treebeard
+  version: "7.0.0"
+  sha256: 54dc526a25c4e5083cf7ae7b37bf0a02c5c2878b693027663db7604de2869d7a
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - django >=5.2
+
+tests:
+  - python:
+      imports:
+        - treebeard
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Efficient tree implementations for Django
+  description: |
+    django-treebeard is a library that implements efficient
+    tree implementations for the Django Web Framework 1.8 and later.
+  homepage: https://github.com/django-treebeard/django-treebeard
+  repository: https://github.com/django-treebeard/django-treebeard
+  documentation: http://django-treebeard.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - darynwhite
+    - cshaley
+    - sannykr

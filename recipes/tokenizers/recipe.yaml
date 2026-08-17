@@ -1,0 +1,117 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.23.1"
+
+package:
+  name: tokenizers
+  version: ${{ version }}
+
+source:
+  url: https://github.com/huggingface/tokenizers/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: aa906ad27ece40261e075e171e4a8873c2c5cfdbb64205170735d425f214c7ef
+  patches:
+    - if: win
+      then: patches/0001-don-t-fork-on-windows.patch
+    # Fix tests that are failing in the 0.23.1 release.
+    # ref: https://github.com/huggingface/tokenizers/pull/2079
+    - patches/0002-Ci-test-fixes-2079.patch
+
+build:
+  # MacOS on ARM builds started failing with segmentation fault.
+  # Those builds are being skipped from v0.20.0 in August 2024
+  # because Python 3.8 is being dropped at the end of October 2024.
+  # https://github.com/conda-forge/polars-feedstock/issues/259
+  number: 0
+  skip: osx and arm64 and match(python, "==3.8")
+  script:
+    - export PYO3_CROSS_INCLUDE_DIR=$PREFIX/include
+    - export PYO3_CROSS_LIB_DIR=$SP_DIR/../
+    - export PYO3_CROSS_PYTHON_VERSION=$PY_VER
+    # see below for what OPENSSL_DIR should be pointing to:
+    # https://github.com/sfackler/rust-openssl/blob/openssl-sys-v0.9.72/openssl/src/lib.rs#L55-L56
+    - export OPENSSL_DIR=$PREFIX
+    # rust-lld (LLD) cannot handle some of the relocations GCC emits for ppc64le
+    # (e.g. inline-PLT R_PPC64_PLTSEQ/PLTCALL), which breaks linking of C-based
+    # crates such as aws-lc-sys and libdbus-sys. Fall back to the GNU bfd linker on
+    # that platform, which handles these relocations. gcc honors the last
+    # -fuse-ld, so this overrides rustc's bundled rust-lld default.
+    - export RUSTFLAGS="-Clink-arg=-fuse-ld=bfd"
+    - cd bindings/python
+    - ${{ PYTHON }} -m pip install . -vv
+  dynamic_linking:
+    missing_dso_allowlist:
+      - if: osx
+        then: /usr/lib/libresolv.9.dylib
+      - if: linux
+        then: /usr/lib64/libgcc_s.so.1
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: openssl
+    - if: build_platform != target_platform
+      then: maturin >=1.0,<2.0
+    - ${{ compiler('cxx') }}
+    - ${{ stdlib("c") }}
+    - ${{ compiler('rust') }}
+  host:
+    - python
+    - pip
+    - maturin >=1.0,<2.0
+    - if: linux
+      then: openssl
+  run:
+    - python
+    - huggingface_hub >=0.16.4,<2.0
+
+tests:
+  - python:
+      imports:
+        - tokenizers
+        - tokenizers.models
+        - tokenizers.decoders
+        - tokenizers.normalizers
+        - tokenizers.pre_tokenizers
+        - tokenizers.processors
+        - tokenizers.trainers
+        - tokenizers.implementations
+      pip_check: true
+  - files:
+      source:
+        - bindings/python/tests
+    requirements:
+      run:
+        - pip
+        - pytest
+        - pytest-asyncio
+        - datasets >=4.4.0
+        - numpy *
+        - requests
+        - curl *
+    script:
+      - cd bindings/python
+      - mkdir data
+      - curl https://norvig.com/big.txt > data/big.txt
+      - pytest -v tests -k "not (${{ tests_to_skip }})"
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: Fast State-of-the-Art Tokenizers optimized for Research and Production
+  homepage: https://pypi.org/project/tokenizers/
+  repository: https://github.com/huggingface/tokenizers
+
+extra:
+  recipe-maintainers:
+    - anthchirp
+    - ndmaxar
+    - oblute
+    - setu4993
+    - h-vetinari
+    - xhochy

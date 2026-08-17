@@ -2,14 +2,16 @@
 schema_version: 1
 
 context:
-  version: "1.0.2"
+  name: datastar-py
+  version: 1.0.2
+  python_min: '3.11'
 
 package:
-  name: datastar-py
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/datastar-py/datastar_py-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/datastar_py-${{ version }}.tar.gz
   sha256: c6f86e2b48c3a5ea08570a4e958267307a5ffc0253c259f054dc3bb6de8a2c0e
 
 build:
@@ -23,29 +25,24 @@ requirements:
     - hatchling
     - pip
   run:
-    - python >=${{ python_min }}
-
+    - python >=${{ python_min }},<4.0
+    - fastapi
+    - sanic
+    - starlette
+    - quart
+    - django
 tests:
   - python:
       imports:
         - datastar_py
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}.*
 
 about:
   summary: Helper functions and classes for the Datastar library
   license: MIT
-  license_file: LICENSE.md
+  license_file: LICENSE
   homepage: https://data-star.dev/
-  repository: https://github.com/starfederation/datastar-python
-  documentation: https://github.com/starfederation/datastar-python/blob/develop/README.md
-  description: |
-    Helper functions and classes for the Datastar hypermedia framework. Provides
-    Server-Sent Event generators plus optional integration shims for FastAPI,
-    Starlette, Sanic, Quart, Django, Litestar, and FastHTML (each loaded only
-    when its framework is present).
 
 extra:
   recipe-maintainers:

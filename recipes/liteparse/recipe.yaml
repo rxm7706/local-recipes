@@ -1,0 +1,214 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: liteparse
+  version: "2.12.0"
+
+recipe:
+  name: ${{ name }}-split
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/l/liteparse/${{ name }}-${{ version }}.tar.gz
+    sha256: c1d3615cf97ba0d74e992fe9f4cc005cbb157221e6cc1c28465bc99730e406f7
+  - url: https://raw.githubusercontent.com/run-llama/liteparse/ae1ae83f527b016d4f318ee27023381109702425/LICENSE
+    sha256: c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4
+    file_name: LICENSE
+  - if: linux and x86_64
+    then:
+      - url: https://github.com/run-llama/pdfium-binaries/releases/download/chromium%2F7897/pdfium-linux-x64.tgz
+        sha256: af96f21fd8e9d53955013dad1d17b003d0120025e787b7ce611a685d57287594
+        target_directory: pdfium-linux-x64
+  - if: linux and aarch64
+    then:
+      - url: https://github.com/run-llama/pdfium-binaries/releases/download/chromium%2F7897/pdfium-linux-arm64.tgz
+        sha256: e81ec447dd00097eb2fc26cff88be53ea321495711a43af9ea7b50bebdea9226
+        target_directory: pdfium-linux-arm64
+  - if: osx and x86_64
+    then:
+      - url: https://github.com/run-llama/pdfium-binaries/releases/download/chromium%2F7897/pdfium-mac-x64.tgz
+        sha256: dea5c9cdedcbdc7b1ce72bf845a2ec8bda1b9d23a5eef0b61e2d217f8b4477d3
+        target_directory: pdfium-mac-x64
+  - if: osx and arm64
+    then:
+      - url: https://github.com/run-llama/pdfium-binaries/releases/download/chromium%2F7897/pdfium-mac-arm64.tgz
+        sha256: 954cd315ff7d7ec51824cc6289ad1b00a0981533cb9762a56fd122bcaa12cd27
+        target_directory: pdfium-mac-arm64
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: ${{ name }}
+      version: ${{ version }}
+
+    build:
+      skip: win or ppc64le
+      script:
+        env:
+          CARGO_PROFILE_RELEASE_STRIP: symbols
+          CARGO_PROFILE_RELEASE_LTO: fat
+        content:
+          - if: linux and x86_64
+            then:
+              - export PDFIUM_ROOT="${SRC_DIR}/pdfium-linux-x64"
+              - export PDFIUM_DYLIB="libpdfium.so"
+          - if: linux and aarch64
+            then:
+              - export PDFIUM_ROOT="${SRC_DIR}/pdfium-linux-arm64"
+              - export PDFIUM_DYLIB="libpdfium.so"
+          - if: osx and x86_64
+            then:
+              - export PDFIUM_ROOT="${SRC_DIR}/pdfium-mac-x64"
+              - export PDFIUM_DYLIB="libpdfium.dylib"
+          - if: osx and arm64
+            then:
+              - export PDFIUM_ROOT="${SRC_DIR}/pdfium-mac-arm64"
+              - export PDFIUM_DYLIB="libpdfium.dylib"
+          - export PDFIUM_LIB_PATH="${PDFIUM_ROOT}/lib"
+          - export PDFIUM_INCLUDE_PATH="${PDFIUM_ROOT}/include"
+          - export OPENSSL_DIR="${BUILD_PREFIX}"
+          - if: linux
+            then:
+              - ln -sf "${CXX}" "${BUILD_PREFIX}/bin/g++"
+          - cargo fetch
+          - cargo update --workspace --offline
+          - cargo auditable install --locked --no-default-features --features tesseract --path crates/liteparse --root ${{ PREFIX }} --no-track
+          - mkdir -p "${PREFIX}/lib"
+          - cp "${PDFIUM_LIB_PATH}/${PDFIUM_DYLIB}" "${PREFIX}/lib/${PDFIUM_DYLIB}"
+          - cp "${PDFIUM_ROOT}/LICENSE" PDFIUM-LICENSE
+          - cp -R "${PDFIUM_ROOT}/licenses" pdfium-licenses
+          - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+
+    requirements:
+      build:
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ compiler('rust') }}
+        - ${{ stdlib('c') }}
+        - cmake
+        - make
+        - cargo-auditable
+        - cargo-bundle-licenses
+        - openssl
+        - pkg-config
+
+    tests:
+      - script:
+          - lit --help
+          - test -f "${PREFIX}/lib/libpdfium.dylib" || test -f "${PREFIX}/lib/libpdfium.so"
+          - printf '%s\n' '%PDF-1.1' '1 0 obj << /Type /Catalog /Pages 2 0 R >> endobj' '2 0 obj << /Type /Pages /Kids [3 0 R] /Count 1 >> endobj' '3 0 obj << /Type /Page /Parent 2 0 R /MediaBox [0 0 200 200] /Contents 4 0 R /Resources << /Font << /F1 5 0 R >> >> >> endobj' '4 0 obj << /Length 44 >> stream' 'BT /F1 12 
+            Tf 72 120 Td (Hello LiteParse) Tj ET' 'endstream endobj' '5 0 obj << /Type /Font /Subtype /Type1 /BaseFont /Helvetica >> endobj' 'xref' '0 6' '0000000000 65535 f ' '0000000009 00000 n ' '0000000060 00000 n ' '0000000117 00000 n ' '0000000251 00000 n ' '0000000345 00000 n ' 'trailer << /Root 1 0 R /Size 6 
+            >>' 'startxref' '415' '%%EOF' > smoke.pdf
+          - lit parse smoke.pdf
+      - package_contents:
+          bin:
+            - lit
+
+    about:
+      summary: Fast, lightweight document parsing CLI
+      license: Apache-2.0
+      license_file:
+        - LICENSE
+        - THIRDPARTY.yml
+        - PDFIUM-LICENSE
+        - pdfium-licenses/*.txt
+        - pdfium-licenses/*.md
+
+  - package:
+      name: python-${{ name }}
+      version: ${{ version }}
+
+    build:
+      skip: win or ppc64le
+      script:
+        env:
+          CARGO_PROFILE_RELEASE_STRIP: symbols
+          CARGO_PROFILE_RELEASE_LTO: fat
+        content:
+          - if: linux and x86_64
+            then:
+              - export PDFIUM_ROOT="${SRC_DIR}/pdfium-linux-x64"
+              - export PDFIUM_DYLIB="libpdfium.so"
+          - if: linux and aarch64
+            then:
+              - export PDFIUM_ROOT="${SRC_DIR}/pdfium-linux-arm64"
+              - export PDFIUM_DYLIB="libpdfium.so"
+          - if: osx and x86_64
+            then:
+              - export PDFIUM_ROOT="${SRC_DIR}/pdfium-mac-x64"
+              - export PDFIUM_DYLIB="libpdfium.dylib"
+          - if: osx and arm64
+            then:
+              - export PDFIUM_ROOT="${SRC_DIR}/pdfium-mac-arm64"
+              - export PDFIUM_DYLIB="libpdfium.dylib"
+          - export PDFIUM_LIB_PATH="${PDFIUM_ROOT}/lib"
+          - export PDFIUM_INCLUDE_PATH="${PDFIUM_ROOT}/include"
+          - export OPENSSL_DIR="${BUILD_PREFIX}"
+          - if: linux
+            then:
+              - ln -sf "${CXX}" "${BUILD_PREFIX}/bin/g++"
+          - cp "${PDFIUM_LIB_PATH}/${PDFIUM_DYLIB}" "liteparse/${PDFIUM_DYLIB}"
+          - cargo fetch
+          - cargo update --workspace --offline
+          - maturin build --release --locked --no-default-features --features tesseract --compatibility linux --interpreter ${{ PYTHON }} --out dist
+          - ${{ PYTHON }} -m pip install dist/*.whl -vv --no-deps --no-build-isolation
+          - rm -f "${PREFIX}/bin/lit"
+          - cp "${PDFIUM_ROOT}/LICENSE" PDFIUM-LICENSE
+          - cp -R "${PDFIUM_ROOT}/licenses" pdfium-licenses
+          - cargo-bundle-licenses --format yaml --output THIRDPARTY.yml
+
+    requirements:
+      build:
+        - if: build_platform != target_platform
+          then:
+            - cross-python_${{ target_platform }}
+            - python
+            - maturin
+        - ${{ compiler('c') }}
+        - ${{ compiler('cxx') }}
+        - ${{ compiler('rust') }}
+        - ${{ stdlib('c') }}
+        - cmake
+        - make
+        - cargo-bundle-licenses
+        - openssl
+        - pkg-config
+      host:
+        - python
+        - maturin
+        - pip
+      run:
+        - python
+
+    tests:
+      - python:
+          imports:
+            - liteparse
+          pip_check: true
+      - package_contents:
+          site_packages:
+            - liteparse
+
+    about:
+      summary: Python bindings for LiteParse document parsing
+      license: Apache-2.0
+      license_file:
+        - LICENSE
+        - THIRDPARTY.yml
+        - PDFIUM-LICENSE
+        - pdfium-licenses/*.txt
+        - pdfium-licenses/*.md
+
+about:
+  summary: Open-source document parsing with spatial text extraction and OCR processing
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/run-llama/liteparse
+  repository: https://github.com/run-llama/liteparse
+
+extra:
+  recipe-maintainers:
+    - moritzwilksch

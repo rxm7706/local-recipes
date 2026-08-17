@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.3.0"
+  # TODO: bump after e.g. https://github.com/conda-forge/pylsqpack-feedstock/pull/5
+  python_check_max: "3.14"
+
+package:
+  name: aioquic
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/aioquic/aioquic-${{ version }}.tar.gz
+  sha256: 28d070b2183e3e79afa9d4e7bd558960d0d53aeb98bc0cf0a358b279ba797c92
+
+build:
+  skip: not (is_abi3 and match(python, python_min ~ ".*"))
+  number: 0
+  script:
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  python:
+    version_independent: true
+
+requirements:
+  build:
+    - ${{ compiler("c") }}
+    - ${{ stdlib("c") }}
+    - if: build_platform != target_platform
+      then:
+        - python
+        - cross-python_${{ target_platform }}
+  host:
+    - pip
+    - python
+    - python-abi3
+    - setuptools
+  run:
+    - certifi
+    - cryptography >=42.0.0
+    - openssl
+    - pylsqpack >=0.3.3,<0.4.0
+    - pyopenssl >=24
+    - python
+    - service-identity >=24.1.0
+
+tests:
+  - python:
+      imports:
+        - aioquic
+        - aioquic._buffer
+        - aioquic._crypto
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - files:
+      source:
+        - tests/
+    requirements:
+      run:
+        - coverage
+        - pip
+        - pytest
+        - python ${{ python_min }}.*
+    script:
+      - pip check
+      - coverage run --source=aioquic --branch -m pytest -vv --tb=long --color=yes -k "not connect_and_serve_ipv6"
+      - if: linux
+        then: coverage report --show-missing --skip-covered --fail-under=99
+
+about:
+  summary: An implementation of QUIC and HTTP/3
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/aiortc/aioquic
+  documentation: https://aioquic.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

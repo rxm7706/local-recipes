@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python_http_client
+  version: "3.3.7"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: bf841ee45262747e00dec7ee9971dfb8c7d83083f5713596488d67739170cea0
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - python_http_client
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: MIT
+  # https://github.com/sendgrid/python-http-client/pull/87
+  license_file: ${{ env.get("RECIPE_DIR") }}/LICENSE.txt
+  summary: SendGrid's Python HTTP Client for calling APIs
+  description: Quickly and easily access any RESTful or RESTful-like API
+  homepage: https://github.com/sendgrid/sendgrid-python/
+  repository: https://github.com/sendgrid/python-http-client
+  documentation: https://github.com/sendgrid/python-http-client
+
+extra:
+  recipe-maintainers:
+    - RohitK89
+    - mariusvniekerk

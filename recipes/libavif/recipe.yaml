@@ -1,0 +1,192 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.4.2"
+  so_version: ${{ "16." ~ (version | split("."))[1] ~ "." ~ (version | split("."))[2] }}
+  so_major_version: ${{ (so_version | split("."))[0] }}
+  build: 3
+
+recipe:
+  name: libavif-split
+  version: ${{ version }}
+
+source:
+  url: https://github.com/AOMediaCodec/libavif/archive/refs/tags/v${{ version }}.tar.gz
+  sha256: 2b645287340ba5a631d268b551dc2d72bd73ac33335962dd36dcdb6d8366921d
+
+build:
+  number: ${{ build }}
+
+outputs:
+  # Builds libavif once into the prefix; each package output below inherits
+  # these files and selects its subset with build.files.
+  - staging:
+      name: libavif-split-build
+    build:
+      script:
+        file: build
+    requirements:
+      build:
+        - cmake
+        - ${{ compiler('c') }}
+        - ${{ stdlib('c') }}
+        - ninja
+      host:
+        - aom
+        - dav1d
+        - rav1e
+        - svt-av1
+
+  - package:
+      name: libavif
+    inherit: libavif-split-build
+    build:
+      number: ${{ build }}
+      # Headers, unversioned shared libs, pkgconfig, cmake configs, and the
+      # Windows import library; everything except the versioned shared libs.
+      files:
+        include:
+          - include/**/*
+          - lib/**/*
+          - Library/include/**/*
+          - Library/lib/**/*
+        exclude:
+          - lib/lib*.so.*
+          - lib/lib*.*.dylib
+    requirements:
+      run:
+        - ${{ pin_subpackage('libavif' ~ so_major_version, exact=True) }}
+      run_exports:
+        - ${{ pin_subpackage('libavif' ~ so_major_version) }}
+    tests:
+      # The dev package owns headers, the unversioned shared lib, pkgconfig,
+      # cmake configs (and the Windows import lib) but must NOT contain the
+      # versioned shared libraries (those live in libavif${{ so_major_version }}).
+      - if: linux
+        then:
+          - package_contents:
+              files:
+                exists:
+                  - include/avif/avif.h
+                  - lib/libavif.so
+                  - lib/pkgconfig/libavif.pc
+                  - lib/cmake/libavif/libavif-config.cmake
+                  - lib/cmake/libavif/libavif-config-release.cmake
+                  - lib/cmake/libavif/libavif-config-version.cmake
+                not_exists:
+                  - lib/libavif.so.*
+      - if: osx
+        then:
+          - package_contents:
+              files:
+                exists:
+                  - include/avif/avif.h
+                  - lib/libavif.dylib
+                  - lib/pkgconfig/libavif.pc
+                  - lib/cmake/libavif/libavif-config.cmake
+                  - lib/cmake/libavif/libavif-config-release.cmake
+                  - lib/cmake/libavif/libavif-config-version.cmake
+                not_exists:
+                  - lib/libavif.*.dylib
+      - if: win
+        then:
+          - package_contents:
+              files:
+                exists:
+                  - Library/include/avif/avif.h
+                  - Library/lib/avif.lib
+                  - Library/lib/pkgconfig/libavif.pc
+                  - Library/lib/cmake/libavif/libavif-config.cmake
+                  - Library/lib/cmake/libavif/libavif-config-release.cmake
+                  - Library/lib/cmake/libavif/libavif-config-version.cmake
+                not_exists:
+                  - Library/bin/avif.dll
+
+  - package:
+      name: libavif${{ so_major_version }}
+    inherit: libavif-split-build
+    build:
+      number: ${{ build }}
+      # Only the versioned shared libraries and the Windows DLL.
+      files:
+        include:
+          - lib/lib*.so.*
+          - lib/lib*.*.dylib
+          - bin/*.dll
+          - Library/bin/*.dll
+    requirements:
+      run:
+        - if: win
+          then:
+            - ${{ pin_subpackage('_libavif_api', upper_bound='x.x.x') }}
+      run_exports:
+        - ${{ pin_subpackage('libavif' ~ so_major_version) }}
+    tests:
+      # The runtime package owns ONLY the versioned shared libraries (Windows
+      # DLL) and must NOT contain the dev files (headers, unversioned lib,
+      # pkgconfig, cmake configs, import lib).
+      - if: linux
+        then:
+          - package_contents:
+              files:
+                exists:
+                  - lib/libavif.so.${{ so_major_version }}
+                  - lib/libavif.so.${{ so_version }}
+                not_exists:
+                  - include/avif/avif.h
+                  - lib/libavif.so
+                  - lib/pkgconfig/libavif.pc
+                  - lib/cmake/libavif/*
+      - if: osx
+        then:
+          - package_contents:
+              files:
+                exists:
+                  - lib/libavif.${{ so_major_version }}.dylib
+                  - lib/libavif.${{ so_version }}.dylib
+                not_exists:
+                  - include/avif/avif.h
+                  - lib/libavif.dylib
+                  - lib/pkgconfig/libavif.pc
+                  - lib/cmake/libavif/*
+      - if: win
+        then:
+          - package_contents:
+              files:
+                exists:
+                  - Library/bin/avif.dll
+                not_exists:
+                  - Library/include/avif/avif.h
+                  - Library/lib/avif.lib
+                  - Library/lib/pkgconfig/libavif.pc
+                  - Library/lib/cmake/libavif/*
+
+  # Clobber preventer for Windows; prevents multiple dll files from being
+  # installed simultaneously. This lets us avoid exporting a strict pin on the
+  # API which is not strictly correlated with the ABI.
+  - package:
+      name: _libavif_api
+    build:
+      number: ${{ build }}
+      skip: not win
+    about:
+      summary: >
+        An empty package that prevents multiple ABIs being installed simultaneously on Windows.
+
+about:
+  homepage: https://github.com/AOMediaCodec/libavif
+  license: BSD-2-Clause
+  license_file: LICENSE
+  summary: A friendly, portable C implementation of the AV1 Image File Format
+  description: |
+    This library aims to be a friendly, portable C implementation of the AV1
+    Image File Format, as described here
+    <https://aomediacodec.github.io/av1-avif/>.
+
+extra:
+  feedstock-name: libavif
+  recipe-maintainers:
+    - carterbox
+    - hmaarrfk
+    - pavelzw

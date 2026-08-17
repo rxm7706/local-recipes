@@ -1,0 +1,68 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pykerberos
+  version: "1.2.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 9d701ebd8fc596c99d3155d5ba45813bd5908d26ef83ba0add250edb622abed4
+  patches:
+    # fix issue with memcpy on macOS
+    # LICENSE: this patch is reproduced from the AnacondaRecipes/aggregate
+    #          recipe for this package, with permission from the author, see
+    #          https://github.com/conda-forge/staged-recipes/pull/10646#issuecomment-576312814
+    - if: osx
+      then: 0001-Implement-mempcpy-via-memcpy.patch
+
+build:
+  number: 8
+  skip: win
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - krb5
+    - pip
+    - python
+    - setuptools
+  run:
+    - krb5
+    - python
+
+tests:
+  - python:
+      imports:
+        - kerberos
+      pip_check: false
+
+about:
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: High-level interface to Kerberos
+  description: |
+    pykerberos is a high-level wrapper for Kerberos (GSSAPI) operations. The
+    goal is to avoid having to build a module that wraps the entire
+    Kerberos.framework and instead offer a limited set of functions that do
+    what is needed for client/server Kerberos authentication.
+
+
+  homepage: https://github.com/02strich/pykerberos
+  repository: https://github.com/02strich/pykerberos
+  documentation: https://pypi.python.org/pypi/kerberos
+
+extra:
+  recipe-maintainers:
+    - duncanmmacleod

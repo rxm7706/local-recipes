@@ -1,0 +1,81 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5"
+
+recipe:
+  name: lazy-loader
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/lazy_loader/lazy_loader-${{ version }}.tar.gz
+  sha256: 717f9179a0dbed357012ddad50a5ad3d5e4d9a0b8712680d4e687f5e6e6ed9b3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - setuptools >=61.2
+    - python ${{ python_min }}
+    - packaging
+  run:
+    - python >=${{ python_min }}
+    - packaging
+
+outputs:
+    # A conflict was created for older lazy_loader packages
+    # version 0.4.0 build 0 and older
+    # https://github.com/conda-forge/conda-forge-repodata-patches-feedstock/pull/815
+    # so that they cannot be co-installed with lazy-loader
+    package:
+      name: lazy-loader
+  - package:
+      name: lazy_loader
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python ${{ python_min }}
+      run:
+        - python >=${{ python_min }}
+        - ${{ pin_subpackage('lazy-loader', exact=True) }}
+    tests:
+      - python:
+          imports:
+            - lazy_loader
+          pip_check: false
+          python_version: ${{ python_min }}
+      - requirements:
+          run:
+            - python ${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - lazy_loader
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Easily load subpackages and functions on demand
+  license: BSD-3-Clause
+  license_file: LICENSE.md
+  description: |
+    `lazy-loader` makes it easy to load subpackages and functions on demand.
+
+    PyPI: https://pypi.org/project/lazy-loader/
+
+  homepage: https://pypi.org/project/lazy-loader/
+  repository: https://github.com/scientific-python/lazy-loader
+  documentation: https://github.com/scientific-python/lazy-loader
+
+extra:
+  recipe-maintainers:
+    - bsipocz
+    - sugatoray
+    - bmcfee

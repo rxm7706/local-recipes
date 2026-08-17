@@ -1,0 +1,443 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# if build_num is reset to 0 (for new version), update increment for blas_minor below
+# blas_major denotes major infrastructural change to how blas is managed
+# make sure we do not create colliding version strings of output "blas"
+# for builds across lapack-versions within the same blas_major
+# versions of pinned blas implementation flavours
+# NOTE: aarch64 compatibility tests are skipped in CI; run locally before merging
+# MKL uses the yyyy-portion of CalVer also as the major version indicating API/ABI stability, see
+# https://github.com/conda-forge/intel_repack-feedstock/issues/81
+# to avoid tempting the solver into switching the underlying blas flavour "just" to update MKL,
+# we add a constraint on the MKL-version across all flavours. This means (essentially) that any
+# new MKL major version must first pass the tests on this feedstock
+schema_version: 1
+
+context:
+  version: "3.11.0"
+  build_num: 9
+  version_major: ${{ version.split(".")[0] }}
+  version_minor: ${{ version.split(".")[1] }}
+  blas_major: 2
+  blas_minor: build_num + (version_minor|int - 8) * 100
+  blis_version: "2.0"
+  mkl_version: "2026.1"
+  openblas_version: "0.3.34"
+  nvpl_version: 25.11.0.*
+  mkl_next: ${{ mkl_version.split(".")[0]|int + 1 }}
+  blas_impl: openblas
+
+recipe:
+  name: blas-split
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/Reference-LAPACK/lapack/archive/v${{ version }}.tar.gz
+    sha256: 4b9ba79bfd4921ca820e83979db76ab3363155709444a787979e81c22285ffa9
+    patches:
+      # Test BLAS and LAPACKE in addition to LAPACK
+      - patches/0001-Test-BLAS-and-LAPACKE-in-addition-to-LAPACK.patch
+      # avoid corruption of characters through implicit decode
+      - patches/0002-read-pipe-as-binary.patch
+      # make symbol RowMajorStrg visible through DLL boundary
+      - patches/0003-add-DLL-import-export-machinery-for-RowMajorStrg.patch
+      # backport https://github.com/Reference-LAPACK/lapack/pull/758, can be dropped for 3.12
+      - patches/0004-fixed-bug-in-array-bounds-in-complex-syl01-test.patch
+      # backport https://github.com/Reference-LAPACK/lapack/pull/854, can be dropped for 3.12
+      - patches/0005-Use-dynamic-allocation-in-SYL01-tests.patch
+  - url: https://github.com/isuruf/vecLibFort/archive/99af8640e98c829b41c3235e3706760cd5696fe4.tar.gz
+    sha256: 80de7c6e83d1d84d016b4cb299f2c15f5a82b9d36865dd5c16bf221fe9a303ad
+    target_directory: vecLibFort
+
+build:
+  number: ${{ build_num }}
+
+requirements:
+  build:
+    - ${{ stdlib("c") }}
+    - ${{ compiler("c") }}
+    - ${{ compiler("fortran") }}
+    - cmake <4
+    - if: not win
+      then: make
+    - if: win
+      then: ninja
+    - if: win
+      then: create-forwarder-dll
+    # in testing we end up calling a python script, see
+    # https://github.com/Reference-LAPACK/lapack/blame/master/lapack_testing.py
+    - python *
+    # The following are actual build dependencies of this recipe; however, they
+    # only get installed by the build scripts, since they must be installed in a
+    # different environment (otherwise there'd be a variant collision)! The build
+    # script will link to those netlib libraries and set up the netlib test suite.
+    # For the different blas variants, build_pkg.{sh|bat} will then point those
+    # links to the respective libraries of the desired variant, and *then* run
+    # the test suite (in test_blas.{sh|bat}) to see that everything works correctly.
+    # Note: These libraries are built in the lapack-feedstock.
+    # - libblas    {{ version }} *netlib
+    # - libcblas   {{ version }} *netlib
+    # - liblapack  {{ version }} *netlib
+    # - liblapacke {{ version }} *netlib
+
+outputs:
+  - package:
+      name: libblas
+    files:
+      - if: linux
+        then: lib/libblas.so
+      - if: osx
+        then: lib/libblas.dylib
+      - if: linux
+        then: lib/libblas.so.${{ version_major }}
+      - if: osx
+        then: lib/libblas.${{ version_major }}.dylib
+      - if: win
+        then: Library/bin/libblas.dll
+      - if: blas_impl == 'newaccelerate'
+        then: lib/libblas_reexport.dylib
+      - if: blas_impl == 'newaccelerate'
+        then: lib/liblapacke-netlib.*.dylib
+      - if: blas_impl == 'accelerate'
+        then: lib/libvecLibFort-ng.dylib
+      - if: blas_impl == 'accelerate'
+        then: lib/liblapack-netlib.*.dylib
+      - if: blas_impl == 'accelerate'
+        then: lib/liblapacke-netlib.*.dylib
+      - if: blas_impl == 'mkl'
+        then: etc/conda/activate.d/libblas_mkl_*
+      - if: blas_impl == 'mkl'
+        then: etc/conda/deactivate.d/libblas_mkl_*
+    build:
+      string: ${{ build_num }}_h${{ PKG_HASH }}_${{ blas_impl }}
+      track_features:
+        - if: blas_impl != blas_default_impl
+          then: blas_${{ blas_impl }}
+        - if: blas_impl != blas_default_impl
+          then: blas_${{ blas_impl }}_2
+      script:
+        file: ${{ 'build_pkg.sh' if unix else 'build_pkg.bat' if win else '' }}
+    requirements:
+      build:
+        - if: blas_impl in ('accelerate', 'newaccelerate')
+          then: ${{ compiler("fortran") }}
+        # need to compile wrapper code, see build.sh
+        - if: blas_impl == 'newaccelerate'
+          then: ${{ compiler('c') }}
+        - if: blas_impl in ('accelerate', 'newaccelerate')
+          then: ${{ stdlib('c') }}
+      host:
+        - if: blas_impl == 'blis' or blas_impl == 'blis'
+          then: blis 2.0.*
+        # from https://github.com/conda-forge/intel_repack-feedstock/
+        - if: blas_impl == 'openblas' or blas_impl == 'openblas'
+          then: libopenblas 0.3.34.*
+        - if: blas_impl == 'mkl' or blas_impl == 'mkl'
+          then: mkl-devel  2026.1.*
+        - if: (blas_impl or '').startswith('nvpl')
+          then: _nvpl_dev_mutex ${{ nvpl_version }}
+        - if: (blas_impl or '').startswith('nvpl')
+          then: libnvpl-blas-dev
+        - if: (blas_impl or '').startswith('nvpl')
+          then: libnvpl-blas0
+      run:
+        - if: blas_impl == 'blis'
+          then: ${{ pin_compatible("blis", upper_bound="x.x.x") }}
+        - if: blas_impl == 'mkl'
+          then: ${{ pin_compatible("mkl", upper_bound="x") }}
+        - if: blas_impl == 'openblas'
+          then: ${{ pin_compatible("libopenblas", upper_bound="x.x.x") }}
+        - if: (blas_impl or '').startswith('nvpl')
+          then: ${{ pin_compatible("libnvpl-blas0", upper_bound="x.x.x") }}
+        - if: blas_impl == 'newaccelerate'
+          then: __osx >=15.5
+      run_exports:
+        - ${{ pin_subpackage("libblas", upper_bound="x") }}
+      run_constraints:
+        - libcblas   3.11.0   9*_openblas.*
+        - if: blas_impl != 'blis' or blas_impl != 'blis'
+          then: liblapack  3.11.0   9*_openblas.*
+        - if: blas_impl != 'blis' or blas_impl != 'blis'
+          then: liblapacke 3.11.0   9*_openblas.*
+        - blas 2.build_num + (version_minor|int - 8) * 100   openblas.*
+        - if: blas_impl != 'mkl'
+          then: mkl <${{ mkl_next }}
+    tests:
+      - script:
+          - if: blas_impl_lib == 'blas'
+            then: echo hello
+          - if: lapack_impl_lib == 'blas'
+            then: echo hello
+          - if: linux
+            then: test -f $PREFIX/lib/libblas.so.${{ version_major }}
+          - if: osx
+            then: test -f $PREFIX/lib/libblas.${{ version_major }}.dylib
+          - if: win
+            then: if not exist %LIBRARY_BIN%/libblas.dll exit 1
+  - package:
+      name: libcblas
+    files:
+      - if: linux
+        then: lib/libcblas.so
+      - if: osx
+        then: lib/libcblas.dylib
+      - if: linux
+        then: lib/libcblas.so.${{ version_major }}
+      - if: osx
+        then: lib/libcblas.${{ version_major }}.dylib
+      - if: win
+        then: Library/bin/libcblas.dll
+    build:
+      string: ${{ build_num }}_h${{ PKG_HASH }}_${{ blas_impl }}
+      track_features:
+        - if: blas_impl != blas_default_impl
+          then: blas_${{ blas_impl }}
+      script:
+        file: ${{ 'build_pkg.sh' if unix else 'build_pkg.bat' if win else '' }}
+    requirements:
+      host:
+        # cannot pin exactly due to https://github.com/conda/conda-build/issues/5573
+        - libblas 3.11.0   9*_openblas.*
+      run:
+        - ${{ pin_subpackage("libblas", exact=True) }}
+      run_exports:
+        - ${{ pin_subpackage("libcblas", upper_bound="x") }}
+      run_constraints:
+        - if: blas_impl != 'blis' or blas_impl != 'blis'
+          then: liblapack  3.11.0   9*_openblas.*
+        - if: blas_impl != 'blis' or blas_impl != 'blis'
+          then: liblapacke 3.11.0   9*_openblas.*
+        - blas 2.build_num + (version_minor|int - 8) * 100   openblas.*
+    tests:
+      - script:
+          - if: linux
+            then: test -f $PREFIX/lib/libcblas.so.${{ version_major }}
+          - if: osx
+            then: test -f $PREFIX/lib/libcblas.${{ version_major }}.dylib
+          - if: win
+            then: if not exist %LIBRARY_BIN%/libcblas.dll exit 1
+  - package:
+      name: liblapack
+    files:
+      - if: linux
+        then: lib/liblapack.so
+      - if: osx
+        then: lib/liblapack.dylib
+      - if: linux
+        then: lib/liblapack.so.${{ version_major }}
+      - if: osx
+        then: lib/liblapack.${{ version_major }}.dylib
+      - if: win
+        then: Library/bin/liblapack.dll
+    build:
+      string: ${{ build_num }}_h${{ PKG_HASH }}_${{ blas_impl }}
+      skip: blas_impl == 'blis'
+      track_features:
+        - if: blas_impl != blas_default_impl
+          then: blas_${{ blas_impl }}
+      script:
+        file: ${{ 'build_pkg.sh' if unix else 'build_pkg.bat' if win else '' }}
+    requirements:
+      host:
+        - ${{ pin_subpackage("libblas", exact=True) }}
+        - if: (blas_impl or '').startswith('nvpl')
+          then: _nvpl_dev_mutex ${{ nvpl_version }}
+        - if: (blas_impl or '').startswith('nvpl')
+          then: libnvpl-lapack-dev
+        - if: (blas_impl or '').startswith('nvpl')
+          then: libnvpl-lapack0
+      run:
+        - if: (blas_impl or '').startswith('nvpl')
+          then: ${{ pin_compatible("libnvpl-lapack0", upper_bound="x.x.x") }}
+        - ${{ pin_subpackage("libblas", exact=True) }}
+      run_exports:
+        - ${{ pin_subpackage("liblapack", upper_bound="x.x") }}
+      run_constraints:
+        - libcblas   3.11.0   9*_openblas.*
+        - liblapacke 3.11.0   9*_openblas.*
+        - blas 2.build_num + (version_minor|int - 8) * 100   openblas.*
+    tests:
+      - script:
+          - if: linux
+            then: test -f $PREFIX/lib/liblapack.so.${{ version_major }}
+          - if: osx
+            then: test -f $PREFIX/lib/liblapack.${{ version_major }}.dylib
+          - if: win
+            then: if not exist %LIBRARY_BIN%/liblapack.dll exit 1
+  - package:
+      name: liblapacke
+    files:
+      - if: linux
+        then: lib/liblapacke.so
+      - if: osx
+        then: lib/liblapacke.dylib
+      - if: linux
+        then: lib/liblapacke.so.${{ version_major }}
+      - if: osx
+        then: lib/liblapacke.${{ version_major }}.dylib
+      - if: win
+        then: Library/bin/liblapacke.dll
+    build:
+      string: ${{ build_num }}_h${{ PKG_HASH }}_${{ blas_impl }}
+      skip: blas_impl == 'blis'
+      track_features:
+        - if: blas_impl != blas_default_impl
+          then: blas_${{ blas_impl }}
+      script:
+        file: ${{ 'build_pkg.sh' if unix else 'build_pkg.bat' if win else '' }}
+    requirements:
+      host:
+        - ${{ pin_subpackage("libblas", exact=True) }}
+        - ${{ pin_subpackage("libcblas", exact=True) }}
+        - ${{ pin_subpackage("liblapack", exact=True) }}
+      run:
+        - ${{ pin_subpackage("libblas", exact=True) }}
+        - ${{ pin_subpackage("libcblas", exact=True) }}
+        - ${{ pin_subpackage("liblapack", exact=True) }}
+      run_exports:
+        - ${{ pin_subpackage("liblapacke", upper_bound="x.x") }}
+      run_constraints:
+        - blas 2.build_num + (version_minor|int - 8) * 100   openblas.*
+    tests:
+      - script:
+          - if: linux
+            then: test -f $PREFIX/lib/liblapacke.so.${{ version_major }}
+          - if: osx
+            then: test -f $PREFIX/lib/liblapacke.${{ version_major }}.dylib
+          - if: win
+            then: if not exist %LIBRARY_BIN%/liblapacke.dll exit 1
+    # uses lapack {{ version }}, not {{ blas_major }}
+    package:
+      name: blas-devel
+    build:
+      string: ${{ build_num }}_h${{ PKG_HASH }}_${{ blas_impl }}
+      script:
+        file: ${{ 'install_blas_devel.sh' if unix else '' }}
+    requirements:
+      host:
+        - if: blas_impl == "blis" or blas_impl == "blis"
+          then: blis      2.0.*
+        - if: blas_impl == "mkl" or blas_impl == "mkl"
+          then: mkl-devel 2026.1.*
+        - if: blas_impl == "openblas" or blas_impl == "openblas"
+          then: openblas  0.3.34.*
+        - if: (blas_impl or '').startswith('nvpl')
+          then: _nvpl_dev_mutex ${{ nvpl_version }}
+        - if: (blas_impl or '').startswith('nvpl')
+          then: libnvpl-lapack-dev
+        - if: (blas_impl or '').startswith('nvpl')
+          then: libnvpl-blas-dev
+      run:
+        - if: blas_impl == "blis" or blas_impl == "blis"
+          then: blis      2.0.*
+        - if: blas_impl == "mkl" or blas_impl == "mkl"
+          then: mkl-devel 2026.1.*
+        - if: blas_impl == "openblas" or blas_impl == "openblas"
+          then: openblas  0.3.34.*
+        - if: (blas_impl or '').startswith('nvpl')
+          then: _nvpl_dev_mutex ${{ nvpl_version }}
+        - if: (blas_impl or '').startswith('nvpl')
+          then: libnvpl-lapack-dev
+        - if: (blas_impl or '').startswith('nvpl')
+          then: libnvpl-blas-dev
+        - ${{ pin_subpackage("libblas", exact=True) }}
+        - ${{ pin_subpackage("libcblas", exact=True) }}
+        - if: blas_impl != 'blis'
+          then: ${{ pin_subpackage("liblapack", exact=True) }}
+        - if: blas_impl != 'blis'
+          then: ${{ pin_subpackage("liblapacke", exact=True) }}
+        # netlib variants don't have the same build number
+        - if: blas_impl == 'blis' or blas_impl == 'blis'
+          then: liblapack  3.11.0   *_netlib.*
+        - if: blas_impl == 'blis' or blas_impl == 'blis'
+          then: liblapacke 3.11.0   *_netlib.*
+    tests:
+      - script:
+          - if: unix and blas_impl == "openblas"
+            then: test -f $PREFIX/lib/pkgconfig/blas.pc
+          - if: (blas_impl or '').startswith('nvpl')
+            then: test -f $PREFIX/lib/cmake/nvpl_blas/nvpl_blas-config.cmake
+          - if: (blas_impl or '').startswith('nvpl')
+            then: test -f $PREFIX/lib/cmake/nvpl_lapack/nvpl_lapack-config-version.cmake
+          - if: linux
+            then: test -f $PREFIX/lib/liblapack.so
+          - if: osx
+            then: test -f $PREFIX/lib/liblapack.dylib
+          - if: linux
+            then: test -f $PREFIX/lib/liblapacke.so
+          - if: linux
+            then: test -f $PREFIX/lib/liblapacke.so.${{ version_major }}
+          - if: osx
+            then: test -f $PREFIX/lib/liblapacke.dylib
+          - if: osx
+            then: test -f $PREFIX/lib/liblapacke.${{ version_major }}.dylib
+          - if: win
+            then: if not exist %LIBRARY_BIN%/liblapack.dll exit 1
+          - if: win
+            then: if not exist %LIBRARY_BIN%/liblapacke.dll exit 1
+  # For compatiblity
+  - package:
+      name: blas
+      version: ${{ blas_major }}.${{ blas_minor }}
+    build:
+      string: ${{ blas_impl }}
+      activate_in_script: true
+      script:
+        file: ${{ 'test_blas.sh' if unix else 'test_blas.bat' if win else '' }}
+    requirements:
+      build:
+        - ${{ stdlib("c") }}
+        - ${{ compiler("c") }}
+        - ${{ compiler("fortran") }}
+        - cmake <4
+        - if: win
+          then: ninja
+        # we end up calling a python script, see
+        # https://github.com/Reference-LAPACK/lapack/blame/master/lapack_testing.py
+        - python *
+        - if: linux and ((blas_impl == "openblas") or (blas_impl == "mkl"))
+          then: llvm-openmp
+      host:
+        - blas-devel 3.11.0   9*_openblas.*
+      run:
+        - blas-devel 3.11.0   9*_openblas.*
+      ignore_run_exports:
+        from_package:
+          - ${{ stdlib("c") }}
+          - ${{ compiler("c") }}
+          - ${{ compiler("fortran") }}
+          - llvm-openmp
+    tests:
+      - python:
+          imports:
+            - numpy
+          pip_check: false
+      - requirements:
+          run:
+            - numpy
+        script:
+          - if: linux
+            then: test -f $PREFIX/lib/liblapacke.so
+          - if: linux
+            then: test -f $PREFIX/lib/liblapacke.so.${{ version_major }}
+          - if: osx
+            then: test -f $PREFIX/lib/liblapacke.dylib
+          - if: osx
+            then: test -f $PREFIX/lib/liblapacke.${{ version_major }}.dylib
+          - if: win
+            then: if not exist %LIBRARY_BIN%/liblapacke.dll exit 1
+
+about:
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE.txt
+  summary: Metapackage to select the BLAS variant. Use conda's pinning mechanism in your environment to control which variant you want.
+  homepage: https://github.com/conda-forge/blas-feedstock
+
+extra:
+  recipe-maintainers:
+    - jakirkham
+    - pelson
+    - isuruf
+    - ocefpaf
+    - h-vetinari
+  feedstock-name: blas

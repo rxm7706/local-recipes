@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: django-filebrowser
+  version: 5.0.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 0da016aeea8be0e51050aae9467e81ca4508f803bc1e97bc0c5df78ed04196bc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }},<4.0
+    - django-grappelli >=4.0,<4.1
+    - pillow
+    - django
+tests:
+  - python:
+      imports:
+        - filebrowser
+      python_version: ${{ python_min }}.*
+      pip_check: true
+
+about:
+  summary: Media-Management with Grappelli
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: http://django-filebrowser.readthedocs.org
+
+extra:
+  recipe-maintainers:
+    - rxm7706

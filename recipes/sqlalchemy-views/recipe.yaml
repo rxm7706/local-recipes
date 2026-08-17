@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: sqlalchemy-views
+  version: "0.3.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: c396416939bc4459c71f15c0279b72c9eb1f92fe022afe7fa74ed3adeef76e3b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+  run:
+    - python >=3.7
+    - sqlalchemy >=1.0.0
+
+tests:
+  - python:
+      imports:
+        - sqlalchemy_views
+      pip_check: true
+
+about:
+  summary: Adds CreateView and DropView constructs to SQLAlchemy.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/jklukas/sqlalchemy-views
+
+extra:
+  recipe-maintainers:
+    - cpcloud

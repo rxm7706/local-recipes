@@ -2,40 +2,41 @@
 schema_version: 1
 
 context:
+  name: natural-keys
   version: "2.1.1"
 
 package:
-  name: natural-keys
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/n/natural-keys/natural-keys-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/natural-keys-${{ version }}.tar.gz
   sha256: 67dbfdfd975fe19256c7385aae56b6c7d65d9f595523d1c75703ef91e292da16
 
 build:
-  number: 0
+  number: 1
   noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}.*
-    - pip
+    - python ${{ python_min }}
     - setuptools
     - setuptools-scm
+    - pip
   run:
     - python >=${{ python_min }}
     - django >=3.2,<5.0
     - html-json-forms >=1.0.0
 
-# CFEP-25-justified: Django app — `import natural_keys` raises
-# ImproperlyConfigured without DJANGO_SETTINGS_MODULE / settings.configure().
 tests:
-  - package_contents:
-      site_packages:
-        - natural_keys
-  - python:
-      pip_check: true
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - python -c "import django; from django.conf import settings; settings.configure(); django.setup(); import natural_keys"
+      - pip check
 
 about:
   summary: Enhanced support for natural keys in Django and Django REST Framework.
@@ -43,7 +44,6 @@ about:
   license_file: LICENSE
   homepage: https://github.com/wq/django-natural-keys
   repository: https://github.com/wq/django-natural-keys
-  documentation: https://wq.io/
 
 extra:
   recipe-maintainers:

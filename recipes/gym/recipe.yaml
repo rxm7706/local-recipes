@@ -1,0 +1,189 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# Need these up here for conda-smithy to handle them properly.
+schema_version: 1
+
+context:
+  version: "0.22.0"
+
+recipe:
+  name: gym
+  version: ${{ version }}
+
+source:
+  url: https://github.com/openai/gym/archive/refs/tags/${{ version }}.tar.gz
+  sha256: acff3d469aca4489d67dd2b81797b23a851a076871a623f63ce321cf4dca6141
+
+build:
+  number: 0
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: numpy
+  host:
+    - python
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python
+
+outputs:
+  - package:
+      name: gym
+    build:
+      script: ${{ PYTHON }} -m pip install . -vv --no-deps
+    requirements:
+      host:
+        - python
+        - pip
+        - cloudpickle >=1.2.0
+        - numpy
+      run:
+        - python
+        - cloudpickle >=1.2.0
+        - gym-notices
+        - numpy
+        - if: match(python, "<=3.9")
+          then: importlib_metadata >=4.8.1
+    tests:
+      - python:
+          imports:
+            - gym
+          pip_check: false
+  - package:
+      name: gym-all
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        # see below
+        # - {{ pin_subpackage('gym-atari', exact=True) }}
+        - ${{ pin_subpackage('gym-box2d', exact=True) }}
+        - ${{ pin_subpackage('gym-classic_control', exact=True) }}
+        # exclude because mujoco has incompatible license, see below
+        # - {{ pin_subpackage('gym-mujoco', exact=True) }}
+        - ${{ pin_subpackage('gym-toy_text', exact=True) }}
+        - ${{ pin_subpackage('gym-other', exact=True) }}
+    tests:
+      - requirements:
+          run:
+            - pip
+        script:
+          - pip check
+  # TODO: run test suite
+  - package:
+      name: gym-atari
+    build:
+      # FIXME: causes import errors for gym.envs.atari
+      skip: true
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - ${{ pin_subpackage('gym', exact=True) }}
+        - ale-py >=0.7.4
+    tests:
+      - python:
+          imports:
+            - gym.envs.atari
+          pip_check: false
+  - package:
+      name: gym-box2d
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - ${{ pin_subpackage('gym', exact=True) }}
+        - box2d-py ==2.3.*
+        - pygame ==2.1.*
+    tests:
+      - python:
+          imports:
+            - gym.envs.box2d
+          pip_check: false
+  - package:
+      name: gym-classic_control
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - ${{ pin_subpackage('gym', exact=True) }}
+        - pygame ==2.1.*
+    tests:
+      - python:
+          imports:
+            - gym.envs.classic_control
+          pip_check: false
+  - package:
+      name: gym-mujoco
+    build:
+      # mujoco-py cannot be packaged for license reasons, see
+      # https://github.com/openai/mujoco-py#install-mujoco
+      skip: true
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - ${{ pin_subpackage('gym', exact=True) }}
+        # conda-forge builds for mujoco-python start only from 2.2.0
+        - mujoco-python
+        - imageio
+    tests:
+      - python:
+          imports:
+            - gym.envs.mujoco
+          pip_check: false
+  - package:
+      name: gym-toy_text
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - ${{ pin_subpackage('gym', exact=True) }}
+        - pygame ==2.1.*
+        - scipy >=1.4.1
+    tests:
+      - python:
+          imports:
+            - gym.envs.toy_text
+          pip_check: false
+  - package:
+      name: gym-other
+    requirements:
+      host:
+        - python
+      run:
+        - python
+        - ${{ pin_subpackage('gym', exact=True) }}
+        - lz4 >=3.1.0
+        - opencv >=3.0
+    tests:
+      - python:
+          imports: {}
+          pip_check: false
+
+about:
+  license: MIT
+  license_file: LICENSE.md
+  summary: "The OpenAI Gym: A toolkit for developing and comparing your reinforcement learning agents."
+  description: "The OpenAI Gym: A toolkit for developing and comparing your reinforcement learning agents."
+  homepage: https://github.com/openai/gym
+  repository: https://github.com/openai/gym
+  documentation: https://gym.openai.com/docs/
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - h-vetinari
+    - dsangillo

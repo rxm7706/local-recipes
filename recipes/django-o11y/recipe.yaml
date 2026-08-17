@@ -2,16 +2,17 @@
 schema_version: 1
 
 context:
-  version: "0.8.0"
+  name: django-o11y
+  version: "0.9.0"
   python_min: "3.12"
 
 package:
-  name: django-o11y
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/django-o11y/django_o11y-${{ version }}.tar.gz
-  sha256: 92e0389023022e55f2bce7a76b2d1a3ce5ba2074c7eb4bc7ae35d971c3174dfe
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/django_o11y-${{ version }}.tar.gz
+  sha256: 3bd99c5a009d4bf82ea9b584b2ee30c9313b866ebcfef1ea38a9fb103ab4ae88
 
 build:
   number: 0
@@ -22,9 +23,11 @@ requirements:
   host:
     - python ${{ python_min }}.*
     - hatchling
+    - prometheus_client
+    - celery
     - pip
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0
     - django >=5.2
     - opentelemetry-api >=1.39.1
     - opentelemetry-sdk >=1.39.1
@@ -37,20 +40,19 @@ requirements:
     - prometheus_client >=0.24.1
 
 tests:
-  # CFEP-25-justified: Django app backend — `import django_o11y` raises
-  # ImproperlyConfigured without DJANGO_SETTINGS_MODULE configured; the test
-  # env cannot exercise python.imports standalone.
-  - package_contents:
-      site_packages:
+  - python:
+      imports:
         - django_o11y
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
 
 about:
+  summary: Comprehensive OpenTelemetry observability for Django with traces, logs, metrics, and profiling
   license: Apache-2.0
   license_file: LICENSE
   homepage: https://github.com/adinhodovic/django-o11y
-  summary: Comprehensive OpenTelemetry observability for Django with traces, logs, metrics, and profiling
-  description: |
-    Comprehensive OpenTelemetry observability for Django with traces, logs, metrics, and profiling
 
 extra:
   recipe-maintainers:

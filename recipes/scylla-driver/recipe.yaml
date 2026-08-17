@@ -1,0 +1,55 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: scylla-driver
+  version: "3.29.11"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: a8f644d73713be556e99d6355cd2de41503ee50bff990865d71887e1f9f18b46
+
+build:
+  number: 0
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - if: build_platform != target_platform
+      then: cython
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - cython
+    - pip
+    - setuptools
+  run:
+    - python
+    - geomet >=1.1
+    - pyyaml >5.0
+
+tests:
+  - python:
+      imports:
+        - cassandra
+      pip_check: true
+
+about:
+  summary: Scylla Driver for Apache Cassandra
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: https://github.com/scylladb/python-driver
+  repository: https://github.com/scylladb/python-driver/
+
+extra:
+  recipe-maintainers:
+    - cclinet

@@ -1,0 +1,177 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+# see https://github.com/explosion/spacy-models/blob/master/compatibility.json
+# but the pattern _generally_ seems to be x.x
+schema_version: 1
+
+context:
+  prefix: spacy-model-
+  name: en_core_web_
+  version: "3.3.0"
+  build_number: 0
+  spacy_version: {{ ".".join(version | split(".")[:2] + ['*']) }}
+
+recipe:
+  name: ${{ prefix }}${{ name[:-1] }}
+  version: ${{ version }}
+
+source:
+  - url: https://github.com/explosion/spacy-models/releases/download/${{ name }}sm-${{ version }}/${{ name }}sm-${{ version }}.tar.gz
+    sha256: 348aa7a0afc04ef52b2f63a9de29a9bcc4463260f023b2814ff506214d9476ae
+    target_directory: sm
+  - url: https://github.com/explosion/spacy-models/releases/download/${{ name }}md-${{ version }}/${{ name }}md-${{ version }}.tar.gz
+    sha256: b4599087ee8810a2f3c65f55f25962bbc95bd87e691d19fc3a8ee731e946d8aa
+    target_directory: md
+  - url: https://github.com/explosion/spacy-models/releases/download/${{ name }}lg-${{ version }}/${{ name }}lg-${{ version }}.tar.gz
+    sha256: 432ae42b4c26fab11574b48a8d47ef543a2b48fdf0a990bf8f6a61dc454c2d48
+    target_directory: lg
+  - url: https://github.com/explosion/spacy-models/releases/download/${{ name }}trf-${{ version }}/${{ name }}trf-${{ version }}.tar.gz
+    sha256: bc6195dd3a01efdbabca3c93f0eb4701ad9e78c05528d6fcdc2fe9df848bd3e1
+    target_directory: trf
+  - url: https://raw.githubusercontent.com/explosion/spaCy/master/LICENSE
+    sha256: c07800e058b1b544eb9d47dd81687582fe6830c1ddc47f57521fc93628685915
+
+build:
+  number: ${{ build_number }}
+  noarch: python
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - setuptools
+    - python >=3.6
+
+outputs:
+  - package:
+      name: ${{ prefix }}${{ name }}sm
+    files:
+      - sm
+      - LICENSE
+    build:
+      number: ${{ build_number }}
+      noarch: python
+      script: cd sm && ${{ PYTHON }} -m pip install . --no-deps -vv
+    requirements:
+      host:
+        - python >=3.6
+        - pip
+      run:
+        - python >=3.6
+        - setuptools
+        - spacy ==${{ spacy_version }}
+    tests:
+      - python:
+          imports:
+            - ${{ name }}sm
+          pip_check: false
+      - requirements:
+          run:
+            - spacy
+        script:
+          - python -c "__import__('${{ name }}sm').load()"
+          - python -c "__import__('spacy').load('${{ name }}sm')"
+  - package:
+      name: ${{ prefix }}${{ name }}md
+    files:
+      - md
+      - LICENSE
+    build:
+      number: ${{ build_number }}
+      noarch: python
+      script: cd md && ${{ PYTHON }} -m pip install . --no-deps -vv
+    requirements:
+      host:
+        - python >=3.6
+        - pip
+      run:
+        - python >=3.6
+        - setuptools
+        - spacy ==${{ spacy_version }}
+    tests:
+      - python:
+          imports:
+            - ${{ name }}md
+          pip_check: false
+      - requirements:
+          run:
+            - spacy
+        script:
+          - python -c "__import__('${{ name }}md').load()"
+          - python -c "__import__('spacy').load('${{ name }}md')"
+  - package:
+      name: ${{ prefix }}${{ name }}lg
+    files:
+      - lg
+      - LICENSE
+    build:
+      number: ${{ build_number }}
+      noarch: python
+      script: cd lg && ${{ PYTHON }} -m pip install . --no-deps -vv
+    requirements:
+      host:
+        - python >=3.6
+        - pip
+      run:
+        - python >=3.6
+        - setuptools
+        - spacy ==${{ spacy_version }}
+    tests:
+      - python:
+          imports:
+            - ${{ name }}lg
+          pip_check: false
+      - requirements:
+          run:
+            - spacy
+        script:
+          - python -c "__import__('${{ name }}lg').load()"
+          - python -c "__import__('spacy').load('${{ name }}lg')"
+  - package:
+      name: ${{ prefix }}${{ name }}trf
+    files:
+      - trf
+      - LICENSE
+    build:
+      number: ${{ build_number }}
+      noarch: python
+      script: cd trf && ${{ PYTHON }} -m pip install . --no-deps -vv
+    requirements:
+      host:
+        - python >=3.6
+        - pip
+      run:
+        - python >=3.6
+        - setuptools
+        - spacy ==${{ spacy_version }}
+        - spacy-alignments
+        - spacy-transformers
+    tests:
+      - python:
+          imports:
+            - ${{ name }}trf
+          pip_check: false
+      - requirements:
+          run:
+            - spacy
+        script:
+          - python -c "__import__('${{ name }}trf').load()"
+          - python -c "__import__('spacy').load('${{ name }}trf')"
+
+tests:
+  - script:
+      - echo "make lint happy"
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: English multi-task CNN trained on OntoNotes, with GloVe vectors trained on Common Crawl.
+  homepage: https://spacy.io
+  repository: https://github.com/explosion/spacy-models
+  documentation: https://spacy.io/models/en
+
+extra:
+  recipe-maintainers:
+    - sodre
+    - bollwyvl
+    - setu4993

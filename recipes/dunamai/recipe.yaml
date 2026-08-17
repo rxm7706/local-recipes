@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: dunamai
+  version: "1.26.1"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 3b46007bd65b00b4824ead0a1aee365fd22d0ec2b9c219497d4fd48f52860c8b
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - dunamai = dunamai.__main__:main
+
+requirements:
+  host:
+    - pip
+    - poetry-core >=1.0.0
+    - python ${{ python_min }}
+  run:
+    - importlib-metadata >=1.6.0
+    - packaging >=20.9
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - dunamai
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - dunamai --help
+
+about:
+  summary: Dynamic version generation
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/mtkennerly/dunamai
+
+extra:
+  recipe-maintainers:
+    - dhirschfeld
+    - BastianZim

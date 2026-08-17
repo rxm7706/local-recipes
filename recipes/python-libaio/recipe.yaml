@@ -1,0 +1,56 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.9.5"
+
+package:
+  name: python-libaio
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/l/libaio/libaio-${{ version }}.tar.gz
+  sha256: 5f674b21a63389308eaf76f5fa2227cadc63d739295dc75d295cfc55c521228a
+
+build:
+  # the python package is noarch, but requires an a linux only package.
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - libaio
+
+tests:
+  - python:
+      imports:
+        - libaio
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - python -m libaio.test -vv
+
+about:
+  license: LGPL-3.0-or-later
+  license_file: COPYING.LESSER
+  summary: Python wrapper for libaio
+  description: |
+    Linux AIO API wrapper
+
+    This is about in-kernel, file-descriptor-based asynchronous I/O. It has
+    nothing to do with the asyncio standard module.
+
+
+  homepage: https://github.com/vpelletier/python-libaio
+
+extra:
+  recipe-maintainers:
+    - hmaarrfk

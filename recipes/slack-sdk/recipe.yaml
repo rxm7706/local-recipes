@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: slack-sdk
+  version: "3.43.0"
+
+recipe:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/slack_sdk-${{ version }}.tar.gz
+  sha256: 0553152e46c4259eb69f7464cdadc35ba4802ca10f9f5a849c92cf03d6c2ba07
+
+build:
+  number: 0
+
+outputs:
+  - package:
+      name: ${{ name }}
+    build:
+      noarch: python
+      script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+    requirements:
+      host:
+        - pip
+        - python ${{ python_min }}.*
+        - setuptools
+      run:
+        - python >=${{ python_min }}
+    tests:
+      - python:
+          imports:
+            - slack_sdk
+            - slack_sdk.web
+            - slack_sdk.webhook
+            - slack_sdk.signature
+            - slack_sdk.socket_mode
+            - slack_sdk.audit_logs
+            - slack_sdk.scim
+            - slack_sdk.oauth
+            - slack_sdk.models
+          pip_check: true
+          python_version: ${{ python_min }}.*
+      - requirements:
+          run:
+            - python ${{ python_min }}.*
+            - aiohttp
+        script:
+          - python -c "import slack_sdk.rtm, slack_sdk.rtm_v2"
+  - package:
+      name: slack_sdk
+    build:
+      noarch: python
+    requirements:
+      host:
+        - python ${{ python_min }}.*
+      run:
+        - python >=${{ python_min }}
+        - ${{ pin_subpackage(name, exact=True) }}
+    tests:
+      - python:
+          imports:
+            - slack_sdk
+          python_version: ${{ python_min }}.*
+
+about:
+  homepage: https://github.com/slackapi/python-slack-sdk
+  summary: The Slack API Platform SDK for Python
+  license: MIT
+  license_file: LICENSE
+  repository: https://github.com/slackapi/python-slack-sdk
+  documentation: https://github.com/slackapi/python-slack-sdk
+
+extra:
+  recipe-maintainers:
+    - xylar
+    - maresb

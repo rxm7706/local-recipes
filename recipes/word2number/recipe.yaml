@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1"
+
+package:
+  name: word2number
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/w/word2number/word2number-${{ version }}.zip
+  sha256: 70e27a5d387f67b04c71fbb7621c05930b19bfd26efd6851e6e0f9969dcde7d0
+
+build:
+  number: 1
+  noarch: python
+  script:
+    - ${{ PYTHON }} -m pip install . --no-deps -vv --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - word2number
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: Convert number words eg. three hundred and forty two to numbers (342).
+  description: |
+    This is a Python module to convert number words (eg. twenty one) to numeric
+    digits (21). It works for positive numbers upto the range of 999,999,999,999
+    (i.e. billions)
+  homepage: https://github.com/akshaynagpal/w2n
+  documentation: https://w2n.readthedocs.io
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

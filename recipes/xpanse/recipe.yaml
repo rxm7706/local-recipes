@@ -1,0 +1,82 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.1.0"
+
+package:
+  name: xpanse
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/x/xpanse/xpanse-${{ version }}.tar.gz
+  sha256: 18915f075dfab1d8d976dbadbfadb27b5c07c5ba56ee62418674a744ff44dd2d
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - requests >=2.25.1
+    - deprecated >=1.2.0
+    - typing_extensions >=4.5.0
+
+tests:
+  - python:
+      imports:
+        - xpanse
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://pypi.org/project/xpanse/
+  license: ISC
+  license_file: LICENSE
+  summary: Python library is an interface to the Cortex Xpanse API.
+  description: |
+    Python library is an interface to the Cortex Xpanse API.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: xpanse
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: xpanse
+  cfe-purls:
+    - pkg:conda/xpanse@${{ version }}?channel=conda-forge
+    - pkg:pypi/xpanse@${{ version }}
+  cfe-upstream-repo: https://pypi.org/project/xpanse/
+  cfe-upstream-homepage: https://pypi.org/project/xpanse/
+  cfe-import-names: [xpanse]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:55:40Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:55:40Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.5.1"
+
+package:
+  name: pytinytex
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/pytinytex/pytinytex-${{ version }}.tar.gz
+  sha256: 206d2adcbe58262ee501399c7aed30b684473b03dcb71fc248271d1801138525
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - pytinytex = pytinytex.cli:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - hatchling
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - pytinytex
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - pytinytex --help
+
+about:
+  summary: Thin wrapper for TinyTeX.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/JessicaTegner/PyTinyTeX
+  repository: https://github.com/JessicaTegner/PyTinyTeX
+  documentation: https://github.com/JessicaTegner/PyTinyTeX#readme
+
+extra:
+  recipe-maintainers:
+    - JessicaTegner

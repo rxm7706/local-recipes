@@ -1,0 +1,63 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.6.0"
+  python_check_max: "3.14"
+
+package:
+  name: pathable
+  version: ${{ version }}
+
+source:
+  - url: https://pypi.org/packages/source/p/pathable/pathable-${{ version }}.tar.gz
+    sha256: 6404b8b82aef5ff0fd478934137128b99b12212ba35afdde5525ca4f8388ea58
+    target_directory: dist
+  - url: https://github.com/p1c2u/pathable/archive/refs/tags/${{ version }}.tar.gz
+    sha256: ee92e59b251ab95f23e2a7f9813c933e6a78c546f00b65b984528dcecbd15b3e
+    target_directory: src
+
+build:
+  number: 0
+  noarch: python
+  script:
+    - cd dist
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+
+requirements:
+  host:
+    - pip
+    - poetry-core >=1.0.0
+    - python ${{ python_min }}.*
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports: pathable
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - ${{ python_check_max }}.*
+  - files:
+      source:
+        - src/tests/
+    requirements:
+      run:
+        - pytest-cov
+        - python ${{ python_min }}.*
+    script:
+      - cd src
+      - coverage run --source=pathable --branch -m pytest -vv --tb=long --color=yes
+      - coverage report --show-missing --skip-covered --fail-under=83
+
+about:
+  summary: Object-oriented paths
+  license: Apache-2.0
+  license_file: dist/LICENSE
+  homepage: https://pypi.org/project/pathable
+  repository: https://github.com/p1c2u/pathable
+
+extra:
+  recipe-maintainers:
+    - bollwyvl

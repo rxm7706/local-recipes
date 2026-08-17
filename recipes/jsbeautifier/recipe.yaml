@@ -1,0 +1,61 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: jsbeautifier
+  version: "2.0.3"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/jsbeautifier-${{ version }}.tar.gz
+  sha256: 9579d4e9dbaa00383f3efdff4c98c8140bb85ba319398e8b97cdaba27abd6ba3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation --disable-pip-version-check
+  python:
+    entry_points:
+      - js-beautify = jsbeautifier:main
+
+requirements:
+  host:
+    - pip
+    - pytest
+    - python ${{ python_min }}.*
+    - setuptools
+  run:
+    - editorconfig >=0.12.2
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - jsbeautifier
+        - jsbeautifier.cli
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}.*
+    script:
+      - js-beautify --help
+
+about:
+  summary: JavaScript unobfuscator and beautifier.
+  license: MIT
+  # The PyPI sdist/wheel ships no license file, so recipe/LICENSE is a recipe-local
+  # copy. Upstream license: https://github.com/beautifier/js-beautify/blob/main/LICENSE
+  license_file: LICENSE
+  homepage: https://beautifier.io
+  repository: https://github.com/beautifier/js-beautify
+
+extra:
+  recipe-maintainers:
+    - mitchellwood
+    - fhoehle
+    - whophil

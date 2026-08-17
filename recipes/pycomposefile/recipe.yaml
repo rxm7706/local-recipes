@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pycomposefile
+  version: "0.0.34"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/pycomposefile-${{ version }}.tar.gz
+  sha256: 933a93b439f8692882b4d50ff744e12a3d996040068e96651a37dd842126a508
+
+build:
+  number: 0
+  noarch: python
+  script: BUILD_TAG="${{ version }}" ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - setuptools
+    - python ${{ python_min }}.*
+    - pip
+    - flit
+  run:
+    - python >=${{ python_min }}
+    - pyyaml
+
+tests:
+  - python:
+      imports:
+        - pycomposefile
+      pip_check: true
+      python_version: ${{ python_min }}.*
+  # Version metadata in package is currently incorrect.
+  # Ref.: https://github.com/smurawski/pycomposefile/issues/29
+  - script:
+      interpreter: python
+      content: |
+        from importlib.metadata import version
+        assert version("${{ name }}") == "${{ version }}"
+
+about:
+  summary: Structured deserialization of Docker Compose files.
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/smurawski/pycomposefile
+
+extra:
+  recipe-maintainers:
+    - janjagusch

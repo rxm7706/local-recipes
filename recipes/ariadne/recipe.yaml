@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: ariadne
+  version: "1.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/ariadne-${{ version }}.tar.gz
+  sha256: 847b5b399e56e4781f851b4ee3f3fd443d6c379e64a4828a792e8264b597c9e4
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - hatchling
+    - pip
+    - python ${{ python_min }}.*
+  run:
+    - python >=${{ python_min }}
+    - graphql-core >=3.2.0
+    - starlette >0.17,<2.0
+    - typing_extensions >=4.6.0
+
+tests:
+  - python:
+      imports:
+        - ariadne
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  summary: Ariadne is a Python library for implementing GraphQL servers.
+  license: BSD-3-Clause
+  license_file:
+    - LICENSE
+  homepage: https://ariadnegraphql.org/
+  repository: https://github.com/mirumee/ariadne
+  documentation: https://ariadnegraphql.org/docs/intro
+
+extra:
+  recipe-maintainers:
+    - thewchan

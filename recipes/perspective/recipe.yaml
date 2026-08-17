@@ -1,6 +1,7 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
 context:
   name: perspective
-  version: "4.5.2"
+  version: "5.1.0"
   python_min: "3.11"
 
 package:
@@ -9,13 +10,13 @@ package:
 
 source:
   url: https://github.com/finos/perspective/releases/download/v${{ version }}/perspective_python-${{ version }}.tar.gz
-  sha256: d209cff1bc746f44fd811a80e039d1a79d30841f3f6c20c73e648e633f82dca8
+  sha256: d0bbeb206649c1f70b08cd60ddc5f054bbe6a5d1beddef0b3615b8786c930543
 
 build:
   number: 0
   python:
     version_independent: true
-  skip: is_abi3 and not is_python_min or win
+  skip: is_abi3 and not is_python_min
 
 requirements:
   build:

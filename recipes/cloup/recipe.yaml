@@ -1,0 +1,49 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: cloup
+  version: "3.1.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/cloup-${{ version }}.tar.gz
+  sha256: 637c1e628fe98f3f20a5e44da591a72b42bf54d7d4527190bf39ed5f64af7585
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+    - setuptools-scm
+  run:
+    - typing_extensions
+    - python >=${{ python_min }}
+    - click >=8.1.0,<9.0
+    - typing-extensions
+
+tests:
+  - python:
+      imports:
+        - cloup
+        - cloup.constraints
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Option groups and subcommand help sections for pallets/click
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/janLuke/cloup
+
+extra:
+  recipe-maintainers:
+    - ocefpaf

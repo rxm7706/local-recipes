@@ -1,0 +1,59 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: archspec
+  version: "0.2.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/archspec-${{ version }}.tar.gz
+  sha256: 5bec8dfc5366ff299071200466dc9572d56db4e43abca3c66bdd62bc2b731a2a
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - archspec = archspec.cli:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}
+    - poetry
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - archspec
+        - archspec.cpu
+      pip_check: true
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - pip
+        - python ${{ python_min }}
+    script:
+      - archspec --help
+
+about:
+  summary: A library to query system architecture
+  license: MIT OR Apache-2.0
+  license_file:
+    - LICENSE-MIT
+    - LICENSE-APACHE
+  homepage: https://pypi.org/project/archspec/
+  repository: https://github.com/archspec/archspec/
+  documentation: https://archspec.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - anthchirp
+    - isuruf

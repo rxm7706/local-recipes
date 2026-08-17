@@ -1,0 +1,111 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.19.2"
+
+package:
+  name: giskard
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/g/giskard/giskard-${{ version }}.tar.gz
+  sha256: fc9cebbcfee35fd972f8f6ddffde56fe039608ebd0f291e902bded09b982fbf2
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+    - wheel
+  run:
+    - python >=${{ python_min }}
+    - cloudpickle >=1.1.1
+    - zstandard >=0.10.0
+    - mlflow-skinny >=2
+    - numpy <2,>=1.26.0
+    - scikit-learn >=1.0
+    - scipy <1.12.0,>=1.7.3
+    - mixpanel >=4.4.0
+    - requests >=2.19
+    - pydantic <3,>1
+    - pandas >=2.0
+    - python-xxhash >=3.2.0
+    - langdetect >=1.0.9
+    - chardet
+    - jinja2 >=3
+    - requests-toolbelt >=0.9.1
+    - typing_extensions
+    - pyyaml
+    - packaging
+    - markdown
+    - colorama
+    - num2words >=0.5.13
+    - griffe <2.0.0,>=1.0.0
+    - ipython
+    - if: osx
+      then:
+        - tensorflow-macos
+    - if: linux
+      then:
+        - tensorflow-text
+
+tests:
+  - python:
+      imports:
+        - giskard
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://giskard.ai
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: The testing framework dedicated to ML models, from tabular to LLMs
+  description: |
+    The testing framework dedicated to ML models, from tabular to LLMs
+  repository: https://github.com/Giskard-AI/giskard
+  documentation: https://docs.giskard.ai/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: giskard
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: giskard
+  cfe-purls:
+    - pkg:conda/giskard@${{ version }}?channel=conda-forge
+    - pkg:pypi/giskard@${{ version }}
+  cfe-upstream-repo: https://github.com/Giskard-AI/giskard
+  cfe-upstream-homepage: https://giskard.ai
+  cfe-import-names: [giskard]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:35:55Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:35:55Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

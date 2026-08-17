@@ -1,0 +1,69 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyobjc-framework-CoreServices
+  version: "12.2.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://files.pythonhosted.org/packages/source/${{ name[0] }}/${{ name }}/pyobjc_framework_coreservices-${{ version }}.tar.gz
+  sha256: f753005f2aa70a7f6cb00e10e5d55bf536d0a2227203777e7940c3d6db7a1c60
+
+build:
+  number: 0
+  skip: not osx or match(python, ">=2,<3") or python_impl == 'pypy' or (arm64 and match(python, "<3.9"))
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+    - pyobjc-core 12.2.2.*
+    - pyobjc-framework-fsevents 12.2.2.*
+
+tests:
+  - python:
+      imports:
+        - CoreServices
+        - CoreServices.CarbonCore
+        - CoreServices.DictionaryServices
+        - CoreServices.LaunchServices
+        - CoreServices.Metadata
+        - CoreServices.SearchKit
+      pip_check: true
+
+about:
+  summary: Wrappers for the “CoreServices” framework on macOS.
+  description: |
+    The PyObjC project aims to provide a bridge between the Python and
+    Objective-C programming languages on macOS. The bridge is intended to be
+    fully bidirectional, allowing the Python programmer to take full advantage
+    of the power provided by various Objective-C based toolkits and the
+    Objective-C programmer transparent access to Python based functionality.
+  license: MIT
+  license_file: License.txt
+  homepage: https://github.com/ronaldoussoren/pyobjc
+  repository: https://github.com/ronaldoussoren/pyobjc
+  documentation: https://pyobjc.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - andfoy
+    - ccordoba12
+    - dalthviz
+    - larsoner
+    - steff456

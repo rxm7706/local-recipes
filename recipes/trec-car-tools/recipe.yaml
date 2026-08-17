@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "2.6"
+
+package:
+  name: trec-car-tools
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/t/trec-car-tools/trec-car-tools-${{ version }}.tar.gz
+  sha256: 2fce2de120224fd569b151d5bed358a4ed334e643889b9e3dfe3e5a3d15d21c8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - trec_car
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/TREMA-UNH/trec-car-tools/python3
+  license: MIT
+  license_file: LICENSE
+  summary: Support tools for TREC CAR participants. Also see trec-car.cs.unh.edu
+  description: |
+    Support tools for TREC CAR participants. Also see trec-car.cs.unh.edu
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: trec-car-tools
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: trec-car-tools
+  cfe-purls:
+    - pkg:conda/trec-car-tools@${{ version }}?channel=conda-forge
+    - pkg:pypi/trec-car-tools@${{ version }}
+  cfe-upstream-repo: https://github.com/TREMA-UNH/trec-car-tools/python3
+  cfe-upstream-homepage: https://github.com/TREMA-UNH/trec-car-tools/python3
+  cfe-import-names: [trec_car]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:40:04Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:40:04Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

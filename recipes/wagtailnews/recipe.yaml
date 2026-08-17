@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: wagtailnews
+  version: "5.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/wagtailnews-${{ version }}.tar.gz
+  sha256: 75e5be8743a76eba2d2671e993494d1c36f61258066968acdc595a681607b5fb
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - wagtail >=5.2.0
+
+tests:
+  - python:
+      imports:
+        - wagtailnews
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: News / blog plugin for the Wagtail CMS
+  license: BSD-2-Clause
+  license_file: LICENSE
+  homepage: https://github.com/neon-jungle/wagtailnews/
+
+extra:
+  recipe-maintainers:
+    - rxm7706

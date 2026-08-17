@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyahocorasick
+  version: "2.3.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 2960f5838bbcca4d7765c40478ec56f938e3f161946ff84f00c06d2b3a0ba9dd
+
+build:
+  number: 0
+  script: python -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - python
+    - pip
+    - setuptools
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - ahocorasick
+      pip_check: true
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  summary: Python module (C extension and plain python) implementing Aho-Corasick algorithm.
+  description: |
+    pyahocorasick is a fast and memory efficient library for exact or approximate multi-pattern string
+    search meaning that you can find multiple key strings occurrences at once in some input text.
+    The library provides an ahocorasick Python module that you can use as a plain dict-like Trie or
+    convert a Trie to an automaton for efficient Aho-Corasick search.
+  homepage: https://github.com/WojciechMula/pyahocorasick
+  repository: https://github.com/WojciechMula/pyahocorasick
+  documentation: http://pyahocorasick.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - jonashaag
+    - peterk87

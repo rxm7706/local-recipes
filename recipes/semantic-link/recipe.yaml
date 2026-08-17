@@ -1,0 +1,85 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.14.2"
+
+package:
+  name: semantic-link
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/py3/s/semantic-link/semantic_link-0.14.2-py3-none-any.whl
+  sha256: 214401d177895f6bd99198d8f6a52fb3ad4e0d7cd4aeec5c9597ea3faaf51f4f
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - semantic-link-sempy ==0.14.2
+    - semantic-link-functions-geopandas ==0.14.2
+    - semantic-link-functions-holidays ==0.14.2
+    - semantic-link-functions-meteostat ==0.14.2
+    - semantic-link-functions-phonenumbers ==0.14.2
+    - semantic-link-functions-validators ==0.14.2
+
+tests:
+  - python:
+      imports:
+        - semantic_link
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://learn.microsoft.com/en-us/fabric/data-science/semantic-link-overview
+  license: REPLACE_LICENSE
+  license_file: LICENSE
+  summary: Semantic link for Microsoft Fabric
+  description: |
+    Semantic link for Microsoft Fabric
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: semantic-link
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: semantic-link
+  cfe-purls:
+    - pkg:conda/semantic-link@${{ version }}?channel=conda-forge
+    - pkg:pypi/semantic-link@${{ version }}
+  cfe-upstream-repo: https://learn.microsoft.com/en-us/fabric/data-science/semantic-link-overview
+  cfe-upstream-homepage: https://learn.microsoft.com/en-us/fabric/data-science/semantic-link-overview
+  cfe-import-names: []
+  cfe-source-kind: pypi-wheel
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:06:24Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:06:24Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

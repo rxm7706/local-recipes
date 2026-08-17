@@ -1,0 +1,64 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.25.1"
+
+package:
+  name: redisvl
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/r/redisvl/redisvl-${{ version }}.tar.gz
+  sha256: 5a651d4be1136e6e82d00c8e16ec02711992a5cf95079d9c50e6129bd960621c
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - rvl = redisvl.cli.runner:main
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - numpy >=1.26.0,<3
+    - pyyaml >=5.4,<7.0
+    - redis-py >=5.0,<8.0
+    - pydantic >=2,<3
+    - tenacity >=8.2.2
+    - ml_dtypes >=0.4.0,<1.0.0
+    - python-ulid >=3.0.0
+    - jsonpath-ng >=1.5.0
+
+tests:
+  - python:
+      imports:
+        - redisvl
+        - redisvl.index
+        - redisvl.query
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - 3.*
+  - script:
+      - rvl --help
+    requirements:
+      run:
+        - python ${{ python_min }}.*
+
+about:
+  summary: Python client library and CLI for using Redis as a vector database
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/redis/redis-vl-python
+  documentation: https://docs.redisvl.com
+
+extra:
+  recipe-maintainers:
+    - beenje

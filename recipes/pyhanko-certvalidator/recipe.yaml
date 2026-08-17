@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: pyhanko-certvalidator
+  version: "0.31.4"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: 1d079f2a24d4086d85203ad6df2b8bdbb21a50e16ab361dbed50fc396dd01450
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.10.*
+    - pip
+    - setuptools >=80.8.0
+  run:
+    - python >=${{ python_min }}
+    - asn1crypto >=1.5.1
+    - cryptography >=48.0.0
+    - oscrypto >=1.1.0
+    - requests >=2.31.0
+    - uritools >=3.0.1
+
+tests:
+  - python:
+      imports:
+        - pyhanko_certvalidator
+        - pyhanko_certvalidator.fetchers
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Validates X.509 certificates and paths; forked from wbond/certvalidator
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/MatthiasValvekens/certvalidator
+
+extra:
+  recipe-maintainers:
+    - mrakitin
+    - killua156

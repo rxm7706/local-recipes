@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.1.0"
+
+package:
+  name: py11
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/py11/py11-${{ version }}.tar.gz
+  sha256: 24f579165e06f6c8003400d4b32b34e571cd460f5994d4a9907a70e333fa0ff1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - py11
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: http://cct.lsu.edu/~sbrandt/
+  license: MIT
+  license_file: LICENSE
+  summary: Provide a Python3 interface for Pybind11
+  description: |
+    Provide a Python3 interface for Pybind11
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: py11
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: py11
+  cfe-purls:
+    - pkg:conda/py11@${{ version }}?channel=conda-forge
+    - pkg:pypi/py11@${{ version }}
+  cfe-upstream-repo: http://cct.lsu.edu/~sbrandt/
+  cfe-upstream-homepage: http://cct.lsu.edu/~sbrandt/
+  cfe-import-names: [py11]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:23:19Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:23:19Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

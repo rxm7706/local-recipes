@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-memcached
+  version: "1.62"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/python-memcached-${{ version }}.tar.gz
+  sha256: 0285470599b7f593fbf3bec084daa1f483221e68c1db2cf1d846a9f7c2655103
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - memcache
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license_file: PSF.LICENSE
+  license: PSF-2.0
+  summary: Pure python memcached client
+  homepage: http://www.tummy.com/Community/software/python-memcached/
+  repository: https://github.com/linsomniac/python-memcached
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - ocefpaf

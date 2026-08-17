@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: flake8-bugbear
+  version: "25.11.29"
+  python_min: "3.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: b5d06710f3d26e595541ad303ad4d5cb52578bd4bccbb2c2c0b2c72e243dafc8
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python 3.10.*
+    - pip
+    - setuptools >=61.2
+  run:
+    - python >=${{ python_min }}
+    - flake8 >=7.2.0
+    - attrs >=22.2.0
+
+tests:
+  - requirements:
+      run:
+        - python ${{ python_min }}
+    script:
+      - flake8 --version | grep flake8-bugbear
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: A plugin for Flake8 finding likely bugs and design problems in your program.
+  description: |
+    A plugin for Flake8 finding likely bugs and design problems in your
+    program. Contains warnings that don't belong in pyflakes and pycodestyle.
+  homepage: https://github.com/PyCQA/flake8-bugbear
+  repository: https://github.com/PyCQA/flake8-bugbear
+
+extra:
+  recipe-maintainers:
+    - dopplershift

@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.11.5"
+
+package:
+  name: ggplot
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/g/ggplot/ggplot-${{ version }}.tar.gz
+  sha256: 48bbc9ea5987f815ad25856d76573506dbfe153ff696f026ce324582af56469f
+
+build:
+  number: 5
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  host:
+    - python
+    - pip
+  run:
+    - python
+    - six
+    - statsmodels
+    - brewer2mpl
+    - matplotlib-base
+    - scipy
+    - patsy >=0.4
+    - pandas <=0.22.0
+    - cycler
+    - numpy
+
+tests:
+  - python:
+      imports:
+        - ggplot
+      pip_check: false
+
+about:
+  license_file: ${{ RECIPE_DIR }}/LICENSE
+  license: BSD-2-Clause
+  summary: ggplot for python
+  homepage: https://github.com/yhat/ggplot
+  repository: https://github.com/yhat/ggplot
+  documentation: https://github.com/yhat/ggplot/tree/master/docs
+
+extra:
+  recipe-maintainers:
+    - pmlandwehr
+    - ocefpaf

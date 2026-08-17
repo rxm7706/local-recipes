@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.6"
+
+package:
+  name: stdiomask
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/s/stdiomask/stdiomask-${{ version }}.tar.gz
+  sha256: c1e47069ead9e10bda150a26f7922ca01d2adc503042a9d7acf64877a2b9a3a6
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - stdiomask
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/asweigart/stdiomask
+  license: GPLv3+
+  license_file: LICENSE
+  summary: A cross-platform Python module for entering passwords to a stdio terminal and displaying a **** mask, which getpass cannot do.
+  description: |
+    A cross-platform Python module for entering passwords to a stdio terminal and displaying a **** mask, which getpass cannot do.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: stdiomask
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: stdiomask
+  cfe-purls:
+    - pkg:conda/stdiomask@${{ version }}?channel=conda-forge
+    - pkg:pypi/stdiomask@${{ version }}
+  cfe-upstream-repo: https://github.com/asweigart/stdiomask
+  cfe-upstream-homepage: https://github.com/asweigart/stdiomask
+  cfe-import-names: [stdiomask]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:32:30Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:32:30Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -1,0 +1,93 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.7.0"
+
+package:
+  name: deeppavlov
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/d/deeppavlov/deeppavlov-${{ version }}.tar.gz
+  sha256: 196c544b17a5ea8a36a2ad39f5e7aac6770d0506d1322be7a8f25c06bfeb5357
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - fastapi <=0.89.1,>=0.47.0
+    - filelock <3.10.0,>=3.0.0
+    - nltk <3.10.0,>=3.2.4
+    - numpy <1.24
+    - pandas <1.6.0,>=1.0.0
+    - prometheus_client <=1.16.0,>=0.13.0
+    - pydantic <2
+    - pybind11 ==2.10.3
+    - requests <3.0.0,>=2.19.0
+    - tqdm <4.65.0,>=4.42.0
+    - uvicorn <0.19.0,>=0.13.0
+    - wheel
+    - scipy <1.10.0
+    - scikit-learn ==1.4.0
+
+tests:
+  - python:
+      imports:
+        - deeppavlov
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/deeppavlov/DeepPavlov
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: An open source library for building end-to-end dialog systems and training chatbots.
+  description: |
+    An open source library for building end-to-end dialog systems and training chatbots.
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: deeppavlov
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: deeppavlov
+  cfe-purls:
+    - pkg:conda/deeppavlov@${{ version }}?channel=conda-forge
+    - pkg:pypi/deeppavlov@${{ version }}
+  cfe-upstream-repo: https://github.com/deeppavlov/DeepPavlov
+  cfe-upstream-homepage: https://github.com/deeppavlov/DeepPavlov
+  cfe-import-names: [deeppavlov]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T22:48:35Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T22:48:35Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

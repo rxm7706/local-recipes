@@ -1,0 +1,54 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: inflate64
+  version: "1.0.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/inflate64-${{ version }}.tar.gz
+  sha256: b398c686960c029777afc0ed281a86f66adb956cfc3fbf6667cc6453f7b407ce
+
+build:
+  number: 2
+  skip: match(python, "<3.7")
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  build:
+    - if: build_platform != target_platform
+      then: python
+    - if: build_platform != target_platform
+      then: cross-python_${{ target_platform }}
+    - ${{ compiler('c') }}
+    - ${{ stdlib("c") }}
+  host:
+    - pip
+    - python
+    - setuptools >=45
+    - setuptools-scm >=6.0.1
+  run:
+    - if: match(python, "<3.8")
+      then: importlib-metadata
+    - python
+
+tests:
+  - python:
+      imports:
+        - inflate64
+      pip_check: true
+
+about:
+  summary: deflate64 compression/decompression library
+  license: LGPL-2.1-or-later
+  license_file:
+    - COPYING
+  homepage: https://pypi.org/project/inflate64/
+
+extra:
+  recipe-maintainers:
+    - sarthakpati

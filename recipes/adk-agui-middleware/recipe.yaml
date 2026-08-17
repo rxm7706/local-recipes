@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: adk-agui-middleware
+  version: "1.5.1"
+  python_min: "3.11"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/adk_agui_middleware-${{ version }}.tar.gz
+  sha256: 5ab6dee0923594e30eea1d14afa88da128a852b14952049387e4c3e3699a73df
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python 3.11.*
+    - hatchling
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - ag-ui-protocol >=0.1.7
+    - google-adk >=1.9.0
+    - pydantic >=2.11.7
+    - pydantic-settings >=2.10.1
+    - fastapi >=0.104.0
+    - sse-starlette >=1.6.5
+    - jsonpatch >=1.33
+
+tests:
+  - python:
+      imports:
+        - adk_agui_middleware
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Python middleware bridging Google ADK agents with AGUI protocol via Server-Sent Events for real-time agent interactions
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/trendmicro/adk-agui-middleware
+
+extra:
+  recipe-maintainers:
+    - rxm7706

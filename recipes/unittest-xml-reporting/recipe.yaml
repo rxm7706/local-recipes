@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: unittest-xml-reporting
+  version: "3.2.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: edd8d3170b40c3a81b8cf910f46c6a304ae2847ec01036d02e9c0f9b85762d28
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - pip
+    - python >=3.5
+  run:
+    - python >=3.5
+
+tests:
+  - python:
+      imports:
+        - xmlrunner
+        - xmlrunner.extra
+      pip_check: false
+
+about:
+  license: 0BSD
+  license_file: LICENSE
+  summary: unittest-based test runner with Ant/JUnit like XML reporting.
+  homepage: http://github.com/xmlrunner/unittest-xml-reporting/tree/master/
+  repository: http://github.com/xmlrunner/unittest-xml-reporting
+  documentation: https://pypi.org/project/unittest-xml-reporting/
+
+extra:
+  recipe-maintainers:
+    - mxr-conda
+    - oblute
+    - benhuff

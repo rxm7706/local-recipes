@@ -2,27 +2,30 @@
 schema_version: 1
 
 context:
+  name: drf-standardized-errors
   version: "0.16.0"
 
 package:
-  name: drf-standardized-errors
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/d/drf-standardized-errors/drf_standardized_errors-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: 77b367955af7ed246db12d299a5a75a71eccef54dae4ef69ead29f5fb01be192
 
 build:
   number: 0
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script: ${{ PYTHON }} -m pip install . -vv
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - flit-core >=3.2,<4
     - pip
   run:
+    - drf-spectacular
+    - inflection
     - python >=${{ python_min }}
     - django >=3.2
     - djangorestframework >=3.12
@@ -32,22 +35,13 @@ tests:
       imports:
         - drf_standardized_errors
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Standardize your API error responses.
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/ghazi-git/drf-standardized-errors
-  repository: https://github.com/ghazi-git/drf-standardized-errors
-  documentation: https://drf-standardized-errors.readthedocs.io/en/latest/
-  description: |
-    drf-standardized-errors transforms Django REST Framework error responses
-    into a single, predictable, standardized format, with support for
-    customizing error codes and generating OpenAPI schema for the error
-    responses.
 
 extra:
   recipe-maintainers:

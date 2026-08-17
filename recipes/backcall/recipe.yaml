@@ -1,0 +1,53 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: backcall
+  version: "0.2.0"
+  sha256: 5cbdbf27be5e7cfadb448baf0aa95508f91f2bbc6c6437cd9cd06e2a4c215e1e
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: ${{ sha256 }}
+  file_name: ${{ name }}-${{ version }}.tar.gz
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps -vv
+
+requirements:
+  build:
+    - python
+    - pip
+    - flit
+  run:
+    - python
+
+tests:
+  - python:
+      imports:
+        - backcall
+      pip_check: false
+
+about:
+  license: BSD-3-Clause
+  license_file: LICENSE
+  #license_file: LICENSE.txt
+  summary: Specifications for callback functions passed in to an API
+  description: |
+    Backcall provides a way of specifying the parameters that callback functions
+    need to accept, and adapting callbacks that take fewer parameters, so you
+    can add parameters to your callback API without breaking code that doesn't
+    know about them.
+
+
+  homepage: https://github.com/takluyver/backcall/
+
+extra:
+  recipe-maintainers:
+    - takluyver

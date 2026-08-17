@@ -1,0 +1,47 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: branca
+  version: "0.8.2"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/branca-${{ version }}.tar.gz
+  sha256: e5040f4c286e973658c27de9225c1a5a7356dd0702a7c8d84c0f0dfbde388fe7
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=41.2
+    - setuptools-scm
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - jinja2 >=3
+
+tests:
+  - python:
+      imports:
+        - branca
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  license_file: LICENSE.txt
+  summary: This library is a spinoff from folium with the non-map-specific features
+  homepage: https://github.com/python-visualization/branca
+
+extra:
+  recipe-maintainers:
+    - BibMartin
+    - ocefpaf

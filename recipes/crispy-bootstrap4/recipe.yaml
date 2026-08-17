@@ -2,14 +2,15 @@
 schema_version: 1
 
 context:
+  name: crispy-bootstrap4
   version: "2026.2"
 
 package:
-  name: crispy-bootstrap4
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/c/crispy-bootstrap4/crispy_bootstrap4-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
   sha256: 66f8f14bf9c2c16ed94243236ed253a94e5a625afa1ee64022ce29db98c6cd85
 
 build:
@@ -20,31 +21,27 @@ build:
 requirements:
   host:
     - python ${{ python_min }}.*
-    - setuptools >=77.0.3
     - pip
+    - setuptools
   run:
-    - python >=${{ python_min }}
-    - django >=5.2
+    - python >=${{ python_min }},<4.0
     - django-crispy-forms >=2.3
+    - django >=4.2
+    # - pytest-django
+    # - pytest
 
 tests:
   - python:
       imports:
         - crispy_bootstrap4
+      python_version: ${{ python_min }}.*
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
 
 about:
   summary: Bootstrap4 template pack for django-crispy-forms
   license: MIT
   license_file: LICENSE
   homepage: https://github.com/django-crispy-forms/crispy-bootstrap4
-  repository: https://github.com/django-crispy-forms/crispy-bootstrap4
-  description: |
-    Bootstrap4 template pack for django-crispy-forms. This template pack was
-    included with the core django-crispy-forms package until version 2.0.
 
 extra:
   recipe-maintainers:

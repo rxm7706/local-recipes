@@ -1,8 +1,12 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+
 schema_version: 1
 
 context:
   version: "1.1.0"
+  # Upstream requires-python is >=3.10, but the only ibm-watsonx-ai on
+  # conda-forge requires >=3.11, so 3.11 is the effective build/runtime floor.
+  python_min: "3.11"
 
 package:
   name: langchain-ibm
@@ -13,15 +17,15 @@ source:
   sha256: 09695295a2773a2f651272586e86a95275872b404c11421d609cfb7866a17c26
 
 build:
-  noarch: python
   number: 0
+  noarch: python
   script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
     - python ${{ python_min }}.*
-    - pdm-backend
     - pip
+    - pdm-backend
   run:
     - python >=${{ python_min }},<3.15
     - langchain-core >=1.2.22,<2.0.0
@@ -40,17 +44,14 @@ tests:
 about:
   homepage: https://github.com/langchain-ai/langchain-ibm
   repository: https://github.com/langchain-ai/langchain-ibm
+  summary: An integration package connecting IBM watsonx.ai and LangChain
   license: MIT
   license_file: LICENSE
-  summary: An integration package connecting IBM watsonx.ai and LangChain
-  description: |
-    langchain-ibm is the LangChain integration package for IBM watsonx.ai,
-    exposing IBM foundation models, embeddings, and rerankers as LangChain
-    chat models, LLMs, and tools.
 
 extra:
   recipe-maintainers:
-    - rxm7706
+    - pb01ka
+    - killua156
 
 #### CFE metadata AND comments
 # CFE metadata

@@ -1,0 +1,46 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: azure-mgmt-postgresqlflexibleservers
+  version: 2.0.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/azure_mgmt_postgresqlflexibleservers-${{ version }}.tar.gz
+  sha256: 13d2f45ba218a364fb0405684f8070f261ae3ed597d5a54d04e3298732c4cdaa
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - setuptools
+    - python ${{ python_min }}.*
+    - pip
+  run:
+    - python >=${{ python_min }}
+    - typing_extensions >=4.6.0
+    - azure-mgmt-core >=1.6.0
+    - msrest >=0.7.1
+tests:
+  - python:
+      imports:
+        - azure.mgmt.postgresqlflexibleservers
+        - azure.mgmt.postgresqlflexibleservers.aio
+      pip_check: true
+      python_version: ${{ python_min }}.*
+about:
+  summary: Microsoft Azure Postgresqlflexibleservers Management Client Library for Python
+  license: MIT
+  license_file: LICENSE
+  homepage: https://github.com/Azure/azure-sdk-for-python
+
+extra:
+  recipe-maintainers:
+    - janjagusch

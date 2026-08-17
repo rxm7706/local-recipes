@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  goname: syft
+  version: "1.50.0"
+
+package:
+  name: ${{ goname|lower }}
+  version: ${{ version|replace("-", "_") }}
+
+source:
+  - url: https://github.com/anchore/syft/archive/v${{ version }}.tar.gz
+    sha256: 83a6c11669094a6514a620976f22d0a4006509b4e2925f53e43e7bf506f0a3ac
+    target_directory: src
+  - url: https://gitlab.com/cznic/mathutil/-/raw/b13e5b5643328f15fd2fcedc85f647f0d8f9180f/LICENSE  # v1.5.0
+    sha256: bfa9bf72a72ca009fd62a8f84fca3dca67e51d93af96352723646599898b6cf5
+    file_name: LICENSE-mathutil
+  - url: https://raw.githubusercontent.com/xi2/xz/48954b6210f8d154cb5f8484d3a3e1f83489309e/LICENSE
+    sha256: 5c640056d513f276d56635af7a0bed81cb7eac02a31b6e56d40c416557a8d8ce
+    file_name: LICENSE-xz
+  - url: https://raw.githubusercontent.com/deitch/magic/2def47b612f6f806d1e136bbec1c34fdefacf04a/LICENSE
+    sha256: 2423c6eb9948e617a61f7a2d1cb463c69d60e599fbae5931551631d2a8730838
+    file_name: LICENSE-magic
+
+build:
+  number: 0
+
+
+requirements:
+  build:
+    - ${{ compiler('go-nocgo') }}
+    - go-licenses
+
+tests:
+  - script:
+      - if: unix
+        then:
+          - syft --version | grep ${{ version }}
+      - if: win
+        then:
+          - syft.exe --version | findstr ${{ version }}
+
+about:
+  license: Apache-2.0
+  license_file:
+    - src/LICENSE
+    - library_licenses/
+    - LICENSE-xz
+    - LICENSE-mathutil
+    - LICENSE-magic
+  summary: CLI tool and library for generating a Software Bill of Materials from container images and filesystems
+  homepage: https://github.com/anchore/syft
+
+extra:
+  recipe-maintainers:
+    - janjagusch

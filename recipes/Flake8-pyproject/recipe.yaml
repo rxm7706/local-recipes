@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: flake8-pyproject
+  version: "1.2.4"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://github.com/john-hen/Flake8-pyproject/archive/${{ version }}.tar.gz
+  sha256: 9075bdd9712b03a9dad78652425081bbee63c9ad759bf9efb3a0eb1cd1b180c3
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  python:
+    entry_points:
+      - flake8p = flake8p:main
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - flit-core >=3.4
+    - flake8
+    - tomli
+  run:
+    - python >=${{ python_min }}
+    - flake8 >=5
+    - tomli
+
+tests:
+  - python:
+      imports:
+        - flake8p
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Flake8 plug-in loading the configuration from pyproject.toml
+  license: MIT
+  license_file: license.txt
+  homepage: https://github.com/john-hen/Flake8-pyproject
+
+extra:
+  recipe-maintainers:
+    - rxm7706

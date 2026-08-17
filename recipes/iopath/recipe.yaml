@@ -1,0 +1,50 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: iopath
+  version: "0.1.10"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  # no tag created on github, but release made to pypi
+  # url: https://github.com/facebookresearch/{{ name }}/archive/refs/tags/v{{ version }}.tar.gz
+  # Release commit is
+  # https://github.com/facebookresearch/iopath/tree/b3ea6da153ab61b3b8687544c0708a4234a8fb58
+  url: https://pypi.io/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 3311c16a4d9137223e20f141655759933e1eda24f8bff166af834af3c645ef01
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.6
+    - pip
+  run:
+    - dataclasses
+    - portalocker
+    - python >=3.6
+    - tqdm
+    - typing-extensions
+
+tests:
+  - python:
+      imports:
+        - iopath
+      pip_check: true
+
+about:
+  license: MIT
+  license_file: LICENSE
+  summary: Lightweight I/O abstraction library
+  homepage: https://github.com/facebookresearch/iopath
+
+extra:
+  recipe-maintainers:
+    - thewchan

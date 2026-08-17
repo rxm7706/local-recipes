@@ -1,0 +1,60 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "5.6.2"
+
+package:
+  name: miceforest
+  version: ${{ version }}
+
+source:
+  url: https://pypi.io/packages/source/m/miceforest/miceforest-${{ version }}.tar.gz
+  sha256: a81a03e69d97273a77d83b0a14c61ce33578d2704d9f86f40102f54e1b8540dc
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python >=3.7
+    - pip
+    - setuptools
+  run:
+    - python >=3.7
+    - scipy >=1.6.0
+    - lightgbm >=3.3.1
+    - numpy
+    - python-blosc
+    - dill
+    - pandas
+    - seaborn >=0.11.0
+    - matplotlib-base >=3.3.0
+
+tests:
+  - python:
+      imports:
+        - miceforest
+      pip_check: true
+
+about:
+  license: MIT
+  # LICENSE file has been included in future distributions to pypi.
+  # Remove on second push.
+  license_file: LICENSE
+  summary: Fast multiple imputation with random forests.
+  description: |
+    Multiple Imputation iteratively 'fills in' missing values in a dataset
+    by modeling each variable as a function of the other variables. The
+    function used in this package is random forests, because they have
+    advantages which work well with the multiple imputation algorithm.
+    For detailed information, see https://github.com/AnotherSamWilson/miceforest
+  homepage: https://github.com/AnotherSamWilson/miceforest
+  repository: https://github.com/AnotherSamWilson/miceforest
+  documentation: https://miceforest.readthedocs.io/en/latest/
+
+extra:
+  recipe-maintainers:
+    - AnotherSamWilson

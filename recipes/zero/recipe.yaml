@@ -1,0 +1,92 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.9.2"
+
+package:
+  name: zero
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/z/zero/zero-${{ version }}.tar.gz
+  sha256: c42d0363823f1ed68cf147e129c65c844e77092d238f345056bf11ebded38d77
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+    - pkg-resources
+    - numpy >=1.15.2
+    - scipy >=1.1.0
+    - matplotlib-base >=3.0.3
+    - requests >=2.19.1
+    - progressbar2 >=3.38.0
+    - tabulate >=0.8.2
+    - setuptools-scm >=3.1.0
+    - ply >=3.11
+    - click ==7.0
+    - quantiphy >=2.5.0
+    - pyyaml >=3.13
+    - python-graphviz >=0.9
+
+tests:
+  - python:
+      imports:
+        - zero
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://git.ligo.org/sean-leavey/zero
+  license: GPL-3.0-only
+  license_file: LICENSE
+  summary: Linear circuit simulator
+  description: |
+    Linear circuit simulator
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: zero
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: zero
+  cfe-purls:
+    - pkg:conda/zero@${{ version }}?channel=conda-forge
+    - pkg:pypi/zero@${{ version }}
+  cfe-upstream-repo: https://git.ligo.org/sean-leavey/zero
+  cfe-upstream-homepage: https://git.ligo.org/sean-leavey/zero
+  cfe-import-names: [zero]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T19:56:03Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T19:56:03Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

@@ -2,28 +2,34 @@
 schema_version: 1
 
 context:
+  name: robocorp-http
   version: "0.4.1"
 
 package:
-  name: robocorp-http
+  name: ${{ name|lower }}
   version: ${{ version }}
 
 source:
-  url: https://pypi.org/packages/source/r/robocorp-http/robocorp_http-${{ version }}.tar.gz
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/robocorp_http-${{ version }}.tar.gz
   sha256: c16ca123201d08cc7684b7f2e3dc6208505d2ae0ff240b285a07d37399daaa95
 
 build:
-  number: 0
+  number: 1
   noarch: python
-  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+  script:
+    - if: win
+      then: echo f | xcopy /f /y /S %RECIPE_DIR%\README.md %SRC_DIR%\README.md
+    - if: unix
+      then: cp -R ${{ RECIPE_DIR }}/README.md ${{ SRC_DIR }}/README.md
+    - ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
-    - python ${{ python_min }}.*
+    - python ${{ python_min }}
     - poetry-core
     - pip
   run:
-    - python >=${{ python_min }}
+    - python >=${{ python_min }},<4.0.0
     - requests >=2.31.0,<3.0.0
 
 tests:
@@ -31,16 +37,13 @@ tests:
       imports:
         - robocorp.http
       pip_check: true
-      python_version:
-        - ${{ python_min }}.*
-        - "*"
+      python_version: ${{ python_min }}
 
 about:
   summary: Robocorp HTTP library
   license: Apache-2.0
   license_file: LICENSE
-  homepage: https://github.com/robocorp/robocorp
-  repository: https://github.com/robocorp/robocorp
+  homepage: https://github.com/robocorp/robo/
 
 extra:
   recipe-maintainers:

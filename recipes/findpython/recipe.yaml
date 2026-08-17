@@ -1,0 +1,52 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: findpython
+  version: "0.8.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/findpython-${{ version }}.tar.gz
+  sha256: 53b32264874dfa5990bd09d717819386d8db3149d89fe20f88fe1078de286bae
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+  python:
+    entry_points:
+      - findpython = findpython.__main__:main
+
+requirements:
+  host:
+    - pip
+    - python ${{ python_min }}.*
+    - pdm-backend
+  run:
+    - packaging >=20
+    - python >=${{ python_min }}
+    - platformdirs >=4.3.6
+
+tests:
+  - python:
+      imports:
+        - findpython
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - '*'
+
+about:
+  summary: A utility to find python versions on your system
+  license: MIT
+  license_file: LICENSE
+  homepage: https://pypi.org/project/findpython/
+  repository: https://github.com/frostming/findpython
+
+extra:
+  recipe-maintainers:
+    - xhochy

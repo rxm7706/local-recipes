@@ -2,7 +2,7 @@
 schema_version: 1
 
 context:
-  version: "9.5.0"
+  version: "9.6.0"
 
 package:
   name: kedro-datasets
@@ -10,17 +10,12 @@ package:
 
 source:
   url: https://pypi.org/packages/source/k/kedro-datasets/kedro_datasets-${{ version }}.tar.gz
-  sha256: 331c84d47d39d8582bb09d6e9196eded1f672d0ae369cabce042ca6dcdd2c498
+  sha256: f6ae5a4638a4ee66492b28a5ef62f9de8684e95a51bab8d76aaa3a0f80e1594a
 
 build:
   number: 0
   noarch: python
-  script:
-    env:
-      WARNINGS: "ignore::kedro.KedroPythonVersionWarning"
-      PYTHONWARNINGS: "ignore::UserWarning"
-    content:
-      - "${{ PYTHON }} -m pip install -vv --use-pep517 --no-deps --no-build-isolation ."
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
 
 requirements:
   host:
@@ -66,9 +61,7 @@ about:
   repository: https://github.com/kedro-org/kedro-plugins/tree/main/kedro-datasets
   documentation: https://docs.kedro.org
   license: Apache-1.1
-  license_file:
-    - LICENSE.md
-
+  license_file: LICENSE.md
 extra:
   recipe-maintainers:
     - rxm7706

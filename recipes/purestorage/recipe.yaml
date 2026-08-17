@@ -1,0 +1,79 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "1.19.0"
+
+package:
+  name: purestorage
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/p/purestorage/purestorage-${{ version }}.tar.gz
+  sha256: 195ca34b46ecb157896ac5aac3c669a76d0ec50993d8a48a9a87d5a83fdf6529
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - purestorage
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://github.com/purestorage/rest-client
+  license: MIT
+  license_file: LICENSE
+  summary: Pure Storage FlashArray REST Client
+  description: |
+    Pure Storage FlashArray REST Client
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: purestorage
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: purestorage
+  cfe-purls:
+    - pkg:conda/purestorage@${{ version }}?channel=conda-forge
+    - pkg:pypi/purestorage@${{ version }}
+  cfe-upstream-repo: https://github.com/purestorage/rest-client
+  cfe-upstream-homepage: https://github.com/purestorage/rest-client
+  cfe-import-names: [purestorage]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T20:22:51Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T20:22:51Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

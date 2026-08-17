@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: commonregex
+  version: "1.5.5"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://raw.githubusercontent.com/madisonmay/CommonRegex/master/dist/commonregex-${{ version }}.tar.gz
+  sha256: 08e93aec3ce2a3ae29d89cc249af47e70df10218f2161455b3df19fb5cb67d00
+
+build:
+  number: 2
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - pip
+    - setuptools
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - commonregex
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  license: MIT
+  summary: Find all dates, times, emails, phone numbers, links, emails, ip addresses, prices, bitcoin address, and street addresses in a string.
+  license: Apache-2.0
+  license_file: LICENSE
+  homepage: http://www.github.com/madisonmay/CommonRegex
+
+extra:
+  recipe-maintainers:
+    - rxm7706

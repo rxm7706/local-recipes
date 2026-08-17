@@ -1,0 +1,45 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: python-iso639
+  version: "2026.7.23"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name | replace('-', '_') }}-${{ version }}.tar.gz
+  sha256: c176522e92cc76b3581cd354e5544330980a36b017d7c291717eface84eaff57
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}
+    - setuptools >=65.3.0
+    - wheel
+    - pip
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - iso639
+      pip_check: true
+      python_version: ${{ python_min }}
+
+about:
+  summary: Look-up utilities for ISO 639 language codes and names
+  license: Apache-2.0
+  license_file: LICENSE.txt
+  homepage: https://github.com/jacksonllee/iso639
+
+extra:
+  recipe-maintainers:
+    - jan-janssen

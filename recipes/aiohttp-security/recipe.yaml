@@ -1,0 +1,51 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: aiohttp-security
+  version: "0.5.0"
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/${{ name }}-${{ version }}.tar.gz
+  sha256: 50cb724d310e1d0289798bb98ae852c3b75b77e8f51ce5159c57b7261d0638bd
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . --no-deps --ignore-installed -vv
+
+requirements:
+  host:
+    - aiohttp >=3.2.0
+    - pip
+    - python ${{ python_min }}
+    - setuptools
+    - wheel
+  run:
+    - aiohttp >=3.2.0
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports:
+        - aiohttp_security
+      pip_check: false
+      python_version: ${{ python_min }}
+  - requirements:
+      run:
+        - python ${{ python_min }}
+
+about:
+  license: Apache Software
+  license_file: LICENSE
+  summary: security for aiohttp.web
+  homepage: https://github.com/aio-libs/aiohttp-security/
+  documentation: https://aiohttp-security.readthedocs.io/
+
+extra:
+  recipe-maintainers:
+    - epruesse

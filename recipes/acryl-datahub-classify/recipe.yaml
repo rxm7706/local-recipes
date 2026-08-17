@@ -1,0 +1,89 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  version: "0.0.12"
+
+package:
+  name: acryl-datahub-classify
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/a/acryl-datahub-classify/acryl_datahub_classify-${{ version }}.tar.gz
+  sha256: 08f58e760489f2b8b63d3740ee4d177f8c21a3512ef91e01135973038a51b5e1
+
+build:
+  number: 0
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv --no-deps --no-build-isolation
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=54.0.0
+    - wheel
+    - pip >=21.0.0
+  run:
+    - python >=${{ python_min }}
+    - phonenumbers <=8.13.0,>=8.12.56
+    - schwifty >=2022.9.0
+    - spacy <3.8,>=3.4.1
+    - ipaddress >=1.0.23
+    - vininfo >=1.7.0
+    - python-stdnum >=1.17
+
+tests:
+  - python:
+      imports:
+        - datahub_classify
+      pip_check: true
+      python_version:
+        - ${{ python_min }}.*
+        - "*"
+
+about:
+  homepage: https://datahub.com/
+  license: Apache-2.0
+  license_file: LICENSE
+  summary: [DEPRECATED] Library to predict info types for DataHub
+  description: |
+    [DEPRECATED] Library to predict info types for DataHub
+  repository: https://github.com/acryldata/datahub-classify
+  documentation: https://datahub.com/docs/
+
+extra:
+  recipe-maintainers:
+    - rxm7706
+
+#### CFE metadata AND comments
+# CFE metadata
+  cfe-conda-name: acryl-datahub-classify
+  cfe-upstream-registry: pypi
+  cfe-upstream-name: acryl-datahub-classify
+  cfe-purls:
+    - pkg:conda/acryl-datahub-classify@${{ version }}?channel=conda-forge
+    - pkg:pypi/acryl-datahub-classify@${{ version }}
+  cfe-upstream-repo: https://github.com/acryldata/datahub-classify
+  cfe-upstream-homepage: https://datahub.com/
+  cfe-import-names: [datahub_classify]
+  cfe-source-kind: pypi-sdist
+  cfe-noarch: python
+  cfe-pip-check: "true"
+  cfe-on-conda-forge-status: pending-submission-to-conda-forge
+  cfe-on-conda-forge-feedstock: none
+  cfe-forge-recipe-updates-needed: none
+  cfe-forge-blocker-list: []
+  cfe-last-checked: 2026-08-16T23:47:54Z
+  cfe-generated-by-version: 8.81.0
+  cfe-generated-at-datetime: 2026-08-16T23:47:54Z
+  cfe-local-build-status: not-attempted
+  cfe-local-build-datetime: none
+  cfe-local-build-platform: none
+  cfe-local-build-tool: none
+####
+# CFE comments
+# Header:
+#    # (agent rationale parks here, organized by recipe location — never
+#    # inline in the body; see SKILL.md "Never Add AI Comments Inline")
+####

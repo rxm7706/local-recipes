@@ -31,9 +31,11 @@ tests:
         - dockerflow
       pip_check: true
       python_version:
-        - ${{ python_min }}.*
-        - "*"
-
+      - ${{ python_min }}.*
+      - "*"
+  - package_contents:
+      site_packages:
+        - dockerflow
 
 about:
   homepage: https://github.com/mozilla-services/python-dockerflow

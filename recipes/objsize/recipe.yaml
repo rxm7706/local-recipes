@@ -1,0 +1,43 @@
+# yaml-language-server: $schema=https://raw.githubusercontent.com/prefix-dev/recipe-format/main/schema.json
+schema_version: 1
+
+context:
+  name: objsize
+  version: 0.8.0
+
+package:
+  name: ${{ name|lower }}
+  version: ${{ version }}
+
+source:
+  url: https://pypi.org/packages/source/${{ name[0] }}/${{ name }}/objsize-${{ version }}.tar.gz
+  sha256: df17998cf6ef4b24d52abee5020484491230e3f4af71a8ff0098c7455ad4d91c
+
+build:
+  number: 1
+  noarch: python
+  script: ${{ PYTHON }} -m pip install . -vv
+
+requirements:
+  host:
+    - python ${{ python_min }}.*
+    - pip
+    - setuptools >=61.0.0
+  run:
+    - python >=${{ python_min }}
+
+tests:
+  - python:
+      imports: objsize
+      pip_check: true
+      python_version: ${{ python_min }}.*
+
+about:
+  summary: Traversal over Python's objects subtree and calculate the total size of the subtree in bytes (deep size).
+  license: BSD-3-Clause
+  license_file: LICENSE
+  homepage: https://github.com/liran-funaro/objsize
+
+extra:
+  recipe-maintainers:
+    - xylar
