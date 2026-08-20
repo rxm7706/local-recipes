@@ -444,3 +444,108 @@ class TestNetrcHostDerivation:
         creds = _http.netrc_credentials("https://artifactory.corp:8081/api/conda/cf")
 
         assert creds == ("REALUSER", "REALPASS")
+
+    def test_uppercase_machine_line_still_matches_the_host(
+        self, monkeypatch, tmp_path
+    ):
+        """Fourth-pass regression. `_host_of` is `urlparse().hostname`, which
+        LOWERCASES; `netrc.authenticators` is an exact dict lookup over the
+        `machine` tokens as spelled in the file and folds nothing. So moving
+        this function to `_host_of` silently stopped matching a perfectly
+        legal `machine ARTIFACTORY.CORP.COM` and fell through to `default` —
+        reintroducing, by a different route, the exact
+        wrong-credential-to-the-mirror failure the move was made to fix.
+        Reproduced before the fix: returned ('DEFAULTUSER', 'DEFAULTPASS')."""
+        netrc_path = tmp_path / ".netrc"
+        netrc_path.write_text(
+            "machine ARTIFACTORY.CORP.COM login REALUSER password REALPASS\n"
+            "default login DEFAULTUSER password DEFAULTPASS\n"
+        )
+        monkeypatch.setenv("NETRC", str(netrc_path))
+
+        creds = _http.netrc_credentials("https://artifactory.corp.com/api/conda/cf")
+
+        assert creds == ("REALUSER", "REALPASS")
+
+    def test_default_entry_still_applies_when_no_machine_line_matches(
+        self, monkeypatch, tmp_path
+    ):
+        """The case-insensitive match must not cost `default` its documented
+        meaning ("any machine not named above")."""
+        netrc_path = tmp_path / ".netrc"
+        netrc_path.write_text(
+            "machine artifactory.corp login REALUSER password REALPASS\n"
+            "default login DEFAULTUSER password DEFAULTPASS\n"
+        )
+        monkeypatch.setenv("NETRC", str(netrc_path))
+
+        creds = _http.netrc_credentials("https://unrelated.example/x")
+
+        assert creds == ("DEFAULTUSER", "DEFAULTPASS")
+
+    def test_no_resolvable_home_directory_does_not_raise(self, monkeypatch):
+        """Fourth-pass regression. `Path.home()` raises RuntimeError when
+        neither HOME nor a passwd entry resolves (rootless / arbitrary-UID
+        containers) and it sits OUTSIDE the try. Before the host gate this
+        branch was unreachable whenever a JFrog credential was set (step 1
+        matched unconditionally); gating step 1 handed its traffic here, so
+        the raise landed on EVERY request to an unconfigured host. Reproduced
+        before the fix: RuntimeError propagated out of `auth_headers_for`.
+        Same shape, same reason, as the `read_pixi_config` guard."""
+        monkeypatch.delenv("NETRC", raising=False)
+        monkeypatch.setattr(
+            Path, "home",
+            staticmethod(lambda: (_ for _ in ()).throw(RuntimeError("no home"))),
+        )
+        monkeypatch.setenv("JFROG_API_KEY", "secret-key")
+
+        # Must degrade to "no credential", never take the process down.
+        assert _http.netrc_credentials("https://pypi.org/simple/x") is None
+        assert _http.auth_headers_for("https://pypi.org/simple/x") == {}
+
+
+class TestPublicHostFloor:
+    """Fourth-pass regression: `_public_default_hosts()` derives from the
+    module's own `_DEFAULT_*` globals, which cannot see a public host this
+    module reaches from an inline-built URL, as a CDN/redirect target, or
+    under a vendor's second domain. Each of these was reproduced receiving
+    `JFROG_API_KEY` under a `*_BASE_URL` naming it."""
+
+    @pytest.mark.parametrize(
+        "env_var,base,request_url",
+        [
+            ("PYPI_FILES_BASE_URL", "https://files.pythonhosted.org/packages",
+             "https://files.pythonhosted.org/packages/aa/bb/pkg.tar.gz"),
+            ("AZURE_BASE_URL", "https://dev.azure.com/conda-forge",
+             "https://dev.azure.com/conda-forge/feedstock-builds/_apis/build/builds"),
+            ("ANACONDA_BASE_URL", "https://anaconda.org/conda-forge",
+             "https://anaconda.org/conda-forge/pkg"),
+            ("REPO_ANACONDA_BASE_URL", "https://repo.anaconda.com/pkgs",
+             "https://repo.anaconda.com/pkgs/main/linux-64/repodata.json"),
+        ],
+    )
+    def test_undeclared_public_host_named_by_a_base_url_gets_no_credential(
+        self, monkeypatch, env_var, base, request_url
+    ):
+        monkeypatch.setenv("JFROG_API_KEY", "secret-key")
+        monkeypatch.setenv(env_var, base)
+        assert _http.auth_headers_for(request_url) == {}
+
+    def test_a_genuine_enterprise_mirror_still_receives_its_credential(
+        self, monkeypatch
+    ):
+        """The floor must not be so broad it defeats the allowlist."""
+        monkeypatch.setenv("JFROG_API_KEY", "secret-key")
+        monkeypatch.setenv("CORP_BASE_URL", "https://mycorp.jfrog.io/artifactory/conda")
+        assert _http.auth_headers_for(
+            "https://mycorp.jfrog.io/artifactory/conda/noarch/repodata.json"
+        ) == {"X-JFrog-Art-Api": "secret-key"}
+
+    def test_an_empty_public_host_set_is_never_cached(self, monkeypatch):
+        """The set is SUBTRACTED from the allowlist, so caching an empty one
+        would silently re-open the gate for the life of the process. Empty can
+        only mean the `_DEFAULT_*` globals were not in place when the first
+        call ran (they are declared below the function) — a load-order bug,
+        not a real answer."""
+        monkeypatch.setattr(_http, "_PUBLIC_DEFAULT_HOSTS", frozenset())
+        assert "pypi.org" in _http._public_default_hosts()

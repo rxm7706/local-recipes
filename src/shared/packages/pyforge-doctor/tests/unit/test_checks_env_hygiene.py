@@ -270,7 +270,23 @@ def test_gather_golden_fixture_finds_no_injection_in_the_real_cfe_scripts():
             "CFE scripts golden fixture not present (non-monorepo context)"
         )
 
+    # An absence assertion cannot tell "scanned real code, found nothing"
+    # apart from "scanned nothing at all": `gather()` over an empty directory
+    # also returns []. So pin the precondition first -- if `_HTTP_PY_DIR` ever
+    # resolves somewhere else, or the walker stops matching these files, this
+    # test must red rather than pass vacuously.
+    scanned = {p.name for p in _HTTP_PY_DIR.glob("*.py")}
+    assert {"_http.py", "inventory_channel.py"} <= scanned, (
+        f"golden-fixture directory {_HTTP_PY_DIR} no longer holds the files "
+        f"this guard is about -- got {sorted(scanned)[:10]}"
+    )
+
     result = gather(_HTTP_PY_DIR)
+
+    # A scan that bailed out reports it rather than returning a clean []; that
+    # state must not read as "no leak found" either.
+    incomplete = [f for f in result if f.check == SCAN_INCOMPLETE_CHECK_NAME]
+    assert incomplete == [], f"scan did not complete: {incomplete}"
 
     unconditional = [f for f in result if f.check == CHECK_NAME]
     assert unconditional == [], (

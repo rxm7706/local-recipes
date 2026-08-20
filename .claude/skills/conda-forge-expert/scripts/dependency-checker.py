@@ -115,8 +115,12 @@ _SKIP_PACKAGES: Set[str] = {
 
 # Make the sibling `_http` importable, ONCE at import time. Doing this inside a
 # per-call helper (as the auth gate previously did) appends a duplicate entry
-# on every call — a long-lived process such as the MCP server grew sys.path by
-# one entry per request, taxing every later import.
+# on every call, so sys.path grows without bound in any process that calls it
+# repeatedly, taxing every later import. (The MCP server is NOT such a process:
+# `conda_forge_server.py::_run_script` subprocesses this script per tool call,
+# so each request starts with a fresh sys.path. The unbounded growth is real
+# for an in-process caller; the "long-lived MCP server" framing this comment
+# used to carry was not traced through the actual entry point.)
 _SCRIPTS_DIR = str(Path(__file__).resolve().parent)
 if _SCRIPTS_DIR not in sys.path:
     sys.path.insert(0, _SCRIPTS_DIR)
@@ -195,10 +199,19 @@ def get_configured_channels(override: Optional[str] = None) -> List[str]:
     enterprise-config Artifactory channel, none of which is a `*_BASE_URL`.
 
     The remembered set is REPLACED, not accumulated: it is the authorization
-    scope for the channels resolved by THIS call. Accumulating leaked scope
-    across calls in a long-lived process (the MCP server calls this once per
-    `check_dependencies` request), so a host named by one request's
-    `--channel` stayed credential-authorized for every later request.
+    scope for the channels resolved by THIS call. When it only ever grew, a
+    host named by one call's `--channel` stayed credential-authorized for
+    every later call in the same process — a credential allowlist assembled
+    out of caller arguments.
+
+    That is an in-process hazard only. The MCP server reaches this script
+    through `conda_forge_server.py::_run_script`, which subprocesses it per
+    tool call, so no module-level state crosses requests there; an earlier
+    version of this docstring claimed the MCP path as the reproduction and was
+    wrong about it. `_auth_headers` does depend on this function having run
+    (it reads the set this call populates) — the CLI `main` ordering
+    guarantees that, and an in-process caller must resolve channels before
+    asking for headers.
     """
     _EXPLICIT_CHANNEL_HOSTS.clear()
 
@@ -314,6 +327,25 @@ def _is_public_default_host(url: str) -> bool:
     return host in _public_default_hosts() or host in _PUBLIC_CHANNEL_HOST_FLOOR
 
 
+# The hosts `CONDA_TOKEN` is actually a credential FOR. Splitting the gate by
+# credential kind stopped the JFrog family reaching public hosts, but left the
+# public branch treating every public host as interchangeable: a named
+# `--channel https://repo.prefix.dev/myorg` or `https://pypi.org/simple` was
+# handed the anaconda.org channel token, which is a different vendor's
+# credential going somewhere it can never authenticate. Same cross-host send
+# the retro exists to close, one level down from where it was fixed.
+_ANACONDA_CHANNEL_HOSTS: frozenset[str] = frozenset({
+    "conda.anaconda.org",
+    "anaconda.org",
+    "repo.anaconda.com",
+})
+
+
+def _is_anaconda_channel_host(url: str) -> bool:
+    """Is `url` on the anaconda.org family that `CONDA_TOKEN` authenticates to?"""
+    return _host_of(url) in _ANACONDA_CHANNEL_HOSTS
+
+
 def _auth_headers(url: str) -> Dict[str, str]:
     """Build authorization headers for the URL from environment variables.
 
@@ -330,7 +362,9 @@ def _auth_headers(url: str) -> Dict[str, str]:
     all?" is `_is_configured_enterprise_host`. "May it receive a JFrog-family
     one?" additionally requires that it not be a public package host — see
     `_is_public_default_host`. `CONDA_TOKEN` is an anaconda.org channel token,
-    not a JFrog one, so it is the only credential a named public channel gets.
+    not a JFrog one, so it is the only credential a named public channel gets
+    — and then only on the anaconda.org family it can actually authenticate
+    to, never on every public host indiscriminately.
     """
     if not _is_configured_enterprise_host(url):
         return {}
@@ -340,7 +374,7 @@ def _auth_headers(url: str) -> Dict[str, str]:
     # deprioritized: attaching it here is the leak, not a fallback order.
     if _is_public_default_host(url):
         conda_token = os.environ.get("CONDA_TOKEN")
-        if conda_token:
+        if conda_token and _is_anaconda_channel_host(url):
             return {"Authorization": f"Bearer {conda_token}"}
         return {}
 

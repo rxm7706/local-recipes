@@ -153,18 +153,40 @@ def _fallback_host_of(url: str) -> str:
 # Public package hosts that can never be an enterprise mirror, however an
 # operator's `*_BASE_URL` is spelled. The no-`_http` floor for what
 # `_http._public_default_hosts()` derives from its own `_DEFAULT_*` globals —
-# kept short and literal on purpose: this path exists precisely because that
-# module could not be imported.
+# literal on purpose: this path exists precisely because that module could not
+# be imported, so the derivation is unavailable here by construction.
+#
+# It must stay a SUPERSET of what `_http` subtracts. The first version of this
+# list held only the nine most obvious hosts, which left it eleven short of
+# `_http`'s derived set and so made this copy WIDER than `_http` in exactly the
+# leaking direction — the opposite of what the docstring below claims — for
+# crates.io, rubygems.org, gitlab.com and the rest. Verified against
+# `sorted(_http._public_default_hosts())`; when a resolver adds a public
+# fallback there, add it here too. `tests/unit/test_inventory_channel_auth_host_gate.py`
+# asserts this set covers `_http`'s, so the drift reds rather than leaks.
 _PUBLIC_HOST_FLOOR: frozenset[str] = frozenset({
+    "anaconda-package-data.s3.amazonaws.com",
+    "anaconda.org",
+    "api.github.com",
+    "api.nuget.org",
+    "codeberg.org",
     "conda.anaconda.org",
+    "crandb.r-pkg.org",
+    "crates.io",
+    "dev.azure.com",
+    "endoflife.date",
+    "fastapi.metacpan.org",
+    "files.pythonhosted.org",
+    "github.com",
+    "gitlab.com",
+    "luarocks.org",
+    "pypi.org",
+    "raw.githubusercontent.com",
+    "registry.npmjs.org",
     "repo.anaconda.com",
     "repo.prefix.dev",
-    "pypi.org",
-    "files.pythonhosted.org",
-    "registry.npmjs.org",
-    "github.com",
-    "api.github.com",
-    "raw.githubusercontent.com",
+    "rubygems.org",
+    "search.maven.org",
 })
 
 
@@ -191,7 +213,11 @@ def _fallback_configured_enterprise_hosts() -> set[str]:
     made `_http.auth_headers_for` return `{}` for anaconda.org made this
     fallback attach `X-JFrog-Art-Api` to it. `_PUBLIC_HOST_FLOOR` is the
     local stand-in for `_DEFAULT_*`-derived hosts, which are unavailable by
-    construction on this path.
+    construction on this path — and it is only as good as its coverage: when
+    it held nine hosts against `_http`'s twenty-two, the "not wider" claim in
+    this paragraph was false for the thirteen it was missing. The test file
+    named on `_PUBLIC_HOST_FLOOR` now pins the containment so the claim cannot
+    quietly go stale again.
     """
     hosts: set[str] = set()
     for key, value in os.environ.items():

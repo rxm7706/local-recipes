@@ -166,15 +166,52 @@ def netrc_credentials(url: str) -> tuple[str, str] | None:
     `machine` line, so `netrc.authenticators` fell through to any `default`
     entry — silently sending an unrelated credential to the mirror the
     operator had a correct entry for.
+
+    `_host_of` also LOWERCASES (it is `urlparse().hostname`), and
+    `netrc.authenticators` is an exact dict lookup over the `machine` tokens
+    as spelled in the file — it does no case folding of its own. So a
+    perfectly legal `machine ARTIFACTORY.CORP.COM` stopped matching when this
+    function moved to `_host_of`, falling through to `default` and
+    reintroducing, by a different route, the exact wrong-credential-to-the-
+    mirror failure the move was made to fix.
+
+    So the `machine` tokens are matched case-insensitively here, against
+    `nrc.hosts` directly rather than via `nrc.authenticators`: that method
+    returns the `default` entry as soon as its exact lookup misses, which
+    would consume the miss before any second spelling could be tried. An
+    explicit `machine` line therefore wins over `default` whatever its case,
+    and `default` still applies when no machine line matches at all — the
+    documented netrc semantics, unchanged. Only the netrc lookup needs this;
+    the allowlist compares hosts that went through `_host_of` on both sides,
+    so it is already consistently folded.
     """
     host = _host_of(url)
     if not host:
         return None
 
-    netrc_path = os.environ.get("NETRC") or Path.home() / ".netrc"
+    try:
+        netrc_path = os.environ.get("NETRC") or Path.home() / ".netrc"
+    except RuntimeError as exc:
+        # `Path.home()` raises RuntimeError when neither HOME nor a passwd
+        # entry resolves (rootless / arbitrary-UID containers). Before the
+        # JFrog host gate this branch was unreachable whenever a JFrog
+        # credential was set (step 1 matched unconditionally); gating step 1
+        # handed its traffic here, putting this raise on EVERY request to an
+        # unconfigured host. Same shape, same reason, as the guard on
+        # `read_pixi_config` in `_pixi_configured_hosts`.
+        _log(f"_http: cannot locate .netrc ({exc}) — skipping credential lookup")
+        return None
     try:
         nrc = _netrc_mod.netrc(str(netrc_path))
-        entry = nrc.authenticators(host)
+        entry = None
+        for machine, creds in nrc.hosts.items():
+            if machine.lower() == host:
+                entry = creds
+                break
+        if entry is None:
+            # No explicit machine line — fall through to `default` if the file
+            # declares one, which is what `authenticators` does.
+            entry = nrc.hosts.get("default")
         if entry:
             login, _, password = entry
             if login and password:
@@ -207,10 +244,36 @@ def _host_of(url: str) -> str:
     return (urlparse(url).hostname or "").lower()
 
 
+# Public package hosts this module REQUESTS but never declares in a
+# `_DEFAULT_*` global, so the derivation below cannot see them. Derivation is
+# still the primary source — this is a floor under it, not a replacement.
+#
+# The derivation covers a resolver only if that resolver declares its public
+# fallback in a `_DEFAULT_*` global. Three classes escape it, all verified
+# present in this module today:
+#   * hosts reached from a URL built inline (`resolve_anaconda_channel_urls`
+#     f-strings `https://anaconda.org/...`; `dev.azure.com` in the
+#     `pr_artifacts` flow),
+#   * hosts reached only as a redirect/CDN target of a declared one
+#     (`files.pythonhosted.org` behind pypi.org),
+#   * a vendor's second public domain (`repo.anaconda.com` beside
+#     `conda.anaconda.org`).
+# Each was reproduced receiving `JFROG_API_KEY` under a `*_BASE_URL` naming
+# it, which is the leak `_public_default_hosts` exists to close. When you add
+# a resolver, declare its fallback in a `_DEFAULT_*` global and it needs no
+# entry here.
+_PUBLIC_HOST_FLOOR: frozenset[str] = frozenset({
+    "anaconda.org",
+    "repo.anaconda.com",
+    "files.pythonhosted.org",
+    "dev.azure.com",
+})
+
+
 def _public_default_hosts() -> frozenset[str]:
     """Hosts of every public fallback this module ships — derived from its own
-    `_DEFAULT_*` globals, never a hand-kept list, so a newly-added resolver's
-    fallback is covered the moment it is declared.
+    `_DEFAULT_*` globals wherever it can be, unioned with `_PUBLIC_HOST_FLOOR`
+    for the public hosts this module requests without declaring.
 
     These can never enter the enterprise allowlist. A JFrog credential is
     never legitimately needed against pypi.org / conda.anaconda.org /
@@ -220,9 +283,16 @@ def _public_default_hosts() -> frozenset[str]:
     exists to close. `_pixi_configured_hosts` already excluded them by
     construction; the env-var half did not, which is the asymmetry this
     closes.
+
+    The result is cached, but an EMPTY result is never cached: this set is
+    subtracted from the allowlist, so caching an empty one would silently
+    re-open the gate for the life of the process. Empty can only mean the
+    `_DEFAULT_*` globals were not in place when the first call ran (they are
+    declared below this function), which is a load-order bug, not a real
+    answer — so recompute instead of freezing it.
     """
     global _PUBLIC_DEFAULT_HOSTS
-    if _PUBLIC_DEFAULT_HOSTS is None:
+    if not _PUBLIC_DEFAULT_HOSTS:
         urls: list[str] = []
         for name, value in list(globals().items()):
             if not name.startswith("_DEFAULT_"):
@@ -231,7 +301,7 @@ def _public_default_hosts() -> frozenset[str]:
                 urls.append(value)
             elif isinstance(value, (tuple, list)):
                 urls.extend(v for v in value if isinstance(v, str))
-        hosts: set[str] = set()
+        hosts: set[str] = set(_PUBLIC_HOST_FLOOR)
         for u in urls:
             try:
                 host = _host_of(u)

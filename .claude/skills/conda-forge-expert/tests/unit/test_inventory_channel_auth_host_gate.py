@@ -143,3 +143,33 @@ class TestFallbackExcludesPublicDefaultHosts:
         hosts = mod._fallback_configured_enterprise_hosts()
         assert "pypi.org" not in hosts
         assert "mycompany.jfrog.io" in hosts
+
+    def test_public_host_floor_covers_everything_http_subtracts(self, load_module):
+        """Fourth-pass regression. This fallback's docstring claims it is
+        never WIDER than `_http` in the leaking direction, but its floor is a
+        literal list while `_http`'s is derived — so the two drift silently.
+        Measured before the fix: the floor held 9 hosts against `_http`'s 18,
+        leaving 11 (crates.io, rubygems.org, gitlab.com, codeberg.org,
+        endoflife.date, api.nuget.org, search.maven.org, luarocks.org,
+        crandb.r-pkg.org, fastapi.metacpan.org, and the anaconda S3 bucket)
+        able to receive `X-JFrog-Art-Api` here while `_http` returned `{}`.
+        Containment, not equality: the floor may be broader."""
+        import _http  # noqa: PLC0415 -- the module under comparison
+
+        mod = load_module("inventory_channel.py")
+        missing = _http._public_default_hosts() - mod._PUBLIC_HOST_FLOOR
+        assert missing == set(), (
+            "hosts _http subtracts from the allowlist but this fallback does "
+            f"not, so the fallback is wider in the leaking direction: {sorted(missing)}"
+        )
+
+    def test_public_host_named_by_a_base_url_gets_no_credential_on_the_fallback(
+        self, load_module, monkeypatch
+    ):
+        """The concrete leak the containment gap allowed."""
+        monkeypatch.setenv("JFROG_API_KEY", "secret-key")
+        monkeypatch.setenv("CRATES_BASE_URL", "https://crates.io/api/v1")
+        mod = load_module("inventory_channel.py")
+        monkeypatch.setattr(mod, "_HTTP_AVAILABLE", False)
+        request = mod._make_request("https://crates.io/api/v1/crates/serde")
+        assert "X-jfrog-art-api" not in request.headers

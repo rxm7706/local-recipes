@@ -30,16 +30,25 @@ class TestSkipAuth:
         self, monkeypatch
     ):
         monkeypatch.setenv("JFROG_API_KEY", "dummy-key-12345")
-        # dev.azure.com must be a *configured* host for the baseline (no
-        # skip_auth) injection to fire post-retro — see
-        # test_http_jfrog_host_gate.py for the un-configured-host case.
-        monkeypatch.setenv("CONDA_FORGE_BASE_URL", "https://dev.azure.com/conda-forge/foo")
-        baseline = _http.auth_headers_for("https://dev.azure.com/conda-forge/foo")
+        # The host must be a *configured* one for the baseline (no skip_auth)
+        # injection to fire post-retro — see test_http_jfrog_host_gate.py for
+        # the un-configured-host case.
+        #
+        # It must also be a genuinely ENTERPRISE host. This example was
+        # `anaconda.org` until the third review pass, which encoded "the JFrog
+        # credential IS sent to a public host" as expected behaviour in the
+        # very file pair meant to pin that leak closed; it was repointed at
+        # `dev.azure.com`, which is public too, so the fourth pass's public-host
+        # floor correctly stopped the baseline firing. Use a host that could
+        # only ever be an operator's own mirror.
+        monkeypatch.setenv(
+            "CONDA_FORGE_BASE_URL", "https://mycorp.jfrog.io/artifactory/conda-forge"
+        )
+        url = "https://mycorp.jfrog.io/artifactory/conda-forge/noarch/repodata.json"
+        baseline = _http.auth_headers_for(url)
         assert baseline.get("X-JFrog-Art-Api") == "dummy-key-12345"
         # With skip_auth=True → empty, even though the host is configured.
-        skipped = _http.auth_headers_for(
-            "https://dev.azure.com/conda-forge/foo", skip_auth=True
-        )
+        skipped = _http.auth_headers_for(url, skip_auth=True)
         assert skipped == {}
 
     def test_auth_headers_for_skip_auth_returns_empty_even_with_github_token(

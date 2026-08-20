@@ -244,3 +244,43 @@ class TestCredentialKindIsGatedSeparatelyFromHost:
         assert checker._auth_headers(
             "https://first.corp.example/api/conda/cf/repodata.json"
         ) == {}
+
+    def test_conda_token_reaches_only_the_anaconda_family(
+        self, load_module, monkeypatch
+    ):
+        """Fourth-pass regression. Splitting the gate by credential KIND
+        stopped the JFrog family reaching public hosts, but left the public
+        branch treating every public host as interchangeable: a named
+        `repo.prefix.dev` or `pypi.org` channel was handed CONDA_TOKEN — a
+        different vendor's credential, sent where it can never authenticate.
+        Same cross-host send the retro exists to close, one level below where
+        it was fixed. Reproduced before the fix on both hosts below."""
+        monkeypatch.setenv("CONDA_TOKEN", "conda-org-token")
+        checker = load_module("dependency-checker.py")
+
+        for public_but_not_anaconda in (
+            "https://repo.prefix.dev/myorg",
+            "https://pypi.org/simple",
+        ):
+            checker.get_configured_channels(public_but_not_anaconda)
+            assert checker._auth_headers(
+                public_but_not_anaconda + "/noarch/repodata.json"
+            ) == {}, f"CONDA_TOKEN must not be sent to {public_but_not_anaconda}"
+
+    def test_conda_token_still_reaches_a_named_anaconda_org_channel(
+        self, load_module, monkeypatch
+    ):
+        """The narrowing must not undo the second pass's own fix: a private
+        anaconda.org org channel is exactly what CONDA_TOKEN is for."""
+        monkeypatch.setenv("CONDA_TOKEN", "conda-org-token")
+        checker = load_module("dependency-checker.py")
+
+        for anaconda_host in (
+            "https://conda.anaconda.org/myprivateorg",
+            "https://anaconda.org/myprivateorg",
+            "https://repo.anaconda.com/pkgs/main",
+        ):
+            checker.get_configured_channels(anaconda_host)
+            assert checker._auth_headers(
+                anaconda_host + "/noarch/repodata.json"
+            ) == {"Authorization": "Bearer conda-org-token"}, anaconda_host
