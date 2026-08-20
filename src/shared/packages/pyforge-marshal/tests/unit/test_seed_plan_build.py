@@ -972,6 +972,21 @@ def test_opted_out_is_keyword_only(tmp_path):
         build_plan(manifest, inventory, frozenset())  # type: ignore[misc]
 
 
+def test_a_bare_str_opted_out_is_refused_rather_than_read_as_substrings(tmp_path):
+    """A type hint is not runtime enforcement, and this failure is SILENT
+    rather than loud: `in` against a `str` is substring containment, so one
+    key passed as a string instead of a one-element set makes every key that
+    is a substring of it read as opted out -- dropping entries from
+    `actions` AND from `artifact_hashes`, with no error at any layer. The
+    same defensive re-check `opt_out_key_or_none` makes on its own two
+    halves, for the same reason."""
+    manifest = _manifest(_hybrid("h", "CLAUDE.md", "tiers"))
+    inventory = classify(manifest, tmp_path)
+
+    with pytest.raises(ValueError, match="must be a set of opt_out_key strings"):
+        build_plan(manifest, inventory, opted_out="h#tiers")  # type: ignore[arg-type]
+
+
 @pytest.mark.parametrize(
     "build_fixture",
     [
