@@ -231,8 +231,11 @@ def _read_conda_forge_python_floor() -> str:
     snapshot, not a contract.
     """
     try:
-        repo_root = Path(__file__).resolve().parents[3]
-    except (IndexError, OSError):
+        import sys as _sys
+        _sys.path.insert(0, str(Path(__file__).resolve().parent))
+        from _paths import get_repo_root  # noqa: E402
+        repo_root = get_repo_root()
+    except (ImportError, IndexError, OSError):
         return _DEFAULT_CONDA_FORGE_PYTHON_FLOOR
     pinning = repo_root / ".pixi/envs/local-recipes/conda_build_config.yaml"
     try:
