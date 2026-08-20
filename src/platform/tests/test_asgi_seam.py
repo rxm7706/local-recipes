@@ -10,6 +10,10 @@ from __future__ import annotations
 import asyncio
 from http import HTTPStatus
 
+import pytest
+
+pytest.importorskip("langflow")
+
 from httpx import ASGITransport
 from httpx import AsyncClient
 

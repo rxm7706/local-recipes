@@ -1,8 +1,11 @@
 # ruff: noqa: ERA001, E501
 """Base settings to build other settings files upon."""
 
+import json
+import os
 import ssl
 from pathlib import Path
+from urllib.parse import quote
 
 import environ
 
@@ -104,6 +107,9 @@ THIRD_PARTY_APPS = [
 
 LOCAL_APPS = [
     "platformapp.users",
+    # Story 11.1: migration-only app provisioning `langflow_schema` (AD-5).
+    # No models -- see langflow_integration/apps.py.
+    "langflow_integration",
     # Your stuff: custom apps go here
 ]
 # https://docs.djangoproject.com/en/dev/ref/settings/#installed-apps
@@ -344,6 +350,70 @@ SOCIALACCOUNT_FORMS = {"signup": "platformapp.users.forms.UserSocialSignupForm"}
 # https://django-compressor.readthedocs.io/en/latest/quickstart/#installation
 INSTALLED_APPS += ["compressor"]
 STATICFILES_FINDERS += ["compressor.finders.CompressorFinder"]
+
+# Langflow integration (Story 11.1, spec-python-agent-platform CAP-2)
+# ------------------------------------------------------------------------------
+# AD-5: `LANGFLOW_DATABASE_URL` is derived from this platform's OWN
+# `DATABASES["default"]` -- the SAME PostgreSQL instance, never a second
+# hand-maintained credential -- with a `search_path` suffix pointing Langflow's
+# own SQLAlchemy/Alembic layer at `langflow_schema` (provisioned by
+# `langflow_integration`'s `RunSQL` migration) instead of `public`. Langflow
+# reads this via `os.getenv("LANGFLOW_DATABASE_URL")` directly (its own
+# pydantic-settings service, env_prefix "LANGFLOW_"), not through
+# django-environ, so the derived values are exported into `os.environ` here --
+# they must land there before `langflow_integration/asgi.py` calls
+# `create_app()` (config/asgi.py imports that module only after this settings
+# module has already executed, mirroring how it already sequences
+# config.fastapi_app/config.websocket after django.setup()).
+_langflow_db = DATABASES["default"]
+_langflow_db_auth = ""
+if _langflow_db.get("USER"):
+    _langflow_db_auth = quote(_langflow_db["USER"], safe="")
+    if _langflow_db.get("PASSWORD"):
+        _langflow_db_auth += f":{quote(_langflow_db['PASSWORD'], safe='')}"
+    _langflow_db_auth += "@"
+LANGFLOW_DATABASE_URL = (
+    f"postgresql://{_langflow_db_auth}"
+    f"{quote(_langflow_db.get('HOST') or 'localhost', safe='')}:{_langflow_db.get('PORT') or 5432}"
+    f"/{quote(_langflow_db['NAME'], safe='')}"
+    "?options=-c%20search_path=langflow_schema"
+)
+os.environ["LANGFLOW_DATABASE_URL"] = LANGFLOW_DATABASE_URL
+# The URL's `?options=` suffix alone is NOT sufficient (verified live, Story
+# 11.1): `DatabaseService._get_connect_args()` (langflow/services/database/
+# service.py) hardcodes `connect_args={"options": "-c timezone=utc"}` for
+# every PostgreSQL engine it builds, and SQLAlchemy's `connect_args` wins over
+# the URL's own query-string `options` on that same key -- so Langflow's main
+# session engine (every ORM query outside Alembic, which builds its own
+# connection straight from the URL and is unaffected) silently drops back to
+# the `public` search_path, defeating AD-5 for anything but migrations.
+# `db_driver_connection_settings`, when set, is returned by
+# `_get_connect_args()` BEFORE that hardcoded default is ever reached, so
+# folding both `-c` clauses into one `options` value here is the sanctioned
+# override -- not a vendored patch (AD-9): a documented Langflow settings key.
+os.environ["LANGFLOW_DB_DRIVER_CONNECTION_SETTINGS"] = json.dumps(
+    {"options": "-c search_path=langflow_schema -c timezone=utc"},
+)
+
+# AD-6: statelessness -- Langflow's cache backend is Redis (the platform's own
+# `REDIS_URL`, same instance Django's own cache/Celery broker use), never its
+# in-memory default, and its config/knowledge-base paths are explicit,
+# non-default locations rather than the ambient `platformdirs.user_cache_dir()`
+# default -- both env-overridable, matching every other `env()`-sourced value
+# in this file.
+LANGFLOW_CACHE_TYPE = env("LANGFLOW_CACHE_TYPE", default="redis")
+os.environ["LANGFLOW_CACHE_TYPE"] = LANGFLOW_CACHE_TYPE
+os.environ["LANGFLOW_REDIS_URL"] = env("LANGFLOW_REDIS_URL", default=REDIS_URL)
+
+LANGFLOW_CONFIG_DIR = env(
+    "LANGFLOW_CONFIG_DIR", default=str(BASE_DIR / ".langflow" / "config")
+)
+LANGFLOW_KNOWLEDGE_BASES_DIR = env(
+    "LANGFLOW_KNOWLEDGE_BASES_DIR",
+    default=str(BASE_DIR / ".langflow" / "knowledge_bases"),
+)
+os.environ["LANGFLOW_CONFIG_DIR"] = LANGFLOW_CONFIG_DIR
+os.environ["LANGFLOW_KNOWLEDGE_BASES_DIR"] = LANGFLOW_KNOWLEDGE_BASES_DIR
 
 # Your stuff...
 # ------------------------------------------------------------------------------
