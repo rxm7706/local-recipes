@@ -72,8 +72,16 @@ except ImportError:
 
 
 def _get_data_dir() -> Path:
-    """Get skill-scoped data directory: .claude/data/conda-forge-expert/"""
-    return Path(__file__).parent.parent.parent.parent / "data" / "conda-forge-expert"
+    """Get skill-scoped data directory: .claude/data/conda-forge-expert/
+
+    Still a local copy rather than `_paths.get_data_dir()` (whose `None`
+    contract would ripple through ATLAS_DB/CACHE_DIR and their five use
+    sites) — that migration is tracked. `.resolve()` is NOT optional though:
+    without it a parent-walk over a symlinked invocation path lands one
+    directory off, which is the defect class the Rule-2 retro's new
+    path-resolution constraint exists to prevent.
+    """
+    return Path(__file__).resolve().parent.parent.parent.parent / "data" / "conda-forge-expert"
 
 
 DATA_DIR = _get_data_dir()
@@ -119,8 +127,8 @@ def _make_request(url: str) -> urllib.request.Request:
     # leak _http.py closed, present here too since this fallback duplicates
     # that logic rather than delegating to it.
     headers: dict[str, str] = {"User-Agent": "inventory-channel/1.0"}
-    host = urllib.parse.urlparse(url).netloc.lower().split(":")[0]
-    is_configured_host = host in _fallback_configured_enterprise_hosts()
+    host = _fallback_host_of(url)
+    is_configured_host = bool(host) and host in _fallback_configured_enterprise_hosts()
     if is_configured_host and os.environ.get("JFROG_API_KEY"):
         headers["X-JFrog-Art-Api"] = os.environ["JFROG_API_KEY"]
     elif is_configured_host and os.environ.get("JFROG_USERNAME") and os.environ.get("JFROG_PASSWORD"):
@@ -129,20 +137,39 @@ def _make_request(url: str) -> urllib.request.Request:
     return urllib.request.Request(url, headers=headers)
 
 
+def _fallback_host_of(url: str) -> str:
+    """Lowercased hostname, userinfo and port stripped — the same contract as
+    `_http._host_of`. `urlparse().hostname`, never `netloc.split(':')[0]`:
+    the latter returns the USERNAME for `https://user:pw@host/` (a routine
+    Artifactory form, so the real mirror would never match) and mangles IPv6
+    literals into a shared `[2001` prefix (so an unrelated host would).
+    Returns `""` — never raises — on a malformed URL."""
+    try:
+        return (urllib.parse.urlparse(url).hostname or "").lower()
+    except ValueError:
+        return ""
+
+
 def _fallback_configured_enterprise_hosts() -> set[str]:
     """Env-var-derived host allowlist for `_make_request`'s no-`_http`
     fallback. A minimal, local re-derivation (not an `_http` import — that
-    path is already unavailable here by construction) of the same `*_BASE_URL`
-    scan `_http._configured_enterprise_hosts()` performs, so the two auth
-    paths agree even when `_http` can't be loaded."""
+    path is already unavailable here by construction) of the `*_BASE_URL`
+    half of `_http._configured_enterprise_hosts()`.
+
+    **Deliberately narrower than `_http`'s:** it does NOT read pixi config,
+    which `_http._pixi_configured_hosts()` does. An operator on the
+    pixi-only enterprise setup that `docs/reference/pixi-config-jfrog.example.toml`
+    documents therefore gets no credential from THIS path. That is the safe
+    direction (auth withheld, not leaked) and the path is only reachable when
+    `_http` — a sibling file in this same directory — cannot be imported at
+    all; re-deriving pixi's whole config chain here would be a third
+    standalone copy of logic the retro exists to consolidate.
+    """
     hosts: set[str] = set()
     for key, value in os.environ.items():
         if not key.endswith("_BASE_URL") or not value:
             continue
-        try:
-            host = urllib.parse.urlparse(value).netloc.lower().split(":")[0]
-        except ValueError:
-            continue
+        host = _fallback_host_of(value)
         if host:
             hosts.add(host)
     return hosts

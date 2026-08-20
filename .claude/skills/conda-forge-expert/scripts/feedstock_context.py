@@ -31,8 +31,12 @@ from typing import List, Optional
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 from _paths import get_data_dir  # noqa: E402
 
+# `get_data_dir()` returns None when the repo root can't be resolved; the
+# on-disk cache is an optimization, so we degrade to "no caching" rather than
+# raising a TypeError at import time (the crash `_paths`'s lazy contract
+# exists to avoid).
 _DATA_DIR = get_data_dir()
-_CACHE_DIR = _DATA_DIR / "feedstock_issue_cache"
+_CACHE_DIR = None if _DATA_DIR is None else _DATA_DIR / "feedstock_issue_cache"
 _CACHE_TTL_SECONDS = 1800  # 30 min — issue state changes faster than recipe content
 
 
@@ -60,14 +64,17 @@ class FeedstockContext:
     error: Optional[str] = None
 
 
-def _cache_path(pkg_name: str) -> Path:
+def _cache_path(pkg_name: str) -> Optional[Path]:
+    """Cache file for `pkg_name`, or None when the data dir couldn't resolve."""
+    if _CACHE_DIR is None:
+        return None
     safe = pkg_name.replace("/", "_").replace(" ", "_")
     return _CACHE_DIR / f"{safe}.json"
 
 
 def _load_cache(pkg_name: str) -> Optional[dict]:
     cache = _cache_path(pkg_name)
-    if not cache.exists():
+    if cache is None or not cache.exists():
         return None
     try:
         if time.time() - cache.stat().st_mtime > _CACHE_TTL_SECONDS:
@@ -78,9 +85,12 @@ def _load_cache(pkg_name: str) -> Optional[dict]:
 
 
 def _store_cache(pkg_name: str, data: dict) -> None:
+    cache = _cache_path(pkg_name)
+    if cache is None or _CACHE_DIR is None:
+        return  # caching disabled — data dir unresolvable
     try:
         _CACHE_DIR.mkdir(parents=True, exist_ok=True)
-        _cache_path(pkg_name).write_text(json.dumps(data, indent=2))
+        cache.write_text(json.dumps(data, indent=2))
     except OSError:
         pass
 

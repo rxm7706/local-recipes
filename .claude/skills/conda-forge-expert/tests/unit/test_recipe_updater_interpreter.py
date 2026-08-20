@@ -15,6 +15,8 @@ import inspect
 import subprocess
 import sys
 
+import pytest
+
 
 class TestRecipeUpdaterInterpreterResolution:
     def test_real_write_path_invokes_recipe_editor_with_resolved_interpreter(
@@ -27,6 +29,12 @@ class TestRecipeUpdaterInterpreterResolution:
         actually returning, and would also miss a regression that kept the
         string "CONDA_PYTHON_EXE" somewhere but stopped using its resolved
         value as argv[0]."""
+        # `recipe_updater.py` treats ruamel.yaml as OPTIONAL (it keeps a
+        # RUAMEL_AVAILABLE flag); this test drives the parse path, so without
+        # the guard a lean env fails here with a bare `assert False is True`
+        # that reports an interpreter-resolution regression when the real
+        # cause is a missing parser.
+        pytest.importorskip("ruamel.yaml")
         updater = load_module("recipe_updater.py")
 
         recipe_path = tmp_path / "recipe.yaml"

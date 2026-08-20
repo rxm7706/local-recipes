@@ -28,10 +28,140 @@ spec.loader.exec_module(_http)
 
 @pytest.fixture(autouse=True)
 def _clean_enterprise_env(monkeypatch):
-    """Every test starts with no JFrog / *_BASE_URL vars set."""
+    """Every test starts with no JFrog / mirror env vars AND an empty pixi
+    config.
+
+    Stubbing `read_pixi_config` is not optional hygiene: without it the
+    allowlist reads the DEVELOPER'S real pixi config chain (`./.pixi/
+    config.toml`, `~/.pixi/config.toml`, `/etc/pixi/config.toml`), so every
+    set-equality assertion below would fail on exactly the enterprise machine
+    this feature exists for — the suite would be green here and red for the
+    operator. Tests that need pixi hosts re-stub it themselves.
+    """
     for key in list(os.environ):
         if key.endswith("_BASE_URL") or key.startswith("JFROG_"):
             monkeypatch.delenv(key, raising=False)
+    for key in _http._EXTRA_MIRROR_ENV_VARS:
+        monkeypatch.delenv(key, raising=False)
+    monkeypatch.setattr(_http, "read_pixi_config", lambda: {})
+
+
+class TestHostOf:
+    """`_host_of` — the single host-derivation used by both halves of the
+    allowlist and by `auth_headers_for` itself. It parses with
+    `urlparse().hostname`; the `netloc.split(":")[0]` it replaced was wrong
+    on two shapes that decide whether a credential is withheld or leaked."""
+
+    def test_strips_port(self):
+        assert _http._host_of("https://mirror.example.com:8081/cf") == "mirror.example.com"
+
+    def test_strips_userinfo(self):
+        """`https://user:token@host/` is a routine Artifactory form.
+        `netloc.split(":")[0]` returns the USERNAME, so the real mirror never
+        enters the allowlist and its own credential is silently withheld."""
+        assert (
+            _http._host_of("https://svc:tok@artifactory.corp.com/api/conda/cf")
+            == "artifactory.corp.com"
+        )
+
+    def test_strips_userinfo_and_port_together(self):
+        assert (
+            _http._host_of("https://svc:tok@artifactory.corp.com:8081/api/conda/cf")
+            == "artifactory.corp.com"
+        )
+
+    def test_ipv6_literals_are_distinguished(self):
+        """`netloc.split(":")[0]` collapsed EVERY IPv6 host to `[2001`, so an
+        unrelated address sharing that prefix matched the allowlist and
+        received the credential — the leak class this gate exists to close."""
+        a = _http._host_of("https://[2001:db8::1]:8081/x")
+        b = _http._host_of("https://[2001:db8::2]/y")
+        assert a == "2001:db8::1"
+        assert b == "2001:db8::2"
+        assert a != b
+
+    def test_lowercases(self):
+        assert _http._host_of("https://MIRROR.Example.COM/cf") == "mirror.example.com"
+
+
+class TestPublicDefaultHosts:
+    """Public fallback hosts can never enter the enterprise allowlist."""
+
+    def test_derived_from_module_defaults_not_a_hand_kept_list(self):
+        hosts = _http._public_default_hosts()
+        # Sampled across several resolver families — all come from the
+        # `_DEFAULT_*` globals, so adding a resolver extends this for free.
+        assert {"pypi.org", "conda.anaconda.org", "repo.prefix.dev",
+                "registry.npmjs.org", "github.com"} <= hosts
+
+    def test_base_url_pinned_to_a_public_default_contributes_no_host(self, monkeypatch):
+        """A merely redundant `PYPI_BASE_URL=https://pypi.org/simple` would
+        otherwise mark the public host "configured" and re-open the leak."""
+        monkeypatch.setenv("PYPI_BASE_URL", "https://pypi.org/simple")
+        assert "pypi.org" not in _http._configured_enterprise_hosts()
+
+    def test_jfrog_credential_not_sent_to_a_public_default_named_by_a_base_url(
+        self, monkeypatch
+    ):
+        monkeypatch.setenv("PYPI_BASE_URL", "https://pypi.org/simple")
+        monkeypatch.setenv("JFROG_API_KEY", "secret-key")
+        assert _http.auth_headers_for("https://pypi.org/simple/example/") == {}
+
+
+class TestExtraMirrorEnvVars:
+    def test_npm_native_registry_var_is_allowlisted(self, monkeypatch):
+        """`resolve_npm_urls` honours npm's own `npm_config_registry`/
+        `NPM_CONFIG_REGISTRY`, neither of which ends in `_BASE_URL`. An
+        operator routing npm at Artifactory the npm-native way must still
+        clear the gate, or their mirror 401s."""
+        monkeypatch.setenv("npm_config_registry", "https://npm.corp.internal/repo")
+        monkeypatch.setenv("JFROG_API_KEY", "secret-key")
+        headers = _http.auth_headers_for("https://npm.corp.internal/repo/example")
+        assert headers.get("X-JFrog-Art-Api") == "secret-key"
+
+
+class TestGateShortCircuit:
+    def test_allowlist_not_derived_when_no_jfrog_credential_is_set(self, monkeypatch):
+        """The allowlist gates a JFrog credential and nothing else, so with no
+        credential set there is nothing to gate. Deriving it anyway costs an
+        os.environ walk plus stat+TOML-parse of the pixi chain on EVERY
+        outbound request."""
+        calls = []
+        monkeypatch.setattr(
+            _http,
+            "_configured_enterprise_hosts",
+            lambda: calls.append(1) or set(),
+        )
+        _http.auth_headers_for("https://example.com/x")
+        assert calls == []
+
+    def test_allowlist_still_derived_when_a_credential_is_set(self, monkeypatch):
+        calls = []
+        monkeypatch.setattr(
+            _http,
+            "_configured_enterprise_hosts",
+            lambda: calls.append(1) or {"example.com"},
+        )
+        monkeypatch.setenv("JFROG_API_KEY", "secret-key")
+        _http.auth_headers_for("https://example.com/x")
+        assert calls == [1]
+
+
+class TestPixiConfigReadFailure:
+    def test_read_pixi_config_raising_does_not_break_every_request(self, monkeypatch):
+        """`read_pixi_config` builds its candidate list with `Path.home()`,
+        which raises RuntimeError when neither HOME nor a passwd entry
+        resolves (rootless / arbitrary-UID containers). Before the gate,
+        that was confined to the resolver paths; the gate put it on every
+        outbound request, so an unguarded raise would take down all HTTP."""
+        def _boom():
+            raise RuntimeError("Could not determine home directory.")
+
+        monkeypatch.setattr(_http, "read_pixi_config", _boom)
+        monkeypatch.setenv("CONDA_FORGE_BASE_URL", "https://mirror.example.com/cf")
+        monkeypatch.setenv("JFROG_API_KEY", "secret-key")
+        headers = _http.auth_headers_for("https://mirror.example.com/cf/repodata.json")
+        assert headers.get("X-JFrog-Art-Api") == "secret-key"
 
 
 class TestConfiguredEnterpriseHosts:
@@ -116,13 +246,29 @@ class TestPixiConfiguredHosts:
         assert _http._pixi_configured_hosts(config=cfg) == {"good.example.com"}
 
     def test_public_default_fallbacks_are_not_pixi_configured(self):
-        """The resolvers' own public-default fallback (repo.prefix.dev,
-        pypi.org, ...) must never appear here — mixing it in would always
-        mark the public host "configured" and defeat the allowlist."""
-        cfg = {}  # nothing configured
+        """The resolvers' own public-default fallbacks (repo.prefix.dev,
+        pypi.org, ...) must never appear here — mixing them in would always
+        mark the public host "configured" and defeat the allowlist.
+
+        The config below NAMES those public hosts explicitly; asserting
+        against an empty `config={}` (as this test first did) could not fail
+        no matter what the implementation returned."""
+        cfg = {
+            "default-channels": ["https://repo.prefix.dev/conda-forge"],
+            "pypi-config": {"index-url": "https://pypi.org/simple"},
+            "mirrors": {
+                "https://conda.anaconda.org/conda-forge": [
+                    "https://conda.anaconda.org/conda-forge",
+                    "https://mycompany.jfrog.io/artifactory/conda-forge-remote",
+                ]
+            },
+        }
         hosts = _http._pixi_configured_hosts(config=cfg)
         assert "repo.prefix.dev" not in hosts
         assert "pypi.org" not in hosts
+        assert "conda.anaconda.org" not in hosts
+        # ...while the genuinely enterprise host alongside them survives.
+        assert hosts == {"mycompany.jfrog.io"}
 
     def test_configured_enterprise_hosts_unions_env_and_pixi_derived_hosts(self, monkeypatch):
         monkeypatch.setenv("CONDA_FORGE_BASE_URL", "https://env-configured.example.com/cf")

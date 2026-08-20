@@ -184,10 +184,68 @@ def netrc_credentials(url: str) -> tuple[str, str] | None:
 # ── Request builder with enterprise auth ─────────────────────────────────────
 
 def _host_of(url: str) -> str:
-    """Lowercased hostname, port stripped — matches `netrc_credentials`'s own
-    convention so a `*_BASE_URL` set without an explicit port still matches a
-    request URL that carries one (or vice versa)."""
-    return urlparse(url).netloc.lower().split(":")[0]
+    """Lowercased hostname — userinfo AND port both stripped.
+
+    `urlparse().hostname`, never `netloc.split(":")[0]`: the latter is wrong
+    on two shapes this allowlist actually sees. For
+    `https://svc:tok@artifactory.corp/api/conda/cf` — a routine Artifactory
+    form — it yields the *username* (`svc`), so the real mirror never enters
+    the allowlist and its credential is silently withheld. For an IPv6
+    literal it yields `[2001` for every address sharing that prefix, so an
+    unrelated host matches the allowlist and RECEIVES the credential. Port
+    stripping (the reason this helper exists) is preserved: `.hostname`
+    drops it too, so a `*_BASE_URL` set without an explicit port still
+    matches a request URL that carries one, or vice versa.
+    """
+    return (urlparse(url).hostname or "").lower()
+
+
+def _public_default_hosts() -> frozenset[str]:
+    """Hosts of every public fallback this module ships — derived from its own
+    `_DEFAULT_*` globals, never a hand-kept list, so a newly-added resolver's
+    fallback is covered the moment it is declared.
+
+    These can never enter the enterprise allowlist. A JFrog credential is
+    never legitimately needed against pypi.org / conda.anaconda.org /
+    registry.npmjs.org / ..., and without this exclusion a merely redundant
+    `PYPI_BASE_URL=https://pypi.org/simple` would mark the public host
+    "configured" and re-open exactly the cross-resolver leak the allowlist
+    exists to close. `_pixi_configured_hosts` already excluded them by
+    construction; the env-var half did not, which is the asymmetry this
+    closes.
+    """
+    global _PUBLIC_DEFAULT_HOSTS
+    if _PUBLIC_DEFAULT_HOSTS is None:
+        urls: list[str] = []
+        for name, value in list(globals().items()):
+            if not name.startswith("_DEFAULT_"):
+                continue
+            if isinstance(value, str):
+                urls.append(value)
+            elif isinstance(value, (tuple, list)):
+                urls.extend(v for v in value if isinstance(v, str))
+        hosts: set[str] = set()
+        for u in urls:
+            try:
+                host = _host_of(u)
+            except ValueError:
+                continue
+            if host:
+                hosts.add(host)
+        _PUBLIC_DEFAULT_HOSTS = frozenset(hosts)
+    return _PUBLIC_DEFAULT_HOSTS
+
+
+_PUBLIC_DEFAULT_HOSTS: frozenset[str] | None = None
+
+# Mirror-pointing env vars that do NOT end in `_BASE_URL`. Kept explicit (and
+# short) because they are npm's own spelling, not this module's convention —
+# `resolve_npm_urls` reads both, so an operator who routes npm at Artifactory
+# the npm-native way must still clear the JFrog host gate.
+_EXTRA_MIRROR_ENV_VARS: tuple[str, ...] = (
+    "npm_config_registry",
+    "NPM_CONFIG_REGISTRY",
+)
 
 
 def _pixi_configured_hosts(config: dict | None = None) -> set[str]:
@@ -202,7 +260,19 @@ def _pixi_configured_hosts(config: dict | None = None) -> set[str]:
     pypi.org, ...) — mixing those in would always mark the public host
     "configured" and defeat the allowlist entirely.
     """
-    cfg = read_pixi_config() if config is None else config
+    if config is None:
+        try:
+            cfg = read_pixi_config()
+        except Exception as exc:  # noqa: BLE001 — best-effort, never fatal
+            # `read_pixi_config` builds its candidate list with `Path.home()`,
+            # which raises RuntimeError when neither HOME nor a passwd entry
+            # resolves (rootless / arbitrary-UID containers). That used to be
+            # confined to the resolver paths; this gate put it on EVERY
+            # outbound request, so an unguarded raise would take down all HTTP.
+            _log(f"_http: skipping pixi-config host derivation ({exc})")
+            cfg = {}
+    else:
+        cfg = config
     urls: list[str] = []
 
     mirrors = cfg.get("mirrors") if isinstance(cfg, dict) else None
@@ -232,7 +302,7 @@ def _pixi_configured_hosts(config: dict | None = None) -> set[str]:
             continue
         if host:
             hosts.add(host)
-    return hosts
+    return hosts - _public_default_hosts()
 
 
 def _configured_enterprise_hosts() -> set[str]:
@@ -243,13 +313,17 @@ def _configured_enterprise_hosts() -> set[str]:
     that is currently set — the resolver chain already defines ~24 of these
     (`CONDA_FORGE_BASE_URL`, `PYPI_BASE_URL`, `GITHUB_RAW_BASE_URL`, ...) and
     enumerating them by name here would silently miss the next one added. A
-    malformed URL value contributes no host rather than raising. Pixi-config
-    half: see `_pixi_configured_hosts`.
+    malformed URL value contributes no host rather than raising. The only
+    non-`_BASE_URL` vars read are npm's own (`_EXTRA_MIRROR_ENV_VARS`), which
+    `resolve_npm_urls` honours. Pixi-config half: see `_pixi_configured_hosts`.
+
+    Public default hosts are subtracted from BOTH halves — see
+    `_public_default_hosts`.
     """
     hosts: set[str] = set()
-    for key, value in os.environ.items():
-        if not key.endswith("_BASE_URL") or not value:
-            continue
+    values = [v for k, v in os.environ.items() if k.endswith("_BASE_URL") and v]
+    values += [v for v in (os.environ.get(k) for k in _EXTRA_MIRROR_ENV_VARS) if v]
+    for value in values:
         try:
             host = _host_of(value)
         except ValueError:
@@ -258,6 +332,7 @@ def _configured_enterprise_hosts() -> set[str]:
             continue
         if host:
             hosts.add(host)
+    hosts -= _public_default_hosts()
     hosts |= _pixi_configured_hosts()
     return hosts
 
@@ -283,8 +358,11 @@ def auth_headers_for(url: str, skip_auth: bool = False) -> dict[str, str]:
 
     JFrog credentials (steps 1-2) are host-gated against
     `_configured_enterprise_hosts()` — the set of hosts named by any
-    currently-set `*_BASE_URL` env var or the operator's pixi config (see
-    `_pixi_configured_hosts`). The gate is host-level, not repo-scoped
+    currently-set `*_BASE_URL` env var (plus npm's own registry vars) or the
+    operator's pixi config, MINUS this module's own public fallback hosts,
+    which can never qualify (see `_public_default_hosts`). The gate is
+    skipped entirely when no JFrog credential is set — there is nothing to
+    gate, and the derivation is not free. It is host-level, not repo-scoped
     (Artifactory's own permission model handles per-repo authorization once
     the request lands), and it does not distinguish which resolver a host
     came from — a JFrog instance fronting several ecosystems under one
@@ -305,11 +383,24 @@ def auth_headers_for(url: str, skip_auth: bool = False) -> dict[str, str]:
     headers: dict[str, str] = {}
     host = _host_of(url)
     # Substring match (not equality) is deliberate and pre-existing — matches
-    # any caller-supplied github.com/api.github.com subdomain (e.g. a future
+    # any caller-supplied github.com subdomain (e.g. a future
     # codeload.github.com/gist.github.com call site), same as before this fix.
-    is_github_host = "github.com" in host or "api.github.com" in host
+    # `api.github.com` needs no separate clause: it contains `github.com`.
+    is_github_host = "github.com" in host
 
-    is_configured_host = not is_github_host and host in _configured_enterprise_hosts()
+    # Short-circuit: the allowlist only ever gates a JFrog credential, so when
+    # none is set there is nothing to gate and the scan is pure cost. It is not
+    # free — it walks os.environ and (via `_pixi_configured_hosts`) stats and
+    # TOML-parses the pixi config chain, on a path every make_request() takes.
+    has_jfrog_cred = bool(
+        os.environ.get("JFROG_API_KEY")
+        or (os.environ.get("JFROG_USERNAME") and os.environ.get("JFROG_PASSWORD"))
+    )
+    is_configured_host = (
+        has_jfrog_cred
+        and not is_github_host
+        and host in _configured_enterprise_hosts()
+    )
 
     # JFrog Artifactory auth (env vars take precedence over .netrc), gated to
     # hosts the operator actually configured a mirror for. A configured host

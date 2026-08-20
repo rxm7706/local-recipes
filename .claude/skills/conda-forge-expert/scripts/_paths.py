@@ -26,13 +26,20 @@ def get_repo_root() -> Path | None:
     """Return the monorepo root (parent of ``.claude/``), or ``None`` if this
     file's own location cannot be resolved to enough ancestor components (a
     symlink loop, or this module relocated somewhere with fewer than 4 real
-    parents — see the module docstring's "future extraction" note).
+    parents).
 
     Computed lazily, per call — never at import time — so a resolution
     failure surfaces only to a caller that actually calls this function, not
-    as an import-time crash for every script that merely imports this
-    module (recipe_optimizer.py's own caller catches this; see its
-    `_read_conda_forge_python_floor` docstring).
+    as an import-time crash for every script that merely imports this module.
+
+    **``None`` is a real return value, not a theoretical one: every caller
+    must handle it.** It is never raised, so nothing downstream catches it
+    for you — an unguarded ``get_data_dir() / "x"`` at module scope is a
+    ``TypeError`` at import, which is the very crash the lazy contract exists
+    to avoid. The four in-tree callers each handle it explicitly:
+    ``recipe_optimizer.py`` falls back to its documented default,
+    ``feedstock_context.py``/``feedstock_lookup.py`` disable their (optional)
+    on-disk cache, and ``bootstrap_data.py`` exits with a diagnostic.
     """
     try:
         # .claude/skills/conda-forge-expert/scripts/_paths.py -> repo root (4 levels up)

@@ -9,6 +9,34 @@ did not close this sibling copy of the identical cross-resolver leak.
 """
 from __future__ import annotations
 
+import os
+import sys
+
+import pytest
+
+_CRED_VARS = (
+    "JFROG_API_KEY", "ARTIFACTORY_API_KEY",
+    "JFROG_TOKEN", "ARTIFACTORY_TOKEN", "CONDA_TOKEN",
+    "JFROG_USER", "ARTIFACTORY_USER",
+    "JFROG_PASSWORD", "ARTIFACTORY_PASSWORD",
+    "CONDA_CHANNEL_URL",
+)
+
+
+@pytest.fixture(autouse=True)
+def _clean_cred_env(monkeypatch):
+    """Start from no credentials and no mirror vars.
+
+    Without this, a developer or CI shell that already exports (say)
+    `JFROG_API_KEY` makes the `api_key` branch win before the branch a test
+    is actually exercising, so the test fails against correct code.
+    """
+    for key in _CRED_VARS:
+        monkeypatch.delenv(key, raising=False)
+    for key in list(os.environ):
+        if key.endswith("_BASE_URL"):
+            monkeypatch.delenv(key, raising=False)
+
 
 class TestDependencyCheckerAuthHostGate:
     def test_jfrog_api_key_not_sent_to_unconfigured_host(self, load_module, monkeypatch):
@@ -50,18 +78,86 @@ class TestDependencyCheckerAuthHostGate:
         )
         assert headers2.get("Authorization") == "Bearer bearer-secret"
 
-    def test_falls_back_to_unconditional_when_http_module_unimportable(
+    def test_explicitly_configured_channel_host_is_authorized(
         self, load_module, monkeypatch
     ):
-        """`_is_configured_enterprise_host` degrades to True (its pre-fix
-        behavior) when `_http` can't be imported at all — no worse than
-        before this patch in that already-degraded case."""
+        """The operator's OWN channel must still get its credential.
+
+        `--channel` / `CONDA_CHANNEL_URL` / the enterprise config are how this
+        tool is pointed at an Artifactory channel, and NONE of them is a
+        `*_BASE_URL`. Gating on `_http`'s allowlist alone therefore withheld
+        the credential from the one channel the operator configured — a
+        silent 401/404 on every lookup, and the reason `CONDA_TOKEN` (an
+        anaconda.org channel token, not a JFrog one) reached nothing at all.
+        """
+        monkeypatch.setenv("CONDA_TOKEN", "anaconda-channel-token")
+        monkeypatch.setenv("CONDA_CHANNEL_URL", "https://conda.anaconda.org/myprivateorg")
         checker = load_module("dependency-checker.py")
-        monkeypatch.setattr(
-            checker,
-            "_is_configured_enterprise_host",
-            lambda url: True,
+        channels = checker.get_configured_channels()
+        assert channels == ["https://conda.anaconda.org/myprivateorg"]
+        headers = checker._auth_headers(channels[0] + "/linux-64/repodata.json")
+        assert headers.get("Authorization") == "Bearer anaconda-channel-token"
+
+    def test_public_fallback_channel_is_not_authorized(self, load_module, monkeypatch):
+        """The step-4 fallback can land on a public default nobody chose, so
+        it is deliberately NOT remembered as an explicit channel."""
+        monkeypatch.setenv("CONDA_TOKEN", "anaconda-channel-token")
+        checker = load_module("dependency-checker.py")
+        checker.get_configured_channels()  # falls through to the public default
+        headers = checker._auth_headers(
+            "https://conda.anaconda.org/conda-forge/linux-64/repodata.json"
         )
+        assert headers == {}
+
+    def test_no_credential_when_http_unimportable_and_nothing_explicit(
+        self, load_module, monkeypatch
+    ):
+        """When `_http` can't be imported the gate must NOT degrade to "yes,
+        unconditionally" — that reinstated the exact leak this gate exists to
+        close for everyone in that state. With no explicit channel either,
+        the answer is no credential."""
+        checker = load_module("dependency-checker.py")
+        monkeypatch.setitem(sys.modules, "_http", None)  # forces ImportError
         monkeypatch.setenv("JFROG_API_KEY", "secret-key")
-        headers = checker._auth_headers("https://conda.anaconda.org/conda-forge/linux-64/repodata.json")
+        assert checker._is_configured_enterprise_host("https://anything.example.com/x") is False
+        headers = checker._auth_headers("https://anything.example.com/x")
+        assert headers == {}
+
+    def test_explicit_channel_still_authorized_when_http_unimportable(
+        self, load_module, monkeypatch
+    ):
+        """...but an explicitly-named channel still gates correctly on its
+        own, with no `_http` at all — the offline / external-clone case."""
+        monkeypatch.setenv("CONDA_CHANNEL_URL", "https://artifactory.corp.com/api/conda/cf")
+        monkeypatch.setenv("JFROG_API_KEY", "secret-key")
+        checker = load_module("dependency-checker.py")
+        channels = checker.get_configured_channels()
+        monkeypatch.setitem(sys.modules, "_http", None)  # forces ImportError
+        headers = checker._auth_headers(channels[0] + "/linux-64/repodata.json")
         assert headers.get("X-JFrog-Art-Api") == "secret-key"
+
+    def test_host_gate_strips_userinfo_and_port(self, load_module, monkeypatch):
+        """Same `urlparse().hostname` contract as `_http._host_of`: a
+        `https://user:token@host/` channel (a routine Artifactory form) must
+        resolve to the host, not to the username."""
+        monkeypatch.setenv("JFROG_API_KEY", "secret-key")
+        monkeypatch.setenv(
+            "CONDA_CHANNEL_URL", "https://svc:tok@artifactory.corp.com:8081/api/conda/cf"
+        )
+        checker = load_module("dependency-checker.py")
+        checker.get_configured_channels()
+        assert checker._EXPLICIT_CHANNEL_HOSTS == {"artifactory.corp.com"}
+        headers = checker._auth_headers("https://artifactory.corp.com/api/conda/cf/repodata.json")
+        assert headers.get("X-JFrog-Art-Api") == "secret-key"
+
+    def test_sys_path_does_not_grow_per_call(self, load_module, monkeypatch):
+        """The gate used to `sys.path.insert(0, ...)` on every invocation, and
+        it sits on the per-request path — a long-lived process (the MCP
+        server) grew sys.path by one duplicate entry per request, taxing
+        every later import."""
+        monkeypatch.setenv("JFROG_API_KEY", "secret-key")
+        checker = load_module("dependency-checker.py")
+        before = len(sys.path)
+        for _ in range(50):
+            checker._auth_headers("https://conda.anaconda.org/conda-forge/repodata.json")
+        assert len(sys.path) == before

@@ -72,10 +72,17 @@ class TestSkipAuth:
 
     def test_make_request_default_injects_auth_for_configured_host(self, monkeypatch):
         """Regression guard: skip_auth defaults to False; injection still fires
-        for a host the operator actually configured a mirror at."""
+        for a host the operator actually configured a mirror at.
+
+        The mirror host must be a genuinely enterprise one. Using a public
+        default here (this test named `anaconda.org`) asserts that the JFrog
+        credential IS sent to a public host — a green test pinning the very
+        leak the surrounding suite exists to close."""
         monkeypatch.setenv("JFROG_API_KEY", "dummy-key-12345")
-        monkeypatch.setenv("CONDA_FORGE_BASE_URL", "https://anaconda.org/conda-forge")
-        req = _http.make_request("https://anaconda.org/conda-forge/repodata.json")
+        monkeypatch.setenv(
+            "CONDA_FORGE_BASE_URL", "https://mycompany.jfrog.io/artifactory/conda-forge"
+        )
+        req = _http.make_request("https://mycompany.jfrog.io/artifactory/conda-forge/repodata.json")
         headers = dict(req.headers)
         keys_lower = {k.lower(): v for k, v in headers.items()}
         assert keys_lower.get("x-jfrog-art-api") == "dummy-key-12345"

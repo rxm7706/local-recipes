@@ -819,6 +819,17 @@ def main() -> int:
                         help="Print steps without executing")
     args = parser.parse_args()
 
+    # `_paths` returns None (never raises) when the repo root can't be
+    # resolved. Every DATA_DIR/REPO_ROOT use below is essential — there is no
+    # degraded mode — so fail here with a diagnostic rather than several
+    # hundred lines deeper with an opaque `'NoneType' has no attribute mkdir`.
+    if DATA_DIR is None or REPO_ROOT is None:
+        print("bootstrap-data: cannot resolve the repo root from "
+              f"{Path(__file__).resolve()} — expected it 4 levels above "
+              ".claude/skills/conda-forge-expert/scripts/. Run this script "
+              "from a normal checkout of the repo.", file=sys.stderr)
+        return 2
+
     print("═" * 70)
     print("  conda-forge-expert · bootstrap-data")
     print(f"  Data dir:  {DATA_DIR}")
