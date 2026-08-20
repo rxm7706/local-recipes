@@ -2,7 +2,7 @@
 <module external.system.id="pyproject.toml" type="PYTHON_MODULE" version="4">
   <component name="NewModuleRootManager">
     <content url="file://$MODULE_DIR$/build_artifacts/linux64/bld/rattler-build_humanize_1787010219/work">
-      <sourceFolder url="file://$MODULE_DIR$/build_artifacts/linux64/bld/rattler-build_humanize_1787010219/work/src" />
+      <sourceFolder url="file://$MODULE_DIR$/build_artifacts/linux64/bld/rattler-build_humanize_1787010219/work/src" isTestSource="false" />
     </content>
     <orderEntry type="sourceFolder" forTests="false" />
   </component>
