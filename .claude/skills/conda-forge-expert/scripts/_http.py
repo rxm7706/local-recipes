@@ -183,12 +183,36 @@ def netrc_credentials(url: str) -> tuple[str, str] | None:
 
 # ── Request builder with enterprise auth ─────────────────────────────────────
 
+def _configured_enterprise_hosts() -> set[str]:
+    """Hosts the operator has explicitly pointed an enterprise mirror at.
+
+    Derived (never hardcoded) from every `*_BASE_URL` env var that is
+    currently set — the resolver chain already defines ~24 of these
+    (`CONDA_FORGE_BASE_URL`, `PYPI_BASE_URL`, `GITHUB_RAW_BASE_URL`, ...)
+    and enumerating them by name here would silently miss the next one
+    added. A malformed URL value contributes no host rather than raising.
+    """
+    hosts: set[str] = set()
+    for key, value in os.environ.items():
+        if not key.endswith("_BASE_URL") or not value:
+            continue
+        try:
+            host = urlparse(value).netloc.lower()
+        except ValueError:
+            # e.g. an unclosed IPv6-bracket literal — malformed input,
+            # not a host to allowlist.
+            continue
+        if host:
+            hosts.add(host)
+    return hosts
+
+
 def auth_headers_for(url: str, skip_auth: bool = False) -> dict[str, str]:
     """Build the enterprise auth headers for `url`.
 
     Auth priority (first match wins):
-      1. JFROG_API_KEY       → X-JFrog-Art-Api header
-      2. JFROG_USERNAME+PWD  → Basic auth header
+      1. JFROG_API_KEY       → X-JFrog-Art-Api header (host-gated, below)
+      2. JFROG_USERNAME+PWD  → Basic auth header (host-gated, below)
       3. GITHUB_TOKEN/GH_TOKEN (github.com) → Bearer header
       4. ~/.netrc lookup     → Basic auth header
       5. Unauthenticated     → empty dict
@@ -201,19 +225,41 @@ def auth_headers_for(url: str, skip_auth: bool = False) -> dict[str, str]:
     or netrc entry. Use this for known-public endpoints where leaking
     JFROG_API_KEY / GITHUB_TOKEN cross-host would be a misconfiguration
     (e.g. dev.azure.com's public conda-forge feedstock-builds project).
-    The unconditional JFROG_API_KEY injection in step 1 above is the
-    documented cross-resolver leak — `skip_auth` is the call-site opt-out
-    until a host allowlist lands.
+
+    JFrog credentials (steps 1-2) are host-gated against
+    `_configured_enterprise_hosts()` — the set of hosts named by any
+    currently-set `*_BASE_URL` env var. The gate is host-level, not
+    repo-scoped (Artifactory's own permission model handles per-repo
+    authorization once the request lands), and it does not distinguish
+    which resolver a host came from — a JFrog instance fronting several
+    ecosystems under one credential is expected to receive that credential
+    for all of them. What it does close is the former UNCONDITIONAL
+    cross-resolver leak: a public fallback host the operator never
+    configured anything for previously received the header whenever the
+    key was merely set. Closing that without an SSRF-style denylist
+    matters because a denylist would wrongly block the very enterprise
+    mirrors this routing exists to reach (see AUD-CFE-004). GitHub-token
+    and `.netrc` auth
+    (steps 3-4) were already host-scoped and are unaffected.
     """
     if skip_auth:
         return {}
     headers: dict[str, str] = {}
     host = urlparse(url).netloc.lower()
 
-    # JFrog Artifactory auth (env vars take precedence over .netrc)
-    if os.environ.get("JFROG_API_KEY"):
+    is_configured_host = host in _configured_enterprise_hosts()
+
+    # JFrog Artifactory auth (env vars take precedence over .netrc), gated to
+    # hosts the operator actually configured a mirror for. A configured host
+    # with no JFrog credential set falls through to the generic .netrc branch
+    # below, same as it always has.
+    if is_configured_host and os.environ.get("JFROG_API_KEY"):
         headers["X-JFrog-Art-Api"] = os.environ["JFROG_API_KEY"]
-    elif os.environ.get("JFROG_USERNAME") and os.environ.get("JFROG_PASSWORD"):
+    elif (
+        is_configured_host
+        and os.environ.get("JFROG_USERNAME")
+        and os.environ.get("JFROG_PASSWORD")
+    ):
         creds = f"{os.environ['JFROG_USERNAME']}:{os.environ['JFROG_PASSWORD']}"
         headers["Authorization"] = "Basic " + b64encode(creds.encode()).decode()
     # GitHub API auth
