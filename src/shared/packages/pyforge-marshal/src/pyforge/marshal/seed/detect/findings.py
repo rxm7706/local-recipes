@@ -131,8 +131,8 @@ REMEDIES: Mapping[FindingType, str] = MappingProxyType({
         "successor by hand when ready."
     ),
     FindingType.OPTED_OUT: (
-        "Informational only, no action required; remove the skip glob from "
-        "state to bring this artifact back under management."
+        "Informational only, no action required; run `marshal seed adopt "
+        "--reinstate <artifact>#<region>` to bring it back under management."
     ),
 })
 

@@ -4,6 +4,10 @@ mismatched-remedy and blank-field rejection, ``Finding.new(...)`` string
 coercion and invalid-value rejection, ``REMEDIES`` completeness, and
 ``to_json_dict()`` stability, plus frozen/hashable dataclass conventions
 matching ``test_seed_model_artifact.py``'s own house style.
+
+Story 8.5 pins the corrected ``REMEDIES[FindingType.OPTED_OUT]`` text: the
+shipped string pointed at ``state.skips``' glob mechanism rather than the
+opt-out's own ``--reinstate`` move.
 """
 
 from __future__ import annotations
@@ -89,6 +93,19 @@ def test_remedies_has_a_non_empty_str_entry_for_every_finding_type():
         remedy = REMEDIES[finding_type]
         assert isinstance(remedy, str)
         assert remedy.strip()
+
+
+def test_the_opted_out_remedy_names_the_real_reinstate_mechanism():
+    """Story 8.5 correction: this remedy used to say "remove the skip glob
+    from state", which pointed at the unrelated ``state.skips`` mechanism
+    (PRD J4 lists opt-out and ``skips[]`` as DISTINCT moves) and described a
+    glob that does not exist. The real move is
+    ``marshal seed adopt --reinstate <artifact>#<region>``, the flag S-10.6
+    wires onto ``state.clear_opt_out``."""
+    remedy = REMEDIES[FindingType.OPTED_OUT]
+    assert "--reinstate" in remedy
+    assert "<artifact>#<region>" in remedy
+    assert "skip glob" not in remedy
 
 
 def test_finding_type_is_exactly_the_12_members_the_epics_ac_names():
