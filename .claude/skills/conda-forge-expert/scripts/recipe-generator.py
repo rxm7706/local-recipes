@@ -2226,7 +2226,7 @@ def _run_preflight_validation(recipe_dir: Path) -> None:
     """
     import subprocess
     scripts_dir = Path(__file__).parent
-    python = os.environ.get("CONDA_PYTHON_EXE") or sys.executable
+    python = sys.executable or os.environ.get("CONDA_PYTHON_EXE") or "python"
     print("\n--- Pre-flight checks ---", file=sys.stderr)
     for script_name, label in (
         ("validate_recipe.py", "validate"),

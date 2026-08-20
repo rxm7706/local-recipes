@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 from typing import Dict, Any
@@ -136,9 +137,12 @@ def update_recipe(recipe_path: Path, dry_run: bool = False) -> Dict[str, Any]:
                 "message": f"Dry run: Would update recipe to version {latest_version}."
             }
 
-        # Call the recipe_editor script as a subprocess
+        # Call the recipe_editor script as a subprocess. Resolve the interpreter the
+        # same way github_updater.py does (DW-2-10-2) — a bare "python" PATH lookup
+        # fails in an environment that only has "python3" on PATH.
         import subprocess
-        cmd = ["python", str(RECIPE_EDITOR_SCRIPT), str(recipe_path), json.dumps(actions)]
+        python = sys.executable or os.environ.get("CONDA_PYTHON_EXE") or "python"
+        cmd = [python, str(RECIPE_EDITOR_SCRIPT), str(recipe_path), json.dumps(actions)]
         result = subprocess.run(cmd, capture_output=True, text=True, check=False)
         
         if result.returncode != 0:

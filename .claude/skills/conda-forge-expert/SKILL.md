@@ -7,7 +7,7 @@ description: |
 
   USE THIS SKILL WHEN: creating or updating conda recipes, fixing conda-forge
   build failures, or performing any task related to conda packaging.
-version: 8.81.0
+version: 8.82.3
 allowed-tools: [conda_forge_server]
 ---
 
@@ -197,6 +197,210 @@ Two properties worth preserving if you touch the helper:
 
 `tests/unit/test_path_guard.py` covers the escapes; add a case there rather than
 re-deriving the rules at a new call site.
+
+### New Scripts Resolve the Data Dir / Repo Root Through `_paths`, Never a Hand-Rolled Walk
+
+Any **new** script needing the skill-scoped data directory (`.claude/data/conda-forge-expert/`)
+or the monorepo root must import `scripts/_paths.py`:
+
+```python
+from _paths import get_data_dir, get_repo_root
+```
+
+A Rule-2 retro (Story 5.5) found ~30 hand-rolled copies of a 1-line `_get_data_dir()`
+across `scripts/*.py`, in three subtly different shapes — with and without
+`.resolve()` on `__file__`, and two files (`feedstock_context.py`,
+`feedstock_lookup.py`) at the **wrong depth entirely**, resolving
+`.claude/skills/data/conda-forge-expert` instead of `.claude/data/conda-forge-expert`.
+That divergence was live, not theoretical: the wrong directory had actually been
+created on disk and `.gitignore`'d rather than root-caused. A second, independent
+divergence hit `REPO_ROOT` the same way — `bootstrap_data.py` walked one level too
+far (`parents[5]`, landing above the real repo root) and `recipe_optimizer.py`'s
+`_read_conda_forge_python_floor()` walked one level too shallow (`parents[3]`,
+landing on `.claude/` itself), which meant it could never find the real
+`.pixi/envs/local-recipes/conda_build_config.yaml` pinning file and silently
+fell back to its hardcoded default on every call since SEL-004 shipped.
+
+All four confirmed-wrong call sites now import `_paths`; the other ~26 duplicated copies
+were **not** mass-migrated in that pass (disproportionate blast radius for a
+closing-retrospective commit) — migrate them opportunistically when you're already
+touching that file. They are duplicated-and-depth-correct, **not** clean: 35 files under
+`scripts/` still contain at least one un-`.resolve()`d `Path(__file__).parent` walk
+(`grep -lE 'Path\(__file__\)\.parent' scripts/*.py | wc -l`), so a large share of the
+deferred population is latently wrong by this constraint's own rule. `.resolve()` matters even when the depth is right: without it, a parent-walk
+over a symlinked invocation path can land one directory off from the real location. If
+you touch one of these files for any reason, at minimum add `.resolve()`.
+
+`get_repo_root()`/`get_data_dir()` compute lazily and return `None` (never raise) on
+`(IndexError, OSError)` — a resolution failure surfaces only to a caller that actually
+calls the function, not as an import-time crash for every script that merely imports
+`_paths`. **`None` is a real return value and nothing downstream catches it for you**:
+binding it straight into a module-scope `_DIR / "name"` is a `TypeError` at import —
+the same crash the lazy contract exists to avoid, one file over, and one that the
+`except ImportError` guards wrapping sibling-module loads elsewhere in this skill do
+**not** catch. Handle it explicitly at the call site: degrade (disable an optional
+cache, fall back to a documented default) or exit with a diagnostic.
+
+### Every Outbound Request's JFrog Credential Is Host-Gated, Not Global
+
+`_http.auth_headers_for` used to attach `JFROG_API_KEY` / `JFROG_USERNAME`+`PASSWORD`
+to **every** outbound request whenever the env var was set, regardless of the target
+host — a cross-resolver credential leak (surfaced 2026-05-10, partially mitigated by
+the v8.14.0 `skip_auth` call-site opt-out). A Rule-2 retro (Story 5.5) landed the fix:
+the JFrog branches are gated on `_configured_enterprise_hosts()`, a set **derived**
+(never hardcoded) from every currently-set `*_BASE_URL` env var's host **and** the
+operator's pixi config (`_pixi_configured_hosts()` — `mirrors`/`default-channels`/
+`pypi-config.index-url`+`extra-index-urls`, deliberately excluding those resolvers'
+own public-default fallbacks). Both sources matter:
+`docs/reference/pixi-config-jfrog.example.toml` documents project-local
+`.pixi/config.toml` — no env vars at all — as **this repo's recommended enterprise
+setup**, so an env-var-only allowlist would have silently dropped JFrog auth for the
+documented path, a functional regression the same-pass adversarial review caught
+before it shipped. The gate is host-level, not repo-scoped or resolver-scoped — a
+JFrog instance fronting several ecosystems under one credential is expected to receive
+that credential for all of them — but it closes the leak that mattered: a public
+fallback host the operator never configured anything for used to receive the header
+whenever the key was merely set. Closing that without an SSRF-style private-IP
+denylist matters because a denylist would wrongly block the very enterprise mirrors
+this routing exists to reach. `skip_auth=True` still short-circuits everything and
+remains the right call for a known-public endpoint regardless of configuration; the
+host gate is defense in depth for every other call site, not a replacement for it. A
+malformed `*_BASE_URL`/pixi-config URL value (e.g. an unclosed IPv6-bracket literal)
+contributes no host rather than crashing the whole allowlist derivation — `urlparse()`
+raises `ValueError` on those, and the derivation catches it per-entry.
+`github.com`/`api.github.com` are **always** excluded from the JFrog gate, regardless
+of `_configured_enterprise_hosts()` — the JFrog/GitHub-token logic shares one
+`if/elif` chain, and without this exclusion a `*_BASE_URL` that happened to resolve to
+either host would shadow `GITHUB_TOKEN` with an unrelated JFrog credential.
+
+**Derive every host with `urlparse(url).hostname`, never `netloc.split(":")[0]`.** The
+allowlist decides whether a credential is withheld or handed over, so a sloppy parse
+fails in both directions at once. `netloc.split(":")[0]` returns the **username** for
+`https://svc:tok@artifactory.corp/api/conda/cf` — a routine Artifactory form, whose
+real mirror then never enters the allowlist and silently stops receiving its own
+credential — and it collapses **every** IPv6 literal to `[2001`, so an unrelated
+address sharing that prefix matches and **receives** the credential. `.hostname`
+strips userinfo, unwraps the brackets, and still strips the port (the property the
+comparison needs so a `*_BASE_URL` with an explicit port matches a request URL
+without one).
+
+**Public default hosts can never be allowlisted.** `_public_default_hosts()` derives
+them from this module's own `_DEFAULT_*` fallback globals — never a hand-kept list — and
+both halves of the allowlist subtract them. The coverage is automatic only for a
+resolver that **declares its fallbacks in a `_DEFAULT_*` global**; one that inlines them
+as f-string literals in its own body (`resolve_anaconda_channel_urls` does) is covered
+only if some other resolver's global happens to name the same host. **Declare your
+fallbacks in a `_DEFAULT_*` global**, or your resolver's public host can be allowlisted. Otherwise a merely redundant `PYPI_BASE_URL=https://pypi.org/simple`
+marks the public host "configured" and re-opens the leak.
+
+The fourth review pass found that gap was not hypothetical: `anaconda.org`,
+`files.pythonhosted.org`, `repo.anaconda.com` and `dev.azure.com` are all hosts this
+module requests and none is named by any `_DEFAULT_*` global, so each was reproduced
+receiving `JFROG_API_KEY` under a `*_BASE_URL` naming it. `_PUBLIC_HOST_FLOOR` now sits
+under the derivation for exactly those three escape classes (URL built inline;
+CDN/redirect target; a vendor's second domain) — **a floor beneath the derivation, never
+a replacement for it**: keep declaring fallbacks in globals, and the floor stays short.
+Two further rules fall out of that pass. **A set you SUBTRACT must never be cached
+empty** — `_public_default_hosts()` recomputes rather than freezing an empty result,
+because an empty subtrahend silently re-opens the gate for the life of the process, and
+empty can only mean a load-order bug (the globals are declared below the function).
+And **a hand-kept mirror of a derived set drifts toward the leak**: `inventory_channel.py`'s
+no-`_http` floor sat at 9 hosts against `_http`'s 18 while its own docstring claimed it
+was never wider — a test now pins the containment. **Non-`*_BASE_URL` mirror
+vars count too** when a resolver honours them: `resolve_npm_urls` reads npm's own
+`npm_config_registry`/`NPM_CONFIG_REGISTRY`, so those are in the scan
+(`_EXTRA_MIRROR_ENV_VARS`). Adding a resolver that reads a new non-`_BASE_URL` var
+means adding it there, or that operator's mirror 401s.
+
+**The gate is skipped entirely when no JFrog credential is set** — it gates nothing
+else, and deriving it costs an `os.environ` walk plus a stat + TOML parse of the pixi
+config chain on a path every `make_request()` takes.
+
+**This gate HAD TWO independent copies elsewhere in this skill** —
+`dependency-checker.py`'s `_auth_headers` (its own implementation, broader alias
+vocabulary, never delegated to `_http.py`) and `inventory_channel.py`'s `_make_request`
+no-`_http` fallback. Both were fixed in the Story 5.5 pass. Before adding a THIRD
+standalone auth-header builder anywhere in this skill: check whether
+`_http.auth_headers_for`/`make_request` can be used directly first; a new independent
+copy is exactly how this leak survived one full "durable fix" landing undetected — and
+each copy then has to re-earn every property the original gained. Both copies needed a
+second and a third pass to reach parity: `inventory_channel.py`'s fallback shipped
+without the public-default subtraction, so it was *wider* than `_http` in exactly the
+direction that leaks while its docstring claimed it was deliberately narrower. **When
+you copy a gate, copy its exclusions too, and test the copy against the same
+scenarios** — a divergence here is silent by construction.
+
+**Gate the credential KIND, not just the host.** "May this host receive a credential?"
+and "may it receive *this* credential?" are different questions, and answering only the
+first leaks. `dependency-checker.py` authorizes the channel the operator NAMED, and
+that channel is routinely public (`--channel https://conda.anaconda.org/myprivateorg`
+is a supported setup) — so host-level authorization alone sent the JFrog API key to
+anaconda.org **and**, because the JFrog branch is checked first, shadowed the
+`CONDA_TOKEN` that channel actually needs. Splitting by kind fixes both at once: a
+named public host gets its channel token and nothing else; a non-public configured host
+keeps the original priority. **A credential's destination is a property of the
+credential, not only of the request.**
+
+**Scope an authorization set to the call that built it.** `_EXPLICIT_CHANNEL_HOSTS` is
+cleared at the top of `get_configured_channels`, not accumulated. A module-level set
+that only ever grows is a per-process credential allowlist assembled from caller
+arguments: a host named by one call's `--channel` stays authorized for every later
+call in that process.
+
+Be exact about which process, though — the fourth review pass found this rule's own
+first write-up asserting a reproduction it never had. **The MCP server does not run
+these scripts in-process.** `conda_forge_server.py::_run_script` is
+`subprocess.run([sys.executable, script_path, *args])`, so `dependency-checker.py`
+gets a fresh interpreter per tool call and no module-level state survives it. The
+accumulation is real in-process and the per-call clear is the right contract, but the
+production trigger described here — and in the matching `sys.path`-growth note below —
+does not exist on the MCP path. **When you justify a fix with a failure mode, name the
+entry point you traced it through**; "a long-lived server" is an assumption about
+process lifetime, and in this skill it happens to be the wrong one.
+
+**A host gate must admit the hosts the tool was pointed at, not only `*_BASE_URL`
+ones.** `dependency-checker.py` takes its channel from `--channel` /
+`CONDA_CHANNEL_URL` / the enterprise config — none of which is a `*_BASE_URL` — so
+gating on the shared allowlist alone withheld the credential from the operator's own
+Artifactory channel (a silent 401/404 on the one channel they configured, and the
+reason `CONDA_TOKEN`, an anaconda.org channel token rather than a JFrog one, reached
+nothing at all). It now unions `_EXPLICIT_CHANNEL_HOSTS`, recorded by
+`get_configured_channels` on its explicit branches only — never on the step-4 public
+fallback. When tightening a credential path, enumerate every way the operator can name
+a destination before assuming one env-var family covers them.
+
+**Migrate every host-parse in the file, not only the ones on the gate's path.**
+`netrc_credentials` was the third `netloc.split(":")[0]` in `_http.py` and the one the
+first two passes did not touch, so a userinfo-bearing Artifactory URL matched no
+`machine` line and fell through to any `default` entry — sending an unrelated
+credential to the mirror the operator had a correct entry for. Grep the whole file for
+the banned form when you fix one instance of it.
+
+**…but check what else the canonical parse changes.** That migration then broke netrc
+matching in the opposite direction: `_host_of` is `urlparse().hostname`, which
+LOWERCASES, while `netrc.authenticators` is an exact dict lookup over the `machine`
+tokens as spelled in the file and folds nothing. A legal `machine ARTIFACTORY.CORP.COM`
+stopped matching and fell through to `default` — the same wrong-credential-to-the-mirror
+failure the migration was made to fix, re-entered by the fix itself. Machine lines are
+matched case-insensitively now. **A shared helper carries all of its normalizations to
+every call site, not only the one you wanted**; before reusing one on a new path, list
+what it normalizes and check each against that path's own matching rules.
+
+**Guard `Path.home()` on any path a request can reach.** It raises `RuntimeError` — not
+`OSError`, so an `except OSError` does not catch it — when neither HOME nor a passwd
+entry resolves, which is ordinary in rootless / arbitrary-UID containers. This has now
+bitten twice in the same feature: once via `read_pixi_config` in the allowlist
+derivation, once via `netrc_credentials` when gating made that branch reachable. Both
+degrade to "no credential" and log; neither takes the process down.
+
+**Closing one credential branch makes the next one reachable.** Before the gate, a set
+`JFROG_API_KEY` matched `auth_headers_for`'s first `if` unconditionally, so the generic
+`.netrc` fallback at the end of the chain never ran in that state. It does now: an
+operator with both a JFrog key and a `default` entry in `.netrc` sends those Basic
+credentials to unconfigured hosts. That is `default`'s documented netrc semantics and so
+is the operator's own declared intent — but it is a behaviour change, and it is the
+general shape to check for. **When you add a guard to a branch in an `if/elif` chain,
+work out which branch now receives the traffic and whether that is acceptable.**
 
 ### Every v1 Recipe Must Declare the Schema Header
 
@@ -3836,6 +4040,27 @@ until an import says otherwise.
 
 ---
 
+### G108. Autotick's internal `recipe_editor.py` subprocess call must resolve the interpreter the same way as its sibling — a bare `"python"` argv0 breaks on any environment without a `python` alias
+
+**Symptom**: `recipe_updater.py`'s (the PyPI autotick bot) real-write path — the branch that actually applies a version bump, not the `--dry-run` preview — fails with `FileNotFoundError` / a non-zero `recipe_editor.py failed` result on an environment whose interpreter is only reachable as `python3`, never `python`.
+
+**Why**: the subprocess call hardcoded `cmd = ["python", str(RECIPE_EDITOR_SCRIPT), ...]` — a bare PATH lookup, which depends on the host's PATH carrying that exact alias. `sys.executable` is the interpreter currently running the calling script: guaranteed to exist, guaranteed executable, and — the property that matters for a script-to-script call — guaranteed to have the same installed dependencies the caller does.
+
+**Do NOT prefer `CONDA_PYTHON_EXE` over it.** It is a natural-looking mistake (all four CFE call sites made it until v8.82.2) because the name suggests "the active conda env's python". It is not: conda sets `CONDA_PYTHON_EXE` to the interpreter of the **conda installation itself** — conda's own `base/context` module writes `sys.executable` into it alongside `_CONDA_ROOT`, the shell hook exports it once, and `conda activate <env>` never re-exports it. So on any multi-env conda install it names BASE python, which need not have the caller's dependencies. Live failure mode: `recipe_editor.py` runs under base python, exits 1 with `{"success": false, "error": "ruamel.yaml is not installed."}`, and the version bump fails with a misleading error on a machine where ruamel plainly IS installed.
+
+**Fix**: resolve `sys.executable` first in every internal subprocess call to a sibling CFE script:
+
+```python
+python = sys.executable or os.environ.get("CONDA_PYTHON_EXE") or "python"
+cmd = [python, str(RECIPE_EDITOR_SCRIPT), str(recipe_path), json.dumps(actions)]
+```
+
+Never hardcode a bare `"python"` (or `"python3"`) for an internal script-to-script call — the calling script's own interpreter is always the correct one to reuse, and is always resolvable without a PATH lookup. `CONDA_PYTHON_EXE` survives only as a fallback for the rare embedded interpreter where `sys.executable` is empty.
+
+**Case study**: discovered during the pyforge-mason effort's Story 2.10 (`mason recipe update`) by adversarial review of the Mason↔CFE delegation boundary, 2026-08-12 — Mason's own fixture stubs short-circuit before this real subprocess chain is reached, so the divergence carried zero test coverage on either side until the review inspected both scripts directly. Flagged for this Rule-2 retrospective (`DW-2-10-2`) since the fix belongs in the wrapped tool, not in the wrapper.
+
+---
+
 ## Skill Automation
 
 A quarterly live-doc audit keeps this skill aligned with upstream conda-forge changes. It runs as a remote Claude Code routine (registered at `claude.ai/code/routines`) but the prompt and runner are committed under [`automation/`](automation/) so the job is reproducible from this repo.
@@ -3871,6 +4096,11 @@ To run an off-cycle audit locally: `.claude/skills/conda-forge-expert/automation
 ---
 
 ## Version History
+
+- **v8.82.3** (Aug 20, 2026) — **Story 5.5 fourth review pass: the public-host floor, two netrc regressions, and a rationale that was never traced (PATCH).** A third independent follow-up review found five real defects in the previous two passes' own fixes, each reproduced before triage. **(1)** `_public_default_hosts()` derives from `_DEFAULT_*` globals and so could not see `anaconda.org`, `files.pythonhosted.org`, `repo.anaconda.com` or `dev.azure.com` — all hosts this module requests; each was reproduced receiving `JFROG_API_KEY` under a `*_BASE_URL` naming it, the very public-host leak v8.82.1's subtraction exists to close. Added `_PUBLIC_HOST_FLOOR` beneath the derivation, and an empty result is never cached (an empty subtrahend re-opens the gate). **(2)** v8.82.2 moving `netrc_credentials` to `_host_of` broke it in the other direction: `_host_of` lowercases and `netrc.authenticators` does not, so a legal `machine ARTIFACTORY.CORP.COM` fell through to `default` — the same failure that migration was made to fix. **(3)** `netrc_credentials`'s `Path.home()` sits outside the `try` and raises `RuntimeError` in rootless containers; v8.82.0 gating the JFrog branch handed it traffic on every request to an unconfigured host. **(4)** `inventory_channel.py`'s fallback floor held 9 hosts against `_http`'s 18, still wider in the leaking direction for 11 while claiming otherwise; brought to parity with a containment test. **(5)** v8.82.2's credential-kind split sent `CONDA_TOKEN` to every named public host, including `repo.prefix.dev` and `pypi.org`; restricted to the anaconda.org family. **Also:** v8.82.2 justified its `_EXPLICIT_CHANNEL_HOSTS` and `sys.path` fixes with a "long-lived MCP server" failure mode asserted as reproduced — `conda_forge_server.py::_run_script` subprocesses these scripts per tool call, so it is unreachable there; the fixes stay, the claims are corrected, and SKILL.md gains the rule that a fix's justification must name the entry point it was traced through. `pyforge-doctor`'s inverted golden-fixture test now pins its own precondition instead of asserting an absence indistinguishable from having scanned nothing. Unit suite 1386 → 1401 passed, 0 failed.
+- **v8.82.2** (Aug 20, 2026) — **Story 5.5 third review pass: credential-KIND gating + the third host-parse + a red sibling suite (PATCH).** A second independent follow-up review found the v8.82.1 gate still wrong in three ways, each reproduced before triage. **(1)** The gate answered "may this host receive a credential?" but never "may it receive *this* one". `dependency-checker.py` authorizes the channel the operator NAMED, and that channel is routinely public, so `JFROG_API_KEY` still reached `conda.anaconda.org` — and, the JFrog branch being first, it shadowed the `CONDA_TOKEN` v8.82.1 had just fixed, whenever both were set. Now split by credential kind: a named public host gets its channel token only. `_EXPLICIT_CHANNEL_HOSTS` also only ever grew — in the MCP server a host from one request's `--channel` stayed authorized for every later one; it is now cleared per call. **(2)** `inventory_channel.py`'s fallback never got the public-default subtraction, making the copy *wider* than `_http` in the leaking direction while claiming to be narrower. **(3)** `netrc_credentials` was the third `netloc.split(":")[0]` in `_http.py`, left behind because it is not on the allowlist path; a userinfo URL fell through to any `.netrc` `default` entry. **Also:** `pyforge-doctor`'s golden-fixture test used `_http.py`'s live leak as its one non-synthetic fixture, so fixing the leak turned that suite red (A/B: 2 findings pre-retro, 0 post) — inverted into a regression guard that the real scripts stay clean. **G108 was documented backwards**: `CONDA_PYTHON_EXE` is conda's own (base) interpreter, not the activated env's, so preferring it over `sys.executable` ran the child under a python that need not have the caller's dependencies; all four call sites corrected. Four `sys.path` inserts guarded (the fix v8.82.1 made in one file and reintroduced in four), three tests that could not fail repaired, and `_paths`'s "correct-but-duplicated" claim corrected (~35 copies carry an un-`.resolve()`d walk). Unit suite 1377 → 1386 passed, 0 failed.
+- **v8.82.1** (Aug 20, 2026) — **Story 5.5 follow-up review pass: host-parsing + gate-coverage fixes to v8.82.0 (PATCH).** An independent follow-up review found the new JFrog host gate correct in shape but wrong in three places that decide, in opposite directions, whether a credential is withheld or handed over. **(1)** `_host_of()` parsed with `urlparse().netloc.split(":")[0]`, which returns the *username* for `https://svc:tok@artifactory.corp/...` (so the operator's real mirror never entered the allowlist and silently lost its credential) and collapses every IPv6 literal to `[2001` (so an unrelated same-prefix address matched and *received* it) — now `urlparse().hostname`; the same defect had been copied verbatim into `inventory_channel.py`'s fallback. **(2)** Public default hosts could enter the allowlist via the env-var half, so a redundant `PYPI_BASE_URL=https://pypi.org/simple` re-opened the leak — `_public_default_hosts()` now derives them from the module's own `_DEFAULT_*` globals and both halves subtract them. **(3)** `dependency-checker.py` takes its channel from `--channel`/`CONDA_CHANNEL_URL`/enterprise config, none of them a `*_BASE_URL`, so the gate withheld the credential from the operator's own Artifactory channel and left `CONDA_TOKEN` reaching nothing — it now unions `_EXPLICIT_CHANNEL_HOSTS` (explicit branches only, never the public fallback), and its `_http`-unimportable path no longer degrades to "attach unconditionally". **Also:** the gate is skipped when no JFrog credential is set (it gated nothing else and cost a stat + TOML parse on every request); `_pixi_configured_hosts()` no longer lets `read_pixi_config()`'s `Path.home()` RuntimeError raise through every outbound request; npm's own `npm_config_registry`/`NPM_CONFIG_REGISTRY` join the scan; `dependency-checker.py` stopped growing `sys.path` once per call; and the three `_paths` callers still crashing on v8.82.0's own `None` contract (`feedstock_context`/`feedstock_lookup`/`bootstrap_data` bound it into a module-scope `_DIR / "name"` — a `TypeError` at import) now degrade or exit cleanly. Two doc overclaims corrected (the "still-unpatched copies" contradiction, and `mason_cfe_surface_check.py` "proving" exactly-once use). Unit suite 1352 → 1377 passed, 0 failed.
+- **v8.82.0** (Aug 20, 2026) — **pyforge-mason Epic-5 closing retrospective (Rule 2): 1 new gotcha G108 + 2 new operating constraints (MINOR).** The mandatory closing retrospective for the `pyforge-mason` BMAD effort (Story 5.5) — the effort's one commit sanctioned to touch the CFE surface (AD-15; Story 5.2's `mason_cfe_surface_check.py` scans only commits touching mason source, so it proves no mason-source commit smuggles a CFE change — not that the exception was used exactly once). Triaged the four CFE upstream defects `epic-5-context.md` flagged during planning. **New Critical Constraint (path resolution)** — ~30 scripts hand-rolled a 1-line `_get_data_dir()` in three subtly different shapes; two (`feedstock_context.py`, `feedstock_lookup.py`) resolved the WRONG directory entirely (`.claude/skills/data/...` instead of `.claude/data/...` — a live divergence, proven by a stray `.gitignore` entry for the wrong path). `bootstrap_data.py`'s `REPO_ROOT` walked one level too far; `recipe_optimizer.py`'s `_read_conda_forge_python_floor()` (SEL-004) walked one level too shallow, so it could never find the real pinning file and silently always used its hardcoded default. New shared `scripts/_paths.py` (`get_data_dir()`/`get_repo_root()`, lazy + `None`-returning on resolution failure rather than crashing on import) fixes all four confirmed-wrong sites; the ~26 other correct-but-duplicated copies are left alone (disproportionate churn for a closing-retro commit). **New Critical Constraint (JFrog credential host-gating)** — `_http.py`'s unconditional `JFROG_API_KEY` injection (the cross-resolver leak documented since v8.14.0's `skip_auth` partial mitigation) is now gated on `_configured_enterprise_hosts()`, derived from every currently-set `*_BASE_URL` env var AND the operator's pixi config (`docs/reference/pixi-config-jfrog.example.toml` documents pixi-only as this repo's RECOMMENDED setup) — closes the leak without an SSRF-style private-IP denylist (which would break the enterprise-mirror routing AUD-CFE-004 already flagged as undoable that way). A same-pass adversarial review (Blind Hunter + Edge Case Hunter) found this fix's first landing incomplete on 5 counts, all patched before this commit: missing pixi-config hosts (functional regression, not just a residual leak), a JFrog/GitHub `if/elif` chain that could shadow `GITHUB_TOKEN` when a `*_BASE_URL` resolved to github.com, no port-stripping on host comparison, `_paths.py`'s import-time crash risk (see above), and — most significant — TWO sibling scripts (`dependency-checker.py`, `inventory_channel.py`'s no-`_http` fallback) with their own independent, still-unconditional copies of the identical leak, now fixed the same way. **G108 (new)** — `recipe_updater.py`'s autotick bot hardcoded a bare `"python"` for its internal `recipe_editor.py` subprocess call, unlike sibling `github_updater.py`'s `CONDA_PYTHON_EXE`-or-`sys.executable` resolution (`DW-2-10-2`, found by Story 2.10 adversarial review). Full CFE suite verified against a `git stash` A/B baseline — zero regressions; 9 pre-existing meta-suite failures confirmed byte-for-byte identical before/after, not merely re-asserted. **Files**: `SKILL.md`, `scripts/_paths.py` (new), `scripts/{feedstock_context,feedstock_lookup,bootstrap_data,recipe_optimizer,recipe_updater,_http,dependency-checker,inventory_channel}.py`, 7 new `tests/unit/*.py`, 3 updated `tests/unit/*.py`, `.gitignore`, `config/skill-config.yaml` (8.81.0 → 8.82.0), `MANIFEST.yaml`, `CHANGELOG.md`.
 
 - **v8.81.0** (Jul 29, 2026) — **Round-4 code-audit remediation retro (Rule 2 — the AUD-CFE-\* + AUD-REPO-001 findings; 1 new operating constraint; MINOR).** Closes the `AUD-CFE-*` half of `spec-code-audit-remediation-2026-07-26`, which the 2026-07-27 incorporation record left with **no disposition** ("pyforge-atlas only"). PR #131 is abandoned, so every finding was re-verified **OPEN against `main`** rather than trusted from the branch's `Status:` lines. No recipes authored; no `recipes/**` touched. **New Critical Constraint** — *Every Recipe-Facing Path Argument Confines Through `_path_guard`*: `submit_pr.prepare_branch` (slug → `recipes/` → `copytree` into a **public fork**), `recipe_editor.execute_actions` (suffix-only check, so any repo YAML was writable) and `trigger_build` (any recipe path on disk) all skipped confinement; they now share one helper, whose root is read **per call** so the test override cannot be silently defeated. **Root cause found:** `/.claude/skills` sat in `.git/info/exclude` — 919 files there are tracked, so it hid only **new** ones, which is why `_path_guard.py` and `tests/meta/test_dashboard_renders.py` were written and never committed (**PR #131 imports a module it does not ship**). Guarded by `tests/meta/test_skill_files_tracked.py`, which walks the filesystem instead of asking `git status` (that honours the exclude and reports clean). **Refinements:** a keyword *substring* scan false-positives on identifiers (`updated_at` contains `UPDATE`) → word-boundary matching; `query_atlas`'s `order_by` was interpolated with **no** validation → allowlists on `select`/`order_by`, `where` keeps its documented subqueries, connection read-only, `limit` clamped at both ends (`limit=-1` = *no limit* in SQLite, verified to dump a table); the atlas N+1 fix applied to **both** readers via a shared chunked helper, not just the one the finding named (`with sqlite3.connect(...)` manages the transaction, **not** the connection). **AUD-REPO-001** dependency-completeness gate restored (`pyforge-deps-test`, pure stdlib so it runs in the lean env) — it found AUD-WARDEN-010 still open on `main` on its first run. Also: Gemini key → `x-goog-api-key`; provenance-hook return/argparse/exit fixes; `.secrets` into the tracked `.gitignore`; `--force-with-lease` on the fork sync; `wiki-test` wired for a suite that collected nowhere; **stale `7.0.0` in `SKILL.md`/`MANIFEST.yaml` corrected**. AUD-CFE-003/004 stay deferred (004 cannot be a private-IP denylist — internal hosts are what `<HOST>_BASE_URL` routing targets). **Files**: `SKILL.md`, `MANIFEST.yaml`, `config/skill-config.yaml`, `reference/mcp-tools.md`, `scripts/{_path_guard,submit_pr,recipe_editor,scan_project}.py`, `.claude/tools/{conda_forge_server,gemini_server,mcp_call}.py`, `.claude/hooks/post-tool-call.py`, `tests/{meta,unit}/…` (+134 tests), `tests/packaging/`, `pixi.toml`, `.gitignore`, `CHANGELOG.md`.
 

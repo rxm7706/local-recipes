@@ -929,6 +929,10 @@ class TestAuthHeadersFor:
     def test_jfrog_api_key_wins(self, monkeypatch):
         _clean_env(monkeypatch)
         monkeypatch.setenv("NETRC", "/nonexistent/.netrc")
+        # Rule-2 retro: JFrog credentials are host-gated against configured
+        # *_BASE_URL vars — "artifactory" must be a configured host for the
+        # injection to fire.
+        monkeypatch.setenv("NPM_BASE_URL", "https://artifactory/api/npm/npm")
         monkeypatch.setenv("JFROG_API_KEY", "secret-token")
         monkeypatch.setenv("JFROG_USERNAME", "ignored")
         monkeypatch.setenv("JFROG_PASSWORD", "ignored")
@@ -938,11 +942,21 @@ class TestAuthHeadersFor:
     def test_jfrog_username_password_basic_auth(self, monkeypatch):
         _clean_env(monkeypatch)
         monkeypatch.setenv("NETRC", "/nonexistent/.netrc")
+        monkeypatch.setenv("NPM_BASE_URL", "https://artifactory/api/npm/npm")
         monkeypatch.setenv("JFROG_USERNAME", "alice")
         monkeypatch.setenv("JFROG_PASSWORD", "hunter2")
         headers = _http.auth_headers_for("https://artifactory/api/npm/npm/codex")
         # Basic base64('alice:hunter2') == 'YWxpY2U6aHVudGVyMg=='
         assert headers == {"Authorization": "Basic YWxpY2U6aHVudGVyMg=="}
+
+    def test_jfrog_api_key_not_sent_to_unconfigured_host(self, monkeypatch):
+        """Rule-2 retro regression guard: the former cross-resolver leak —
+        JFROG_API_KEY must NOT attach to a host no *_BASE_URL var names."""
+        _clean_env(monkeypatch)
+        monkeypatch.setenv("NETRC", "/nonexistent/.netrc")
+        monkeypatch.setenv("JFROG_API_KEY", "secret-token")
+        headers = _http.auth_headers_for("https://artifactory/api/npm/npm/codex")
+        assert headers == {}
 
     def test_github_token_only_attaches_to_github_hosts(self, monkeypatch):
         _clean_env(monkeypatch)
@@ -958,6 +972,7 @@ class TestAuthHeadersFor:
         """make_request and auth_headers_for share the same chain."""
         _clean_env(monkeypatch)
         monkeypatch.setenv("NETRC", "/nonexistent/.netrc")
+        monkeypatch.setenv("CONDA_FORGE_BASE_URL", "https://artifactory/x")
         monkeypatch.setenv("JFROG_API_KEY", "k")
         req = _http.make_request("https://artifactory/x")
         assert req.headers.get("X-jfrog-art-api") == "k"

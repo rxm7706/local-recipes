@@ -46,6 +46,7 @@ import sqlite3
 import sys
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from base64 import b64encode
 from dataclasses import dataclass, field
@@ -71,8 +72,16 @@ except ImportError:
 
 
 def _get_data_dir() -> Path:
-    """Get skill-scoped data directory: .claude/data/conda-forge-expert/"""
-    return Path(__file__).parent.parent.parent.parent / "data" / "conda-forge-expert"
+    """Get skill-scoped data directory: .claude/data/conda-forge-expert/
+
+    Still a local copy rather than `_paths.get_data_dir()` (whose `None`
+    contract would ripple through ATLAS_DB/CACHE_DIR and their five use
+    sites) — that migration is tracked. `.resolve()` is NOT optional though:
+    without it a parent-walk over a symlinked invocation path lands one
+    directory off, which is the defect class the Rule-2 retro's new
+    path-resolution constraint exists to prevent.
+    """
+    return Path(__file__).resolve().parent.parent.parent.parent / "data" / "conda-forge-expert"
 
 
 DATA_DIR = _get_data_dir()
@@ -110,14 +119,114 @@ def _make_request(url: str) -> urllib.request.Request:
     """Build a Request with JFrog/netrc/Bearer auth. Uses _http if available."""
     if _HTTP_AVAILABLE and _http_make_request is not None:
         return _http_make_request(url, user_agent="inventory-channel/1.0")
-    # Fallback: env-var only auth (no .netrc)
+    # Fallback: env-var only auth (no .netrc), used only when _http itself
+    # isn't importable ("offline / external clones", per _HTTP_AVAILABLE's
+    # own comment above). Host-gated the same way _http.auth_headers_for is
+    # (Rule-2 retro, Story 5.5) — this branch previously attached the JFrog
+    # credential to every host unconditionally, the identical cross-resolver
+    # leak _http.py closed, present here too since this fallback duplicates
+    # that logic rather than delegating to it.
     headers: dict[str, str] = {"User-Agent": "inventory-channel/1.0"}
-    if os.environ.get("JFROG_API_KEY"):
+    host = _fallback_host_of(url)
+    is_configured_host = bool(host) and host in _fallback_configured_enterprise_hosts()
+    if is_configured_host and os.environ.get("JFROG_API_KEY"):
         headers["X-JFrog-Art-Api"] = os.environ["JFROG_API_KEY"]
-    elif os.environ.get("JFROG_USERNAME") and os.environ.get("JFROG_PASSWORD"):
+    elif is_configured_host and os.environ.get("JFROG_USERNAME") and os.environ.get("JFROG_PASSWORD"):
         creds = f"{os.environ['JFROG_USERNAME']}:{os.environ['JFROG_PASSWORD']}"
         headers["Authorization"] = "Basic " + b64encode(creds.encode()).decode()
     return urllib.request.Request(url, headers=headers)
+
+
+def _fallback_host_of(url: str) -> str:
+    """Lowercased hostname, userinfo and port stripped — the same contract as
+    `_http._host_of`. `urlparse().hostname`, never `netloc.split(':')[0]`:
+    the latter returns the USERNAME for `https://user:pw@host/` (a routine
+    Artifactory form, so the real mirror would never match) and mangles IPv6
+    literals into a shared `[2001` prefix (so an unrelated host would).
+    Returns `""` — never raises — on a malformed URL."""
+    try:
+        return (urllib.parse.urlparse(url).hostname or "").lower()
+    except ValueError:
+        return ""
+
+
+# Public package hosts that can never be an enterprise mirror, however an
+# operator's `*_BASE_URL` is spelled. The no-`_http` floor for what
+# `_http._public_default_hosts()` derives from its own `_DEFAULT_*` globals —
+# literal on purpose: this path exists precisely because that module could not
+# be imported, so the derivation is unavailable here by construction.
+#
+# It must stay a SUPERSET of what `_http` subtracts. The first version of this
+# list held only the nine most obvious hosts, which left it eleven short of
+# `_http`'s derived set and so made this copy WIDER than `_http` in exactly the
+# leaking direction — the opposite of what the docstring below claims — for
+# crates.io, rubygems.org, gitlab.com and the rest. Verified against
+# `sorted(_http._public_default_hosts())`; when a resolver adds a public
+# fallback there, add it here too. `tests/unit/test_inventory_channel_auth_host_gate.py`
+# asserts this set covers `_http`'s, so the drift reds rather than leaks.
+_PUBLIC_HOST_FLOOR: frozenset[str] = frozenset({
+    "anaconda-package-data.s3.amazonaws.com",
+    "anaconda.org",
+    "api.github.com",
+    "api.nuget.org",
+    "codeberg.org",
+    "conda.anaconda.org",
+    "crandb.r-pkg.org",
+    "crates.io",
+    "dev.azure.com",
+    "endoflife.date",
+    "fastapi.metacpan.org",
+    "files.pythonhosted.org",
+    "github.com",
+    "gitlab.com",
+    "luarocks.org",
+    "pypi.org",
+    "raw.githubusercontent.com",
+    "registry.npmjs.org",
+    "repo.anaconda.com",
+    "repo.prefix.dev",
+    "rubygems.org",
+    "search.maven.org",
+})
+
+
+def _fallback_configured_enterprise_hosts() -> set[str]:
+    """Env-var-derived host allowlist for `_make_request`'s no-`_http`
+    fallback. A minimal, local re-derivation (not an `_http` import — that
+    path is already unavailable here by construction) of the `*_BASE_URL`
+    half of `_http._configured_enterprise_hosts()`.
+
+    Narrower than `_http`'s in one direction: it does NOT read pixi config,
+    which `_http._pixi_configured_hosts()` does. An operator on the
+    pixi-only enterprise setup that `docs/reference/pixi-config-jfrog.example.toml`
+    documents therefore gets no credential from THIS path. That is the safe
+    direction (auth withheld, not leaked) and the path is only reachable when
+    `_http` — a sibling file in this same directory — cannot be imported at
+    all; re-deriving pixi's whole config chain here would be a third
+    standalone copy of logic the retro exists to consolidate.
+
+    It must NOT be wider in the other direction. `_http` subtracts its own
+    public fallback hosts (`_public_default_hosts`) from the env-var half, so
+    a merely redundant `CONDA_FORGE_BASE_URL=https://conda.anaconda.org/conda-forge`
+    cannot mark a public host "configured". Omitting that subtraction here
+    re-opened exactly that leak on this path — verified: the same env that
+    made `_http.auth_headers_for` return `{}` for anaconda.org made this
+    fallback attach `X-JFrog-Art-Api` to it. `_PUBLIC_HOST_FLOOR` is the
+    local stand-in for `_DEFAULT_*`-derived hosts, which are unavailable by
+    construction on this path — and it is only as good as its coverage: when
+    it held nine hosts against `_http`'s twenty-two, the "not wider" claim in
+    this paragraph was false for the thirteen it was missing. The test file
+    named on `_PUBLIC_HOST_FLOOR` now pins the containment so the claim cannot
+    quietly go stale again.
+    """
+    hosts: set[str] = set()
+    for key, value in os.environ.items():
+        if not key.endswith("_BASE_URL") or not value:
+            continue
+        host = _fallback_host_of(value)
+        if host:
+            hosts.add(host)
+    return hosts - _PUBLIC_HOST_FLOOR
 
 
 def fetch_source(url_or_path: str, no_cache: bool, cache_ttl: int) -> tuple[bytes | None, str | None]:
